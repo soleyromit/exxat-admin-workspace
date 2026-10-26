@@ -9,42 +9,22 @@
 // conflict -> resolve -> state in the store, audit log and counters on other pages -> Reset demo restores.
 // Each check prints PASS or FAIL with what it saw. Exit code 1 on any FAIL. Playwright is resolved from tools/visual-check.
 
-import os from 'node:os'
-import path from 'node:path'
-import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import { KEY, IV, parseBase, makeChecker, startSession, demoMenu, derived } from './_lib.mjs'
 
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const TOOLS = path.resolve(HERE, '../../../../../tools/visual-check')
-const { chromium } = createRequire(path.join(TOOLS, 'package.json'))('playwright')
-
-const args = process.argv.slice(2)
-const base = args.includes('--base') ? args[args.indexOf('--base') + 1] : 'http://localhost:3007'
-const KEY = 'skills-checklist:v2:store'
-const IV = 'sk-iv-cath'
-
-let failures = 0
-const check = (name, ok, seen) => {
-  if (!ok) failures++
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${seen === undefined ? '' : `  (saw: ${typeof seen === 'string' ? seen : JSON.stringify(seen)})`}`)
-}
-const step = (t) => console.log(`\n== ${t}`)
+const base = parseBase()
+const { check, step, abort, finish } = makeChecker('stage2')
 
 // A 1x1 PNG and a tiny PDF for the photo input.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
 const PDF = Buffer.from('%PDF-1.1\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF')
 
-const browser = await chromium.launch()
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce', permissions: ['clipboard-read', 'clipboard-write'] })
-const page = await ctx.newPage()
-const pageErrors = []
-page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 200)))
-
-const store = () => page.evaluate((k) => { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw).state : null }, KEY)
-const putStore = (fn) => page.evaluate(([k, src]) => { const env = JSON.parse(localStorage.getItem(k)); const f = new Function('s', src); f(env.state); localStorage.setItem(k, JSON.stringify(env)) }, [KEY, fn])
-const open = async (route) => { await page.goto(base + route, { waitUntil: 'load' }); await page.waitForSelector('h1', { timeout: 30000 }); await page.waitForTimeout(700) }
-const counter = (id) => page.locator(`[data-counter="${id}"]`).first().textContent().then((t) => Number(t))
-const btn = (name, opts = {}) => page.getByRole('button', { name, ...opts })
+const { browser, page, pageErrors, open, reloadPage, store, putStore, btn, failShot } = await startSession({ base, viewport: { width: 390, height: 844 }, permissions: ['clipboard-read', 'clipboard-write'], auto: true })
+const demo = demoMenu(page)
+/** Number on the left-nav or bottom-bar badge of the row named `label` (0 when the badge is absent). The role switcher decides which nav is shown. */
+const badge = async (label) => {
+  const t = await page.locator(`a[href^="/v2/"]`).filter({ hasText: new RegExp(`^${label}\\s*\\d*$`) }).first().innerText().catch(() => '')
+  const m = t.match(/(\d+)\s*$/); return m ? Number(m[1]) : 0
+}
 const mine = (s) => s.submissions.filter((x) => x.studentId === 'stu-maya')
 const idOf = { 'IV catheter insertion': IV, 'Sterile dressing change': 'sk-sterile-dressing', 'Vital signs and early warning score': 'sk-vitals', 'Point-of-care blood glucose': 'sk-blood-glucose' }
 
@@ -96,16 +76,14 @@ async function decodeQr() {
 try {
   // ------------------------------------------------------------------ 0. start from the seed
   step('0. Start from the seed')
-  await open('/v2')
+  await open('/v2/student')
   await page.evaluate(() => localStorage.clear())
   await open('/v2/student')
+  await demo.setPhone('Phone is offline', true); await demo.setPhone('Phone is offline', false)  // one harmless write so the store reaches localStorage
   let s = await store()
-  const seedCounters = {}
-  await open('/v2')
-  seedCounters.withEvaluator = await counter('withEvaluator')
-  // Stage 4 replaced the placeholder at /v2/reviewer/review-queue with the real queue; the shared counter is still on the overview.
-  seedCounters.queueWaiting = await counter('queueWaiting')
-  check('seed: 1 request with an evaluator, 2 in the review queue', seedCounters.withEvaluator === 1 && seedCounters.queueWaiting === 2, seedCounters)
+  // The overview counters are gone. The same numbers come from the saved store with the filters lib/v2/selectors.ts uses.
+  const seedCounters = { withEvaluator: derived.withEvaluator(s), queueWaiting: derived.queueWaiting(s), syncConflict: derived.syncConflict(s) }
+  check('seed: 1 request with an evaluator, 8 submissions awaiting review, 1 sync conflict, 14 requests in all', seedCounters.withEvaluator === 1 && seedCounters.queueWaiting === 8 && seedCounters.syncConflict === 1 && s.submissions.length === 14, seedCounters)
   await open('/v2/student')
   check('home before publishing: 4 mandatory skills, IV catheter insertion listed as not open yet', (await page.getByText('Mandatory (4)').count()) === 1 && (await page.getByText('1 skill is not open yet').count()) === 1)
 
@@ -157,7 +135,7 @@ try {
   await page.getByRole('radiogroup', { name: 'Explained each step to the patient for Sterile dressing change' }).getByRole('radio', { name: 'No' }).click()
   await page.locator(`#note-${IV}`).fill('Second attempt this week.')
   // draft survives a reload
-  await page.reload({ waitUntil: 'load' }); await page.waitForSelector('h1'); await page.waitForTimeout(800)
+  await reloadPage()
   check('the draft survives a reload (still on step 3 with the rating kept)', (await page.locator('[data-step="3"]').count()) === 1 && (await page.locator(`#note-${IV}`).inputValue()) === 'Second attempt this week.')
   await btn('Review').click()
   await btn('Save 2 entries').click()
@@ -251,11 +229,15 @@ try {
 
   // ------------------------------------------------------------------ 5. other roles
   step('5. Other roles see the new requests')
-  await open('/v2')
-  const we = await counter('withEvaluator')
-  const qw = await counter('queueWaiting')
+  s = await store()
+  const we = derived.withEvaluator(s)
+  const qw = derived.queueWaiting(s)
   check('requests with an evaluator rose by 3 (QR, handover, link)', we === seedCounters.withEvaluator + 3, we)
   check('requests in the review queue rose by 1 (paper form)', qw === seedCounters.queueWaiting + 1, qw)
+  await open('/v2/preceptor/preceptor-evaluation')
+  check('the preceptor Requests page lists 5 waiting requests for J. Delgado (2 at the seed, 3 new)', (await page.locator('[data-waiting]').count()) === 5, await page.locator('[data-waiting]').count())
+  await open('/v2/reviewer/review-queue')
+  check('the reviewer Review and approve page lists the photo of the paper form from Maya', (await page.getByRole('heading', { level: 1, name: 'Review and approve' }).count()) === 1 && (await page.getByText('Maya Ferreira').count()) >= 1)
   await open('/v2/student/request-signoff')
   check('Your requests lists all 4 new ones plus the seeded one', (await page.locator('[data-request]').count()) === 5)
   const beforeOffline = (await store()).submissions.length
@@ -263,14 +245,14 @@ try {
   // ------------------------------------------------------------------ 6. offline
   step('6. Offline: queued, survives a reload, then synced')
   await open('/v2/student/offline-sync')
-  await btn('Go offline').click()
+  await demo.setPhone('Phone is offline', true)
   check('offline banner and strip say so', (await page.locator('[data-device-banner="offline"]').count()) === 1 && (await page.locator('[data-sync-strip]').getByText('Offline', { exact: true }).count()) === 1)
   r = await logViaUi(['Vital signs and early warning score'], { rate: { 'Vital signs and early warning score': 'Met' } })
   const offEntry = r.ids[0]
   check('the entry shows a Queued chip with text after saving', (await page.locator('[data-sync-chip="queued"]').count()) >= 1 && (await page.getByText('Queued', { exact: true }).count()) >= 1)
   s = await store()
   check('the store has the entry and its sync item is queued', s.logEntries.some((e) => e.id === offEntry) && s.syncQueue.find((i) => i.entryId === offEntry)?.state === 'queued')
-  await page.reload({ waitUntil: 'load' }); await page.waitForSelector('h1'); await page.waitForTimeout(800)
+  await reloadPage()
   s = await store()
   check('after a reload the entry is still there and still queued, the phone still offline', s.logEntries.some((e) => e.id === offEntry) && s.syncQueue.find((i) => i.entryId === offEntry)?.state === 'queued' && s.device.offline === true)
   // a request made offline
@@ -283,22 +265,24 @@ try {
   s = await store()
   const offSub = mine(s)[mine(s).length - 1]
   check('a request made offline is saved on the phone, not yet with the evaluator', offSub.status === 'on-device' && s.submissions.length === beforeOffline + 1, offSub.status)
-  await open('/v2')
-  check('the preceptor page counter did not change while offline', (await counter('withEvaluator')) === seedCounters.withEvaluator + 3)
+  check('the request made offline is not with the evaluator yet (still 3 more than the seed)', derived.withEvaluator(await store()) === seedCounters.withEvaluator + 3)
+  await open('/v2/preceptor/preceptor-evaluation')
+  check('the preceptor Requests page still lists 5 waiting requests while the phone is offline', (await page.locator('[data-waiting]').count()) === 5)
   await open('/v2/student/offline-sync')
   check('Send all and Retry are disabled with a reason while offline', (await btn(/^Send all waiting/).isDisabled()) && (await page.getByText('You are offline. Go online to send.').count()) === 1)
-  await btn('Go online').click()
+  await demo.setPhone('Phone is offline', false)
   await page.waitForTimeout(400)
   s = await store()
   check('going online sends everything: entry Synced, request with the evaluator', s.syncQueue.find((i) => i.entryId === offEntry)?.state === 'synced' && s.submissions.find((x) => x.id === offSub.id).status === 'with-evaluator' && s.device.offline === false)
-  await open('/v2')
-  check('now the preceptor counter rose by 1 more', (await counter('withEvaluator')) === seedCounters.withEvaluator + 4)
+  check('now one more request is with the evaluator', derived.withEvaluator(await store()) === seedCounters.withEvaluator + 4)
+  await open('/v2/preceptor/preceptor-evaluation')
+  check('the preceptor Requests page lists 6 waiting requests', (await page.locator('[data-waiting]').count()) === 6, await page.locator('[data-waiting]').count())
 
   // ------------------------------------------------------------------ 7. signed out, update pending
   step('7. Signed out and an update pending never block logging')
   await open('/v2/student/offline-sync')
-  await btn('Sign out').click()
-  await btn('Mark update as pending').click()
+  await demo.setPhone('Phone is signed out', true)
+  await demo.setPhone('App update is pending', true)
   check('banners say signed out and update ready, and neither is a wall', (await page.locator('[data-device-banner="signed-out"]').count()) === 1 && (await page.locator('[data-device-banner="update"]').count()) === 1)
   r = await logViaUi(['Point-of-care blood glucose'], { rate: { 'Point-of-care blood glucose': 'Met' } })
   s = await store()
@@ -317,12 +301,12 @@ try {
   // ------------------------------------------------------------------ 8. failed sync, retry
   step('8. Failed sync: retry one, then all')
   await open('/v2/student/offline-sync')
-  await btn('Make the next sync fail').click()
-  await btn('Go offline').click()
+  await demo.setPhone('Make the next sync fail', true)
+  await demo.setPhone('Phone is offline', true)
   const a = (await logViaUi(['Point-of-care blood glucose'], { rate: { 'Point-of-care blood glucose': 'Met' } })).ids[0]
   const b = (await logViaUi(['Vital signs and early warning score'], { rate: { 'Vital signs and early warning score': 'Met' } })).ids[0]
   await open('/v2/student/offline-sync')
-  await btn('Go online').click()
+  await demo.setPhone('Phone is offline', false)
   await page.waitForTimeout(400)
   s = await store()
   check('both items failed, nothing was lost, the flag cleared', [a, b].every((id) => s.syncQueue.find((i) => i.entryId === id)?.state === 'failed') && s.logEntries.some((e) => e.id === a) && s.device.failNextSync === false)
@@ -338,20 +322,22 @@ try {
   // ------------------------------------------------------------------ 9. conflict
   step('9. Force a conflict, resolve it')
   await open('/v2/student/offline-sync')
-  await btn('Go offline').click()
+  await demo.setPhone('Phone is offline', true)
   const c = (await logViaUi(['IV catheter insertion', 'Sterile dressing change'], { rate: { 'IV catheter insertion': 'Works with prompts' }, notes: { 'IV catheter insertion': 'Felt steady with the flush.', 'Sterile dressing change': 'Used a new kit.' } })).ids
   await open('/v2/student/offline-sync')
-  await btn('Simulate an edit on another device').click()
+  await demo.clickItem('Simulate an edit on another device')
+  await page.getByRole('dialog').getByRole('button', { name: 'Close' }).last().click()
   const conflictsBefore = (await store()).syncQueue.filter((i) => i.state === 'conflict').length
-  await btn('Go online').click()
+  await demo.setPhone('Phone is offline', false)
   await page.waitForTimeout(400)
   s = await store()
   const cItem = s.syncQueue.find((i) => i.state === 'conflict' && i.entryId && c.includes(i.entryId))
   check('on sync the edited entry becomes a Conflict, the other one is Synced', !!cItem && s.syncQueue.filter((i) => c.includes(i.entryId) && i.state === 'synced').length === 1, cItem?.state)
   check('the Conflict chip and text are shown, and the strip says a conflict needs you', (await page.locator('[data-sync-chip="conflict"]').count()) >= 2 && /conflict/.test(await page.locator('[data-sync-headline]').textContent()))
-  await open('/v2')
-  const conflictsCounter = await counter('syncConflict')
-  check('the overview counter Sync conflicts reads 2 (the seeded one and this one)', conflictsCounter === 2, conflictsCounter)
+  const conflictsCounter = derived.syncConflict(await store())
+  check('2 sync conflicts in the store (the seeded one and this one)', conflictsCounter === 2, conflictsCounter)
+  await open('/v2/student')
+  check('the student Home strip says 2 conflicts need you', /2 conflicts need you/.test(await page.locator('[data-sync-headline]').first().textContent()), await page.locator('[data-sync-headline]').first().textContent())
   await open('/v2/student/offline-sync')
   await page.locator(`[data-item-id="${cItem.id}"]`).getByRole('button', { name: /^Resolve conflict/ }).click()
   await page.locator('[data-version="mine"]').waitFor()
@@ -365,8 +351,9 @@ try {
   const entry = s.logEntries.find((e) => e.id === cItem.entryId)
   check('resolved in the store: item Synced, conflict cleared, note holds both versions', resolved.state === 'synced' && !resolved.conflict && entry.note === `${cItem.conflict.theirs}\n\n${cItem.conflict.mine}`, entry.note)
   check('the audit log records the decision', s.audit.some((x) => x.action === 'Resolved sync conflict: kept both versions' && x.target === cItem.label), s.audit[0])
-  await open('/v2')
-  check('the overview counter Sync conflicts fell to 1', (await counter('syncConflict')) === 1)
+  check('sync conflicts fell to 1 in the store', derived.syncConflict(await store()) === 1)
+  await open('/v2/student')
+  check('the student Home strip says 1 conflict needs you', /1 conflict needs you/.test(await page.locator('[data-sync-headline]').first().textContent()), await page.locator('[data-sync-headline]').first().textContent())
   // resolve the seeded one with keep mine too
   await open('/v2/student/offline-sync')
   await page.locator('[data-item-id="sy-3"]').getByRole('button', { name: /^Resolve conflict/ }).click()
@@ -389,25 +376,16 @@ try {
   // ------------------------------------------------------------------ 11. reload and reset
   step('11. Reload persists; Reset demo restores')
   const before = await store()
-  await page.reload({ waitUntil: 'load' }); await page.waitForSelector('h1'); await page.waitForTimeout(800)
+  await reloadPage()
   check('store identical after reload', JSON.stringify(before) === JSON.stringify(await store()))
-  await page.getByRole('button', { name: 'Scenario' }).click()
-  await page.getByRole('menuitem', { name: 'Reset demo' }).click()
-  await page.getByRole('button', { name: 'Reset demo data' }).click()
-  await page.waitForSelector('h1')
-  await page.waitForTimeout(800)
+  await demo.reset()
+  check('Reset demo lands on the student Home', page.url().endsWith('/v2/student'), page.url())
   s = await store()
-  check('log entries, requests and sync items are back to the seed', s.logEntries.length === 5 && mine(s).length === 1 && s.syncQueue.length === 3 && s.syncQueue.filter((i) => i.state === 'conflict').length === 1, { logs: s.logEntries.length, subs: mine(s).length, sync: s.syncQueue.length })
+  check('log entries (11), requests (1 for Maya, 14 in all) and sync items (3, one conflict) are back to the seed', s.logEntries.length === 11 && mine(s).length === 1 && s.syncQueue.length === 3 && s.syncQueue.filter((i) => i.state === 'conflict').length === 1, { logs: s.logEntries.length, subs: mine(s).length, sync: s.syncQueue.length })
   check('the phone is back online, signed in, no update pending, IV not in use again', !s.device.offline && !s.device.signedOut && !s.device.updatePending && s.skills.find((k) => k.id === IV).published === false)
   check('no page errors during the run', pageErrors.length === 0, pageErrors)
 } catch (e) {
-  failures++
-  console.log(`FAIL  flow aborted: ${String(e?.message ?? e).split('\n').slice(0, 3).join(' | ')}`)
-  // Failure shots stay out of docs/v2/screenshots, which holds only reviewed evidence.
-  await page.screenshot({ path: path.join(os.tmpdir(), 'stage2-e2e-failure.png') }).catch(() => {})
-  console.log(`(failure screenshot: ${path.join(os.tmpdir(), 'stage2-e2e-failure.png')})`)
+  abort(e)
+  await failShot('stage2-e2e')
 }
-
-await browser.close()
-console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}`)
-process.exit(failures === 0 ? 0 : 1)
+await finish(browser)

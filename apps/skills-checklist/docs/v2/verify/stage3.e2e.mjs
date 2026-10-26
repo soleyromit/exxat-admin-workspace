@@ -11,41 +11,15 @@
 // progress drops while reopened, confirm restores it -> state survives a reload.
 // Each check prints PASS or FAIL with what it saw. Exit code 1 on any FAIL. Playwright is resolved from tools/visual-check.
 
-import path from 'node:path'
-import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import { KEY, IV, SD, parseBase, makeChecker, startSession, demoMenu, radio as libRadio } from './_lib.mjs'
 
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const TOOLS = path.resolve(HERE, '../../../../../tools/visual-check')
-const { chromium } = createRequire(path.join(TOOLS, 'package.json'))('playwright')
-
-const args = process.argv.slice(2)
-const base = args.includes('--base') ? args[args.indexOf('--base') + 1] : 'http://localhost:3007'
-const KEY = 'skills-checklist:v2:store'
-const IV = 'sk-iv-cath'
-const SD = 'sk-sterile-dressing'
+const base = parseBase()
 const CONCERN = 'E2E-CONCERN-NOTE arrived late twice this week'
-
-let failures = 0
-const check = (name, ok, seen) => {
-  if (!ok) failures++
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${seen === undefined ? '' : `  (saw: ${typeof seen === 'string' ? seen : JSON.stringify(seen)})`}`)
-}
-const step = (t) => console.log(`\n== ${t}`)
-
-const browser = await chromium.launch()
-const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' })
-const page = await ctx.newPage()
-const pageErrors = []
-page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 200)))
-
-const store = () => page.evaluate((k) => { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw).state : null }, KEY)
-const putStore = (fn) => page.evaluate(([k, src]) => { const env = JSON.parse(localStorage.getItem(k)); new Function('s', src)(env.state); localStorage.setItem(k, JSON.stringify(env)) }, [KEY, fn])
-const open = async (route) => { await page.goto(base + route, { waitUntil: 'load' }); await page.waitForSelector('h1', { timeout: 30000 }); await page.waitForTimeout(800) }
-const btn = (name, opts = {}) => page.getByRole('button', { name, ...opts })
-const text = () => page.locator('body').innerText()
-const radio = (group, name) => page.getByRole('radiogroup', { name: group }).getByRole('radio', { name, exact: true })
+const { check, step, abort, finish } = makeChecker('stage3')
+const { browser, page, pageErrors, open, reloadPage, store, putStore, btn, text, failShot } = await startSession({ base, viewport: { width: 390, height: 844 }, auto: true })
+const demo = demoMenu(page)
 const mine = (s) => s.submissions.filter((x) => x.studentId === 'stu-maya')
+const radio = (g, n) => libRadio(page, g, n)
 
 /** Logs IV catheter insertion and Sterile dressing change through the four steps, then requests sign-off from J. Delgado by QR. */
 async function logAndRequest() {
@@ -84,7 +58,7 @@ async function fillSd(answers, outcome, feedback) {
 
 try {
   step('0. Start from the seed, publish IV in the admin step')
-  await open('/v2')
+  await open('/v2/admin')
   await page.evaluate(() => localStorage.clear())
   await open('/v2/admin/validate-publish')
   await btn('Publish IV catheter insertion').click()
@@ -103,7 +77,7 @@ try {
 
   step('2. The preceptor link: no account, one pass for both skills')
   await open(req.path)
-  check('title names the student and says no account is needed', (await page.getByRole('heading', { level: 1 }).textContent()) === 'Evaluate Maya Ferreira' && (await page.getByText('You opened this link as J. Delgado, RN. No account is needed.').count()) === 1)
+  check('title names the student and the subtitle says who the link was opened as (EV-01, no account)', (await page.getByRole('heading', { level: 1 }).textContent()) === 'Evaluate Maya Ferreira' && (await page.getByText('Opened as J. Delgado, RN', { exact: true }).count()) === 1)
   check('one card per skill, in the request order', (await page.locator('[data-skill-form]').evaluateAll((els) => els.map((e) => e.getAttribute('data-skill-form')))).join() === `${IV},${SD}`)
   check('IV shows the program\'s own levels, in order', JSON.stringify(await page.getByRole('radiogroup', { name: 'Level of supervision you observed for IV catheter insertion' }).getByRole('radio').evaluateAll((els) => els.map((e) => e.closest('label')?.textContent?.trim()))) === JSON.stringify(['Needs coaching', 'Works with prompts', 'Works alone']))
   check('Sterile dressing shows its three questions as Yes or No', (await page.locator(`[data-skill-form="${SD}"] fieldset`).count()) >= 4)
@@ -114,10 +88,12 @@ try {
   check('feedback is marked required for IV (program setting, EV-06)', (await page.getByText('Feedback for IV catheter insertion (required)').count()) === 1)
 
   step('3. Qualified-evaluator rules: blocked, with the reason and what to do')
-  await open(`${req.path}&as=lab-whitmore`)
+  await open(req.path)
+  await demo.openAs(/R\. Whitmore/)
+  check('Demo > Open evaluator link as rewrites ?as and keeps ?request', page.url().includes('as=lab-whitmore') && page.url().includes(`request=${req.id}`), page.url())
   check('lab instructor blocked on a clinical request, form not rendered', (await page.locator('[data-access="unqualified"]').count()) === 1 && (await page.locator('[data-eval-form]').count()) === 0 && /Lab instructors sign off in the lab, not in clinical practice/.test(await text()), (await page.locator('[data-access]').textContent()))
   check('blocked page says how to fix it', (await page.getByText('Ask Maya to send this request to a qualified evaluator.').count()) === 1)
-  await open(`${req.path}&as=pre-castillo`)
+  await demo.openAs(/M\. Castillo/)
   check('a qualified colleague the request was not sent to is told so', (await page.locator('[data-access="not-on-request"]').count()) === 1 && (await page.getByText('Maya Ferreira sent this request to J. Delgado, RN, not to M. Castillo, RN.').count()) === 1)
   await putStore(`s.people.find(p => p.id === 'pre-delgado').yearsPractice = 1`)
   await open(req.path)
@@ -132,6 +108,7 @@ try {
   await page.locator('[data-error-summary]').waitFor()
   const items = await page.locator('[data-error-summary] li').allTextContents()
   check('summary lists 4 problems in form order', items.length === 4 && items[0] === 'Choose an outcome for IV catheter insertion: Met, Not met or Not yet.' && items[1] === 'Write feedback for IV catheter insertion. The program requires it on every evaluation.' && items[3] === 'Confirm your credentials before you submit.', items)
+  await page.waitForTimeout(300)  // focus moves in a requestAnimationFrame
   check('focus moved to the summary', await page.evaluate(() => document.activeElement?.hasAttribute('data-error-summary')))
   await page.locator('[data-error-summary] li').nth(3).getByRole('button').click()
   check('an error link moves focus to its field', await page.evaluate(() => document.activeElement?.id === 'attest'))
@@ -189,7 +166,7 @@ try {
   await open('/v2/reviewer/outcome-remediation')
   check('step 9 route renders the same outcomes screen for the reviewer', (await page.locator('[data-outcomes-page]').count()) === 1)
 
-  step('8. Round 2: IV Not met opens a plan, Sterile dressing Met')
+  step('8. Round 2: IV Not met, Sterile dressing Met, staff open a plan by hand')
   const req2 = await logAndRequest()
   await open(req2.path)
   await fillIv('Needs coaching', 'Not met', 'Contamination at the insertion site. Review the aseptic steps.')
@@ -198,9 +175,14 @@ try {
   await btn(/^Submit evaluation of 2 skills$/).click()
   await page.locator('[data-receipt]').waitFor()
   s = await store()
+  check('a fail does not open a plan on its own (remediation is manual; no auto-remediation setting exists)', s.remediations.filter((r) => r.studentId === 'stu-maya').length === 0)
+  const failed = s.evaluations.filter((e) => e.studentId === 'stu-maya' && e.skillId === IV && e.outcome === 'not-met').at(-1)
+  await open(`/v2/admin/evaluation/${failed.id}`)
+  await btn('Open a remediation plan').click()
+  await page.locator('[data-staff-message]').waitFor()
+  s = await store()
   const plan = s.remediations.find((r) => r.studentId === 'stu-maya')
-  check('a fail on a skill with auto-remediation opened exactly one plan, 3 open steps', s.remediations.filter((r) => r.studentId === 'stu-maya').length === 1 && plan.status === 'open' && plan.steps.length === 3 && plan.skillId === IV, plan)
-  check('Sterile dressing Met had no plan; the receipt says follow-up is coming', (await page.getByText(/Program staff will follow up with Maya/).count()) === 1)
+  check('staff opened exactly one plan by hand, 3 open steps', s.remediations.filter((r) => r.studentId === 'stu-maya').length === 1 && plan.status === 'open' && plan.steps.length === 3 && plan.skillId === IV, plan)
 
   step('9. Remediation plan: student view, staff view, steps, close')
   await open('/v2/student')
@@ -258,16 +240,11 @@ try {
   check('audit records the reopen and the confirm', s.audit.some((a) => a.action === 'Reopened evaluation' && a.actorId === 'adm-ross') && s.audit.some((a) => a.action.startsWith('Confirmed version 2') && a.actorId === 'rev-haddad'))
 
   step('11. State survives a reload; no uncaught page errors')
-  await page.reload({ waitUntil: 'load' })
-  await page.waitForSelector('h1')
-  await page.waitForTimeout(800)
+  await reloadPage()
   check('after reload the history still shows two versions', (await page.locator('[data-version]').count()) === 2)
   check('no uncaught page errors', pageErrors.length === 0, pageErrors)
 } catch (e) {
-  failures++
-  console.log(`FAIL  script error: ${String(e).slice(0, 600)}`)
-} finally {
-  await browser.close()
+  abort(e)
+  await failShot('stage3-e2e')
 }
-console.log(`\n${failures === 0 ? 'ALL PASS' : `${failures} FAILED`}`)
-process.exit(failures === 0 ? 0 : 1)
+await finish(browser)

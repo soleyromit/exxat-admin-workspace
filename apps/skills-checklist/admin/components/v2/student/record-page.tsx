@@ -5,29 +5,29 @@ import Link from "next/link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
-import { statusLabel, STATUS_TONE } from "@/components/v2/director/verification-pages"
+import { StatusPill } from "@/components/v2/status-pill"
 import { Block, StudentPage } from "@/components/v2/student/student-frame"
 import { BANNER_TOUCH, BTN, fmtDate } from "@/components/v2/student/use-student"
 import { downloadBytes, fileSlug } from "@/lib/v2/download"
 import { signPdf } from "@/lib/v2/pdf"
 import { clrOf, recordContent, verifiedRecord } from "@/lib/v2/record"
-import { useV2State } from "@/lib/v2/react"
+import { LoadingBlocks } from "@/components/v2/shared-loading"
+import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { STUDENT_ID } from "@/lib/v2/student"
 import { HISTORY_PATH } from "@/lib/v2/paths"
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
 const settingWord = (e: { setting: string; clinicalSetting?: string }) => (e.setting === "clinical" ? `Clinical${e.clinicalSetting ? `, ${e.clinicalSetting}` : ""}` : e.setting === "lab" ? "Lab" : "Simulation")
 
-/** Scenario step 13: what the program verified, what is left out and why, and the two files Maya can share. */
+/** What the program verified, what is left out and why, and the two files Maya can share. */
 export function RecordPage() {
   const s = useV2State()
+  const hydrated = useV2Hydrated()
   const r = verifiedRecord(s, STUDENT_ID)
   const [done, setDone] = React.useState<{ kind: "pdf" | "clr"; name: string; hash: string } | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [failed, setFailed] = React.useState<"pdf" | "clr">("pdf")
   const [busy, setBusy] = React.useState<"pdf" | "clr" | null>(null)
-  const tone = STATUS_TONE[r.status]
   const slug = fileSlug(r.student?.name ?? "student", `v${r.verification?.version ?? 0}`)
 
   const pdf = async () => {
@@ -62,8 +62,10 @@ export function RecordPage() {
     setBusy(null)
   }
 
+  if (!hydrated) return <StudentPage title="Share your verified record"><LoadingBlocks label="Opening your record" rows={4} /></StudentPage>
+
   return (
-    <StudentPage title="Share your verified record" subtitle="Only what your program director verified can leave the program. See what is in it before you share.">
+    <StudentPage title="Share your verified record" subtitle="Only verified evidence can be shared.">
       <div role="status" aria-live="polite" className="flex flex-col gap-2">
         {done ? (
           <LocalBanner variant="success" title="Verified record downloaded" data-record-done={done.kind}>
@@ -75,7 +77,7 @@ export function RecordPage() {
 
       <Card size="sm" data-record-status={r.status}>
         <CardContent className="flex flex-col gap-2 text-sm">
-          <StatusBadge label={statusLabel(r.status, r.verification?.version ?? null)} tone={tone.tone} icon={tone.icon} size="sm" />
+          <StatusPill kind="verify" value={r.status} label={r.status === "verified" && r.verification?.version ? `Verified, version ${r.verification.version}` : undefined} />
           <p className="text-foreground">{r.verification ? `This record was verified by ${r.verifiedBy} on ${fmtDate(r.verification.at)}, version ${r.verification.version}.` : "Your program director has not verified your record yet."}</p>
         </CardContent>
       </Card>
@@ -84,14 +86,14 @@ export function RecordPage() {
         <LocalBanner variant={r.status === "changed" ? "warning" : "info"} title="Sharing is off" data-record-blocked>
           <p>{r.blocked}</p>
           <Button asChild variant="outline" size="lg" className={`${BTN} mt-2`}>
-            <Link href={HISTORY_PATH}>Back to your record</Link>
+            <Link href={HISTORY_PATH}>Back to Record</Link>
           </Button>
         </LocalBanner>
       ) : null}
 
       {r.canShare ? (
         <>
-          <Block id="included" title="What is included" description="Met evaluations your director verified, for skills you had achieved at that time.">
+          <Block id="included" title="What is included" description="Verified Met evaluations for achieved skills.">
             {r.included.length === 0 ? (
               <p className="text-sm text-muted-foreground" data-included-empty>No skill is achieved yet. The file would be a verified record with no skills in it.</p>
             ) : (
@@ -114,7 +116,7 @@ export function RecordPage() {
             )}
           </Block>
 
-          <Block id="excluded" title="What is not included" description="Each item with the reason it stays with you or the program.">
+          <Block id="excluded" title="What is not included">
             {r.excluded.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nothing was left out.</p>
             ) : (
@@ -137,13 +139,13 @@ export function RecordPage() {
             <Card size="sm">
               <CardContent className="flex flex-col gap-2 text-sm">
                 <Button type="button" variant="default" size="lg" className={BTN} data-download-pdf disabled={busy !== null} aria-busy={busy === "pdf" || undefined} onClick={pdf}>{busy === "pdf" ? "Making the PDF" : "Download PDF"}</Button>
-                <p className="text-muted-foreground">A signed PDF. Whoever receives it can check it has not changed. This prototype signs with a demo key, so the check shows the file is unchanged, not who made it.</p>
+                <p className="text-muted-foreground">A signed PDF. Whoever receives it can check that it has not changed since it was issued.</p>
               </CardContent>
             </Card>
             <Card size="sm">
               <CardContent className="flex flex-col gap-2 text-sm">
                 <Button type="button" variant="outline" size="lg" className={BTN} data-download-clr disabled={busy !== null} aria-busy={busy === "clr" || undefined} onClick={clr}>Download CLR 2.0 file</Button>
-                <p className="text-muted-foreground">A JSON file in the 1EdTech Comprehensive Learner Record 2.0 shape, one achievement for each skill above. It is unsigned. A receiving system will not treat it as a verifiable credential until the program signs it.</p>
+                <p className="text-muted-foreground">CLR 2.0 JSON, one achievement per skill. Unsigned, so not a verifiable credential yet.</p>
               </CardContent>
             </Card>
           </Block>

@@ -10,11 +10,12 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
+import { StatusPill } from "@/components/v2/status-pill"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { PageFrame, PageSection } from "@/components/skills/page-header"
+import { contextLine } from "@/lib/v2/page-context"
 import { useStaff } from "@/components/v2/outcomes/staff"
-import { OUTCOME_TONE, fmtDay } from "@/components/v2/outcomes/version-timeline"
+import { fmtDay } from "@/components/v2/outcomes/version-timeline"
 import { ChoiceGroup } from "@/components/v2/preceptor/choice-group"
 import { BTN, SkillCard } from "@/components/v2/preceptor/evaluation-form"
 import { OUTCOME_WORD } from "@/lib/v2/outcomes"
@@ -26,11 +27,12 @@ import {
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { ROLE_BY_ID } from "@/lib/v2/roles"
 import type { Evaluation, RoleId, Skill, V2State } from "@/lib/v2/types"
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 
-const AGREE: Record<Agreement, { label: string; badge: string; tone: "success" | "warning" | "neutral"; icon: string }> = {
-  agreed: { label: "Agreed", badge: "Self-rating and evaluator agreed", tone: "success", icon: "fa-circle-check" },
-  differed: { label: "Differed", badge: "Self-rating and evaluator differed", tone: "warning", icon: "fa-circle-exclamation" },
-  "not-comparable": { label: "Not comparable", badge: "No self-rating to compare", tone: "neutral", icon: "fa-minus" },
+const AGREE: Record<Agreement, { label: string; badge: string }> = {
+  agreed: { label: "Agreed", badge: "Self-rating and evaluator agreed" },
+  differed: { label: "Differed", badge: "Self-rating and evaluator differed" },
+  "not-comparable": { label: "Not comparable", badge: "No self-rating to compare" },
 }
 
 type Decision = { kind: "approved" | "returned"; title: string; text: string }
@@ -46,7 +48,7 @@ export function ReviewItemPage({ role, id }: { role: RoleId; id: string }) {
   const back = `/v2/${role}/review-queue`
   if (!item && decision) return <Decided role={role} decision={decision} back={back} />
   if (!item) {
-    if (!hydrated) return <PageFrame title="Opening the item"><p role="status" className="text-sm text-muted-foreground">Opening the item</p></PageFrame>
+    if (!hydrated) return <PageFrame title="Opening the item"><LoadingBlocks label="Opening the item" rows={4} /></PageFrame>
     const x = s.submissions.find((y) => y.id === id)
     const e = s.evaluations.find((y) => y.id === id)
     const text = x ? `This request is not waiting for review. It is ${x.status === "done" ? "complete" : x.status === "returned" ? "with the student" : x.status === "with-evaluator" ? "with its evaluator" : x.status === "stalled" ? "stalled with its evaluator" : "not in the queue"}.` : e ? `This evaluation is not waiting for review. It ${e.status === "counted" ? "already counts" : e.status === "returned" ? "was returned to the student" : "is " + e.status}.` : "This item does not exist."
@@ -109,12 +111,12 @@ function ItemBody({ s, item, role, back, onDecided }: { s: V2State; item: QueueI
       return
     }
     const n = r.evaluations
-    onDecided({ kind: "approved", title: "Approved", text: `${n} ${n === 1 ? "evaluation now counts" : "evaluations now count"} toward ${student}'s record${r.plansOpened ? ", and a remediation plan was opened" : ""}. Progress and the counters across the app have already changed.` })
+    onDecided({ kind: "approved", title: "Approved", text: `${n} ${n === 1 ? "evaluation now counts" : "evaluations now count"} toward ${student}'s record${r.plansOpened ? ", and a remediation plan was opened" : ""}.` })
   }
 
   return (
-    <PageFrame title={`${student}, ${joinNames(item.skillIds.map((id) => s.skills.find((k) => k.id === id)?.name ?? "A skill"))}`} subtitle={`${s.course.code}, ${s.course.term}. ${paper ? "A photo of a signed paper form." : "An evaluation held for approval."} Nothing here counts until you approve it.`}>
-      <div className="flex max-w-5xl flex-col gap-6" data-review-item={item.key}>
+    <PageFrame title={`${student}, ${joinNames(item.skillIds.map((id) => s.skills.find((k) => k.id === id)?.name ?? "A skill"))}`} subtitle={contextLine(s)} width="wide">
+      <div className="flex flex-col gap-6" data-review-item={item.key}>
         <div role="status" aria-live="polite">
           {msg ? (
             <LocalBanner variant="error" title="Not saved" retry={{ label: "Approve again", onClick: approve }} data-item-message>
@@ -184,21 +186,21 @@ function ItemBody({ s, item, role, back, onDecided }: { s: V2State; item: QueueI
         {paper && x ? <PhotoPlaceholder file={x.photo} /> : null}
 
         {item.state === "needs-outcome" && paper ? (
-          <PaperForm s={s} item={item} role={role} onRecorded={() => { setMsg(null); setNotice("Outcome recorded from the paper form. Compare it below, then approve or return it.") }} />
+          <PaperForm s={s} item={item} role={role} onRecorded={() => { setMsg(null); setNotice("Outcome recorded. Approve or return it below.") }} />
         ) : null}
 
         {item.evaluations.map((e) => (
           <CompareBlock key={e.id} s={s} e={e} />
         ))}
 
-        <PageSection title="Your decision" id="decision" description="Approving counts the evaluation. Returning sends it back and it does not count.">
+        <PageSection title="Your decision" id="decision">
           <Card>
             <CardContent className="flex flex-col gap-4">
               {item.state === "ready" ? (
                 <Field>
                   <FieldLabel htmlFor="review-note">Note for the record (optional)</FieldLabel>
                   <Textarea id="review-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-                  <FieldDescription>Kept with the evaluation. The student does not see an approval note.</FieldDescription>
+                  <FieldDescription>Staff only. The student does not see it.</FieldDescription>
                 </Field>
               ) : null}
               {block ? <p className="text-sm text-foreground" data-approve-block>{block}</p> : null}
@@ -226,7 +228,7 @@ function ItemBody({ s, item, role, back, onDecided }: { s: V2State; item: QueueI
           const r = run((st, a, at) => returnItem(st, item.key, { reason }, a, at))
           if (!r.ok) return r.error
           setReturning(false)
-          onDecided({ kind: "returned", title: "Returned to the student", text: `${student} now sees your reason and what to do next. It does not count, and the request is no longer in the queue.` })
+          onDecided({ kind: "returned", title: "Returned to the student", text: `${student} sees your reason. It does not count until they send it again.` })
           return null
         }}
       />
@@ -241,13 +243,12 @@ function PhotoPlaceholder({ file }: { file?: { name: string; sizeKb: number } })
         <CardTitle asChild className="text-base">
           <h2>Photo of the signed paper form</h2>
         </CardTitle>
-        <CardDescription>The prototype keeps the file name and size, not the image.</CardDescription>
       </CardHeader>
       <CardContent>
         <div role="img" aria-label={file ? `Placeholder for the photo ${file.name}, ${file.sizeKb} kilobytes` : "Placeholder for the photo"} className="flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-control-35 bg-muted p-4 text-center">
           <i className="fa-light fa-file-image text-3xl text-muted-foreground" aria-hidden="true" />
           <p className="text-sm font-medium text-foreground">{file ? file.name : "Photo of the form"}</p>
-          <p className="text-xs text-muted-foreground">{file ? `${file.sizeKb} KB. Open the original on the student's phone or in the program's file store.` : "No file details were kept."}</p>
+          <p className="text-xs text-muted-foreground">{file ? `${file.sizeKb} KB` : "No file details."}</p>
         </div>
       </CardContent>
     </Card>
@@ -256,17 +257,16 @@ function PhotoPlaceholder({ file }: { file?: { name: string; sizeKb: number } })
 
 function CompareBlock({ s, e }: { s: V2State; e: Evaluation }) {
   const c = compareEvaluation(s, e)
-  const t = OUTCOME_TONE[e.outcome]
   const prior = priorAttempts(s, e)
   const [open, setOpen] = React.useState(false)
   const a = AGREE[c.overall]
   return (
     <section aria-labelledby={`cmp-${e.id}`} className="flex flex-col gap-3" data-compare={e.id}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id={`cmp-${e.id}`} className="text-base font-semibold text-foreground">{`${c.skillName}: self-rating and evaluator side by side`}</h2>
+        <h2 id={`cmp-${e.id}`} className="text-base font-semibold text-foreground">{c.skillName}</h2>
         <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge label={`Outcome: ${e.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[e.outcome]}`} tone={t.tone} icon={t.icon} size="sm" />
-          <StatusBadge label={a.badge} tone={a.tone} icon={a.icon} size="sm" />
+          <StatusPill kind="outcome" value={e.outcome} label={`Outcome: ${e.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[e.outcome]}`} />
+          <StatusPill kind="agreement" value={c.overall} label={a.badge} />
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -366,13 +366,13 @@ function ReturnDialog({ open, s, item, onClose, onReturn }: { open: boolean; s: 
       <DialogContent className="sm:max-w-lg" data-return-dialog>
         <DialogHeader>
           <DialogTitle>Return to the student?</DialogTitle>
-          <DialogDescription>{`${itemLabel(s, item)} will not count. ${student.split(" ")[0]} reads your reason and what to do next.`}</DialogDescription>
+          <DialogDescription>{`Does not count until ${student.split(" ")[0]} sends it again. They see your reason.`}</DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-4" noValidate onSubmit={(e) => { e.preventDefault(); const issue = returnReasonIssue(reason); if (issue) { setError(issue); return } setError(onReturn(reason)) }}>
           <Field>
             <FieldLabel htmlFor="return-reason">What is wrong, and what should the student change?</FieldLabel>
             <Textarea id="return-reason" rows={4} value={reason} aria-invalid={error ? true : undefined} aria-describedby={`return-help${error ? " return-error" : ""}`} onChange={(e) => { setReason(e.target.value); setError(null) }} />
-            <FieldDescription id="return-help">{`${len} of ${REASON_MAX} characters. The student then sees: ${next}`}</FieldDescription>
+            <FieldDescription id="return-help">{`${len} of ${REASON_MAX} characters. Then: ${next}`}</FieldDescription>
             {error ? <FieldError id="return-error" errors={[{ message: error }]} /> : null}
           </Field>
           <DialogFooter>
@@ -424,7 +424,7 @@ function PaperForm({ s, item, role, onRecorded }: { s: V2State; item: QueueItem;
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4" aria-label="Outcome from the paper form" data-paper-form>
       <LocalBanner variant="info" title="Enter what the signed form says">
-        {`You are entering this on behalf of the person who signed the form. The record shows it as a paper form, entered by you, and it waits for your approval like any other evaluation.`}
+        The record shows it as a paper form, entered by you.
       </LocalBanner>
       {error ? (
         <div ref={summaryRef} tabIndex={-1} role="alert" className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring" data-error-summary>

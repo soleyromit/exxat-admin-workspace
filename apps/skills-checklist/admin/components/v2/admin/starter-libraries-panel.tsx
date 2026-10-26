@@ -70,7 +70,7 @@ function ReviewSheet({ lib, existing, onClose, onCopied }: { lib: StarterLibrary
       setError(r.error)
       return
     }
-    onCopied(`${r.created} ${r.created === 1 ? "skill" : "skills"} copied from ${lib.label}. They are not configured yet, so they cannot be mapped to a course until you configure them.`, r.state.batches[r.state.batches.length - 1].skillIds[0])
+    onCopied(`${r.created} ${r.created === 1 ? "skill" : "skills"} copied from ${lib.label}. Configure them before mapping.`, r.state.batches[r.state.batches.length - 1].skillIds[0])
     onClose()
   }
   return (
@@ -78,7 +78,7 @@ function ReviewSheet({ lib, existing, onClose, onCopied }: { lib: StarterLibrary
       <SheetContent side="right" size="lg" className="flex flex-col gap-0 p-0">
         <SheetHeader className="border-b border-border p-4 pe-12">
           <SheetTitle>{lib.label} starter library</SheetTitle>
-          <SheetDescription>Choose the skills to copy into your program. After copying you can rename, recategorize or remove them. Nothing is added until you copy.</SheetDescription>
+          <SheetDescription>Nothing is added until you copy.</SheetDescription>
         </SheetHeader>
         <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-4" aria-label={`${lib.label} skills`}>
           {lib.skills.map((k, i) => {

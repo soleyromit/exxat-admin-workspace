@@ -1,10 +1,5 @@
-import { Suspense } from "react"
-import { OverviewPage } from "@/components/v2/overview-page"
+import { redirect } from "next/navigation"
 
-export default function Page() {
-  return (
-    <Suspense fallback={null}>
-      <OverviewPage />
-    </Suspense>
-  )
+export default async function Page() {
+  redirect("/v2/admin")
 }

@@ -1,37 +1,25 @@
 import type { NavLinkItem } from "@exxatdesignux/ui/components/shell"
-import { ROLE_BY_ID, ROLES } from "@/lib/v2/roles"
-import { STEPS, stepsForRole } from "@/lib/v2/scenario"
-import type { RoleId } from "@/lib/v2/types"
-
-export const STUDENT_HISTORY = "/v2/student/history"
+import { allKnownUrls, NAV_ROWS, type NavRowDef } from "@/lib/v2/roles"
+import { approvalsBadge, evaluatorRequestsBadge, unsentRequestsBadge } from "@/lib/v2/selectors"
+import type { RoleId, V2State } from "@/lib/v2/types"
 
 const icon = (name: string, solid = false) => <i className={`${solid ? "fa-solid" : "fa-light"} fa-${name}`} aria-hidden="true" />
 
-const item = (key: string, title: string, url: string, fa: string): NavLinkItem => ({ key, title, url, icon: icon(fa), iconActive: icon(fa, true) })
+function badgeFor(row: NavRowDef, state: V2State, actorId: string): number {
+  if (row.badge === "approvals") return approvalsBadge(state)
+  if (row.badge === "evaluator-requests") return evaluatorRequestsBadge(state, actorId)
+  if (row.badge === "unsent-requests") return unsentRequestsBadge(state)
+  return 0
+}
 
-const ROLE_ICON: Record<RoleId, string> = { admin: "user-gear", student: "mobile-screen", preceptor: "stethoscope", reviewer: "clipboard-check", director: "user-tie" }
-
-/** Sidebar rows for a v2 role: its home plus the scenario steps it owns. With no role, the overview and the five role homes. */
-export function buildV2Nav(role: RoleId | null): NavLinkItem[] {
-  if (!role) {
-    return [item("v2-overview", "Scenario overview", "/v2", "route"), ...ROLES.map((r) => item(`v2-home-${r.id}`, r.label, r.home, ROLE_ICON[r.id]))]
-  }
-  return [
-    item("v2-overview", "Scenario overview", "/v2", "route"),
-    item(`v2-home-${role}`, `${ROLE_BY_ID[role].label} home`, ROLE_BY_ID[role].home, ROLE_ICON[role]),
-    ...stepsForRole(role).map((s) => item(`v2-step-${s.id}`, `${s.n}. ${s.title}`, s.route, "circle-dot")),
-    ...(role === "admin"
-      ? [
-          item("v2-admin-review-queue", "Review queue", "/v2/admin/review-queue", "inbox-full"),
-          item("v2-admin-outcomes", "Outcomes and remediation", "/v2/admin/outcomes", "clipboard-list-check"),
-          item("v2-admin-verification", "Record verification", "/v2/admin/verification", "badge-check"),
-        ]
-      : []),
-    ...(role === "director" ? [item("v2-director-reports", "Cohort reports", "/v2/director/reports", "chart-mixed")] : []),
-    ...(role === "student" ? [item("v2-student-history", "Your record", STUDENT_HISTORY, "clock-rotate-left")] : []),
-  ]
+/** Sidebar rows for a v2 role (contract section 3). A count badge is set only when it is above 0. */
+export function buildV2Nav(role: RoleId, state: V2State, actorId: string): NavLinkItem[] {
+  return NAV_ROWS[role].map((r) => {
+    const n = badgeFor(r, state, actorId)
+    return { key: `v2-${role}-${r.key}`, title: r.title, url: r.url, icon: icon(r.icon), iconActive: icon(r.icon, true), ...(n > 0 ? { badge: n } : {}) }
+  })
 }
 
 export function allV2Urls(): string[] {
-  return ["/v2", ...ROLES.map((r) => r.home), ...STEPS.map((s) => s.route), STUDENT_HISTORY, "/v2/admin/outcomes", "/v2/admin/review-queue", "/v2/admin/verification", "/v2/director/reports"]
+  return allKnownUrls()
 }

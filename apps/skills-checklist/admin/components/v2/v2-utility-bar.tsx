@@ -2,15 +2,16 @@
 
 /**
  * V2 utility bar: the same DS Design OS row as components/shell/utility-bar.tsx (sidebar toggle, product switcher,
- * breadcrumb title, search, notifications, help, Ask Leo, profile), with the v2 role switcher and Scenario menu
+ * breadcrumb title, search, notifications, help, Ask Leo, profile), with the v2 role switcher and Demo menu
  * added before the profile menu. No chrome is hand-built; the shared shell pieces are reused.
  */
 import * as React from "react"
-import { usePathname } from "next/navigation"
+import Link from "next/link"
+import { usePathname, useSearchParams } from "next/navigation"
 import { SidebarTrigger, useSidebar } from "@exxatdesignux/ui/components/ui/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@exxatdesignux/ui/components/ui/tooltip"
 import { Kbd, KbdGroup } from "@exxatdesignux/ui/components/ui/kbd"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage } from "@exxatdesignux/ui/components/ui/breadcrumb"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { utilityBarActionButtonClass } from "@exxatdesignux/ui/components/shell/utility-bar-chrome"
 import { useModKeyLabel } from "@exxatdesignux/ui/hooks/use-mod-key-label"
 import { useIsMobile } from "@exxatdesignux/ui/hooks/use-mobile"
@@ -20,7 +21,8 @@ import { AskLeoControl, HelpTrigger, NotificationsTrigger, SearchTrigger } from 
 import { RoleSwitcher } from "@/components/v2/role-switcher"
 import { ScenarioMenu } from "@/components/v2/scenario-menu"
 import { V2UserMenu } from "@/components/v2/v2-user-menu"
-import { v2TitleFor } from "@/components/v2/v2-titles"
+import { v2CrumbsFor } from "@/components/v2/v2-titles"
+import { roleForPath } from "@/lib/v2/roles"
 
 function SidebarToggle() {
   const { state, isMobile } = useSidebar()
@@ -53,9 +55,40 @@ function AfterMount({ children }: { children: React.ReactNode }) {
   return mounted ? <>{children}</> : null
 }
 
+function Crumbs({ pathname, search }: { pathname: string; search: URLSearchParams | null }) {
+  const crumbs = v2CrumbsFor(pathname, search)
+  return (
+    <BreadcrumbList className="flex-nowrap">
+      {crumbs.map((c, i) => {
+        const last = i === crumbs.length - 1
+        return (
+          <React.Fragment key={`${c.label}-${i}`}>
+            <BreadcrumbItem className="min-w-0">
+              {last || !c.href ? (
+                <BreadcrumbPage className="truncate">{c.label}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink asChild>
+                  <Link href={c.href}>{c.label}</Link>
+                </BreadcrumbLink>
+              )}
+            </BreadcrumbItem>
+            {last ? null : <BreadcrumbSeparator />}
+          </React.Fragment>
+        )
+      })}
+    </BreadcrumbList>
+  )
+}
+
+function CrumbsWithSearch({ pathname }: { pathname: string }) {
+  return <Crumbs pathname={pathname} search={useSearchParams()} />
+}
+
 export function V2UtilityBar() {
   const pathname = usePathname() ?? ""
   const isMobile = useIsMobile()
+  // A student below 768 px has the bottom bar as the nav, so the sidebar toggle is not rendered.
+  const showToggle = !(roleForPath(pathname) === "student" && isMobile)
   return (
     <nav
       aria-label="Global utilities"
@@ -64,16 +97,14 @@ export function V2UtilityBar() {
       className="sticky top-0 z-50 flex h-(--shell-utility-bar-height) min-h-(--shell-utility-bar-height) w-full min-w-0 shrink-0 items-center gap-1 bg-sidebar pe-2 sm:pe-3"
     >
       <div className="flex min-w-0 shrink items-center gap-0.5 ps-1.5">
-        <SidebarToggle />
+        {showToggle ? <SidebarToggle /> : null}
         <ProductSwitcher markOnly={isMobile} />
       </div>
       <div aria-hidden="true" className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" />
       <Breadcrumb aria-label="Breadcrumb" className="hidden min-w-0 flex-1 overflow-hidden md:block">
-        <BreadcrumbList className="flex-nowrap">
-          <BreadcrumbItem className="min-w-0">
-            <BreadcrumbPage className="truncate">{v2TitleFor(pathname)}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
+        <React.Suspense fallback={<Crumbs pathname={pathname} search={null} />}>
+          <CrumbsWithSearch pathname={pathname} />
+        </React.Suspense>
       </Breadcrumb>
       <div className="ms-auto flex shrink-0 items-center gap-1">
         <span className="hidden sm:inline-flex">
@@ -93,7 +124,9 @@ export function V2UtilityBar() {
         <div aria-hidden="true" className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" />
         <RoleSwitcher />
         <ScenarioMenu />
-        <V2UserMenu />
+        <React.Suspense fallback={null}>
+          <V2UserMenu />
+        </React.Suspense>
       </div>
     </nav>
   )

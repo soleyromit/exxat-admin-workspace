@@ -12,7 +12,7 @@ import { StarterLibrariesPanel } from "@/components/v2/admin/starter-libraries-p
 /** Radix tab panels are focusable, so they carry the DS focus ring. */
 const TAB_PANEL = "mt-4 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
 
-/** Scenario step 1: add skills by copying a starter library or by importing a checklist, then see what still needs configuring. */
+/** Add skills by copying a starter library or by importing a checklist, then see what still needs configuring. */
 export function StarterLibraryPage() {
   const [banner, setBanner] = React.useState<{ text: string; skillId: string } | null>(null)
   const [status, setStatus] = React.useState("")
@@ -20,14 +20,14 @@ export function StarterLibraryPage() {
     setBanner({ text, skillId })
   }
   return (
-    <PageFrame title="Add skills to the library" subtitle="Copy a specialty starter list or import the checklist you already have.">
+    <PageFrame title="Skills library">
       <LiveStatus message={status} />
       {banner ? (
-        <LocalBanner variant="success" title="Skills added" dismissible onDismiss={() => setBanner(null)} action={{ label: "Configure the first new skill", href: `/v2/admin/configure-skill?skill=${banner.skillId}` }}>
+        <LocalBanner variant="success" title="Skills added" dismissible onDismiss={() => setBanner(null)} action={{ label: "Configure first skill", href: `/v2/admin/configure-skill?skill=${banner.skillId}` }}>
           {banner.text}
         </LocalBanner>
       ) : null}
-      <PageSection title="Add skills" id="add" description="Both ways create skills without an evaluation model. You choose the model for each skill when you configure it.">
+      <PageSection title="Add skills" id="add" description="Added skills need configuring before students can use them.">
         <Tabs defaultValue="starter">
           <TabsList variant="line" aria-label="Ways to add skills" className="rounded-md focus-visible:ring-3 focus-visible:ring-ring/50">
             <TabsTrigger value="starter">Starter libraries</TabsTrigger>
@@ -41,7 +41,7 @@ export function StarterLibraryPage() {
           </TabsContent>
         </Tabs>
       </PageSection>
-      <PageSection title="Your library" id="library" description="Every skill the program holds, where it came from, and whether it still needs configuring.">
+      <PageSection title="Library" id="library">
         <LibraryTable announce={setStatus} />
       </PageSection>
     </PageFrame>

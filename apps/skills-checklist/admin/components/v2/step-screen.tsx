@@ -15,15 +15,15 @@ import { LogFlow } from "@/components/v2/student/log-flow"
 import { RequestSignoff } from "@/components/v2/student/request-signoff"
 import { SyncPage } from "@/components/v2/student/sync-page"
 
-/** Picks the real screen for a step. Steps whose stage has not been built fall back to the foundation page. */
-export function StepScreen({ stepId, fallback }: { stepId: string; fallback: React.ReactNode }) {
+/** Picks the real screen for a route slug. */
+export function StepScreen({ stepId }: { stepId: string }) {
   switch (stepId) {
     case "starter-library":
       return <StarterLibraryPage />
     case "configure-skill":
       return <ConfigureWizardPage />
     case "validate-publish":
-      return <ConfigureWizardPage startStep={8} />
+      return <ConfigureWizardPage startStep={7} />
     case "map-courses":
       return <MapCoursesPage />
     case "pick-and-rate":
@@ -47,6 +47,6 @@ export function StepScreen({ stepId, fallback }: { stepId: string; fallback: Rea
     case "lab-batch-grid":
       return <LabGridPage />
     default:
-      return <>{fallback}</>
+      return null
   }
 }

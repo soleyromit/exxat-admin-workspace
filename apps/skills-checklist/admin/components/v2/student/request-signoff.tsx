@@ -1,5 +1,6 @@
 "use client"
 
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
@@ -19,7 +20,7 @@ import { QrCode } from "@/components/v2/student/qr-code"
 import { ReturnedPanel } from "@/components/v2/student/returned-panel"
 import { SyncChip } from "@/components/v2/student/sync-chip"
 import { Announce, BANNER_TOUCH, fmtDate, TOUCH, useStudentRun, BTN } from "@/components/v2/student/use-student"
-import { useV2State } from "@/lib/v2/react"
+import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { createRequest, evaluatorChoices, METHOD_WORD, PHOTO_MAX_KB, requestPath, requestsOf, requestWaitText, STUDENT_ID } from "@/lib/v2/student"
 import { syncBlock, syncStateOf } from "@/lib/v2/sync"
 import type { SignoffMethod, Submission, V2State } from "@/lib/v2/types"
@@ -57,9 +58,10 @@ interface Photo {
   type: string
 }
 
-/** Scenario step 6: ask for sign-off by QR code, handing over the phone, a link, or a photo of a signed paper form. */
+/** Walkthrough step 6: ask for sign-off by QR code, handing over the phone, a link, or a photo of a signed paper form. */
 export function RequestSignoff() {
   const s = useV2State()
+  const hydrated = useV2Hydrated()
   const run = useStudentRun()
   const origin = useOrigin()
   const params = useSearchParams()
@@ -141,8 +143,9 @@ export function RequestSignoff() {
 
   const requests = requestsOf(s)
 
+  if (!hydrated) return <StudentPage title="Requests"><LoadingBlocks label="Opening requests" rows={4} /></StudentPage>
   return (
-    <StudentPage title="Ask for sign-off" subtitle="One request can carry several skills. Evaluators need no account.">
+    <StudentPage title="Requests">
       <Announce message={status} />
       {done ? (
         <LocalBanner variant="success" title="Request created" dismissible onDismiss={() => setDone(null)} data-request-done>
@@ -156,12 +159,12 @@ export function RequestSignoff() {
         </LocalBanner>
       ) : null}
 
-      <Block id="entries" title={`Ready to send (${unsent.length})`} description="Clinical skills you logged that are not in a request yet. Lab and simulation practice trials are not sent for sign-off.">
+      <Block id="entries" title={`Ready to send (${unsent.length})`} description="Lab and simulation practice trials are not sent.">
         {unsent.length === 0 ? (
           <Card size="sm">
             <CardContent className="flex flex-col gap-2 text-sm">
               <p className="font-medium text-foreground">Nothing to send yet</p>
-              <p className="text-muted-foreground">Log a skill first. It appears here, ready to send.</p>
+              <p className="text-muted-foreground">Log a skill first. It appears here.</p>
               <Button asChild variant="default" size="lg" className={BTN}>
                 <Link href="/v2/student/pick-and-rate">Log a skill</Link>
               </Button>
@@ -195,7 +198,7 @@ export function RequestSignoff() {
             <SelectionTileGrid<SignoffMethod> sectionLabel="How do you want to ask?" options={METHODS} columns={2} value={method} onValueChange={(v) => { setMethod(v); setChosen([]); setError(null) }} interaction="radio" idPrefix="method" />
           </Block>
 
-          <Block id="who" title={method === "photo" ? "Who signed the paper form?" : method === "link" ? "Who can open the link?" : "Who signs off?"} description={method === "link" ? "Pick one or several. The first to finish completes the request for all of them." : "Only evaluators qualified for every skill you picked can be chosen."}>
+          <Block id="who" title={method === "photo" ? "Who signed the paper form?" : method === "link" ? "Who can open the link?" : "Who signs off?"} description={method === "link" ? "Pick several. The first to finish completes it for all." : "Only qualified evaluators are listed. No account needed."}>
             {skillIds.length === 0 ? <p className="text-sm text-muted-foreground">Choose a logged skill above to see who can sign it off.</p> : null}
             {nobody ? (
               <LocalBanner variant="warning" title="No evaluator can sign this off">
@@ -206,7 +209,7 @@ export function RequestSignoff() {
           </Block>
 
           {method === "photo" ? (
-            <Block id="photo" title="Photo of the signed form" description={`A JPG, PNG, HEIC or WebP under ${PHOTO_MAX_KB / 1024} MB. It goes to the review queue as a paper submission.`}>
+            <Block id="photo" title="Photo of the signed form" description={`JPG, PNG, HEIC or WebP, under ${PHOTO_MAX_KB / 1024} MB.`}>
               <input ref={fileRef} id="photo-file" type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = "" }} />
               <input ref={cameraRef} id="photo-camera" type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { pickPhoto(e.target.files?.[0]); e.target.value = "" }} />
               <div className="flex flex-col gap-2">
@@ -242,12 +245,13 @@ export function RequestSignoff() {
                 {why}
               </p>
             ) : null}
-            {s.device.offline || s.device.signedOut ? <p className="text-sm text-muted-foreground">{s.device.offline ? "You are offline. The request is saved on this phone and sent when you are online. A QR code or link works once it is sent. Handing over the phone works now." : "You are signed out. The request is saved on this phone and sent after you sign in."}</p> : null}
+            {s.device.offline || s.device.signedOut ? <p className="text-sm text-muted-foreground">{s.device.offline ? "Offline: saved on this phone and sent later. QR code and link work once sent. Handing over the phone works now." : "Signed out: saved on this phone and sent after you sign in."}</p> : null}
           </div>
         </>
       ) : null}
 
-      <Block id="requests" title={`Your requests (${requests.length})`} description="Every request, who it is with and whether it has reached them.">
+      <Block id="requests" title={`Your requests (${requests.length})`}>
+        {requests.length === 0 ? <p className="text-sm text-muted-foreground" data-requests-empty>No requests yet. A request you send appears here.</p> : null}
         <ul className="flex flex-col gap-3">
           {requests.map((x) => (
             <li key={x.id}>

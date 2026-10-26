@@ -12,45 +12,21 @@
 // version 1 untouched, version 2 added after the confirm -> state survives a reload.
 // Each check prints PASS or FAIL with what it saw. Exit code 1 on any FAIL. Playwright is resolved from tools/visual-check.
 
-import path from 'node:path'
-import { createRequire } from 'node:module'
-import { fileURLToPath } from 'node:url'
+import { KEY, SD, parseBase, makeChecker, startSession, demoMenu, radio as libRadio } from './_lib.mjs'
 
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const TOOLS = path.resolve(HERE, '../../../../../tools/visual-check')
-const { chromium } = createRequire(path.join(TOOLS, 'package.json'))('playwright')
-
-const args = process.argv.slice(2)
-const base = args.includes('--base') ? args[args.indexOf('--base') + 1] : 'http://localhost:3007'
-const KEY = 'skills-checklist:v2:store'
-const SD = 'sk-sterile-dressing'
+const base = parseBase()
 const NG = 'sk-ng-tube'
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64')
 const QS = ['Performed hand hygiene before and after', 'Kept the field clean throughout', 'Explained each step to the patient']
-
-let failures = 0
-const check = (name, ok, seen) => {
-  if (!ok) failures++
-  console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${seen === undefined ? '' : `  (saw: ${typeof seen === 'string' ? seen : JSON.stringify(seen)})`}`)
-}
-const step = (t) => console.log(`\n== ${t}`)
-
-const browser = await chromium.launch()
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' })
-const page = await ctx.newPage()
-const pageErrors = []
-page.on('pageerror', (e) => pageErrors.push(String(e).slice(0, 200)))
-
-const store = () => page.evaluate((k) => { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw).state : null }, KEY)
-const open = async (route) => { await page.goto(base + route, { waitUntil: 'load' }); await page.waitForSelector('h1', { timeout: 30000 }); await page.waitForTimeout(900) }
-const btn = (name, opts = {}) => page.getByRole('button', { name, ...opts })
-const text = () => page.locator('body').innerText()
-const radio = (group, name) => page.getByRole('radiogroup', { name: group }).getByRole('radio', { name, exact: true })
-const phone = () => page.setViewportSize({ width: 390, height: 844 })
-const desktop = () => page.setViewportSize({ width: 1440, height: 900 })
+const { check, step, abort, finish } = makeChecker('stage4')
+// Staff pages run at 1440 px, student and evaluator pages at 390 px: `open` switches the viewport by route.
+const { browser, page, pageErrors, open, reloadPage, store, btn, text, failShot } = await startSession({ base, auto: true })
+const radio = (g, n) => libRadio(page, g, n)
+const record = (id) => page.locator(`[data-record-row="${id}"]`)
 const rowFor = (label) => page.getByRole('row').filter({ hasText: label })
-const pickRow = (label) => page.getByRole('checkbox', { name: new RegExp(`^Select ${label}`) })
-const summary = (key) => page.locator(`[data-summary="${key}"]`).textContent()
+const pickRow = (label) => page.getByRole('checkbox', { name: new RegExp(`^Select row, ${label}`) })
+/** KPI tiles (KeyMetrics) read as "<label>\n<number>" in the page text. Returns the number or null. */
+const tile = async (label) => { const t = await page.locator('main').first().innerText(); const m = t.match(new RegExp(`${label}\\s+(\\d+)`)); return m ? Number(m[1]) : null }
 
 /** Maya logs Sterile dressing change and Nasogastric tube care (both Yes), then sends a photo of a paper form signed by J. Delgado. */
 async function logAndSendPhoto() {
@@ -80,25 +56,36 @@ async function logAndSendPhoto() {
 
 try {
   step('0. Seed')
-  await open('/v2')
+  await open('/v2/admin')
   await page.evaluate(() => localStorage.clear())
   await open('/v2/reviewer/review-queue')
   let s = await store()
-  check('seed: 4 items awaiting review, 1 stalled, 0 returned', (await summary('awaiting')) === '4' && (await summary('stalled')) === '1' && (await summary('returned')) === '0', [await summary('awaiting'), await summary('stalled'), await summary('returned')])
-  check('tabs carry their counts', (await page.getByRole('tab', { name: 'Awaiting (4)' }).count()) === 1 && (await page.getByRole('tab', { name: 'Stalled (1)' }).count()) === 1 && (await page.getByRole('tab', { name: 'Returned (0)' }).count()) === 1)
-  check('the table shows student, skills, evaluator and role, setting, location, course, source (AR-01)', ['Student', 'Skills', 'Evaluator and role', 'Setting', 'Location', 'Course', 'Source'].every((h) => true) && (await page.getByRole('columnheader', { name: 'Evaluator and role' }).count()) === 1 && (await page.getByRole('columnheader', { name: 'Location' }).count()) === 1 && (await page.getByRole('columnheader', { name: 'Course' }).count()) === 1)
+  check('seed: 9 items awaiting review (oldest 12 days), 1 stalled, 0 returned (KeyMetrics tiles)', (await tile('Awaiting review')) === 9 && (await tile('Stalled requests')) === 1 && (await tile('Returned to students')) === 0 && /Oldest waiting\s+12 days/.test(await page.locator('main').first().innerText()), [await tile('Awaiting review'), await tile('Stalled requests'), await tile('Returned to students')])
+  check('tabs carry their counts', (await page.getByRole('tab', { name: 'Awaiting (9)' }).count()) === 1 && (await page.getByRole('tab', { name: 'Stalled (1)' }).count()) === 1 && (await page.getByRole('tab', { name: 'Returned (0)' }).count()) === 1)
+  const heads = await page.getByRole('columnheader').allTextContents()
+  check('the table shows student, skills, evaluator and role, age, status, self-rating, setting, location, course, source (AR-01)', ['Student', 'Skills', 'Evaluator and role', 'Age', 'Status', 'Self-rating', 'Setting', 'Location', 'Course', 'Source'].every((h) => heads.some((x) => x.trim().startsWith(h))), heads.map((h) => h.trim()))
+  check('Age column: the oldest item reads 12 days, the newest 1 day', (await rowFor('Amara Nwosu').getByText('12 days', { exact: true }).count()) === 1 && (await rowFor('Hannah Brooks').getByText('1 day', { exact: true }).count()) === 1)
+  const chip = (v) => page.getByRole('button', { name: `Remove filter Self-rating: ${v}` })
+  await page.getByRole('button', { name: /Add filter/ }).click()
+  await page.getByRole('button', { name: 'Self-rating', exact: true }).click()
+  const optionNames = (await page.getByRole('group', { name: 'Self-rating' }).locator('button').allTextContents()).map((x) => x.trim())
+  check('self-rating filter counts: Agreed 3, Differed 2, Not comparable 4 (of 9)', ['Agreed (3)', 'Differed (2)', 'Not comparable (4)'].every((n) => optionNames.includes(n)), optionNames)
+  await page.getByRole('button', { name: /^Differed/ }).click()
+  await page.waitForTimeout(300)
+  check('choosing Differed narrows the table to the 2 differed items, shows a removable chip, and the select-all follows the 2 rows', (await chip('Differed (2)').count()) === 1 && (await page.getByRole('checkbox', { name: /^Select row,/ }).count()) === 2 && (await rowFor('Sofia Marchetti').count()) === 1 && (await rowFor('Jordan Okafor').count()) === 1 && (await rowFor('Amara Nwosu').count()) === 0)
+  await chip('Differed (2)').click()
+  await page.waitForTimeout(300)
+  check('removing the chip shows the 9 items again', (await page.getByRole('checkbox', { name: /^Select row,/ }).count()) === 9)
   check('a paper form that has no outcome is flagged, a ready item says so', (await rowFor('Tomas Alvarez').getByText('Needs the paper form outcome').count()) === 1 && (await rowFor('Jordan Okafor').getByText('Ready to approve').count()) === 1)
-  check('admin reaches the same queue', await (async () => { await open('/v2/admin/review-queue'); const ok = (await page.locator('[data-review-queue]').count()) === 1 && (await summary('awaiting')) === '4'; await open('/v2/reviewer/review-queue'); return ok })())
+  check('admin reaches the same queue', await (async () => { await open('/v2/admin/review-queue'); const ok = (await page.locator('[data-review-queue]').count()) === 1 && (await tile('Awaiting review')) === 9; await open('/v2/reviewer/review-queue'); return ok })())
 
   step('1. Maya sends a photo of a signed paper form (phone)')
-  await phone()
   await logAndSendPhoto()
   s = await store()
   const mayaPhoto = s.submissions.find((x) => x.studentId === 'stu-maya' && x.method === 'photo')
   check('request is in the queue as a paper submission with the file facts only', mayaPhoto && mayaPhoto.status === 'awaiting-review' && mayaPhoto.photo.name === 'maya-signed-form.png' && mayaPhoto.assignedToId === 'rev-haddad', mayaPhoto)
-  await desktop()
   await open('/v2/reviewer/review-queue')
-  check('queue now holds 5 items', (await summary('awaiting')) === '5')
+  check('queue now holds 10 items', (await tile('Awaiting review')) === 10, await tile('Awaiting review'))
 
   step('2. Bulk approve with one blocked item (partial failure)')
   const before = await store()
@@ -106,7 +93,7 @@ try {
   await pickRow('Maya Ferreira, Point-of-care blood glucose').check()
   await pickRow('Jordan Okafor').check()
   await pickRow('Maya Ferreira, Sterile dressing change and Nasogastric').check()
-  check('the bar counts the selection', (await page.locator('[data-selected-count]').textContent()) === '3 selected')
+  check('the bar counts the selection', (await btn('Approve 3 submissions').count()) === 1 && (await btn('Clear selection').count()) === 1)
   await btn('Approve 3 submissions').click()
   await page.locator('[data-bulk-dialog]').waitFor()
   check('the confirm names the count', (await page.getByRole('dialog').getByRole('heading', { name: 'Approve 3 submissions?' }).count()) === 1)
@@ -119,9 +106,9 @@ try {
   s = await store()
   check('the blocked item is still waiting, the others count', s.submissions.find((x) => x.id === mayaPhoto.id).status === 'awaiting-review' && s.evaluations.find((e) => e.id === 'ev-maya-7').status === 'counted' && s.evaluations.find((e) => e.id === 'ev-rq-1').status === 'counted' && s.submissions.find((x) => x.id === 'sub-02').status === 'done')
   check('counted evaluations rose by exactly 2; each approval is audited with the reviewer', s.evaluations.filter((e) => e.status === 'counted').length === countedBefore + 2 && s.audit.filter((a) => a.action === 'Approved an evaluation, it now counts' && a.actorId === 'rev-haddad').length === 2)
-  check('the queue and its counters moved', (await summary('awaiting')) === '3' && (await page.getByRole('tab', { name: 'Awaiting (3)' }).count()) === 1)
+  check('the queue and its counters moved', (await tile('Awaiting review')) === 8 && (await page.getByRole('tab', { name: 'Awaiting (8)' }).count()) === 1)
   await open('/v2/reviewer/outcome-remediation')
-  check('the outcomes screen shows the higher count', Number(await summary('counted')) === countedBefore + 2, await summary('counted'))
+  check('the outcomes screen shows the higher count (Evaluations that count)', (await tile('Evaluations that count')) === countedBefore + 2, await tile('Evaluations that count'))
   await open('/v2/student')
   check('student home: blood glucose now has a counted evaluation, no longer waiting', (await page.locator('[data-skill-card="sk-blood-glucose"]').getByText('1 of 3 successful evaluations').count()) === 1, await page.locator('[data-skill-card="sk-blood-glucose"] [data-progress]').first().textContent())
 
@@ -146,7 +133,6 @@ try {
   check('the Returned tab lists it with the reason the student reads', (await page.getByRole('region', { name: 'Returned to students' }).getByText(/The signature is cut off/).count()) === 1)
 
   step('4. Maya reads the reason and what to do, sends a new photo (phone)')
-  await phone()
   await open('/v2/student')
   check('student home leads with the returned request', (await page.locator('[data-next-action="returned"]').count()) === 1 && /The signature is cut off/.test(await page.locator('[data-next-action="returned"]').textContent()), await page.locator('[data-next-action]').first().textContent())
   await open('/v2/student/history')
@@ -164,7 +150,6 @@ try {
   check('same record, revision 1, new photo, back in review; the reason stays on file', rx2.status === 'awaiting-review' && rx2.revisions === 1 && rx2.photo.name === 'maya-retake.png' && rx2.returns.length === 1)
 
   step('5. Reviewer enters the outcome from the paper form, compares, approves')
-  await desktop()
   await open(`/v2/reviewer/review-queue/${mayaPhoto.id}`)
   check('revision and the earlier return are visible to the reviewer', (await page.locator('[data-revision]').textContent()) === 'Sent again 1 time' && (await page.locator('[data-return-history]').textContent()).includes('The signature is cut off'))
   check('the new photo is shown', (await page.locator('[data-photo-placeholder]').getByText('maya-retake.png').count()) === 1)
@@ -201,10 +186,8 @@ try {
   await page.locator('[data-decided="approved"]').waitFor()
   s = await store()
   check('both count, the request is done, the note is kept, audit names the reviewer', s.evaluations.filter((e) => e.studentId === 'stu-maya' && e.status === 'counted').length === countedMayaBefore + 2 && s.submissions.find((x) => x.id === mayaPhoto.id).status === 'done' && s.evaluations.find((e) => e.id === pe[0].id).review.note === 'Paper form matched the entries.' && s.audit.some((a) => a.action === 'Entered an evaluation from a signed paper form'))
-  await phone()
   await open('/v2/student/history')
   check('student history: the paper-form evaluations show as Counted', (await page.locator(`[data-history-skill="${NG}"] [data-attempt="counted"]`).count()) === 1 && (await page.locator(`[data-history-skill="${SD}"] [data-attempt="counted"]`).count()) === 1)
-  await desktop()
 
   step('6. Reassign the stalled request')
   await open('/v2/reviewer/review-queue')
@@ -223,7 +206,7 @@ try {
   const sx = s.submissions.find((x) => x.id === 'sub-03')
   check('request moved: new assignee, with evaluator, wait reset, reassignment recorded', sx.assignedToId === 'pre-castillo' && sx.status === 'with-evaluator' && sx.daysWaiting === 0 && sx.reassignments[0].fromId === 'pre-delgado' && sx.reassignments[0].reason === 'On leave until next week.', sx)
   check('audit entry names the reviewer, both people and the reason', s.audit.some((a) => a.action === 'Reassigned a stalled request' && a.actorId === 'rev-haddad' && a.target.includes('from J. Delgado, RN to M. Castillo, RN') && a.target.includes('On leave until next week.')))
-  check('stalled count is 0 and the tab says so', (await summary('stalled')) === '0' && (await page.getByRole('tab', { name: 'Stalled (0)' }).count()) === 1)
+  check('stalled count is 0 and the tab says so', (await tile('Stalled requests')) === 0 && (await page.getByRole('tab', { name: 'Stalled (0)' }).count()) === 1)
   await open('/v2/preceptor/preceptor-evaluation?request=sub-03&as=pre-delgado')
   check('the old link no longer opens the form for the first person', (await page.locator('[data-access="not-on-request"]').count()) === 1, (await text()).slice(0, 0))
   await open('/v2/preceptor/preceptor-evaluation?request=sub-03&as=pre-castillo')
@@ -232,21 +215,23 @@ try {
   step('7. Clear the rest: partial bulk approve, return the last item, empty state')
   await open('/v2/admin/review-queue')
   s = await store()
-  const left = await summary('awaiting')
-  check('two items are left: the seeded paper form and one ready evaluation', left === '2', left)
-  await page.getByLabel('Select all 2').check()
-  await btn('Approve 2 submissions').click()
+  const left = await tile('Awaiting review')
+  check('7 items are left: 5 ready evaluations and the 2 seeded paper forms', left === 7, left)
+  await page.getByRole('checkbox', { name: 'Select all rows' }).check()
+  await btn('Approve 7 submissions').click()
   await page.locator('[data-bulk-dialog]').waitFor()
-  await page.getByRole('dialog').getByRole('button', { name: 'Approve 1 of 2 submissions' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Approve 5 of 7 submissions' }).click()
   await page.locator('[data-queue-message]').waitFor()
-  check('admin gets the same partial result, naming the paper form', /Approved 1 of 2 submissions/.test(await page.locator('[data-queue-message]').textContent()) && /Tomas Alvarez/.test(await page.locator('[data-blocked-list]').textContent()))
-  await open('/v2/admin/review-queue/sub-04')
-  await page.locator('[data-return]').click()
-  await page.locator('#return-reason').fill('The photo is blurred. Retake it flat and in good light.')
-  await page.locator('[data-return-confirm]').click()
-  await page.locator('[data-decided="returned"]').waitFor()
+  check('admin gets the same partial result, naming both paper forms', /Approved 5 of 7 submissions/.test(await page.locator('[data-queue-message]').textContent()) && /Tomas Alvarez/.test(await page.locator('[data-blocked-list]').textContent()) && /Liam Kowalski/.test(await page.locator('[data-blocked-list]').textContent()), await page.locator('[data-blocked-list]').textContent())
+  for (const id of ['sub-04', 'sub-12']) {
+    await open(`/v2/admin/review-queue/${id}`)
+    await page.locator('[data-return]').click()
+    await page.locator('#return-reason').fill('The photo is blurred. Retake it flat and in good light.')
+    await page.locator('[data-return-confirm]').click()
+    await page.locator('[data-decided="returned"]').waitFor()
+  }
   await open('/v2/admin/review-queue')
-  check('empty state says what comes here', (await page.locator('[data-empty="awaiting"]').textContent()).startsWith('Nothing is waiting for review.'))
+  check('empty state says what comes here', (await page.locator('[data-empty="awaiting"]').textContent()).startsWith('Nothing is waiting.'))
   check('a request that is no longer in the queue says so, with a way back', await (async () => { await open('/v2/admin/review-queue/sub-02'); return (await page.locator('[data-item-missing]').count()) === 1 })())
 
   step('8. Director verification (Maya\'s preceptor request is completed first)')
@@ -258,8 +243,8 @@ try {
   await btn(/^Submit evaluation of 2 skills$/).click()
   await page.locator('[data-receipt]').waitFor()
   await open('/v2/director/director-verification')
-  check('director list: 12 students, none verified yet, Maya not verified', (await summary('students')) === '12' && (await summary('verified')) === '0' && (await rowFor('Maya Ferreira').getByText('Not verified').count()) === 1)
-  await open('/v2/director/verification/stu-maya')
+  check('Records list: 12 students, none verified yet, Maya not verified', (await tile('Students in the cohort')) === 12 && (await tile('Records verified')) === 0 && (await record('stu-maya').getByText('Not verified', { exact: true }).count()) === 1)
+  await open('/v2/director/director-verification/stu-maya')
   check('Maya has nothing pending now, so the form is offered; gaps are named', (await page.locator('[data-verify-form]').count()) === 1 && (await page.locator('[data-gaps]').count()) === 1 && /not achieved yet/.test(await page.locator('[data-gaps]').textContent()), await page.locator('[data-gaps]').textContent())
   await btn(/^Verify Maya Ferreira's record as version 1$/).click()
   check('verifying without the confirmation is refused', (await page.getByText('Confirm that you reviewed the evidence and the gaps listed before you verify.').count()) === 1)
@@ -276,18 +261,16 @@ try {
   check('audit records the verification', s.audit.some((a) => a.action === "Verified a student's record, version 1" && a.actorId === 'dir-brennan'))
   await open('/v2/admin/verification/stu-maya')
   check('administrator reads it; no verify form, only the director can verify', (await page.locator('[data-verify-form]').count()) === 0 && (await page.getByText('Only the program director can verify a record.').count()) === 1 && (await page.locator('[data-verify-status="verified"]').count()) === 1)
-  await phone()
   await open('/v2/student/history')
   check('the student record shows who verified it and when', /Verified by Dr\. K\. Brennan on/.test(await page.locator('[data-verification-card]').textContent()) && (await page.locator('[data-verification-card="verified"]').count()) === 1, await page.locator('[data-verification-card]').textContent())
-  await desktop()
   await open('/v2/director/director-verification')
-  check('report data: the list shows Maya verified at version 1 by Dr. K. Brennan, counter shows 1', (await summary('verified')) === '1' && (await rowFor('Maya Ferreira').getByText('Verified, version 1').count()) === 1 && (await rowFor('Maya Ferreira').getByText(/Dr\. K\. Brennan/).count()) === 1)
+  check('report data: the list shows Maya verified at version 1 by Dr. K. Brennan, tile shows 1', (await tile('Records verified')) === 1 && (await record('stu-maya').getByText('Verified, version 1').count()) === 1 && (await record('stu-maya').getByText(/Dr\. K\. Brennan/).count()) === 1)
 
   step('9. A later change is a new version through the reopen flow; version 1 never changes')
   const v1Before = JSON.stringify((await store()).verifications[0])
   const target = (await store()).evaluations.find((e) => e.studentId === 'stu-maya' && e.skillId === 'sk-med-admin' && e.status === 'counted' && e.versions[0].detail)
   await open(`/v2/admin/evaluation/${target.id}`)
-  check('the evaluation page warns it is part of a verified record', (await page.locator('[data-verified-banner]').count()) === 1 && /leaves that verification as it is/.test(await page.locator('[data-verified-banner]').textContent()))
+  check('the evaluation page warns it is part of a verified record', (await page.locator('[data-verified-banner]').count()) === 1 && /Reopening marks the record Changed since verified until it is verified again/.test(await page.locator('[data-verified-banner]').textContent()))
   await btn('Reopen to edit').click()
   await page.getByRole('dialog').getByText('Not yet, feedback only', { exact: true }).click()
   await page.locator('#reopen-reason').fill('The evaluator corrected the outcome.')
@@ -295,17 +278,15 @@ try {
   await page.getByText(/Version 2 added/).waitFor()
   s = await store()
   check('verification version 1 is byte-for-byte unchanged after the reopen', JSON.stringify(s.verifications[0]) === v1Before && s.verifications.length === 1)
-  await open('/v2/director/verification/stu-maya')
+  await open('/v2/director/director-verification/stu-maya')
   check('the record reads Changed since verified and says what changed', (await page.locator('[data-verify-status="changed"]').count()) === 1 && /version 2 was added to an evaluation verified at version 1/.test(await page.locator('[data-changed-banner]').textContent()))
   check('verify is blocked until the new version is confirmed', (await page.locator('[data-verify-form]').count()) === 0 && /reopened/.test(await page.locator('[data-blockers]').textContent()))
-  await phone()
   await open('/v2/student/history')
   check('the student sees Changed since verified', (await page.locator('[data-verification-card="changed"]').count()) === 1)
-  await desktop()
   await open(`/v2/reviewer/evaluation/${target.id}`)
   await btn('Confirm version 2 as final').click()
   await page.getByText(/Version 2 confirmed as final/).waitFor()
-  await open('/v2/director/verification/stu-maya')
+  await open('/v2/director/director-verification/stu-maya')
   check('after the confirm the director can verify again, as version 2', (await page.locator('[data-verify-form]').count()) === 1 && (await btn("Verify Maya Ferreira's record as version 2").count()) === 1)
   await page.locator('#verify-confirm').click()
   await btn("Verify Maya Ferreira's record as version 2").click()
@@ -314,17 +295,11 @@ try {
   check('version 2 added, version 1 untouched, both listed newest first', s.verifications.length === 2 && s.verifications[1].version === 2 && JSON.stringify(s.verifications[0]) === v1Before && s.verifications[1].evidence.find((e) => e.evaluationId === target.id).version === 2 && (await page.locator('[data-history] li').count()) === 2)
 
   step('10. State survives a reload; no uncaught page errors')
-  await page.reload({ waitUntil: 'load' })
-  await page.waitForSelector('h1')
-  await page.waitForTimeout(900)
+  await reloadPage()
   check('after reload both verification versions are still listed', (await page.locator('[data-verification-version]').count()) === 2)
   check('no uncaught page errors', pageErrors.length === 0, pageErrors)
 } catch (e) {
-  failures++
-  console.log(`FAIL  script error: ${String(e).slice(0, 800)}`)
-  await page.screenshot({ path: '/tmp/stage4-fail.png' }).catch(() => {})
-} finally {
-  await browser.close()
+  abort(e)
+  await failShot('stage4-e2e')
 }
-console.log(`\n${failures === 0 ? 'ALL PASS' : `${failures} FAILED`}`)
-process.exit(failures === 0 ? 0 : 1)
+await finish(browser)

@@ -3,15 +3,13 @@
 import * as React from "react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
+import { StatusPill } from "@/components/v2/status-pill"
+import { PILL_KINDS } from "@/lib/v2/status-pill"
 import { OUTCOME_WORD } from "@/lib/v2/outcomes"
 import type { Evaluation, EvaluationVersion, Outcome, Skill, V2State } from "@/lib/v2/types"
 
-export const OUTCOME_TONE: Record<Outcome, { tone: "success" | "warning" | "neutral"; icon: string }> = {
-  met: { tone: "success", icon: "fa-circle-check" },
-  "not-met": { tone: "warning", icon: "fa-circle-minus" },
-  "not-yet": { tone: "neutral", icon: "fa-comment" },
-}
+/** Tone and icon per outcome, from the one pill table (kept as an export for importers). */
+export const OUTCOME_TONE: Record<Outcome, { tone: "success" | "info" | "warning" | "neutral"; icon: string }> = PILL_KINDS.outcome
 
 export const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
 
@@ -76,14 +74,13 @@ export function VersionTimeline({ s, e }: { s: V2State; e: Evaluation }) {
   return (
     <ol className="flex flex-col gap-3" aria-label="Versions, newest first" data-timeline>
       {versions.map((v) => {
-        const t = OUTCOME_TONE[v.outcome]
         const current = v.version === e.currentVersion
         const open = openV === v.version
         return (
           <li key={v.version} className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3" data-version={v.version}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-foreground">{`Version ${v.version}${current ? ", current" : ""}`}</h3>
-              <StatusBadge label={v.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[v.outcome]} tone={t.tone} icon={t.icon} size="sm" />
+              <StatusPill kind="outcome" value={v.outcome} label={v.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[v.outcome]} />
             </div>
             <p className="text-sm text-foreground">{`${fmtDay(v.at)}, by ${name(v.by)}.`}</p>
             <p className="text-sm text-muted-foreground">{v.reason ? `Why: ${v.reason}` : "First version, as the evaluator submitted it."}</p>

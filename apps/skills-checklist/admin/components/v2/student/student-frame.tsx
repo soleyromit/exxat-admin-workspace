@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
+import type { PageHeaderActionItem } from "@exxatdesignux/ui/components/ui/page-header"
+import { PageFrame } from "@/components/skills/page-header"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { useV2State } from "@/lib/v2/react"
 import { unsentEntries } from "@/lib/v2/student"
@@ -74,13 +75,13 @@ const NAV = [
   { href: "/v2/student/history", label: "Record", icon: "clock-rotate-left", match: (p: string) => p.startsWith("/v2/student/history") },
 ] as const
 
-/** Mobile bottom navigation: four destinations, 44 px targets, safe-area aware. On desktop the same links sit above the column. */
+/** Mobile bottom navigation: four destinations, 44 px targets, safe-area aware. From 768 px the same four rows are in the left shell. */
 export function StudentNav() {
   const pathname = usePathname() ?? ""
   const s = useV2State()
   const ready = unsentEntries(s).length
   return (
-    <nav aria-label="Student" className="sticky bottom-0 z-10 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:order-first md:top-0 md:border-t-0 md:border-b md:pb-0">
+    <nav aria-label="Student" className="sticky bottom-0 z-10 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
       <ul className="mx-auto flex w-full max-w-md items-stretch justify-between gap-1 px-2 py-1">
         {NAV.map((n) => {
           const active = n.match(pathname)
@@ -102,17 +103,29 @@ export function StudentNav() {
 }
 
 /**
- * The student's page: a centred column that is a phone width everywhere (28rem), the always-visible sync strip, the device
- * banners, the DS page header and the bottom navigation. Composed from DS primitives (docs/v2/new-components-needed.md).
+ * The student's page. Below 768px: the phone column (28rem, centred), the sync strip and device banners above the DS page
+ * header, the bottom navigation. From 768px the left shell carries the same four rows, so the page is the shared PageFrame
+ * (`width="reading"`, left aligned, 48rem, the staff gutter) and the title sits where every staff title sits. Composed from
+ * DS primitives (docs/v2/new-components-needed.md).
  */
-export function StudentPage({ title, subtitle, actions, wide, children }: { title: React.ReactNode; subtitle?: string; actions?: React.ReactNode; wide?: boolean; children?: React.ReactNode }) {
+export function StudentPage({ title, subtitle, actionItems, children }: { title: React.ReactNode; subtitle?: string; actionItems?: PageHeaderActionItem[]; children?: React.ReactNode }) {
   return (
     <div className="flex min-h-full w-full flex-col" data-student-page>
-      <div className={`mx-auto flex w-full flex-1 flex-col gap-4 px-4 pt-4 pb-6 ${wide ? "max-w-3xl" : "max-w-md"}`}>
-        <SyncStrip />
-        <DeviceBanners />
-        <PageHeader title={title} subtitle={subtitle} actions={actions} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
-        {children}
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col md:mx-0 md:max-w-none">
+        <PageFrame
+          width="reading"
+          title={title}
+          subtitle={subtitle}
+          actionItems={actionItems}
+          lead={
+            <>
+              <SyncStrip />
+              <DeviceBanners />
+            </>
+          }
+        >
+          {children}
+        </PageFrame>
       </div>
       <StudentNav />
     </div>

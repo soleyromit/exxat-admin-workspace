@@ -12,11 +12,11 @@ One row per screen. "IDs" are the requirement IDs the screen satisfies in whole 
 
 | Stage | Screen | Route | IDs | Flow check |
 |---|---|---|---|---|
-| 0 | Scenario overview, role homes (x5), Scenario menu, Reset demo | `/v2`, `/v2/<role>` | none (navigation and demo data) | `tests/v2/store.test.ts` |
+| 0 | Admin Home, nav landings per role, Demo menu, Reset demo | `/v2` (redirects to `/v2/admin`), `/v2/admin`, `/v2/<role>/<nav item>` | none (navigation and demo data) | `tests/v2/store.test.ts` |
 | 1 | Add skills: starter libraries | `/v2/admin/starter-library` | SL-01, IM-09, IM-10, IM-11, IM-12 | `stage1.e2e.mjs` |
 | 1 | Add skills: import from a file | `/v2/admin/starter-library` | IM-01 to IM-11, IM-13 | `stage1.e2e.mjs` |
 | 1 | Your library (Edit, Configure) | `/v2/admin/starter-library` | IM-09, IM-10, IM-11 | `stage1.e2e.mjs` |
-| 1 | Configure wizard, steps 1 to 7 | `/v2/admin/configure-skill` | SC-01 to SC-04, SC-08 to SC-12, SC-16, SC-17, IM-14 | `stage1.e2e.mjs` |
+| 1 | Configure wizard, steps 1 to 6 | `/v2/admin/configure-skill` | SC-01 to SC-04, SC-08 to SC-12, SC-16, SC-17, IM-14 | `stage1.e2e.mjs` |
 | 1 | Review and publish | `/v2/admin/validate-publish` | SC-18, SC-19, IM-09 | `stage1.e2e.mjs` |
 | 1 | Map skills to NURS 350 | `/v2/admin/map-courses` | CM-01, CM-03 to CM-06, IM-09, SC-12 | `stage1.e2e.mjs` |
 | 2 | Student home, what is left | `/v2/student` | ST-01, SC-12, AR-06, IM-09 | `stage2.e2e.mjs` |
@@ -44,8 +44,8 @@ Not exercised by any v2 screen: SL-02 to SL-11, SC-05 to SC-07, SC-13, CM-02, CM
 
 | Screen | Route | Requirement IDs satisfied | Coverage now | New requirements (status: proposed) |
 |---|---|---|---|---|
-| Scenario overview | `/v2` | none (navigation and demo data only) | Built, Verified | Scenario menu and Reset demo `[PROPOSED]` |
-| Role home (x5) | `/v2/<role>` | none | Built, Verified | Role switcher `[PROPOSED]` |
+| Admin Home | `/v2/admin` (`/v2` redirects here) | none (navigation and demo data only) | Built | Demo menu and Reset demo `[PROPOSED]` |
+| Role landings | `/v2/<role>` (opens that role's first nav item; the old role homes are gone) | none | Built | Role switcher `[PROPOSED]` |
 | Shared store and seed | `lib/v2` | none directly; seeds data for AE-04 states, RV-03 versions, CM-03 mapping levels | Built | Shared mock store `[PROPOSED]` |
 
 ## Stage 1 screens (admin setup, built)
@@ -57,8 +57,8 @@ Status: **Built** (real screens, unit tests, Playwright flow `docs/v2/verify/sta
 | Add skills: starter libraries | `/v2/admin/starter-library` (tab 1) | SL-01 (conflicts as written, see D2), IM-09, IM-10, IM-11, IM-12 (copy path) | Four specialty starter libraries, admin-copied and editable `[PROPOSED]` |
 | Add skills: import from a file | `/v2/admin/starter-library` (tab 2) | IM-01, IM-02 (PDF and text exercised; Word and Excel go through the same extractor but are not driven in the demo), IM-03, IM-04, IM-05 (edit, rename, discard; merge, split and add are not built), IM-06 (skip or keep both; replace not offered), IM-07, IM-08, IM-09, IM-11, IM-13 | Rule-based proposal standing in for AI reading `[PROPOSED]`; proposal never sets a model (OD-12 untouched) |
 | Your library (Edit, Configure) | `/v2/admin/starter-library` | IM-09, IM-10, IM-11 | Edit skill after copy `[PROPOSED]` |
-| Configure wizard, steps 1 to 7 | `/v2/admin/configure-skill` | SC-01, SC-02 (model chosen explicitly once any model exists; binary pre-selected only for a skill with none, see D3), SC-03, SC-04, SC-08, SC-09, SC-10 (total number only; minimum at each level is not built), SC-11, SC-12, SC-15 (not built: self-evaluation and approval toggles), SC-16, SC-17, IM-14 (copy half) | Last-N window; distinct evaluators; minimum level; simulation cap and allow list; lab check-off and practice trials; evaluator credential, years and training; attempt limit, days between attempts, retake score cap, auto remediation; event-based re-validation with optional calendar expiry (off); overall supervision rating beside a checklist; live strength hint `[PROPOSED]` |
-| Review and publish, step 8 | `/v2/admin/validate-publish` | SC-18, SC-19, IM-09 | Publish blocked until clean; issue links to the field `[PROPOSED]` |
+| Configure wizard, steps 1 to 6 | `/v2/admin/configure-skill` | SC-01, SC-02 (no model preselected; chosen explicitly, see D3), SC-03, SC-04, SC-08, SC-09, SC-10 (total number only; minimum at each level is not built), SC-11, SC-12, SC-15 (not built: self-evaluation and approval toggles), SC-16, SC-17, IM-14 (copy half) | Last-N window; distinct evaluators; minimum level; simulation cap and allow list; lab check-off and practice trials; evaluator credential, years and training; attempt limit, days between attempts, retake score cap; overall supervision rating beside a checklist; live strength hint `[PROPOSED]` |
+| Review and publish, step 7 | `/v2/admin/validate-publish` | SC-18, SC-19, IM-09 | Publish blocked until clean; issue links to the field `[PROPOSED]` |
 | Map skills to NURS 350 | `/v2/admin/map-courses` | CM-01 (one offering), CM-03, CM-04, CM-05, CM-06 (level stored per course id), IM-09, SC-12 (in the coverage reading) | Coverage warnings: no mandatory skills, mandatory skill not in use, mandatory skill needing a setting the course lacks, mandatory skill with no qualified evaluator `[PROPOSED]` |
 
 Scenario steps 2 and 3 cite SC-15; Stage 1 does not build it (see the Out of scope line of `V2-01b`). Steps 1 to 4 keep their planned IDs in `scenario.ts`; this table is the claim of coverage.
@@ -123,14 +123,14 @@ Status: **Built** (real screens, unit tests in `tests/v2/reports.test.ts`, `pdf.
 
 Scenario steps 12 to 14 now point at built screens. Step 12 adds RP-08 and RP-09 to its IDs; RP-04 is not built.
 
-## Story steps (14)
+## Walkthrough steps (14)
 
 All 14 steps are built (steps 1 to 4 in Stage 1, 5 to 7 in Stage 2, 8 and 9 in Stage 3, 10 and 11 in Stage 4, 12 to 14 in Stage 5). "Requirement IDs" is the plan, not a claim of coverage; the complete table above says what each screen covers.
 
 | # | Screen | Route | Requirement IDs (planned) | Coverage now | New requirements (status: proposed) |
 |---|---|---|---|---|---|
 | 1 | Copy a specialty starter library | `/v2/admin/starter-library` | SL-01, IM-01, IM-09, IM-10, IM-11, IM-14 | Built (IM-14 copy half is on step 2) | Specialty starter libraries `[PROPOSED]`; conflicts with SL-01 as written, see D2 |
-| 2 | Configure IV catheter insertion | `/v2/admin/configure-skill` | SC-01, SC-02, SC-08, SC-10, SC-11, SC-12, SC-15, SC-16, SC-17 | Built (SC-15 not built) | Last-N achievement rule ("4 of last 5"); simulation share cap; prerequisites; evaluator qualification; failure path; event-based revalidation; binary as pre-selected model `[PROPOSED]` |
+| 2 | Configure IV catheter insertion | `/v2/admin/configure-skill` | SC-01, SC-02, SC-08, SC-10, SC-11, SC-12, SC-15, SC-16, SC-17 | Built (SC-15 not built) | Last-N achievement rule ("4 of last 5"); simulation share cap; prerequisites; evaluator qualification; failure path; |
 | 3 | Fix validation errors, then publish | `/v2/admin/validate-publish` | SC-18, SC-19, IM-09 | Built | none beyond the requirements |
 | 4 | Map skills to NURS 350 | `/v2/admin/map-courses` | CM-01, CM-03, CM-04, CM-05, CM-06 | Built | Coverage warnings `[PROPOSED]` |
 | 5 | See what is left, pick two skills and self-rate | `/v2/student/pick-and-rate` | ST-01, ST-04, ST-05, ST-06, ST-11, ST-12, ST-13 | Built (home is `/v2/student`) | Mobile bottom navigation; prerequisite gating; next best action `[PROPOSED]` |

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Avatar, AvatarFallback } from "@exxatdesignux/ui/components/ui/avatar"
@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { utilityBarActionButtonClass } from "@exxatdesignux/ui/components/shell/utility-bar-chrome"
-import { ROLE_BY_ID, roleForPath } from "@/lib/v2/roles"
+import { actorIdFor, roleForPath } from "@/lib/v2/roles"
 import { personName } from "@/lib/v2/selectors"
 import { useV2State } from "@/lib/v2/react"
 
@@ -34,11 +34,15 @@ function initials(name: string): string {
 }
 
 export function V2UserMenu() {
-  const role = roleForPath(usePathname() ?? "")
+  const pathname = usePathname() ?? ""
+  const asParam = useSearchParams()?.get("as") ?? null
+  const role = roleForPath(pathname) ?? "admin"
   const state = useV2State()
   const { theme, setTheme } = useTheme()
-  const name = role ? personName(state, ROLE_BY_ID[role].personId) : "Demo presenter"
-  const ini = role ? initials(name) : "DP"
+  const actorId = actorIdFor(role, pathname, asParam)
+  const name = personName(state, actorId)
+  const ini = initials(name)
+  const title = state.people.find((p) => p.id === actorId)?.title ?? ""
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -59,7 +63,7 @@ export function V2UserMenu() {
           </Avatar>
           <span className="min-w-0">
             <span className="block truncate text-sm font-medium">{name}</span>
-            <span className="block truncate text-xs font-normal text-muted-foreground">{role ? ROLE_BY_ID[role].label : "No role chosen"}, sample data</span>
+            <span className="block truncate text-xs font-normal text-muted-foreground">{title}</span>
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

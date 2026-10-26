@@ -1,41 +1,45 @@
 "use client"
 
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 import * as React from "react"
 import Link from "next/link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
+import { StatusPill } from "@/components/v2/status-pill"
+import { ChartCard } from "@/components/chart-card"
 import { Block, StudentPage } from "@/components/v2/student/student-frame"
-import { Pips } from "@/components/v2/student/skill-card"
+import { SkillProgressViz } from "@/components/v2/student/skill-card"
+import { CumulativeLine } from "@/components/v2/viz"
+import { paceSeries } from "@/lib/v2/student-viz"
 import { fmtDate, TOUCH, BTN } from "@/components/v2/student/use-student"
-import { useV2State } from "@/lib/v2/react"
+import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { STUDENT_ID, studentHistory, type Attempt, type AttemptKind, type SkillHistory } from "@/lib/v2/student"
-import { statusLabel, STATUS_TONE } from "@/components/v2/director/verification-pages"
 import { verificationStatus } from "@/lib/v2/verification"
 import { RECORD_PATH } from "@/lib/v2/paths"
 import type { V2State } from "@/lib/v2/types"
 
-const KIND: Record<AttemptKind, { tone: "success" | "info" | "warning" | "neutral"; icon: string }> = {
-  counted: { tone: "success", icon: "fa-circle-check" },
-  "did-not-meet": { tone: "warning", icon: "fa-circle-minus" },
-  "not-yet": { tone: "neutral", icon: "fa-comment" },
-  waiting: { tone: "info", icon: "fa-hourglass-half" },
-  returned: { tone: "warning", icon: "fa-rotate-left" },
-  reopened: { tone: "warning", icon: "fa-folder-open" },
-}
+const verifyLabel = (status: string, version: number | null) => (status === "verified" && version ? `Verified, version ${version}` : undefined)
 
 /** Student history: every attempt per skill in order, with an explicit outcome, who it is with, the rule not met, and what counted. */
 export function HistoryPage() {
   const s = useV2State()
+  const hydrated = useV2Hydrated()
   const h = studentHistory(s)
   const [open, setOpen] = React.useState<{ skill: SkillHistory; attempt: Attempt } | null>(null)
   const sum = h.summary
+  const pace = paceSeries(s)
+  if (!hydrated) return <StudentPage title="Record"><LoadingBlocks label="Opening your record" rows={4} /></StudentPage>
   return (
-    <StudentPage title="Your record" subtitle="Every attempt, what counted and why. Evidence from every course counts toward each skill.">
+    <StudentPage title="Record">
+      <div data-pace-card>
+        <ChartCard title="Pace this term" description="Evaluations counted against the expected pace." className="h-auto">
+          <CumulativeLine label="Counted evaluations and the expected pace" data={pace.data} unit="evaluation" caption={pace.caption} height={180} />
+        </ChartCard>
+      </div>
       <Card size="sm">
         <CardContent>
-          <dl className="grid grid-cols-2 gap-3 text-sm" aria-label="Record summary">
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm" aria-label="Record summary">
             {[
               ["Counted", sum.counted, "counted"],
               ["Waiting", sum.waiting, "waiting"],
@@ -43,9 +47,9 @@ export function HistoryPage() {
               ["Not yet, feedback only", sum.notYet, "not-yet"],
               ["Returned or reopened", sum.returned, "returned"],
             ].map(([label, n, key]) => (
-              <div key={String(key)} className="flex flex-col gap-0.5">
+              <div key={String(key)} className="flex items-baseline justify-between gap-2">
                 <dt className="text-muted-foreground">{label}</dt>
-                <dd className="text-2xl font-semibold tabular-nums" data-history-count={String(key)}>
+                <dd className="text-lg font-semibold tabular-nums" data-history-count={String(key)}>
                   {n}
                 </dd>
               </div>
@@ -54,7 +58,6 @@ export function HistoryPage() {
         </CardContent>
       </Card>
       <VerificationCard s={s} />
-      <p className="text-sm text-muted-foreground">{`Showing every course. All of your evidence so far is from ${s.course.code}, so narrowing to one course would show the same list.`}</p>
 
       {h.skills.length === 0 ? (
         <Card size="sm">
@@ -77,15 +80,10 @@ export function HistoryPage() {
                   <CardTitle asChild className="text-base">
                     <h2 id={`hist-${sk.skill.id}`}>{sk.skill.name}</h2>
                   </CardTitle>
-                  <StatusBadge label={sk.progress.achieved ? "Achieved" : "In progress"} tone={sk.progress.achieved ? "success" : "info"} icon={sk.progress.achieved ? "fa-circle-check" : "fa-hourglass-half"} size="sm" />
+                  <StatusPill kind="skill-progress" value={sk.progress.achieved ? "achieved" : "in-progress"} />
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Pips have={sk.progress.counted} need={sk.progress.need} />
-                  <span>{sk.progress.summary}</span>
-                </div>
-                {sk.progress.settings.map((x) => (
-                  <CardDescription key={x.setting}>{`${x.setting}: ${x.have} of ${x.min}. Lab and simulation do not count here.`}</CardDescription>
-                ))}
+                <p className="text-sm text-muted-foreground">{sk.progress.summary}</p>
+                <SkillProgressViz progress={sk.progress} name={sk.skill.name} />
               </CardHeader>
               <CardContent>
                 <ol className="flex flex-col gap-3" aria-label={`Attempts at ${sk.skill.name}`}>
@@ -93,7 +91,7 @@ export function HistoryPage() {
                     <li key={a.key} className="flex flex-col gap-1.5 border-t border-border pt-3 first:border-t-0 first:pt-0" data-attempt={a.kind}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-sm font-medium text-foreground">{`Attempt ${a.attempt}, ${fmtDate(a.date)}`}</span>
-                        <StatusBadge label={a.outcome} tone={KIND[a.kind].tone} icon={KIND[a.kind].icon} size="sm" />
+                        <StatusPill kind="attempt" value={a.kind} label={a.outcome} />
                       </div>
                       <p className="text-xs text-muted-foreground">{`${a.setting}. ${a.kind === "waiting" ? `With ${a.who}.` : `Evaluator: ${a.who}.`}`}</p>
                       <p className="text-sm text-foreground">{a.counted}</p>
@@ -167,7 +165,12 @@ function Detail({ s, open, onClose }: { s: V2State; open: { skill: SkillHistory;
               <Link href={`/v2/student/evaluation/${e.id}`}>See the full evaluation and versions</Link>
             </Button>
           </>
-        ) : null}
+        ) : (
+          <DialogHeader className="sr-only">
+            <DialogTitle>Attempt details</DialogTitle>
+            <DialogDescription>No attempt is selected.</DialogDescription>
+          </DialogHeader>
+        )}
         <DialogFooter>
           <Button type="button" variant="default" size="lg" className={BTN} onClick={onClose}>
             Close
@@ -182,13 +185,12 @@ function Detail({ s, open, onClose }: { s: V2State; open: { skill: SkillHistory;
 function VerificationCard({ s }: { s: V2State }) {
   const st = verificationStatus(s, STUDENT_ID)
   const by = st.latest ? (s.people.find((p) => p.id === st.latest?.byId)?.name ?? "the program director") : ""
-  const tone = STATUS_TONE[st.status]
   return (
     <Card size="sm" data-verification-card={st.status}>
       <CardContent className="flex flex-col gap-2 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="font-medium text-foreground">Program verification</span>
-          <StatusBadge label={statusLabel(st.status, st.latest?.version ?? null)} tone={tone.tone} icon={tone.icon} size="sm" />
+          <StatusPill kind="verify" value={st.status} label={verifyLabel(st.status, st.latest?.version ?? null)} />
         </div>
         {st.latest ? (
           <p className="text-foreground">{`Verified by ${by} on ${fmtDate(st.latest.at)}, version ${st.latest.version}, based on ${st.latest.evidence.length} ${st.latest.evidence.length === 1 ? "evaluation" : "evaluations"}.`}</p>

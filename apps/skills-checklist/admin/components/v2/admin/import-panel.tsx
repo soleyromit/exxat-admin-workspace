@@ -144,7 +144,7 @@ export function ImportPanel({ onCreated }: { onCreated: (message: string, firstS
               <h3 id="proposal-heading" className="text-base font-semibold text-foreground">
                 {`${source.proposal.skills.length} proposed skills from ${source.name}`}
               </h3>
-              <p className="text-sm text-muted-foreground">Each proposal sits beside the line it came from. Accept, edit or reject each one. Categories are taken from the headings above the skills.</p>
+              <p className="text-sm text-muted-foreground">Categories come from the headings above each skill.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -161,6 +161,7 @@ export function ImportPanel({ onCreated }: { onCreated: (message: string, firstS
             </div>
           </div>
           <V2Grid<ProposedSkill>
+            selectable={false}
             caption="Proposed skills with their source lines"
             rows={source.proposal.skills}
             id={(p) => p.id}
@@ -238,7 +239,7 @@ export function ImportPanel({ onCreated }: { onCreated: (message: string, firstS
                 Accept at least one proposed skill to create it.
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">They are created without an evaluation model. You configure each one next.</p>
+              <p className="text-sm text-muted-foreground">You configure each one next.</p>
             )}
             <Button type="button" variant="default" size="default" disabled={n === 0} aria-describedby={n === 0 ? "create-reason" : undefined} onClick={create}>
               {`Create ${n} ${n === 1 ? "skill" : "skills"}`}
