@@ -1,4 +1,6 @@
 @import '@exxatdesignux/ui/globals.css';
+/* Canonical DS variants (data-open, data-active, data-horizontal...). Every product imports this: local copy of shared/ds-tailwind-variants.css so this app deploys on its own; keep in sync. */
+@import './ds-tailwind-variants.css';
 
 /* Explicit @source paths so Tailwind v4 scans both the DS dist and this app's own files
    regardless of where this CSS file sits (same requirement as apps/pce/admin: without them the

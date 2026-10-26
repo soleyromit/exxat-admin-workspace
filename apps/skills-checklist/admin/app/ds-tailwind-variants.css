@@ -1,0 +1,72 @@
+/*
+  DS custom variants — canonical source for all products.
+
+  Source: shadcn@4.2.0/dist/tailwind.css
+  Reference: apps/portal/app/globals.css (Portal is the canonical reference copy)
+  Governed by: docs/governance/ds-product-compatibility.md
+
+  WHY THIS FILE EXISTS:
+  The DS uses Tailwind variants (data-horizontal:, data-open:, data-active:, etc.)
+  that are shorthand aliases for Radix's verbose data-orientation / data-state
+  attributes. These aliases are defined in the DS's own Tailwind config. When a
+  product compiles DS components through ITS OWN Tailwind, those aliases are
+  missing — CSS is generated but selectors never match DOM attributes.
+
+  TypeScript passes. Browser console is silent. DS component renders visually wrong.
+
+  This file provides the canonical block. Products @import it from their CSS entry
+  point so a single change here propagates everywhere.
+
+  PRODUCT IMPORT PATHS:
+  - apps/exam-management/assessment-taker/src/index.css   → @import '../../../../shared/ds-tailwind-variants.css'
+  - apps/exam-management/admin/app/globals.css            → @import '../../../../shared/ds-tailwind-variants.css'
+  - apps/pce/admin/app/globals.css                        → @import '../../../../shared/ds-tailwind-variants.css'
+  - apps/pce/student/app/globals.css                      → @import '../../../../shared/ds-tailwind-variants.css'
+  - apps/portal/app/globals.css                           → @import '../../../shared/ds-tailwind-variants.css'
+
+  WHAT BREAKS WITHOUT THIS BLOCK (per component):
+  - Tabs variant="line": active underline never appears
+  - Tabs any: active tab has wrong background
+  - Dialog: overlay has no fade-in/fade-out animation
+  - Sheet: no slide animation (opens as hard cut)
+  - Select/DropdownMenu: no open/close animation
+  - Tooltip: no fade animation
+  - Checkbox: checked/unchecked visual state may not update
+  - Select/DropdownMenu items: disabled items look active
+  - Sidebar menu button: data-active="false" items get active styling
+
+  KEEPING IN SYNC:
+  If the DS updates shadcn@4.2.0 or its Tailwind config, update this file.
+  grep -rn "@custom-variant data-open" /Users/romitsoley/Work/apps --include="*.css"
+  to find all product copies that may need updating.
+*/
+
+@custom-variant data-open {
+  &:where([data-state="open"]) { @slot; }
+}
+@custom-variant data-closed {
+  &:where([data-state="closed"]) { @slot; }
+}
+@custom-variant data-checked {
+  &:where([data-state="checked"]) { @slot; }
+}
+@custom-variant data-unchecked {
+  &:where([data-state="unchecked"]) { @slot; }
+}
+@custom-variant data-selected {
+  &:where([data-state="selected"]),
+  &:where([data-selected]:not([data-selected="false"])) { @slot; }
+}
+@custom-variant data-disabled {
+  &:where([data-disabled]:not([data-disabled="false"])) { @slot; }
+}
+@custom-variant data-active {
+  &:where([data-state="active"]),
+  &:where([data-active]:not([data-active="false"])) { @slot; }
+}
+@custom-variant data-horizontal {
+  &:where([data-orientation="horizontal"]) { @slot; }
+}
+@custom-variant data-vertical {
+  &:where([data-orientation="vertical"]) { @slot; }
+}

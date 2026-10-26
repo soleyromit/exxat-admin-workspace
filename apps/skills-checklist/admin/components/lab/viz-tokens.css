@@ -1,0 +1,42 @@
+/*
+ * Lab viz palette: one palette for every chart and indicator in the design lab.
+ * Built only from @exxatdesignux/ui tokens through var(). No hex, no raw oklch, no color-mix.
+ * Validated with the dataviz skill's validate_palette.js (results and mapping: docs/knowledge/design/visual-language.md).
+ *
+ * Rules the palette enforces:
+ * - Neutral for on track and counted; amber only for behind or short. Never red for shortfall.
+ * - State is glyph + word + colour: on track is a circle, behind is a diamond, short cells carry a triangle.
+ * - One accent per view. The amber marks are the only saturated colour on a dashboard.
+ */
+:root {
+  /* Marks */
+  --lab-viz-on: var(--border-control-3);          /* on track dot: neutral grey, 3.19:1 on card */
+  --lab-viz-behind: var(--chart-5);               /* behind diamond: amber-orange fill, 4.41:1 on card */
+  --lab-viz-behind-edge: var(--status-badge-warning-fg); /* outline on the amber marks and short cells */
+  --lab-viz-behind-wash: var(--status-badge-warning-fill); /* hero icon tile, quiet amber surface */
+  --lab-viz-behind-ink: var(--status-badge-warning-fg);    /* icon and label text on the wash, 8.72:1 */
+
+  /* Axes */
+  --lab-viz-zero: var(--foreground);              /* expected-now line */
+  --lab-viz-grid: var(--border);                  /* baselines and gridlines */
+  --lab-viz-track: var(--border);                 /* empty track behind a ranked dot */
+  --lab-viz-tick: var(--muted-foreground);        /* tick labels, 9.25:1 */
+
+  /* Sequential (heat cells): brand tint, light to dark. The printed value carries the number; the ramp only groups. */
+  --lab-viz-seq-1: var(--background);
+  --lab-viz-seq-2: var(--brand-tint);
+  --lab-viz-seq-3: var(--brand-tint-subtle);
+  --lab-viz-seq-4: var(--sidebar-border);
+
+  /* Aging bands: graded neutrals, the oldest band also outlined in amber. */
+  --lab-viz-age-1: var(--border);
+  --lab-viz-age-2: var(--border-control);
+  --lab-viz-age-3: var(--border-control-3);
+  --lab-viz-age-4: var(--muted-foreground);
+  --lab-viz-age-4-edge: var(--chart-5);
+}
+
+/* Variant bar: a quiet strip, not a band. */
+[data-lab-variant-bar] {
+  background: var(--background);
+}

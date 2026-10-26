@@ -1,16 +1,54 @@
 import * as React from "react"
-import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
+import { PageHeader, type PageHeaderActionItem } from "@exxatdesignux/ui/components/ui/page-header"
+import { cn } from "@exxatdesignux/ui/lib/utils"
+
+export type PageFrameWidth = "full" | "reading" | "wide" | "form" | "wizard"
+
+const WIDTH_CLASS: Record<PageFrameWidth, string> = {
+  full: "",
+  reading: "max-w-3xl",
+  wide: "max-w-5xl",
+  // Lab templates T3 and T2 (docs/knowledge/design/skill-setup-journey/01 section 2): 720 px form, 960 px wizard.
+  form: "max-w-[45rem]",
+  wizard: "max-w-[60rem]",
+}
 
 /**
  * THE page frame for every shell page (admin, student view, preceptor demo): the DS PageHeader (serif h1, one purpose
- * line, optional actions) above a full-width content column with the prototype rhythm (16px between blocks, 24px side
- * and 20px vertical padding). Title font, inset, width and spacing are identical on every page because this is the only
- * place they are set. Exactly one filled primary lives in `actions` or in the content, never two (ux/08 P-12).
+ * line, optional actions) above a content column with the prototype rhythm (16px between blocks, 20px vertical padding).
+ * Title font, inset, width and spacing are identical on every page because this is the only place they are set.
+ *
+ * - `actionItems`: the only way v2 pages put commands in the header (DS responsive action row). At most one filled primary
+ *   per page, at most two `row` items, everything else `overflow`. `actions` stays for v1 callers only.
+ * - `width`: `full` (lists, dashboards), `reading` (max-w-3xl, forms and detail), `wide` (max-w-5xl, side by side). Always
+ *   left aligned, never centred, so the title and the body share one left edge.
+ * - `lead`: content above the header inside the same column (the student sync strip and device banners).
+ * - `gutter`: `responsive` (px-4 below 768px, px-6 from 768px) is the default; `fixed` keeps the old px-6 for v1 pages.
  */
-export function PageFrame({ title, subtitle, actions, children }: { title: React.ReactNode; subtitle?: string; actions?: React.ReactNode; wide?: boolean; children?: React.ReactNode }) {
+export function PageFrame({
+  title,
+  subtitle,
+  actions,
+  actionItems,
+  width = "full",
+  lead,
+  gutter = "responsive",
+  children,
+}: {
+  title: React.ReactNode
+  subtitle?: React.ReactNode
+  /** v1 only. v2 pages use `actionItems`. */
+  actions?: React.ReactNode
+  actionItems?: PageHeaderActionItem[]
+  width?: PageFrameWidth
+  lead?: React.ReactNode
+  gutter?: "responsive" | "fixed"
+  children?: React.ReactNode
+}) {
   return (
-    <div className="flex w-full flex-col gap-4 px-6 py-5">
-      <PageHeader title={title} subtitle={subtitle} actions={actions} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
+    <div className={cn("flex w-full flex-col gap-4 py-5", gutter === "fixed" ? "px-6" : "px-4 md:px-6", WIDTH_CLASS[width])}>
+      {lead}
+      <PageHeader title={title} subtitle={subtitle} actions={actions} actionItems={actionItems} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
       {children}
     </div>
   )

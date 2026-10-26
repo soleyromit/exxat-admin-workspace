@@ -1,0 +1,82 @@
+"use client"
+
+/**
+ * Student Send for evaluation, variant A: who, then how (recommended).
+ * Tests: do skills, then the evaluator (site preceptors first, or anyone by name and email), then one of four ways to reach them,
+ * with one Send and one sentence on what happens next, get a request out fastest?
+ * Regions (form budget 5): header · skills · who signs off · how they sign · this request (Send).
+ * [REQ ST-04, ST-08, ST-09, ST-13, EV-01, EV-05, EV-07; LEDGER D-L2 one link per request; COMP QR fastest, CORE link]
+ */
+import * as React from "react"
+import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
+import { FieldError } from "@exxatdesignux/ui/components/ui/field"
+import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/student2/frame"
+import { EvaluatorPicker, MethodTiles } from "@/components/lab/student2/log-parts"
+import { PhotoField, PlacementSelect, RequestResult, SkillsField, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
+import { SectionTitle } from "@/components/lab/student/parts"
+import { FormSkeleton } from "./student-log-a"
+import { aNoun, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { NO_ACCOUNT_LINE, methodById, needsApproval, student2Href } from "@/lib/lab/student2"
+
+export function StudentRequestA() {
+  return (
+    <Student2Frame
+      title="Send for evaluation"
+      empty={(c) => <EmptyBlock title={`Nothing to send yet`} body={`Log ${aNoun()} first, then send it here for evaluation.`} action={{ label: `Log ${aNoun()}`, href: student2Href("log-skill", {}, c.studentId) }} />}
+      loading={<FormSkeleton />}
+    >
+      {(ctx) => <RequestForm ctx={ctx} />}
+    </Student2Frame>
+  )
+}
+
+function RequestForm({ ctx }: { ctx: Student2Ctx }) {
+  const d = useRequestDraft(ctx)
+  if (d.result) return <div className="max-w-3xl"><RequestResult d={d} r={d.result} /></div>
+  const approval = needsApproval(d.s, d.skills)
+  const m = methodById(d.method)
+  return (
+    <form className="grid gap-5 lg:grid-cols-12" noValidate onSubmit={(e) => { e.preventDefault(); d.send() }} data-student-lab="request-A">
+      <div className="flex min-w-0 flex-col gap-5 lg:col-span-8">
+        <Card className="gap-0 py-0" data-region="who">
+          <CardContent className="flex flex-col gap-5 py-4">
+            <SkillsField d={d} picks={d.picks} />
+            <div className="flex flex-col gap-3 border-t border-border pt-4">
+              <PlacementSelect choices={d.clinicalWhere} value={d.whereVal} onChange={d.setWhere} />
+              <EvaluatorPicker options={d.options} value={d.who} onChange={d.setWho} fresh={d.fresh} onFresh={d.setFresh} errors={d.freshErrors} showErrors={d.tried} compact />
+              {d.tried && d.errors.who ? <FieldError>{d.errors.who}</FieldError> : null}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="gap-0 py-0" data-region="how">
+          <CardContent className="flex flex-col gap-4 py-4">
+            <MethodTiles value={d.method} onChange={d.setMethod} offline={d.offline} />
+            {d.method === "photo" ? <PhotoField d={d} /> : null}
+          </CardContent>
+        </Card>
+      </div>
+      <div className="lg:col-span-4">
+        <Card className="gap-0 py-0 lg:sticky lg:top-4" data-region="send">
+          <CardContent className="flex flex-col gap-3 py-4">
+            <SectionTitle>This request</SectionTitle>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
+              <dt className="text-muted-foreground">{skillNounPlural().replace(/^./, (c) => c.toUpperCase())}</dt>
+              <dd className="text-foreground">{d.skills.length ? countSkills(d.skills.length) : "None yet"}</dd>
+              <dt className="text-muted-foreground">To</dt>
+              <dd className="truncate text-foreground">{d.who ? d.whoName : "Not chosen"}</dd>
+              <dt className="text-muted-foreground">How</dt>
+              <dd className="text-foreground">{m.label}</dd>
+              <dt className="text-muted-foreground">Counts</dt>
+              <dd className="text-foreground">{d.method === "photo" ? "After review" : approval ? "After approval" : "When they answer Met"}</dd>
+            </dl>
+            {/* One paragraph: how the evaluator signs (no account, REQ EV-01), then what they see. Variant B says "no account
+                needed" on its "They are not here" choice, so it does not repeat it here. */}
+            <p className="text-sm text-muted-foreground" data-scope-sentence>{d.method === "photo" ? scopeSentence(d) : `${NO_ACCOUNT_LINE} ${scopeSentence(d)}`}</p>
+            <Button type="submit" variant="default" size="default" className="w-full max-sm:h-11">{d.offline && !m.offline ? "Keep and send later" : "Send"}</Button>
+          </CardContent>
+        </Card>
+      </div>
+    </form>
+  )
+}

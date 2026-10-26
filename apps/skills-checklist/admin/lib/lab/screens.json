@@ -1,0 +1,2106 @@
+{
+  "screens": [
+    {
+      "persona": "admin",
+      "slug": "dashboard",
+      "title": "Dashboard",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Status board: do four figures and six equal question tiles show what is off, and where, at a glance?",
+          "file": "components/lab/screens/admin-dashboard-a.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "B",
+          "question": "Exceptions first: do five exception tabs and one ranked list with the cause in numbers tell me who to act on first?",
+          "file": "components/lab/screens/admin-dashboard-b.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "C",
+          "question": "Journey pipeline: do the four skill-record states, per section, show where progress stalls and what moved this week?",
+          "file": "components/lab/screens/admin-dashboard-pipeline.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "D",
+          "question": "Matrix explorer: does a sections by scope matrix, with the basis beside each cell, show exactly where this scope is short?",
+          "file": "components/lab/screens/admin-dashboard-d.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "E",
+          "question": "Sites and evaluators operations: which site or evaluator holds the oldest requests, and is it getting worse?",
+          "file": "components/lab/screens/admin-dashboard-ops.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "F",
+          "question": "Narrative brief: does one hero verdict, three figures and a worklist answer who is behind, why, and what needs me within 10 seconds?",
+          "file": "components/lab/screens/admin-dashboard-f.tsx",
+          "pageType": "dashboard"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "FilterBar",
+        "Select",
+        "KeyMetrics",
+        "ViewSegmentedControl",
+        "ChartCard",
+        "Table",
+        "LocalBanner",
+        "Tip",
+        "Skeleton",
+        "Card",
+        "Button",
+        "ExportDrawer"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "dashboard-drill",
+      "title": "Dashboard drill list",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Does every dashboard figure open a list of the same length, same scope, with its condition as a removable chip and a breadcrumb back?",
+          "file": "components/lab/screens/admin-dashboard-drill.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Grouped with an inline peek: does the same list, grouped by what the admin acts on (cohort, section, site) with a peek beside it showing what is left for the chosen row, answer why without leaving the page?",
+          "file": "components/lab/screens/admin-dashboard-drill-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Breadcrumb",
+        "FilterBar",
+        "DataTable",
+        "PersonIdentityCell",
+        "Button"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "skills-library",
+      "title": "Skills library",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Table with status tabs: can a coordinator find and bulk-configure 178 skills from one grouped table?",
+          "file": "components/lab/screens/admin-skills-library-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Category tree with a peek panel: do the program's own categories with roll-ups make setup progress easier to work through?",
+          "file": "components/lab/screens/admin-skills-library-b.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "C",
+          "question": "Setup board: does a board by configuration status beat a flat list for working through a part-configured library?",
+          "file": "components/lab/screens/admin-skills-library-c.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Tabs",
+        "LocalBanner",
+        "StatusBadge",
+        "Button",
+        "DropdownMenu",
+        "FloatingSheetPanel",
+        "Dialog",
+        "Skeleton"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Reset edits",
+          "event": "lab:reset"
+        }
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "add-skill",
+      "title": "Add a skill",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Short side sheet: do name, category, tags and required to graduate, with configure as the next step, get a skill in without losing the library?",
+          "file": "components/lab/screens/admin-add-skill-a.tsx",
+          "pageType": "split"
+        },
+        {
+          "id": "B",
+          "question": "Inline row in a category: when adding several skills by hand, is type, Enter, repeat worth deferring tags and required to graduate?",
+          "file": "components/lab/screens/admin-add-skill-b.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "C",
+          "question": "Add several: when a coordinator has 5 to 30 names in an email, is pasting them all at once faster than adding one at a time?",
+          "file": "components/lab/screens/admin-add-skill-c.tsx",
+          "pageType": "form"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "Input",
+        "Field",
+        "FloatingSheetPanel",
+        "AlertDialog",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Reset edits",
+          "event": "lab:reset"
+        }
+      ],
+      "labNotes": [
+        "Open decision: category versus section and group"
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "import-ai-review",
+      "title": "Import and review",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Four steps, one job each: does Upload, Review, Fix, Confirm with the drop as the hero and only the lines that need a decision get a 154-line import created safely?",
+          "file": "components/lab/screens/admin-import-a.tsx",
+          "pageType": "wizard"
+        },
+        {
+          "id": "B",
+          "question": "File beside the list: is checking the original next to only the lines that need a decision faster than steps?",
+          "file": "components/lab/screens/admin-import-b.tsx",
+          "pageType": "split"
+        },
+        {
+          "id": "C",
+          "question": "Many at once: is pasting the list, or dropping several files on it, and fixing on one page faster than steps?",
+          "file": "components/lab/screens/admin-import-c.tsx",
+          "pageType": "wizard"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "StatusBadge",
+        "LocalBanner",
+        "Skeleton",
+        "Select",
+        "Attachment",
+        "Popover",
+        "Collapsible",
+        "Button"
+      ],
+      "scenarios": [
+        {
+          "group": "Data",
+          "label": "Use the sample file",
+          "params": {
+            "state": "review"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Use the large sample",
+          "params": {
+            "state": "large"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Failed read",
+          "params": {
+            "state": "failed"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Done",
+          "params": {
+            "state": "done"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Reset edits",
+          "event": "lab:reset"
+        }
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "starter-library",
+      "title": "Starting points",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Starting points: can a program copy an editable example list knowing it owns the copy?",
+          "file": "components/lab/screens/admin-starter-library-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Browse by discipline: do cards grouped by discipline, each showing its categories before any click, let a program pick a starting point faster than a table, still knowing it owns an editable copy?",
+          "file": "components/lab/screens/admin-starter-library-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "labNotes": [
+        "Conflicts with the rule that Prism ships no skills; kept as an editable starting point"
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "FloatingSheetPanel",
+        "Dialog",
+        "LocalBanner",
+        "Button"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "configure-skill",
+      "title": "Configure skill",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Five steps, rule in the footer: do Model, Outcomes, Rule, Who signs and Check in one 720 px column, with the live rule always in view, get a skill configured right first time?",
+          "file": "components/lab/screens/admin-configure-skill-a.tsx",
+          "pageType": "wizard"
+        },
+        {
+          "id": "B",
+          "question": "One page of sections with anchors: is it faster for an expert re-configuring a skill than steps?",
+          "file": "components/lab/screens/admin-configure-skill-b.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "C",
+          "question": "Rule as one sentence, applied to many: does it get 16 unconfigured skills live fastest?",
+          "file": "components/lab/screens/admin-configure-skill-c.tsx",
+          "pageType": "form",
+          "accepts": [
+            "skills"
+          ]
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "Field",
+        "RadioGroup",
+        "ToggleSwitch",
+        "Tabs",
+        "LocalBanner",
+        "Dialog",
+        "Table",
+        "StatusBadge",
+        "Collapsible"
+      ],
+      "scenarios": [
+        {
+          "group": "Data",
+          "label": "Load a sample rule change",
+          "params": {
+            "change": "sample"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Open an unconfigured skill",
+          "params": {
+            "skill": "sk-pressure-injury"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Configure 4 together (set 3)",
+          "params": {
+            "skills": "sk-pressure-injury,hgtc-safety-01,sk-urinary-cath,sk-sterile-dressing"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Open at Check",
+          "params": {
+            "step": "check",
+            "section": "check"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Reset edits",
+          "event": "lab:reset"
+        }
+      ],
+      "labNotes": [
+        "Open decision: how evidence already held is treated"
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "rule-change-impact",
+      "title": "Rule change impact and publish",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Counts first: do before and after counts, students grouped by move with the shared reason said once, and the open evidence choice make a rule change safe to publish?",
+          "file": "components/lab/screens/admin-rule-impact-a.tsx",
+          "pageType": "detail"
+        },
+        {
+          "id": "B",
+          "question": "People first: do the students grouped by the move they make, each group's reason said once, make the cost of a rule change clearer than counts?",
+          "file": "components/lab/screens/admin-rule-impact-b.tsx",
+          "pageType": "detail"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "Badge",
+        "Table",
+        "StatusBadge",
+        "LocalBanner",
+        "RadioGroup",
+        "Collapsible"
+      ],
+      "scenarios": [
+        {
+          "group": "Data",
+          "label": "Show no rule change",
+          "params": {
+            "change": "none"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Open an unconfigured skill",
+          "params": {
+            "skill": "sk-pressure-injury"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Reset edits",
+          "event": "lab:reset"
+        }
+      ],
+      "labNotes": [
+        "Open decision: how evidence already held is treated"
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "retire-deactivate",
+      "title": "Deactivate, retire and new list",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Own page: does asking why first (a mistake or a changed standard), with the impact beside it and delete apart, prevent the wrong action on a skill with evidence?",
+          "file": "components/lab/screens/admin-deactivate-a.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "B",
+          "question": "In the list: does opening the same decision as a side panel from the skill's row, with evaluations visible per row, decide faster without losing the impact?",
+          "file": "components/lab/screens/admin-deactivate-b.tsx",
+          "pageType": "form"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "RadioGroup",
+        "Checkbox",
+        "Input",
+        "Button",
+        "LocalBanner",
+        "AlertDialog"
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "course-mapping",
+      "title": "Course mapping",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Offering first: does picking one of 110 offerings (search, term by academic year, cohort, professional year) and setting each skill mandatory, non-mandatory or not mapped, with a coverage view of required skills by course, map faster and catch required skills in no course?",
+          "file": "components/lab/screens/admin-course-mapping-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Skill first: does picking a skill and setting its level in each of the term's offerings answer where a required skill is taught better than going course by course?",
+          "file": "components/lab/screens/admin-course-mapping-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "DataTable",
+        "Select",
+        "Button",
+        "Badge"
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "lists-cohorts",
+      "title": "Lists and cohort assignment",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "List first: does treating each list as an object (noun, size, default, completion rule) and checking off the student groups it applies to, with group medians showing what a rule change would do, set up lists without overriding a program's established ones?",
+          "file": "components/lab/screens/admin-lists-cohorts-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Group first: does a student groups by lists grid, with the next new cohort as a row, make which cohort uses which list clearer than opening each list?",
+          "file": "components/lab/screens/admin-lists-cohorts-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "DataTable",
+        "Checkbox",
+        "Dialog",
+        "Button",
+        "Badge"
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "evaluator-directory",
+      "title": "Evaluator directory",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "People first: can an admin find any of 174 evaluators by name, email, role, site or status, decide adopt or merge on the 14 names awaiting approval, and see return rates against the program average only where the numbers are big enough?",
+          "file": "components/lab/screens/admin-evaluator-directory-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Site first: does starting from the sites (setting, names awaiting approval, open requests) and opening one site's evaluators match how coordinators think about preceptors better than one long list?",
+          "file": "components/lab/screens/admin-evaluator-directory-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "DataTablePaginated",
+        "PersonIdentityCell",
+        "StatusBadge",
+        "Dialog",
+        "Button"
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "settings",
+      "title": "Settings",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Can an admin keep categories, tags, clinical settings (with site counts and what uses each) and lab instructors in one tabbed page, creating inline and deleting only what nothing uses?",
+          "file": "components/lab/screens/admin-settings-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Master and detail: do three panes (lists, entries, the chosen entry with everything that uses it shown in place) make deactivate or delete a better-informed decision than tabs with a side panel?",
+          "file": "components/lab/screens/admin-settings-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Input",
+        "Label",
+        "Button",
+        "AlertDialog",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "attainment",
+      "title": "Attainment",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Matrix explorer: does a students by sections heat matrix, filtered in the scope bar, with every cell opening its evidence, answer who is short and where?",
+          "file": "components/lab/screens/admin-attainment-a.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "B",
+          "question": "Ranked skills: does a skills table, most students not yet achieved first, with a four-state distribution and a linked count per state, answer what to fix first faster?",
+          "file": "components/lab/screens/admin-attainment-b.tsx",
+          "pageType": "dashboard"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Select",
+        "Tabs",
+        "Table",
+        "DataTable",
+        "FloatingSheetPanel",
+        "StatusBadge",
+        "LocalBanner",
+        "Button"
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "export",
+      "title": "Export",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Does exporting exactly the view on screen, as a signed PDF summary or a CSV or Excel row per evaluation, with what each contains and leaves out, remove the guesswork?",
+          "file": "components/lab/screens/admin-export-a.tsx",
+          "pageType": "split"
+        },
+        {
+          "id": "B",
+          "question": "Dedicated page: does setting the scope on its own page, previewing the file header and first rows before export, and listing each export made with its filters, beat exporting from a panel over Attainment?",
+          "file": "components/lab/screens/admin-export-b.tsx",
+          "pageType": "form"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "SelectionTileGrid",
+        "LocalBanner",
+        "Button"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "approvals",
+      "title": "Approvals",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Reviewer triage list reused: is the reviewer's own queue plus one Approval rules button enough for an admin who also approves?",
+          "file": "components/lab/screens/admin-approvals-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Rules and queue: does seeing which skills hold for approval and how much each holds help an admin change a rule rather than clear the backlog?",
+          "file": "components/lab/screens/admin-approvals-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "DataTable",
+        "Button",
+        "StatusBadge",
+        "LocalBanner"
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "home",
+      "title": "My progress",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Next actions first: does a short list of what to do now (returned, did not count, one away, placement ending, waiting 3+ days) under a thin verdict get a student to the next sign-off fastest?",
+          "file": "components/lab/screens/student-progress-a.tsx",
+          "pageType": "student"
+        },
+        {
+          "id": "B",
+          "question": "Requirements map: does the whole list as a sections by skills mosaic, with a radar against the cohort median, show where a student stands better than a to-do list?",
+          "file": "components/lab/screens/student-progress-b.tsx",
+          "pageType": "student"
+        },
+        {
+          "id": "C",
+          "question": "Timeline and pace: does a pace line against the term clock, the placement end and what each course expects now help a student plan better than a list or a map?",
+          "file": "components/lab/screens/student-progress-c.tsx",
+          "pageType": "student"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "StatusBadge",
+        "LocalBanner",
+        "Skeleton",
+        "Tip",
+        "Collapsible",
+        "Table"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All done",
+          "params": {
+            "state": "done"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "log-skill",
+      "title": "Log a skill",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "One form per sitting: do skills, where, the program's details and a self-rating only where switched on, saved to the device first with one next step 'Send for evaluation', get a skill logged in under a minute and end the split between logging and asking?",
+          "file": "components/lab/screens/student-log-a.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "B",
+          "question": "Shift log: does adding each skill the moment it happens (one search, place from the placement) and finishing details later, then sending the ready ones together, fit a busy shift better than a form per sitting?",
+          "file": "components/lab/screens/student-log-b.tsx",
+          "pageType": "form"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "Input",
+        "Field",
+        "Command",
+        "DatePickerField",
+        "RadioGroup",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "request-signoff",
+      "title": "Send for evaluation",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Who, then how: do skills, then the evaluator (site preceptors first, or anyone by name and email), then one of four ways to reach them, with one Send and one sentence on what happens next, get a request out fastest?",
+          "file": "components/lab/screens/student-request-a.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "B",
+          "question": "Situation first: does asking 'Is your evaluator with you?' first (with me: QR or hand over; not here: email link; paper: photo) route a student to the right method faster than choosing skills and a person first?",
+          "file": "components/lab/screens/student-request-b.tsx",
+          "pageType": "form"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "Input",
+        "Field",
+        "RadioGroup",
+        "SelectionTileGrid",
+        "StatusBadge",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "my-requests",
+      "title": "My requests",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "By evaluator: does grouping requests under the person who holds them (waiting, returned, done) make it obvious who to remind and what to fix?",
+          "file": "components/lab/screens/student-requests-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "By status: do three tabs with counts, each a table grouped by evaluator, clear open work faster than evaluator cards?",
+          "file": "components/lab/screens/student-requests-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "StatusBadge",
+        "AvatarInitials",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "fix-returned",
+      "title": "Fix a returned or did-not-qualify submission",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Guided column: does reason, then what to change, then send, with correction or further attempt named first, get it right in one pass?",
+          "file": "components/lab/screens/student-fix-a.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "B",
+          "question": "Before and after: does seeing what the reviewer or evaluator saw beside the new draft prevent a second return better than a guided column?",
+          "file": "components/lab/screens/student-fix-b.tsx",
+          "pageType": "form"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "Card",
+        "Textarea",
+        "RadioGroup",
+        "Select",
+        "Checkbox",
+        "Field",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "skill-detail",
+      "title": "Skill detail",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Rule first: does the rule as one sentence with its parts as fractions, above a timeline that says why each attempt counted or not, answer what is left and why?",
+          "file": "components/lab/screens/student-skill-detail-a.tsx",
+          "pageType": "detail"
+        },
+        {
+          "id": "B",
+          "question": "Ledger: does a table of every attempt with Result and Why columns let a student audit what counted faster than a timeline?",
+          "file": "components/lab/screens/student-skill-detail-b.tsx",
+          "pageType": "detail"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "StatusBadge",
+        "Table",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "record",
+      "title": "Record",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "By skill: does a filtered list of evidence grouped under each skill, with did-not-count first and the reason on every row, match how students audit their record?",
+          "file": "components/lab/screens/student-record-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Chronological: does one dated ledger of every evaluation, by month, with the same filters and reasons, match how students audit their record better than grouping by skill?",
+          "file": "components/lab/screens/student-record-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "Table",
+        "StatusBadge",
+        "Select",
+        "Input"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "share-record",
+      "title": "Share record",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Preview is the page: does seeing exactly what a reader will get (evaluator sign-offs, gaps stated, what stays private) beside the link, expiry and PDF and CLR 2.0 exports build enough trust to share?",
+          "file": "components/lab/screens/student-share-a.tsx",
+          "pageType": "detail"
+        },
+        {
+          "id": "B",
+          "question": "Recipient first: does picking who it is for (employer, another school, licensing board) and letting that set the format and expiry share faster and with fewer mistakes than a preview with controls?",
+          "file": "components/lab/screens/student-share-b.tsx",
+          "pageType": "detail"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "StatusBadge",
+        "Select",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "student",
+      "slug": "offline-sync",
+      "title": "Offline and sync",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Queue ledger: does one list of every change on the device, grouped conflict, queued, synced, with one-tap choices inline, make it obvious that nothing is lost?",
+          "file": "components/lab/screens/student-offline-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "One at a time: does resolving each conflict with the two versions side by side as a single choice, the rest summarised in one line, resolve conflicts faster than a grouped ledger?",
+          "file": "components/lab/screens/student-offline-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "StatusBadge",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "evaluator",
+      "slug": "evaluation-form",
+      "title": "Evaluation form",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "One page, a card per skill: can a nurse finish every skill on one phone scroll in under 2 minutes?",
+          "file": "components/lab/screens/evaluator-form-a.tsx",
+          "pageType": "evaluator"
+        },
+        {
+          "id": "B",
+          "question": "Stepper, one skill per screen with a review: does it keep a 7-skill request from losing the evaluator's place?",
+          "file": "components/lab/screens/evaluator-form-b.tsx",
+          "pageType": "evaluator"
+        },
+        {
+          "id": "C",
+          "question": "Fast batch table with inline chips and one drawer: is it faster for a lab instructor signing many skills at once?",
+          "file": "components/lab/screens/evaluator-form-c.tsx",
+          "pageType": "evaluator"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "Input",
+        "Label",
+        "Card"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Corrected request",
+          "params": {
+            "state": "corrected"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Further attempt",
+          "params": {
+            "state": "further-attempt"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Forwarded: is this for you?",
+          "params": {
+            "state": "forwarded"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Expired link",
+          "params": {
+            "state": "expired"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Not for you",
+          "params": {
+            "state": "not-for-you"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Already completed",
+          "params": {
+            "state": "completed"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Submitted",
+          "params": {
+            "state": "submitted"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Offline, queued",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Validation errors",
+          "params": {
+            "state": "errors"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Name not yet on record",
+          "params": {
+            "state": "unverified"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Lab sample, 7 skills",
+          "params": {
+            "sample": "long"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Program requires feedback",
+          "params": {
+            "fb": "1"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Program holds for approval",
+          "params": {
+            "hold": "1"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Rule hint per skill (open decision)",
+          "params": {
+            "hint": "1"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Third answer: feedback only (open decision)",
+          "params": {
+            "fo": "1"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Corrected: prefill earlier answers (open decision)",
+          "params": {
+            "prefill": "1",
+            "state": "corrected"
+          }
+        },
+        {
+          "group": "Data",
+          "label": "Reset edits",
+          "event": "lab:reset"
+        }
+      ],
+      "labNotes": [
+        "Open decisions: a rule hint per skill, a third answer (feedback only), prefilling a corrected request (Scenario menu, Data)"
+      ]
+    },
+    {
+      "persona": "evaluator",
+      "slug": "submitted",
+      "title": "Submitted",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Receipt per skill: does the evaluator know at a glance whether each skill counts now or waits for approval?",
+          "file": "components/lab/screens/evaluator-submitted-a.tsx",
+          "pageType": "evaluator"
+        },
+        {
+          "id": "B",
+          "question": "What happens next: does a short ordered checklist, with each skill under its step, explain waits for approval better than a badge?",
+          "file": "components/lab/screens/evaluator-submitted-b.tsx",
+          "pageType": "evaluator"
+        },
+        {
+          "id": "C",
+          "question": "Thanks and what the student sees: does showing the student's word for each skill connect the handoff and make waiting feel finished?",
+          "file": "components/lab/screens/evaluator-submitted-c.tsx",
+          "pageType": "evaluator"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "Badge"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Saved offline, queued",
+          "params": {
+            "state": "offline"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Name not yet on record",
+          "params": {
+            "state": "unverified"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "evaluator",
+      "slug": "expired",
+      "title": "Expired or not for you",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "One message and one way out: does a wrong or late link show nothing of the request and say what to do?",
+          "file": "components/lab/screens/evaluator-expired-a.tsx",
+          "pageType": "evaluator"
+        },
+        {
+          "id": "B",
+          "question": "Ask the student to resend: does a preview of which request lapsed (student, course, count, sent) let the evaluator act without guessing?",
+          "file": "components/lab/screens/evaluator-expired-b.tsx",
+          "pageType": "evaluator"
+        },
+        {
+          "id": "C",
+          "question": "Identify yourself for a fresh link (open decision seam): would an address check with a neutral answer recover a lapsed link without exposing who was asked?",
+          "file": "components/lab/screens/evaluator-expired-c.tsx",
+          "pageType": "evaluator"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "Badge"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Forwarded: is this for you?",
+          "params": {
+            "state": "forwarded"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Not for you",
+          "params": {
+            "state": "not-for-you"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Already completed",
+          "params": {
+            "state": "completed"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "evaluator",
+      "slug": "invitation-email",
+      "title": "Invitation email",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "One email, one link per request: can a preceptor tell from the subject who and how many, and open each request?",
+          "file": "components/lab/screens/evaluator-invitation-email-a.tsx",
+          "pageType": "evaluator"
+        },
+        {
+          "id": "B",
+          "question": "As the inbox shows it: do the first 40 characters of subject and body tell who and how many before the email is opened?",
+          "file": "components/lab/screens/evaluator-invitation-email-b.tsx",
+          "pageType": "evaluator"
+        },
+        {
+          "id": "C",
+          "question": "Shortest form: is one 160 character text per request, with the plain text email as fallback, enough to start the form?",
+          "file": "components/lab/screens/evaluator-invitation-email-c.tsx",
+          "pageType": "evaluator"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Skeleton"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "One request",
+          "params": {
+            "state": "single"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "lab-instructor",
+      "slug": "lab-batch-grid",
+      "title": "Lab batch grid",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Students by skills grid: can an instructor record a 123-student cohort on several skills in one pass?",
+          "file": "components/lab/screens/lab-instructor-lab-batch-grid-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Roll call, one skill at a time with touch chips: is it faster at the bench on a tablet than the grid?",
+          "file": "components/lab/screens/lab-instructor-lab-batch-grid-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Table",
+        "Checkbox",
+        "Button"
+      ]
+    },
+    {
+      "persona": "reviewer",
+      "slug": "approvals",
+      "title": "Approvals queue",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Triage list: does one table ranked oldest first, with a Why held column and inline approve for obvious rows, clear the queue fastest?",
+          "file": "components/lab/screens/reviewer-approvals-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Split view: does keeping the queue in place beside the open submission help a reviewer keep their place through 30 decisions?",
+          "file": "components/lab/screens/reviewer-approvals-b.tsx",
+          "pageType": "split"
+        },
+        {
+          "id": "C",
+          "question": "By-reason board: does grouping by why each submission is held let a reviewer batch the same kind of decision?",
+          "file": "components/lab/screens/reviewer-approvals-c.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "StatusBadge",
+        "LocalBanner",
+        "Skeleton",
+        "Dialog"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "reviewer",
+      "slug": "review-item",
+      "title": "Review item",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Side-by-side compare: does seeing the student's self-rating next to the evaluator's answers, marked where they differ, make the decision obvious?",
+          "file": "components/lab/screens/reviewer-review-item-a.tsx",
+          "pageType": "detail"
+        },
+        {
+          "id": "B",
+          "question": "Evidence timeline: does reading the submission as a story, request to signature to waiting, make the decision safer?",
+          "file": "components/lab/screens/reviewer-review-item-b.tsx",
+          "pageType": "detail"
+        },
+        {
+          "id": "C",
+          "question": "Decision first: does leading with what approval does to the rule, in numbers, decide faster than leading with the answers?",
+          "file": "components/lab/screens/reviewer-review-item-c.tsx",
+          "pageType": "detail"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "StatusBadge",
+        "LocalBanner",
+        "Dialog",
+        "Table"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "reviewer",
+      "slug": "student-record",
+      "title": "Student record",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Tabs: do Evaluations, Skills and Verification as tabs with counts answer what this student has in one click?",
+          "file": "components/lab/screens/reviewer-student-record-a.tsx",
+          "pageType": "detail"
+        },
+        {
+          "id": "B",
+          "question": "One page: does putting held evidence first, skills second and each skill's history in a side panel beat tabs?",
+          "file": "components/lab/screens/reviewer-student-record-b.tsx",
+          "pageType": "detail"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "DataTable",
+        "Button",
+        "StatusBadge",
+        "Badge"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "reviewer",
+      "slug": "students",
+      "title": "Students",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Table: is one sortable table of every student, needs attention first, with an attention filter, the fastest way to find who needs the reviewer?",
+          "file": "components/lab/screens/reviewer-students-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "By cohort: does one card per cohort, with who waits and who is behind, make the work feel smaller and show which cohort is slipping?",
+          "file": "components/lab/screens/reviewer-students-b.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "C",
+          "question": "Needs attention first: does a worklist grouped in the order a reviewer acts replace sorting and filtering?",
+          "file": "components/lab/screens/reviewer-students-c.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "PersonIdentityCell",
+        "Button",
+        "InputGroup",
+        "LocalBanner",
+        "Skeleton"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "director",
+      "slug": "dashboard",
+      "title": "Dashboard",
+      "tier": 1,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Readiness pipeline: does seeing the graduating cohort as complete, one short and far behind, with open requests overlaid, tell the director who can be verified now?",
+          "file": "components/lab/screens/director-dashboard-a.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "B",
+          "question": "Blockers first: does ranking the required skills that block graduation, with students per blocker and waiting requests, show what to chase?",
+          "file": "components/lab/screens/director-dashboard-b.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "C",
+          "question": "Verification worklist: is a table of every graduating student as Ready, Changed since verified or Blocked, with what stops each, the fastest way to verify?",
+          "file": "components/lab/screens/director-dashboard-c.tsx",
+          "pageType": "dashboard"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "Badge",
+        "StatusBadge",
+        "Select"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "director",
+      "slug": "verification-detail",
+      "title": "Verification detail",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Record view: does reading the whole record beside one decision panel, each gap acknowledged by name, support a verify decision?",
+          "file": "components/lab/screens/director-verification-detail-a.tsx",
+          "pageType": "detail"
+        },
+        {
+          "id": "B",
+          "question": "Checklist view: does stepping through what changed, each gap, a spot check and verify support a verify decision?",
+          "file": "components/lab/screens/director-verification-detail-b.tsx",
+          "pageType": "detail"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Card",
+        "Button",
+        "Checkbox",
+        "StatusBadge"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "director",
+      "slug": "reports",
+      "title": "Reports",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "One table, three views: does switching by student, skill or section on the shared scope, then exporting what is on screen, answer the reporting job?",
+          "file": "components/lab/screens/director-reports-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Preview what leaves: does seeing the signed PDF and the evaluation-level CSV before export build trust in what is shared?",
+          "file": "components/lab/screens/director-reports-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "DataTable",
+        "ExportDrawer",
+        "ViewSegmentedControl"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "director",
+      "slug": "attainment",
+      "title": "Attainment",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Matrix under a readiness line: does the admin students by sections matrix, read-only with export, show where the graduating cohort is short at a glance?",
+          "file": "components/lab/screens/director-attainment-a.tsx",
+          "pageType": "dashboard"
+        },
+        {
+          "id": "B",
+          "question": "Skills ranked under a readiness line: does the admin skills table, most not achieved first, tell the director what to raise with faculty faster?",
+          "file": "components/lab/screens/director-attainment-b.tsx",
+          "pageType": "dashboard"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "Badge",
+        "FloatingSheetPanel"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "All clear",
+          "params": {
+            "state": "clear"
+          }
+        }
+      ]
+    }
+  ]
+}

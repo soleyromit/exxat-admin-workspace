@@ -1,0 +1,666 @@
+{
+  "flows": [
+    {
+      "id": "set-up-skills",
+      "title": "Set up skills",
+      "short": "Setup",
+      "persona": "admin",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Guided",
+          "summary": "Table, side sheet, step-by-step wizards"
+        },
+        {
+          "id": "2",
+          "label": "One page",
+          "summary": "Category tree, inline add, file beside the list, one page of sections"
+        },
+        {
+          "id": "3",
+          "label": "Many at once",
+          "summary": "Setup board, paste several names, paste a list to import, one rule for many"
+        }
+      ],
+      "steps": [
+        {
+          "id": "library",
+          "label": "Library",
+          "screen": "admin/skills-library",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "add",
+          "label": "Add a skill",
+          "screen": "admin/add-skill",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "configure",
+          "label": "Configure",
+          "screen": "admin/configure-skill",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "publish",
+          "label": "Impact and publish",
+          "screen": "admin/configure-skill",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          },
+          "params": {
+            "1": {
+              "step": "check",
+              "change": "sample"
+            },
+            "2": {
+              "section": "check",
+              "change": "sample"
+            },
+            "3": {
+              "impact": "open",
+              "change": "sample"
+            }
+          }
+        },
+        {
+          "id": "assign",
+          "label": "Assign to cohort or group",
+          "screen": "admin/lists-cohorts",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "B"
+          }
+        },
+        {
+          "id": "map",
+          "label": "Map to courses",
+          "screen": "admin/course-mapping",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "A"
+          }
+        },
+        {
+          "id": "import",
+          "label": "Import",
+          "screen": "admin/import-ai-review",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          },
+          "side": true,
+          "after": "add",
+          "tag": "Later"
+        }
+      ]
+    },
+    {
+      "id": "watch-the-cohort",
+      "title": "Watch the cohort",
+      "short": "Cohort",
+      "persona": "admin",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Status board",
+          "summary": "Status board, drill list, matrix, export builder"
+        },
+        {
+          "id": "2",
+          "label": "Exceptions",
+          "summary": "Lead with who needs attention, then the evidence"
+        },
+        {
+          "id": "3",
+          "label": "Narrative",
+          "summary": "A written summary first, then the figures behind it"
+        }
+      ],
+      "steps": [
+        {
+          "id": "dashboard",
+          "label": "Dashboard",
+          "screen": "admin/dashboard",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "F"
+          }
+        },
+        {
+          "id": "drill",
+          "label": "Drill list",
+          "screen": "admin/dashboard-drill",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "A"
+          }
+        },
+        {
+          "id": "attainment",
+          "label": "Attainment",
+          "screen": "admin/attainment",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "B"
+          }
+        },
+        {
+          "id": "export",
+          "label": "Export",
+          "screen": "admin/export",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "A"
+          }
+        }
+      ]
+    },
+    {
+      "id": "keep-library-right",
+      "title": "Keep the library right",
+      "short": "Library",
+      "persona": "admin",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Pages",
+          "summary": "Each task on its own page"
+        },
+        {
+          "id": "2",
+          "label": "In place",
+          "summary": "Edit where the record is listed"
+        }
+      ],
+      "steps": [
+        {
+          "id": "library",
+          "label": "Library",
+          "screen": "admin/skills-library",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "deactivate",
+          "label": "Deactivate or replace",
+          "screen": "admin/retire-deactivate",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "lists",
+          "label": "Lists and cohorts",
+          "screen": "admin/lists-cohorts",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "settings",
+          "label": "Settings",
+          "screen": "admin/settings",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "evaluators",
+          "label": "Evaluator directory",
+          "screen": "admin/evaluator-directory",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        }
+      ]
+    },
+    {
+      "id": "admin-approvals",
+      "title": "Approvals",
+      "short": "Approvals",
+      "persona": "admin",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Table and pages",
+          "summary": "Queue table, then a full page per submission"
+        },
+        {
+          "id": "2",
+          "label": "Rules first",
+          "summary": "Which rules hold work, then the decision in numbers"
+        }
+      ],
+      "steps": [
+        {
+          "id": "queue",
+          "label": "Approvals",
+          "screen": "admin/approvals",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "review",
+          "label": "Review",
+          "screen": "reviewer/review-item",
+          "variants": {
+            "1": "A",
+            "2": "C"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ask-for-evaluation",
+      "title": "Ask for evaluation",
+      "short": "Ask",
+      "persona": "student",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Guided",
+          "summary": "Log, send, track by evaluator, fix in a guided column"
+        },
+        {
+          "id": "2",
+          "label": "Situational",
+          "summary": "Shift log, situation first, track by status, before and after"
+        }
+      ],
+      "steps": [
+        {
+          "id": "log",
+          "label": "Log",
+          "screen": "student/log-skill",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "send",
+          "label": "Send for evaluation",
+          "screen": "student/request-signoff",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "requests",
+          "label": "My requests",
+          "screen": "student/my-requests",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "fix",
+          "label": "Fix returned",
+          "screen": "student/fix-returned",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        }
+      ]
+    },
+    {
+      "id": "my-progress",
+      "title": "My progress",
+      "short": "Progress",
+      "persona": "student",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Next actions",
+          "summary": "What to do next, first"
+        },
+        {
+          "id": "2",
+          "label": "Map",
+          "summary": "Every skill on one map"
+        },
+        {
+          "id": "3",
+          "label": "Timeline",
+          "summary": "Progress over time"
+        }
+      ],
+      "steps": [
+        {
+          "id": "home",
+          "label": "My progress",
+          "screen": "student/home",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "detail",
+          "label": "Skill detail",
+          "screen": "student/skill-detail",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "A"
+          }
+        },
+        {
+          "id": "record",
+          "label": "Record",
+          "screen": "student/record",
+          "variants": {
+            "1": "A",
+            "2": "A",
+            "3": "B"
+          }
+        },
+        {
+          "id": "share",
+          "label": "Share record",
+          "screen": "student/share-record",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "A"
+          }
+        },
+        {
+          "id": "offline",
+          "label": "Offline and sync",
+          "screen": "student/offline-sync",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "A"
+          },
+          "side": true,
+          "after": "home"
+        }
+      ]
+    },
+    {
+      "id": "clear-approvals",
+      "title": "Clear approvals",
+      "short": "Approvals",
+      "persona": "reviewer",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Table and pages",
+          "summary": "Queue table, compare page, record in tabs"
+        },
+        {
+          "id": "2",
+          "label": "Split view",
+          "summary": "Queue beside the decision, decision first"
+        },
+        {
+          "id": "3",
+          "label": "Batch by reason",
+          "summary": "Group the queue by why it is held, decide in batches"
+        }
+      ],
+      "steps": [
+        {
+          "id": "queue",
+          "label": "Approvals",
+          "screen": "reviewer/approvals",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "review",
+          "label": "Review",
+          "screen": "reviewer/review-item",
+          "variants": {
+            "1": "A",
+            "2": "C",
+            "3": "C"
+          }
+        },
+        {
+          "id": "record",
+          "label": "Student record",
+          "screen": "reviewer/student-record",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "B"
+          }
+        },
+        {
+          "id": "students",
+          "label": "Students",
+          "screen": "reviewer/students",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          },
+          "side": true,
+          "after": "queue"
+        }
+      ]
+    },
+    {
+      "id": "confirm-readiness",
+      "title": "Confirm readiness",
+      "short": "Readiness",
+      "persona": "director",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Pipeline",
+          "summary": "Cohort pipeline, verification page, report"
+        },
+        {
+          "id": "2",
+          "label": "Blockers",
+          "summary": "Lead with what blocks readiness"
+        },
+        {
+          "id": "3",
+          "label": "Worklist",
+          "summary": "One list of students to verify"
+        }
+      ],
+      "steps": [
+        {
+          "id": "dashboard",
+          "label": "Dashboard",
+          "screen": "director/dashboard",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "verify",
+          "label": "Verification",
+          "screen": "director/verification-detail",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "A"
+          }
+        },
+        {
+          "id": "reports",
+          "label": "Reports",
+          "screen": "director/reports",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "B"
+          }
+        },
+        {
+          "id": "attainment",
+          "label": "Attainment",
+          "screen": "director/attainment",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "A"
+          },
+          "side": true,
+          "after": "dashboard"
+        }
+      ]
+    },
+    {
+      "id": "sign-skills",
+      "title": "Sign skills",
+      "short": "Sign",
+      "persona": "evaluator",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "One page",
+          "summary": "Email, one-page form, confirmation"
+        },
+        {
+          "id": "2",
+          "label": "Stepper",
+          "summary": "One skill per step"
+        },
+        {
+          "id": "3",
+          "label": "Fast batch",
+          "summary": "Several students or skills in one pass"
+        }
+      ],
+      "steps": [
+        {
+          "id": "email",
+          "label": "Email",
+          "screen": "evaluator/invitation-email",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "form",
+          "label": "Form",
+          "screen": "evaluator/evaluation-form",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "submitted",
+          "label": "Submitted",
+          "screen": "evaluator/submitted",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          }
+        },
+        {
+          "id": "expired",
+          "label": "Link expired",
+          "screen": "evaluator/expired",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "C"
+          },
+          "side": true,
+          "after": "email"
+        }
+      ]
+    },
+    {
+      "id": "record-lab-session",
+      "title": "Record a lab session",
+      "short": "Lab session",
+      "persona": "lab-instructor",
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Grid",
+          "summary": "Students by skills in one grid"
+        },
+        {
+          "id": "2",
+          "label": "Roll call",
+          "summary": "One student at a time down the list"
+        }
+      ],
+      "steps": [
+        {
+          "id": "grid",
+          "label": "Lab batch grid",
+          "screen": "lab-instructor/lab-batch-grid",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "submitted",
+          "label": "Submitted",
+          "screen": "evaluator/submitted",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        }
+      ]
+    }
+  ]
+}
