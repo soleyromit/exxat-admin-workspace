@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
+import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
@@ -229,7 +229,7 @@ function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) 
   )
 }
 
-function ReopenDialog({ open, onClose, s, e, onSave }: { open: boolean; onClose: () => void; s: V2State; e: Evaluation; onSave: (i: { outcome: Outcome; feedback: string; reason: string }) => string | null; actorId: string }) {
+function ReopenDialog({ open, onClose, e, onSave }: { open: boolean; onClose: () => void; s: V2State; e: Evaluation; onSave: (i: { outcome: Outcome; feedback: string; reason: string }) => string | null; actorId: string }) {
   const current = e.versions[e.versions.length - 1]?.detail?.feedback ?? ""
   const [outcome, setOutcome] = React.useState<Outcome>(e.outcome)
   const [feedback, setFeedback] = React.useState(current)

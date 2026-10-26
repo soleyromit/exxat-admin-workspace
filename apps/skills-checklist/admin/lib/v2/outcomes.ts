@@ -1,6 +1,6 @@
 import type { Result } from "./admin-actions"
 import { appendAudit } from "./store"
-import type { Evaluation, EvaluationDetail, EvaluationVersion, Outcome, Person, Remediation, RoleId, Skill, V2State } from "./types"
+import type { Evaluation, EvaluationDetail, EvaluationVersion, Outcome, Person, Remediation, RoleId, V2State } from "./types"
 
 /**
  * Stage 3: what an outcome does next. Remediation plans, reopening a completed evaluation with a new version, and who may see a

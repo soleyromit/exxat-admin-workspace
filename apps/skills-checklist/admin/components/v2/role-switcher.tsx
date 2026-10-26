@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@exxatdesignux/ui/components/ui/dropdown-menu"
-import { utilityBarActionButtonClass } from "@exxatdesignux/ui/components/shell/utility-bar-chrome"
 import { isRoleId, ROLE_BY_ID, ROLES, roleForPath } from "@/lib/v2/roles"
 
 /** Role switcher: changing the role opens that role's home. The role is read from the URL, so deep links keep working. */

@@ -61,7 +61,7 @@ export function SettingsPage() {
 
   const setParams = (p: Record<string, string | null>) => {
     const q = new URLSearchParams(params?.toString() ?? "")
-    for (const [k, v] of Object.entries(p)) (v ? q.set(k, v) : q.delete(k))
+    for (const [k, v] of Object.entries(p)) { if (v) q.set(k, v); else q.delete(k) }
     const s = q.toString()
     router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false })
   }

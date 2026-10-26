@@ -40,7 +40,7 @@ export function useStudentPage(): StudentPageCtx {
   const setParams = React.useCallback(
     (p: Record<string, string | null>) => {
       const q = new URLSearchParams(params?.toString() ?? "")
-      for (const [k, v] of Object.entries(p)) (v === null ? q.delete(k) : q.set(k, v))
+      for (const [k, v] of Object.entries(p)) { if (v === null) q.delete(k); else q.set(k, v) }
       router.replace(`${pathname}${q.toString() ? `?${q.toString()}` : ""}`, { scroll: false })
     },
     [params, pathname, router],

@@ -1,4 +1,4 @@
-import { aNoun, skillNoun, skillNounPlural, capitalize } from "./terms"
+import { aNoun, skillNounPlural, capitalize } from "./terms"
 import type { PersonaId } from "./screens"
 
 export interface LabNavRow {

@@ -18,7 +18,7 @@ import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/st
 import { EvaluatorPicker, MethodTiles, TOUCH_ROW } from "@/components/lab/student2/log-parts"
 import { PhotoField, PlacementSelect, RequestResult, SkillsField, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
 import { FormSkeleton } from "./student-log-a"
-import { aNoun, skillNoun } from "@/lib/lab/terms"
+import { aNoun } from "@/lib/lab/terms"
 import { METHODS, methodById, needsApproval, student2Href } from "@/lib/lab/student2"
 
 type Situation = "with-me" | "not-here" | "paper"

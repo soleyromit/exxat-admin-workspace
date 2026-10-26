@@ -57,7 +57,7 @@ describe("Settings naming", () => {
   })
 
   it("changing the noun changes the library title, live, without a reload", () => {
-    render(React.createElement(LibraryFrame, { api: fakeApi, onAdd: () => {}, children: null }))
+    render(React.createElement(LibraryFrame, { api: fakeApi, onAdd: () => {} } as React.ComponentProps<typeof LibraryFrame>, null))
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("Skills")
     act(() => setTerms({ skillNoun: "EPA", skillNounPlural: "EPAs" }))
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain("EPAs")

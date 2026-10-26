@@ -21,7 +21,7 @@ import { BTN, SkillCard } from "@/components/v2/preceptor/evaluation-form"
 import { OUTCOME_WORD } from "@/lib/v2/outcomes"
 import type { SkillResponse } from "@/lib/v2/preceptor"
 import {
-  approveBlock, approveItems, blankPaper, compareEvaluation, findQueueItem, itemLabel, joinNames, locationOf, PAPER_FIELDS, priorAttempts, recordPaperOutcome, REASON_MAX, returnItem, returnNextStep, returnReasonIssue, ROLE_LABEL, signerChoices,
+  approveBlock, approveItems, blankPaper, compareEvaluation, findQueueItem, joinNames, locationOf, PAPER_FIELDS, priorAttempts, recordPaperOutcome, REASON_MAX, returnItem, returnNextStep, returnReasonIssue, ROLE_LABEL, signerChoices,
   type Agreement, type PaperInput, type QueueItem,
 } from "@/lib/v2/queue"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"

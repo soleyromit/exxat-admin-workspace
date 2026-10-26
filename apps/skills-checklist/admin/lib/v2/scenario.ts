@@ -24,8 +24,6 @@ export interface ScenarioStep {
   precondition: { text: string; check: (s: V2State) => boolean }
 }
 
-const has = (s: V2State, id: string) => s.skills.some((k) => k.id === id)
-
 export const STEPS: ScenarioStep[] = [
   {
     n: 1,

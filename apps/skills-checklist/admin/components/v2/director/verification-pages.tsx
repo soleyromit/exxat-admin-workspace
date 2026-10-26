@@ -23,7 +23,7 @@ import { recordGroups } from "@/lib/v2/queue-viz"
 import { OUTCOME_WORD } from "@/lib/v2/outcomes"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import type { RoleId, V2State, Verification } from "@/lib/v2/types"
-import { gaps, isDirector, mandatoryProgress, NOTE_MAX, pendingReasons, STATUS_LABEL, verificationRows, verificationsOf, verificationStatus, verifyBlockers, verifyRecord, type VerificationRow, type VerifyStatus } from "@/lib/v2/verification"
+import { gaps, isDirector, mandatoryProgress, NOTE_MAX, pendingReasons, STATUS_LABEL, verificationRows, verificationsOf, verificationStatus, verifyBlockers, verifyRecord, type VerifyStatus } from "@/lib/v2/verification"
 import { LoadingBlocks } from "@/components/v2/shared-loading"
 
 export const statusLabel = (st: VerifyStatus, version: number | null) => (st === "verified" && version ? `Verified, version ${version}` : STATUS_LABEL[st])

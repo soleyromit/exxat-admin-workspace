@@ -101,7 +101,7 @@ export function retryItem(s: V2State, itemId: string, at: string, actorId: strin
   return flushQueue(s, at, [itemId], actorId)
 }
 
-export interface DevicePatch extends Partial<DeviceState> {}
+export type DevicePatch = Partial<DeviceState>
 
 const DEVICE_AUDIT: Array<[keyof DeviceState, boolean, string]> = [
   ["offline", true, "Went offline (demo control)"],

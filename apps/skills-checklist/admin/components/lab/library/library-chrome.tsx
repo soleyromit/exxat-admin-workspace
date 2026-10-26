@@ -35,7 +35,7 @@ import {
   type LibraryStatus,
   type LibraryTab,
 } from "@/lib/lab/library"
-import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { LibraryApi } from "./use-library"
 import { useTerms } from "./use-terms"
 

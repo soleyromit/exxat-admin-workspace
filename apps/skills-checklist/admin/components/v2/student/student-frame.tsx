@@ -13,7 +13,7 @@ import { useV2State } from "@/lib/v2/react"
 import { unsentEntries } from "@/lib/v2/student"
 import { syncSummary } from "@/lib/v2/sync"
 import { SyncChip } from "@/components/v2/student/sync-chip"
-import { TOUCH, useDevice, BTN } from "@/components/v2/student/use-student"
+import { useDevice, BTN } from "@/components/v2/student/use-student"
 
 /** Always-visible sync status: the chip that needs the most attention, a sentence, and a link to the details. */
 export function SyncStrip() {

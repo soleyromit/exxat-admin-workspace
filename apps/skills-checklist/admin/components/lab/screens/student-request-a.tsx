@@ -16,7 +16,7 @@ import { EvaluatorPicker, MethodTiles } from "@/components/lab/student2/log-part
 import { PhotoField, PlacementSelect, RequestResult, SkillsField, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
 import { SectionTitle } from "@/components/lab/student/parts"
 import { FormSkeleton } from "./student-log-a"
-import { aNoun, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, countSkills, skillNounPlural } from "@/lib/lab/terms"
 import { NO_ACCOUNT_LINE, methodById, needsApproval, student2Href } from "@/lib/lab/student2"
 
 export function StudentRequestA() {

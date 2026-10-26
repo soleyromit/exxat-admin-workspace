@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/comp
 import { StatusPill } from "@/components/v2/status-pill"
 import { requestWaitText, STATUS_LABEL, type CourseItem } from "@/lib/v2/student"
 import { useV2State } from "@/lib/v2/react"
-import { TOUCH, BTN } from "@/components/v2/student/use-student"
+import { BTN } from "@/components/v2/student/use-student"
 import { SegmentedDots } from "@/components/v2/viz"
 import { skillDots } from "@/lib/v2/student-viz"
 import type { SkillProgress } from "@/lib/v2/student"

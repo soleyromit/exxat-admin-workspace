@@ -94,7 +94,7 @@ export function EvaluatorPreview({ skillName, rule }: { skillName: string; rule:
           ))}
         </RadioGroup>
       ) : null}
-      {!rule.model ? <p className="text-sm text-muted-foreground">The form appears once you choose how it's judged.</p> : null}
+      {!rule.model ? <p className="text-sm text-muted-foreground">The form appears once you choose how it&apos;s judged.</p> : null}
       <div className="flex flex-col gap-1">
         <Label htmlFor={name("fb")}>{`Feedback${rule.feedbackRequired ? " (required)" : " (optional)"}`}</Label>
         <Textarea id={name("fb")} disabled rows={2} />

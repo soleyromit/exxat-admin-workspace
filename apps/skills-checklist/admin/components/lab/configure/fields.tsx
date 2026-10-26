@@ -254,7 +254,7 @@ export function PresetChips({ rule, setRule }: Pick<SectionProps, "rule" | "setR
 
 export function OutcomesSection({ rule, setRule, issues, showErrors }: SectionProps) {
   const err = useErr(issues, showErrors)
-  if (!rule.model) return <p className="text-sm text-muted-foreground">Choose how it's judged first. The criteria depend on it.</p>
+  if (!rule.model) return <p className="text-sm text-muted-foreground">Choose how it&apos;s judged first. The criteria depend on it.</p>
   if (rule.model === "binary") {
     return (
       <div className="flex flex-col gap-6" data-section="outcomes">
@@ -352,7 +352,7 @@ function NumberRow({ id, label, value, onChange, error, after }: { id: string; l
 
 export function RuleSection({ rule, setRule, issues, showErrors, settings, withMore = true }: SectionProps & { withMore?: boolean }) {
   const err = useErr(issues, showErrors)
-  if (!rule.model) return <p className="text-sm text-muted-foreground">Choose how it's judged first. The rule depends on it.</p>
+  if (!rule.model) return <p className="text-sm text-muted-foreground">Choose how it&apos;s judged first. The rule depends on it.</p>
   return (
     <div className="flex flex-col gap-8" data-section="rule">
       {rule.model === "question" ? <QuestionRuleField rule={rule} setRule={setRule} err={err} /> : null}

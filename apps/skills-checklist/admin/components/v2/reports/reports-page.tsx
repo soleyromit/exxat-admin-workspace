@@ -27,7 +27,6 @@ import { V2Grid, v2col } from "@/components/v2/v2-grid"
 import { DotStrip, HeatGrid, HeatGridKey, StackedBar, type HeatColumn, type HeatRow } from "@/components/v2/viz"
 import {
   ALL,
-  appliedFilters,
   behindPace,
   categoriesOf,
   cohortsOf,
@@ -57,7 +56,6 @@ import {
   TERM,
   termDaysGone,
   termShare,
-  type CellState,
   type PaceRow,
   type RaterRow,
   type ReportFilters,
@@ -118,7 +116,6 @@ export function ReportsPage({ role }: { role: RoleId }) {
 
   const hm = heatmap(s, f)
   const sum = reportSummary(s, f)
-  const applied = appliedFilters(f)
   const conflict = explainFilters(f, s)
   const fix = conflictFix(f, s)
   const inView = population(s, f)
@@ -136,7 +133,6 @@ export function ReportsPage({ role }: { role: RoleId }) {
 
   if (!hydrated && hm.rows.length === 0) return <PageFrame title="Reports"><LoadingBlocks label="Opening the reports" rows={4} /></PageFrame>
 
-  const set = (patch: Partial<ReportFilters>) => setF((cur) => ({ ...cur, ...patch }))
   const filterFields: V2FilterField[] = [
     v2SelectField("cohort", "Cohort", cohortsOf(s).map((c) => ({ value: c, label: c })), "fa-users"),
     v2SelectField("group", "Group", groupsOf(s, f.cohort).map((g) => ({ value: g, label: g })), "fa-user-group", f.cohort === ALL ? { disabled: true, hint: "Choose a cohort first" } : {}),

@@ -13,7 +13,6 @@ import {
   heroSiteIds,
   HGTC,
   isIvLevel,
-  type HgtcRow,
   type Rand,
   pick,
   shuffle,
@@ -519,7 +518,6 @@ export function generate(hero: V2State): V2State {
   // Student attributes: kinds, progress, arcs
 
   const rS = stream("students")
-  const generated = gs.filter((x) => !x.hero)
   // 2026: 31 complete, 4 one short (Hangs PB Med), 3 far behind.
   g26.forEach((g, i) => {
     g.kind = i < 31 ? "complete" : i < 35 ? "one-short" : "far-behind"
@@ -883,7 +881,7 @@ export function generate(hero: V2State): V2State {
   const logEntries: LogEntry[] = []
   let subN = 0
   const subId = () => `sub-g-${String(++subN).padStart(3, "0")}`
-  const rowsOfStudentWith = (evaluatorId: string, avoid?: Set<string>): Row[] => {
+  const rowsOfStudentWith = (evaluatorId: string, _avoid?: Set<string>): Row[] => {
     const l = rowsOk.get(evaluatorId) ?? []
     return l
   }

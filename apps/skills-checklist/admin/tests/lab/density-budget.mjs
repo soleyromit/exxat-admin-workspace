@@ -263,7 +263,6 @@ function measure({ FOLD, TYPE }) {
     else actions.push(el)
   }
   const isForm = TYPE === "form" || TYPE === "wizard"
-  const isEval = TYPE === "evaluator"
   const counted = isForm ? fields : fields.concat(actions)
   const isDisabled = (el) => el.disabled || el.getAttribute("aria-disabled") === "true" || el.hasAttribute("data-disabled")
   // Pager exemption: a Previous/Next pair at its first or last record keeps the dead half in place (hiding it would move the

@@ -184,7 +184,7 @@ for (const [label, group] of [["Group A", "Group+A"], ["custom group Enrolled in
   check("Clinical only: the scope bar Course reads Clinical only by default and switches when didactic is included", { clinicalDefault: kind === "clinical" ? 1 : 0, allWithDidactic: didKind === "all" ? 1 : 0, expected: 1 })
   check("Clinical only: behind and students in scope are the same with didactic included", { behind: defHero?.[0], behindWithDidactic: didHero?.[0] })
   check("Clinical only: Required this term records are the same with didactic included", { records: defAch?.[2], recordsWithDidactic: didAch?.[2] })
-  const cm = await open(`/lab/admin/course-mapping?${TERM}&variant=A`)
+  await open(`/lab/admin/course-mapping?${TERM}&variant=A`)
   const cmKind = await page.evaluate(() => document.querySelector("[data-course-kind]")?.getAttribute("data-course-kind") ?? null)
   check("Clinical only: Course mapping A lists clinical offerings by default", { clinicalDefault: cmKind === "clinical" ? 1 : 0, expected: 1 })
   const lv = await page.evaluate(() => {

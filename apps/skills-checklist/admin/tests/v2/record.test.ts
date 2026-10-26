@@ -138,15 +138,16 @@ describe("the PDF", () => {
 describe("the CLR 2.0 file", () => {
   it("has the 1EdTech context, types and one achievement credential per included skill", () => {
     const s = verified()
-    const clr = clrOf(s, GRACE, AT)! as Record<string, any>
+    type Loose = { [k: string]: Loose }
+    const clr = clrOf(s, GRACE, AT)! as unknown as Loose
     expect(clr["@context"]).toEqual(["https://www.w3.org/ns/credentials/v2", "https://purl.imsglobal.org/spec/clr/v2p0/context-2.0.1.json"])
     expect(clr.type).toEqual(["VerifiableCredential", "ClrCredential"])
     expect(clr.issuer).toMatchObject({ type: ["Profile"], name: "Harbor University, BSN" })
     expect(clr.id).toMatch(/^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/)
     expect(clr.partial).toBe(true)
-    const creds = clr.credentialSubject.verifiableCredential as Array<Record<string, any>>
+    const creds = clr.credentialSubject.verifiableCredential as unknown as Loose[]
     expect(creds).toHaveLength(verifiedRecord(s, GRACE).included.length)
-    const cath = creds.find((c) => c.credentialSubject.achievement.name === "Indwelling urinary catheter insertion")!
+    const cath = creds.find((c) => String(c.credentialSubject.achievement.name) === "Indwelling urinary catheter insertion")!
     expect(cath.type).toEqual(["VerifiableCredential", "AchievementCredential"])
     expect(cath.credentialSubject.achievement).toMatchObject({ type: ["Achievement"], achievementType: "Competency", name: "Indwelling urinary catheter insertion" })
     expect(cath.evidence).toHaveLength(3)

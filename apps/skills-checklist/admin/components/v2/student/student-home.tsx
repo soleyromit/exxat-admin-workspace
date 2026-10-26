@@ -9,7 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesig
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Block, StudentPage } from "@/components/v2/student/student-frame"
 import { SkillCard } from "@/components/v2/student/skill-card"
-import { TOUCH, BTN } from "@/components/v2/student/use-student"
+import { BTN } from "@/components/v2/student/use-student"
 import { contextLine } from "@/lib/v2/page-context"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { courseWork, STUDENT_ID } from "@/lib/v2/student"

@@ -184,7 +184,7 @@ const CHOICES: Array<{ value: Resolution; label: string; consequence: (field: "n
   { value: "both", label: "Keep both", consequence: () => "Joins them into one note, server text first, then yours. Nothing is discarded." },
 ]
 
-function ConflictScreen({ item, skill, onBack, onResolve }: { item: SyncItem; skill: string; onBack: () => void; onResolve: (c: Resolution) => void }) {
+function ConflictScreen({ item, onBack, onResolve }: { item: SyncItem; skill: string; onBack: () => void; onResolve: (c: Resolution) => void }) {
   const c = item.conflict!
   const [choice, setChoice] = React.useState<Resolution | "">("")
   const headingRef = React.useRef<HTMLHeadingElement>(null)

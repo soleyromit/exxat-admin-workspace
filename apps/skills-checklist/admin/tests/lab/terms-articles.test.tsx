@@ -2,7 +2,7 @@ import * as React from "react"
 import { readdirSync, readFileSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
+import { cleanup, render, screen, waitFor } from "@testing-library/react"
 
 let search = new URLSearchParams()
 vi.mock("next/navigation", () => ({
@@ -61,7 +61,7 @@ describe.each(NOUNS)("with the noun $one", (n) => {
 
   it("library title and the Add button", () => {
     use()
-    render(React.createElement(LibraryFrame, { api: fakeApi, onAdd: () => {}, children: null }))
+    render(React.createElement(LibraryFrame, { api: fakeApi, onAdd: () => {} } as React.ComponentProps<typeof LibraryFrame>, null))
     expect(screen.getByRole("heading", { level: 1 }).textContent).toContain(capitalize(n.many))
     expect(screen.getByRole("button", { name: `Add ${n.a}` })).toBeTruthy()
   })

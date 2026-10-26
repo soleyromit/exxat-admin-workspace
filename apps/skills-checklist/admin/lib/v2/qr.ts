@@ -92,7 +92,7 @@ export function codewords(bytes: number[], version: number): number[] {
   const { ecPerBlock, groups } = SPECS[version]
   const blocks: number[][] = []
   let at = 0
-  for (const [count, size] of groups) for (let i = 0; i < count; i++) (blocks.push(data.slice(at, at + size)), (at += size))
+  for (const [count, size] of groups) for (let i = 0; i < count; i++) { blocks.push(data.slice(at, at + size)); at += size }
   const parity = blocks.map((b) => rsParity(b, ecPerBlock))
   const out: number[] = []
   const longest = Math.max(...blocks.map((b) => b.length))
@@ -291,7 +291,7 @@ export function qrEncode(text: string, forceMask?: number): QrResult {
     for (let m = 1; m < 8; m++) {
       const g = build(m)
       const p = penalty(g)
-      if (p < bestScore) ((bestScore = p), (best = m), (bestGrid = g))
+      if (p < bestScore) { bestScore = p; best = m; bestGrid = g }
     }
   }
   return { version, mask: best, size: bestGrid.size, modules: bestGrid.dark }

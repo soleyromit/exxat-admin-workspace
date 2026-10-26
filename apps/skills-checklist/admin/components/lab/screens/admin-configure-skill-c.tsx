@@ -135,7 +135,7 @@ export function AdminConfigureSkillC() {
         <div className={cn("flex flex-col gap-6", quietErrors)} data-region="sentence">
           <ModelSection {...props} columns={4} legend={isMany ? `How are these ${skillNounPlural()} evaluated?` : undefined} />
           {!m.rule.model ? (
-            <p className="text-sm text-muted-foreground">Choose how it's judged. The sentence then shows what that choice can ask for.</p>
+            <p className="text-sm text-muted-foreground">Choose how it&apos;s judged. The sentence then shows what that choice can ask for.</p>
           ) : (
             <>
               {outcomesInline ? (

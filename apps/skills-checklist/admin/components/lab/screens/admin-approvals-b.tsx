@@ -8,13 +8,11 @@
  * rule behind the queue help an admin decide whether to change the rule rather than clear the backlog?
  */
 import * as React from "react"
-import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { ApprovalsFrame } from "@/components/lab/reviewer/approvals-frame"
-import { SummaryLine, LINK_U } from "@/components/lab/reviewer/parts"
+import { SummaryLine } from "@/components/lab/reviewer/parts"
 import { RulesTable } from "@/components/lab/rbac/approval-rules"
 import { approvalRules } from "@/lib/lab/rbac"
 import { REASON_META, REASON_ORDER, plural, reviewItemHref } from "@/lib/lab/reviewer"
-import { withScope } from "@/lib/lab/scope"
 
 export function AdminApprovalsB() {
   return (

@@ -63,7 +63,7 @@ export function AdminSettingsB() {
 
   const hrefWith = (p: Record<string, string | null>) => {
     const q = new URLSearchParams(params?.toString() ?? "")
-    for (const [k, v] of Object.entries(p)) (v ? q.set(k, v) : q.delete(k))
+    for (const [k, v] of Object.entries(p)) { if (v) q.set(k, v); else q.delete(k) }
     const s = q.toString()
     return s ? `${pathname}?${s}` : pathname
   }

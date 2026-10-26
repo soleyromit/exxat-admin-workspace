@@ -48,7 +48,7 @@ export function ProgressHero({ model, studentId, compact = false }: { model: Stu
 }
 
 /** The nearest placement end and the likely skills not started there, in one line (context for N-03). */
-export function PlacementLine({ model, studentId }: { model: StudentModel; studentId: string }) {
+export function PlacementLine({ model }: { model: StudentModel; studentId: string }) {
   if (model.placements.length === 0) return null
   const first = [...model.placements].sort((a, b) => a.daysLeft - b.daysLeft)[0]
   const notStarted = [...new Set(model.placements.flatMap((p) => p.notStartedIds))]
