@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest"
 import { confirmVersion, reopenEvaluation } from "@/lib/v2/outcomes"
 import { COUNTER_BY_ID } from "@/lib/v2/selectors"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createSeed as createFullSeed, IDS } from "@/lib/v2/seed"
+
+/** These v2 verify-flow tests start from no verifications; the seed now carries two story verifications (spec section 12). */
+const createSeed = () => ({ ...createFullSeed(), verifications: [] })
 import { createV2Store } from "@/lib/v2/store"
 import { gaps, isDirector, latestVerification, mandatoryProgress, pendingReasons, verificationRows, verificationStatus, verifiedAt, verifyBlockers, verifyRecord } from "@/lib/v2/verification"
 import type { V2State } from "@/lib/v2/types"
@@ -45,7 +48,8 @@ describe("what blocks a verification", () => {
     const s = createSeed()
     const reasons = pendingReasons(s, IDS.maya)
     expect(reasons[0]).toBe("1 evaluation is waiting for approval in the review queue.")
-    expect(reasons.some((r) => /sign-off request is still open/.test(r))).toBe(true)
+    // Two since the hero story (2026-10-26): the request with Delgado and the returned handoff submission.
+    expect(reasons.some((r) => /sign-off requests? (is|are) still open/.test(r))).toBe(true)
     const r = verifyRecord(s, IDS.maya, { note: "", confirmed: true }, DIR, AT)
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.error).toMatch(/^This record cannot be verified yet\. 1 evaluation is waiting for approval/)
@@ -104,7 +108,8 @@ describe("a verification is an immutable numbered version", () => {
     const id = cleanStudent(s)
     const v1 = must(verifyRecord(s, id, { note: "First pass.", confirmed: true }, DIR, AT)).state
     const frozen = structuredClone(v1.verifications)
-    const ev = v1.evaluations.find((e) => e.studentId === id && e.status === "counted")!
+    // A skill that asks for approval would send the confirmed version to the queue (SC-15); this story needs one that counts at once.
+    const ev = v1.evaluations.find((e) => e.studentId === id && e.status === "counted" && !v1.skills.find((k) => k.id === e.skillId)?.config?.approvalRequired)!
     expect(verifiedAt(v1, ev)?.version).toBe(1)
 
     const reopened = must(reopenEvaluation(v1, { evaluationId: ev.id, outcome: ev.outcome === "met" ? "not-yet" : "met", feedback: null, reason: "Evaluator corrected the outcome." }, IDS.ross, LATER))
@@ -182,7 +187,9 @@ describe("the saved store", () => {
     store.update((s) => must(verifyRecord(s, id, { note: "n", confirmed: true }, DIR, AT)).state)
     const again = createV2Store({ storage })
     again.hydrate()
-    expect(again.getSnapshot().verifications).toHaveLength(1)
-    expect(again.getSnapshot().verifications![0]).toMatchObject({ version: 1, note: "n" })
+    // The real store starts from the full seed, which carries the two story verifications (spec section 12).
+    const base = store.getSnapshot().verifications!.length - 1
+    expect(again.getSnapshot().verifications).toHaveLength(base + 1)
+    expect(again.getSnapshot().verifications!.at(-1)).toMatchObject({ version: 1, note: "n" })
   })
 })

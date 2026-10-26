@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createSeed as createFullSeed, IDS } from "@/lib/v2/seed"
+import type { V2State as FullState } from "@/lib/v2/types"
+
+/**
+ * These v2 courseWork tests predate the hero story (2026-10-26) that gave Maya a returned submission (sub-maya-2). A returned
+ * submission is rightly her next action, so the ordering tests below run on the seed without it. v2 is to be replaced.
+ */
+const createSeed = (): FullState => { const s = createFullSeed(); return { ...s, submissions: s.submissions.filter((x) => x.id !== "sub-maya-2") } }
 import { courseWork, createRequest, evaluatorChoices, logSkills, prerequisiteStatus, ratingKind, ratingOptions, skillProgress, unsentEntries, type LogInput } from "@/lib/v2/student"
 import type { Evaluation, Setting, V2State } from "@/lib/v2/types"
 
@@ -210,7 +217,7 @@ function input(over: Partial<LogInput> = {}): LogInput {
     setting: "clinical" as Setting,
     clinicalSetting: "Inpatient",
     location: "Harbor General, 4 West",
-    ratings: { [IV]: "Works with prompts" },
+    ratings: { [IV]: "With assistance" },
     answers: { "sk-sterile-dressing": [] },
     notes: {},
     ...over,
@@ -334,7 +341,7 @@ describe("evaluatorChoices (qualified-evaluator filter)", () => {
 describe("createRequest", () => {
   function logged(): { s: V2State; ids: string[] } {
     const base = publishIv({ ...createSeed(), syncQueue: createSeed().syncQueue.filter((i) => i.state !== "conflict") })
-    const r = logSkills(base, { skillIds: [IV, "sk-sterile-dressing"], setting: "clinical", clinicalSetting: "Inpatient", location: "Harbor General, 4 West", ratings: { [IV]: "Works with prompts" }, answers: { "sk-sterile-dressing": ["yes", "yes", "yes"] }, notes: {} }, AT)
+    const r = logSkills(base, { skillIds: [IV, "sk-sterile-dressing"], setting: "clinical", clinicalSetting: "Inpatient", location: "Harbor General, 4 West", ratings: { [IV]: "With assistance" }, answers: { "sk-sterile-dressing": ["yes", "yes", "yes"] }, notes: {} }, AT)
     if (!r.ok) throw new Error(r.error)
     return { s: r.state, ids: r.entryIds }
   }

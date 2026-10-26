@@ -1,6 +1,6 @@
 import type { Result } from "./admin-actions"
 import { needsLevels, needsQuestions } from "./config"
-import { nextIdFor, openPlan, opensPlanAutomatically, OUTCOME_WORD } from "./outcomes"
+import { nextIdFor, OUTCOME_WORD } from "./outcomes"
 import type { RuleIssue } from "./rules"
 import { appendAudit } from "./store"
 import { ineligibleReason, reviewerId } from "./student"
@@ -268,13 +268,6 @@ export function submitEvaluation(s: V2State, input: PassInput, at: string): Resu
   for (const ev of created) {
     const skill = skills.find((k) => k.id === ev.skillId) as Skill
     state = appendAudit(state, input.evaluatorId, holds(skill) ? "Submitted an evaluation, held for approval" : "Submitted an evaluation", `${skill.name} for ${studentNameOf(s, x.studentId)}: ${OUTCOME_WORD[ev.outcome]}`, at)
-    if (ev.outcome === "not-met" && opensPlanAutomatically(skill)) {
-      const r = openPlan(state, { studentId: ev.studentId, skillId: ev.skillId, evaluationId: ev.id, actorId: input.evaluatorId }, at)
-      state = r.state
-      if (r.created) planIds.push(r.plan.id)
-      const item = items.find((i) => i.evaluationId === ev.id)
-      if (item) item.planId = r.plan.id
-    }
   }
   let concernId: string | null = null
   if (input.concern.raised) {

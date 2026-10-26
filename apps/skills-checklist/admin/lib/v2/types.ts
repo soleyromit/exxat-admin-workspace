@@ -6,7 +6,7 @@
 
 export type RoleId = "admin" | "student" | "preceptor" | "reviewer" | "director"
 
-export type Specialty = "bsn-med-surg" | "radiography" | "surgical-tech" | "paramedic"
+export type Specialty = "bsn-med-surg" | "adn-hgtc" | "radiography" | "surgical-tech" | "paramedic"
 
 /** The four evaluation models of the requirements (section 4.1). The program chooses; binary is the v2 demo default only. */
 export type EvalModel = "binary" | "question" | "scored" | "demonstration"
@@ -18,12 +18,80 @@ export interface Person {
   name: string
   /** Display role label. */
   title: string
-  kind: "admin" | "student" | "preceptor" | "lab-instructor" | "reviewer" | "director"
+  kind: "admin" | "student" | "preceptor" | "lab-instructor" | "faculty" | "reviewer" | "director"
   email: string
   /** Evaluator attributes used by the "who counts as qualified" rule. Sample data. */
   credentials?: string[]
   yearsPractice?: number
   training?: string[]
+  /** Students: the cohort and the group inside it (RP-01). Sample data. Absent on state saved before the filters existed. */
+  cohort?: string
+  group?: string
+  /** Students: the cohort record (Cohort.id) and the custom tracks the student is also in. Sample data. */
+  cohortId?: string
+  trackIds?: string[]
+  /** Evaluators: false for a name a student gave that the program has not adopted yet (RP-01, J7). Absent means verified. */
+  verified?: boolean
+  /** Evaluators: the site where they supervise (Site.id). Student screens match evaluators to a placement through it. */
+  homeSiteId?: string
+  /** Students: the institution's student number, for example S2024-0412. Sample data. */
+  studentNumber?: string
+  /** Students: the calendar year the student enrolled (sample data, position-based; custom group rules filter on it). */
+  enrollmentYear?: number
+  /** Students: the program's enrollment category, for example Day or Hybrid (sample data; custom group rules filter on it). */
+  enrollmentCategory?: string
+}
+
+export interface Cohort {
+  id: string
+  name: string
+  graduates: string
+  studentCount: number
+  /** Professional year (1 to 4) in the current academic year (decision D-X19: a field in the data). */
+  professionalYear?: number
+}
+
+/** A custom track inside a cohort, for example an accelerated path. */
+export interface Track {
+  id: string
+  name: string
+}
+
+export interface Term {
+  id: string
+  name: string
+  start: string
+  end: string
+  current?: boolean
+}
+
+/** A course in a term for one cohort. */
+export interface CourseOffering {
+  id: string
+  courseId: string
+  termId: string
+  cohortId: string
+  /** "2026-27" (REQ CM-01: an offering is a course in a term, academic year and professional year). */
+  academicYear?: string
+  professionalYear?: number
+}
+
+export interface Site {
+  id: string
+  facility: string
+  unit: string
+  /** One of six settings. */
+  setting: string
+  /** The program clinical setting it counts toward, or null for the lab. */
+  clinicalSetting: string | null
+  /** The location name evidence from this site carries (Program.locations). */
+  location: string
+  active: boolean
+  hasPreceptors: boolean
+  /** Town, state and kind of facility (sample data, fictional: lib/v2/pools.ts). */
+  city?: string
+  state?: string
+  facilityType?: string
 }
 
 export interface Program {
@@ -35,6 +103,17 @@ export interface Program {
   clinicalSettings: string[]
   /** Simulation settings the program can allow-list. */
   simulationSettings: string[]
+  /** Program-defined places where evidence is gathered, with what each offers (RP-01, RP-09). Sample data. */
+  locations?: ProgramLocation[]
+  /** Program-defined groups inside each cohort (RP-01). Sample data. */
+  groups?: Record<string, string[]>
+}
+
+export interface ProgramLocation {
+  name: string
+  setting: Setting
+  /** The named clinical setting a clinical location offers (SC-11). Absent for lab and simulation. */
+  clinicalSetting?: string
 }
 
 export interface Course {
@@ -45,6 +124,8 @@ export interface Course {
   cohort: string
   /** Clinical settings this offering actually places students in. */
   clinicalSettings: string[]
+  /** Generated courses: clinical or lab bearing, or didactic only. */
+  kind?: "clinical" | "didactic"
 }
 
 export interface AchievementRule {
@@ -80,11 +161,10 @@ export interface SkillConfig {
   prerequisites: { skillIds: string[]; labCheckoff: boolean; practiceTrials: number }
   evaluatorRoles: EvaluatorRole[]
   qualification: { credentials: string[]; minYears: number; training: string[] }
-  failure: { attemptLimit: number | null; minDaysBetween: number; retakeScoreCap: number | null; autoRemediation: boolean }
-  revalidation: { onEvents: string[]; calendarExpiry: { enabled: boolean; months: number } }
-  /** SC-14: the evaluator cannot submit without narrative feedback. Absent means feedback is optional. The wizard has no control for it yet. */
+  failure: { attemptLimit: number | null; minDaysBetween: number; retakeScoreCap: number | null }
+  /** SC-14: the evaluator cannot submit without narrative feedback. Absent means feedback is optional. */
   feedbackRequired?: boolean
-  /** SC-15: evidence is held for administrator approval before it counts. Absent means it counts at once. The wizard has no control for it yet. */
+  /** SC-15: evidence is held for administrator approval before it counts. Absent means it counts at once. */
   approvalRequired?: boolean
 }
 
@@ -92,7 +172,7 @@ export interface SkillConfig {
 export interface SkillDraft {
   model: EvalModel | null
   config: SkillConfig
-  /** Wizard step, 1 to 8. */
+  /** Wizard step, 1 to 7. */
   step: number
   copiedFromSkillId?: string
 }
@@ -117,14 +197,30 @@ export interface Skill {
   published: boolean
   config: SkillConfig | null
   description?: string
+  /** Program-defined tags (SL-07). A skill may carry several. Sample data: no tag ships with the product. */
+  tags?: string[]
   /** Which import or copy created the skill (IM-11). Absent for the original seed. */
   batchId?: string
+  /** Link to the published starter list this skill came from (the HGTC ADN checklist). */
+  hgtc?: { id: string; required: boolean; group?: string; groupRule?: "any" }
+  /**
+   * false when the program deactivated the skill (SL-02, SL-11): evidence is kept, but it leaves mapping, student selection and
+   * every report figure (decision D-X14). Absent means active.
+   */
+  active?: boolean
 }
+
+/**
+ * Per-course level [REQ CM-03; CALL 10-26]: mandatory (the only level "Required this term" and pace read, decision D-X12),
+ * recommended (feeds "Likely here" and the placement-ending nudge), optional (submittable, counts on the record, never required),
+ * or not expected.
+ */
+export type MappingLevel = "mandatory" | "recommended" | "optional" | "not-expected"
 
 export interface MappingRow {
   courseId: string
   skillId: string
-  level: "mandatory" | "optional" | "not-expected"
+  level: MappingLevel
 }
 
 export type Outcome = "met" | "not-met" | "not-yet"
@@ -168,6 +264,10 @@ export interface Evaluation {
   versions: EvaluationVersion[]
   /** Named clinical setting (SC-11) for clinical evaluations. Lab and simulation never carry one, so they can never satisfy it. */
   clinicalSetting?: string
+  /** Where the evidence was gathered (RP-08). Absent on evidence saved before locations existed. */
+  location?: string
+  /** The course the evidence was gathered in (RP-01). Absent means the report's own course. */
+  courseId?: string
   /** Index into the skill's levels when the evaluation recorded a level. Absent means the level is not recorded. */
   levelIndex?: number
   /** Stage 3: the request this evaluation completed. */
@@ -176,8 +276,12 @@ export interface Evaluation {
   source?: "evaluator" | "paper-form"
   /** Stage 4: the reviewer who typed a paper-form evaluation on the evaluator's behalf. */
   enteredById?: string
+  /** The site the evidence was gathered at. Absent on the hand-written history. */
+  siteId?: string
   /** Stage 4: the reviewer's latest decision and note (AR-04, AR-05). Earlier returns stay on the request. */
   review?: { decision: "approved" | "returned"; byId: string; at: string; note: string }
+  /** The student's self-evaluation sent with the request (RP-10: the row-per-evaluation export carries it). */
+  self?: SelfEvaluation
 }
 
 export type SignoffMethod = "qr" | "handover" | "link" | "photo"
@@ -211,6 +315,8 @@ export interface Submission {
   reassignments?: Array<{ at: string; byId: string; fromId: string; toId: string; reason: string }>
   /** Stage 4: the student's words when sending a returned request again. */
   studentNote?: string
+  /** The site of the evaluator the request is with. Absent on the hand-written history. */
+  siteId?: string
 }
 
 export type SyncState = "queued" | "synced" | "conflict" | "failed"
@@ -242,12 +348,22 @@ export interface SyncItem {
 }
 
 /** A placement for the course: where the student works and in which named clinical setting (ST-06). */
+/**
+ * A clinical rotation: one student at one site for one course offering, inside one term. Rotations run 4 to 8 weeks
+ * (dataset spec section 12). `startDate` and `endDate` are ISO dates (YYYY-MM-DD), both inside the term.
+ */
 export interface Placement {
   id: string
   studentId: string
   courseId: string
   location: string
   setting: string
+  siteId?: string
+  termId?: string
+  /** The course offering (course x term x cohort) the rotation belongs to, when the state carries offerings. */
+  offeringId?: string
+  startDate: string
+  endDate: string
 }
 
 /**
@@ -341,6 +457,23 @@ export interface AuditEntry {
 }
 
 /** Stage 4: a program director's verification of a student's record. Append-only: a verification is never edited. */
+/** One change to a skill's achievement rule (rule version history). The rule as it now reads is the skill's current config. */
+export interface RuleChangeRecord {
+  skillId: string
+  /** ISO date of the change. */
+  at: string
+  byId: string
+  /** Rule version after the change (the first published rule is version 1). */
+  version: number
+}
+
+/** What the student said about their own performance when they sent it (RP-10 export column). */
+export interface SelfEvaluation {
+  /** One of the skill's outcome labels or level names, or null when the student gave no rating. */
+  rating: string | null
+  note: string
+}
+
 export interface Verification {
   id: string
   studentId: string
@@ -379,6 +512,8 @@ export interface V2State {
   people: Person[]
   skills: Skill[]
   mappings: MappingRow[]
+  /** Other clinical courses the program runs, so the course filter has more than one value. Optional so older state loads. */
+  otherCourses?: Course[]
   evaluations: Evaluation[]
   submissions: Submission[]
   syncQueue: SyncItem[]
@@ -388,7 +523,7 @@ export interface V2State {
   batches: ImportBatch[]
   /** Skill id -> wizard draft. */
   drafts: Record<string, SkillDraft>
-  /** Scenario step id -> ISO time the presenter marked it reviewed. */
+  /** Walkthrough step id -> ISO time the presenter marked it reviewed. */
   stepsReviewed: Record<string, string>
   /** Stage 2: student placements, log entries, lab check-offs, the phone's state and the log flow draft. */
   placements: Placement[]
@@ -398,6 +533,21 @@ export interface V2State {
   logDraft: LogDraft | null
   /** Stage 4: director verifications, oldest first. Optional so state saved before Stage 4 still loads. */
   verifications?: Verification[]
+  /**
+   * Rule version history: each time a skill's achievement rule was changed after evidence existed (strategy/03 H11). A record
+   * verified before a change to a rule it rests on reads "Changed since verified". Oldest first.
+   */
+  ruleChanges?: RuleChangeRecord[]
   /** Stage 5: saved lab sessions, oldest first. Optional so state saved before Stage 5 still loads. */
   labBatches?: LabBatch[]
+  /**
+   * Multi-course data. `course` stays the focus course (NURS 350) that every single-course screen reads. Optional so older state loads.
+   * `courses` holds every course including the focus one; `offerings` is courses x terms.
+   */
+  cohorts?: Cohort[]
+  tracks?: Track[]
+  terms?: Term[]
+  courses?: Course[]
+  offerings?: CourseOffering[]
+  sites?: Site[]
 }

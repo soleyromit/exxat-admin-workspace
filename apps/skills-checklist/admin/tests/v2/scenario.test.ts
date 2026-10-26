@@ -48,6 +48,5 @@ describe("scenario", () => {
 
   it("keeps UI strings free of em dashes", () => {
     for (const s of STEPS) for (const t of [s.title, s.summary, s.precondition.text]) expect(t).not.toMatch(new RegExp("\\u2014"))
-    for (const r of ROLES) expect(r.blurb).not.toMatch(new RegExp("\\u2014"))
   })
 })

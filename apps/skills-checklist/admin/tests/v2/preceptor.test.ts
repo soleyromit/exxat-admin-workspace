@@ -13,7 +13,7 @@ const SD = "sk-sterile-dressing"
 function requested(method: "qr" | "link" = "qr", evaluatorIds: string[] = [IDS.delgado]): { s: V2State; id: string } {
   const base = { ...createSeed(), syncQueue: createSeed().syncQueue.filter((i) => i.state !== "conflict") }
   base.skills = base.skills.map((k) => (k.id === IV ? { ...k, published: true } : k))
-  const l = logSkills(base, { skillIds: [IV, SD], setting: "clinical", clinicalSetting: "Inpatient", location: "Harbor General, 4 West", ratings: { [IV]: "Works with prompts" }, answers: { [SD]: ["yes", "yes", "yes"] }, notes: { [IV]: "Second IV this week." } }, AT)
+  const l = logSkills(base, { skillIds: [IV, SD], setting: "clinical", clinicalSetting: "Inpatient", location: "Harbor General, 4 West", ratings: { [IV]: "With assistance" }, answers: { [SD]: ["yes", "yes", "yes"] }, notes: { [IV]: "Second IV this week." } }, AT)
   if (!l.ok) throw new Error(l.error)
   const r = createRequest(l.state, { entryIds: l.entryIds, method, evaluatorIds }, AT)
   if (!r.ok) throw new Error(r.error)
@@ -216,18 +216,16 @@ describe("submitEvaluation", () => {
     expect(r.state.remediations).toHaveLength(createSeed().remediations.length)
   })
 
-  it("a fail opens a plan only when the skill's failure path says so", () => {
+  it("a fail never opens a plan on its own (remediation is out of scope)", () => {
     const { s, id } = requested()
     const p = goodPass(s, id)
     p.responses = p.responses.map((r) => ({ ...r, outcome: "not-met" as const }))
     const r = submitEvaluation(s, p, AT)
     expect(r.ok).toBe(true)
     if (!r.ok) return
-    // IV catheter insertion has auto-remediation; Sterile dressing change does not.
-    expect(r.items.map((i) => !!i.planId)).toEqual([true, false])
-    const plan = r.state.remediations.find((x) => x.id === r.planIds[0])!
-    expect(plan).toMatchObject({ studentId: IDS.maya, skillId: IV, status: "open", evaluationId: r.items[0].evaluationId })
-    expect(plan.steps).toHaveLength(3)
+    expect(r.items.every((i) => !i.planId)).toBe(true)
+    expect(r.planIds).toEqual([])
+    expect(r.state.remediations).toHaveLength(s.remediations.length)
   })
 
   it("stores a concern for staff only", () => {

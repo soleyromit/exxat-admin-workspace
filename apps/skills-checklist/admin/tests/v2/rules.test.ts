@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { defaultConfig, rebuildForModel } from "@/lib/v2/config"
 import { createSeed, IDS } from "@/lib/v2/seed"
-import { qualifiedEvaluators, simulationShare, strengthHint, validateDraft } from "@/lib/v2/rules"
+import { qualifiedEvaluators, simulationShare, strengthHint, validateDraft, WIZARD_STEPS } from "@/lib/v2/rules"
 import type { SkillConfig, V2State } from "@/lib/v2/types"
 
 const seed = (): V2State => createSeed()
@@ -28,7 +28,7 @@ describe("validateDraft (SC-18)", () => {
     const issues = validateDraft(d, s, IDS.ivCath)
     expect(issues.find((i) => i.field === "wiz-level-1")?.message).toMatch(/no name/)
     expect(issues.find((i) => i.field === "wiz-level-2")?.message).toMatch(/repeats/)
-    expect(issues.every((i) => i.step >= 1 && i.step <= 7)).toBe(true)
+    expect(issues.every((i) => i.step >= 1 && i.step <= 6)).toBe(true)
   })
 
   it("needs two levels, and a minimum level that still exists", () => {
@@ -113,14 +113,11 @@ describe("validateDraft (SC-18)", () => {
     expect(codes(d, s)).toContain("wiz-qualified:none")
   })
 
-  it("keeps calendar expiry optional, and checks months only when it is on", () => {
-    const s = seed()
-    const d = draftOf(s)
-    expect(d.config.revalidation.calendarExpiry.enabled).toBe(false)
-    d.config.revalidation.calendarExpiry.months = 0
-    expect(codes(d, s)).not.toContain("wiz-months:range")
-    d.config.revalidation.calendarExpiry.enabled = true
-    expect(codes(d, s)).toContain("wiz-months:range")
+  it("has no calendar expiry, re-validation or auto-remediation settings (REQ section 14)", () => {
+    const c = defaultConfig() as unknown as Record<string, unknown>
+    expect(c).not.toHaveProperty("revalidation")
+    expect(c.failure).not.toHaveProperty("autoRemediation")
+    expect(WIZARD_STEPS.map((x) => x.id)).toEqual(["model", "achievement", "simulation", "prerequisites", "evaluators", "failure", "review"])
   })
 
   it("retake score cap only applies to the scored model", () => {

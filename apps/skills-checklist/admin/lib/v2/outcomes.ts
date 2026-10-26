@@ -56,9 +56,6 @@ export function plansOf(s: V2State, studentId: string): Remediation[] {
   return s.remediations.filter((r) => r.studentId === studentId).slice().sort((a, b) => Number(isOpenPlan(b)) - Number(isOpenPlan(a)))
 }
 
-/** The skill's failure path says a fail opens a plan without anyone asking (SC-17 family). */
-export const opensPlanAutomatically = (skill: Skill | undefined) => !!skill?.config?.failure.autoRemediation
-
 /**
  * Opens a plan for a failed skill, or adds a note to the plan that is already open for the same student and skill. Callers decide
  * whether a plan is wanted; this only builds it. Returns whether a new plan was created.
@@ -202,12 +199,7 @@ export function confirmVersion(s: V2State, evaluationId: string, actorId: string
   const status: Evaluation["status"] = skill?.config?.approvalRequired ? "awaiting-approval" : "counted"
   let state: V2State = { ...s, evaluations: s.evaluations.map((x) => (x.id === e.id ? { ...e, status } : x)) }
   state = appendAudit(state, actorId, `Confirmed version ${e.currentVersion} as final`, `${skill?.name ?? "A skill"} for ${nameOf(s, e.studentId)}`, at)
-  let planOpened = false
-  if (e.outcome === "not-met" && opensPlanAutomatically(skill)) {
-    const r = openPlan(state, { studentId: e.studentId, skillId: e.skillId, evaluationId: e.id, actorId }, at)
-    state = r.state
-    planOpened = r.created
-  }
+  const planOpened = false
   return { ok: true, state, planOpened }
 }
 

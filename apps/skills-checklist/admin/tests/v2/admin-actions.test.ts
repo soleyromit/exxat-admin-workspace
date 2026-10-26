@@ -60,7 +60,8 @@ describe("creating imported skills (IM-05, IM-13)", () => {
     expect(b.category).toBe("No category")
     expect(b.description).toBe("Place leads")
     expect(r.state.batches[0].label).toBe("Import from checklist.pdf")
-    expect(s.skills).toHaveLength(31)
+    expect(s.skills).toHaveLength(createSeed().skills.length)
+    expect(r.state.skills).toHaveLength(s.skills.length + 2)
   })
 
   it("refuses an empty list and duplicate names inside the list", () => {
@@ -82,10 +83,10 @@ describe("updateSkillMeta (editable after copy)", () => {
 })
 
 describe("drafts", () => {
-  it("pre-selects binary for a skill with no model and does not write on read", () => {
+  it("a new draft has NO model chosen (SC-02) and reading does not write", () => {
     const s = createSeed()
     const d = draftFor(s, "sk-pressure-injury")
-    expect(d.model).toBe("binary")
+    expect(d.model).toBeNull()
     expect(s.drafts).toEqual({})
   })
 
@@ -137,7 +138,7 @@ describe("publishSkill (SC-19)", () => {
   it("publishes a clean draft: writes model and rules, marks it in use, clears the draft, audits", () => {
     const s0 = createSeed()
     const d = draftFor(s0, IDS.ivCath)
-    const edited = setDraft(s0, IDS.ivCath, { ...d, config: { ...d.config, levels: ["Needs coaching", "Works with prompts", "Works alone", "Teaches others"] } })
+    const edited = setDraft(s0, IDS.ivCath, { ...d, config: { ...d.config, levels: ["Needs coaching", "With assistance", "Works alone", "Teaches others"] } })
     const r = must(publishSkill(edited, IDS.ivCath, A, AT))
     const k = r.state.skills.find((x) => x.id === IDS.ivCath)!
     expect(k.published && k.configured).toBe(true)
@@ -147,9 +148,42 @@ describe("publishSkill (SC-19)", () => {
     expect(COUNTER_BY_ID.published.value(r.state)).toBe(COUNTER_BY_ID.published.value(s0) + 1)
   })
 
-  it("a never-configured skill can be configured with the binary default and published", () => {
+  it("writes feedbackRequired and approvalRequired (SC-14, SC-15) and reloads them into a new draft", () => {
     const s0 = createSeed()
-    const r = must(publishSkill(s0, "sk-pressure-injury", A, AT))
+    const d = draftFor(s0, IDS.ivCath)
+    const on = setDraft(s0, IDS.ivCath, { ...d, config: { ...d.config, feedbackRequired: true, approvalRequired: true } })
+    const pub = must(publishSkill(on, IDS.ivCath, A, AT))
+    const k = pub.state.skills.find((x) => x.id === IDS.ivCath)!
+    expect(k.config?.feedbackRequired).toBe(true)
+    expect(k.config?.approvalRequired).toBe(true)
+    expect(draftFor(pub.state, IDS.ivCath).config).toMatchObject({ feedbackRequired: true, approvalRequired: true })
+    const d2 = draftFor(pub.state, IDS.ivCath)
+    const off = setDraft(pub.state, IDS.ivCath, { ...d2, config: { ...d2.config, feedbackRequired: false, approvalRequired: false } })
+    const pub2 = must(publishSkill(off, IDS.ivCath, A, AT))
+    expect(pub2.state.skills.find((x) => x.id === IDS.ivCath)?.config).toMatchObject({ feedbackRequired: false, approvalRequired: false })
+  })
+
+  it("publish is blocked until a model is chosen (SC-02)", () => {
+    const s0 = createSeed()
+    const r = publishSkill(s0, "sk-pressure-injury", A, AT)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.issues?.some((i) => i.id === "wiz-model:missing")).toBe(true)
+    expect(s0.skills.find((x) => x.id === "sk-pressure-injury")?.published).toBeFalsy()
+  })
+
+  it("a new skill starts with both optional", () => {
+    const s = createSeed()
+    const chosen = setDraft(s, "sk-pressure-injury", chooseModel(draftFor(s, "sk-pressure-injury"), "binary"))
+    const r = must(publishSkill(chosen, "sk-pressure-injury", A, AT))
+    const c = r.state.skills.find((x) => x.id === "sk-pressure-injury")!.config
+    expect(c?.feedbackRequired).toBe(false)
+    expect(c?.approvalRequired).toBe(false)
+  })
+
+  it("a never-configured skill can be published once the admin chooses a model", () => {
+    const s0 = createSeed()
+    const chosen = setDraft(s0, "sk-pressure-injury", chooseModel(draftFor(s0, "sk-pressure-injury"), "binary"))
+    const r = must(publishSkill(chosen, "sk-pressure-injury", A, AT))
     const k = r.state.skills.find((x) => x.id === "sk-pressure-injury")!
     expect(k.model).toBe("binary")
     expect(k.configured && k.published).toBe(true)
@@ -160,12 +194,12 @@ describe("setMapping (CM-03, CM-06, IM-09)", () => {
   it("adds, changes and removes a mapping, with an audit entry each time", () => {
     const s0 = createSeed()
     const added = must(setMapping(s0, "sk-rad-chest", "optional", A, AT))
-    expect(added.state.mappings).toHaveLength(10)
+    expect(added.state.mappings).toHaveLength(s0.mappings.length + 1)
     const changed = must(setMapping(added.state, "sk-rad-chest", "mandatory", A, AT))
     expect(changed.state.mappings.filter((m) => m.skillId === "sk-rad-chest")).toEqual([{ courseId: s0.course.id, skillId: "sk-rad-chest", level: "mandatory" }])
     expect(changed.state.audit[0].action).toBe("Mapped skill as mandatory")
     const removed = must(setMapping(changed.state, "sk-rad-chest", null, A, AT))
-    expect(removed.state.mappings).toHaveLength(9)
+    expect(removed.state.mappings).toHaveLength(s0.mappings.length)
     expect(removed.state.audit[0].action).toBe("Removed mapping")
   })
 
@@ -179,7 +213,7 @@ describe("setMapping (CM-03, CM-06, IM-09)", () => {
     const made = must(copyStarterSkills(createSeed(), "paramedic", [0], A, AT))
     const id = made.state.batches[0].skillIds[0]
     expect(setMapping(made.state, id, "mandatory", A, AT).ok).toBe(false)
-    const pub = must(publishSkill(made.state, id, A, AT))
+    const pub = must(publishSkill(setDraft(made.state, id, chooseModel(draftFor(made.state, id), "binary")), id, A, AT))
     expect(setMapping(pub.state, id, "mandatory", A, AT).ok).toBe(true)
   })
 })

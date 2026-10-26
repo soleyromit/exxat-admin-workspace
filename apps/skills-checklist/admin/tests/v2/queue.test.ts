@@ -29,7 +29,10 @@ describe("the queue (AR-01)", () => {
     expect(keys).not.toContain("sub-03")
     expect(keys).not.toContain("sub-06")
     expect(keys).not.toContain("sub-maya-1")
-    expect(items).toHaveLength(4)
+    // The nine hand-written items, plus the generated cohort's.
+    expect(items.filter((i) => !i.key.startsWith("sub-g-"))).toHaveLength(9)
+    expect(items.length).toBeGreaterThan(9)
+    expect(items.map((i) => i.key)).not.toEqual(expect.arrayContaining(stalledRequests(s).map((x) => x.id)))
   })
 
   it("separates a photo that still needs its outcome from an evaluation that is ready", () => {
@@ -45,8 +48,9 @@ describe("the queue (AR-01)", () => {
   it("holds the stalled request apart, with the person it is stuck with", () => {
     const s = createSeed()
     const st = stalledRequests(s)
-    expect(st.map((x) => x.id)).toEqual(["sub-03"])
-    expect(st[0].assignedToId).toBe(IDS.delgado)
+    const hero = st.filter((x) => !x.id.startsWith("sub-g-"))
+    expect(hero.map((x) => x.id)).toEqual(["sub-03"])
+    expect(hero[0].assignedToId).toBe(IDS.delgado)
   })
 
   it("only an administrator or a clinical coordinator can act", () => {
@@ -92,24 +96,13 @@ describe("approve (AR-05, AR-06)", () => {
     expect(COUNTER_BY_ID.queueWaiting.value(r.state)).toBe(COUNTER_BY_ID.queueWaiting.value(s) - 1)
   })
 
-  it("an approved not-met opens a plan only when the skill says so and none is open", () => {
+  it("an approved not-met never opens a plan on its own (remediation is out of scope, REQ section 14)", () => {
     const s = createSeed()
-    const sd = s.skills.find((k) => k.id === "sk-sterile-dressing")!
-    sd.config!.failure.autoRemediation = true
     const e: Evaluation = { ...s.evaluations.find((x) => x.id === "ev-maya-7")!, id: "ev-t-nm", skillId: "sk-sterile-dressing", outcome: "not-met", versions: [{ version: 1, outcome: "not-met", at: AT, by: IDS.delgado, reason: null }] }
     const withIt: V2State = { ...s, evaluations: [...s.evaluations, e] }
     const r = must(approveItems(withIt, ["ev-t-nm"], ROSS, AT))
-    expect(r.plansOpened).toBe(1)
-    expect(r.state.remediations.filter((p) => p.studentId === IDS.maya)).toHaveLength(1)
-    // Approving a second not-met for the same open plan adds nothing.
-    const again: Evaluation = { ...e, id: "ev-t-nm2" }
-    const r2 = must(approveItems({ ...r.state, evaluations: [...r.state.evaluations, again] }, ["ev-t-nm2"], ROSS, AT))
-    expect(r2.plansOpened).toBe(0)
-    expect(r2.state.remediations.filter((p) => p.studentId === IDS.maya)).toHaveLength(1)
-    // A skill that does not ask for a plan opens none.
-    sd.config!.failure.autoRemediation = false
-    const r3 = must(approveItems({ ...s, evaluations: [...s.evaluations, { ...e, id: "ev-t-nm3" }] }, ["ev-t-nm3"], ROSS, AT))
-    expect(r3.plansOpened).toBe(0)
+    expect(r.plansOpened).toBe(0)
+    expect(r.state.remediations).toHaveLength(s.remediations.length)
   })
 
   it("bulk approve: the blocked item stays and is named with its reason, the others go through (partial failure)", () => {
@@ -185,7 +178,7 @@ describe("return (AR-05, RV-01, RV-02)", () => {
     const att = studentHistory(r.state, "stu-02").skills.find((k) => k.skill.id === "sk-med-admin")!.attempts.find((a) => a.key === "ev-rq-1")!
     expect(att).toMatchObject({ kind: "returned", returnReason: "The setting is wrong. Log it again as Outpatient." })
     expect(r.state.audit[0]).toMatchObject({ action: "Returned to the student", actorId: HADDAD })
-    expect(COUNTER_BY_ID.returned.value(r.state)).toBe(1)
+    expect(COUNTER_BY_ID.returned.value(r.state)).toBe(COUNTER_BY_ID.returned.value(s) + 1)
   })
 
   it("an evaluation with no request goes back on its own, and the student is told who to ask", () => {
@@ -338,8 +331,9 @@ describe("reassign a stalled request (RV-04)", () => {
     expect(r.state.audit[0]).toMatchObject({ actorId: ROSS, action: "Reassigned a stalled request" })
     expect(r.state.audit[0].target).toContain("from J. Delgado, RN to M. Castillo, RN")
     expect(r.state.audit[0].target).toContain("On leave until next week.")
-    expect(stalledRequests(r.state)).toHaveLength(0)
-    expect(COUNTER_BY_ID.stalled.value(r.state)).toBe(0)
+    expect(stalledRequests(r.state)).toHaveLength(stalledRequests(s).length - 1)
+    expect(stalledRequests(r.state).map((y) => y.id)).not.toContain("sub-03")
+    expect(COUNTER_BY_ID.stalled.value(r.state)).toBe(COUNTER_BY_ID.stalled.value(s) - 1)
     expect(COUNTER_BY_ID.withEvaluator.value(r.state)).toBe(COUNTER_BY_ID.withEvaluator.value(s) + 1)
     // The old link stops working for the first person; the new person gets the form.
     expect(requestAccess(r.state, "sub-03", IDS.delgado).kind).toBe("not-on-request")
@@ -385,7 +379,7 @@ describe("compare (AR-02, AR-03)", () => {
     const s = createSeed()
     const base = s.evaluations.find((e) => e.id === "ev-maya-1")!
     const mk = (levelIndex: number): Evaluation => ({ ...base, id: "ev-t-l", skillId: IDS.urinaryCath, submissionId: "sub-maya-1", levelIndex, versions: [{ version: 1, outcome: "met", at: AT, by: IDS.delgado, reason: null, detail: { feedback: "ok", levelIndex } }] })
-    expect(compareEvaluation(s, mk(1)).rows[0]).toMatchObject({ label: "Level of supervision", student: "Works with prompts", evaluator: "Works with prompts", agreement: "agreed" })
+    expect(compareEvaluation(s, mk(1)).rows[0]).toMatchObject({ label: "Level of supervision", student: "With assistance", evaluator: "With assistance", agreement: "agreed" })
     expect(compareEvaluation(s, mk(2)).rows[0]).toMatchObject({ evaluator: "Works alone", agreement: "differed" })
     expect(compareEvaluation(s, mk(2)).responses).toEqual([{ label: "Level of supervision", value: "Works alone" }])
   })

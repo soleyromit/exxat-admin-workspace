@@ -1,6 +1,9 @@
-import { defaultConfig, SAMPLE_QUESTIONS } from "./config"
+import { ASSISTED_LEVEL, defaultConfig, SAMPLE_QUESTIONS } from "./config"
+import { generate } from "./generate"
+import { daysBefore, DEMO_TODAY, HERO_APPROVAL, IDS, prng } from "./seed-core"
 import type {
   AuditEntry,
+  Course,
   Evaluation,
   EvaluationStatus,
   LabCheckoff,
@@ -9,6 +12,7 @@ import type {
   Outcome,
   Person,
   Placement,
+  ProgramLocation,
   Setting,
   Skill,
   SkillConfig,
@@ -17,38 +21,25 @@ import type {
   V2State,
 } from "./types"
 
-/** Fixed demo clock so the seed is identical on every load and in tests. */
-export const DEMO_TODAY = "2026-10-19"
+/** Bump when the generator changes on purpose: saved deltas made against another seed are then discarded. */
+export const SEED_VERSION = "2026-10-26.7-level-words"
 
-function daysBefore(n: number): string {
-  const d = new Date(`${DEMO_TODAY}T09:00:00Z`)
-  d.setUTCDate(d.getUTCDate() - n)
-  return d.toISOString()
-}
+export { DEMO_TODAY, IDS }
 
-/** Small deterministic PRNG (mulberry32) so history is stable. */
-function prng(seed: number) {
-  let a = seed >>> 0
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0
-    let t = a
-    t = Math.imul(t ^ (t >>> 15), t | 1)
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
-
-export const IDS = {
-  maya: "stu-maya",
-  delgado: "pre-delgado",
-  whitmore: "lab-whitmore",
-  ross: "adm-ross",
-  reviewer: "rev-haddad",
-  director: "dir-brennan",
-  course: "crs-nurs350",
-  ivCath: "sk-iv-cath",
-  urinaryCath: "sk-urinary-cath",
-} as const
+/** Cohort and group of stu-02 to stu-12, in order (sample data for the report filters). */
+const STUDENT_GROUP: Array<{ cohort: string; group: string }> = [
+  { cohort: "BSN 2027", group: "Group A" },
+  { cohort: "BSN 2027", group: "Group A" },
+  { cohort: "BSN 2027", group: "Group B" },
+  { cohort: "BSN 2027", group: "Group B" },
+  { cohort: "BSN 2027", group: "Group B" },
+  { cohort: "BSN 2027", group: "Group C" },
+  { cohort: "BSN 2027", group: "Group C" },
+  { cohort: "ABSN 2027", group: "Group A" },
+  { cohort: "ABSN 2027", group: "Group A" },
+  { cohort: "ABSN 2027", group: "Group B" },
+  { cohort: "ABSN 2027", group: "Group B" },
+]
 
 const PEOPLE: Person[] = [
   { id: IDS.ross, name: "A. Ross", title: "Program administrator", kind: "admin", email: "a.ross@harbor.example" },
@@ -59,7 +50,7 @@ const PEOPLE: Person[] = [
   { id: "pre-okonkwo", name: "S. Okonkwo, RN", title: "Preceptor, Harbor General", kind: "preceptor", email: "s.okonkwo@harborgeneral.example", credentials: ["RN"], yearsPractice: 1, training: [] },
   { id: "pre-castillo", name: "M. Castillo, RN", title: "Preceptor, Harbor Outpatient", kind: "preceptor", email: "m.castillo@harboroutpatient.example", credentials: ["RN"], yearsPractice: 4, training: ["IV therapy"] },
   { id: "pre-aldridge", name: "T. Aldridge, LPN", title: "Preceptor, Harbor General", kind: "preceptor", email: "t.aldridge@harborgeneral.example", credentials: ["LPN"], yearsPractice: 6, training: ["IV therapy"] },
-  { id: IDS.maya, name: "Maya Ferreira", title: "BSN 2027", kind: "student", email: "m.ferreira@students.harbor.example" },
+  { id: IDS.maya, name: "Maya Ferreira", title: "BSN 2027", kind: "student", email: "m.ferreira@students.harbor.example", cohort: "BSN 2027", group: "Group A" },
   ...[
     "Jordan Okafor",
     "Priya Raman",
@@ -75,9 +66,10 @@ const PEOPLE: Person[] = [
   ].map((name, i): Person => ({
     id: `stu-${String(i + 2).padStart(2, "0")}`,
     name,
-    title: "BSN 2027",
+    title: i < 7 ? "BSN 2027" : "ABSN 2027",
     kind: "student",
     email: `${name.toLowerCase().replace(/[^a-z]+/g, ".")}@students.harbor.example`,
+    ...STUDENT_GROUP[i],
   })),
 ]
 
@@ -93,8 +85,7 @@ const IV_CONFIG: SkillConfig = {
   simulation: { allowed: true, mode: "cap", maxSharePercent: 25, allowList: [] },
   prerequisites: { skillIds: ["sk-vitals"], labCheckoff: true, practiceTrials: 3 },
   qualification: { credentials: ["RN"], minYears: 2, training: ["IV therapy"] },
-  failure: { attemptLimit: 3, minDaysBetween: 7, retakeScoreCap: null, autoRemediation: true },
-  revalidation: { onEvents: ["After a leave of absence", "After a policy or equipment change"], calendarExpiry: { enabled: false, months: 24 } },
+  failure: { attemptLimit: 3, minDaysBetween: 7, retakeScoreCap: null },
   // Stage 3: the program made narrative feedback mandatory for this skill (SC-14), so the evaluator form shows the rule (EV-06).
   feedbackRequired: true,
 }
@@ -102,6 +93,7 @@ const IV_CONFIG: SkillConfig = {
 type SkillSeed = [id: string, name: string, category: string, model: Skill["model"], published: boolean, configured?: boolean]
 
 const LIBRARIES: Record<Specialty, SkillSeed[]> = {
+  "adn-hgtc": [],
   "bsn-med-surg": [
     [IDS.ivCath, "IV catheter insertion", "Vascular access", "demonstration", false],
     [IDS.urinaryCath, "Indwelling urinary catheter insertion", "Elimination", "demonstration", true],
@@ -143,6 +135,32 @@ const LIBRARIES: Record<Specialty, SkillSeed[]> = {
   ],
 }
 
+/** Sample program-defined tags (SL-07). Nothing ships: these exist only so the report's tag filter has something to cut across categories. A skill may carry several. */
+const TAGS: Record<string, string[]> = {
+  [IDS.ivCath]: ["Infection prevention", "Invasive procedures"],
+  [IDS.urinaryCath]: ["Infection prevention", "Invasive procedures"],
+  "sk-sterile-dressing": ["Infection prevention"],
+  "sk-central-line": ["Infection prevention", "Invasive procedures"],
+  "sk-ng-tube": ["Invasive procedures"],
+  "sk-med-admin": ["Patient safety"],
+  "sk-vitals": ["Patient safety"],
+  "sk-blood-glucose": ["Patient safety"],
+  "sk-handoff": ["Patient safety"],
+}
+
+/** Sample places where evidence is gathered, and what each offers (RP-01, RP-09). The names match the placements already in the seed. */
+const LOCATIONS: ProgramLocation[] = [
+  { name: "Harbor General, 4 West", setting: "clinical", clinicalSetting: "Inpatient" },
+  { name: "Harbor General, 5 East", setting: "clinical", clinicalSetting: "Inpatient" },
+  { name: "Harbor Outpatient Clinic", setting: "clinical", clinicalSetting: "Outpatient" },
+  { name: "Skills lab 2", setting: "lab" },
+  { name: "Simulation lab", setting: "simulation" },
+]
+
+/** Sample cohorts and groups (RP-01). Maya and the next seven students are BSN 2027; the last four are ABSN 2027. */
+const GROUPS: Record<string, string[]> = { "BSN 2027": ["Group A", "Group B", "Group C"], "ABSN 2027": ["Group A", "Group B"] }
+const SECOND_COURSE: Course = { id: "crs-nurs352", code: "NURS 352", name: "Skills and Simulation Lab", term: "Fall 2026", cohort: "BSN 2027", clinicalSettings: [] }
+
 function buildSkills(): Skill[] {
   const out: Skill[] = []
   for (const specialty of Object.keys(LIBRARIES) as Specialty[]) {
@@ -156,6 +174,7 @@ function buildSkills(): Skill[] {
         model,
         configured: isConfigured,
         published,
+        ...(TAGS[id] ? { tags: [...TAGS[id]] } : {}),
         config: isConfigured
           ? id === IDS.ivCath
             ? structuredClone(IV_CONFIG)
@@ -199,6 +218,40 @@ function mkEval(id: string, studentId: string, h: Hist): Evaluation {
   }
 }
 
+/** Why the reviewer returned Maya's bedside handoff evaluation (hero story, sub-maya-2). */
+export const MAYA_RETURN_REASON = "The signed form is missing the date. Add it and send the request again."
+
+const MAND = [IDS.urinaryCath, "sk-med-admin", "sk-sterile-dressing", "sk-vitals"]
+const OPT = ["sk-ng-tube", "sk-blood-glucose", "sk-handoff"]
+/** Clinical evaluators other than the demo preceptor, and the weights that keep any one person under a third of the history. */
+const RATERS: Array<[id: string, weight: number]> = [
+  [IDS.delgado, 22],
+  ["pre-okonkwo", 22],
+  ["pre-castillo", 20],
+  ["pre-aldridge", 18],
+  [IDS.reviewer, 6],
+]
+
+/**
+ * What each sample student has done so far. `met` is the number of Met evaluations in [urinary catheter, oral medication,
+ * sterile dressing, vital signs] (the four mandatory skills in use, three Met each to achieve), `miss` the Not yet or Not met
+ * attempts, `opt` the evaluations on optional skills. The spread (2 to 10 of 12 needed; Grace Tanaka and Ethan Cole have nothing pending, so their records can be verified) gives pace and attainment charts something
+ * to show; the term is about half gone, so 6 are expected and 5 or fewer is behind.
+ */
+const PLAN: Record<string, { met: [number, number, number, number]; miss: number; opt: number }> = {
+  "stu-02": { met: [3, 3, 2, 0], miss: 2, opt: 2 },
+  "stu-03": { met: [3, 1, 0, 0], miss: 3, opt: 1 },
+  "stu-04": { met: [1, 1, 0, 1], miss: 2, opt: 1 },
+  "stu-05": { met: [3, 3, 0, 1], miss: 2, opt: 3 },
+  "stu-06": { met: [3, 3, 3, 1], miss: 1, opt: 3 },
+  "stu-07": { met: [2, 0, 0, 0], miss: 3, opt: 0 },
+  "stu-08": { met: [3, 0, 3, 0], miss: 2, opt: 2 },
+  "stu-09": { met: [3, 0, 1, 0], miss: 2, opt: 1 },
+  "stu-10": { met: [0, 0, 0, 2], miss: 3, opt: 1 },
+  "stu-11": { met: [3, 1, 0, 2], miss: 2, opt: 2 },
+  "stu-12": { met: [3, 3, 3, 0], miss: 1, opt: 3 },
+}
+
 function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
   const out: Evaluation[] = []
   // Maya: mostly met, one not-yet, IV catheter and central line still ahead.
@@ -212,38 +265,61 @@ function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
     ["sk-blood-glucose", "met", "clinical", 6, IDS.delgado, "awaiting-approval"],
     // A third met vital signs evaluation, so the IV catheter prerequisite "have met vital signs" holds for Maya.
     ["sk-vitals", "met", "clinical", 5, IDS.delgado],
+    // Hero story (added 2026-10-26, dataset spec section 12): a did-not-qualify attempt with a failed rule. The latest sterile
+    // dressing attempt is Unmet, so the skill reads "Evidence does not qualify" and the rule states what is missing.
+    ["sk-sterile-dressing", "not-met", "clinical", 3, "pre-okonkwo"],
+    // And a returned submission: the reviewer returned her bedside handoff evaluation for a missing date (sub-maya-2).
+    ["sk-handoff", "met", "clinical", 6, "pre-okonkwo", "returned"],
   ]
   maya.forEach((h, i) => out.push(mkEval(`ev-maya-${i + 1}`, IDS.maya, h)))
+  const mayaReturned = out.find((e) => e.id === "ev-maya-10")
+  if (mayaReturned) {
+    mayaReturned.submissionId = "sub-maya-2"
+    mayaReturned.review = { decision: "returned", byId: IDS.reviewer, at: daysBefore(4), note: MAYA_RETURN_REASON }
+  }
 
   const rand = prng(350)
-  const pool = ["sk-med-admin", "sk-vitals", "sk-sterile-dressing", "sk-blood-glucose", IDS.urinaryCath, "sk-ng-tube", "sk-handoff"]
+  const totalWeight = RATERS.reduce((n, r) => n + r[1], 0)
+  const pickRater = () => {
+    let x = rand() * totalWeight
+    for (const [id, w] of RATERS) if ((x -= w) < 0) return id
+    return RATERS[0][0]
+  }
   const students = PEOPLE.filter((p) => p.kind === "student" && p.id !== IDS.maya)
   students.forEach((s, si) => {
-    const n = 4 + Math.floor(rand() * 5)
-    for (let i = 0; i < n; i++) {
-      const skillId = pool[Math.floor(rand() * pool.length)]
-      const r = rand()
-      const outcome: Outcome = r < 0.68 ? "met" : r < 0.86 ? "not-yet" : "not-met"
-      const setting: Setting = rand() < 0.2 ? "lab" : rand() < 0.1 ? "simulation" : "clinical"
-      out.push(mkEval(`ev-${si + 2}-${i + 1}`, s.id, [skillId, outcome, setting, 3 + Math.floor(rand() * 60), setting === "lab" ? IDS.whitmore : IDS.delgado]))
+    const plan = PLAN[s.id]
+    const items: Array<{ skillId: string; outcome: Outcome; t: number }> = []
+    plan.met.forEach((n, k) => {
+      for (let i = 0; i < n; i++) items.push({ skillId: MAND[k], outcome: "met", t: rand() })
+    })
+    for (let i = 0; i < plan.miss; i++) {
+      const pool = [...MAND, ...OPT]
+      items.push({ skillId: pool[Math.floor(rand() * pool.length)], outcome: rand() < 0.62 ? "not-yet" : "not-met", t: rand() * 0.8 })
     }
+    for (let i = 0; i < plan.opt; i++) items.push({ skillId: OPT[(i + si) % OPT.length], outcome: rand() < 0.82 ? "met" : "not-yet", t: rand() })
+    items.sort((a, b) => a.t - b.t)
+    // Spread over the weeks of the term so far (55 down to 3 days ago); a student's own pace shows in how many fall in each week.
+    items.forEach((it, i) => {
+      const daysAgo = Math.round(54 - ((i + rand() * 0.9) / items.length) * 51)
+      // Nasogastric tube care rests on one evaluator (the outpatient preceptor), so the single-rater flag has something real to show.
+      // Bedside handoff is part simulation. The core skills draw on several evaluators.
+      const setting: Setting = it.skillId === "sk-handoff" ? (rand() < 0.4 ? "simulation" : "clinical") : rand() < 0.11 ? "lab" : "clinical"
+      const evaluatorId = it.skillId === "sk-ng-tube" ? "pre-castillo" : setting === "clinical" ? pickRater() : IDS.whitmore
+      const e = mkEval(`ev-${si + 2}-${i + 1}`, s.id, [it.skillId, it.outcome, setting, daysAgo, evaluatorId])
+      if (setting === "clinical" && evaluatorId === "pre-castillo") e.clinicalSetting = "Outpatient"
+      out.push(e)
+    })
   })
 
-  // One reopened evaluation with real version history (edit after sign-off keeps versions).
   // The failed attempt that opened the remediation plan.
   out.push(mkEval("ev-rem-1", "stu-04", ["sk-sterile-dressing", "not-met", "clinical", 20, IDS.delgado]))
-  const reopened = out.find((e) => e.studentId === "stu-03" && e.outcome === "met")
-  if (reopened) {
-    reopened.status = "reopened"
-    reopened.currentVersion = 2
-    reopened.outcome = "not-yet"
-    reopened.versions.push({ version: 2, outcome: "not-yet", at: daysBefore(2), by: IDS.reviewer, reason: "Evaluator corrected the outcome after a documentation review." })
-  }
-  // Two more waiting for approval so the queue has depth.
-  for (const sid of ["stu-05"]) {
-    const e = out.find((x) => x.studentId === sid && x.status === "counted" && x.outcome === "met")
-    if (e) e.status = "awaiting-approval"
-  }
+  // One reopened evaluation with real version history (edit after sign-off keeps versions).
+  const reopened = mkEval("ev-reopen-1", "stu-03", ["sk-med-admin", "met", "clinical", 16, "pre-okonkwo"])
+  reopened.status = "reopened"
+  reopened.currentVersion = 2
+  reopened.outcome = "not-yet"
+  reopened.versions.push({ version: 2, outcome: "not-yet", at: daysBefore(2), by: IDS.reviewer, reason: "Evaluator corrected the outcome after a documentation review." })
+  out.push(reopened)
   // Stage 4: Maya's blood glucose evaluation, waiting for approval, keeps the evaluator's words so the compare view has something to show.
   const mayaWaiting = out.find((e) => e.id === "ev-maya-7")
   if (mayaWaiting) mayaWaiting.versions[0].detail = { feedback: "Used the meter correctly and cleaned the site first. Wait for the full reading before you document it." }
@@ -253,22 +329,77 @@ function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
   held.clinicalSetting = "Inpatient"
   held.versions[0].detail = { feedback: "Checked the five rights aloud and confirmed the allergy band before giving the dose." }
   out.push(held)
-  return { list: out, reopenedId: reopened ? reopened.id : "" }
+  // More requests waiting in the queue, completed by different evaluators on different days (ages 1 to 12 days).
+  for (const q of QUEUED) {
+    q.skills.forEach(([skillId, outcome], i) => {
+      const e = mkEval(`ev-${q.sub}-${i + 1}`, q.studentId, [skillId, outcome, "clinical", q.age, q.evaluatorId, "awaiting-approval"])
+      e.submissionId = q.sub
+      if (q.evaluatorId === "pre-castillo") e.clinicalSetting = "Outpatient"
+      e.versions[0].detail = { feedback: q.feedback }
+      out.push(e)
+    })
+  }
+  // A counted evaluation on a skill that asks for approval (HERO_APPROVAL, SC-15) was approved by the reviewer: it carries the approval.
+  for (const e of out) if (e.status === "counted" && !e.review && HERO_APPROVAL.has(e.skillId)) e.review = { decision: "approved", byId: IDS.reviewer, at: e.date, note: "" }
+  // Where and in which course each piece of evidence was gathered (RP-08), consistent with its setting and named clinical setting.
+  for (const e of out) {
+    if (e.location) continue
+    if (e.setting === "lab") e.location = "Skills lab 2"
+    else if (e.setting === "simulation") e.location = "Simulation lab"
+    else e.location = e.clinicalSetting === "Outpatient" ? "Harbor Outpatient Clinic" : e.evaluatorId === IDS.delgado ? "Harbor General, 4 West" : "Harbor General, 5 East"
+    if (e.setting !== "clinical") e.courseId = SECOND_COURSE.id
+  }
+  return { list: out, reopenedId: reopened.id }
 }
 
+/** Requests completed by an evaluator and held for approval, beyond sub-02. `age` is days since the evaluator finished. */
+const QUEUED: Array<{ sub: string; studentId: string; skills: Array<[string, Outcome]>; method: Submission["method"]; evaluatorId: string; age: number; feedback: string; rating: string[]; note: string }> = [
+  { sub: "sub-07", studentId: "stu-05", skills: [["sk-blood-glucose", "met"]], method: "qr", evaluatorId: "pre-okonkwo", age: 1, feedback: "Checked the meter calibration first and repeated the low reading before reporting it.", rating: ["Met"], note: "" },
+  { sub: "sub-08", studentId: "stu-06", skills: [["sk-blood-glucose", "met"]], method: "handover", evaluatorId: "pre-castillo", age: 5, feedback: "Good site choice and a clean technique. Record the time of the reading right away.", rating: ["Met"], note: "Used the clinic meter for the first time." },
+  { sub: "sub-09", studentId: "stu-09", skills: [["sk-med-admin", "met"]], method: "link", evaluatorId: "pre-aldridge", age: 8, feedback: "Verified the patient with two identifiers before the dose.", rating: ["Not met"], note: "I skipped the second identifier at first." },
+  { sub: "sub-10", studentId: "stu-10", skills: [["sk-blood-glucose", "met"], ["sk-med-admin", "not-yet"]], method: "qr", evaluatorId: "pre-okonkwo", age: 10, feedback: "The glucose reading was accurate. For the medication, re-check the order against the chart before you pour.", rating: ["Met", "Met"], note: "" },
+  { sub: "sub-11", studentId: "stu-07", skills: [["sk-blood-glucose", "met"]], method: "link", evaluatorId: IDS.delgado, age: 12, feedback: "Independent and organised. No prompts needed.", rating: ["Met"], note: "" },
+]
+
 function buildSubmissions(): Submission[] {
+  const fromQueued = QUEUED.map((q): Submission => ({
+    id: q.sub,
+    studentId: q.studentId,
+    skillIds: q.skills.map(([k]) => k),
+    method: q.method,
+    status: "awaiting-review",
+    assignedToId: IDS.reviewer,
+    createdAt: daysBefore(q.age + 1),
+    daysWaiting: q.age,
+    entryIds: q.skills.map((_, i) => `log-${q.sub}-${i + 1}`),
+    candidateIds: [q.evaluatorId],
+    completedById: q.evaluatorId,
+    completedAt: daysBefore(q.age),
+  }))
   return [
     { id: "sub-maya-1", studentId: IDS.maya, skillIds: [IDS.urinaryCath, "sk-med-admin"], method: "qr", status: "with-evaluator", assignedToId: IDS.delgado, createdAt: daysBefore(0), daysWaiting: 0, entryIds: ["log-maya-uc-1"], candidateIds: [IDS.delgado] },
+    // Hero story (2026-10-26): Maya's returned submission, with who returned it and why, so "Fix a returned submission" demos for her.
+    { id: "sub-maya-2", studentId: IDS.maya, skillIds: ["sk-handoff"], method: "link", status: "returned", assignedToId: "pre-okonkwo", createdAt: daysBefore(7), daysWaiting: 4, candidateIds: ["pre-okonkwo"], completedById: "pre-okonkwo", completedAt: daysBefore(6), revisions: 0, returns: [{ at: daysBefore(4), byId: IDS.reviewer, reason: MAYA_RETURN_REASON, revision: 1 }] },
     { id: "sub-02", studentId: "stu-02", skillIds: ["sk-med-admin"], method: "link", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(3), daysWaiting: 3, entryIds: ["log-stu02-1"], candidateIds: [IDS.delgado], completedById: IDS.delgado, completedAt: daysBefore(3) },
     { id: "sub-04", studentId: "stu-04", skillIds: ["sk-vitals", "sk-blood-glucose"], method: "photo", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(2), daysWaiting: 2, photo: { name: "signed-form-vitals-glucose.jpg", sizeKb: 842 } },
+    // A signed paper form from a clinic site that still needs its outcome entered.
+    { id: "sub-12", studentId: "stu-08", skillIds: ["sk-vitals"], method: "photo", status: "awaiting-review", assignedToId: IDS.reviewer, createdAt: daysBefore(7), daysWaiting: 7, photo: { name: "signed-form-vitals.jpg", sizeKb: 611 } },
     { id: "sub-03", studentId: "stu-03", skillIds: ["sk-sterile-dressing"], method: "link", status: "stalled", assignedToId: IDS.delgado, createdAt: daysBefore(9), daysWaiting: 9, candidateIds: [IDS.delgado] },
+    ...fromQueued,
     { id: "sub-06", studentId: "stu-06", skillIds: ["sk-handoff"], method: "handover", status: "done", assignedToId: IDS.delgado, createdAt: daysBefore(15), daysWaiting: 0 },
+    { id: "sub-13", studentId: "stu-02", skillIds: ["sk-vitals"], method: "qr", status: "done", assignedToId: "pre-okonkwo", createdAt: daysBefore(22), daysWaiting: 0 },
+    { id: "sub-14", studentId: "stu-12", skillIds: ["sk-ng-tube"], method: "link", status: "done", assignedToId: "pre-castillo", createdAt: daysBefore(30), daysWaiting: 0 },
+    { id: "sub-15", studentId: "stu-09", skillIds: ["sk-sterile-dressing"], method: "handover", status: "done", assignedToId: "pre-aldridge", createdAt: daysBefore(36), daysWaiting: 0 },
   ]
 }
 
+/**
+ * Maya's two Fall 2026 rotations for the focus course (dataset spec section 12): the first finished before the demo day, the
+ * second is current and ends within PLACEMENT_ENDING_DAYS of it, so the "placement ending" cue has a real date to read.
+ */
 const PLACEMENTS: Placement[] = [
-  { id: "pl-maya-1", studentId: IDS.maya, courseId: IDS.course, location: "Harbor General, 4 West", setting: "Inpatient" },
-  { id: "pl-maya-2", studentId: IDS.maya, courseId: IDS.course, location: "Harbor Outpatient Clinic", setting: "Outpatient" },
+  { id: "pl-maya-1", studentId: IDS.maya, courseId: IDS.course, location: "Harbor General, 4 West", setting: "Inpatient", termId: "trm-fa26", startDate: "2026-08-31", endDate: "2026-10-09" },
+  { id: "pl-maya-2", studentId: IDS.maya, courseId: IDS.course, location: "Harbor Outpatient Clinic", setting: "Outpatient", termId: "trm-fa26", startDate: "2026-10-12", endDate: "2026-11-13" },
 ]
 
 /**
@@ -279,8 +410,8 @@ function buildLogEntries(): LogEntry[] {
   const base = { studentId: IDS.maya, answers: null, clinicalSetting: null, setting: "lab" as const }
   return [
     { ...base, id: "log-maya-prac-1", skillId: IDS.ivCath, batchId: "lb-seed-1", location: "Skills lab 2", rating: "Needs coaching", note: "", at: daysBefore(21), requestId: null },
-    { ...base, id: "log-maya-prac-2", skillId: IDS.ivCath, batchId: "lb-seed-2", location: "Skills lab 2", rating: "Works with prompts", note: "", at: daysBefore(18), requestId: null },
-    { ...base, id: "log-maya-prac-3", skillId: IDS.ivCath, batchId: "lb-seed-3", location: "Skills lab 2", rating: "Works with prompts", note: "", at: daysBefore(0), requestId: null },
+    { ...base, id: "log-maya-prac-2", skillId: IDS.ivCath, batchId: "lb-seed-2", location: "Skills lab 2", rating: ASSISTED_LEVEL, note: "", at: daysBefore(18), requestId: null },
+    { ...base, id: "log-maya-prac-3", skillId: IDS.ivCath, batchId: "lb-seed-3", location: "Skills lab 2", rating: ASSISTED_LEVEL, note: "", at: daysBefore(0), requestId: null },
     {
       ...base,
       id: "log-maya-uc-1",
@@ -289,12 +420,28 @@ function buildLogEntries(): LogEntry[] {
       setting: "clinical" as const,
       clinicalSetting: "Inpatient",
       location: "Harbor General, 4 West",
-      rating: "Works with prompts",
+      rating: ASSISTED_LEVEL,
       note: "Asked the preceptor to check my sterile technique before I inserted the catheter.",
       at: daysBefore(14),
       requestId: "sub-maya-1",
     },
     // Stage 4: Jordan Okafor rated herself Not met on oral medication administration; the evaluator said Met (a difference to compare).
+    ...QUEUED.flatMap((q) =>
+      q.skills.map(([skillId], i): LogEntry => ({
+        ...base,
+        id: `log-${q.sub}-${i + 1}`,
+        studentId: q.studentId,
+        skillId,
+        batchId: `lb-${q.sub}`,
+        setting: "clinical" as const,
+        clinicalSetting: q.evaluatorId === "pre-castillo" ? "Outpatient" : "Inpatient",
+        location: q.evaluatorId === "pre-castillo" ? "Harbor Outpatient Clinic" : "Harbor General, 5 East",
+        rating: q.rating[i],
+        note: i === 0 ? q.note : "",
+        at: daysBefore(q.age + 1),
+        requestId: q.sub,
+      })),
+    ),
     { ...base, id: "log-stu02-1", studentId: "stu-02", skillId: "sk-med-admin", batchId: "lb-seed-5", setting: "clinical" as const, clinicalSetting: "Inpatient", location: "Harbor General, 5 East", rating: "Not met", note: "I was nervous and checked the order twice.", at: daysBefore(4), requestId: "sub-02" },
   ]
 }
@@ -309,13 +456,14 @@ function buildAudit(reopenedId: string): AuditEntry[] {
   ]
 }
 
-/** A fresh deep copy of the demo data. Every call returns a new object graph. */
-export function createSeed(): V2State {
+/** The hand-written hero layer: the named people, the 14 scenario steps' starting conditions and their history. Byte-stable. */
+export function buildHero(): V2State {
   const evals = buildEvaluations()
   return {
     schema: 1,
-    program: { id: "prg-bsn", school: "Harbor University", name: "BSN", cohorts: ["BSN 2027"], clinicalSettings: ["Inpatient", "Emergency", "Outpatient"], simulationSettings: ["Simulation lab", "Standardized patient suite"] },
+    program: { id: "prg-bsn", school: "Harbor University", name: "BSN", cohorts: ["BSN 2027", "ABSN 2027"], clinicalSettings: ["Inpatient", "Emergency", "Outpatient"], simulationSettings: ["Simulation lab", "Standardized patient suite"], locations: LOCATIONS.map((l) => ({ ...l })), groups: structuredClone(GROUPS) },
     course: { id: IDS.course, code: "NURS 350", name: "Clinical Practicum", term: "Fall 2026", cohort: "BSN 2027", clinicalSettings: ["Inpatient", "Outpatient"] },
+    otherCourses: [{ ...SECOND_COURSE }],
     people: PEOPLE.map((p) => ({ ...p })),
     skills: buildSkills(),
     mappings: MAPPED.map(([skillId, level]) => ({ courseId: IDS.course, skillId, level })),
@@ -371,4 +519,9 @@ export function createSeed(): V2State {
     verifications: [],
     labBatches: [],
   }
+}
+
+/** A fresh deep copy of the demo data: the hero layer plus the deterministic generated cohort. Every call returns a new object graph. */
+export function createSeed(): V2State {
+  return generate(buildHero())
 }

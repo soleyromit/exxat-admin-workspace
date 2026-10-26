@@ -3,7 +3,8 @@ import { mapBlockReason } from "./coverage"
 import { validateDraft, type RuleIssue } from "./rules"
 import { STARTER_BY_SPECIALTY } from "./starter-libraries"
 import { appendAudit } from "./store"
-import type { EvalModel, ImportBatch, MappingRow, Skill, SkillConfig, SkillDraft, Specialty, V2State } from "./types"
+import { evalsOfSkill } from "./evidence-index"
+import type { Course, EvalModel, ImportBatch, MappingRow, Skill, SkillConfig, SkillDraft, Specialty, V2State } from "./types"
 
 /** Pure Stage 1 transitions for the administrator screens. Each returns a new state and never mutates its input. */
 export type Result<T = object> = ({ ok: true; state: V2State } & T) | { ok: false; error: string; issues?: RuleIssue[] }
@@ -70,13 +71,13 @@ export function updateSkillMeta(s: V2State, skillId: string, meta: NewSkill, act
   return { ok: true, state: appendAudit({ ...s, skills }, actorId, "Edited skill", name, at) }
 }
 
-/** The draft the wizard starts from: the saved draft, else the skill's saved configuration, else defaults with binary pre-selected. */
+/** The draft the wizard starts from: the saved draft, else the skill's saved configuration, else defaults with NO model chosen (SC-02: the admin chooses explicitly). */
 export function draftFor(s: V2State, skillId: string): SkillDraft {
   const saved = s.drafts[skillId]
   if (saved) return saved
   const skill = s.skills.find((k) => k.id === skillId)
   if (skill?.config && skill.model) return { model: skill.model, config: structuredClone(skill.config), step: 1 }
-  return { model: "binary", config: defaultConfig("binary"), step: 1 }
+  return { model: null, config: defaultConfig(), step: 1 }
 }
 
 /** Live draft edits are saved without an audit entry (a draft is not a decision). Saving a step and publishing are audited. */
@@ -102,7 +103,7 @@ export function copyConfigFrom(s: V2State, skillId: string, sourceId: string, ac
 export function saveStep(s: V2State, skillId: string, step: number, actorId: string, at: string): V2State {
   const skill = s.skills.find((k) => k.id === skillId)
   const d = draftFor(s, skillId)
-  return appendAudit(setDraft(s, skillId, { ...d, step }), actorId, `Saved configuration draft, step ${Math.min(step, 8)}`, skill?.name ?? skillId, at)
+  return appendAudit(setDraft(s, skillId, { ...d, step }), actorId, `Saved configuration draft, step ${Math.min(step, 7)}`, skill?.name ?? skillId, at)
 }
 
 /** Puts a skill in use with its drafted rules (SC-19). Refuses while any issue remains. Completed evaluations are not touched. */
@@ -121,7 +122,7 @@ export function publishSkill(s: V2State, skillId: string, actorId: string, at: s
   return { ok: true, state: appendAudit({ ...s, skills, drafts }, actorId, wasPublished ? "Published changes to skill" : "Published skill", skill.name, at) }
 }
 
-export const LEVEL_LABEL: Record<MappingRow["level"], string> = { mandatory: "Mandatory", optional: "Optional", "not-expected": "Not expected" }
+export const LEVEL_LABEL: Record<MappingRow["level"], string> = { mandatory: "Mandatory", recommended: "Recommended", optional: "Optional", "not-expected": "Not expected" }
 
 /** Maps a skill to the course at a level, or removes the mapping when `level` is null (CM-03, CM-06). Unconfigured skills are refused (IM-09). */
 export function setMapping(s: V2State, skillId: string, level: MappingRow["level"] | null, actorId: string, at: string): Result {
@@ -137,4 +138,83 @@ export function setMapping(s: V2State, skillId: string, level: MappingRow["level
   const existing = s.mappings.find((m) => m.courseId === courseId && m.skillId === skillId)
   const mappings = existing ? s.mappings.map((m) => (m === existing ? { ...m, level } : m)) : [...rest, { courseId, skillId, level }]
   return { ok: true, state: appendAudit({ ...s, mappings }, actorId, `Mapped skill as ${LEVEL_LABEL[level].toLowerCase()}`, `${skill.name} in ${s.course.code}`, at) }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Skill lifecycle: deactivate, reactivate, delete (REQ SL-02, SL-11; CALL 10-09; decisions D-X14, D-X15)
+
+/** Every course the program runs (the focus course first when the generator has no course list). */
+export function allCourses(s: V2State): Course[] {
+  return s.courses ?? [s.course, ...(s.otherCourses ?? [])]
+}
+
+/** "NURS 350 Adult Health II": how a course is named in an impact list. */
+export const courseLabel = (c: Pick<Course, "code" | "name">): string => `${c.code} ${c.name}`
+
+/** Courses a skill is mapped to (mandatory or non-mandatory), as labels, sorted. Delete lists these as impact (D-X15). */
+export function mappedCourses(s: V2State, skillId: string): string[] {
+  const ids = new Set(s.mappings.filter((m) => m.skillId === skillId && m.level !== "not-expected").map((m) => m.courseId))
+  return allCourses(s).filter((c) => ids.has(c.id)).map(courseLabel).sort()
+}
+
+export interface Tracked {
+  /** Evaluations recorded against the skill, any status (the library's evidence column). */
+  evaluations: number
+  /** Requests, practice log entries and lab check-offs that name the skill. */
+  other: number
+  total: number
+}
+
+/**
+ * What has been tracked against a skill. The call: "as soon as there is data ... prevent them from deleting", so delete needs
+ * `total === 0` (decision D-X15). A course mapping is not data: it is listed as impact and removed with the skill.
+ */
+export function trackedAgainst(s: V2State, skillId: string): Tracked {
+  const evaluations = evalsOfSkill(s, skillId).length
+  const other =
+    s.submissions.filter((x) => x.skillIds.includes(skillId)).length +
+    s.logEntries.filter((x) => x.skillId === skillId).length +
+    s.labCheckoffs.filter((x) => x.skillId === skillId).length
+  return { evaluations, other, total: evaluations + other }
+}
+
+/** Why a skill cannot be deleted, in words, or null. */
+export function deleteBlockOf(t: Tracked): string | null {
+  if (t.evaluations > 0) return `${t.evaluations.toLocaleString("en-US")} ${t.evaluations === 1 ? "evaluation is" : "evaluations are"} recorded against it`
+  if (t.other > 0) return `${t.other.toLocaleString("en-US")} ${t.other === 1 ? "request or log entry names" : "requests or log entries name"} it`
+  return null
+}
+
+/**
+ * Deactivates (`active` false) or reactivates skills in the shared store, so every report figure (dashboard, attainment, director,
+ * drills, facts) reads the same flag through `population.isReportable` (decision D-X14). Evidence and mappings are kept, so
+ * reactivating restores every figure exactly. Unknown ids are ignored; the state is returned unchanged when no flag changes.
+ */
+export function setSkillsActive(s: V2State, ids: readonly string[], active: boolean, actorId: string, at: string): Result<{ changed: string[] }> {
+  const want = new Set(ids)
+  const changed = s.skills.filter((k) => want.has(k.id) && (k.active !== false) !== active).map((k) => k.id)
+  if (changed.length === 0) return { ok: true, state: s, changed }
+  const hit = new Set(changed)
+  const skills = s.skills.map((k): Skill => {
+    if (!hit.has(k.id)) return k
+    if (!active) return { ...k, active: false }
+    const rest = { ...k }
+    delete rest.active
+    return rest
+  })
+  const label = changed.length === 1 ? (s.skills.find((k) => k.id === changed[0])?.name ?? "A skill") : `${changed.length} skills`
+  return { ok: true, state: appendAudit({ ...s, skills }, actorId, active ? "Reactivated skill" : "Deactivated skill", label, at), changed }
+}
+
+/** Deletes a skill nothing has been tracked against; its course mappings and any draft go with it (decision D-X15). */
+export function deleteSkill(s: V2State, skillId: string, actorId: string, at: string): Result<{ unmapped: string[] }> {
+  const skill = s.skills.find((k) => k.id === skillId)
+  if (!skill) return { ok: false, error: "That skill is no longer in the library." }
+  const block = deleteBlockOf(trackedAgainst(s, skillId))
+  if (block) return { ok: false, error: `${skill.name} cannot be deleted: ${block}. Deactivate it instead.` }
+  const unmapped = mappedCourses(s, skillId)
+  const drafts = { ...s.drafts }
+  delete drafts[skillId]
+  const next: V2State = { ...s, skills: s.skills.filter((k) => k.id !== skillId), mappings: s.mappings.filter((m) => m.skillId !== skillId), drafts }
+  return { ok: true, state: appendAudit(next, actorId, "Deleted skill", unmapped.length ? `${skill.name}, unmapped from ${unmapped.join(", ")}` : skill.name, at), unmapped }
 }

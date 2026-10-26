@@ -1,6 +1,7 @@
 import type { Result } from "./admin-actions"
 import { needsLevels } from "./config"
-import { nextIdFor, openPlan, opensPlanAutomatically, OUTCOME_WORD } from "./outcomes"
+import { submissionById } from "./evidence-index"
+import { nextIdFor, OUTCOME_WORD } from "./outcomes"
 import { blankResponse, studentContext, validatePass, type SkillResponse } from "./preceptor"
 import type { RuleIssue } from "./rules"
 import { appendAudit } from "./store"
@@ -26,7 +27,7 @@ const skillNames = (s: V2State, ids: string[]) => ids.map((id) => skillOf(s, id)
 export const joinNames = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : (names[0] ?? ""))
 const clip = (t: string, n = 140) => (t.length > n ? `${t.slice(0, n - 1)}…` : t)
 
-export const ROLE_LABEL: Record<Person["kind"], string> = { admin: "Administrator", student: "Student", preceptor: "Preceptor", "lab-instructor": "Lab instructor", reviewer: "Faculty", director: "Faculty" }
+export const ROLE_LABEL: Record<Person["kind"], string> = { admin: "Administrator", student: "Student", preceptor: "Preceptor", "lab-instructor": "Lab instructor", faculty: "Faculty", reviewer: "Faculty", director: "Faculty" }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // The queue (AR-01)
@@ -66,11 +67,11 @@ export function queueItems(s: V2State): QueueItem[] {
   const out: QueueItem[] = []
   const grouped = new Map<string, Evaluation[]>()
   for (const e of s.evaluations.filter((x) => x.status === "awaiting-approval")) {
-    const key = e.submissionId && s.submissions.some((x) => x.id === e.submissionId) ? e.submissionId : e.id
+    const key = e.submissionId && submissionById(s, e.submissionId) ? e.submissionId : e.id
     grouped.set(key, [...(grouped.get(key) ?? []), e])
   }
   for (const [key, evaluations] of grouped) {
-    const submission = s.submissions.find((x) => x.id === key) ?? null
+    const submission = submissionById(s, key) ?? null
     const first = evaluations[0]
     out.push({
       key,
@@ -179,7 +180,7 @@ export interface ApproveResult {
 
 function approveOne(s: V2State, item: QueueItem, actorId: string, at: string, note: string): { state: V2State; plans: number } {
   let state = s
-  let plans = 0
+  const plans = 0
   const ids = new Set(item.evaluations.map((e) => e.id))
   state = {
     ...state,
@@ -188,12 +189,6 @@ function approveOne(s: V2State, item: QueueItem, actorId: string, at: string, no
   for (const e of item.evaluations) {
     const skill = skillOf(state, e.skillId)
     state = appendAudit(state, actorId, "Approved an evaluation, it now counts", `${skill?.name ?? "A skill"} for ${nameOf(state, e.studentId)}: ${OUTCOME_WORD[e.outcome]}${note ? `. Note: ${clip(note, 80)}` : ""}`, at)
-    const planExists = state.remediations.some((r) => r.evaluationId === e.id || (r.studentId === e.studentId && r.skillId === e.skillId && r.status !== "closed"))
-    if (e.outcome === "not-met" && opensPlanAutomatically(skill) && !planExists) {
-      const r = openPlan(state, { studentId: e.studentId, skillId: e.skillId, evaluationId: e.id, actorId }, at)
-      state = r.state
-      if (r.created) plans++
-    }
   }
   if (item.submission) {
     state = { ...state, submissions: state.submissions.map((x) => (x.id === item.submission?.id ? { ...x, status: "done" as const, completedAt: x.completedAt ?? at, completedById: x.completedById ?? item.evaluatorId ?? actorId, daysWaiting: 0 } : x)) }

@@ -1,7 +1,9 @@
 import type { Result } from "./admin-actions"
 import { needsLevels } from "./config"
 import { strengthHint } from "./rules"
+import { evalsOfStudentSkill, skillById } from "./evidence-index"
 import { IDS } from "./seed"
+import { sentForNewEvaluationLabel } from "./labels"
 import { appendAudit } from "./store"
 import { flushQueue, queueChange, syncBlock } from "./sync"
 import type { Evaluation, EvaluatorRole, LogDraft, MappingRow, Person, Setting, SignoffMethod, Skill, Submission, V2State } from "./types"
@@ -63,11 +65,11 @@ export function ruleSentence(skill: Skill): string {
  * minimum is only met by clinical evaluations carrying that clinical setting.
  */
 export function skillProgress(s: V2State, studentId: string, skillId: string): SkillProgress | null {
-  const skill = s.skills.find((k) => k.id === skillId)
+  const skill = skillById(s, skillId)
   if (!skill?.config) return null
   const c = skill.config
   const a = c.achievement
-  const mine = s.evaluations.filter((e) => e.studentId === studentId && e.skillId === skillId)
+  const mine = evalsOfStudentSkill(s, studentId, skillId)
   const counted = mine.filter((e) => e.status === "counted").sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
   const awaiting = mine.filter((e) => e.status === "awaiting-approval").length
   const windowed = a.kind === "last-n" && a.window ? counted.slice(0, a.window) : counted
@@ -266,6 +268,31 @@ export function openRequestFor(s: V2State, studentId: string, skillId: string): 
   return s.submissions.find((x) => x.studentId === studentId && x.skillIds.includes(skillId) && OPEN_STATUSES.includes(x.status)) ?? null
 }
 
+/**
+ * The evaluator a held evaluation was sent to by "Assign to someone else" (lib/lab/reviewer.ts assignEntry), or null when the
+ * evaluation was really returned. Recognised by the reassignment on its linked request that carries the evaluation's own review
+ * note and time, so a real return (no reassignment) is never mistaken for one.
+ */
+export function sentElsewhereTo(s: V2State, e: Evaluation): Person | null {
+  if (e.status !== "returned" || !e.submissionId || !e.review) return null
+  const review = e.review
+  const sub = s.submissions.find((x) => x.id === e.submissionId)
+  const hop = sub?.reassignments?.find((h) => h.reason === review.note && h.at === review.at)
+  return hop ? s.people.find((p) => p.id === hop.toId) ?? null : null
+}
+
+/**
+ * The evaluator an open request was sent to by a reviewer's "Assign to someone else", or null for a request the student sent.
+ * Its last reassignment names the current assignee and carries the assignment note.
+ */
+export function sentForNewEvaluationTo(s: V2State, x: Submission): Person | null {
+  if (x.status !== "with-evaluator" && x.status !== "stalled") return null
+  const hop = x.reassignments?.[x.reassignments.length - 1]
+  if (!hop || hop.toId !== x.assignedToId) return null
+  const p = s.people.find((q) => q.id === hop.toId)
+  return p && hop.reason === sentForNewEvaluationLabel(p.name) ? p : null
+}
+
 /** Text for who a request is with. Names the person (SH-02). */
 export function requestWaitText(s: V2State, x: Submission): string {
   const name = (id: string) => s.people.find((p) => p.id === id)?.name ?? "an evaluator"
@@ -273,6 +300,7 @@ export function requestWaitText(s: V2State, x: Submission): string {
     case "on-device":
       return "Saved on this phone, not sent yet"
     case "with-evaluator":
+      if (sentForNewEvaluationTo(s, x)) return sentForNewEvaluationLabel(name(x.assignedToId))
       return x.candidateIds && x.candidateIds.length > 1 ? `Waiting for the first of ${x.candidateIds.map(name).join(", ")}` : `Waiting for ${name(x.assignedToId)}`
     case "awaiting-review":
       return x.method === "photo" ? `Photo of the paper form is with the reviewer, ${name(x.assignedToId)}` : `Waiting for the reviewer, ${name(x.assignedToId)}, to approve it`
@@ -327,7 +355,8 @@ export function courseWork(s: V2State, studentId: string = STUDENT_ID): CourseWo
   }
   const group = (level: MappingRow["level"]) => items.filter((i) => i.level === level).sort(byName)
   const mandatory = group("mandatory")
-  const optional = group("optional")
+  // v2 keeps one non-mandatory block: recommended and optional together (the lab screens split them, CALL 10-26).
+  const optional = [...group("recommended"), ...group("optional")].sort(byName)
   const notExpected = group("not-expected")
   notOpen.sort((a, b) => a.skill.name.localeCompare(b.skill.name))
 
@@ -743,6 +772,11 @@ export function studentHistory(s: V2State, studentId: string = STUDENT_ID): { sk
       if (e.status === "awaiting-approval") {
         attempts.push({ ...base, kind: "waiting", outcome: "Waiting for approval", who: `the reviewer, ${name(reviewerId(s))}`, counted: "Not counted yet. Evidence waiting for approval is left out of the rule until it is approved.", })
         summary.waiting++
+      } else if (sentElsewhereTo(s, e)) {
+        // A handoff, not a return: shown as waiting with the new evaluator. The open request it is linked to already counts once
+        // in "waiting", so this attempt adds to neither waiting nor returned.
+        const to = sentElsewhereTo(s, e)!
+        attempts.push({ ...base, kind: "waiting", outcome: sentForNewEvaluationLabel(to.name), who: to.name, counted: `Not counted yet. It counts after ${to.name} completes the new evaluation.` })
       } else if (e.status === "returned") {
         attempts.push({ ...base, kind: "returned", outcome: "Returned for correction", counted: "Does not count. Your reviewer returned it, so it is kept in your record and a new attempt is needed.", returnReason: e.review?.note ?? null })
         summary.returned++

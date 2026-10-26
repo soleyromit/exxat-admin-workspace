@@ -1,6 +1,9 @@
 import type { Result } from "./admin-actions"
+import { evalsOfStudent, evalsOfStudentSkill, evaluationById, mappingsOfCourse, skillById, submissionsOfStudent } from "./evidence-index"
 import { nextIdFor } from "./outcomes"
 import { appendAudit } from "./store"
+import { heldState } from "./approvals"
+import { mandatoryProgressFor } from "./population"
 import { skillProgress } from "./student"
 import type { Evaluation, Person, Skill, Submission, V2State, Verification } from "./types"
 
@@ -17,7 +20,7 @@ export const isDirector = (p: Person | undefined): p is Person => !!p && p.kind 
 export const verificationsOf = (s: V2State): Verification[] => s.verifications ?? []
 
 const nameOf = (s: V2State, id: string) => s.people.find((p) => p.id === id)?.name ?? "Unknown person"
-const skillOf = (s: V2State, id: string): Skill | undefined => s.skills.find((k) => k.id === id)
+const skillOf = (s: V2State, id: string): Skill | undefined => skillById(s, id)
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
 
 const OPEN_REQUEST: Array<Submission["status"]> = ["on-device", "with-evaluator", "awaiting-review", "stalled", "returned"]
@@ -36,31 +39,43 @@ export interface MandatorySkill {
   evaluations: Evaluation[]
 }
 
-/** Mandatory skills of the course that are open to students, with the student's progress against each rule (AE-03). */
+/**
+ * The student's mandatory skills with progress against each rule (AE-03): the mandatory, configured, published skills of their
+ * own cohort's course offerings in the current term, read from the single population module (lib/v2/population.ts), on the
+ * effective state (evidence held for approval does not count). Equals the dashboard's required set for that student.
+ */
 export function mandatoryProgress(s: V2State, studentId: string): MandatorySkill[] {
+  return mandatoryProgressFor(s, studentId)
+}
+
+/** Focus-course view only (one course's mandatory skills), for a screen that explicitly shows a single course; label it so. */
+export function mandatoryProgressForCourse(s: V2State, studentId: string, courseId: string = s.course.id): MandatorySkill[] {
   const out: MandatorySkill[] = []
-  for (const m of s.mappings.filter((x) => x.courseId === s.course.id && x.level === "mandatory")) {
+  for (const m of mappingsOfCourse(s, courseId)) {
+    if (m.level !== "mandatory") continue
     const skill = skillOf(s, m.skillId)
     if (!skill || !skill.configured || !skill.published) continue
     const p = skillProgress(s, studentId, skill.id)
     if (!p) continue
-    const evaluations = s.evaluations.filter((e) => e.studentId === studentId && e.skillId === skill.id && e.status === "counted").sort((a, b) => (a.date < b.date ? 1 : -1))
+    const evaluations = evalsOfStudentSkill(s, studentId, skill.id).filter((e) => e.status === "counted").sort((a, b) => (a.date < b.date ? 1 : -1))
     out.push({ skill, achieved: p.achieved, counted: p.counted, need: p.need, evaluations })
   }
   return out.sort((a, b) => a.skill.name.localeCompare(b.skill.name))
 }
 
-export const countedEvaluations = (s: V2State, studentId: string): Evaluation[] => s.evaluations.filter((e) => e.studentId === studentId && e.status === "counted")
+export const countedEvaluations = (s: V2State, studentId: string): Evaluation[] => evalsOfStudent(s, studentId).filter((e) => e.status === "counted")
 
 /** What stops a verification now, in plain words. Empty means the record can be verified. */
-export function pendingReasons(s: V2State, studentId: string): string[] {
+export function pendingReasons(state: V2State, studentId: string): string[] {
+  // Read on the effective state, so evidence held for an unadopted evaluator name blocks like any evaluation awaiting approval.
+  const s = heldState(state)
   const out: string[] = []
-  const mine = s.evaluations.filter((e) => e.studentId === studentId)
+  const mine = evalsOfStudent(s, studentId)
   const waiting = mine.filter((e) => e.status === "awaiting-approval").length
   if (waiting) out.push(`${waiting} ${plural(waiting, "evaluation is", "evaluations are")} waiting for approval in the review queue.`)
   const reopened = mine.filter((e) => e.status === "reopened").length
   if (reopened) out.push(`${reopened} ${plural(reopened, "evaluation is", "evaluations are")} reopened. Confirm the newest ${plural(reopened, "version", "versions")} first.`)
-  const open = s.submissions.filter((x) => x.studentId === studentId && OPEN_REQUEST.includes(x.status))
+  const open = submissionsOfStudent(s, studentId).filter((x) => OPEN_REQUEST.includes(x.status))
   if (open.length) out.push(`${open.length} sign-off ${plural(open.length, "request is", "requests are")} still open, so the record may change.`)
   const orphanReturned = mine.filter((e) => e.status === "returned" && !e.submissionId).length
   if (orphanReturned) out.push(`${orphanReturned} ${plural(orphanReturned, "evaluation was", "evaluations were")} returned for correction and not yet fixed.`)
@@ -85,7 +100,7 @@ export function verificationStatus(s: V2State, studentId: string): VerificationS
   if (!latest) return { status: "not-verified", latest: null, changes: [], newer: 0 }
   const changes: string[] = []
   for (const ev of latest.evidence) {
-    const now = s.evaluations.find((e) => e.id === ev.evaluationId)
+    const now = evaluationById(s, ev.evaluationId)
     const skill = skillOf(s, ev.skillId)?.name ?? "A skill"
     if (!now) changes.push(`${skill}: an evaluation was removed.`)
     else if (now.currentVersion !== ev.version) changes.push(`${skill}: version ${now.currentVersion} was added to an evaluation verified at version ${ev.version}.${now.status === "counted" ? "" : now.status === "reopened" ? " It is reopened and does not count until it is confirmed." : " It does not count."}`)

@@ -43,9 +43,12 @@ describe("when a record can be shared", () => {
     expect(r.canShare).toBe(true)
     expect(r.blocked).toBeNull()
     expect(r.verifiedBy).toBe("Dr. K. Brennan")
-    expect(r.included.map((k) => k.skill.id)).toEqual([IDS.urinaryCath])
-    expect(r.included[0].evaluations.every((e) => e.outcome === "met" && e.status === "counted")).toBe(true)
-    expect(r.included[0].evaluations).toHaveLength(3)
+    // Included = achieved mandatory skills of the student's own cohort offerings this term (lib/v2/population.ts), so more than
+    // the focus course's urinary catheter skill since 2026-10-26.
+    expect(r.included.map((k) => k.skill.id)).toContain(IDS.urinaryCath)
+    const cath = r.included.find((k) => k.skill.id === IDS.urinaryCath)!
+    expect(cath.evaluations.every((e) => e.outcome === "met" && e.status === "counted")).toBe(true)
+    expect(cath.evaluations).toHaveLength(3)
   })
 
   it("not once a verified evaluation is reopened, until the director verifies again", () => {
@@ -80,7 +83,8 @@ describe("what is left out, and why", () => {
     const ids = r.included.flatMap((k) => k.evaluations.map((e) => e.id))
     const notMet = s.evaluations.filter((e) => e.studentId === "stu-12" && e.outcome !== "met" && e.status === "counted").map((e) => e.id)
     for (const id of notMet) expect(ids).not.toContain(id)
-    expect(r.included.every((k) => (s.verifications ?? [])[0].skills.find((x) => x.skillId === k.skill.id)?.achieved)).toBe(true)
+    const mine = (s.verifications ?? []).filter((v) => v.studentId === "stu-12").at(-1)!
+    expect(r.included.every((k) => mine.skills.find((x) => x.skillId === k.skill.id)?.achieved)).toBe(true)
   })
 
   it("names evaluations counted after the verification without sharing them", () => {
@@ -120,7 +124,14 @@ describe("the PDF", () => {
   it("carries no self-rating, note or evaluator feedback text", () => {
     const s = verified(createSeed(), GRACE)
     const text = JSON.stringify(recordContent(s, GRACE, AT))
-    expect(text).not.toMatch(/Needs coaching|Works with prompts|feedback/i)
+    expect(text).not.toMatch(/Needs coaching|With assistance/i)
+    // Since the realistic-data pass (dataset spec section 13) Grace's evaluations carry evaluator comments: the record may say
+    // that written feedback is withheld, but none of the comment text itself.
+    const comments = s.evaluations.filter((e) => e.studentId === GRACE).map((e) => e.versions[e.versions.length - 1]?.detail?.feedback?.trim()).filter((x): x is string => !!x)
+    expect(comments.length).toBeGreaterThan(0)
+    for (const c of comments) expect(text).not.toContain(c)
+    const notes = s.evaluations.filter((e) => e.studentId === GRACE && e.self?.note).map((e) => e.self!.note)
+    for (const n of notes) expect(text).not.toContain(n)
   })
 })
 
@@ -134,10 +145,11 @@ describe("the CLR 2.0 file", () => {
     expect(clr.id).toMatch(/^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/)
     expect(clr.partial).toBe(true)
     const creds = clr.credentialSubject.verifiableCredential as Array<Record<string, any>>
-    expect(creds).toHaveLength(1)
-    expect(creds[0].type).toEqual(["VerifiableCredential", "AchievementCredential"])
-    expect(creds[0].credentialSubject.achievement).toMatchObject({ type: ["Achievement"], achievementType: "Competency", name: "Indwelling urinary catheter insertion" })
-    expect(creds[0].evidence).toHaveLength(3)
+    expect(creds).toHaveLength(verifiedRecord(s, GRACE).included.length)
+    const cath = creds.find((c) => c.credentialSubject.achievement.name === "Indwelling urinary catheter insertion")!
+    expect(cath.type).toEqual(["VerifiableCredential", "AchievementCredential"])
+    expect(cath.credentialSubject.achievement).toMatchObject({ type: ["Achievement"], achievementType: "Competency", name: "Indwelling urinary catheter insertion" })
+    expect(cath.evidence).toHaveLength(3)
     expect(creds[0].evidence[0].description).toMatch(/Outcome: Met/)
   })
 

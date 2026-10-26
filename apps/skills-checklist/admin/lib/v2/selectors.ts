@@ -1,4 +1,8 @@
 import type { V2State } from "./types"
+import { waitingFor } from "./preceptor"
+import { approvalsBadgeCount } from "./approvals"
+import { populationRows, populationTotals } from "./population"
+import { unsentEntries } from "./student"
 import { verificationRows } from "./verification"
 
 export interface CounterDef {
@@ -14,8 +18,10 @@ export const COUNTERS: CounterDef[] = [
   { id: "libraries", label: "Specialty libraries", value: (s) => new Set(s.skills.map((k) => k.specialty)).size },
   { id: "unconfigured", label: "Skills still to configure", value: (s) => s.skills.filter((k) => !k.configured).length },
   { id: "published", label: "Skills in use", value: (s) => s.skills.filter((k) => k.published).length },
-  { id: "mapped", label: "Skills mapped to NURS 350", value: (s) => s.mappings.length },
-  { id: "mandatory", label: "Mandatory for NURS 350", value: (s) => s.mappings.filter((m) => m.level === "mandatory").length },
+  { id: "mapped", label: "Skills mapped to the focus course", value: (s) => s.mappings.filter((m) => m.courseId === s.course.id).length },
+  // One definition with the dashboard: each student's mandatory skills from their own cohort's offerings this term.
+  { id: "mandatory", label: "Mandatory skill records this term", value: (s) => populationTotals(populationRows(s)).records },
+  { id: "behind", label: "Students behind the term clock", value: (s) => populationTotals(populationRows(s)).behind },
   { id: "students", label: "Students in the cohort", value: (s) => students(s).length },
   { id: "evalsCounted", label: "Evaluations that count", value: (s) => s.evaluations.filter((e) => e.status === "counted").length },
   { id: "evalsWaiting", label: "Evaluations awaiting approval", value: (s) => s.evaluations.filter((e) => e.status === "awaiting-approval").length },
@@ -33,7 +39,6 @@ export const COUNTERS: CounterDef[] = [
   { id: "remediations", label: "Open remediation plans", value: (s) => s.remediations.filter((r) => r.status !== "closed").length },
   { id: "verified", label: "Student records verified", value: (s) => verificationRows(s).filter((r) => r.status === "verified").length },
   { id: "audit", label: "Audit log entries", value: (s) => s.audit.length },
-  { id: "reviewed", label: "Scenario steps reviewed", value: (s) => Object.keys(s.stepsReviewed).length },
 ]
 
 export const COUNTER_BY_ID: Record<string, CounterDef> = Object.fromEntries(COUNTERS.map((c) => [c.id, c]))
@@ -44,4 +49,19 @@ export function personName(s: V2State, id: string): string {
 
 export function skillName(s: V2State, id: string): string {
   return s.skills.find((k) => k.id === id)?.name ?? "Unknown skill"
+}
+
+/** Nav badge: approval queue entries in the default scope (current term), the one definition in lib/v2/approvals.ts. */
+export function approvalsBadge(s: V2State): number {
+  return approvalsBadgeCount(s)
+}
+
+/** Nav badge: requests waiting for this evaluator (preceptor Requests). */
+export function evaluatorRequestsBadge(s: V2State, actorId: string): number {
+  return waitingFor(s, actorId).length
+}
+
+/** Nav badge: the student's entries that are ready to send (student Requests). */
+export function unsentRequestsBadge(s: V2State): number {
+  return unsentEntries(s).length
 }

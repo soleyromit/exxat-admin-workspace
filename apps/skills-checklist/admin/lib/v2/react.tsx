@@ -6,16 +6,34 @@ import type { V2State } from "./types"
 
 const StoreContext = React.createContext<V2Store | null>(null)
 
+/**
+ * The store of the mounted provider, for writers that live outside React render (a module-level `decide()`). One provider is
+ * mounted per page; null on the server and before mount.
+ */
+let activeStore: V2Store | null = null
+export const activeV2Store = (): V2Store | null => activeStore
+
+/** Applies a pure transition to the mounted store (persisted as a delta). Returns false when no store is mounted. */
+export function updateActiveV2Store(fn: (s: V2State) => V2State): boolean {
+  if (!activeStore) return false
+  activeStore.update(fn)
+  return true
+}
+
 /** One store per browser tab, persisted to localStorage (guarded). Hydrates after mount so server and client markup match. */
 export function V2StoreProvider({ children, store }: { children: React.ReactNode; store?: V2Store }) {
   const [s] = React.useState<V2Store>(() => store ?? createV2Store())
   React.useEffect(() => {
+    activeStore = s
     s.hydrate()
     const onStorage = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY) s.reload()
     }
     window.addEventListener("storage", onStorage)
-    return () => window.removeEventListener("storage", onStorage)
+    return () => {
+      window.removeEventListener("storage", onStorage)
+      if (activeStore === s) activeStore = null
+    }
   }, [s])
   return <StoreContext.Provider value={s}>{children}</StoreContext.Provider>
 }

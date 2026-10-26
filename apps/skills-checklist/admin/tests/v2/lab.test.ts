@@ -137,7 +137,7 @@ describe("what lab evidence does and does not do", () => {
     expect(skillProgress(r.state, IDS.maya, DRESS)!.counted).toBe(1)
     expect(heatCell(r.state, IDS.maya, dress).state).not.toBe(before.state)
     expect(observations(r.state, { ...NO_FILTERS, setting: "lab" }, DRESS).some((e) => r.batch.evaluationIds.includes(e.id))).toBe(true)
-    expect(heatmap(r.state, NO_FILTERS).rows.length).toBe(12)
+    expect(heatmap(r.state, NO_FILTERS).rows.length).toBe(s.people.filter((p) => p.kind === "student").length)
   })
 
   it("never satisfies a named clinical-setting minimum, however many lab Mets are saved", () => {

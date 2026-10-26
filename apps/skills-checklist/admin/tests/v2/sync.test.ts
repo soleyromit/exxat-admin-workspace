@@ -13,7 +13,7 @@ const calm = (): V2State => {
   const s = createSeed()
   return { ...s, skills: s.skills.map((k) => (k.id === IV ? { ...k, published: true } : k)), syncQueue: s.syncQueue.filter((i) => i.state === "synced") }
 }
-const input = (over: Partial<LogInput> = {}): LogInput => ({ skillIds: [IV], setting: "clinical", clinicalSetting: "Inpatient", location: "Harbor General, 4 West", ratings: { [IV]: "Works with prompts" }, answers: {}, notes: { [IV]: "Went well" }, ...over })
+const input = (over: Partial<LogInput> = {}): LogInput => ({ skillIds: [IV], setting: "clinical", clinicalSetting: "Inpatient", location: "Harbor General, 4 West", ratings: { [IV]: "With assistance" }, answers: {}, notes: { [IV]: "Went well" }, ...over })
 const log = (s: V2State, over: Partial<LogInput> = {}) => {
   const r = logSkills(s, input(over), AT)
   if (!r.ok) throw new Error(r.error)
@@ -114,13 +114,13 @@ describe("sync state machine", () => {
     if (!edited.ok) throw new Error(edited.error)
     const c = edited.state.syncQueue.find((i) => i.id === edited.itemId)!.conflict!
     expect(c.field).toBe("rating")
-    expect(c.mine).toBe("Works with prompts")
-    expect(c.theirs).not.toBe("Works with prompts")
+    expect(c.mine).toBe("With assistance")
+    expect(c.theirs).not.toBe("With assistance")
   })
 
   it("a request saved offline is on-device until it syncs, then reaches the evaluator or the review queue", () => {
     const off = setDevice(calm(), { offline: true }, AT).state
-    const logged = log(off, { skillIds: [IV, "sk-med-admin"], ratings: { [IV]: "Works with prompts", "sk-med-admin": "Met" } })
+    const logged = log(off, { skillIds: [IV, "sk-med-admin"], ratings: { [IV]: "With assistance", "sk-med-admin": "Met" } })
     for (const method of ["qr", "photo"] as const) {
       const r = createRequest(logged.state, { entryIds: logged.entryIds, method, evaluatorIds: [IDS.delgado], photo: { name: "f.jpg", sizeKb: 5, type: "image/jpeg" } }, AT)
       if (!r.ok) throw new Error(r.error)

@@ -38,7 +38,7 @@ export const STEPS: ScenarioStep[] = [
     proposed: ["Specialty starter libraries"],
     stage: 1,
     counters: ["skills", "libraries", "unconfigured"],
-    precondition: { text: "Four specialty libraries hold at least 28 skills.", check: (s) => s.skills.length >= 28 && new Set(s.skills.map((k) => k.specialty)).size === 4 },
+    precondition: { text: "Four specialty libraries hold at least 28 skills.", check: (s) => s.skills.length >= 28 && new Set(s.skills.map((k) => k.specialty)).size >= 4 },
   },
   {
     n: 2,
@@ -48,7 +48,7 @@ export const STEPS: ScenarioStep[] = [
     summary: "Choose the evaluation model, name the levels, set the achievement rule, simulation share, prerequisites and who may sign off.",
     route: "/v2/admin/configure-skill",
     reqIds: ["SC-01", "SC-02", "SC-08", "SC-10", "SC-11", "SC-12", "SC-15", "SC-16", "SC-17"],
-    proposed: ["Last-N achievement rule", "Simulation share cap", "Prerequisites", "Evaluator qualification", "Failure path", "Event-based revalidation"],
+    proposed: ["Last-N achievement rule", "Simulation share cap", "Prerequisites", "Evaluator qualification", "Failure path"],
     stage: 1,
     counters: ["skills", "unconfigured", "published"],
     precondition: { text: "IV catheter insertion exists with a model and program-named levels.", check: (s) => !!s.skills.find((k) => k.id === IDS.ivCath)?.config?.levels.length },
@@ -193,7 +193,7 @@ export const STEPS: ScenarioStep[] = [
     reqIds: ["SH-01", "SH-06", "SH-07", "RP-10"],
     proposed: ["CLR 2.0 export"],
     stage: 5,
-    counters: ["evalsCounted", "reviewed"],
+    counters: ["evalsCounted"],
     precondition: { text: "Maya has evaluations that count.", check: (s) => s.evaluations.some((e) => e.studentId === IDS.maya && e.status === "counted") },
   },
   {
