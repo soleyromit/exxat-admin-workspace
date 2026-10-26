@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+// Sidebar symbols must come from @/components/ui/sidebar so they share one
+// SidebarContext with app/(app)/providers.tsx — see the note there.
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +16,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
+  useSidebar,
+} from '@/components/ui/sidebar'
+import {
   Avatar,
   AvatarFallback,
   DropdownMenu,
@@ -29,10 +34,8 @@ import {
   SheetTitle,
   SheetDescription,
   Badge,
-  useSidebar,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { useFacultySession } from '@/lib/faculty-session'
-import { SettingsAppearanceCard } from '@/components/settings-appearance-card'
 
 // ── Brand header ──────────────────────────────────────────────────────────────
 function AppHeader() {
@@ -275,7 +278,7 @@ function UserFooter() {
             <SheetDescription>Theme, contrast, text size, and brand. Saved in this browser.</SheetDescription>
           </SheetHeader>
           <div className="px-6 pb-6">
-            <SettingsAppearanceCard />
+            <p className="text-xs text-muted-foreground">Appearance settings coming soon.</p>
           </div>
         </SheetContent>
       </Sheet>
@@ -294,6 +297,12 @@ function UserFooter() {
 //     setup per student that follows them to every registered course.
 const NAV_ITEMS_BASE = [
   {
+    key: 'question-bank',
+    title: 'Question Bank',
+    href: '/question-bank',
+    icon: 'fa-books',
+  },
+  {
     key: 'courses',
     title: 'Courses',
     href: '/courses',
@@ -311,12 +320,6 @@ const NAV_ITEMS_BASE = [
     href: '/faculty',
     icon: 'fa-chalkboard-user',
     adminOnly: true,
-  },
-  {
-    key: 'question-bank',
-    title: 'Question Bank',
-    href: '/question-bank',
-    icon: 'fa-books',
   },
   {
     key: 'accommodations',
@@ -381,7 +384,7 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {NAV_ITEMS.map(item => {
-                  const isActive = pathname.startsWith(item.href)
+                  const isActive = (pathname ?? '').startsWith(item.href)
                   return (
                     <SidebarMenuItem key={item.key}>
                       <SidebarMenuButton
@@ -391,6 +394,7 @@ export function AppSidebar() {
                       >
                         <Link
                           href={item.href}
+                          aria-label={item.title}
                           aria-current={isActive ? 'page' : undefined}
                         >
                           <span
@@ -425,7 +429,7 @@ export function AppSidebar() {
             {FOOTER_NAV.map(item => (
               <SidebarMenuItem key={item.key}>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link href={item.href}>
+                  <Link href={item.href} aria-label={item.title}>
                     <i className={`fa-light ${item.icon} text-sm`} aria-hidden="true" />
                     <span>{item.title}</span>
                   </Link>

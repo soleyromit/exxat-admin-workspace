@@ -13,7 +13,7 @@ import { useMemo } from 'react'
 import {
   Avatar, AvatarFallback, Button, LocalBanner,
   Card, CardHeader, CardTitle, CardDescription,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { StubButton } from '@/components/stub-button'
 import type { Student, Accommodation, AccommodationType } from '@/lib/faculty-mock-data'
 
@@ -149,7 +149,7 @@ function TypeTile({ type, count }: { type: AccommodationType; count: number }) {
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className={`flex size-9 items-center justify-center rounded-lg shrink-0 ${meta.bgClass}`} aria-hidden="true">
-            <i className={`fa-light ${meta.icon} ${meta.fgClass} text-sm`} />
+            <i className={`fa-light ${meta.icon} ${meta.fgClass} text-sm`} aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
             <CardDescription className="text-[10px] font-bold uppercase tracking-wider">{meta.label}</CardDescription>

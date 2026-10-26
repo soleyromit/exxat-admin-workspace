@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -17,13 +18,14 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { StatusBadge, STATUS_TINT_NEUTRAL } from '@/components/status-badge'
 import {
   Avatar, AvatarFallback,
   Badge, Button,
   InputGroup, InputGroupAddon, InputGroupInput,
   LocalBanner,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { AddAccommodationModal } from '@/components/add-accommodation-modal'
@@ -246,8 +248,8 @@ function RosterRow({ entry }: { entry: RosterEntry }) {
         <AvatarFallback
           className="text-xs font-bold"
           style={{
-            background: 'color-mix(in oklch, var(--foreground) 8%, var(--background))',
-            color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))',
+            background: 'var(--muted)',
+            color: 'var(--muted-foreground)',
           }}
         >
           {entry.initials}
@@ -277,20 +279,13 @@ function RosterRow({ entry }: { entry: RosterEntry }) {
 
         <div className="flex flex-wrap gap-2 mt-2">
           {entry.accommodations.map(a => (
-            <span
+            <StatusBadge
               key={a.id}
-              className="inline-flex items-center gap-1.5 text-xs rounded-md px-2 py-1"
-              style={{
-                background: 'color-mix(in oklch, var(--chart-1) 8%, var(--background))',
-                border: '1px solid color-mix(in oklch, var(--chart-1) 20%, var(--border))',
-                color: 'var(--foreground)',
-              }}
-              title={a.notes ?? `${TYPE_LABEL[a.type]}: ${a.detail}`}
-            >
-              <i className={`fa-light ${TYPE_ICON[a.type]}`} aria-hidden="true" style={{ fontSize: 11, color: 'var(--chart-1)' }} />
-              <strong className="font-semibold">{TYPE_LABEL[a.type]}</strong>
-              <span className="text-muted-foreground">· {a.detail}</span>
-            </span>
+              label={`${TYPE_LABEL[a.type]} · ${a.detail}`}
+              icon={TYPE_ICON[a.type]}
+              tint={STATUS_TINT_NEUTRAL}
+              className="cursor-default"
+            />
           ))}
         </div>
 

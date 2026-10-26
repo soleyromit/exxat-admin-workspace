@@ -17,7 +17,7 @@ import {
   Button, Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter,
   Input, Label, Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Separator,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { SearchInput } from '@/components/search-input'
@@ -29,6 +29,10 @@ import { facultyListRows, type FacultyListRow } from '@/lib/faculty-mock-data'
 // DataTable requires TData extends Record<string, unknown>.
 // Intersect so cell renderers keep full FacultyListRow inference.
 type FacultyTableRow = FacultyListRow & Record<string, unknown>
+
+// ── Module-level constants ────────────────────────────────────────────────────
+
+const IS_LMS_ACTIVE = false
 
 // ── Status badge config ───────────────────────────────────────────────────────
 
@@ -116,7 +120,7 @@ function buildFacultyColumns(isPrism: boolean): ColumnDef<FacultyTableRow>[] {
           <Badge
             variant="secondary"
             className="rounded font-mono text-[11px] px-2"
-            style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', color: 'var(--brand-color)' }}
+            style={{ backgroundColor: 'var(--brand-tint)', color: 'var(--brand-color)' }}
           >
             {count}
           </Badge>
@@ -196,9 +200,9 @@ function AddFacultySheet({ open, onOpenChange }: { open: boolean; onOpenChange: 
         <div
           className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
+            border: '1px solid var(--brand-tint)',
           }}
           role="note"
         >
@@ -374,21 +378,36 @@ export default function FacultyClient() {
 
   return (
     <>
-      <SiteHeader title="Faculty" />
+      <SiteHeader title="Faculty" breadcrumbs={[{ label: 'Faculty' }]} />
       <div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
         <PageHeader
           title="Faculty"
           subtitle={`${facultyListRows.length} faculty members`}
           actions={
-            <Button size="sm" onClick={() => setAddFacultyOpen(true)}>
-              <i className="fa-light fa-plus" aria-hidden="true" />
-              Add Faculty
-            </Button>
+            IS_LMS_ACTIVE ? (
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className="rounded-full gap-1.5 text-xs"
+                  style={{
+                    backgroundColor: 'var(--brand-tint)',
+                    color: 'var(--brand-color)',
+                  }}
+                >
+                  <i className="fa-light fa-link" aria-hidden="true" />
+                  Managed by Canvas
+                </Badge>
+              </div>
+            ) : (
+              <Button size="sm" onClick={() => setAddFacultyOpen(true)}>
+                <i className="fa-light fa-plus" aria-hidden="true" />
+                Add Faculty
+              </Button>
+            )
           }
         />
 
-        <div className="flex flex-1 min-h-0">
-          <div className="flex flex-1 flex-col gap-0 min-h-0 min-w-0">
+        <div className="flex flex-1 flex-col gap-0 min-h-0 min-w-0">
             {/* Single search bar — mirrors Aarti's "Google search" directive from Students */}
             <div className="px-4 lg:px-6 pt-4 pb-2">
               <SearchInput
@@ -429,7 +448,6 @@ export default function FacultyClient() {
                 </span>
               )}
             />
-          </div>
         </div>
       </div>
 

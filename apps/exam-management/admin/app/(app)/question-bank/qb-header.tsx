@@ -1,12 +1,14 @@
 'use client'
 import { useQB } from './qb-state'
 import {
-  Button, useSidebar,
+  Button,
   DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuItem, DropdownMenuSeparator,
   Popover, PopoverTrigger, PopoverContent,
   Tip,
   Avatar, AvatarFallback,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
+// One SidebarContext — see app/(app)/providers.tsx.
+import { useSidebar } from '@/components/ui/sidebar'
 import type { FolderNode, Persona } from '@/lib/qb-types'
 import { PERSONAS as GLOBAL_PERSONAS } from '@/lib/personas'
 
@@ -122,7 +124,7 @@ function QBBreadcrumb() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
             Parent folders
           </DropdownMenuLabel>
           {collapsedNodes.map(node => (
@@ -198,13 +200,13 @@ export function QBHeader() {
         <QBBreadcrumb />
       </div>
 
-      {/* Right: persona switcher */}
+      {/* Right: persona switcher + Ask Leo */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         <DropdownMenu modal={false}>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="gap-1.5 h-7 px-2" aria-label="Switch persona">
               <Avatar style={{ width: 26, height: 26 }}>
-                <AvatarFallback className="text-[10px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                   {currentPersona.initials}
                 </AvatarFallback>
               </Avatar>
@@ -219,13 +221,13 @@ export function QBHeader() {
               return (
                 <div key={groupRole}>
                   {gi > 0 && <DropdownMenuSeparator />}
-                  <DropdownMenuLabel className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground py-1">
+                  <DropdownMenuLabel className="text-xs font-medium text-muted-foreground py-1">
                     {groupRole === 'admin' ? 'Administrator' : 'Faculty'}
                   </DropdownMenuLabel>
                   {groupPersonas.map((p: Persona) => (
                     <DropdownMenuItem key={p.id} onClick={() => setCurrentPersona(p)}>
                       <Avatar style={{ width: 24, height: 24 }}>
-                        <AvatarFallback className="text-[9px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                        <AvatarFallback className="text-xs font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                           {p.initials}
                         </AvatarFallback>
                       </Avatar>
@@ -249,6 +251,10 @@ export function QBHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <Button variant="outline" size="sm" className="qb-ask-leo-btn gap-1.5" aria-label="Ask Leo AI">
+          <i className="fa-duotone fa-solid fa-star-christmas" style={{ fontSize: 11, color: 'var(--brand-color)' }} aria-hidden="true" />
+          <span className="qb-ask-leo-label">Ask Leo</span>
+        </Button>
       </div>
     </header>
   )

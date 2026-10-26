@@ -9,7 +9,7 @@
  *      knows they're in the limited-capability session.
  */
 
-import { SystemBanner } from '@exxat/ds/packages/ui/src'
+import { SystemBanner } from '@exxatdesignux/ui'
 import { useFacultySession } from '@/lib/faculty-session'
 
 export function StandaloneLoginBanner() {

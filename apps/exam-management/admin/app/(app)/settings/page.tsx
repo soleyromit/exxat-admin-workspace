@@ -23,7 +23,7 @@ import {
   Tabs, TabsList, TabsTrigger, TabsContent,
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
   Tip,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { QBToggle } from '@/components/qb/toggle'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
@@ -193,14 +193,14 @@ export default function SettingsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="immediate">Immediate</SelectItem>
-                      <SelectItem value="faculty-published">Faculty-published</SelectItem>
+                      <SelectItem value="immediate">Immediate (low-stakes quiz)</SelectItem>
+                      <SelectItem value="faculty-published">Faculty-published (high-stakes)</SelectItem>
                     </SelectContent>
                   </Select>
                 </SettingRow>
 
                 <SettingRow
-                  label="Default chair-review window"
+                  label="Default chair-review window for high-stakes exams"
                   hint="Days faculty have to consult with chair before publishing."
                   readOnly={isReadOnly}
                 >
@@ -344,7 +344,7 @@ function SettingGroup({
                 variant="secondary"
                 className="rounded-full gap-1.5 cursor-help"
                 style={{
-                  backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+                  backgroundColor: 'var(--brand-tint)',
                   color: 'var(--brand-color-dark)',
                 }}
               >

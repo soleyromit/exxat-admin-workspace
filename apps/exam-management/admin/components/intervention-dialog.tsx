@@ -19,7 +19,7 @@ import { useState } from 'react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   Button, Badge, Textarea,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { StatusPill, BloomChip, DifficultyChip } from '@/components/faculty-ui-kit'
 import type { Student, Accommodation, CourseObjective } from '@/lib/faculty-mock-data'
 

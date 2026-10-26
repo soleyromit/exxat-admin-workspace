@@ -1,9 +1,10 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { useQB } from './qb-state'
-import { StatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
+import { QBStatusBadge, DiffBadge, PBisCell, BloomsBadge } from '@/components/qb/badges'
 import { QBToggle } from '@/components/qb/toggle'
 import {
   Button, Badge, Checkbox, Input,
@@ -11,13 +12,13 @@ import {
   Sheet, SheetContent, SheetTitle,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuCheckboxItem, DropdownMenuLabel,
-  Popover, PopoverTrigger, PopoverContent,
+  Popover, PopoverTrigger, PopoverAnchor, PopoverContent,
   Tooltip, TooltipTrigger, TooltipContent, Tip,
   InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-  TableHeader, TableBody, TableRow, TableHead, TableCell,
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
   FieldError,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import type { Question, QStatus, ColumnId } from '@/lib/qb-types'
 import { MOCK_QB_PERSONAS, mockCourses, mockCourseOfferings } from '@/lib/qb-mock-data'
 import { RequestEditAccessModal } from './qb-modals'
@@ -73,12 +74,15 @@ function showQBToast({
     description: folderName && onLinkClick ? (
       <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         <i className="fa-solid fa-folder" aria-hidden="true" style={{ fontSize: 9, color: 'var(--qb-toast-muted)' }} />
-        <button
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={e => { e.stopPropagation(); onLinkClick(); toast.dismiss(toastId) }}
-          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--qb-toast-link)', textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 'inherit', fontFamily: 'inherit' }}
+          className="p-0 h-auto underline underline-offset-2"
+          style={{ color: 'var(--qb-toast-link)', fontFamily: 'inherit', fontSize: 'inherit' }}
         >
           {folderName}
-        </button>
+        </Button>
       </span>
     ) : undefined,
     action: undoFn ? { label: 'Undo', onClick: undoFn } : undefined,
@@ -185,8 +189,8 @@ function FolderTreePicker({
             paddingLeft: indentPx, paddingRight: 8, height: 36,
             borderRadius: 6, margin: '1px 0',
             cursor: (isCurrent || !isEligible) ? 'default' : 'pointer',
-            backgroundColor: isSelected ? 'var(--sidebar-accent)' : 'transparent',
-            border: `1px solid ${isSelected ? 'var(--sidebar-border)' : 'transparent'}`,
+            backgroundColor: isSelected ? 'var(--muted)' : 'transparent',
+            border: `1px solid ${isSelected ? 'var(--border)' : 'transparent'}`,
             opacity: isCurrent ? 0.45 : 1,
             transition: 'background 80ms',
           }}
@@ -207,16 +211,14 @@ function FolderTreePicker({
             <i className="fa-light fa-chevron-right" aria-hidden="true"
               style={{ fontSize: 9, transition: 'transform 150ms', transform: isExpanded ? 'rotate(90deg)' : 'none' }} />
           </Button>
-          <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'} ${isSelected ? '' : 'text-muted-foreground'}`}
+          <i className={`fa-light ${node.isCourse ? 'fa-graduation-cap' : isExpanded && hasChildren ? 'fa-folder-open' : 'fa-folder'} text-xs shrink-0 ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`}
             aria-hidden="true"
-            style={{ fontSize: 12, flexShrink: 0, color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}
           />
-          <span className={`flex-1 text-sm truncate ${isSelected ? 'font-medium' : 'font-normal text-foreground'}`}
-            style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}>
+          <span className={`flex-1 text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
             {getFolderLabel(node)}
           </span>
           {isCurrent && <span className="text-[10px] text-muted-foreground shrink-0">current</span>}
-          {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />}
+          {isSelected && <i className="fa-solid fa-check text-[10px] text-foreground shrink-0" aria-hidden="true" />}
         </div>
         {isExpanded && (
           <>
@@ -273,7 +275,7 @@ function FolderTreePicker({
     <div>
       {/* Search */}
       <div style={{ padding: '8px 12px' }}>
-        <InputGroup style={{ borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
+        <InputGroup style={{ borderColor: 'var(--brand-color)' }}>
           <InputGroupAddon align="inline-start">
             <i className="fa-light fa-magnifying-glass" aria-hidden="true"
               style={{ fontSize: 12, color: 'var(--brand-color)', padding: '0 6px' }} />
@@ -311,17 +313,15 @@ function FolderTreePicker({
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   padding: '6px 8px', borderRadius: 6, margin: '1px 0', cursor: 'pointer',
-                  backgroundColor: isSelected ? 'var(--sidebar-accent)' : 'transparent',
-                  border: `1px solid ${isSelected ? 'var(--sidebar-border)' : 'transparent'}`,
+                  backgroundColor: isSelected ? 'var(--muted)' : 'transparent',
+                  border: `1px solid ${isSelected ? 'var(--border)' : 'transparent'}`,
                 }}
                 onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'var(--accent)' }}
                 onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent' }}
               >
-                <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'} ${isSelected ? '' : 'text-muted-foreground'}`} aria-hidden="true"
-                  style={{ fontSize: 12, color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined, flexShrink: 0 }} />
+                <i className={`fa-light ${f.isCourse ? 'fa-graduation-cap' : 'fa-folder'} text-xs shrink-0 ${isSelected ? 'text-foreground' : 'text-muted-foreground'}`} aria-hidden="true" />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className={`text-sm truncate ${isSelected ? 'font-medium' : 'font-normal text-foreground'}`}
-                    style={{ color: isSelected ? 'var(--sidebar-accent-foreground)' : undefined }}>
+                  <div className={`text-sm truncate text-foreground ${isSelected ? 'font-medium' : 'font-normal'}`}>
                     {getFolderLabel(f)}
                   </div>
                   {ancestorPath && (
@@ -330,7 +330,7 @@ function FolderTreePicker({
                     </div>
                   )}
                 </div>
-                {isSelected && <i className="fa-solid fa-check" aria-hidden="true" style={{ fontSize: 10, color: 'var(--sidebar-accent-foreground)', flexShrink: 0 }} />}
+                {isSelected && <i className="fa-solid fa-check text-[10px] text-foreground shrink-0" aria-hidden="true" />}
               </div>
             )
           }) : (
@@ -627,38 +627,14 @@ function ArchiveQuestionDialog({ question, open, onClose, currentFolderId }: {
 }
 
 // ── Delete Question Dialog ────────────────────────────────────────────────────
-//
-// Two states driven by question.usedInSections:
-//   • No impact (empty) — simple confirm, immediate delete
-//   • Has impact (used in assessments) — amber warning zone listing each
-//     affected assessment; checkbox acknowledgment gates the Delete button
+// Only reachable for Draft questions with usage === 0 (never used in any assessment).
 function DeleteQuestionDialog({ question, open, onClose }: { question: Question; open: boolean; onClose: () => void }) {
   const { deleteQuestion, questions, restoreQuestion } = useQB()
-  const [acknowledged, setAcknowledged] = useState(false)
-
-  useEffect(() => { setAcknowledged(false) }, [question.id])
-
-  const sections = question.usedInSections ?? []
-  const hasImpact = sections.length > 0
-
-  // Derive course from folderPath: "PHAR101 QB / Antibiotics" → "PHAR101"
-  const courseCode = question.folderPath.split(' QB')[0].trim()
-  const course = mockCourses.find(c => c.code === courseCode)
-
-  // One offering per course — use the most recent one for context
-  const offering = course
-    ? mockCourseOfferings.filter(o => o.courseId === course.id).at(-1)
-    : null
 
   function handleDelete() {
     const snapshot = questions.find(q => q.id === question.id)
     deleteQuestion(question.id)
-    showQBToast({
-      title: hasImpact
-        ? `Question deleted · removed from ${sections.length} assessment${sections.length !== 1 ? 's' : ''}`
-        : 'Question deleted',
-      undoFn: snapshot ? () => restoreQuestion(snapshot) : undefined,
-    })
+    showQBToast({ title: 'Question deleted', undoFn: snapshot ? () => restoreQuestion(snapshot) : undefined })
     onClose()
   }
 
@@ -671,21 +647,12 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: Question;
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-start gap-3">
-            {/* Icon — amber for impact, red for clean */}
             <span
               className="flex size-9 shrink-0 items-center justify-center rounded-full mt-0.5"
-              style={{
-                backgroundColor: hasImpact
-                  ? 'var(--standing-warning-bg)'
-                  : 'color-mix(in oklch, var(--destructive) 10%, var(--background))',
-                color: hasImpact ? 'var(--standing-warning-fg)' : 'var(--destructive)',
-              }}
+              style={{ backgroundColor: 'var(--muted)', color: 'var(--destructive)' }}
               aria-hidden="true"
             >
-              <i
-                className={`fa-light ${hasImpact ? 'fa-triangle-exclamation' : 'fa-trash-can'}`}
-                style={{ fontSize: 16 }}
-              />
+              <i className="fa-light fa-trash-can text-base" aria-hidden="true" />
             </span>
             <div className="flex-1 min-w-0">
               <DialogTitle className="text-base">Delete question?</DialogTitle>
@@ -696,114 +663,13 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: Question;
           </div>
         </DialogHeader>
 
-        {/* ── Impact zone ────────────────────────────────────────────────────── */}
-        {hasImpact && (
-          <div className="flex flex-col gap-4">
-            {/* Amber strip — two lines so text never wraps mid-sentence */}
-            <div
-              className="flex items-start gap-2.5 rounded-lg px-3 py-2.5"
-              style={{
-                backgroundColor: 'var(--standing-warning-bg)',
-                borderLeft: '3px solid var(--standing-warning-fg)',
-              }}
-            >
-              <i
-                className="fa-solid fa-triangle-exclamation mt-0.5 shrink-0"
-                aria-hidden="true"
-                style={{ fontSize: 13, color: 'var(--standing-warning-fg)' }}
-              />
-              <div>
-                <p className="text-sm font-semibold" style={{ color: 'var(--standing-warning-fg)' }}>
-                  Used in {sections.length} assessment{sections.length !== 1 ? 's' : ''}
-                </p>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--standing-warning-fg)' }}>
-                  Removing this question affects all listed assessments immediately
-                </p>
-              </div>
-            </div>
-
-            {/* Scrollable list — capped at 3 visible rows (~192px) */}
-            <div
-              className="rounded-lg overflow-hidden"
-              style={{ border: '1px solid var(--border)' }}
-            >
-              <div
-                style={{
-                  maxHeight: 192,
-                  overflowY: 'auto',
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: 'var(--border) transparent',
-                }}
-                role="list"
-                aria-label="Affected assessments"
-              >
-                {sections.map((sectionName, i) => (
-                  <div
-                    key={sectionName}
-                    className="flex items-center gap-3 px-3 py-3"
-                    style={{ borderTop: i > 0 ? '1px solid var(--border)' : undefined }}
-                    role="listitem"
-                  >
-                    <i
-                      className="fa-light fa-clipboard-list shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                      style={{ fontSize: 14, width: 16 }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{sectionName}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {course ? `${course.name} · ${course.code}` : courseCode}
-                        {offering && ` · ${offering.semester} · ${offering.studentCount} students`}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Consequence — plain text */}
-            <p className="text-xs text-muted-foreground leading-relaxed -mt-1">
-              Scores for students who already submitted{' '}
-              <strong className="font-medium text-foreground">will not be recalculated</strong>.
-            </p>
-
-            {/* Acknowledgment — plain checkbox row, no container border */}
-            <label
-              htmlFor="delete-acknowledge"
-              className="flex items-start gap-3 cursor-pointer"
-            >
-              <Checkbox
-                id="delete-acknowledge"
-                checked={acknowledged}
-                onCheckedChange={(v) => setAcknowledged(!!v)}
-                className="mt-0.5 shrink-0"
-              />
-              <span className="text-sm text-foreground leading-snug select-none">
-                I understand this permanently removes the question from{' '}
-                <strong>{sections.length} assessment{sections.length !== 1 ? 's' : ''}</strong>{' '}
-                and cannot be undone.
-              </span>
-            </label>
-          </div>
-        )}
-
-        {/* ── No-impact description ──────────────────────────────────────────── */}
-        {!hasImpact && (
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            This question hasn&apos;t been used in any assessment — deleting it is safe.
-            This action cannot be undone.
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          This draft question has never been used in an assessment. Deleting it is permanent and cannot be undone.
+        </p>
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={hasImpact && !acknowledged}
-            aria-disabled={hasImpact && !acknowledged}
-          >
+          <Button variant="destructive" size="sm" onClick={handleDelete}>
             <i className="fa-light fa-trash-can" aria-hidden="true" />
             Delete question
           </Button>
@@ -816,7 +682,7 @@ function DeleteQuestionDialog({ question, open, onClose }: { question: Question;
 // ── DS DataTable source (apps/web/components/data-table/index.tsx):
 // ── TH = h-9 px-3 text-left align-middle text-xs font-medium text-muted-foreground tracking-wide select-none
 // ── TD default = px-3 py-2.5 | compact = py-1 | comfortable = py-4
-const TH = 'h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
+const TH = 'h-9 px-3 text-start align-middle text-[12px] font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap'
 const TD = 'px-3 py-2.5 align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap'
 
 // Clean toggle — uses brand-color for ON state, neutral for OFF
@@ -902,10 +768,7 @@ function LocationCell({ question }: { question: Question }) {
         aria-label={`Navigate to ${displayName}`}
         title={loc.folderPath}
       >
-        {targetFolder?.isPrivateSpace
-          ? <i className="fa-solid fa-lock" aria-hidden="true" style={{ fontSize: 10, flexShrink: 0, color: 'var(--muted-foreground)' }} />
-          : <span aria-hidden="true" style={{ width: 10, flexShrink: 0 }} />
-        }
+        <span aria-hidden="true" style={{ width: 10, flexShrink: 0 }} />
         <span style={{ display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'underline', textUnderlineOffset: 2 }}>
           {displayName}
         </span>
@@ -924,14 +787,14 @@ function LocationCell({ question }: { question: Question }) {
           <Button
             variant="ghost" size="xs"
             onClick={e => e.stopPropagation()}
-            className="text-[10px] text-muted-foreground font-medium shrink-0"
+            className="text-xs text-muted-foreground font-medium shrink-0"
             style={{ height: 18, padding: '0 5px', borderRadius: 99, backgroundColor: 'var(--muted)' }}
           >
             +{allLocations.length - 1}
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="p-2" style={{ width: 260 }} onClick={e => e.stopPropagation()}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground mb-1.5">
+          <p className="text-xs font-medium text-muted-foreground mb-1.5">
             {allLocations.length} locations
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -957,17 +820,13 @@ function LocationCell({ question }: { question: Question }) {
               }
 
               return (
-                <button
-                  key={i}
-                  onClick={e => { e.stopPropagation(); if (target) navigateToFolder(target.id) }}
-                  className="flex items-center gap-2 text-left w-full rounded px-2 py-1.5 hover:bg-accent transition-colors"
-                >
-                  <i className={`fa-${target?.isPrivateSpace ? 'solid fa-lock' : 'light fa-folder'} text-muted-foreground shrink-0`} aria-hidden="true" style={{ fontSize: 12 }} />
+                <Button key={i} variant="ghost" size="sm" onClick={e => { e.stopPropagation(); if (target) navigateToFolder(target.id) }} className="flex items-center gap-2 text-left w-full rounded px-2 py-1.5 h-auto justify-start hover:bg-accent transition-colors">
+                  <i className={`fa-${target?.isPrivateSpace ? 'solid fa-lock' : 'light fa-folder'} text-muted-foreground shrink-0 text-xs`} aria-hidden="true" />
                   <div style={{ minWidth: 0 }}>
                     <p className="text-sm font-medium text-foreground truncate">{name}</p>
                     <p className="text-[10px] text-muted-foreground truncate">{loc.folderPath}</p>
                   </div>
-                </button>
+                </Button>
               )
             })}
           </div>
@@ -1087,7 +946,18 @@ function FilterPill({ filter, onUpdate, onRemove, autoOpen = false, fieldDefs = 
         </div>
         {/* Search options */}
         <div style={{ padding: '8px 10px 6px' }}>
-          <Input placeholder="Search options…" value={optSearch} onChange={e => setOptSearch(e.target.value)} className="h-8 text-sm" />
+          <InputGroup>
+            <InputGroupAddon align="inline-start">
+              <i className="fa-light fa-magnifying-glass text-xs" aria-hidden="true" />
+            </InputGroupAddon>
+            <InputGroupInput
+              placeholder="Search options…"
+              value={optSearch}
+              onChange={e => setOptSearch(e.target.value)}
+              className="text-sm"
+              style={{ height: 32 }}
+            />
+          </InputGroup>
         </div>
         {/* Checkbox list */}
         <div role="listbox" aria-multiselectable="true" style={{ maxHeight: 232, overflowY: 'auto', padding: '2px 0 8px' }}>
@@ -1279,12 +1149,18 @@ function QBFilterCard({
       {expanded && (
         <div className="border-t border-border">
           <div className="px-3 pt-2 pb-1">
-            <Input
-              placeholder="Search options…"
-              value={optSearch}
-              onChange={e => setOptSearch(e.target.value)}
-              className="h-8 text-sm"
-            />
+            <InputGroup>
+              <InputGroupAddon align="inline-start">
+                <i className="fa-light fa-magnifying-glass text-xs" aria-hidden="true" />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Search options…"
+                value={optSearch}
+                onChange={e => setOptSearch(e.target.value)}
+                className="text-sm"
+                style={{ height: 32 }}
+              />
+            </InputGroup>
           </div>
           <div role="listbox" aria-multiselectable="true" aria-label={`${fieldDef.label} options`}
             className="py-1 max-h-52 overflow-y-auto">
@@ -1303,17 +1179,7 @@ function QBFilterCard({
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--interactive-hover)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = '')}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
-                    style={{
-                      width: 14, height: 14,
-                      background: checked ? 'var(--primary)' : 'var(--background)',
-                      borderColor: checked ? 'var(--primary)' : 'var(--border-control-3)',
-                    }}
-                  >
-                    {checked && <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />}
-                  </span>
+                  <Checkbox checked={checked} onCheckedChange={() => toggleValue(opt)} onClick={e => e.stopPropagation()} style={{ width: 14, height: 14, minWidth: 14, minHeight: 14, flexShrink: 0 }} />
                   <span className="flex-1">{opt}</span>
                   {fieldDef.counts?.has(opt) && (
                     <span className="text-xs text-muted-foreground tabular-nums">{fieldDef.counts.get(opt)}</span>
@@ -1536,7 +1402,7 @@ function FilterPropertiesSheet({
             <div className="flex-1 overflow-y-auto p-4 space-y-5">
               {/* Appearance */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Appearance</p>
+                <p className="text-xs font-medium text-muted-foreground mb-3">Appearance</p>
                 <div className="space-y-0.5">
                   {([
                     { id: 'gridlines',  icon: 'fa-border-all',  label: 'Gridlines',  checked: showGridlines,     onChange: onShowGridlinesChange },
@@ -1555,7 +1421,7 @@ function FilterPropertiesSheet({
 
               {/* Row height */}
               <div className="border-t border-border pt-4">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Row height</p>
+                <p className="text-xs font-medium text-muted-foreground mb-3">Row height</p>
                 <div className="grid grid-cols-3 gap-2">
                   {([
                     { h: 'compact',     icon: 'fa-arrow-down-to-line' },
@@ -1582,7 +1448,7 @@ function FilterPropertiesSheet({
 
               {/* Display options */}
               <div className="border-t border-border pt-4 space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Display options</p>
+                <p className="text-xs font-medium text-muted-foreground mb-3">Display options</p>
                 {([
                   { id: 'table-title', icon: 'fa-heading',         label: 'Table title',   desc: 'Show the page heading and subtitle.', checked: showTableTitle,    onChange: onShowTableTitleChange },
                   { id: 'col-labels',  icon: 'fa-table-columns',   label: 'Column labels', desc: 'Column headers in the table.',        checked: showColumnLabels,  onChange: onShowColumnLabelsChange },
@@ -1676,31 +1542,26 @@ function FilterPropertiesSheet({
                       keyboard- and screen-reader accessible (was raw <div
                       onClick> with no a11y semantics). */}
                   {bookmarkOnly && (
+                    /* Non-interactive container — the toggle and the remove
+                       control are SIBLING buttons, not nested. (Was a
+                       div[role="button"] wrapping a <Button>, which is a
+                       nested-interactive violation.) */
                     <div
-                      className="rounded-lg border border-border overflow-hidden cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-                      onClick={() => setBookmarkOnly(v => !v)}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={true}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          setBookmarkOnly(v => !v)
-                        }
-                      }}
-                      style={{ background: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' }}
+                      className="flex items-center rounded-lg border border-border overflow-hidden select-none"
+                      style={{ background: 'var(--brand-tint)' }}
                     >
-                      <div className="flex items-center gap-2.5 px-3 py-2.5">
-                        <span aria-hidden="true" className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
-                          style={{ width: 14, height: 14, background: 'var(--primary)', borderColor: 'var(--primary)' }}>
-                          <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />
-                        </span>
-                        <span className="text-sm font-medium text-foreground flex-1">Bookmarked only</span>
-                        <Button variant="ghost" size="icon-xs" onClick={e => { e.stopPropagation(); setBookmarkOnly(false) }}
-                          aria-label="Remove bookmarked filter" className="text-muted-foreground hover:text-destructive">
-                          <i className="fa-light fa-trash text-xs" aria-hidden="true" />
-                        </Button>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setBookmarkOnly(v => !v)}
+                        className="h-auto flex-1 justify-start gap-2.5 px-3 py-2.5 text-left font-medium hover:bg-transparent"
+                      >
+                        <i className="fa-solid fa-bookmark text-xs text-primary" aria-hidden="true" />
+                        <span className="text-sm text-foreground flex-1">Bookmarked only</span>
+                      </Button>
+                      <Button variant="ghost" size="icon-xs" onClick={() => setBookmarkOnly(false)}
+                        aria-label="Remove bookmarked filter" className="mr-2 text-muted-foreground hover:text-destructive">
+                        <i className="fa-light fa-trash text-xs" aria-hidden="true" />
+                      </Button>
                     </div>
                   )}
                 </>
@@ -1969,7 +1830,7 @@ function FilterPropertiesSheet({
                               {rule.operator === 'is' ? 'is' : 'is not'}
                               <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
                             </Button>
-                            <span className="text-xs text-muted-foreground truncate">
+                            <span className="text-sm text-muted-foreground truncate">
                               {rule.values.join(', ') || '—'}
                             </span>
                           </div>
@@ -1989,7 +1850,7 @@ function FilterPropertiesSheet({
 
                       {/* Highlight color swatch row — always visible */}
                       <div className="border-t border-border px-3 py-2.5">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Highlight color</p>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Highlight color</p>
                         <div className="flex flex-wrap gap-2">
                           {QB_RULE_COLORS.map(c => (
                             <Button
@@ -2030,10 +1891,7 @@ function FilterPropertiesSheet({
                                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); const next = checked ? rule.values.filter(v => v !== opt) : [...rule.values, opt]; onUpdateConditionalRule(rule.id, { values: next }) } }}
                                   className="flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-interactive-hover cursor-pointer select-none focus-visible:outline-none focus-visible:bg-interactive-hover"
                                 >
-                                  <span aria-hidden="true" className="inline-flex items-center justify-center shrink-0 rounded-[3px] border transition-colors"
-                                    style={{ width: 14, height: 14, background: checked ? 'var(--primary)' : 'var(--background)', borderColor: checked ? 'var(--primary)' : 'var(--border-control-3)' }}>
-                                    {checked && <i className="fa-solid fa-check text-primary-foreground" aria-hidden="true" style={{ fontSize: 7 }} />}
-                                  </span>
+                                  <Checkbox checked={checked} onCheckedChange={() => { const next = checked ? rule.values.filter(v => v !== opt) : [...rule.values, opt]; onUpdateConditionalRule(rule.id, { values: next }) }} onClick={e => e.stopPropagation()} style={{ width: 14, height: 14, minWidth: 14, minHeight: 14, flexShrink: 0 }} />
                                   <span className="text-foreground">{opt}</span>
                                 </div>
                               )
@@ -2164,9 +2022,9 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
         <div style={{ padding: '14px 16px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-              <StatusBadge status={question.status} />
+              <QBStatusBadge status={question.status} />
               {question.tags.includes('private') && (
-                <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))', color: 'var(--qb-private)' }}>
+                <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: 'var(--muted)', color: 'var(--qb-private)' }}>
                   <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 8, marginRight: 3 }} />Private
                 </Badge>
               )}
@@ -2217,7 +2075,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 1: Tags & Classification ── */}
           <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Tags &amp; Classification</p>
+            <p className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 10 }}>Tags &amp; Classification</p>
             <DetailRow label="Bloom's"><BloomsBadge blooms={question.blooms} /></DetailRow>
             <DetailRow label="Difficulty"><DiffBadge diff={question.difficulty} /></DetailRow>
             <DetailRow label="Type"><span>{question.type}</span></DetailRow>
@@ -2236,7 +2094,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 2: Creator & History ── */}
           <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)' }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Creator &amp; History</p>
+            <p className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 10 }}>Creator &amp; History</p>
 
             <DetailRow label="Created by">
               {creatorPersona ? (
@@ -2312,7 +2170,7 @@ function QuestionDetailSheet({ question, open, onClose, onMove }: { question: Qu
 
           {/* ── Section 3: Usage ── */}
           <div style={{ padding: '16px 18px' }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-muted-foreground" style={{ marginBottom: 10 }}>Usage</p>
+            <p className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 10 }}>Usage</p>
             <DetailRow label="Used in">
               <span>{question.usage > 0 ? `${question.usage} exam${question.usage !== 1 ? 's' : ''}` : '—'}</span>
             </DetailRow>
@@ -2526,87 +2384,97 @@ function ColHeader({
       onDragEnd={onDragEnd}
     >
       <DropdownMenu onOpenChange={open => { if (!open) setColSearch('') }}>
-        {/* Sortable column header — role/tabIndex/onKeyDown + focus-visible
-            ring so keyboard users can trigger sort (was raw <div onClick>
-            with no a11y). The inner Popover trigger keeps its own focus. */}
-        <div
-          className="flex items-center gap-1 group/col-hdr cursor-pointer select-none w-full rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
-          onClick={() => col.sortKey && onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
-          role={col.sortKey ? 'button' : undefined}
-          tabIndex={col.sortKey ? 0 : undefined}
-          aria-label={
-            col.sortKey
-              ? `Sort by ${col.label}, ${
-                  isActive
-                    ? sortDir === 'asc'
-                      ? 'currently ascending'
-                      : 'currently descending'
-                    : 'not sorted'
-                }`
-              : undefined
-          }
-          onKeyDown={e => {
-            if (col.sortKey && (e.key === 'Enter' || e.key === ' ')) {
-              e.preventDefault()
-              onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')
-            }
-          }}
-        >
-          {col.key === 'difficulty' ? (
-            <Popover open={diffHoverOpen} onOpenChange={setDiffHoverOpen}>
-              <PopoverTrigger asChild>
-                <span
-                  className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
-                  onMouseEnter={() => {
-                    if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current)
-                    diffHoverTimerRef.current = setTimeout(() => setDiffHoverOpen(true), 400)
-                  }}
-                  onMouseLeave={() => { if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current); setDiffHoverOpen(false) }}
-                >
-                  {col.label}
+        {/* Sortable column header — the sort action is a real <button> (was a
+            div[role="button"] that wrapped the DropdownMenuTrigger Button,
+            causing nested-interactive). The trigger Button is now a SIBLING of
+            the sort button inside a plain, non-interactive <div>. */}
+        <div className="flex items-center gap-1 group/col-hdr w-full">
+          {col.sortKey ? (
+            <button
+              type="button"
+              className="flex-1 flex items-center min-w-0 cursor-pointer select-none rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              onClick={() => onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')}
+              aria-label={`Sort by ${col.label}, ${
+                isActive
+                  ? sortDir === 'asc'
+                    ? 'currently ascending'
+                    : 'currently descending'
+                  : 'not sorted'
+              }`}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onSort(col.key, isActive && sortDir === 'asc' ? 'desc' : 'asc')
+                }
+              }}
+            >
+              {col.key === 'difficulty' ? (
+                <Popover open={diffHoverOpen} onOpenChange={setDiffHoverOpen}>
+                  {/* PopoverAnchor (not Trigger) — this popover is hover-driven via
+                      the controlled `open` state, so it is NOT an interactive
+                      control. Anchor positions the content without cloning
+                      aria-haspopup/aria-expanded or role="button" onto the span,
+                      which avoids both aria-allowed-attr and nested-interactive
+                      (the span lives inside the sort <button>). */}
+                  <PopoverAnchor asChild>
+                    <span
+                      className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
+                      onMouseEnter={() => {
+                        if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current)
+                        diffHoverTimerRef.current = setTimeout(() => setDiffHoverOpen(true), 400)
+                      }}
+                      onMouseLeave={() => { if (diffHoverTimerRef.current) clearTimeout(diffHoverTimerRef.current); setDiffHoverOpen(false) }}
+                    >
+                      {col.label}
+                    </span>
+                  </PopoverAnchor>
+                  <PopoverContent side="bottom" align="start" className="w-52 p-3">
+                    <DiffDistributionPopover questions={distQuestions ?? []} />
+                  </PopoverContent>
+                </Popover>
+              ) : col.key === 'blooms' ? (
+                <Popover open={bloomsHoverOpen} onOpenChange={setBloomsHoverOpen}>
+                  {/* PopoverAnchor (not Trigger) — hover-driven popover; see the
+                      difficulty header above for the full rationale (avoids
+                      aria-allowed-attr + nested-interactive on the span). */}
+                  <PopoverAnchor asChild>
+                    <span
+                      className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
+                      onMouseEnter={() => {
+                        if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current)
+                        bloomsHoverTimerRef.current = setTimeout(() => setBloomsHoverOpen(true), 400)
+                      }}
+                      onMouseLeave={() => { if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current); setBloomsHoverOpen(false) }}
+                    >
+                      {col.label}
+                    </span>
+                  </PopoverAnchor>
+                  <PopoverContent side="bottom" align="start" className="w-52 p-3">
+                    <BloomsDistributionPopover questions={bloomsQuestions ?? []} />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <span className={`flex-1 truncate${isActive ? ' text-foreground' : ''}`}>{col.label}</span>
+              )}
+              {sortRank !== null && (
+                <span className="flex items-center gap-0.5 ml-1 shrink-0">
+                  <i
+                    className={`fa-solid ${(sortRules?.find(r => r.col === col.key)?.dir ?? 'asc') === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-xs`}
+                    aria-hidden="true"
+                  />
+                  {(sortRules?.length ?? 0) > 1 && (
+                    <span className="text-[9px] font-bold leading-none" style={{ color: 'var(--brand-color)' }}>
+                      {sortRank}
+                    </span>
+                  )}
                 </span>
-              </PopoverTrigger>
-              <PopoverContent side="bottom" align="start" className="w-52 p-3">
-                <DiffDistributionPopover questions={distQuestions ?? []} />
-              </PopoverContent>
-            </Popover>
-          ) : col.key === 'blooms' ? (
-            <Popover open={bloomsHoverOpen} onOpenChange={setBloomsHoverOpen}>
-              <PopoverTrigger asChild>
-                <span
-                  className={`flex-1 truncate cursor-default${isActive ? ' text-foreground' : ''}`}
-                  onMouseEnter={() => {
-                    if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current)
-                    bloomsHoverTimerRef.current = setTimeout(() => setBloomsHoverOpen(true), 400)
-                  }}
-                  onMouseLeave={() => { if (bloomsHoverTimerRef.current) clearTimeout(bloomsHoverTimerRef.current); setBloomsHoverOpen(false) }}
-                >
-                  {col.label}
-                </span>
-              </PopoverTrigger>
-              <PopoverContent side="bottom" align="start" className="w-52 p-3">
-                <BloomsDistributionPopover questions={bloomsQuestions ?? []} />
-              </PopoverContent>
-            </Popover>
+              )}
+            </button>
           ) : (
             <span className={`flex-1 truncate${isActive ? ' text-foreground' : ''}`}>{col.label}</span>
           )}
-          {sortRank !== null && (
-            <span className="flex items-center gap-0.5 ml-1 shrink-0">
-              <i
-                className={`fa-solid ${(sortRules?.find(r => r.col === col.key)?.dir ?? 'asc') === 'asc' ? 'fa-arrow-up' : 'fa-arrow-down'} text-xs`}
-                aria-hidden="true"
-              />
-              {(sortRules?.length ?? 0) > 1 && (
-                <span className="text-[9px] font-bold leading-none" style={{ color: 'var(--brand-color)' }}>
-                  {sortRank}
-                </span>
-              )}
-            </span>
-          )}
           <DropdownMenuTrigger
             className="opacity-0 group-hover/col-hdr:opacity-100 transition-opacity flex items-center justify-center"
-            onClick={e => e.stopPropagation()}
             asChild
           >
             <Button
@@ -2816,7 +2684,6 @@ export function QBTable() {
     anchorQuestionId, setAnchorQuestionId,
     folders,
     navigateToFolder,
-    setCollaboratorsModalFolderId,
     selectedFolderId,
     selectedFolder,
     navView,
@@ -2885,7 +2752,7 @@ export function QBTable() {
   // Shadow the module-level TD so all cells pick up the current density + optional gridlines
   const TD = `px-3 ${rowPy} align-middle border-b border-border group-last/row:border-b-0 whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   // Shadow TH so header cells get matching vertical gridlines
-  const TH_CLS = `h-9 px-3 text-start align-middle text-xs font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
+  const TH_CLS = `h-9 px-3 text-start align-middle text-[12px] font-medium text-muted-foreground tracking-wide bg-dt-header-bg border-b border-border select-none whitespace-nowrap${showGridlines ? ' border-r border-border last:border-r-0' : ''}`
   const [paginationEnabled, setPaginationEnabled] = useState(true)
   const [showTableTitle, setShowTableTitle] = useState(true)
   const [showColumnLabels, setShowColumnLabels] = useState(true)
@@ -3277,7 +3144,7 @@ export function QBTable() {
                   {shown.map((p, i) => (
                     <Tip key={p.id} label={p.name}>
                       <Avatar style={{ width: 22, height: 22, marginLeft: i === 0 ? 0 : -6, border: '2px solid var(--background)', borderRadius: '50%', zIndex: shown.length - i, position: 'relative', flexShrink: 0 }}>
-                        <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'color-mix(in oklch, var(--foreground) 8%, var(--background))', color: 'color-mix(in oklch, var(--foreground) 70%, var(--background))' }}>
+                        <AvatarFallback className="text-[8px] font-bold" style={{ backgroundColor: 'var(--muted)', color: 'var(--muted-foreground)' }}>
                           {p.initials}
                         </AvatarFallback>
                       </Avatar>
@@ -3295,19 +3162,6 @@ export function QBTable() {
             })()}
 
             {/* Manage access icon */}
-            {isExamAdmin && selectedFolder && (
-              <Tip label="Manage access">
-                <Button
-                  variant="ghost" size="icon-xs"
-                  aria-label="Manage access"
-                  className="text-muted-foreground"
-                  style={{ width: 26, height: 26, flexShrink: 0 }}
-                  onClick={() => setCollaboratorsModalFolderId(selectedFolderId)}
-                >
-                  <i className="fa-light fa-user-plus" aria-hidden="true" style={{ fontSize: 12 }} />
-                </Button>
-              </Tip>
-            )}
           </div>
 
           {/* Add Question — icon-only at high zoom to save space, labelled at normal zoom */}
@@ -3363,7 +3217,7 @@ export function QBTable() {
             flexShrink: isHighZoom ? 1 : 0,
           }}>
             {searchOpen ? (
-              <InputGroup style={{ width: isHighZoom ? '100%' : 200, flexShrink: isHighZoom ? 1 : 0, borderColor: 'var(--brand-color)', boxShadow: '0 0 0 3px color-mix(in oklch, var(--brand-color) 18%, transparent)' }}>
+              <InputGroup style={{ width: isHighZoom ? '100%' : 200, flexShrink: isHighZoom ? 1 : 0, borderColor: 'var(--brand-color)' }}>
                 <InputGroupAddon align="inline-start">
                   <i
                     className="fa-light fa-magnifying-glass"
@@ -3429,7 +3283,7 @@ export function QBTable() {
               style={bookmarkOnly ? {
                 borderColor: 'var(--chart-4)',
                 color: 'var(--chart-4)',
-                backgroundColor: 'color-mix(in oklch, var(--chart-4) 10%, var(--background))',
+                backgroundColor: 'var(--muted)',
               } : {}}
             >
               <i
@@ -3447,7 +3301,7 @@ export function QBTable() {
               aria-label="My questions"
               aria-pressed={myQuestionsOnly}
               onClick={() => setMyQuestionsOnly(!myQuestionsOnly)}
-              style={myQuestionsOnly ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))' } : {}}
+              style={myQuestionsOnly ? { borderColor: 'var(--brand-color)', color: 'var(--brand-color)', backgroundColor: 'var(--brand-tint)' } : {}}
             >
               <i className="fa-light fa-user" aria-hidden="true" style={{ fontSize: 13 }} />
             </Button>
@@ -3493,7 +3347,7 @@ export function QBTable() {
           /* ── Truly empty: admin empty folder vs faculty no-access ── */
           isExamAdmin ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 32px', gap: 20 }}>
-              <div style={{ position: 'relative', width: 80, height: 80, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ position: 'relative', width: 80, height: 80, borderRadius: '50%', backgroundColor: 'var(--brand-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="fa-light fa-rectangle-list" aria-hidden="true" style={{ fontSize: 28, color: 'var(--brand-color)', opacity: 0.85 }} />
                 <span style={{ position: 'absolute', top: 5, right: 5, width: 22, height: 22, borderRadius: '50%', backgroundColor: 'var(--background)', border: '1.5px solid var(--brand-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <i className="fa-light fa-plus" aria-hidden="true" style={{ fontSize: 9, color: 'var(--brand-color)' }} />
@@ -3522,7 +3376,7 @@ export function QBTable() {
           ) : (
             /* ── Faculty: no questions in this folder ── */
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 32px', gap: 20 }}>
-              <div style={{ width: 80, height: 80, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--muted-foreground) 8%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 80, height: 80, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <i className="fa-light fa-books" aria-hidden="true" style={{ fontSize: 28, color: 'var(--muted-foreground)', opacity: 0.6 }} />
               </div>
               <div style={{ textAlign: 'center', maxWidth: 340 }}>
@@ -3533,9 +3387,8 @@ export function QBTable() {
                   This folder doesn&apos;t have any questions yet. Your department admin can add questions or give you edit access.
                 </p>
               </div>
-              <Button variant="ghost" size="sm"
-                style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 8%, var(--background))', color: 'var(--brand-color)', gap: 5 }}>
-                <i className="fa-light fa-envelope" aria-hidden="true" style={{ fontSize: 11 }} />
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <i className="fa-light fa-envelope" aria-hidden="true" />
                 Contact your admin
               </Button>
             </div>
@@ -3571,7 +3424,7 @@ export function QBTable() {
             return (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 32px', gap: 24 }}>
                 {/* Illustration */}
-                <div style={{ position: 'relative', width: 72, height: 72, borderRadius: '50%', backgroundColor: 'color-mix(in oklch, var(--muted-foreground) 8%, var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ position: 'relative', width: 72, height: 72, borderRadius: '50%', backgroundColor: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <i className="fa-light fa-sliders" aria-hidden="true" style={{ fontSize: 26, color: 'var(--muted-foreground)', opacity: 0.6 }} />
                   <span style={{ position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%', backgroundColor: 'var(--background)', border: '1.5px solid var(--muted-foreground)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <i className="fa-light fa-xmark" aria-hidden="true" style={{ fontSize: 8, color: 'var(--muted-foreground)' }} />
@@ -3591,7 +3444,7 @@ export function QBTable() {
                 {/* Suggested filter shortcuts */}
                 {topSuggestions.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%', maxWidth: 380 }}>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
+                    <p className="text-xs font-medium text-muted-foreground">
                       Try these instead
                     </p>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' }}>
@@ -3632,13 +3485,13 @@ export function QBTable() {
           <div className="border border-border overflow-hidden rounded-lg" style={{ maxHeight: isHighZoom ? 'none' : '100%', display: 'flex', flexDirection: 'column' }}>
           {/* Table scroll: at high zoom vertical overflow visible (page scrolls); normal: auto (internal scroll) */}
           <div className="qb-table-scroll" style={{ flex: isHighZoom ? 'none' : 1, minHeight: 0, overflowX: 'auto', overflowY: isHighZoom ? 'visible' : 'auto' }}>
-            <table className="text-sm border-separate border-spacing-0 table-fixed" style={{ minWidth: '100%' }}>
+            <Table className="text-sm border-separate border-spacing-0 table-fixed" style={{ minWidth: '100%' }}>
               {showColumnLabels && <TableHeader style={{ position: 'sticky', top: 0, zIndex: 4 }}>
                 <TableRow>
                   {/* Select all */}
                   <TableHead className={TH_CLS} style={{ width: 40, minWidth: 40, maxWidth: 40, paddingInline: 0, position: 'sticky', left: 0, zIndex: 3, backgroundColor: 'var(--dt-header-bg)', boxShadow: '2px 0 4px var(--sticky-edge-fade)' }}>
                     <div className="flex items-center justify-center">
-                      <span className="sr-only">Select all</span>
+                      <span className="sr-only text-sm">Select all</span>
                       <Checkbox
                         checked={allSelected ? true : someSelected ? 'indeterminate' : false}
                         onCheckedChange={handleSelectAll}
@@ -3724,7 +3577,9 @@ export function QBTable() {
                       />
                     )
                   })}
-                  <TableHead className={TH_CLS} style={{ width: 0, minWidth: 0, padding: 0, border: 'none', position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)' }} />
+                  <TableHead className={TH_CLS} style={{ width: 0, minWidth: 0, padding: 0, border: 'none', position: 'sticky', right: 0, zIndex: 2, background: 'var(--dt-header-bg)' }}>
+                    <span className="sr-only text-sm">Row actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>}
               <TableBody className="[&_tr:last-child]:border-b-0">
@@ -3820,9 +3675,9 @@ export function QBTable() {
                                           className="rounded shrink-0 text-[9px] font-semibold"
                                           style={{
                                             padding: '1px 5px',
-                                            backgroundColor: 'color-mix(in oklch, var(--qb-private) 12%, var(--background))',
+                                            backgroundColor: 'var(--muted)',
                                             color: 'var(--qb-private)',
-                                            border: '1px solid color-mix(in oklch, var(--qb-private) 25%, var(--background))',
+                                            border: '1px solid var(--border)',
                                           }}
                                         >
                                           <i className="fa-solid fa-lock-keyhole" aria-hidden="true" style={{ fontSize: 7 }} /> Private
@@ -3831,7 +3686,7 @@ export function QBTable() {
                                     )}
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="text-sm font-semibold text-foreground leading-snug line-clamp-2 whitespace-normal" style={{
+                                        <div className="text-sm font-medium text-foreground leading-snug line-clamp-2 whitespace-normal" style={{
                                           cursor: 'default'
                                         }}>
                                           {q.title}
@@ -3850,7 +3705,7 @@ export function QBTable() {
                           case 'status':
                             return (
                               <TableCell key="status" className={`${TD} w-28`} style={pinnedStyle('status', pinnedCols, pinnedRightCols)}>
-                                <StatusBadge status={q.status} />
+                                <QBStatusBadge status={q.status} />
                               </TableCell>
                             )
                           case 'type':
@@ -3932,13 +3787,13 @@ export function QBTable() {
                                 <Popover>
                                   <PopoverTrigger asChild>
                                     <Button variant="ghost" size="icon-xs" aria-label="Version history">
-                                      <Badge variant="secondary" className="rounded font-mono text-[10px]" style={{ padding: '1px 5px', cursor: 'pointer' }}>
+                                      <Badge variant="secondary" className="rounded font-mono text-xs" style={{ padding: '1px 5px', cursor: 'pointer' }}>
                                         V{q.version}
                                       </Badge>
                                     </Button>
                                   </PopoverTrigger>
                                   <PopoverContent align="end" className="w-72 p-3">
-                                    <div className="text-[10px] font-bold uppercase tracking-[0.07em] text-muted-foreground" style={{ marginBottom: 10 }}>
+                                    <div className="text-xs font-medium text-muted-foreground" style={{ marginBottom: 10 }}>
                                       Version History
                                     </div>
                                     {Array.from({ length: q.version }, (_, i) => {
@@ -4099,21 +3954,15 @@ export function QBTable() {
                                 )}
                               </>
                             )}
-                            {/* Group 4 — Admin / destructive */}
-                            {(isExamAdmin || (canDeleteRow && q.status === 'Draft' && (q.usedInSections?.length ?? 0) === 0)) && (
-                              <DropdownMenuSeparator />
-                            )}
-                            {isExamAdmin && (
-                              <DropdownMenuItem onClick={() => { setOpenMenuQuestionId(null); setCollaboratorsModalFolderId(q.folder) }}>
-                                <i className="fa-light fa-users" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                Manage folder access
-                              </DropdownMenuItem>
-                            )}
-                            {canDeleteRow && q.status === 'Draft' && (
-                              <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget(q) }}>
-                                <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
-                                Delete question
-                              </DropdownMenuItem>
+                            {/* Group 4 — Destructive */}
+                            {(canDeleteRow && q.status === 'Draft' && (q.usage ?? 0) === 0) && (
+                              <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem variant="destructive" onClick={() => { setOpenMenuQuestionId(null); setDeleteTarget(q) }}>
+                                  <i className="fa-light fa-trash-can" aria-hidden="true" style={{ fontSize: 12, width: 14 }} />
+                                  Delete question
+                                </DropdownMenuItem>
+                              </>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -4122,7 +3971,7 @@ export function QBTable() {
                   )
                 })}
               </TableBody>
-            </table>
+            </Table>
           </div>{/* inner scroll */}
           {/* ── Pagination footer — inside clip, border-t separates from table rows */}
           {paginationEnabled && sortedQuestions.length > 0 && (
@@ -4131,7 +3980,7 @@ export function QBTable() {
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="whitespace-nowrap">Rows per page</span>
                 <Select value={String(perPage)} onValueChange={v => setPerPage(Number(v))}>
-                  <SelectTrigger className="inline-flex items-center gap-1 px-2 py-1 rounded border border-input bg-background hover:bg-interactive-hover text-foreground text-sm h-auto focus-visible:ring-ring" style={{ width: 64 }}>
+                  <SelectTrigger aria-label="Rows per page" className="inline-flex items-center gap-1 px-2 py-1 rounded border border-input bg-background hover:bg-interactive-hover text-foreground text-sm h-auto focus-visible:ring-ring" style={{ width: 64 }}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -4263,7 +4112,7 @@ export function QBTable() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" className="w-52">
-                  <DropdownMenuLabel className="text-[10px] text-muted-foreground font-semibold uppercase tracking-[0.06em]">
+                  <DropdownMenuLabel className="text-xs text-muted-foreground font-medium">
                     Change status to
                   </DropdownMenuLabel>
                   <DropdownMenuItem
@@ -4371,74 +4220,67 @@ export function QBTable() {
       {/* ── Bulk delete confirmation ── */}
       {bulkDeleteOpen && (() => {
         const selectedQs = visibleQuestions.filter(q => selectedQuestionIds.has(q.id))
-        const withUsage = selectedQs.filter(q => q.usage > 0)
-        const totalUsage = selectedQs.reduce((sum, q) => sum + q.usage, 0)
-        const allSections = Array.from(new Set(selectedQs.flatMap(q => q.usedInSections ?? [])))
+        const deletable = selectedQs.filter(q => q.status === 'Draft' && (q.usage ?? 0) === 0)
+        const skipped = selectedQs.filter(q => !(q.status === 'Draft' && (q.usage ?? 0) === 0))
         return (
           <Dialog open onOpenChange={v => { if (!v) setBulkDeleteOpen(false) }}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Delete {selectedQs.length} question{selectedQs.length !== 1 ? 's' : ''}?</DialogTitle>
+                <DialogTitle>
+                  {deletable.length > 0
+                    ? `Delete ${deletable.length} question${deletable.length !== 1 ? 's' : ''}?`
+                    : 'Cannot delete selected questions'}
+                </DialogTitle>
               </DialogHeader>
-              {withUsage.length > 0 && (
-                <div style={{ borderRadius: 8, border: '1px solid color-mix(in oklch, var(--destructive) 30%, transparent)', backgroundColor: 'color-mix(in oklch, var(--destructive) 6%, var(--background))', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <i className="fa-light fa-triangle-exclamation" aria-hidden="true" style={{ fontSize: 13, color: 'var(--destructive)', flexShrink: 0 }} />
-                    <span className="text-xs font-semibold text-destructive">Impact summary</span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--destructive)', flexShrink: 0 }} />
-                      <span className="text-xs text-foreground">
-                        <span className="font-semibold">{withUsage.length}</span> question{withUsage.length !== 1 ? 's are' : ' is'} used in active assessments
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--destructive)', flexShrink: 0 }} />
-                      <span className="text-xs text-foreground">
-                        <span className="font-semibold">{totalUsage}</span> total usage{totalUsage !== 1 ? 's' : ''} across all assessments
-                      </span>
-                    </div>
-                    {allSections.length > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--destructive)', flexShrink: 0 }} />
-                        <span className="text-xs text-foreground">
-                          Affects <span className="font-semibold">{allSections.length}</span> section{allSections.length !== 1 ? 's' : ''}:{' '}
-                          <span className="text-muted-foreground">{allSections.slice(0, 3).join(', ')}{allSections.length > 3 ? ` +${allSections.length - 3} more` : ''}</span>
-                        </span>
+              {deletable.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  None of the selected questions are eligible for deletion. Only Draft questions that have never been used in an assessment can be deleted.
+                </p>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground" style={{ margin: 0 }}>
+                    {deletable.length} question{deletable.length !== 1 ? 's' : ''} will be permanently deleted.
+                    {skipped.length > 0 && ` ${skipped.length} will be skipped — not Draft or previously used.`}
+                  </p>
+                  <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px' }}>
+                    {deletable.slice(0, 10).map(q => (
+                      <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <i className="fa-light fa-rectangle-list" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
+                        <span className="flex-1 text-xs text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</span>
                       </div>
+                    ))}
+                    {deletable.length > 10 && (
+                      <p className="text-xs text-muted-foreground italic" style={{ margin: 0 }}>
+                        and {deletable.length - 10} more…
+                      </p>
                     )}
                   </div>
+                </>
+              )}
+              {skipped.length > 0 && deletable.length > 0 && (
+                <div style={{ borderRadius: 8, border: '1px solid var(--border)', backgroundColor: 'var(--muted)', padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <i className="fa-light fa-circle-info" aria-hidden="true" style={{ fontSize: 13, color: 'var(--muted-foreground)', flexShrink: 0, marginTop: 1 }} />
+                  <span className="text-xs text-muted-foreground">
+                    {skipped.length} question{skipped.length !== 1 ? 's are' : ' is'} not eligible and will be skipped. Only Draft questions with no prior usage can be deleted.
+                  </span>
                 </div>
               )}
-              <div style={{ maxHeight: 180, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4, border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px' }}>
-                {selectedQs.slice(0, 10).map(q => (
-                  <div key={q.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <i className="fa-light fa-rectangle-list" aria-hidden="true" style={{ fontSize: 11, color: 'var(--muted-foreground)', flexShrink: 0 }} />
-                    <span className="flex-1 text-xs text-foreground" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.title}</span>
-                    {q.usage > 0 && (
-                      <span className="text-xs font-semibold shrink-0 text-destructive">{q.usage}×</span>
-                    )}
-                  </div>
-                ))}
-                {selectedQs.length > 10 && (
-                  <p className="text-xs text-muted-foreground italic" style={{ margin: 0 }}>
-                    and {selectedQs.length - 10} more…
-                  </p>
-                )}
-              </div>
               <DialogFooter>
-                <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(false)}>Cancel</Button>
-                <Button variant="destructive" size="sm" onClick={() => {
-                  const snapshots = selectedQs.map(q => ({ ...q }))
-                  selectedQs.forEach(q => deleteQuestion(q.id))
-                  showQBToast({ title: `${selectedQs.length} question${selectedQs.length > 1 ? 's' : ''} deleted`, undoFn: () => restoreQuestions(snapshots) })
-                  clearSelection()
-                  setBulkDeleteOpen(false)
-                }}>
-                  <i className="fa-light fa-trash-can" aria-hidden="true" />
-                  Delete {selectedQs.length} question{selectedQs.length !== 1 ? 's' : ''}
+                <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(false)}>
+                  {deletable.length === 0 ? 'Close' : 'Cancel'}
                 </Button>
+                {deletable.length > 0 && (
+                  <Button variant="destructive" size="sm" onClick={() => {
+                    const snapshots = deletable.map(q => ({ ...q }))
+                    deletable.forEach(q => deleteQuestion(q.id))
+                    showQBToast({ title: `${deletable.length} question${deletable.length > 1 ? 's' : ''} deleted`, undoFn: () => restoreQuestions(snapshots) })
+                    clearSelection()
+                    setBulkDeleteOpen(false)
+                  }}>
+                    <i className="fa-light fa-trash-can" aria-hidden="true" />
+                    Delete {deletable.length} question{deletable.length !== 1 ? 's' : ''}
+                  </Button>
+                )}
               </DialogFooter>
             </DialogContent>
           </Dialog>

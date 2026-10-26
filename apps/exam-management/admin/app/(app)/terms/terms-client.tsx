@@ -31,7 +31,9 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from '@exxat/ds/packages/ui/src'
+  StatusBadge,
+  Textarea,
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { DataTable } from '@/components/data-table'
@@ -56,7 +58,7 @@ const STATUS_CONFIG: Record<
   upcoming: {
     label: 'Upcoming',
     icon: 'fa-hourglass',
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color-dark)',
   },
   completed: {
@@ -67,7 +69,7 @@ const STATUS_CONFIG: Record<
   },
 }
 
-function StatusBadge({ status }: { status: Term['status'] }) {
+function TermStatusBadge({ status }: { status: Term['status'] }) {
   const s = STATUS_CONFIG[status]
   return (
     <Badge
@@ -157,7 +159,7 @@ function buildColumns(
       width: 140,
       sortable: true,
       sortKey: 'status',
-      cell: (row) => <StatusBadge status={row.status as Term['status']} />,
+      cell: (row) => <TermStatusBadge status={row.status as Term['status']} />,
     },
     {
       key: 'actions',
@@ -236,9 +238,9 @@ function TermDrawer({ open, term, isNew, onClose, onSave }: TermDrawerProps) {
         <div
           className="mx-4 flex items-start gap-2.5 rounded-lg px-3 py-2.5 text-xs"
           style={{
-            backgroundColor: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+            backgroundColor: 'var(--brand-tint)',
             color: 'var(--brand-color-dark)',
-            border: '1px solid color-mix(in oklch, var(--brand-color) 20%, var(--background))',
+            border: '1px solid var(--brand-tint)',
           }}
           role="note"
           aria-label="LMS integration note"
@@ -334,15 +336,9 @@ function TermDrawer({ open, term, isNew, onClose, onSave }: TermDrawerProps) {
           {/* Notes */}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="term-notes">Notes</Label>
-            <textarea
+            <Textarea
               id="term-notes"
-              className="flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{
-                borderColor: 'var(--border-control-35)',
-                backgroundColor: 'var(--background)',
-                color: 'var(--foreground)',
-                resize: 'vertical',
-              }}
+              className="min-h-20"
               placeholder="Optional notes about this term…"
               value={draft.notes ?? ''}
               onChange={(e) => field('notes', e.target.value)}

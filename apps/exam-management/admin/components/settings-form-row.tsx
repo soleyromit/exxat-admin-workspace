@@ -1,12 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Label } from "@exxat/ds/packages/ui/src"
+import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 
-// Vendored from exxat-ds/apps/web/components/settings-form-row.tsx (2026-05-12).
-// Two-column settings row: label + helper on the left, controls on the right.
-
+/**
+ * Two-column settings row: label + helper on the left, controls on the right.
+ */
 export function SettingsFormRow({
   label,
   description,

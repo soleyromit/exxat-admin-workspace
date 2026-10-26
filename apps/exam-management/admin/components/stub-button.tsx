@@ -22,7 +22,7 @@
 
 import {
   Button, Tip,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { type ComponentProps, type ReactNode } from 'react'
 
 type DSButtonProps = ComponentProps<typeof Button>

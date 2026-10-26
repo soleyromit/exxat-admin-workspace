@@ -1,3 +1,4 @@
+// overflow-hidden safe — floating uses Radix Portal (PopoverContent, TooltipContent, SelectContent all use Radix Portal)
 'use client'
 
 /**
@@ -18,24 +19,29 @@
  *   - Validation is non-blocking: warnings inline, errors prevent Save
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Button, Badge, Input, Textarea, Label,
   Card, CardHeader, CardDescription, CardContent,
   Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
-  RadioGroup, RadioGroupItem, Checkbox,
+  Checkbox,
   Tooltip, TooltipTrigger, TooltipContent,
+  Tip,
   LocalBanner,
-} from '@exxat/ds/packages/ui/src'
+  StatusBadge,
+} from '@exxatdesignux/ui'
 import { QBToggle } from '@/components/qb/toggle'
 import {
   type EditorQType, type QuestionDraft, type QuestionPayload,
-  type DraftValidationIssue,
+  type DraftValidationIssue, type KTypeStatement,
   QUESTION_TYPES, defaultPayload, validateDraft,
 } from '@/lib/question-editor-types'
 import type { CourseObjective } from '@/lib/faculty-mock-data'
+import { MOCK_STANDARDS, groupedStandards, type Standard } from '@/lib/mock-standards'
 
-// ─── Public props ──────────────────────────────────────────────
+const GROUPED_STANDARDS = groupedStandards()
+
+// ─── Public props ──────────────────────────────────────────────────────────
 
 export interface QuestionEditorProps {
   draft: QuestionDraft
@@ -57,7 +63,7 @@ export type SaveDestination =
   | 'bank'               // publish to QB, library row created
   | 'assessment'         // add to active assessment + bank
 
-// ─── Main shell ──────────────────────────────────────────────
+// ─── Main shell ────────────────────────────────────────────────────────────
 
 export function QuestionEditor({
   draft, onChange, objectives, compact = false,
@@ -83,7 +89,7 @@ export function QuestionEditor({
     onChange({ ...draft, payload })
   }
 
-  // ─── AI enhance — mock suggestion engine ──────────────────────────────────
+  // ─── AI enhance — mock suggestion engine ────────────────────────────────
   function runAi(action: 'tighten-stem' | 'add-distractors' | 'tag-objective') {
     setAiThinking(true)
     setTimeout(() => {
@@ -138,14 +144,14 @@ export function QuestionEditor({
       {!compact && (
         <header className="flex items-center justify-between gap-3 px-6 py-3 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <Badge variant="secondary" className="rounded font-mono text-[10px]">{draft.code}</Badge>
+            <Badge variant="secondary" className="rounded font-mono text-xs" suppressHydrationWarning>{draft.code}</Badge>
             <h1 className="text-sm font-semibold text-foreground truncate">
               {draft.stem.trim() ? draft.stem.trim().slice(0, 80) : 'New question'}
             </h1>
             <StateBadge state={draft.state} />
             {draft.aiOriginated && (
-              <Badge variant="secondary" className="rounded text-[10px] gap-1">
-                <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 9 }} />
+              <Badge variant="secondary" className="rounded text-xs gap-1">
+                <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" />
                 AI draft
               </Badge>
             )}
@@ -179,21 +185,16 @@ export function QuestionEditor({
           <div className="flex flex-col gap-5">
             {/* Type picker */}
             <section className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Question type
-                </h2>
-                <span className="text-[11px] text-muted-foreground">
-                  Switching type clears type-specific answer data
-                </span>
-              </div>
+              <h2 className="text-xs font-semibold text-muted-foreground mb-3">
+                Question type
+              </h2>
               <TypePickerGrid value={draft.type} onChange={setType} />
             </section>
 
             {/* Stem editor */}
             <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="stem" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <Label htmlFor="stem" className="text-xs font-semibold text-muted-foreground">
                   Question stem <span className="text-destructive">*</span>
                 </Label>
                 <Tooltip>
@@ -205,7 +206,7 @@ export function QuestionEditor({
                       disabled={aiThinking || !draft.stem.trim()}
                       className="text-xs gap-1.5 h-7"
                     >
-                      <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 11 }} />
+                      <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 14 }} />
                       Tighten with AI
                     </Button>
                   </TooltipTrigger>
@@ -225,7 +226,7 @@ export function QuestionEditor({
                   body={
                     <div className="flex flex-col gap-2">
                       <p className="text-xs line-clamp-3 text-muted-foreground italic">{aiSuggestion.before || '—'}</p>
-                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-muted-foreground">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
                         <i className="fa-light fa-arrow-down" aria-hidden="true" />
                         After
                       </div>
@@ -242,8 +243,8 @@ export function QuestionEditor({
             {/* Type-specific control */}
             <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Answer
+                <h2 className="text-xs font-semibold text-muted-foreground">
+                  Answer &amp; Rationale
                 </h2>
                 {(draft.payload.type === 'mcq' || draft.payload.type === 'multi-select') && (
                   <Button
@@ -253,7 +254,7 @@ export function QuestionEditor({
                     disabled={aiThinking || !draft.stem.trim()}
                     className="text-xs gap-1.5 h-7"
                   >
-                    <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 11 }} />
+                    <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 14 }} />
                     Suggest distractors
                   </Button>
                 )}
@@ -267,19 +268,21 @@ export function QuestionEditor({
               />
             </section>
 
-            {/* Explanation / rationale */}
-            <section className="rounded-xl border border-border bg-card p-4">
-              <Label htmlFor="explanation" className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 block">
-                Explanation <span className="font-normal text-muted-foreground normal-case tracking-normal text-[11px]">— shown after submission for student review</span>
-              </Label>
-              <Textarea
-                id="explanation"
-                value={draft.explanation}
-                onChange={e => update('explanation', e.target.value)}
-                placeholder="Explain why the correct answer is correct (and optionally why the others aren't)."
-                className="min-h-20 text-sm resize-y"
-              />
-            </section>
+            {/* Question-level explanation — only for types without per-option rationale */}
+            {draft.payload.type !== 'mcq' && draft.payload.type !== 'multi-select' && draft.payload.type !== 'true-false' && (
+              <section className="rounded-xl border border-border bg-card p-4">
+                <Label htmlFor="explanation" className="text-xs font-semibold text-muted-foreground mb-2 block">
+                  Rationale <span className="font-normal text-muted-foreground normal-case tracking-normal text-xs">— shown to students during review session</span>
+                </Label>
+                <Textarea
+                  id="explanation"
+                  value={draft.explanation}
+                  onChange={e => update('explanation', e.target.value)}
+                  placeholder="Explain the correct answer and any key distinctions students should understand."
+                  className="min-h-20 text-sm resize-y"
+                />
+              </section>
+            )}
 
             {/* Validation panel */}
             {(errors.length > 0 || warnings.length > 0) && (
@@ -322,32 +325,35 @@ export function QuestionEditor({
   )
 }
 
-// ─── Type picker grid ───────────────────────────────────────────────
+// ─── Type picker grid ─────────────────────────────────────────────────────
 
 function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t: EditorQType) => void }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {QUESTION_TYPES.map(t => {
         const active = t.id === value
         return (
           <Button
             key={t.id}
             variant="ghost"
+            size="sm"
             onClick={() => onChange(t.id)}
             aria-pressed={active}
-            className={`flex-col items-start justify-start text-left h-auto rounded-lg border px-3 py-2.5 whitespace-normal ${
-              active
-                ? 'border-brand/60 bg-brand/8 ring-1 ring-brand/30'
-                : 'border-border bg-card hover:border-brand/40 hover:bg-muted/30'
-            }`}
+            title={t.shortDescription}
+            className="gap-1.5 h-7 px-2.5 text-xs rounded-full"
+            style={{
+              border: '1px solid var(--border)',
+              background: active ? 'var(--muted)' : 'transparent',
+              fontWeight: active ? 600 : 400,
+              color: active ? 'var(--foreground)' : 'var(--muted-foreground)',
+            }}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <i className={`fa-light ${t.icon} ${active ? 'text-brand-dark' : 'text-muted-foreground'}`} aria-hidden="true" style={{ fontSize: 13 }} />
-              <span className={`text-xs font-semibold ${active ? 'text-foreground' : 'text-foreground'}`}>
-                {t.label}
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2">{t.shortDescription}</p>
+            <i
+              className={`fa-light ${t.icon}`}
+              aria-hidden="true"
+              style={{ color: active ? 'var(--foreground)' : 'var(--muted-foreground)' }}
+            />
+            {t.label}
           </Button>
         )
       })}
@@ -355,7 +361,95 @@ function TypePickerGrid({ value, onChange }: { value: EditorQType; onChange: (t:
   )
 }
 
-// ─── Type-specific controls ─────────────────────────────────────────────
+// ─── K-type (complex MCQ) ─────────────────────────────────────────────────
+
+function KTypeControls({ payload, onChange }: {
+  payload: Extract<QuestionPayload, { type: 'k-type' }>
+  onChange: (p: QuestionPayload) => void
+}) {
+  function updateStatement(id: string, patch: Partial<KTypeStatement>) {
+    onChange({ ...payload, statements: payload.statements.map(s => s.id === id ? { ...s, ...patch } : s) })
+  }
+  function addStatement() {
+    onChange({ ...payload, statements: [...payload.statements, { id: `ks-${Math.random().toString(36).slice(2, 9)}`, text: '', correct: false }] })
+  }
+  function removeStatement(id: string) {
+    onChange({ ...payload, statements: payload.statements.filter(s => s.id !== id) })
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">Statements</p>
+        <p className="text-xs text-muted-foreground mb-3">Mark each statement as True or False. The correct combination key is the one whose selected pattern matches.</p>
+        {payload.statements.map((stmt, idx) => (
+          <div key={stmt.id} className="flex items-start gap-2 mb-2">
+            <span className="text-xs font-mono text-muted-foreground mt-2 w-4 shrink-0">{String.fromCharCode(65 + idx)}.</span>
+            <input
+              value={stmt.text}
+              onChange={e => updateStatement(stmt.id, { text: e.target.value })}
+              placeholder={`Statement ${String.fromCharCode(65 + idx)}`}
+              className="flex-1 text-sm"
+              style={{ height: 36, padding: '0 10px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--background)', color: 'var(--foreground)', outline: 'none', fontSize: 13 }}
+            />
+            <Button
+              variant={stmt.correct ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateStatement(stmt.id, { correct: true })}
+              className="shrink-0"
+              style={{ height: 36, minWidth: 56, fontSize: 12 }}
+            >
+              True
+            </Button>
+            <Button
+              variant={!stmt.correct ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateStatement(stmt.id, { correct: false })}
+              className="shrink-0"
+              style={{ height: 36, minWidth: 56, fontSize: 12 }}
+            >
+              False
+            </Button>
+            {payload.statements.length > 2 && (
+              <Button variant="ghost" size="sm" onClick={() => removeStatement(stmt.id)} aria-label="Remove statement" style={{ height: 36 }}>
+                <i className="fa-light fa-xmark" aria-hidden="true" />
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button variant="ghost" size="sm" onClick={addStatement} className="gap-1.5 mt-1">
+          <i className="fa-light fa-plus" aria-hidden="true" />
+          Add statement
+        </Button>
+      </div>
+
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-2">Combination keys</p>
+        <p className="text-xs text-muted-foreground mb-3">Define what each answer key (A, B, C, D) means — which statements are true in that combination. Mark the correct key.</p>
+        {payload.combinationKeys.map((key) => (
+          <div key={key.id} className="flex items-center gap-2 mb-2">
+            <Button
+              variant={key.isCorrect ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onChange({ ...payload, combinationKeys: payload.combinationKeys.map(k => ({ ...k, isCorrect: k.id === key.id })) })}
+              style={{ height: 32, width: 32, padding: 0, fontWeight: 700, fontSize: 13, flexShrink: 0 }}
+              aria-label={`Mark key ${key.label} as correct`}
+            >
+              {key.label}
+            </Button>
+            <span className="text-xs text-muted-foreground flex-1">
+              {payload.statements.length > 0
+                ? payload.statements.map((s, i) => `${String.fromCharCode(65 + i)}=${s.correct ? 'T' : 'F'}`).join(', ')
+                : 'Define statements above'}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Type-specific controls ───────────────────────────────────────────────
 
 function TypeControls({
   payload, onChange, aiSuggestion, onAcceptAi, onRejectAi,
@@ -394,10 +488,12 @@ function TypeControls({
       return <OrderingControls payload={payload} onChange={onChange} />
     case 'hotspot':
       return <HotspotControls payload={payload} onChange={onChange} />
+    case 'k-type':
+      return <KTypeControls payload={payload} onChange={onChange} />
   }
 }
 
-// ─── MCQ / Multi-select ─────────────────────────────────────────────
+// ─── MCQ / Multi-select ───────────────────────────────────────────────────
 
 function McqControls({
   payload, onChange, aiSuggestion, onAcceptAi, onRejectAi,
@@ -410,11 +506,10 @@ function McqControls({
 }) {
   const isMulti = payload.type === 'multi-select'
 
-  function setOption(idx: number, patch: Partial<{ text: string; correct: boolean }>) {
+  function setOption(idx: number, patch: Partial<{ text: string; correct: boolean; rationale: string; locked: boolean }>) {
     onChange({
       ...payload,
       options: payload.options.map((o, i) => i === idx ? { ...o, ...patch } : (
-        // For MCQ, marking one correct unmarks others
         !isMulti && patch.correct === true ? { ...o, correct: false } : o
       )),
     })
@@ -423,7 +518,7 @@ function McqControls({
   function addOption() {
     onChange({
       ...payload,
-      options: [...payload.options, { id: `opt-${Date.now()}-${payload.options.length}`, text: '', correct: false }],
+      options: [...payload.options, { id: `opt-${Math.random().toString(36).slice(2, 9)}`, text: '', correct: false }],
     })
   }
 
@@ -432,55 +527,172 @@ function McqControls({
     onChange({ ...payload, options: payload.options.filter((_, i) => i !== idx) })
   }
 
+  const cardStyle = (correct: boolean): React.CSSProperties => ({
+    borderColor: correct ? 'var(--chart-2)' : 'var(--border)',
+    background: 'var(--card)',
+  })
+
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] text-muted-foreground -mt-1">
+      <p className="text-xs text-muted-foreground -mt-1">
         {isMulti ? 'Mark all correct answers — students can earn partial credit.' : 'Mark exactly one correct answer.'}
       </p>
-      <ul className="flex flex-col gap-2">
-        {payload.options.map((opt, i) => (
-          <li key={opt.id} className="flex items-start gap-2">
-            {isMulti ? (
-              <Checkbox
-                id={`opt-${opt.id}`}
-                checked={opt.correct}
-                onCheckedChange={c => setOption(i, { correct: !!c })}
-                aria-label={`Mark option ${String.fromCharCode(65 + i)} correct`}
-                className="mt-2"
-              />
-            ) : (
-              <RadioGroup value={opt.correct ? opt.id : ''} onValueChange={(_v) => setOption(i, { correct: true })}>
-                <RadioGroupItem value={opt.id} id={`opt-${opt.id}`} aria-label={`Mark option ${String.fromCharCode(65 + i)} correct`} className="mt-2" />
-              </RadioGroup>
-            )}
-            <span className="font-mono text-xs font-bold w-5 text-center text-muted-foreground mt-2.5">
-              {String.fromCharCode(65 + i)}
-            </span>
-            <Input
-              type="text"
-              value={opt.text}
-              onChange={e => setOption(i, { text: e.target.value })}
-              placeholder={`Option ${String.fromCharCode(65 + i)}`}
-              className="flex-1"
-            />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => removeOption(i)}
-                  disabled={payload.options.length <= 2}
-                  aria-label={`Remove option ${String.fromCharCode(65 + i)}`}
-                  className="mt-1"
-                >
-                  <i className="fa-light fa-trash-can" aria-hidden="true" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Remove option</TooltipContent>
-            </Tooltip>
-          </li>
-        ))}
-      </ul>
+
+      {isMulti ? (
+        <div className="flex flex-col gap-1.5">
+          {payload.options.map((opt, i) => {
+            const letter = String.fromCharCode(65 + i)
+            const missingRationale = opt.correct && !opt.rationale?.trim()
+            return (
+              <div key={opt.id} className="rounded-lg border overflow-hidden transition-colors" style={cardStyle(opt.correct)}>
+                <div className="flex items-center gap-2 px-3 py-2.5">
+                  <Checkbox
+                    id={`opt-${opt.id}`}
+                    checked={opt.correct}
+                    onCheckedChange={c => setOption(i, { correct: !!c })}
+                    aria-label={`Mark option ${letter} correct`}
+                  />
+                  <span className="font-mono text-xs font-bold w-4 shrink-0 text-center text-muted-foreground">{letter}</span>
+                  <Input type="text" value={opt.text} onChange={e => setOption(i, { text: e.target.value })} placeholder={`Option ${letter}`} className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1" />
+                  {opt.correct && <Badge variant="secondary" className="text-xs shrink-0" style={{ color: 'var(--chart-2)' }}>Correct</Badge>}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-sm" onClick={() => setOption(i, { locked: !opt.locked })} aria-label={opt.locked ? 'Unlock' : 'Lock position'} aria-pressed={!!opt.locked} disabled={!payload.shuffle} style={{ color: opt.locked ? 'var(--foreground)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}>
+                        <i className={`fa-light ${opt.locked ? 'fa-lock' : 'fa-lock-open'}`} aria-hidden="true" style={{ fontSize: 13 }} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{!payload.shuffle ? 'Enable shuffle to lock positions' : opt.locked ? "Locked — won't shuffle" : 'Lock this position'}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon-sm" onClick={() => removeOption(i)} disabled={payload.options.length <= 2} aria-label={`Remove option ${letter}`}>
+                        <i className="fa-light fa-trash-can" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove</TooltipContent>
+                  </Tooltip>
+                </div>
+                {(opt.correct || opt.rationale) && (
+                  <div className="px-3 pb-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+                    <div className="flex items-start gap-1.5 pt-2">
+                      <i className="fa-light fa-quote-left shrink-0 mt-1 text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+                      <Textarea value={opt.rationale ?? ''} onChange={e => setOption(i, { rationale: e.target.value })} placeholder={opt.correct ? 'Explain why this is correct — students see this during review' : 'Explain why this distractor is wrong (optional)'} className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0" rows={2} />
+                      {missingRationale && <span className="text-xs font-medium shrink-0 mt-1 text-chart-4">missing</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        /* MCQ — custom role="radiogroup" so the visual indicator is driven directly from opt.correct,
+           not from Radix's internal data-state (which requires htmlFor→native input, not a button). */
+        <div role="radiogroup" aria-label="Answer options" className="flex flex-col gap-1.5">
+          {payload.options.map((opt, i) => {
+            const letter = String.fromCharCode(65 + i)
+            const missingRationale = opt.correct && !opt.rationale?.trim()
+            const noCorrect = !payload.options.some(o => o.correct)
+            function handleKeyDown(e: React.KeyboardEvent) {
+              if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                e.preventDefault()
+                setOption((i + 1) % payload.options.length, { correct: true })
+              } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault()
+                setOption((i - 1 + payload.options.length) % payload.options.length, { correct: true })
+              }
+            }
+            return (
+              /* The row container is a non-interactive group: a radio must NOT
+                 contain other interactive controls (axe: nested-interactive).
+                 The radio role lives on the dedicated indicator button below;
+                 the text input, lock/remove buttons and rationale are siblings. */
+              <div
+                key={opt.id}
+                role="group"
+                aria-label={`Option ${letter}`}
+                className="rounded-lg border overflow-hidden transition-colors"
+                style={cardStyle(opt.correct)}
+              >
+                <div className="flex items-center gap-2 px-3 py-2.5">
+                  {/* Custom radio control — the only interactive radio in the row */}
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={opt.correct}
+                    aria-label={`Mark option ${letter} correct`}
+                    tabIndex={opt.correct || (noCorrect && i === 0) ? 0 : -1}
+                    onClick={() => setOption(i, { correct: true })}
+                    onKeyDown={handleKeyDown}
+                    className="size-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                    style={{ borderColor: opt.correct ? 'var(--chart-2)' : 'var(--border)' }}
+                  >
+                    {opt.correct && (
+                      <div className="size-2 rounded-full" style={{ background: 'var(--chart-2)' }} />
+                    )}
+                  </button>
+                  <span className="font-mono text-xs font-bold w-4 shrink-0 text-center text-muted-foreground">{letter}</span>
+                  <Input
+                    type="text"
+                    value={opt.text}
+                    onChange={e => setOption(i, { text: e.target.value })}
+                    placeholder={`Option ${letter}`}
+                    className="flex-1 border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 px-1"
+                    aria-label={`Option ${letter} text`}
+                  />
+                  {opt.correct && <Badge variant="secondary" className="text-xs shrink-0" style={{ color: 'var(--chart-2)' }}>Correct</Badge>}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => setOption(i, { locked: !opt.locked })}
+                        aria-label={opt.locked ? 'Unlock' : 'Lock position'}
+                        aria-pressed={!!opt.locked}
+                        disabled={!payload.shuffle}
+                        style={{ color: opt.locked ? 'var(--foreground)' : 'var(--muted-foreground)', opacity: !payload.shuffle ? 0.35 : 1 }}
+                      >
+                        <i className={`fa-light ${opt.locked ? 'fa-lock' : 'fa-lock-open'}`} aria-hidden="true" style={{ fontSize: 13 }} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{!payload.shuffle ? 'Enable shuffle to lock positions' : opt.locked ? "Locked — won't shuffle" : 'Lock this position'}</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => removeOption(i)}
+                        disabled={payload.options.length <= 2}
+                        aria-label={`Remove option ${letter}`}
+                      >
+                        <i className="fa-light fa-trash-can" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Remove</TooltipContent>
+                  </Tooltip>
+                </div>
+                {(opt.correct || opt.rationale) && (
+                  <div className="px-3 pb-2.5" style={{ borderTop: '1px solid var(--border)' }}>
+                    <div className="flex items-start gap-1.5 pt-2">
+                      <i className="fa-light fa-quote-left shrink-0 mt-1 text-xs" aria-hidden="true" style={{ color: 'var(--muted-foreground)' }} />
+                      <Textarea
+                        value={opt.rationale ?? ''}
+                        onChange={e => setOption(i, { rationale: e.target.value })}
+                        placeholder={opt.correct ? 'Explain why this is correct — students see this during review' : 'Explain why this distractor is wrong (optional)'}
+                        className="flex-1 text-xs min-h-[52px] resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 p-0"
+                        rows={2}
+                        aria-label={`Rationale for option ${letter}`}
+                      />
+                      {missingRationale && <span className="text-xs font-medium shrink-0 mt-1 text-chart-4">missing</span>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3 pt-1">
         <Button variant="outline" size="sm" onClick={addOption} className="gap-1.5">
           <i className="fa-light fa-plus" aria-hidden="true" />
@@ -511,7 +723,7 @@ function McqControls({
             <ul className="flex flex-col gap-1">
               {aiSuggestion.newDistractors.map((d, i) => (
                 <li key={i} className="text-sm text-foreground flex items-center gap-2">
-                  <span className="size-4 rounded-full bg-muted text-[10px] font-bold flex items-center justify-center text-muted-foreground">
+                  <span className="size-4 rounded-full bg-muted text-xs font-bold flex items-center justify-center text-muted-foreground">
                     {String.fromCharCode(65 + payload.options.length + i)}
                   </span>
                   {d}
@@ -528,34 +740,66 @@ function McqControls({
   )
 }
 
-// ─── True / False ──────────────────────────────────────────────────
+// ─── True / False ─────────────────────────────────────────────────────────
 
 function TrueFalseControls({
   payload, onChange,
 }: { payload: Extract<QuestionPayload, { type: 'true-false' }>; onChange: (p: QuestionPayload) => void }) {
   return (
-    <RadioGroup
-      value={payload.correct ? 'true' : 'false'}
-      onValueChange={v => onChange({ ...payload, correct: v === 'true' })}
-      className="flex gap-3"
-    >
-      <Label htmlFor="tf-true" className={`flex-1 flex items-center gap-2 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${payload.correct ? 'border-brand/60 bg-brand/8' : 'border-border hover:bg-muted/30'}`}>
-        <RadioGroupItem value="true" id="tf-true" />
-        <i className="fa-light fa-circle-check text-chart-2" aria-hidden="true" />
-        <span className="text-sm font-medium">True</span>
-        {payload.correct && <Badge variant="secondary" className="rounded text-[9px] ms-auto">Correct</Badge>}
-      </Label>
-      <Label htmlFor="tf-false" className={`flex-1 flex items-center gap-2 rounded-lg border px-4 py-3 cursor-pointer transition-colors ${!payload.correct ? 'border-brand/60 bg-brand/8' : 'border-border hover:bg-muted/30'}`}>
-        <RadioGroupItem value="false" id="tf-false" />
-        <i className="fa-light fa-circle-xmark text-destructive" aria-hidden="true" />
-        <span className="text-sm font-medium">False</span>
-        {!payload.correct && <Badge variant="secondary" className="rounded text-[9px] ms-auto">Correct</Badge>}
-      </Label>
-    </RadioGroup>
+    <div className="flex flex-col gap-3">
+      <div role="radiogroup" aria-label="True or False" className="flex gap-3">
+        {([true, false] as const).map(val => {
+          const isSelected = payload.correct === val
+          return (
+            <div
+              key={String(val)}
+              role="radio"
+              aria-checked={isSelected}
+              tabIndex={isSelected || (!payload.correct && val) ? 0 : -1}
+              onClick={() => onChange({ ...payload, correct: val })}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  onChange({ ...payload, correct: !val })
+                }
+              }}
+              className={`flex-1 flex items-center gap-2 rounded-lg border px-4 py-3 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 ${isSelected ? 'border-chart-2/60 bg-muted/30' : 'border-border hover:bg-muted/20'}`}
+            >
+              <div
+                className="size-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors"
+                style={{ borderColor: isSelected ? 'var(--chart-2)' : 'var(--border)' }}
+              >
+                {isSelected && <div className="size-2 rounded-full" style={{ background: 'var(--chart-2)' }} />}
+              </div>
+              <i className={`fa-light ${val ? 'fa-circle-check text-chart-2' : 'fa-circle-xmark text-destructive'}`} aria-hidden="true" />
+              <span className="text-sm font-medium">{val ? 'True' : 'False'}</span>
+              {isSelected && <Badge variant="secondary" className="rounded text-xs ms-auto" style={{ color: 'var(--chart-2)' }}>Correct</Badge>}
+            </div>
+          )
+        })}
+      </div>
+      <div className="relative">
+        <Label htmlFor="tf-rationale" className="text-xs font-medium block mb-1">
+          Rationale
+          {!payload.rationale?.trim() && (
+            <span className="ms-1.5 text-xs font-medium text-chart-4">missing</span>
+          )}
+        </Label>
+        <Textarea
+          id="tf-rationale"
+          value={payload.rationale ?? ''}
+          onChange={e => onChange({ ...payload, rationale: e.target.value })}
+          placeholder="Explain why the statement is true or false — students see this during review"
+          className="text-xs min-h-14 resize-none"
+          style={!payload.rationale?.trim() ? { borderColor: 'var(--chart-4)' } : undefined}
+          rows={2}
+        />
+      </div>
+    </div>
   )
 }
 
-// ─── Short answer ─────────────────────────────────────────────────
+// ─── Short answer ─────────────────────────────────────────────────────────
 
 function ShortAnswerControls({
   payload, onChange,
@@ -572,13 +816,13 @@ function ShortAnswerControls({
   }
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] text-muted-foreground -mt-1">
+      <p className="text-xs text-muted-foreground -mt-1">
         Provide every accepted spelling/casing variant. Grading is exact-match against any one of them.
       </p>
       <ul className="flex flex-col gap-2">
         {payload.acceptedAnswers.map((a, i) => (
           <li key={i} className="flex items-center gap-2">
-            <span className="text-[10px] font-mono uppercase text-muted-foreground tracking-wider w-6">
+            <span className="text-xs font-mono text-muted-foreground w-6">
               {i === 0 ? 'Main' : `Alt ${i}`}
             </span>
             <Input value={a} onChange={e => setAnswer(i, e.target.value)} placeholder="Accepted answer" className="flex-1" />
@@ -604,7 +848,7 @@ function ShortAnswerControls({
   )
 }
 
-// ─── Numeric ────────────────────────────────────────────────────
+// ─── Numeric ──────────────────────────────────────────────────────────────
 
 function NumericControls({
   payload, onChange,
@@ -621,7 +865,12 @@ function NumericControls({
         />
       </div>
       <div>
-        <Label htmlFor="num-tol" className="text-xs font-medium block mb-1">Tolerance ±</Label>
+        <Label htmlFor="num-tol" className="text-xs font-medium flex items-center gap-1 mb-1">
+          Tolerance ±
+          <Tip label="Acceptable range around the correct answer. A student's response is graded correct if |response − answer| ≤ tolerance.">
+            <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 11, cursor: 'help' }} />
+          </Tip>
+        </Label>
         <Input
           id="num-tol"
           type="number"
@@ -641,14 +890,14 @@ function NumericControls({
           placeholder="mg, mL, mmHg…"
         />
       </div>
-      <p className="col-span-3 text-[11px] text-muted-foreground">
+      <p className="col-span-3 text-xs text-muted-foreground">
         A response is correct if {Number.isFinite(payload.answer) ? `|response − ${payload.answer}| ≤ ${payload.tolerance}` : 'response is within tolerance of the answer'}{payload.units ? ` (units: ${payload.units})` : ''}.
       </p>
     </div>
   )
 }
 
-// ─── Essay ──────────────────────────────────────────────────────────
+// ─── Essay ────────────────────────────────────────────────────────────────
 
 function EssayControls({
   payload, onChange,
@@ -659,7 +908,7 @@ function EssayControls({
   function addCriterion() {
     onChange({
       ...payload,
-      rubric: [...payload.rubric, { id: `rb-${Date.now()}`, label: '', weight: 0, description: '' }],
+      rubric: [...payload.rubric, { id: `rb-${Math.random().toString(36).slice(2, 9)}`, label: '', weight: 0, description: '' }],
     })
   }
   function removeCriterion(idx: number) {
@@ -682,13 +931,8 @@ function EssayControls({
       </div>
       <div>
         <div className="flex items-center justify-between mb-2">
-          <Label className="text-xs font-medium">
-            Rubric{' '}
-            <span className="font-normal text-muted-foreground normal-case tracking-normal text-[11px]">
-              (optional — enables AI grading assistance)
-            </span>
-          </Label>
-          <span className={`text-[11px] font-mono tabular-nums ${totalWeight === 100 ? 'text-chart-2' : 'text-chart-4'}`}>
+          <Label className="text-xs font-medium">Rubric</Label>
+          <span className={`text-xs font-mono tabular-nums ${totalWeight === 100 ? 'text-chart-2' : 'text-chart-4'}`}>
             Total: {totalWeight}%
           </span>
         </div>
@@ -722,7 +966,7 @@ function EssayControls({
   )
 }
 
-// ─── Fill in the blank ─────────────────────────────────────────────────
+// ─── Fill in the blank ────────────────────────────────────────────────────
 
 function FillBlankControls({
   payload, onChange,
@@ -732,7 +976,7 @@ function FillBlankControls({
     const tokens = Array.from(value.matchAll(/\[\[([^\]]*)\]\]/g)).map(m => m[1])
     const blanks = tokens.map((tok, i) => {
       const existing = payload.blanks[i]
-      return existing ?? { id: `blk-${Date.now()}-${i}`, acceptedAnswers: [tok], caseSensitive: false }
+      return existing ?? { id: `blk-${Math.random().toString(36).slice(2, 9)}-${i}`, acceptedAnswers: [tok], caseSensitive: false }
     })
     onChange({ ...payload, stemTemplate: value, blanks })
   }
@@ -744,7 +988,7 @@ function FillBlankControls({
       <div>
         <Label htmlFor="fb-template" className="text-xs font-medium block mb-1">
           Sentence template
-          <span className="ms-1 text-[10px] text-muted-foreground">— wrap blanks in <code className="font-mono">[[ ]]</code></span>
+          <span className="ms-1 text-xs text-muted-foreground">— wrap blanks in <code className="font-mono">[[ ]]</code></span>
         </Label>
         <Textarea
           id="fb-template"
@@ -779,7 +1023,7 @@ function FillBlankControls({
               </li>
             ))}
           </ul>
-          <p className="text-[11px] text-muted-foreground">Separate multiple accepted answers with <code className="font-mono">|</code>.</p>
+          <p className="text-xs text-muted-foreground">Separate multiple accepted answers with <code className="font-mono">|</code>.</p>
         </div>
       )}
     </div>
@@ -803,7 +1047,7 @@ function FillBlankPreview({ template }: { template: string }) {
       className="ring-0 border border-dashed border-border bg-muted/20"
     >
       <CardHeader>
-        <CardDescription className="text-[10px] font-bold uppercase tracking-wider">
+        <CardDescription className="text-xs font-semibold text-muted-foreground">
           Student-facing preview
         </CardDescription>
       </CardHeader>
@@ -814,7 +1058,7 @@ function FillBlankPreview({ template }: { template: string }) {
             : (
               <span
                 key={i}
-                className="inline-block min-w-12 px-2 mx-0.5 rounded bg-background border-b-2 border-brand text-center text-xs font-mono text-muted-foreground align-baseline"
+                className="inline-block min-w-12 px-2 mx-0.5 rounded bg-background border-b-2 border-foreground/30 text-center text-xs font-mono text-muted-foreground align-baseline"
                 style={{ paddingTop: 1, paddingBottom: 1 }}
               >
                 #{p.idx + 1}
@@ -827,7 +1071,7 @@ function FillBlankPreview({ template }: { template: string }) {
   )
 }
 
-// ─── Matching ───────────────────────────────────────────────────────
+// ─── Matching ─────────────────────────────────────────────────────────────
 
 function MatchingControls({
   payload, onChange,
@@ -839,10 +1083,10 @@ function MatchingControls({
     onChange({ ...payload, rights: payload.rights.map((r, i) => i === idx ? { ...r, ...patch } : r) })
   }
   function addPair() {
-    const r = { id: `r-${Date.now()}`, text: '' }
+    const r = { id: `r-${Math.random().toString(36).slice(2, 9)}`, text: '' }
     onChange({
       ...payload,
-      lefts: [...payload.lefts, { id: `l-${Date.now()}`, left: '', rightId: r.id }],
+      lefts: [...payload.lefts, { id: `l-${Math.random().toString(36).slice(2, 9)}`, left: '', rightId: r.id }],
       rights: [...payload.rights, r],
     })
   }
@@ -857,7 +1101,7 @@ function MatchingControls({
   }
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] text-muted-foreground -mt-1">
+      <p className="text-xs text-muted-foreground -mt-1">
         Pair items on the left with their match on the right. Right column is shown shuffled to students.
       </p>
       <ul className="flex flex-col gap-2">
@@ -888,7 +1132,7 @@ function MatchingControls({
   )
 }
 
-// ─── Ordering ────────────────────────────────────────────────────────
+// ─── Ordering ─────────────────────────────────────────────────────────────
 
 function OrderingControls({
   payload, onChange,
@@ -907,7 +1151,7 @@ function OrderingControls({
   function addItem() {
     onChange({
       ...payload,
-      items: [...payload.items, { id: `o-${Date.now()}`, text: '', canonicalIdx: payload.items.length }],
+      items: [...payload.items, { id: `o-${Math.random().toString(36).slice(2, 9)}`, text: '', canonicalIdx: payload.items.length }],
     })
   }
   function removeItem(idx: number) {
@@ -918,7 +1162,7 @@ function OrderingControls({
   }
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[11px] text-muted-foreground -mt-1">
+      <p className="text-xs text-muted-foreground -mt-1">
         Use ↑ / ↓ to set the canonical order. Items will be presented to students in shuffled order.
       </p>
       <ul className="flex flex-col gap-1.5">
@@ -948,7 +1192,7 @@ function OrderingControls({
   )
 }
 
-// ─── Hotspot ──────────────────────────────────────────────────────────
+// ─── Hotspot ──────────────────────────────────────────────────────────────
 
 function HotspotControls({
   payload, onChange,
@@ -960,7 +1204,7 @@ function HotspotControls({
     onChange({
       ...payload,
       hotspots: [...payload.hotspots, {
-        id: `hs-${Date.now()}`,
+        id: `hs-${Math.random().toString(36).slice(2, 9)}`,
         x: Math.max(0, x - 6),
         y: Math.max(0, y - 6),
         w: 12,
@@ -1009,7 +1253,7 @@ function HotspotControls({
             className="absolute rounded border-2 border-brand bg-brand/12"
             style={{ left: `${h.x}%`, top: `${h.y}%`, width: `${h.w}%`, height: `${h.h}%` }}
           >
-            <span className="absolute -top-5 left-0 text-[9px] font-mono bg-brand text-brand-foreground px-1 rounded">
+            <span className="absolute -top-5 left-0 text-xs font-mono bg-brand text-brand-foreground px-1 rounded">
               {h.label}
             </span>
             <Button
@@ -1024,14 +1268,14 @@ function HotspotControls({
           </div>
         ))}
       </div>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         {payload.hotspots.length} {payload.hotspots.length === 1 ? 'hotspot' : 'hotspots'} marked. Click anywhere on the image to add another.
       </p>
     </div>
   )
 }
 
-// ─── Metadata panel ───────────────────────────────────────────────
+// ─── Metadata panel ───────────────────────────────────────────────────────
 
 function MetadataPanel({
   draft, objectives, onUpdate,
@@ -1049,15 +1293,21 @@ function MetadataPanel({
   const objective = objectives.find(o => o.id === draft.objectiveId)
   return (
     <section className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
-      <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tagging</h2>
+      <h2 className="text-xs font-semibold text-muted-foreground">Tagging</h2>
 
       <div>
-        <Label htmlFor="meta-objective" className="text-xs font-medium block mb-1">Course objective</Label>
-        <Select value={draft.objectiveId ?? ''} onValueChange={v => onUpdate('objectiveId', v || null)}>
+        <div className="flex items-center justify-between mb-1">
+          <Label htmlFor="meta-objective" className="text-xs font-medium">Course objective</Label>
+          <span className="text-xs text-muted-foreground">one per question</span>
+        </div>
+        <Select value={draft.objectiveId ?? '__none__'} onValueChange={v => onUpdate('objectiveId', v === '__none__' ? null : v)}>
           <SelectTrigger id="meta-objective" className="text-xs">
             <SelectValue placeholder="Select objective…" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="__none__">
+              <span className="text-muted-foreground">None</span>
+            </SelectItem>
             {objectives.map(o => (
               <SelectItem key={o.id} value={o.id}>
                 <span className="line-clamp-1">{o.title}</span>
@@ -1066,7 +1316,7 @@ function MetadataPanel({
           </SelectContent>
         </Select>
         {objective && (
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             <i className="fa-light fa-bullseye-pointer me-1" aria-hidden="true" />
             Bloom level: {objective.bloomsLevel}
           </p>
@@ -1074,21 +1324,24 @@ function MetadataPanel({
         <Button
           variant="ghost"
           size="sm"
-          className="text-[11px] gap-1.5 h-7 mt-1.5 -ms-2"
+          className="text-xs gap-1.5 h-7 mt-1.5 -ms-2"
           onClick={onRunAi}
           disabled={aiThinking || objectives.length === 0 || !draft.stem.trim()}
         >
-          <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 10 }} />
+          <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: 14 }} />
           AI suggest objective
         </Button>
         {aiSuggestion && (
           <AiSuggestionCard
             compact
-            title={`AI matched to objective`}
+            title={draft.objectiveId ? 'Replace objective?' : 'AI matched objective'}
             body={
               <div className="flex flex-col gap-1">
+                {draft.objectiveId && objective && (
+                  <p className="text-xs text-muted-foreground line-through">{objective.title}</p>
+                )}
                 <p className="text-xs text-foreground font-medium">{aiSuggestion.objectiveTitle}</p>
-                <p className="text-[10px] text-muted-foreground">Match confidence: {Math.round(aiSuggestion.confidence * 100)}%</p>
+                <p className="text-xs text-muted-foreground">Match confidence: {Math.round(aiSuggestion.confidence * 100)}%</p>
               </div>
             }
             rationale={aiSuggestion.rationale}
@@ -1099,7 +1352,12 @@ function MetadataPanel({
       </div>
 
       <div>
-        <Label htmlFor="meta-difficulty" className="text-xs font-medium block mb-1">Difficulty</Label>
+        <Label htmlFor="meta-difficulty" className="text-xs font-medium flex items-center gap-1 mb-1">
+          Difficulty
+          <Tip label="Estimated cognitive load. Easy = most students answer correctly; Hard = few do. Informs question-bank balance and psychometric analysis.">
+            <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 11, cursor: 'help' }} />
+          </Tip>
+        </Label>
         <Select value={draft.difficulty} onValueChange={v => onUpdate('difficulty', v as QuestionDraft['difficulty'])}>
           <SelectTrigger id="meta-difficulty" className="text-xs">
             <SelectValue />
@@ -1113,7 +1371,12 @@ function MetadataPanel({
       </div>
 
       <div>
-        <Label htmlFor="meta-bloom" className="text-xs font-medium block mb-1">Bloom level</Label>
+        <Label htmlFor="meta-bloom" className="text-xs font-medium flex items-center gap-1 mb-1">
+          Bloom level
+          <Tip label="Bloom's Taxonomy: Remember → Understand → Apply → Analyze → Evaluate → Create. Higher levels require deeper reasoning.">
+            <i className="fa-light fa-circle-question text-muted-foreground" aria-hidden="true" style={{ fontSize: 11, cursor: 'help' }} />
+          </Tip>
+        </Label>
         <Select value={draft.blooms} onValueChange={v => onUpdate('blooms', v as QuestionDraft['blooms'])}>
           <SelectTrigger id="meta-bloom" className="text-xs">
             <SelectValue />
@@ -1130,18 +1393,21 @@ function MetadataPanel({
       </div>
 
       <div>
-        <Label htmlFor="meta-tags" className="text-xs font-medium block mb-1">Tags</Label>
+        <div className="flex items-center justify-between mb-1">
+          <Label htmlFor="meta-tags" className="text-xs font-medium">Custom labels</Label>
+          <span className="text-xs text-muted-foreground">comma-separated</span>
+        </div>
         <Input
           id="meta-tags"
           value={draft.tags.join(', ')}
           onChange={e => onUpdate('tags', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
-          placeholder="e.g. drug-interactions, NSAID"
+          placeholder="e.g. faculty-review, NSAID, high-yield"
           className="text-xs"
         />
         {draft.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {draft.tags.map(t => (
-              <Badge key={t} variant="secondary" className="rounded text-[9px] gap-1">
+              <Badge key={t} variant="secondary" className="rounded text-xs gap-1">
                 {t}
                 <Button
                   variant="ghost"
@@ -1157,11 +1423,22 @@ function MetadataPanel({
           </div>
         )}
       </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-1">
+          <Label className="text-xs font-medium">Standards</Label>
+          <span className="text-xs text-muted-foreground">direct mapping</span>
+        </div>
+        <StandardsSelect
+          selectedIds={draft.standardIds ?? []}
+          onUpdate={ids => onUpdate('standardIds', ids)}
+        />
+      </div>
     </section>
   )
 }
 
-// ─── Workflow panel ────────────────────────────────────────────────
+// ─── Workflow panel ───────────────────────────────────────────────────────
 
 function WorkflowPanel({
   draft, onUpdate,
@@ -1171,11 +1448,11 @@ function WorkflowPanel({
 }) {
   return (
     <section className="rounded-xl border border-border bg-card p-4 flex flex-col gap-3">
-      <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Workflow</h2>
+      <h2 className="text-xs font-semibold text-muted-foreground">Workflow</h2>
 
       <div>
         <Label className="text-xs font-medium block mb-1">Confidence marker</Label>
-        <p className="text-[10px] text-muted-foreground mb-2">
+        <p className="text-xs text-muted-foreground mb-2">
           Used by reviewers to filter low-confidence drafts during bulk review.
         </p>
         <div className="flex gap-1.5">
@@ -1207,7 +1484,7 @@ function WorkflowPanel({
 
       <div>
         <Label className="text-xs font-medium block mb-1">Bulk-import status</Label>
-        <p className="text-[10px] text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           {draft.aiOriginated
             ? 'This draft was generated by AI — flag any factual issues during review.'
             : 'Manually authored — no AI assist. AI enhance is still available per field.'}
@@ -1217,7 +1494,7 @@ function WorkflowPanel({
   )
 }
 
-// ─── Validation panel ────────────────────────────────────────────────
+// ─── Validation panel ─────────────────────────────────────────────────────
 
 function ValidationPanel({ errors, warnings }: { errors: DraftValidationIssue[]; warnings: DraftValidationIssue[] }) {
   if (errors.length === 0 && warnings.length === 0) return null
@@ -1244,7 +1521,7 @@ function ValidationPanel({ errors, warnings }: { errors: DraftValidationIssue[];
   )
 }
 
-// ─── AI suggestion shared card ─────────────────────────────────────────────
+// ─── AI suggestion shared card ────────────────────────────────────────────
 
 type AiSuggestion =
   | { kind: 'stem'; before: string; after: string; rationale: string }
@@ -1265,10 +1542,10 @@ function AiSuggestionCard({
     <div className={`rounded-lg border border-brand/30 bg-brand/5 ${compact ? 'p-2.5 mt-2' : 'p-3 mt-3'} flex flex-col gap-2`}>
       <div className="flex items-center gap-2">
         <i className="fa-duotone fa-solid fa-star-christmas text-brand" aria-hidden="true" style={{ fontSize: compact ? 10 : 11 }} />
-        <span className={`${compact ? 'text-[11px]' : 'text-xs'} font-bold text-brand-dark`}>{title}</span>
+        <span className="text-xs font-semibold text-foreground">{title}</span>
       </div>
       <div>{body}</div>
-      <p className={`${compact ? 'text-[10px]' : 'text-[11px]'} text-muted-foreground italic`}>
+      <p className="text-xs text-muted-foreground italic">
         {rationale}
       </p>
       <div className="flex items-center gap-1.5">
@@ -1281,6 +1558,110 @@ function AiSuggestionCard({
           Reject
         </Button>
       </div>
+    </div>
+  )
+}
+
+// ─── Standards multi-select ───────────────────────────────────────────────────
+
+function StandardsSelect({
+  selectedIds,
+  onUpdate,
+}: {
+  selectedIds: string[]
+  onUpdate: (ids: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const selected: Standard[] = MOCK_STANDARDS.filter(s => selectedIds.includes(s.id))
+  const grouped = GROUPED_STANDARDS
+
+  useEffect(() => {
+    if (!open) return
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
+
+  function toggle(id: string) {
+    onUpdate(selectedIds.includes(id) ? selectedIds.filter(x => x !== id) : [...selectedIds, id])
+  }
+
+  return (
+    <div ref={containerRef} className="flex flex-col gap-1.5">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {selected.map(s => (
+            <Badge key={s.id} variant="secondary" className="rounded text-xs gap-1">
+              <span className="font-mono text-muted-foreground">{s.framework}</span>
+              {' '}{s.code}
+              <Button
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => toggle(s.id)}
+                aria-label={`Remove ${s.title}`}
+                className="size-3 p-0 hover:bg-transparent"
+              >
+                <i className="fa-solid fa-xmark" aria-hidden="true" style={{ fontSize: 8 }} />
+              </Button>
+            </Badge>
+          ))}
+        </div>
+      )}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(o => !o)}
+        className="gap-1.5 h-7 text-xs justify-start"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        <i className="fa-light fa-plus" aria-hidden="true" />
+        {selected.length === 0 ? 'Map to standard…' : 'Add more'}
+      </Button>
+      {open && (
+        <div
+          className="rounded-lg border border-border bg-card p-2"
+          role="listbox"
+          aria-multiselectable="true"
+          aria-label="Available standards"
+          onKeyDown={e => { if (e.key === 'Escape') setOpen(false) }}
+        >
+          {Object.entries(grouped).map(([framework, stds]) => (
+            <div key={framework}>
+              <p className="text-xs font-semibold text-muted-foreground px-1 pt-2 pb-1">{framework}</p>
+              {stds.map(s => {
+                const checked = selectedIds.includes(s.id)
+                return (
+                  <div
+                    key={s.id}
+                    role="option"
+                    aria-selected={checked}
+                    onClick={() => toggle(s.id)}
+                    onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(s.id) } }}
+                    tabIndex={0}
+                    className="flex items-start gap-2 px-1 py-1 rounded cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggle(s.id)}
+                      aria-label={s.title}
+                    />
+                    <span className="text-xs leading-relaxed">
+                      <span className="font-mono text-muted-foreground mr-1 text-xs">{s.code}</span>
+                      {s.title}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -1300,10 +1681,10 @@ function ToggleSwitchRow({
 
 function StateBadge({ state }: { state: QuestionDraft['state'] }) {
   const meta = state === 'draft' ? { label: 'Draft', icon: 'fa-hourglass',    bg: 'var(--muted)',         fg: 'var(--muted-foreground)' }
-                                 : { label: 'Saved', icon: 'fa-circle-check', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
+                                 : { label: 'Saved', icon: 'fa-circle-check', bg: 'var(--muted)', fg: 'var(--chart-2)' }
   return (
-    <Badge variant="secondary" className="rounded text-[10px] gap-1" style={{ backgroundColor: meta.bg, color: meta.fg }}>
-      <i className={`fa-light ${meta.icon}`} aria-hidden="true" style={{ fontSize: 9 }} />
+    <Badge variant="secondary" className="rounded text-xs gap-1" style={{ backgroundColor: meta.bg, color: meta.fg }}>
+      <i className={`fa-light ${meta.icon}`} aria-hidden="true" style={{ fontSize: 12 }} />
       {meta.label}
     </Badge>
   )
@@ -1311,10 +1692,10 @@ function StateBadge({ state }: { state: QuestionDraft['state'] }) {
 
 function ConfidenceBadge({ level }: { level: 'high' | 'low' }) {
   const meta = level === 'high'
-    ? { label: 'High confidence', bg: 'color-mix(in oklch, var(--chart-2) 14%, var(--background))', fg: 'var(--chart-2)' }
-    : { label: 'Low confidence',  bg: 'color-mix(in oklch, var(--chart-4) 14%, var(--background))', fg: 'var(--chart-4)' }
+    ? { label: 'High confidence', bg: 'var(--muted)', fg: 'var(--chart-2)' }
+    : { label: 'Low confidence',  bg: 'var(--muted)', fg: 'var(--chart-4)' }
   return (
-    <Badge variant="secondary" className="rounded text-[10px]" style={{ backgroundColor: meta.bg, color: meta.fg }}>
+    <Badge variant="secondary" className="rounded text-xs" style={{ backgroundColor: meta.bg, color: meta.fg }}>
       {meta.label}
     </Badge>
   )

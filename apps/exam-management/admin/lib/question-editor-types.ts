@@ -27,6 +27,7 @@ export type EditorQType =
   | 'matching'
   | 'ordering'
   | 'hotspot'
+  | 'k-type'
 
 export interface QuestionTypeMeta {
   id: EditorQType
@@ -48,6 +49,7 @@ export const QUESTION_TYPES: QuestionTypeMeta[] = [
   { id: 'matching',      label: 'Matching',         icon: 'fa-arrow-right-arrow-left', baseMinutes: 3.0, shortDescription: 'Pair terms on the left to definitions on the right' },
   { id: 'ordering',      label: 'Ordering',         icon: 'fa-arrow-down-1-9', baseMinutes: 3.0, shortDescription: 'Place items in the correct sequence' },
   { id: 'hotspot',       label: 'Hotspot',          icon: 'fa-bullseye',      baseMinutes: 2.5, shortDescription: 'Click the correct region of an image' },
+  { id: 'k-type',        label: 'K-type',           icon: 'fa-table-list',    baseMinutes: 3.0, shortDescription: 'Complex MCQ — each option rated True/False, select correct combination' },
 ]
 
 export const QUESTION_TYPE_BY_ID: Record<EditorQType, QuestionTypeMeta> =
@@ -55,18 +57,19 @@ export const QUESTION_TYPE_BY_ID: Record<EditorQType, QuestionTypeMeta> =
 
 // ─── Per-type payloads ──────────────────────────────────────────────────────
 
-export interface McqOption     { id: string; text: string; correct: boolean }
+export interface McqOption     { id: string; text: string; correct: boolean; rationale?: string; locked?: boolean }
 export interface MatchPair     { id: string; left: string; rightId: string }
 export interface MatchRight    { id: string; text: string }
 export interface OrderItem     { id: string; text: string; canonicalIdx: number }
 export interface FillBlankSpan { id: string; acceptedAnswers: string[]; caseSensitive: boolean }
 export interface Hotspot       { id: string; x: number; y: number; w: number; h: number; label: string }
 export interface RubricCriterion { id: string; label: string; weight: number; description: string }
+export interface KTypeStatement  { id: string; text: string; correct: boolean }
 
 export type QuestionPayload =
   | { type: 'mcq';          options: McqOption[]; shuffle: boolean }
   | { type: 'multi-select'; options: McqOption[]; shuffle: boolean; partialCredit: boolean }
-  | { type: 'true-false';   correct: boolean }
+  | { type: 'true-false';   correct: boolean; rationale?: string }
   | { type: 'short-answer'; acceptedAnswers: string[]; caseSensitive: boolean }
   | { type: 'numeric';      answer: number; tolerance: number; units: string }
   | { type: 'essay';        wordLimit: number; rubric: RubricCriterion[] }
@@ -74,6 +77,7 @@ export type QuestionPayload =
   | { type: 'matching';     lefts: MatchPair[]; rights: MatchRight[] }
   | { type: 'ordering';     items: OrderItem[] }
   | { type: 'hotspot';      imageUrl: string; hotspots: Hotspot[] }
+  | { type: 'k-type';       statements: KTypeStatement[]; combinationKeys: { id: string; label: string; selectedIds: string[]; isCorrect: boolean }[] }
 
 // ─── Workflow ──────────────────────────────────────────────────────────────
 
@@ -100,6 +104,7 @@ export interface QuestionDraft {
   objectiveId: string | null         // course-objective tag
   folderId: string | null
   tags: string[]
+  standardIds: string[]               // direct mapping to standards/competencies
   state: EditorState
   confidence: Confidence             // AI-set; faculty can override
   payload: QuestionPayload
@@ -112,7 +117,8 @@ export interface QuestionDraft {
 // ─── Defaults per type ─────────────────────────────────────────────────────
 
 let pidCounter = 0
-const newPayloadId = (prefix: string) => `${prefix}-${Date.now()}-${++pidCounter}`
+// No Date.now() — counter-only IDs are stable across SSR + hydration.
+const newPayloadId = (prefix: string) => `${prefix}-${++pidCounter}`
 
 export function defaultPayload(type: EditorQType): QuestionPayload {
   switch (type) {
@@ -198,6 +204,22 @@ export function defaultPayload(type: EditorQType): QuestionPayload {
         imageUrl: '',
         hotspots: [],
       }
+    case 'k-type':
+      return {
+        type: 'k-type',
+        statements: [
+          { id: newPayloadId('ks'), text: '', correct: true },
+          { id: newPayloadId('ks'), text: '', correct: false },
+          { id: newPayloadId('ks'), text: '', correct: false },
+          { id: newPayloadId('ks'), text: '', correct: false },
+        ],
+        combinationKeys: [
+          { id: newPayloadId('kk'), label: 'A', selectedIds: [], isCorrect: false },
+          { id: newPayloadId('kk'), label: 'B', selectedIds: [], isCorrect: false },
+          { id: newPayloadId('kk'), label: 'C', selectedIds: [], isCorrect: false },
+          { id: newPayloadId('kk'), label: 'D', selectedIds: [], isCorrect: false },
+        ],
+      }
   }
 }
 
@@ -212,8 +234,8 @@ export function createDraft(opts: {
 }): QuestionDraft {
   const type = opts.type ?? 'mcq'
   return {
-    id: `draft-${Date.now()}`,
-    code: opts.code ?? `DRAFT-${String(Math.floor(Date.now() / 1000) % 10000).padStart(4, '0')}`,
+    id: `draft-${++pidCounter}`,
+    code: opts.code ?? `DRAFT-${String(pidCounter).padStart(4, '0')}`,
     type,
     stem: '',
     explanation: '',
@@ -222,6 +244,7 @@ export function createDraft(opts: {
     objectiveId: opts.objectiveId ?? null,
     folderId: opts.folderId ?? null,
     tags: [],
+    standardIds: [],
     state: 'draft',
     confidence: null,
     payload: defaultPayload(type),
@@ -254,6 +277,15 @@ export function validateDraft(d: QuestionDraft): DraftValidationIssue[] {
     }
     if (d.payload.type === 'mcq' && correct.length > 1) {
       issues.push({ field: 'options', message: 'MCQ has multiple correct — switch to Multi-select?', severity: 'warning' })
+    }
+    const missingRationale = correct.filter(o => !o.rationale?.trim())
+    if (missingRationale.length > 0) {
+      issues.push({ field: 'rationale', message: `${missingRationale.length} correct option${missingRationale.length > 1 ? 's are' : ' is'} missing a rationale`, severity: 'warning' })
+    }
+  }
+  if (d.payload.type === 'true-false') {
+    if (!d.payload.rationale?.trim()) {
+      issues.push({ field: 'rationale', message: 'Add a rationale explaining why this answer is correct', severity: 'warning' })
     }
   }
   if (d.payload.type === 'short-answer') {
@@ -312,6 +344,7 @@ const TYPE_TO_QB_TYPE: Record<EditorQType, Question['type']> = {
   'matching':     'Matching',
   'ordering':     'Ordering',
   'hotspot':      'Hotspot',
+  'k-type':       'MCQ',
 }
 
 export function toQuestion(draft: QuestionDraft, opts: { folderPath: string; folder: string }): Question {

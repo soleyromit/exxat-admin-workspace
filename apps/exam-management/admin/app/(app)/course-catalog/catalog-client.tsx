@@ -19,6 +19,7 @@ import { useState, useMemo } from 'react'
 import {
   Button,
   Badge,
+  Card, CardContent,
   Sheet,
   SheetContent,
   SheetHeader,
@@ -35,7 +36,7 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
-} from '@exxat/ds/packages/ui/src'
+} from '@exxatdesignux/ui'
 import { SiteHeader } from '@/components/site-header'
 import { PageHeader } from '@/components/page-header'
 import { DataTable } from '@/components/data-table'
@@ -52,7 +53,7 @@ type MasterCourseRow = MasterCourse & Record<string, unknown>
 
 const TYPE_STYLES: Record<MasterCourse['type'], { bg: string; fg: string }> = {
   Core: {
-    bg: 'color-mix(in oklch, var(--brand-color) 10%, var(--background))',
+    bg: 'var(--brand-tint)',
     fg: 'var(--brand-color-dark)',
   },
   Elective: {
@@ -93,10 +94,11 @@ function buildColumns(
       sortable: true,
       sortKey: 'courseName',
       cell: (row) => (
-        <button
-          type="button"
-          className="text-sm font-medium text-left truncate w-full"
-          style={{ color: 'var(--brand-color)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+        <Button
+          variant="ghost"
+          size="xs"
+          className="text-sm font-medium text-left truncate w-full justify-start px-0 h-auto"
+          style={{ color: 'var(--brand-color)' }}
           onClick={(e) => {
             e.stopPropagation()
             onEdit(row as unknown as MasterCourse)
@@ -104,7 +106,7 @@ function buildColumns(
           aria-label={`Edit ${row.courseName as string}`}
         >
           {row.courseName as string}
-        </button>
+        </Button>
       ),
     },
     {
@@ -263,24 +265,22 @@ export default function CatalogClient() {
         <div className="flex flex-1 flex-col overflow-auto py-4">
           {/* Information banner — QB shell auto-generation note */}
           <div className="px-4 lg:px-6 pb-3">
-            <div
-              className="rounded-lg border border-border flex items-start gap-2.5 px-3 py-2.5 text-[13px]"
-              style={{ backgroundColor: 'color-mix(in oklch, var(--brand-color) 6%, var(--background))' }}
-              role="note"
-            >
+            <Card role="note" style={{ backgroundColor: 'var(--brand-tint)' }}>
+              <CardContent className="flex items-start gap-2.5 px-3 py-2.5 text-[13px]">
               <i
-                className="fa-light fa-circle-info mt-0.5 shrink-0"
+                className="fa-light fa-circle-info mt-0.5 shrink-0 text-sm"
                 aria-hidden="true"
-                style={{ color: 'var(--brand-color)', fontSize: 14 }}
+                style={{ color: 'var(--brand-color)' }}
               />
               <span style={{ color: 'var(--muted-foreground)' }}>
                 When a course offering is created from this catalog, a{' '}
-                <strong style={{ color: 'var(--foreground)', fontWeight: 500 }}>
+                <strong className="text-foreground font-medium">
                   Question Bank shell
                 </strong>{' '}
                 is automatically generated with the same name.
               </span>
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Search bar above the table */}
@@ -353,20 +353,18 @@ export default function CatalogClient() {
 
           <div className="flex flex-col gap-4 py-4 overflow-y-auto flex-1 px-4">
             {/* QB shell info note */}
-            <div
-              className="rounded-lg border border-border flex items-start gap-2 p-3 text-[13px]"
-              style={{ color: 'var(--muted-foreground)' }}
-              role="note"
-            >
+            <Card role="note" className="text-muted-foreground">
+              <CardContent className="flex items-start gap-2 p-3 text-[13px]">
               <i
-                className="fa-light fa-circle-info shrink-0"
+                className="fa-light fa-circle-info shrink-0 text-sm"
                 aria-hidden="true"
-                style={{ color: 'var(--brand-color)', marginTop: 1, fontSize: 14 }}
+                style={{ color: 'var(--brand-color)', marginTop: 1 }}
               />
               <span>
                 Creating a course offering from this catalog auto-generates a Question Bank shell.
               </span>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* Course Number */}
             <div className="flex flex-col gap-1.5">
