@@ -1,0 +1,83 @@
+# Decisions ledger (Romit, Oct 2026) and open questions
+
+**Rule:** a decision here is Romit's statement in the session of 2026-10-26 (relayed by the lead agent), not a requirement and not an `OD-*` resolution. Requirement open decisions (`OD-01` to `OD-38`) stay open; see `../strategy/05-open-decisions.md`. Tag `[ROMIT 10-26]`.
+
+## 1. Stated this session (treat as settled until Romit says otherwise)
+
+| # | Decision | Design consequence | Notes |
+|---|---|---|---|
+| D-A | The navigation must shrink. Too many rows, too much chrome. | Collapse rows per role; remove duplicate pages that render the same component for several roles. Starting proposal 19 rows to 12 (admin 4, reviewer 2, director 2, preceptor 0 or 1, student 3) [AUDIT T4] | The specific row list is an audit proposal, not approved. Ask before cutting a destination that carries a REQ job |
+| D-B | "Items" is the wrong word. | UI says "skills" (or the program's own noun). Never "items" in copy | Build prompt uses `{itemNoun}`; this is a copy rule, not a data rename. See `glossary.md` |
+| D-C | The dots must connect per role: each role's screen shows what the previous role did and what the next will see. | Handoff cue at each hop (student sends, evaluator signs, reviewer decides, student sees result); record-carrying links; "same record in other views" [AUDIT T4; BUILD-PROMPT §8] | The audit found the store is shared (state does propagate); the gap is entry points and signals, not data |
+| D-D | The dataset must be 100+ students and 100+ skills. | Design and prototype at that scale; reference set is 123 students, 153 skills [BUILD-PROMPT §6] | 7-skill demos are not acceptable evidence of a design |
+| D-E | Base knowledge is: the outcome (build prompt) markdown, the three Word documents, and the competitive analysis. | These, plus REQ and the two transcripts, are what agents consult first; this folder distils them | Which three .docx files Romit means was not identified in this session; the REQ docx is one. `[PENDING-ROMIT]` confirm the other two |
+| D-F | v2 (the current branch prototype) is a reference, not final. | Do not defend v2 choices; audit findings may be overruled by this brief | Branch `feat/skills-checklist-v2` |
+
+## 2. Carried from earlier sessions (already in the repo)
+
+- Visual layout, IA and copy structure follow Sankalp's prototype inside the DS base shell; behaviour follows requirements (Romit 2026-10-08) [README].
+- All 20 early contracts were confirmed by Romit on 2026-10-08 as written; every OD stays open [README]. The audit and this session may supersede parts of them; flag when a contract and this ledger disagree.
+- Aarti dislikes red in score and rating visualisation [memory].
+
+## 3. Open questions awaiting Romit
+
+| # | Question | Why it matters | Source |
+|---|---|---|---|
+| Q1 | Reopen on counted evaluations: v2 lets staff "Reopen to edit" a counted or awaiting-approval evaluation as an append-only version. REQ RV-03 and RV-05 say completed evaluations cannot be edited. The competitive analysis (rec 10) says an edit after sign-off reopens the item with history visible. Keep, rename (for example "Add a correction"), or remove? | Hard stop versus competitive recommendation versus faculty convenience | [AUDIT T3]; [COMP rec 10]; [REQ RV-03, RV-05] |
+| Q2 | Web-first or phone-first for student and evaluator surfaces? The build prompt says web-first (adapt to 1024 and 375); v2 is phone-first (28 rem column). Public reviews say mobile reliability is the main risk. | Determines shells, nav, offline scope | [BUILD-PROMPT §2.1]; [AUDIT T2]; [COMP] |
+| Q3 | Director verifying with unmet mandatory skills: may a director verify a record when mandatory skills are unmet? v2 shows a gaps banner plus a checkbox acknowledgement. Director and "verification" are not in REQ. | Risk of verifying an incomplete record; scope | [AUDIT T3] |
+| Q4 | Which of the 41 build-prompt screens are in scope for the next build? The audit counts: admin 1 present, 7 partial, 11 missing of 20; student 4 of 10 absent (stuoverview, sturadar, stutarget, stuplace partial). | Prevents building 41 screens by default; sets the sequence | [BUILD-PROMPT §7]; [AUDIT T1, T2] |
+| Q5 | Which v2-only scope changes stay: shipped starter libraries (REQ SL-01 hard stop), last-N currency rule (REQ section 14), evaluator credential and training qualification, remediation in the nav (REQ section 14), QR, hand-over, photo of paper form, CLR 2.0? | Several conflict with hard stops or REQ section 14 | [AUDIT T1, T2]; `docs/v2/decisions-and-open-questions.md` D2 |
+| Q6 | Are the four extra achievement-rule types (distinct evaluators, success rate, practice count before checkoff, context in requirement) in v1? The build prompt engine already includes distinct evaluators and level thresholds. | Not in REQ SC section; affects rule builder | [COMP rec 3]; [BUILD-PROMPT §5] |
+| Q7 | Do option A and option B toggles (strategy section 15.1: one list versus separate module, setting as context versus measure, any versus all signers, completion rule on or off) ship in the prototype? | Build prompt asks for A default, B behind a toggle | [BUILD-PROMPT §11] |
+| Q8 | "Reviewer" versus "admin" as separate nav: the audit says they differ by permission, not IA. Confirm one staff shell with per-role actions. | Drives nav size | [AUDIT T3, T4] |
+| Q9 | Evaluator identity lifecycle (unverified name, adopt, merge) is missing in v2; confirm it is in scope because the reviewer "why held" cue depends on it. | Dots between roles | [REQ SL-09, ST-09]; [BUILD-PROMPT admevals, J7]; [AUDIT T3] |
+
+## 3b. Decided later in the session (2026-10-26, Romit's own word)
+
+**Source note:** D-L1 to D-L4 come from Romit's replies in the Claude working session on 2026-10-26 (chat), not from the Granola call with Sankalp; they are not verifiable in the Granola transcript.
+
+| # | Decision | Design consequence | Notes |
+|---|---|---|---|
+| D-L1 | Third skill-record state is labelled **In progress** (his reply to "In progress or Not yet met"). | Skill with some counted evidence and the rule not yet met reads "In progress (2 of 4)". The evaluator answer stays "Not yet". Replaces the PENDING-ROMIT flag on this label in glossary and strategy 02/03/05. | v2 still says "Not yet met" at `tokens.ts:17` and in `viz.test.tsx` until renamed. His reply was one line, so confirm if he meant something else. |
+
+| D-L2 | **Evaluator link: one link per request**, with one email that lists each request as its own link (his "go with your recommendation"). | A link exposes only its own request, so other students' requests are not visible to whoever holds it. Resolves the conflict between strategy 01/02 (inbox) and 03 (per request): update 01 and 02 to per-request. | Privacy rule in strategy/06 holds. `evinvite` email shows one row per request. |
+| D-L3 | **Approvals row is always shown** in the nav, with an empty state when no skill requires approval. | Stable nav. Glossary row 153 and 01-IA agree. | Overrides the T3/glossary idea of hiding it. |
+| D-L4 | **Student landing is labelled "My progress"** (a label only; it is still a personal dashboard-style page, not a "Home"). | Staff landings stay "Dashboard". Reviewer lands on "Approvals". | Strategy 06 question 2 resolved. |
+
+## 3c. Delegated defaults (2026-10-26: Romit said "What call you need? Go ahead")
+
+These are NOT Romit's explicit decisions. He delegated the open calls; Claude chose the defaults below so work can continue. Each is reversible. Anything in section 2 marked "decide" that is listed here is now a default, not a settled decision.
+
+| # | Open call | Default chosen | Why | Reverse by |
+|---|---|---|---|---|
+| D-X1 | Q1 reopen on counted evaluations | **No reopen. "Request a correction"**: the original evaluator gets a new link, the new version is appended, the old stays visible and keeps counting until the correction completes. | REQ RV-03/05 (completed evaluation cannot be edited) is a hard stop | Change `REOPENABLE` seam |
+| D-X2 | Q2 web-first or phone-first | **Web-first** (1440 primary, 1024, complete 375 layout). Evaluator form designed 375-first because it arrives by email. | Build prompt 2.1; competitive research says mobile reliability is the risk | Layout order only |
+| D-X3 | Q3 director verifying with unmet mandatory skills | **Allowed with named acknowledgement of every gap; the verified record states its gaps; no "ready for practice" wording.** Evidence in flux (open request, awaiting approval, returned) **blocks** verification. | Director verification is not in REQ; this limits overclaiming | Verification rules in `lib/lab/director.ts` |
+| D-X4 | Q4 which screens are in scope | **All 38 registered lab screens**, each with at least 2 structurally different variants (tier 1 up to 6). | Romit asked to finish every planned screen with multiple variants | Registry |
+| D-X5 | Q5 v2-only scope | Starter libraries kept only as **editable starting points the program owns, labelled; SL-01 conflict flagged**. Last-N currency, evaluator credential qualification and remediation nav **out** (REQ 14 / not in REQ). QR, hand-over, photo of paper form, CLR 2.0 **kept** (competitive recs 7, 10, 11). | Hard stops and REQ 14 | Registry |
+| D-X6 | Q6 extra rule types | **Distinct evaluators and level thresholds in** (marked "Proposed"). Success rate, practice-count and context-in-requirement **out** for now. | Build prompt engine has the first two; the rest not in REQ | `configure.ts` |
+| D-X7 | Q7 option A/B toggles | **Option A only**; option B is not built. | Keeps variants about design, not product scope | Later |
+| D-X8 | Q8 reviewer vs admin nav | **One staff route tree; role is a permission.** Admin Approvals reuses the reviewer queue with extra permissions. | Audit T3/T4 | Registry |
+| D-X9 | Q9 evaluator identity lifecycle | **In scope** (unverified name, adopt, merge). | Reviewer "why held" depends on it | Registry |
+| D-X10 | Pace / term clock | **Kept as the default comparison ("Expected now")** with "All required" as the REQ-only fallback, always named in the hero. | Audit D31 assumption; fallback keeps REQ-only reading available | `basis` default |
+| D-X11 | "Far behind" threshold | **4 or more required-to-graduate skills missing.** One short = exactly 1; 2 to 3 missing = "short". | Matches the dataset story (31 / 4 / 3) | `lib/lab/director.ts` |
+| D-X12 | Two "required" sets | **Both exist and must be named apart**: "Required this term" (mandatory on the student's current-term offerings; drives pace and "behind") and "Required to graduate" (the list's required-before-graduation set; drives readiness and verification). No figure mixes them. | Romit: "required is meant to be mandatory"; director needs graduation readiness | Glossary |
+| D-X13 | Export contents | **Row-per-evaluation CSV/Excel carries feedback, settings, locations, self-evaluations and review notes, and records the filters that produced it; signed PDF is the aggregate summary.** CSV vs native Excel stays an open decision (OD-10): offer both as a seam. | REQ RP-10 wins over the v2 D36 proposal | Export screen |
+| D-X14 | Deactivated skills in reports | **Excluded from every report figure** (SL-11), in dashboard, attainment and director views together. | REQ SL-11 and the call | Single source |
+| D-X15 | Delete rule | **Delete only while the skill has no evidence** (the call); courses it was mapped to are listed as impact and unmapped on delete. | The call; library rule aligned | `retire.ts`, library |
+| D-X16 | Attainment skills tab | **"Required this term / All skills" switch**, default required. | Avoids hiding 143 skills | Attainment |
+| D-X17 | Lists | **One default list at a time; a new list starts blank or as an explicit "copy from"; never silently cloned per cohort.** | The call rejected per-cohort cloning | `lists.ts` |
+| D-X18 | Evaluator outlier flag | **Flag only with n >= 30 evaluations and >= 5 returns; at least 2x the program average.** Marked Proposed; consistency view is a Recommendation (build prompt), off by default in nav. | Small-n honesty | `evaluators.ts` |
+| D-X19 | Professional year | **Derived into the data** as a field on the cohort (not computed in screens). | Consistency | Generator |
+| D-X20 | Placement ending window | **21 days, a named setting** (`PLACEMENT_ENDING_DAYS`). | Build prompt gives no number | Constant |
+| D-X21 | Charts above the fold | **A grid of small tiles counts as one region; max 6 tiles; at most 3 charts visible in the first viewport.** Variant C's controls exception accepted. 100% stacked state bars allowed **only with printed counts and a table fallback** (not the banned attainment progress bar). | Designer's open questions 1 and 4 | Density script |
+| D-X22 | Default dashboard variant | **A (status board) recommended; B, C, D, E, F selectable.** D (matrix) is the first view in Attainment. Hero number keeps the heading font. | Designer's recommendation | Registry |
+| D-X23 | Realistic data | **Realistic but fictional** students, university, sites and evaluators; HGTC skill and course names stay real (public); "Sample data" label stays. | Problem stories must not attach to real organisations or people; student privacy | Generator pools |
+| D-X25 | Held evidence assigned to someone else (Approvals "Assign to someone else") | **A handoff, not a return.** The student reads "Sent to {name} for a new evaluation" (lib/v2/labels.ts) in My requests, Skill detail, Record and the reviewer's student record; Fix returned does not offer it; it is left out of the evaluator's outlier events (lib/lab/evaluators.ts). | A reassignment is not that evaluator's judgement; "Returned" would send the student to fix something they cannot fix | `sentElsewhereTo` in lib/v2/student.ts |
+| D-X24 | v2 | **Being replaced by the lab.** No new polish on v2 components; data layer and selectors are the lasting foundation. | Romit | Migration plan |
+| D-X26 | v2 route group | **The v2 route group (`app/(v2)`, `components/v2`) is legacy being replaced by the lab** (`/lab`, `components/lab`, `lib/lab`). `lib/v2` is NOT legacy: it is the shared data layer the lab reads. Known legacy contradictions, none of which exists in the lab: (1) with D-X1, the `REOPENABLE` reopen UI (`lib/v2/outcomes.ts:152`, "Reopen to edit" at `components/v2/outcomes/evaluation-page.tsx:158`); (2) with D-X5, the remediation routes (`app/(v2)/v2/[role]/remediation/[id]`, `components/v2/outcomes/remediation-page.tsx`, the student link at `components/v2/student/student-home.tsx:68`); (3) a raw `<table>` in `components/evaluator/confirmation.tsx:38` (v1 legacy). Do not extend any of them; removal waits for Romit's go-ahead (plan: `v2-retirement-plan.md`). | Two route trees disagreed with D-X1 and D-X5; the lab already follows both | Delete the v2 routes per the plan, or reverse D-X1/D-X5 |
+
+## 4. Not decided (for avoidance of doubt)
+
+All `OD-01` to `OD-38`, including: one list versus separate models (OD-28), report as launch page (OD-29), evidence sources beyond student submission (OD-31), sign-off chains (OD-33), FAST form reuse (OD-36), standalone versus Student Success (OD-34), first domain (OD-38). Competitive recommendations 13 (expiry, validator qualifications) are proposed new ODs, not decisions.

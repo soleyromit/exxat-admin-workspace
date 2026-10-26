@@ -316,6 +316,50 @@ DOCUMENTED_HAND_ROLLS = {
     # ds-adoption-reviewer 2026-10-20; documented in docs/governance/ds-adoption.md.
     "components/v2/reports/reports-page.tsx",
     "components/v2/preceptor/lab-grid-page.tsx",
+    # skills-checklist lab (and the shared v2 heat grid): DS Table primitives used for
+    # static cross-tab matrices, chart "Show as table" / sr-only fallbacks, per-cell
+    # data-entry grids, file previews and small bounded read-only detail tables, per
+    # the DS Table docstring ("static doc matrices and small read-only tables"); every
+    # record list in the lab uses DataTable. Reviewed by ds-adoption-reviewer
+    # 2026-10-26 (all HAND-ROLL-ALLOWED, none IMPORT); documented in
+    # docs/governance/ds-adoption.md -> skills-checklist rows.
+    "components/v2/viz/heat-grid.tsx",
+    "components/lab/admin-b/student-matrix.tsx",
+    "components/lab/dashboard/section-matrix.tsx",
+    "components/lab/dashboard/pipeline-sections.tsx",
+    "components/lab/dashboard/cards.tsx",
+    "components/lab/dashboard/status-tiles.tsx",
+    "components/lab/student/progress.tsx",
+    "components/lab/screens/director-dashboard-b.tsx",
+    "components/lab/screens/evaluator-form-c.tsx",
+    "components/lab/screens/lab-instructor-lab-batch-grid-a.tsx",
+    "components/lab/screens/lab-instructor-lab-batch-grid-b.tsx",
+    "components/lab/reviewer/review-parts.tsx",
+    "components/lab/configure/impact.tsx",
+    "components/lab/configure/bulk-apply.tsx",
+    "components/lab/screens/admin-configure-skill-c.tsx",
+    "components/lab/student/skill-detail.tsx",
+    "components/lab/screens/director-verification-detail-a.tsx",
+    "components/lab/screens/director-reports-b.tsx",
+    "components/lab/screens/admin-export-b.tsx",
+    "components/lab/screens/student-record-a.tsx",
+    "components/lab/screens/student-record-b.tsx",
+    "components/lab/screens/student-requests-b.tsx",
+    "components/lab/screens/admin-skills-library-b.tsx",
+    # Test harness: mounts InlineAddTrigger (renders a TableRow) inside Table/TableBody
+    # so the row has a valid DOM ancestor. Not product UI.
+    "tests/lab/terms-articles.test.tsx",
+    # skills-checklist: the lab DS gate's own tests. gate.test.ts feeds violation
+    # fixture strings (<button>, #fff, uppercase tracking-wide, <table>) to the
+    # scanner; layout.test.tsx asserts with a regex whose text contains <button>.
+    # Not product UI. Reviewed by ds-adoption-reviewer 2026-10-26.
+    "tests/lab/gate.test.ts",
+    "tests/lab/layout.test.tsx",
+    # skills-checklist v2 (legacy, being replaced by the lab): export-sheet signs a
+    # cohort or student PDF and verifies a PDF signature. DS ExportDrawer is a
+    # table-data export shell (format, rows, columns) and covers neither.
+    # Reviewed by ds-adoption-reviewer 2026-10-26.
+    "components/v2/reports/export-sheet.tsx",
 }
 
 # Pre-existing organism-name-collision files we're grandfathering as of
@@ -389,6 +433,19 @@ LEGITIMATE_NON_CARD_DIVS = {
     # display elements inside a Sheet body — Card would over-engineer.
     # Accepted by touch-gate exemption 2026-06-05.
     "components/assessment-builder/qb-result-detail-panel.tsx",
+    # skills-checklist lab: preview frames that render a replica of another surface
+    # (student and evaluator previews in configure, the share preview, the evaluator
+    # invitation email); radio option tiles (row-actions intent choice); a dashed
+    # empty state (library-chrome); an amber banner-anatomy reason callout (fix);
+    # side-by-side conflict text boxes (student-offline-a). Reviewed by
+    # ds-adoption-reviewer 2026-10-26 (all NON-CARD).
+    "components/lab/configure/live-panel.tsx",
+    "components/lab/student/fix.tsx",
+    "components/lab/library/library-chrome.tsx",
+    "components/lab/library/row-actions.tsx",
+    "components/lab/screens/student-offline-a.tsx",
+    "components/lab/screens/student-share-b.tsx",
+    "components/lab/screens/evaluator-invitation-email-b.tsx",
 }
 
 GRANDFATHERED_ORGANISM_COLLISIONS: set[str] = {

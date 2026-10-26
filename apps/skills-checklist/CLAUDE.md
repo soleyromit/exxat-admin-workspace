@@ -19,6 +19,18 @@
 ## Module Context (READ FIRST — anti-hallucination)
 
 Product = **Prism Skills Tracking** (initiative owner Sankalp Panda). Sources, in precedence: **REQ** `docs/source/requirements.extracted.txt` > **CALL** vault raw transcripts (2026-09-23, 2026-03-05) > **PROTO** `docs/source/prism-skills-prototype.html` (behaviour: illustration; VISUAL LAYOUT/IA/COPY: build it exactly, inside the DS base shell with left nav + utility bar + page header, per Romit 2026-10-08) > **INFER**.
+- **Design brief (read before ANY design/UX/copy/chart/nav task):** `docs/knowledge/00-design-brief.md` + `docs/knowledge/glossary.md` + `docs/knowledge/02-decisions-ledger.md` (skill `skills-design-brief`); competitive digest `docs/knowledge/01-competitive-digest.md`. State which you consulted.
+- **Standing design rules (digest of `docs/knowledge/`; the full files still win):**
+  1. Never the word "items" in UI copy; say the program's noun ("skills") via one terms file. Vocabulary: `docs/knowledge/glossary.md`.
+  2. Nav is small: target 11 sidebar rows (admin 4, reviewer 2, director 2, student 3; the evaluator has no sidebar). Say each thing once; no repeated sentences, no requirement IDs or OD notes in UI.
+  3. Every handoff needs a receiver-side cue (badge, "what changed for you", deep link carrying the record). A name or count is a link to where it is acted on.
+  4. Design for scale: 100+ students, 100+ skills. Aggregate first, drill down second; no progress bars for attainment; every chart has a table fallback and a text summary.
+  5. Shortfall is amber, never red; state = glyph + word + colour. Four engine states only; waiting/returned/unverified are overlays.
+  6. DS only (`@exxatdesignux/ui`): look up the component in `docs/knowledge/ds-usage-map.md` and `node tools/ds/source.mjs <Component>` before writing JSX; never hand-roll Button, Badge, Card, Table, Dialog, Sheet, Tabs or status pills.
+  7. Evaluators/preceptors have no login and no app chrome. Completed evaluations are immutable (correction = new version request).
+  8. Still PENDING-ROMIT (never decide): third skill-record state label, evaluator link model (inbox vs per-request), Approvals row visibility, web-first vs phone-first, reopen vs request-a-correction, director verification scope.
+  9. Subagents inherit nothing: paste `docs/knowledge/subagent-standing-brief.md` into every worker prompt. A hook blocks app-code edits until `00-design-brief.md` has been read.
+  10. No crowded screens: apply the density budget in `docs/knowledge/strategy/07-ux-laws-and-density.md` (dashboard first viewport at 1440 x 900: 5 regions, 4 figures, 2 charts, 8 controls, 40 words; one colour per meaning; say it once) and paste its audit counts before claiming done.
 - Index + rules: `docs/README.md` · why/so-what: `docs/strategy/01` · engine: `docs/strategy/02` · journeys: `docs/journeys/` · coverage: `docs/strategy/04` · open decisions: `docs/strategy/05` · defects/do-not-assume: `docs/strategy/07` · build plan: `docs/build/01`.
 - Tools here: skills `skills-module-context`, `skills-surface-contract`, `skills-journey-check`, `skills-req-trace`; agents `skills-requirements-auditor`, `skills-ux-critic`, `skills-pm-challenger`; hooks in `.claude/settings.json` (session context, code-gate until a contract exists, requirement-ID validator).
 - Hard stops: no shipped skills/taxonomy · no default evaluation model · unconfigured skills can't be mapped/submitted · completed evaluations immutable · mapping ≠ eligibility · preceptors have no login · lab never satisfies clinical-setting minimum · REQ §14 out of scope · never treat an `OD-*` as decided.

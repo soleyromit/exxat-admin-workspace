@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Matrix explorer</title>
+<meta name="description" content="Concept D: students by sections heat map in the centre, facet filters on the left, the selected cell's evidence on the right.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<link rel="stylesheet" href="dash.css">
+<style>
+.lay{display:grid;grid-template-columns:200px minmax(0,1fr) 300px;gap:16px}
+.facets{padding:12px 14px;display:flex;flex-direction:column;gap:14px;align-self:start}
+.facets h3{font-size:12px;font-weight:600;margin:0 0 6px}
+.fx{display:flex;align-items:center;gap:8px;height:28px;font-size:13px}
+.cb{width:16px;height:16px;border:1px solid var(--border-control-3);border-radius:4px;display:grid;place-items:center;flex:none}
+.cb.on{background:var(--primary);border-color:var(--primary)}
+.cb.on::after{content:"";width:8px;height:4px;border-left:2px solid var(--primary-foreground);border-bottom:2px solid var(--primary-foreground);transform:rotate(-45deg) translateY(-1px)}
+.fx .c{margin-left:auto;color:var(--muted-foreground);font-variant-numeric:tabular-nums;font-size:12px}
+.mx{overflow:hidden}
+.mx table{border-collapse:separate;border-spacing:3px;width:100%;table-layout:fixed}
+.mx th{font-size:12px;font-weight:500;color:var(--muted-foreground);text-align:center;height:44px;vertical-align:bottom;padding:0 2px 6px;line-height:1.2}
+.mx th.rh{text-align:left;width:140px}
+.mx td{height:30px;border-radius:4px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums}
+.mx td.rh{text-align:left;background:none;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mx td.na{background:none;color:var(--viz-soft)}
+.mx td.selc{box-shadow:0 0 0 2px var(--foreground)}
+.scale{display:flex;gap:2px;align-items:center}
+.scale i{width:22px;height:10px;border-radius:2px;display:block}
+.det .bd{display:flex;flex-direction:column;gap:10px}
+.sk{display:grid;grid-template-columns:16px 1fr auto;gap:8px;align-items:start;padding:8px 0;border-top:1px solid var(--border);font-size:13px}
+.sk:first-child{border-top:0}
+.sk small{display:block;color:var(--muted-foreground);font-size:12px}
+</style>
+</head>
+<body>
+<div class="frame"><main>
+  <div class="ph"><h1>Dashboard</h1><div class="act"><span class="chip-sample">Sample data</span><button class="btn outline" type="button">Export</button></div></div>
+
+  <div class="tb" role="form" aria-label="Scope">
+    <span class="sel caret"><span class="k">Term</span><span class="v">Fall 2026</span></span>
+    <span class="sel caret"><span class="k">Course</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Rows</span><span class="v">Students</span></span>
+    <span class="sel caret"><span class="k">Columns</span><span class="v">Sections</span></span>
+    <span class="sel caret"><span class="k">Sort</span><span class="v">Furthest behind</span></span>
+    <span class="sp"></span>
+    <span class="asof">As of Oct 26, 09:40</span>
+    <button class="btn outline icon" type="button" aria-label="Refresh figures">&#8635;</button>
+  </div>
+
+  <div class="lay">
+    <aside class="card facets" aria-label="Filters">
+      <div><h3>Pace</h3>
+        <div class="fx"><span class="cb on"></span><span class="dia"></span>Behind<span class="c">28</span></div>
+        <div class="fx"><span class="cb"></span>On pace<span class="c">95</span></div></div>
+      <div><h3>Cohort</h3>
+        <div class="fx"><span class="cb"></span>2026<span class="c">1</span></div>
+        <div class="fx"><span class="cb"></span>2027<span class="c">19</span></div>
+        <div class="fx"><span class="cb"></span>2028<span class="c">8</span></div></div>
+      <div><h3>Open request</h3>
+        <div class="fx"><span class="cb"></span>15 days or more<span class="c">11</span></div>
+        <div class="fx"><span class="cb"></span>None sent<span class="c">9</span></div></div>
+      <button class="btn ghost xs" type="button" style="align-self:flex-start">Clear filters</button>
+    </aside>
+
+    <section class="card mx" aria-label="Students by section">
+      <div class="hd"><h2>28 students behind, by section</h2><span class="meta">cell: required skills achieved</span>
+        <span style="margin-left:auto" class="scale" aria-hidden="true"><span class="muted" style="font-size:12px;margin-right:4px">0%</span><i style="background:var(--viz-seq-0)"></i><i style="background:var(--viz-seq-1)"></i><i style="background:var(--viz-seq-2)"></i><i style="background:var(--viz-seq-3)"></i><i style="background:var(--viz-seq-4)"></i><span class="muted" style="font-size:12px;margin-left:4px">100%</span></span></div>
+      <div class="bd" style="padding:4px 10px 10px"><table id="mx" aria-label="Students by section matrix"></table>
+        <div class="muted" style="font-size:12px;padding:6px 4px 0">15 of 28 shown. 6 of 10 sections have required skills for these students; 4 hidden. Dash: not required in the student's course.</div></div>
+    </section>
+
+    <aside class="card det" aria-label="Selected cell">
+      <div class="hd" style="flex-wrap:wrap"><h2 style="font-size:14px">Amara Nwosu, IV therapy</h2><span class="meta" style="flex-basis:100%">0 of 4 required achieved. Expected 2 by now.</span></div>
+      <div class="bd">
+        <div class="sk"><span class="dia" style="margin-top:5px"></span><span>Start IV<small>Waiting with D. Pryor, Maple Ridge Care</small></span><span class="short num">34 d</span></div>
+        <div class="sk"><span class="dot" style="margin-top:5px"></span><span>Hangs PB Med<small>Awaiting approval</small></span><span class="muted num">6 d</span></div>
+        <div class="sk"><span class="dot" style="margin-top:5px;background:var(--viz-soft)"></span><span>Changes primary IV tubing<small>No evidence yet</small></span><span></span></div>
+        <div class="sk"><span class="dot" style="margin-top:5px;background:var(--viz-soft)"></span><span>Rate calculation: device<small>Evidence, none qualifies. Needs a clinical setting</small></span><span></span></div>
+        <div style="display:flex;gap:8px"><button class="btn outline" type="button">Student record</button><button class="btn ghost" type="button">IV therapy for all 28</button></div>
+      </div>
+    </aside>
+  </div>
+
+  <p class="note">Concept D, matrix explorer. Mockup for design review; sample data. Rows can switch to skills; columns can switch to cohorts or sites. Every cell opens the students and skills behind it.</p>
+</main></div>
+<script src="dash.js"></script>
+<script>
+shell('Dashboard');
+const SEC = ['Basic skills','Safety','Medications','IV therapy','Oxygenation','Elimination'];
+// [name, cohort, [achieved, required] per section or null]
+const named = [
+  ['Yuki Sato',[[1,5],[0,3],null,null,[0,2],[1,2],null,null,null,null]],
+  ['Amara Nwosu',[[1,4],[1,3],[1,3],[0,4],null,null,null,null,null,null]],
+  ['Noah Whitfield',[[2,4],[1,3],[0,2],[0,4],null,null,null,null,null,null]],
+  ['Selin Varga',[[1,4],[1,4],null,null,null,[1,3],null,null,null,null]],
+  ['Tomas Alvarez',[[2,4],[1,3],[0,3],[1,4],null,null,null,null,null,null]],
+  ['Zara Novak',[[2,4],[1,3],[0,2],[1,4],null,null,null,null,null,null]],
+  ['Elias Okafor',[[2,4],[2,3],[0,3],[1,4],null,null,null,null,null,null]],
+  ['Nadia Duarte',[[2,4],[2,3],[1,3],[0,3],null,null,null,null,null,null]],
+  ['Diego Quinn',[[2,5],[1,3],null,null,[1,2],[1,2],null,null,null,null]],
+];
+const more = ['Leah Moreau','Kofi Adeyemi','Marcus Ibarra','Priya Raman','Owen Castell','Hana Mori','Luca Ferri'];
+const r = prng(2026);
+more.forEach(n => named.push([n, [[2,4],[1+Math.floor(r()*2),3],[Math.floor(r()*2),3],[1+Math.floor(r()*2),4],null,null,null,null,null,null]]));
+const seq = v => v<.15?'--viz-seq-0':v<.35?'--viz-seq-1':v<.55?'--viz-seq-2':v<.8?'--viz-seq-3':'--viz-seq-4';
+let h = `<thead><tr><th class="rh">Student</th>${SEC.map(s=>`<th>${s}</th>`).join('')}</tr></thead><tbody>`;
+named.slice(0,15).forEach(([n,cells],ri)=>{
+  h += `<tr><td class="rh"><span class="dia" style="margin-right:8px;vertical-align:1px"></span><span class="lnk">${n}</span></td>` +
+    cells.slice(0,6).map((c,ci)=> c ? `<td class="${ri===1&&ci===3?'selc':''}" style="background:var(${seq(c[0]/c[1])})">${c[0]}/${c[1]}</td>` : `<td class="na">-</td>`).join('') + `</tr>`;
+});
+mx.innerHTML = h + '</tbody>';
+</script>
+</body>
+</html>

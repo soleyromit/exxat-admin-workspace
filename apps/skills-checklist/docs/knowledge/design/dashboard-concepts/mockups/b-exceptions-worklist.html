@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Exceptions worklist</title>
+<meta name="description" content="Concept B: exceptions first. A thin row of exception counts acts as tabs over one ranked list with inline evidence and a peek panel.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<link rel="stylesheet" href="dash.css">
+<style>
+.ex{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.ex a{padding:10px 14px;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.ex a:first-child{border-left:0}
+.ex .l{font-size:12px;color:var(--muted-foreground);display:flex;gap:6px;align-items:center}
+.ex .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.ex .v small{font-size:12px;font-weight:400;color:var(--muted-foreground);margin-left:4px}
+.ex a.on{background:var(--brand-tint-light);box-shadow:inset 0 -2px 0 var(--foreground)}
+.body{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;margin-top:16px}
+.ltb{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.search{display:flex;align-items:center;height:32px;width:220px;border:1px solid var(--border);border-radius:6px;padding:0 10px;color:var(--muted-foreground)}
+tr.on td{background:var(--brand-tint-light)}
+.who b{font-weight:500}
+.who span{display:block;font-size:12px;color:var(--muted-foreground)}
+table.t td{height:48px}
+.peek .bd{display:flex;flex-direction:column;gap:14px}
+.sec{display:grid;grid-template-columns:120px 1fr 40px;align-items:center;gap:8px;font-size:12px}
+.tl{list-style:none;margin:0;padding:0;font-size:12px}
+.tl li{display:grid;grid-template-columns:14px 1fr auto;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
+.tl li:first-child{border-top:0}
+.pg{display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-foreground)}
+</style>
+</head>
+<body>
+<div class="frame"><main>
+  <div class="ph"><h1>Dashboard</h1><div class="act"><span class="chip-sample">Sample data</span><button class="btn outline" type="button">Export</button></div></div>
+
+  <div class="tb" role="form" aria-label="Scope">
+    <span class="sel caret"><span class="k">Term</span><span class="v">Fall 2026</span></span>
+    <span class="sel caret"><span class="k">Cohort</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Course</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Filters</span><span class="v">0</span></span>
+    <span class="sp"></span>
+    <span class="sel caret"><span class="k">Compare with</span><span class="v">Expected now</span></span>
+    <span class="vsep"></span>
+    <span class="asof">As of Oct 26, 09:40</span>
+    <button class="btn outline icon" type="button" aria-label="Refresh figures">&#8635;</button>
+  </div>
+
+  <nav class="ex" role="tablist" aria-label="What needs action">
+    <a class="on" role="tab" aria-selected="true" href="#"><span class="l"><span class="dia"></span>Students behind</span><span class="v">28<small>of 123</small></span></a>
+    <a role="tab" href="#"><span class="l">Requests stalled 15+ days</span><span class="v">31<small>at 9 sites</small></span></a>
+    <a role="tab" href="#"><span class="l">Approvals over 10 days</span><span class="v">3<small>of 20</small></span></a>
+    <a role="tab" href="#"><span class="l">Evaluator names to adopt</span><span class="v">3<small>of 14 unverified</small></span></a>
+    <a role="tab" href="#"><span class="l">Skills not configured</span><span class="v">16<small>of 178</small></span></a>
+  </nav>
+
+  <div class="body">
+    <section class="card" aria-label="Students behind">
+      <div class="ltb">
+        <span class="search">Search students</span>
+        <span class="sel caret"><span class="k">Short in</span><span class="v">Any section</span></span>
+        <span class="sel caret"><span class="k">Request</span><span class="v">Any</span></span>
+        <span style="flex:1"></span>
+        <span class="muted" style="font-size:12px">Furthest behind first. 19 of the 28 are short in IV therapy.</span>
+      </div>
+      <table class="t">
+        <thead><tr><th>Student</th><th>Points from expected</th><th class="r">Required</th><th>Most short in</th><th>Open request</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="pg"><span>1 to 9 of 28</span><span style="flex:1"></span><button class="btn outline xs" type="button">Previous</button><button class="btn outline xs" type="button">Next</button></div>
+    </section>
+
+    <aside class="card peek" aria-label="Amara Nwosu">
+      <div class="hd" style="flex-wrap:wrap"><h2 style="font-size:14px">Amara Nwosu</h2><a class="more" href="#">Student record</a><span class="meta" style="flex-basis:100%">Cohort 2027, NURS 350</span></div>
+      <div class="bd">
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start"><span class="pill warning"><span class="dia"></span>Behind by 37 points</span><span class="muted" style="font-size:12px">3 of 14 required, 8 expected now</span></div>
+        <div>
+          <div class="muted" style="font-size:12px;margin-bottom:6px">Required achieved by section</div>
+          <div id="secs" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px;margin-bottom:4px">Waiting and returned</div>
+          <ul class="tl">
+            <li><span class="dia" style="margin-top:4px"></span><span>Start IV, with D. Pryor at Maple Ridge Care</span><span class="short num">34 d</span></li>
+            <li><span class="dot" style="margin-top:4px"></span><span>Hangs PB Med, awaiting approval</span><span class="muted num">6 d</span></li>
+            <li><span class="dot" style="margin-top:4px;background:var(--viz-soft)"></span><span>Oral medication, returned by L. Haddad</span><span class="muted num">2 d</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <p class="note">Concept B, exceptions first. Mockup for design review; sample data, not real people or sites. The five counts are the only figures; each one switches the list. Selecting a row fills the peek panel.</p>
+</main></div>
+<script src="dash.js"></script>
+<script>
+shell('Dashboard');
+const R = [
+  ['Yuki Sato','2028',-41,'2 of 12','Safety, 0 of 3',['Maple Ridge Care',16],'16 days ago'],
+  ['Amara Nwosu','2027',-37,'3 of 14','IV therapy, 0 of 4',['D. Pryor',34],'34 days ago'],
+  ['Noah Whitfield','2027',-35,'3 of 13','IV therapy, 0 of 4',null,'21 days ago'],
+  ['Selin Varga','2028',-31,'3 of 11','Safety, 1 of 4',null,'11 days ago'],
+  ['Tomas Alvarez','2027',-29,'4 of 14','Medications, 0 of 3',['K. Vance',6],'6 days ago'],
+  ['Zara Novak','2027',-27,'4 of 13','Medications, 0 of 2',['Meadowbrook Health',19],'19 days ago'],
+  ['Elias Okafor','2027',-22,'5 of 14','Medications, 0 of 3',['J. Delgado',4],'4 days ago'],
+  ['Nadia Duarte','2027',-20,'5 of 13','IV therapy, 0 of 3',['Northfield Regional',22],'22 days ago'],
+  ['Diego Quinn','2028',-16,'5 of 12','Safety, 1 of 3',['K. Vance',6],'6 days ago'],
+];
+const gap = g => { const w=120,h=16,x0=w-14, x = x0 + g*(x0-6)/50;
+  return `<span style="display:inline-flex;align-items:center;gap:8px"><svg width="${w}" height="${h}" aria-hidden="true"><line x1="6" x2="${x0}" y1="8" y2="8" stroke="var(--viz-faint)" stroke-width="4" stroke-linecap="round"/><line x1="${x0}" x2="${x0}" y1="2" y2="14" stroke="var(--viz-ink)"/><line x1="${x}" x2="${x0}" y1="8" y2="8" stroke="var(--viz-short)" stroke-width="2"/><rect x="${x-4}" y="4" width="8" height="8" transform="rotate(45 ${x} 8)" fill="var(--viz-short)"/></svg><span class="num short">${g}</span></span>`; };
+rows.innerHTML = R.map((r,i)=>`<tr class="${i===1?'on':''}"><td class="who"><b class="lnk">${r[0]}</b><span>Cohort ${r[1]}</span></td><td>${gap(r[2])}</td><td class="r num">${r[3]}</td><td>${r[4]}</td><td>${r[5]?`${r[5][0]} <span class="${r[5][1]>=15?'pill warning':'pill neutral'}" style="margin-left:4px">${r[5][1]} d</span>`:'<span class="muted">None sent</span>'}</td></tr>`).join('');
+const S = [['IV therapy',0,4,true],['Medications',1,3],['Safety',1,3],['Basic skills',1,4]];
+secs.innerHTML = S.map(([n,a,t,f])=>`<div class="sec"><span>${n}</span><span>${(() => { let s=''; for(let i=0;i<t;i++){ s+=`<span style="display:inline-block;width:14px;height:10px;margin-right:2px;border-radius:2px;background:${i<a?'var(--viz-ink)':(f?'var(--status-badge-warning-fill)':'var(--viz-faint)')};${f&&i>=a?'box-shadow:inset 0 0 0 1px var(--viz-short)':''}"></span>`;} return s; })()}</span><span class="num muted" style="text-align:right">${a} of ${t}</span></div>`).join('');
+</script>
+</body>
+</html>

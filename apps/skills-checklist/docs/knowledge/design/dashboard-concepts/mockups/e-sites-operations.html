@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Sites operations</title>
+<meta name="description" content="Concept E: an operations board for evidence flow. Sites ranked by the age of open requests, evaluators holding the oldest ones.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<link rel="stylesheet" href="dash.css">
+<style>
+.lay{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;margin-top:16px}
+.site b{font-weight:500}
+.site span{display:block;font-size:12px;color:var(--muted-foreground)}
+table.t td{height:48px}
+.ev{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:10px 0;border-top:1px solid var(--border)}
+.ev:first-child{border-top:0}
+.ev .n{display:flex;gap:8px;align-items:center;font-weight:500}
+.ev .m{font-size:12px;color:var(--muted-foreground)}
+</style>
+</head>
+<body>
+<div class="frame"><main>
+  <div class="ph"><h1>Dashboard</h1><div class="act"><span class="chip-sample">Sample data</span><button class="btn outline" type="button">Export</button></div></div>
+
+  <div class="tb" role="form" aria-label="Scope">
+    <span class="sel caret"><span class="k">Term</span><span class="v">Fall 2026</span></span>
+    <span class="sel caret"><span class="k">Cohort</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Setting</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Filters</span><span class="v">0</span></span>
+    <span class="sp"></span>
+    <span class="asof">As of Oct 26, 09:40</span>
+    <button class="btn outline icon" type="button" aria-label="Refresh figures">&#8635;</button>
+  </div>
+
+  <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+    <a class="kpi" href="#"><span class="l">Waiting with evaluators</span><span class="v">252<small>requests</small></span><span id="s1"></span><span class="d">At 31 sites, 64 evaluators</span></a>
+    <a class="kpi" href="#"><span class="l">Median wait</span><span class="v">6<small>days</small></span><span id="s2"></span><span class="d">Was 4 days a month ago</span></a>
+    <a class="kpi" href="#"><span class="l"><span class="dia"></span>Waited 15 days or more</span><span class="v">31<small>requests</small></span><span id="s3"></span><span class="d">At 9 sites</span></a>
+    <a class="kpi" href="#"><span class="l">Unverified evaluators</span><span class="v">14<small>names</small></span><span id="s4"></span><span class="d">3 hold requests over 8 days</span></a>
+  </div>
+
+  <div class="lay">
+    <section class="card" aria-label="Sites, oldest request first">
+      <div class="hd"><h2>Where are requests stuck?</h2><span class="meta">sites, oldest request first</span><a class="more" href="#">All 31 sites</a></div>
+      <div class="bd" style="padding:4px 4px 8px">
+        <table class="t">
+          <thead><tr><th>Site</th><th class="r">Open</th><th>Age of open requests</th><th class="r">Oldest</th><th>Signed, last 8 weeks</th><th class="r">Students</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div class="legend" style="padding:10px 12px 0" id="lg"></div>
+      </div>
+    </section>
+    <aside class="card" aria-label="Evaluators holding the oldest requests">
+      <div class="hd"><h2>Who holds the oldest?</h2><span class="meta">evaluators</span><a class="more" href="#">All 180</a></div>
+      <div class="bd" id="evs"></div>
+    </aside>
+  </div>
+
+  <p class="note">Concept E, sites and evaluators. Mockup for design review; sample data, fictional sites and people. Reminders are out of scope; every row opens the site or the evaluator, where requests can be reassigned or the name adopted.</p>
+</main></div>
+<script src="dash.js"></script>
+<script>
+shell('Dashboard');
+s1.outerHTML = spark([190,204,215,230,238,241,247,250,252]);
+s2.outerHTML = spark([4,4,4,5,5,5,6,6,6]);
+s3.outerHTML = spark([9,12,14,17,20,22,26,29,31], {amber:true});
+s4.outerHTML = spark([8,9,10,10,11,12,13,14,14]);
+const S = [
+  ['Maple Ridge Care, 5 East','Long-term care',[0,0,0,7],34,[3,2,1,0,0,0,0,0],6],
+  ['Meadowbrook Health, Infusion clinic','Outpatient',[7,9,3,6],35,[9,8,7,6,5,4,4,3],11],
+  ['Northfield Regional, Pediatrics','Maternal-child',[1,6,3,4],35,[6,6,5,5,3,2,2,1],7],
+  ['Maple Ridge Care, Telemetry','Inpatient',[0,0,1,2],30,[2,2,1,1,1,0,0,0],3],
+  ['Westgate Medical, 4 South','Inpatient med-surg',[11,8,4,4],29,[12,13,11,12,10,11,9,10],14],
+  ['Harbor Point Medical, ED','Emergency',[6,3,4,2],21,[7,8,6,7,7,6,6,5],9],
+  ['Lakeview Long-term Care','Long-term care',[3,2,3,2],18,[5,4,5,4,3,4,3,3],6],
+  ['Seaside Regional, 4 West','Inpatient',[9,6,5,1],16,[11,12,10,11,12,11,10,11],12],
+];
+rows.innerHTML = S.map(([n,set,b,old,sg,st])=>{ const tot=b.reduce((a,c)=>a+c,0);
+  return `<tr><td class="site"><b class="lnk">${n}</b><span>${set}</span></td><td class="r num">${tot}</td><td>${hstack(b.map((v,i)=>({v,c:AGE[i]})),27,{w:150,h:10})}</td><td class="r num" style="${old>=30?'font-weight:600':''}">${old} d</td><td>${spark(sg,{w:84,h:24})}</td><td class="r num">${st}</td></tr>`; }).join('') +
+  `<tr><td class="site"><b>Other 23 sites</b><span>3 requests at 15 days or more</span></td><td class="r num">130</td><td class="muted num">62, 26, 39, 3 by age</td><td class="r num">17 d</td><td></td><td class="r num">78</td></tr>`;
+lg.innerHTML = AGE.map((c,i)=>`<span><span class="sw" style="background:${c}"></span>${AGE_LABEL[i]}</span>`).join('') + '<span>Full bar: 27 requests</span>';
+const E = [
+  ['D. Pryor',true,'Maple Ridge Care',3,34],
+  ['K. Vance, RN',false,'Westgate Medical',9,29],
+  ['Jon Delgado, RN',true,'Northfield Regional. May be J. Delgado, RN',2,22],
+  ['M. Ortega',true,'Meadowbrook Health',2,19],
+  ['T. Brandt, RN',false,'Harbor Point Medical',7,16],
+  ['S. Okonkwo, RN',false,'Seaside Regional',5,12],
+];
+evs.innerHTML = E.map(([n,u,site,c,old])=>`<div class="ev"><span class="n"><span class="lnk">${n}</span>${u?'<span class="pill neutral">Unverified</span>':''}</span><span class="num" style="${old>=30?'font-weight:600':''}">${old} d</span><span class="m" style="grid-column:1/-1">${site}. ${c} open ${c===1?'request':'requests'}</span></div>`).join('');
+</script>
+</body>
+</html>

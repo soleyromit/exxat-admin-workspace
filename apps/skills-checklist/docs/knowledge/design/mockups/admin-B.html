@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Admin Home B</title>
+<meta name="description" content="Variant B, cohort lens: the report is the launch page. Section by cohort matrix with a behind list and stale sites in the side rail.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<style>
+:root{
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --muted: oklch(0.9560 0.0080 345);
+  --muted-foreground: oklch(0.40 0.014 270);
+  --border: oklch(0.92 0.002 270);
+  --border-control-3: oklch(0.6533 0.0077 268.51);
+  --primary: oklch(0.3457 0.0052 286.13);
+  --primary-foreground: oklch(0.985 0 0);
+  --brand-tint: oklch(0.9695 0.0158 341.4);
+  --brand-tint-subtle: oklch(0.9465 0.0247 348.5);
+  --brand-color: oklch(0.57 0.24 342);
+  --brand-color-dark: oklch(0.42 0.18 342);
+  --sidebar: var(--brand-tint);
+  --sidebar-accent: oklch(0.9465 0.0247 348.5);
+  --sidebar-border: oklch(0.9152 0.0394 347.1);
+  --ring: var(--brand-color-dark);
+  --status-badge-success-fill: oklch(0.952 0.029 126);
+  --status-badge-success-fg: oklch(0.386 0.107 135.9);
+  --status-badge-info-fill: oklch(0.953 0.018 245.4);
+  --status-badge-info-fg: oklch(0.385 0.110 253.2);
+  --status-badge-warning-fill: oklch(0.953 0.029 80.7);
+  --status-badge-warning-fg: oklch(0.386 0.084 62.5);
+  --status-badge-neutral-fill: oklch(0.952 0 0);
+  --status-badge-neutral-fg: oklch(0.386 0 0);
+  --radius: 0.5rem;
+  --control-height: 40px;
+  --control-height-sm: 32px;
+  --font-heading: "ivypresto-text", Georgia, serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --text-xs: 12px; --text-sm: 14px; --text-md: 15px; --text-base: 16px;
+  /* PROPOSED viz layer tokens (not in DS). Magnitude = neutral slate; shortfall = amber; Prism sequential for matrices. */
+  --viz-mark: oklch(0.48 0.02 270);
+  --viz-mark-soft: oklch(0.78 0.01 270);
+  --viz-grid: oklch(0.94 0.002 270);
+  --viz-shortfall: oklch(0.68 0.15 68);
+  --viz-age-1: oklch(0.90 0.006 270);
+  --viz-age-2: oklch(0.78 0.01 270);
+  --viz-age-3: oklch(0.60 0.014 270);
+  --viz-age-4: oklch(0.38 0.018 270);
+  --viz-seq-1: oklch(0.985 0.006 345);
+  --viz-seq-2: oklch(0.955 0.022 345);
+  --viz-seq-3: oklch(0.915 0.042 345);
+  --viz-seq-4: oklch(0.865 0.066 345);
+  --viz-seq-5: oklch(0.80 0.092 345);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:var(--text-sm);line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.frame{width:1440px;margin:0 auto;min-height:100vh;display:grid;grid-template-columns:240px 1fr;grid-template-rows:48px 1fr;background:var(--background)}
+.util{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid var(--border);background:var(--background)}
+.util .sep{width:1px;height:20px;background:var(--border)}
+.prod{display:flex;align-items:center;gap:8px;font-weight:600;font-size:var(--text-md)}
+.prod .mark{width:24px;height:24px;border-radius:6px;background:var(--brand-color);display:grid;place-items:center;color:var(--primary-foreground);font-size:12px;font-weight:700}
+.crumb{font-size:var(--text-md)}
+.util .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.scope{display:inline-flex;align-items:center;gap:6px;height:var(--control-height-sm);padding:0 10px;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);font-size:var(--text-sm)}
+.search{display:flex;align-items:center;gap:8px;width:300px;height:var(--control-height-sm);padding:0 10px;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);color:var(--muted-foreground)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--brand-tint-subtle);display:grid;place-items:center;font-size:12px;font-weight:600}
+.iconbtn{width:32px;height:32px;display:grid;place-items:center;border-radius:calc(var(--radius) - 2px);color:var(--foreground)}
+.rail{background:var(--sidebar);border-right:1px solid var(--sidebar-border);padding:8px}
+.nav a{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:calc(var(--radius) - 2px);text-decoration:none;font-size:var(--text-sm)}
+.nav a.on{background:var(--background);font-weight:600;box-shadow:0 0 0 1px var(--sidebar-border)}
+.nav .count{margin-left:auto;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:var(--primary);color:var(--primary-foreground);font-size:12px;font-weight:600;display:grid;place-items:center}
+.nav svg{width:16px;height:16px;flex:none}
+.rail .railnote{margin:16px 10px 0;font-size:12px;color:var(--muted-foreground)}
+main{padding:20px 32px 56px;min-width:0}
+.ph{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px}
+.ph h1{font-family:var(--font-heading);font-weight:400;font-size:30px;line-height:1.15;margin:0}
+.ph p{margin:4px 0 0;color:var(--muted-foreground);font-size:var(--text-sm)}
+.ph .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.sample{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:999px;background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg);font-size:12px;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:var(--control-height-sm);padding:0 12px;border-radius:calc(var(--radius) - 2px);font-size:var(--text-sm);font-weight:500;text-decoration:none;border:1px solid transparent;white-space:nowrap;cursor:pointer;font-family:inherit}
+.btn-default{background:var(--primary);color:var(--primary-foreground)}
+.btn-outline{background:var(--background);border-color:var(--border-control-3);color:var(--foreground)}
+.btn-ghost{background:transparent;color:var(--foreground)}
+.btn-xs{height:28px;padding:0 10px;font-size:13px}
+.g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.s3{grid-column:span 3}.s4{grid-column:span 4}.s5{grid-column:span 5}.s6{grid-column:span 6}.s7{grid-column:span 7}.s8{grid-column:span 8}.s9{grid-column:span 9}.s12{grid-column:span 12}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px oklch(0 0 0 / 0.04)}
+.card > .hd{display:flex;align-items:baseline;gap:4px 12px;padding:16px 20px 0;flex-wrap:wrap}
+.card > .hd .q{order:3;flex-basis:100%}
+.card > .hd h2{font-size:var(--text-base);font-weight:600;margin:0}
+.card > .hd .q{color:var(--muted-foreground);font-size:var(--text-sm)}
+.card > .hd .more{margin-left:auto;font-size:var(--text-sm)}
+.card > .bd{padding:12px 20px 16px}
+.section-title{font-size:var(--text-base);font-weight:600;margin:28px 0 12px;display:flex;align-items:baseline;gap:12px}
+.section-title .q{font-weight:400;color:var(--muted-foreground);font-size:var(--text-sm)}
+.muted{color:var(--muted-foreground)}
+.num{font-variant-numeric:tabular-nums}
+.link{text-decoration:underline;text-decoration-color:var(--border-control-3);text-underline-offset:3px}
+.link:hover{text-decoration-color:var(--foreground)}
+/* hero band */
+.hero{display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;padding:20px 24px;border:1px solid var(--border);border-radius:12px;background:linear-gradient(0deg,var(--background),var(--background))}
+.hero .glyph{width:56px;height:56px;border-radius:14px;background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg);display:grid;place-items:center}
+.hero .glyph.ok{background:var(--status-badge-success-fill);color:var(--status-badge-success-fg)}
+.hero .glyph.neutral{background:var(--brand-tint);color:var(--brand-color-dark)}
+.hero .glyph svg{width:28px;height:28px}
+.hero .big{font-size:48px;font-weight:600;line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.hero .big small{display:inline-block;font-size:20px;font-weight:500;color:var(--muted-foreground);letter-spacing:0}
+.hero .sent{font-size:17px;line-height:1.4;margin-top:6px;max-width:640px}
+.hero .sub{margin-top:8px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+/* KPI flat strip */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:20px 0 4px}
+.kpi{padding:14px 20px;border-left:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end;text-decoration:none}
+.kpi:first-child{border-left:0;padding-left:0}
+.kpi .l{grid-column:1/-1;font-size:var(--text-sm);color:var(--muted-foreground)}
+.kpi .v{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .v small{font-size:var(--text-sm);font-weight:400;color:var(--muted-foreground)}
+.kpi .d{grid-column:1/-1;font-size:12px;color:var(--muted-foreground)}
+.kpi:hover .v{text-decoration:underline;text-underline-offset:4px}
+/* status pill (StatusBadge mirror) */
+.pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill svg{width:13px;height:13px}
+.pill.success{background:var(--status-badge-success-fill);color:var(--status-badge-success-fg)}
+.pill.info{background:var(--status-badge-info-fill);color:var(--status-badge-info-fg)}
+.pill.warning{background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg)}
+.pill.neutral{background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg)}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--muted-foreground);white-space:nowrap}
+/* lists and tables (DS Table / DataTable mirror) */
+.rows{list-style:none;margin:0;padding:0}
+.rows li{display:grid;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+.rows li:first-child{border-top:0}
+table.t{width:100%;border-collapse:collapse;font-size:var(--text-sm)}
+table.t th{text-align:left;font-weight:500;color:var(--muted-foreground);font-size:13px;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.t td a{white-space:nowrap}
+table.t td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.t tr:last-child td{border-bottom:0}
+table.t td.r,table.t th.r{text-align:right;font-variant-numeric:tabular-nums}
+details.tbl{margin-top:10px;font-size:var(--text-sm)}
+details.tbl summary{cursor:pointer;color:var(--foreground);font-weight:500;list-style:none;display:inline-flex;gap:6px;align-items:center}
+details.tbl summary::before{content:"";width:0;height:0;border-left:5px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent}
+details.tbl[open] summary::before{transform:rotate(90deg)}
+details.tbl table{margin-top:8px}
+figcaption.sum{font-size:var(--text-sm);color:var(--foreground);margin:0 0 8px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted-foreground);align-items:center;margin-bottom:6px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend svg{flex:none}
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--border);margin:4px 0 16px}
+.tabs a{padding:10px 0;text-decoration:none;color:var(--muted-foreground);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:var(--foreground);border-color:var(--foreground)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);padding:2px;gap:2px;background:var(--background)}
+.seg a{padding:4px 10px;border-radius:5px;text-decoration:none;font-size:13px;color:var(--muted-foreground)}
+.seg a.on{background:var(--muted);color:var(--foreground);font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--border-control-3);border-radius:999px;font-size:13px;background:var(--background)}
+.chip.on{background:var(--muted)}
+.rail-card + .rail-card{margin-top:16px}
+.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-foreground)}
+svg text{font-family:var(--font-sans)}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="frame" data-mockup="admin-B.html">
+  <header class="util" aria-label="Utility bar">
+    <span class="iconbtn" role="button" tabindex="0" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></span>
+    <span class="prod"><span class="mark" aria-hidden="true">P</span>Clinical Education <span style="width:14px;height:14px;display:inline-block" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span></span>
+    <span class="sep" aria-hidden="true"></span>
+    <span class="crumb">Home</span>
+    <span class="right">
+      <span class="scope" aria-label="Program">Nursing ADN, Fall 2026 <span style="width:14px;height:14px;display:inline-block" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span></span>
+      <span class="search" role="search"><span style="width:16px;height:16px;display:inline-block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg></span>Search students, skills, evaluators</span>
+      <span class="avatar" role="button" tabindex="0" aria-label="Profile menu, Admin view. Switch view lives here">AR</span>
+    </span>
+  </header>
+  <nav class="rail" aria-label="Admin navigation">
+    <div class="nav"><a href="#" class="on" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a><a href="#" class="" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h11M4 12h11M4 18h11"/><path d="M18 5l1.5 1.5L22 4"/><path d="M18 17l1.5 1.5L22 16"/></svg><span>Skills</span></a><a href="#" class="" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 12l3 3 5-6"/></svg><span>Approvals</span><span class="count" aria-label="14 waiting">14</span></a><a href="#" class="" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Attainment</span></a></div>
+    <p class="railnote">Admin view. Proposed 4-row nav.</p>
+  </nav>
+  <main id="main-content" tabindex="-1">
+<div class="ph"><div><h1>Home</h1><p>Where each cohort stands on required skills, and who to act on.</p></div><div class="actions"><span class="sample"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Sample data</span><span class="seg" role="group" aria-label="Skills shown"><a href="#" class="on">Required</a><a href="#">All skills</a></span></div></div>
+<section class="hero" aria-labelledby="hb-t" style="grid-template-columns:auto 1fr">
+  <div class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg></div>
+  <div><div class="big num" id="hb-t">38% <small>of IV therapy achieved in Cohort 2027, against 60% expected now</small></div>
+  <div class="sent">IV therapy holds the largest gap on the page. It is why 9 of the 12 students behind are behind.</div>
+  <div class="sub"><a href="#" class="btn btn-outline btn-xs">Open IV therapy for Cohort 2027</a></div></div>
+</section>
+<div class="g12" style="margin-top:24px">
+  <div class="s8"><article class="card"><div class="hd"><h2>Where is each cohort short?</h2><span class="q">Grouped by section. Select a cell for its students.</span></div><div class="bd"><table class="t" style="table-layout:fixed"><caption class="sum" style="caption-side:top;text-align:left;padding-bottom:8px">Share of required skills achieved, by section and cohort. Cells with a triangle are 8 or more points under what is expected now.</caption>
+<thead><tr><th style="width:38%">Section <span class="muted">(required skills)</span></th><th>Cohort 2026 <span class="muted">38</span></th><th>Cohort 2027 <span class="muted">43</span></th><th>Cohort 2028 <span class="muted">42</span></th></tr></thead><tbody>
+<tr><td><a href="#" class="link">Basic Skills</a> <span class="muted">14</span></td><td style="padding:4px"><a href="#" aria-label="Basic Skills, cohort 2026: 100 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">100%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Basic Skills, cohort 2027: 81 percent achieved, 75 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-4);color:var(--foreground);"><span class="num" style="font-weight:600">81%</span><span style="font-size:12px">75%</span></a></td><td style="padding:4px"><a href="#" aria-label="Basic Skills, cohort 2028: 54 percent achieved, 50 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-3);color:var(--foreground);"><span class="num" style="font-weight:600">54%</span><span style="font-size:12px">50%</span></a></td></tr><tr><td><a href="#" class="link">Safety</a> <span class="muted">12</span></td><td style="padding:4px"><a href="#" aria-label="Safety, cohort 2026: 99 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">99%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Safety, cohort 2027: 74 percent achieved, 70 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-4);color:var(--foreground);"><span class="num" style="font-weight:600">74%</span><span style="font-size:12px">70%</span></a></td><td style="padding:4px"><a href="#" aria-label="Safety, cohort 2028: 47 percent achieved, 45 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-2);color:var(--foreground);"><span class="num" style="font-weight:600">47%</span><span style="font-size:12px">45%</span></a></td></tr><tr><td><a href="#" class="link">Medications</a> <span class="muted">6</span></td><td style="padding:4px"><a href="#" aria-label="Medications, cohort 2026: 97 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">97%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Medications, cohort 2027: 62 percent achieved, 60 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-3);color:var(--foreground);"><span class="num" style="font-weight:600">62%</span><span style="font-size:12px">60%</span></a></td><td style="padding:4px"><a href="#" aria-label="Medications, cohort 2028: 18 percent achieved, 15 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-1);color:var(--foreground);"><span class="num" style="font-weight:600">18%</span><span style="font-size:12px">15%</span></a></td></tr><tr><td><a href="#" class="link">Emotional/Cognitive</a> <span class="muted">6</span></td><td style="padding:4px"><a href="#" aria-label="Emotional/Cognitive, cohort 2026: 100 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">100%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Emotional/Cognitive, cohort 2027: 70 percent achieved, 65 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-4);color:var(--foreground);"><span class="num" style="font-weight:600">70%</span><span style="font-size:12px">65%</span></a></td><td style="padding:4px"><a href="#" aria-label="Emotional/Cognitive, cohort 2028: 31 percent achieved, 30 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-2);color:var(--foreground);"><span class="num" style="font-weight:600">31%</span><span style="font-size:12px">30%</span></a></td></tr><tr><td><a href="#" class="link">Teaching Learning Principles</a> <span class="muted">5</span></td><td style="padding:4px"><a href="#" aria-label="Teaching Learning Principles, cohort 2026: 98 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">98%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Teaching Learning Principles, cohort 2027: 66 percent achieved, 60 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-3);color:var(--foreground);"><span class="num" style="font-weight:600">66%</span><span style="font-size:12px">60%</span></a></td><td style="padding:4px"><a href="#" aria-label="Teaching Learning Principles, cohort 2028: 22 percent achieved, 20 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-1);color:var(--foreground);"><span class="num" style="font-weight:600">22%</span><span style="font-size:12px">20%</span></a></td></tr><tr><td><a href="#" class="link">Mobility</a> <span class="muted">6</span></td><td style="padding:4px"><a href="#" aria-label="Mobility, cohort 2026: 100 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">100%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Mobility, cohort 2027: 79 percent achieved, 75 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-4);color:var(--foreground);"><span class="num" style="font-weight:600">79%</span><span style="font-size:12px">75%</span></a></td><td style="padding:4px"><a href="#" aria-label="Mobility, cohort 2028: 49 percent achieved, 45 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-2);color:var(--foreground);"><span class="num" style="font-weight:600">49%</span><span style="font-size:12px">45%</span></a></td></tr><tr><td><a href="#" class="link">Oxygenation</a> <span class="muted">3</span></td><td style="padding:4px"><a href="#" aria-label="Oxygenation, cohort 2026: 98 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">98%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Oxygenation, cohort 2027: 58 percent achieved, 55 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-3);color:var(--foreground);"><span class="num" style="font-weight:600">58%</span><span style="font-size:12px">55%</span></a></td><td style="padding:4px"><a href="#" aria-label="Oxygenation, cohort 2028: 14 percent achieved, 25 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-1);color:var(--foreground);box-shadow:inset 0 0 0 2px var(--viz-shortfall);"><span class="num" style="font-weight:600">14%</span><span style="display:inline-flex;gap:4px;align-items:center;background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg);padding:1px 6px;border-radius:999px;font-size:12px"><span style="width:12px;height:12px"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l7 12.4H1z" fill="currentColor"/><path d="M8 6v3.6M8 11.6v.1" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></svg></span>25%</span></a></td></tr><tr><td><a href="#" class="link">Nutrition, excluding IV therapy</a> <span class="muted">5</span></td><td style="padding:4px"><a href="#" aria-label="Nutrition, excluding IV therapy, cohort 2026: 99 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">99%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Nutrition, excluding IV therapy, cohort 2027: 64 percent achieved, 60 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-3);color:var(--foreground);"><span class="num" style="font-weight:600">64%</span><span style="font-size:12px">60%</span></a></td><td style="padding:4px"><a href="#" aria-label="Nutrition, excluding IV therapy, cohort 2028: 25 percent achieved, 25 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-1);color:var(--foreground);"><span class="num" style="font-weight:600">25%</span><span style="font-size:12px">25%</span></a></td></tr><tr><td style="padding-left:28px"><a href="#" class="link">IV therapy (group in Nutrition)</a> <span class="muted">6</span></td><td style="padding:4px"><a href="#" aria-label="IV therapy (group in Nutrition), cohort 2026: 97 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">97%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="IV therapy (group in Nutrition), cohort 2027: 38 percent achieved, 60 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-2);color:var(--foreground);box-shadow:inset 0 0 0 2px var(--viz-shortfall);"><span class="num" style="font-weight:600">38%</span><span style="display:inline-flex;gap:4px;align-items:center;background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg);padding:1px 6px;border-radius:999px;font-size:12px"><span style="width:12px;height:12px"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l7 12.4H1z" fill="currentColor"/><path d="M8 6v3.6M8 11.6v.1" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></svg></span>60%</span></a></td><td><span class="muted" style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Not expected yet</span></td></tr><tr><td><a href="#" class="link">Elimination</a> <span class="muted">1</span></td><td style="padding:4px"><a href="#" aria-label="Elimination, cohort 2026: 100 percent achieved, 96 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-5);color:var(--foreground);"><span class="num" style="font-weight:600">100%</span><span style="font-size:12px">96%</span></a></td><td style="padding:4px"><a href="#" aria-label="Elimination, cohort 2027: 71 percent achieved, 65 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-4);color:var(--foreground);"><span class="num" style="font-weight:600">71%</span><span style="font-size:12px">65%</span></a></td><td style="padding:4px"><a href="#" aria-label="Elimination, cohort 2028: 36 percent achieved, 30 expected" style="display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 10px;border-radius:6px;text-decoration:none;background:var(--viz-seq-2);color:var(--foreground);"><span class="num" style="font-weight:600">36%</span><span style="font-size:12px">30%</span></a></td></tr>
+<tr><td><strong>All required</strong> <span class="muted">50</span></td><td class="num"><strong>31 of 38 complete</strong></td><td class="num"><strong>58%</strong></td><td class="num"><strong>28%</strong></td></tr>
+</tbody></table>
+<div class="legend" style="margin-top:10px"><span>Achieved</span><span><svg width="14" height="14"><rect width="14" height="14" rx="3" fill="var(--viz-seq-1)" stroke="var(--border)"/></svg>0 to 29%</span><span><svg width="14" height="14"><rect width="14" height="14" rx="3" fill="var(--viz-seq-2)" stroke="var(--border)"/></svg>30 to 49%</span><span><svg width="14" height="14"><rect width="14" height="14" rx="3" fill="var(--viz-seq-3)" stroke="var(--border)"/></svg>50 to 69%</span><span><svg width="14" height="14"><rect width="14" height="14" rx="3" fill="var(--viz-seq-4)" stroke="var(--border)"/></svg>70 to 89%</span><span><svg width="14" height="14"><rect width="14" height="14" rx="3" fill="var(--viz-seq-5)" stroke="var(--border)"/></svg>90 to 100%</span><span>Small number in a cell: expected now</span></div></div></article>
+    <article class="card" style="margin-top:24px"><div class="hd"><h2>Where are requests stuck?</h2><a href="#" class="more link">All 120 sites</a></div><div class="bd">
+      <p class="sum" style="margin:0 0 8px">52 requests have waited 15 days or more. 3 sites hold the oldest; Seaside Regional, 4 West has answered none in 18 days.</p><div class="legend"><span><svg width="12" height="12"><rect width="12" height="12" fill="var(--viz-age-1)"/></svg>0 to 3 days</span><span><svg width="12" height="12"><rect width="12" height="12" fill="var(--viz-age-2)"/></svg>4 to 7</span><span><svg width="12" height="12"><rect width="12" height="12" fill="var(--viz-age-3)"/></svg>8 to 14</span><span><svg width="12" height="12"><rect x="1" y="1" width="10" height="10" fill="var(--viz-age-4)" stroke="var(--viz-shortfall)" stroke-width="2"/></svg>15 days or more</span></div>
+      <svg width="708" height="134" viewBox="0 0 708 134" role="img" aria-labelledby="ageb-t"><title id="ageb-t">Three stale sites by age of waiting requests</title><text x="0" y="23" font-size="13" fill="var(--foreground)">Seaside Regional, 4 West</text><text x="0" y="38" font-size="12" fill="var(--muted-foreground)">Inpatient med-surg, 9 students</text><rect x="230" y="16" width="433" height="18" fill="var(--viz-age-4)" stroke="var(--viz-shortfall)" stroke-width="2"/><text x="670" y="29" font-size="13" font-weight="600" fill="var(--foreground)">14</text><text x="0" y="65" font-size="13" fill="var(--foreground)">Harbor Point Medical, ED</text><text x="0" y="80" font-size="12" fill="var(--muted-foreground)">Emergency, 7 students</text><rect x="230" y="58" width="92" height="18" fill="var(--viz-age-1)"/><rect x="323" y="58" width="61" height="18" fill="var(--viz-age-2)"/><rect x="385" y="58" width="92" height="18" fill="var(--viz-age-3)"/><rect x="478" y="58" width="92" height="18" fill="var(--viz-age-4)" stroke="var(--viz-shortfall)" stroke-width="2"/><text x="577" y="71" font-size="13" font-weight="600" fill="var(--foreground)">11</text><text x="0" y="107" font-size="13" fill="var(--foreground)">Lakeview Long-term Care</text><text x="0" y="122" font-size="12" fill="var(--muted-foreground)">Long-term care, 6 students</text><rect x="230" y="100" width="61" height="18" fill="var(--viz-age-1)"/><rect x="292" y="100" width="30" height="18" fill="var(--viz-age-2)"/><rect x="323" y="100" width="92" height="18" fill="var(--viz-age-3)"/><rect x="416" y="100" width="61" height="18" fill="var(--viz-age-4)" stroke="var(--viz-shortfall)" stroke-width="2"/><text x="484" y="113" font-size="13" font-weight="600" fill="var(--foreground)">8</text></svg><details class="tbl"><summary>Show as table</summary><table class="t"><thead><tr><th>Site</th><th class="r">0 to 3 days</th><th class="r">4 to 7</th><th class="r">8 to 14</th><th class="r">15 or more</th><th class="r">Total</th></tr></thead><tbody><tr><td>Seaside Regional, 4 West</td><td class="r">0</td><td class="r">0</td><td class="r">0</td><td class="r">14</td><td class="r">14</td></tr><tr><td>Harbor Point Medical, ED</td><td class="r">3</td><td class="r">2</td><td class="r">3</td><td class="r">3</td><td class="r">11</td></tr><tr><td>Lakeview Long-term Care</td><td class="r">2</td><td class="r">1</td><td class="r">3</td><td class="r">2</td><td class="r">8</td></tr><tr><td>Mercy Clinic</td><td class="r">6</td><td class="r">3</td><td class="r">2</td><td class="r">1</td><td class="r">12</td></tr><tr><td>Bayside Women's Center</td><td class="r">5</td><td class="r">4</td><td class="r">2</td><td class="r">1</td><td class="r">12</td></tr><tr><td>Other 115 sites</td><td class="r">146</td><td class="r">91</td><td class="r">79</td><td class="r">31</td><td class="r">347</td></tr><tr><td><strong>All 120 sites</strong></td><td class="r">162</td><td class="r">101</td><td class="r">89</td><td class="r">52</td><td class="r"><strong>404</strong></td></tr></tbody></table></details>
+    </div></article></div>
+  <aside class="s4" aria-label="Act on">
+    <article class="card rail-card"><div class="hd"><h2>Students behind</h2><span class="q">12 of 123</span></div><div class="bd"><ul class="rows">
+      <li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Amara Nwosu</a><br><span class="muted" style="font-size:12px">2027, IV therapy 0 of 6</span></span><span class="num" style="font-weight:600">15%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Noah Whitfield</a><br><span class="muted" style="font-size:12px">2027, IV therapy 0 of 6</span></span><span class="num" style="font-weight:600">22%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Tomas Alvarez</a><br><span class="muted" style="font-size:12px">2027, IV therapy 1 of 6</span></span><span class="num" style="font-weight:600">26%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Zara Novak</a><br><span class="muted" style="font-size:12px">2027, IV therapy 1 of 6</span></span><span class="num" style="font-weight:600">30%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Elias Okafor</a><br><span class="muted" style="font-size:12px">2027, IV therapy 0 of 6</span></span><span class="num" style="font-weight:600">33%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Nadia Duarte</a><br><span class="muted" style="font-size:12px">2027, IV therapy 1 of 6</span></span><span class="num" style="font-weight:600">36%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Kofi Adeyemi</a><br><span class="muted" style="font-size:12px">2027, IV therapy 1 of 6</span></span><span class="num" style="font-weight:600">40%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Leah Moreau</a><br><span class="muted" style="font-size:12px">2027, IV therapy 1 of 6</span></span><span class="num" style="font-weight:600">42%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Marcus Ibarra</a><br><span class="muted" style="font-size:12px">2027, IV therapy 1 of 6</span></span><span class="num" style="font-weight:600">46%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Yuki Sato</a><br><span class="muted" style="font-size:12px">2028, Basic skills 4 of 14</span></span><span class="num" style="font-weight:600">6%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Selin Varga</a><br><span class="muted" style="font-size:12px">2028, Safety 3 of 12</span></span><span class="num" style="font-weight:600">11%</span></li><li style="grid-template-columns:16px 1fr auto"><svg width="13" height="13" aria-hidden="true"><path d="M6.5 1L12 6.5 6.5 12 1 6.5Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/></svg><span><a href="#" class="link">Diego Quinn</a><br><span class="muted" style="font-size:12px">2028, Basic skills 7 of 14, Accelerated track</span></span><span class="num" style="font-weight:600">17%</span></li>
+    </ul></div></article>
+    <article class="card rail-card"><div class="hd"><h2>Needs you</h2></div><div class="bd"><ul class="rows">
+      <li style="grid-template-columns:1fr auto"><span>2 approvals older than 10 days</span><a href="#" class="link">Approvals</a></li>
+      <li style="grid-template-columns:1fr auto"><span>12 skills need configuration</span><a href="#" class="link">Skills</a></li>
+      <li style="grid-template-columns:1fr auto"><span>3 evaluator names to adopt</span><a href="#" class="link">Evaluators</a></li>
+    </ul></div></article>
+  </aside>
+</div>
+    <p class="foot">Mockup for design review. Sample data generated to match docs/knowledge/dataset-spec.md (123 students in 3 cohorts, 154 skills, 404 waiting requests). Not real people or sites.</p>
+  </main>
+</div>
+</body>
+</html>

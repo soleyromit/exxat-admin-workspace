@@ -1,0 +1,14 @@
+# U1 notes: configure, evaluator labels and attempt counting (Oct 26 call, Thursday items)
+
+Source: `granola-2026-10-26-updates.md` section B rows 1 to 5 and 14 `[CALL 10-26]`. Existing screens and variants only.
+
+| Item | What changed | Where |
+|---|---|---|
+| 1 Names | Steps read Model, Evaluation criteria, How many times, Who signs, Check (A wizard, B anchors, C headings). Footer sentence is prefixed "How many times:". Check "What you changed" rows use the same two names. Rule impact A/B headings and "Edit how many times". Engine section ids (`outcomes`, `rule`) unchanged. | `lib/lab/configure.ts` (`CRITERIA_LABEL`, `HOW_MANY_LABEL`, `criteriaKind`), configure screens, `live-panel.tsx`, rule impact A/B |
+| 2 Model choices | Approved or not approved; Questions, then a final result; Independence level; Scored (fourth, Proposed badge). One-line examples. Nothing preselected. | `LAB_MODEL_LABEL`, `LAB_MODELS`, `PROPOSED_MODELS`, `MODEL_HELP`; `fields.tsx` ModelSection |
+| 3 Presets | "Start from" chip in Evaluation criteria: Approved / Not approved (binary) or Independent / With assistance / Observed (levels, stored lowest first). Fills labels only; editable; never sets which outcome qualifies. The evaluator form and lab grid read the program's labels; because the lab configure never writes the shared store, `?labels=approval` or `?labels=independence` previews a preset on Evaluator form A/B/C and the lab grid, including the student's self-rating. | `applyPreset`, `LABEL_PRESETS`; `lib/lab/evaluator.ts` `programLabels`; `use-evaluator.tsx`, `use-lab-grid.tsx` |
+| 4 Counting | Engine returns `attempts` (total, did not qualify, not used, count). Check step (A/B) and the C publish dialog show "One student's record: 4 attempts, 1 unmet: 3 count." from the real dataset. Student Skill detail A/B: "2 attempts, 0 count" next to the parts. Record A: per skill row; Record B: on each skill's newest row. Question rule reads "A valid attempt needs at least [2] of [3] questions answered Yes" (existing `atLeast` rule, validated, in the sentence and engine; new tests). | `evaluateRule`, `attemptLine`, `Impact.example`; `impact.tsx` AttemptExample; `lib/lab/student.ts` `attemptCountLine`; `lib/lab/student2.ts` `recordAttemptLine` |
+| 5 Frequency | No platform default: a never-configured skill starts with an empty count and the line "Your program sets this number. Nothing is filled in for you."; sentence reads "Not set yet. Your program decides." Different evaluators stays Proposed. | `emptyRule().need = NaN`, `hasNeed`; `fields.tsx`, configure C |
+| 6 Self-rating | Kept beside the evaluator's answer; question model now shows "Student said Yes" under each question. | `components/lab/evaluator/fields.tsx` |
+
+Open: the library model column still reads the v2 model names (`lib/v2/config.ts`, not U1's file). Rule impact A does not show the counting line (word budget 38 of 40).

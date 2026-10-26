@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Student Home</title>
+<meta name="description" content="Student home: what is left in the current course, the one next action, waiting and returned with names, pace, and what changed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<style>
+:root{
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --muted: oklch(0.9560 0.0080 345);
+  --muted-foreground: oklch(0.40 0.014 270);
+  --border: oklch(0.92 0.002 270);
+  --border-control-3: oklch(0.6533 0.0077 268.51);
+  --primary: oklch(0.3457 0.0052 286.13);
+  --primary-foreground: oklch(0.985 0 0);
+  --brand-tint: oklch(0.9695 0.0158 341.4);
+  --brand-tint-subtle: oklch(0.9465 0.0247 348.5);
+  --brand-color: oklch(0.57 0.24 342);
+  --brand-color-dark: oklch(0.42 0.18 342);
+  --sidebar: var(--brand-tint);
+  --sidebar-accent: oklch(0.9465 0.0247 348.5);
+  --sidebar-border: oklch(0.9152 0.0394 347.1);
+  --ring: var(--brand-color-dark);
+  --status-badge-success-fill: oklch(0.952 0.029 126);
+  --status-badge-success-fg: oklch(0.386 0.107 135.9);
+  --status-badge-info-fill: oklch(0.953 0.018 245.4);
+  --status-badge-info-fg: oklch(0.385 0.110 253.2);
+  --status-badge-warning-fill: oklch(0.953 0.029 80.7);
+  --status-badge-warning-fg: oklch(0.386 0.084 62.5);
+  --status-badge-neutral-fill: oklch(0.952 0 0);
+  --status-badge-neutral-fg: oklch(0.386 0 0);
+  --radius: 0.5rem;
+  --control-height: 40px;
+  --control-height-sm: 32px;
+  --font-heading: "ivypresto-text", Georgia, serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --text-xs: 12px; --text-sm: 14px; --text-md: 15px; --text-base: 16px;
+  /* PROPOSED viz layer tokens (not in DS). Magnitude = neutral slate; shortfall = amber; Prism sequential for matrices. */
+  --viz-mark: oklch(0.48 0.02 270);
+  --viz-mark-soft: oklch(0.78 0.01 270);
+  --viz-grid: oklch(0.94 0.002 270);
+  --viz-shortfall: oklch(0.68 0.15 68);
+  --viz-age-1: oklch(0.90 0.006 270);
+  --viz-age-2: oklch(0.78 0.01 270);
+  --viz-age-3: oklch(0.60 0.014 270);
+  --viz-age-4: oklch(0.38 0.018 270);
+  --viz-seq-1: oklch(0.985 0.006 345);
+  --viz-seq-2: oklch(0.955 0.022 345);
+  --viz-seq-3: oklch(0.915 0.042 345);
+  --viz-seq-4: oklch(0.865 0.066 345);
+  --viz-seq-5: oklch(0.80 0.092 345);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:var(--text-sm);line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.frame{width:1440px;margin:0 auto;min-height:100vh;display:grid;grid-template-columns:240px 1fr;grid-template-rows:48px 1fr;background:var(--background)}
+.util{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid var(--border);background:var(--background)}
+.util .sep{width:1px;height:20px;background:var(--border)}
+.prod{display:flex;align-items:center;gap:8px;font-weight:600;font-size:var(--text-md)}
+.prod .mark{width:24px;height:24px;border-radius:6px;background:var(--brand-color);display:grid;place-items:center;color:var(--primary-foreground);font-size:12px;font-weight:700}
+.crumb{font-size:var(--text-md)}
+.util .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.scope{display:inline-flex;align-items:center;gap:6px;height:var(--control-height-sm);padding:0 10px;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);font-size:var(--text-sm)}
+.search{display:flex;align-items:center;gap:8px;width:300px;height:var(--control-height-sm);padding:0 10px;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);color:var(--muted-foreground)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--brand-tint-subtle);display:grid;place-items:center;font-size:12px;font-weight:600}
+.iconbtn{width:32px;height:32px;display:grid;place-items:center;border-radius:calc(var(--radius) - 2px);color:var(--foreground)}
+.rail{background:var(--sidebar);border-right:1px solid var(--sidebar-border);padding:8px}
+.nav a{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:calc(var(--radius) - 2px);text-decoration:none;font-size:var(--text-sm)}
+.nav a.on{background:var(--background);font-weight:600;box-shadow:0 0 0 1px var(--sidebar-border)}
+.nav .count{margin-left:auto;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:var(--primary);color:var(--primary-foreground);font-size:12px;font-weight:600;display:grid;place-items:center}
+.nav svg{width:16px;height:16px;flex:none}
+.rail .railnote{margin:16px 10px 0;font-size:12px;color:var(--muted-foreground)}
+main{padding:20px 32px 56px;min-width:0}
+.ph{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px}
+.ph h1{font-family:var(--font-heading);font-weight:400;font-size:30px;line-height:1.15;margin:0}
+.ph p{margin:4px 0 0;color:var(--muted-foreground);font-size:var(--text-sm)}
+.ph .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.sample{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:999px;background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg);font-size:12px;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:var(--control-height-sm);padding:0 12px;border-radius:calc(var(--radius) - 2px);font-size:var(--text-sm);font-weight:500;text-decoration:none;border:1px solid transparent;white-space:nowrap;cursor:pointer;font-family:inherit}
+.btn-default{background:var(--primary);color:var(--primary-foreground)}
+.btn-outline{background:var(--background);border-color:var(--border-control-3);color:var(--foreground)}
+.btn-ghost{background:transparent;color:var(--foreground)}
+.btn-xs{height:28px;padding:0 10px;font-size:13px}
+.g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.s3{grid-column:span 3}.s4{grid-column:span 4}.s5{grid-column:span 5}.s6{grid-column:span 6}.s7{grid-column:span 7}.s8{grid-column:span 8}.s9{grid-column:span 9}.s12{grid-column:span 12}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px oklch(0 0 0 / 0.04)}
+.card > .hd{display:flex;align-items:baseline;gap:4px 12px;padding:16px 20px 0;flex-wrap:wrap}
+.card > .hd .q{order:3;flex-basis:100%}
+.card > .hd h2{font-size:var(--text-base);font-weight:600;margin:0}
+.card > .hd .q{color:var(--muted-foreground);font-size:var(--text-sm)}
+.card > .hd .more{margin-left:auto;font-size:var(--text-sm)}
+.card > .bd{padding:12px 20px 16px}
+.section-title{font-size:var(--text-base);font-weight:600;margin:28px 0 12px;display:flex;align-items:baseline;gap:12px}
+.section-title .q{font-weight:400;color:var(--muted-foreground);font-size:var(--text-sm)}
+.muted{color:var(--muted-foreground)}
+.num{font-variant-numeric:tabular-nums}
+.link{text-decoration:underline;text-decoration-color:var(--border-control-3);text-underline-offset:3px}
+.link:hover{text-decoration-color:var(--foreground)}
+/* hero band */
+.hero{display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;padding:20px 24px;border:1px solid var(--border);border-radius:12px;background:linear-gradient(0deg,var(--background),var(--background))}
+.hero .glyph{width:56px;height:56px;border-radius:14px;background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg);display:grid;place-items:center}
+.hero .glyph.ok{background:var(--status-badge-success-fill);color:var(--status-badge-success-fg)}
+.hero .glyph.neutral{background:var(--brand-tint);color:var(--brand-color-dark)}
+.hero .glyph svg{width:28px;height:28px}
+.hero .big{font-size:48px;font-weight:600;line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.hero .big small{display:inline-block;font-size:20px;font-weight:500;color:var(--muted-foreground);letter-spacing:0}
+.hero .sent{font-size:17px;line-height:1.4;margin-top:6px;max-width:640px}
+.hero .sub{margin-top:8px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+/* KPI flat strip */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:20px 0 4px}
+.kpi{padding:14px 20px;border-left:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end;text-decoration:none}
+.kpi:first-child{border-left:0;padding-left:0}
+.kpi .l{grid-column:1/-1;font-size:var(--text-sm);color:var(--muted-foreground)}
+.kpi .v{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .v small{font-size:var(--text-sm);font-weight:400;color:var(--muted-foreground)}
+.kpi .d{grid-column:1/-1;font-size:12px;color:var(--muted-foreground)}
+.kpi:hover .v{text-decoration:underline;text-underline-offset:4px}
+/* status pill (StatusBadge mirror) */
+.pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill svg{width:13px;height:13px}
+.pill.success{background:var(--status-badge-success-fill);color:var(--status-badge-success-fg)}
+.pill.info{background:var(--status-badge-info-fill);color:var(--status-badge-info-fg)}
+.pill.warning{background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg)}
+.pill.neutral{background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg)}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--muted-foreground);white-space:nowrap}
+/* lists and tables (DS Table / DataTable mirror) */
+.rows{list-style:none;margin:0;padding:0}
+.rows li{display:grid;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+.rows li:first-child{border-top:0}
+table.t{width:100%;border-collapse:collapse;font-size:var(--text-sm)}
+table.t th{text-align:left;font-weight:500;color:var(--muted-foreground);font-size:13px;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.t td a{white-space:nowrap}
+table.t td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.t tr:last-child td{border-bottom:0}
+table.t td.r,table.t th.r{text-align:right;font-variant-numeric:tabular-nums}
+details.tbl{margin-top:10px;font-size:var(--text-sm)}
+details.tbl summary{cursor:pointer;color:var(--foreground);font-weight:500;list-style:none;display:inline-flex;gap:6px;align-items:center}
+details.tbl summary::before{content:"";width:0;height:0;border-left:5px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent}
+details.tbl[open] summary::before{transform:rotate(90deg)}
+details.tbl table{margin-top:8px}
+figcaption.sum{font-size:var(--text-sm);color:var(--foreground);margin:0 0 8px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted-foreground);align-items:center;margin-bottom:6px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend svg{flex:none}
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--border);margin:4px 0 16px}
+.tabs a{padding:10px 0;text-decoration:none;color:var(--muted-foreground);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:var(--foreground);border-color:var(--foreground)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);padding:2px;gap:2px;background:var(--background)}
+.seg a{padding:4px 10px;border-radius:5px;text-decoration:none;font-size:13px;color:var(--muted-foreground)}
+.seg a.on{background:var(--muted);color:var(--foreground);font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--border-control-3);border-radius:999px;font-size:13px;background:var(--background)}
+.chip.on{background:var(--muted)}
+.rail-card + .rail-card{margin-top:16px}
+.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-foreground)}
+svg text{font-family:var(--font-sans)}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="frame" data-mockup="student-home.html">
+  <header class="util" aria-label="Utility bar">
+    <span class="iconbtn" role="button" tabindex="0" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></span>
+    <span class="prod"><span class="mark" aria-hidden="true">P</span>Clinical Education <span style="width:14px;height:14px;display:inline-block" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span></span>
+    <span class="sep" aria-hidden="true"></span>
+    <span class="crumb">Home</span>
+    <span class="right">
+      
+      <span class="avatar" role="button" tabindex="0" aria-label="Profile menu, Student view. Switch view lives here">MF</span>
+    </span>
+  </header>
+  <nav class="rail" aria-label="Student navigation">
+    <div class="nav"><a href="#" class="on" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>Home</span></a><a href="#" class="" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg><span>Log</span></a><a href="#" class="" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg><span>Record</span></a></div>
+    <p class="railnote">Student view. Proposed 3-row nav.</p>
+  </nav>
+  <main id="main-content" tabindex="-1">
+<div class="ph"><div><h1>Home</h1><p>Maya Ferreira, Cohort 2027. NURS 350, Fall 2026.</p></div><div class="actions"><span class="sample"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Sample data</span><span class="seg" role="group" aria-label="Scope"><a href="#" class="on">NURS 350</a><a href="#">All courses</a></span></div></div>
+<section class="hero" aria-labelledby="sh-t">
+  <div class="glyph ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg></div>
+  <div><div class="big num" id="sh-t">6 <small>of 12 required sign-offs counted</small></div>
+  <div class="sent">2 are waiting and 1 came back to fix. You are on pace: 6 were expected by now.</div></div>
+  <figure style="margin:0"><svg width="300" height="64" viewBox="0 0 300 64" role="img" aria-label="12 required sign-offs in NURS 350: 6 counted, 2 waiting, 1 returned, 3 still to do"><defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--status-badge-neutral-fill)"/><line x1="0" y1="0" x2="0" y2="5" stroke="var(--status-badge-neutral-fg)" stroke-width="1.6"/></pattern></defs>
+<g transform="translate(0,6)"><g transform="translate(0,0)"><rect width="18" height="18" rx="3" fill="var(--status-badge-success-fg)"/></g><g transform="translate(22,0)"><rect width="18" height="18" rx="3" fill="var(--status-badge-success-fg)"/></g><g transform="translate(44,0)"><rect width="18" height="18" rx="3" fill="var(--status-badge-success-fg)"/></g><text x="0" y="40" font-size="12" fill="var(--muted-foreground)">Vital signs</text></g><g transform="translate(76,6)"><g transform="translate(0,0)"><rect width="18" height="18" rx="3" fill="var(--status-badge-success-fg)"/></g><g transform="translate(22,0)"><rect width="18" height="18" rx="3" fill="var(--status-badge-success-fg)"/></g><g transform="translate(44,0)"><rect x=".75" y=".75" width="16.5" height="16.5" rx="3" fill="url(#hatch)" stroke="var(--status-badge-neutral-fg)" stroke-width="1.5"/></g><text x="0" y="40" font-size="12" fill="var(--muted-foreground)">Catheter</text></g><g transform="translate(152,6)"><g transform="translate(0,0)"><rect width="18" height="18" rx="3" fill="var(--status-badge-success-fg)"/></g><g transform="translate(22,0)"><rect x=".75" y=".75" width="16.5" height="16.5" rx="3" fill="var(--status-badge-warning-fill)" stroke="var(--status-badge-warning-fg)" stroke-width="1.5" stroke-dasharray="2 2"/></g><g transform="translate(44,0)"><rect x=".75" y=".75" width="16.5" height="16.5" rx="3" fill="none" stroke="var(--border-control-3)" stroke-width="1.5"/></g><text x="0" y="40" font-size="12" fill="var(--muted-foreground)">Oral meds</text></g><g transform="translate(228,6)"><g transform="translate(0,0)"><rect x=".75" y=".75" width="16.5" height="16.5" rx="3" fill="url(#hatch)" stroke="var(--status-badge-neutral-fg)" stroke-width="1.5"/></g><g transform="translate(22,0)"><rect x=".75" y=".75" width="16.5" height="16.5" rx="3" fill="none" stroke="var(--border-control-3)" stroke-width="1.5"/></g><g transform="translate(44,0)"><rect x=".75" y=".75" width="16.5" height="16.5" rx="3" fill="none" stroke="var(--border-control-3)" stroke-width="1.5"/></g><text x="0" y="40" font-size="12" fill="var(--muted-foreground)">Glucose</text></g></svg>
+  <div class="legend" style="margin:0"><span><svg width="12" height="12"><rect width="12" height="12" rx="2" fill="var(--status-badge-success-fg)"/></svg>Counted</span><span><svg width="12" height="12"><defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--status-badge-neutral-fill)"/><line x1="0" y1="0" x2="0" y2="5" stroke="var(--status-badge-neutral-fg)" stroke-width="1.6"/></pattern></defs><rect x=".5" y=".5" width="11" height="11" rx="2" fill="url(#hatch)" stroke="var(--status-badge-neutral-fg)"/></svg>Waiting</span><span><svg width="12" height="12"><rect x=".5" y=".5" width="11" height="11" rx="2" fill="var(--status-badge-warning-fill)" stroke="var(--status-badge-warning-fg)" stroke-dasharray="2 2"/></svg>Returned</span><span><svg width="12" height="12"><rect x=".5" y=".5" width="11" height="11" rx="2" fill="none" stroke="var(--border-control-3)"/></svg>Still to do</span></div></figure>
+</section>
+<div class="g12" style="margin-top:24px">
+  <div class="s8">
+    <article class="card" style="border-color:var(--status-badge-warning-fg)"><div class="bd" style="padding:20px">
+      <div style="display:flex;gap:10px;align-items:center"><span class="pill warning"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4L2.5 7.5 6 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5h6.5a4 4 0 010 8H8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Do this next</span><span class="muted">Returned Oct 16 by L. Haddad, reviewer</span></div>
+      <h2 style="font-size:20px;font-weight:600;margin:10px 0 4px">Fix and send Oral medication administration again</h2>
+      <p style="margin:0 0 14px">"Add the medication name and route." Your other answers are kept, and this stays the same submission.</p>
+      <a href="#" class="btn btn-default" style="height:40px;padding:0 18px">Fix and send again</a>
+    </div></article>
+    <h2 class="section-title">Mandatory in NURS 350 <span class="q">4 skills, 12 sign-offs</span></h2>
+    <div class="card"><ul class="rows" style="padding:0 20px">
+      <li style="grid-template-columns:1fr 80px 120px"><span><a href="#" class="link" style="font-weight:500">Vital signs and early warning score</a> <span class="tag">Basic Skills</span><br><span class="muted">Achieved Oct 17. Signed by S. Okonkwo, RN, and 2 others.</span></span><svg width="74" height="20" aria-hidden="true"><defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--status-badge-neutral-fill)"/><line x1="0" y1="0" x2="0" y2="5" stroke="var(--status-badge-neutral-fg)" stroke-width="1.6"/></pattern></defs><g transform="translate(1,1)"><circle cx="9" cy="9" r="8" fill="var(--status-badge-success-fg)"/><path d="M5.5 9.2l2.3 2.3 4.6-4.8" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round"/></g><g transform="translate(25,1)"><circle cx="9" cy="9" r="8" fill="var(--status-badge-success-fg)"/><path d="M5.5 9.2l2.3 2.3 4.6-4.8" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round"/></g><g transform="translate(49,1)"><circle cx="9" cy="9" r="8" fill="var(--status-badge-success-fg)"/><path d="M5.5 9.2l2.3 2.3 4.6-4.8" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round"/></g></svg><span style="justify-self:end"><span class="pill success"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Achieved</span></span></li><li style="grid-template-columns:1fr 80px 120px"><span><a href="#" class="link" style="font-weight:500">Indwelling urinary catheter insertion</a> <span class="tag">Elimination</span><br><span class="muted">2 of 3 counted. 1 waiting with J. Delgado, RN, for 4 days.</span></span><svg width="74" height="20" aria-hidden="true"><defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--status-badge-neutral-fill)"/><line x1="0" y1="0" x2="0" y2="5" stroke="var(--status-badge-neutral-fg)" stroke-width="1.6"/></pattern></defs><g transform="translate(1,1)"><circle cx="9" cy="9" r="8" fill="var(--status-badge-success-fg)"/><path d="M5.5 9.2l2.3 2.3 4.6-4.8" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round"/></g><g transform="translate(25,1)"><circle cx="9" cy="9" r="8" fill="var(--status-badge-success-fg)"/><path d="M5.5 9.2l2.3 2.3 4.6-4.8" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round"/></g><g transform="translate(49,1)"><circle cx="9" cy="9" r="7.5" fill="url(#hatch)" stroke="var(--status-badge-neutral-fg)" stroke-width="1.5"/></g></svg><span style="justify-self:end"><span class="pill info"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.8a6.2 6.2 0 010 12.4z" fill="currentColor"/></svg>In progress</span></span></li><li style="grid-template-columns:1fr 80px 120px"><span><a href="#" class="link" style="font-weight:500">Oral medication administration</a> <span class="tag">Medications</span><br><span class="muted">1 of 3 counted. 1 returned by L. Haddad: add the medication name and route.</span></span><svg width="74" height="20" aria-hidden="true"><defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--status-badge-neutral-fill)"/><line x1="0" y1="0" x2="0" y2="5" stroke="var(--status-badge-neutral-fg)" stroke-width="1.6"/></pattern></defs><g transform="translate(1,1)"><circle cx="9" cy="9" r="8" fill="var(--status-badge-success-fg)"/><path d="M5.5 9.2l2.3 2.3 4.6-4.8" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round"/></g><g transform="translate(25,1)"><circle cx="9" cy="9" r="7.5" fill="var(--status-badge-warning-fill)" stroke="var(--status-badge-warning-fg)" stroke-width="1.5" stroke-dasharray="2 2"/></g><g transform="translate(49,1)"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--border-control-3)" stroke-width="1.5"/></g></svg><span style="justify-self:end"><span class="pill warning"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4L2.5 7.5 6 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5h6.5a4 4 0 010 8H8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Returned</span></span></li><li style="grid-template-columns:1fr 80px 120px"><span><a href="#" class="link" style="font-weight:500">Point-of-care blood glucose</a> <span class="tag">Nutrition</span><br><span class="muted">0 of 3 counted. 1 signed by M. Castillo, RN, waiting for approval.</span></span><svg width="74" height="20" aria-hidden="true"><defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="var(--status-badge-neutral-fill)"/><line x1="0" y1="0" x2="0" y2="5" stroke="var(--status-badge-neutral-fg)" stroke-width="1.6"/></pattern></defs><g transform="translate(1,1)"><circle cx="9" cy="9" r="7.5" fill="url(#hatch)" stroke="var(--status-badge-neutral-fg)" stroke-width="1.5"/></g><g transform="translate(25,1)"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--border-control-3)" stroke-width="1.5"/></g><g transform="translate(49,1)"><circle cx="9" cy="9" r="7.5" fill="none" stroke="var(--border-control-3)" stroke-width="1.5"/></g></svg><span style="justify-self:end"><span class="pill info"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.8a6.2 6.2 0 010 12.4z" fill="currentColor"/></svg>In progress</span></span></li>
+    </ul></div>
+    <h2 class="section-title">Not mandatory in NURS 350 <span class="q">3 skills, likely for this placement</span></h2>
+    <div class="card"><ul class="rows" style="padding:0 20px">
+      <li style="grid-template-columns:1fr 120px"><span><a href="#" class="link" style="font-weight:500">Sterile dressing change</a><br><span class="muted">1 counted. Needs approval after the evaluator signs.</span></span><span style="justify-self:end"><span class="pill info"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 1.8a6.2 6.2 0 010 12.4z" fill="currentColor"/></svg>In progress</span></span></li>
+      <li style="grid-template-columns:1fr 120px"><span><a href="#" class="link" style="font-weight:500">NG tube insertion</a><br><span class="muted">No evidence yet.</span></span><span style="justify-self:end"><span class="pill neutral"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>No evidence yet</span></span></li>
+      <li style="grid-template-columns:1fr 120px"><span><a href="#" class="link" style="font-weight:500">Pressure injury risk assessment</a><br><span class="muted">No evidence yet.</span></span><span style="justify-self:end"><span class="pill neutral"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>No evidence yet</span></span></li>
+    </ul></div>
+  </div>
+  <aside class="s4" aria-label="Pace and changes">
+    <article class="card rail-card"><div class="hd"><h2>Am I on pace?</h2></div><div class="bd"><figure style="margin:0"><figcaption class="sum">On pace. 6 counted, 6 expected by week 8 of 16.</figcaption>
+      <div class="legend"><span><svg width="16" height="8"><line x1="0" x2="16" y1="4" y2="4" stroke="var(--status-badge-success-fg)" stroke-width="2.5"/></svg>Counted</span><span><svg width="16" height="8"><line x1="0" x2="16" y1="4" y2="4" stroke="var(--foreground)" stroke-dasharray="4 4"/></svg>Expected</span><span><svg width="16" height="8"><line x1="0" x2="16" y1="4" y2="4" stroke="var(--status-badge-neutral-fg)" stroke-dasharray="3 3" stroke-width="2"/></svg>If waiting count</span></div>
+      <svg width="330" height="170" viewBox="0 0 330 170" role="img" aria-labelledby="bu-t"><title id="bu-t">Counted sign-offs by week against the expected line. Week 8 of 16: 6 counted, 6 expected, 8 if both waiting sign-offs count.</title><line x1="30" x2="316" y1="144" y2="144" stroke="var(--viz-grid)"/><text x="24" y="148" font-size="12" text-anchor="end" fill="var(--muted-foreground)">0</text><line x1="30" x2="316" y1="78" y2="78" stroke="var(--viz-grid)"/><text x="24" y="82" font-size="12" text-anchor="end" fill="var(--muted-foreground)">6</text><line x1="30" x2="316" y1="12" y2="12" stroke="var(--viz-grid)"/><text x="24" y="16" font-size="12" text-anchor="end" fill="var(--muted-foreground)">12</text><line x1="30" y1="144" x2="316" y2="12" stroke="var(--foreground)" stroke-dasharray="4 4"/><path d="M30 144L47.875 144L65.75 133L83.625 133L101.5 122L119.375 111L137.25 100.00000000000001L155.125 88.99999999999999L173 78" fill="none" stroke="var(--status-badge-success-fg)" stroke-width="2.5"/><path d="M173 78L183.725 56.00000000000001" stroke="var(--status-badge-neutral-fg)" stroke-width="2" stroke-dasharray="3 3"/><circle cx="173" cy="78" r="4" fill="var(--status-badge-success-fg)"/><line x1="173" x2="173" y1="12" y2="144" stroke="var(--border-control-3)"/><text x="179" y="22" font-size="12" fill="var(--foreground)">Today</text><text x="30" y="164" font-size="12" fill="var(--muted-foreground)">Aug 24</text><text x="316" y="164" font-size="12" text-anchor="end" fill="var(--muted-foreground)">Dec 11</text></svg><details class="tbl"><summary>Show as table</summary><table class="t"><thead><tr><th>Week</th><th class="r">Counted</th><th class="r">Expected</th></tr></thead><tbody><tr><td>4</td><td class="r">1</td><td class="r">3</td></tr><tr><td>6</td><td class="r">3</td><td class="r">4.5</td></tr><tr><td>8 (today)</td><td class="r">6</td><td class="r">6</td></tr></tbody></table></details></figure></div></article>
+    <article class="card rail-card"><div class="hd"><h2>Waiting on others</h2><span class="q">2</span></div><div class="bd"><ul class="rows">
+      <li style="grid-template-columns:1fr auto"><span><strong>J. Delgado, RN</strong>, preceptor<br><span class="muted">Catheter insertion, sent Oct 15</span></span><span class="pill neutral"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.6V8l2.3 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>4 days</span></li>
+      <li style="grid-template-columns:1fr auto"><span><strong>Program approval</strong><br><span class="muted">Blood glucose, signed by M. Castillo, RN</span></span><span class="pill neutral"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.6V8l2.3 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>3 days</span></li>
+    </ul><p style="margin:10px 0 0"><a href="#" class="link">Resend or change evaluator</a></p></div></article>
+    <article class="card rail-card"><div class="hd"><h2>What changed for you</h2></div><div class="bd"><ul class="rows">
+      <li style="grid-template-columns:18px 1fr"><span style="width:16px;height:16px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>S. Okonkwo, RN signed Vital signs. It counted, and the skill is achieved. <span class="muted">Oct 17</span></span></li>
+      <li style="grid-template-columns:18px 1fr"><span style="width:16px;height:16px;color:var(--status-badge-warning-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4L2.5 7.5 6 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5h6.5a4 4 0 010 8H8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span>L. Haddad returned Oral medication administration with a note. <span class="muted">Oct 16</span></span></li>
+      <li style="grid-template-columns:18px 1fr"><span style="width:16px;height:16px;color:var(--status-badge-neutral-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 4.6V8l2.3 1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span><span>M. Castillo, RN signed Blood glucose. It waits for program approval. <span class="muted">Oct 16</span></span></li>
+    </ul></div></article>
+  </aside>
+</div>
+    <p class="foot">Mockup for design review. Sample data generated to match docs/knowledge/dataset-spec.md (123 students in 3 cohorts, 154 skills, 404 waiting requests). Not real people or sites.</p>
+  </main>
+</div>
+</body>
+</html>

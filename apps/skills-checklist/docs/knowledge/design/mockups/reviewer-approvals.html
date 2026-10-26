@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Approvals Queue</title>
+<meta name="description" content="Reviewer approvals: queue oldest first with the reason each evaluation is held, an aging unit chart and an evaluator outlier strip.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<style>
+:root{
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --muted: oklch(0.9560 0.0080 345);
+  --muted-foreground: oklch(0.40 0.014 270);
+  --border: oklch(0.92 0.002 270);
+  --border-control-3: oklch(0.6533 0.0077 268.51);
+  --primary: oklch(0.3457 0.0052 286.13);
+  --primary-foreground: oklch(0.985 0 0);
+  --brand-tint: oklch(0.9695 0.0158 341.4);
+  --brand-tint-subtle: oklch(0.9465 0.0247 348.5);
+  --brand-color: oklch(0.57 0.24 342);
+  --brand-color-dark: oklch(0.42 0.18 342);
+  --sidebar: var(--brand-tint);
+  --sidebar-accent: oklch(0.9465 0.0247 348.5);
+  --sidebar-border: oklch(0.9152 0.0394 347.1);
+  --ring: var(--brand-color-dark);
+  --status-badge-success-fill: oklch(0.952 0.029 126);
+  --status-badge-success-fg: oklch(0.386 0.107 135.9);
+  --status-badge-info-fill: oklch(0.953 0.018 245.4);
+  --status-badge-info-fg: oklch(0.385 0.110 253.2);
+  --status-badge-warning-fill: oklch(0.953 0.029 80.7);
+  --status-badge-warning-fg: oklch(0.386 0.084 62.5);
+  --status-badge-neutral-fill: oklch(0.952 0 0);
+  --status-badge-neutral-fg: oklch(0.386 0 0);
+  --radius: 0.5rem;
+  --control-height: 40px;
+  --control-height-sm: 32px;
+  --font-heading: "ivypresto-text", Georgia, serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --text-xs: 12px; --text-sm: 14px; --text-md: 15px; --text-base: 16px;
+  /* PROPOSED viz layer tokens (not in DS). Magnitude = neutral slate; shortfall = amber; Prism sequential for matrices. */
+  --viz-mark: oklch(0.48 0.02 270);
+  --viz-mark-soft: oklch(0.78 0.01 270);
+  --viz-grid: oklch(0.94 0.002 270);
+  --viz-shortfall: oklch(0.68 0.15 68);
+  --viz-age-1: oklch(0.90 0.006 270);
+  --viz-age-2: oklch(0.78 0.01 270);
+  --viz-age-3: oklch(0.60 0.014 270);
+  --viz-age-4: oklch(0.38 0.018 270);
+  --viz-seq-1: oklch(0.985 0.006 345);
+  --viz-seq-2: oklch(0.955 0.022 345);
+  --viz-seq-3: oklch(0.915 0.042 345);
+  --viz-seq-4: oklch(0.865 0.066 345);
+  --viz-seq-5: oklch(0.80 0.092 345);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:var(--text-sm);line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.frame{width:1440px;margin:0 auto;min-height:100vh;display:grid;grid-template-columns:240px 1fr;grid-template-rows:48px 1fr;background:var(--background)}
+.util{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid var(--border);background:var(--background)}
+.util .sep{width:1px;height:20px;background:var(--border)}
+.prod{display:flex;align-items:center;gap:8px;font-weight:600;font-size:var(--text-md)}
+.prod .mark{width:24px;height:24px;border-radius:6px;background:var(--brand-color);display:grid;place-items:center;color:var(--primary-foreground);font-size:12px;font-weight:700}
+.crumb{font-size:var(--text-md)}
+.util .right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.scope{display:inline-flex;align-items:center;gap:6px;height:var(--control-height-sm);padding:0 10px;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);font-size:var(--text-sm)}
+.search{display:flex;align-items:center;gap:8px;width:300px;height:var(--control-height-sm);padding:0 10px;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);color:var(--muted-foreground)}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--brand-tint-subtle);display:grid;place-items:center;font-size:12px;font-weight:600}
+.iconbtn{width:32px;height:32px;display:grid;place-items:center;border-radius:calc(var(--radius) - 2px);color:var(--foreground)}
+.rail{background:var(--sidebar);border-right:1px solid var(--sidebar-border);padding:8px}
+.nav a{display:flex;align-items:center;gap:10px;height:36px;padding:0 10px;border-radius:calc(var(--radius) - 2px);text-decoration:none;font-size:var(--text-sm)}
+.nav a.on{background:var(--background);font-weight:600;box-shadow:0 0 0 1px var(--sidebar-border)}
+.nav .count{margin-left:auto;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:var(--primary);color:var(--primary-foreground);font-size:12px;font-weight:600;display:grid;place-items:center}
+.nav svg{width:16px;height:16px;flex:none}
+.rail .railnote{margin:16px 10px 0;font-size:12px;color:var(--muted-foreground)}
+main{padding:20px 32px 56px;min-width:0}
+.ph{display:flex;align-items:flex-start;gap:16px;margin-bottom:20px}
+.ph h1{font-family:var(--font-heading);font-weight:400;font-size:30px;line-height:1.15;margin:0}
+.ph p{margin:4px 0 0;color:var(--muted-foreground);font-size:var(--text-sm)}
+.ph .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.sample{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:999px;background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg);font-size:12px;font-weight:500}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:var(--control-height-sm);padding:0 12px;border-radius:calc(var(--radius) - 2px);font-size:var(--text-sm);font-weight:500;text-decoration:none;border:1px solid transparent;white-space:nowrap;cursor:pointer;font-family:inherit}
+.btn-default{background:var(--primary);color:var(--primary-foreground)}
+.btn-outline{background:var(--background);border-color:var(--border-control-3);color:var(--foreground)}
+.btn-ghost{background:transparent;color:var(--foreground)}
+.btn-xs{height:28px;padding:0 10px;font-size:13px}
+.g12{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:24px}
+.s3{grid-column:span 3}.s4{grid-column:span 4}.s5{grid-column:span 5}.s6{grid-column:span 6}.s7{grid-column:span 7}.s8{grid-column:span 8}.s9{grid-column:span 9}.s12{grid-column:span 12}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px oklch(0 0 0 / 0.04)}
+.card > .hd{display:flex;align-items:baseline;gap:4px 12px;padding:16px 20px 0;flex-wrap:wrap}
+.card > .hd .q{order:3;flex-basis:100%}
+.card > .hd h2{font-size:var(--text-base);font-weight:600;margin:0}
+.card > .hd .q{color:var(--muted-foreground);font-size:var(--text-sm)}
+.card > .hd .more{margin-left:auto;font-size:var(--text-sm)}
+.card > .bd{padding:12px 20px 16px}
+.section-title{font-size:var(--text-base);font-weight:600;margin:28px 0 12px;display:flex;align-items:baseline;gap:12px}
+.section-title .q{font-weight:400;color:var(--muted-foreground);font-size:var(--text-sm)}
+.muted{color:var(--muted-foreground)}
+.num{font-variant-numeric:tabular-nums}
+.link{text-decoration:underline;text-decoration-color:var(--border-control-3);text-underline-offset:3px}
+.link:hover{text-decoration-color:var(--foreground)}
+/* hero band */
+.hero{display:grid;grid-template-columns:auto 1fr auto;gap:24px;align-items:center;padding:20px 24px;border:1px solid var(--border);border-radius:12px;background:linear-gradient(0deg,var(--background),var(--background))}
+.hero .glyph{width:56px;height:56px;border-radius:14px;background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg);display:grid;place-items:center}
+.hero .glyph.ok{background:var(--status-badge-success-fill);color:var(--status-badge-success-fg)}
+.hero .glyph.neutral{background:var(--brand-tint);color:var(--brand-color-dark)}
+.hero .glyph svg{width:28px;height:28px}
+.hero .big{font-size:48px;font-weight:600;line-height:1;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+.hero .big small{display:inline-block;font-size:20px;font-weight:500;color:var(--muted-foreground);letter-spacing:0}
+.hero .sent{font-size:17px;line-height:1.4;margin-top:6px;max-width:640px}
+.hero .sub{margin-top:8px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+/* KPI flat strip */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:20px 0 4px}
+.kpi{padding:14px 20px;border-left:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:2px 12px;align-items:end;text-decoration:none}
+.kpi:first-child{border-left:0;padding-left:0}
+.kpi .l{grid-column:1/-1;font-size:var(--text-sm);color:var(--muted-foreground)}
+.kpi .v{font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .v small{font-size:var(--text-sm);font-weight:400;color:var(--muted-foreground)}
+.kpi .d{grid-column:1/-1;font-size:12px;color:var(--muted-foreground)}
+.kpi:hover .v{text-decoration:underline;text-underline-offset:4px}
+/* status pill (StatusBadge mirror) */
+.pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill svg{width:13px;height:13px}
+.pill.success{background:var(--status-badge-success-fill);color:var(--status-badge-success-fg)}
+.pill.info{background:var(--status-badge-info-fill);color:var(--status-badge-info-fg)}
+.pill.warning{background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg)}
+.pill.neutral{background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg)}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--muted-foreground);white-space:nowrap}
+/* lists and tables (DS Table / DataTable mirror) */
+.rows{list-style:none;margin:0;padding:0}
+.rows li{display:grid;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--border)}
+.rows li:first-child{border-top:0}
+table.t{width:100%;border-collapse:collapse;font-size:var(--text-sm)}
+table.t th{text-align:left;font-weight:500;color:var(--muted-foreground);font-size:13px;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.t td a{white-space:nowrap}
+table.t td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.t tr:last-child td{border-bottom:0}
+table.t td.r,table.t th.r{text-align:right;font-variant-numeric:tabular-nums}
+details.tbl{margin-top:10px;font-size:var(--text-sm)}
+details.tbl summary{cursor:pointer;color:var(--foreground);font-weight:500;list-style:none;display:inline-flex;gap:6px;align-items:center}
+details.tbl summary::before{content:"";width:0;height:0;border-left:5px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent}
+details.tbl[open] summary::before{transform:rotate(90deg)}
+details.tbl table{margin-top:8px}
+figcaption.sum{font-size:var(--text-sm);color:var(--foreground);margin:0 0 8px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted-foreground);align-items:center;margin-bottom:6px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend svg{flex:none}
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--border);margin:4px 0 16px}
+.tabs a{padding:10px 0;text-decoration:none;color:var(--muted-foreground);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs a.on{color:var(--foreground);border-color:var(--foreground)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:calc(var(--radius) - 2px);padding:2px;gap:2px;background:var(--background)}
+.seg a{padding:4px 10px;border-radius:5px;text-decoration:none;font-size:13px;color:var(--muted-foreground)}
+.seg a.on{background:var(--muted);color:var(--foreground);font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid var(--border-control-3);border-radius:999px;font-size:13px;background:var(--background)}
+.chip.on{background:var(--muted)}
+.rail-card + .rail-card{margin-top:16px}
+.foot{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted-foreground)}
+svg text{font-family:var(--font-sans)}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="frame" data-mockup="reviewer-approvals.html">
+  <header class="util" aria-label="Utility bar">
+    <span class="iconbtn" role="button" tabindex="0" aria-label="Toggle sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></svg></span>
+    <span class="prod"><span class="mark" aria-hidden="true">P</span>Clinical Education <span style="width:14px;height:14px;display:inline-block" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span></span>
+    <span class="sep" aria-hidden="true"></span>
+    <span class="crumb">Approvals</span>
+    <span class="right">
+      <span class="scope" aria-label="Program">Nursing ADN, Fall 2026 <span style="width:14px;height:14px;display:inline-block" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span></span>
+      <span class="search" role="search"><span style="width:16px;height:16px;display:inline-block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg></span>Search students, skills, evaluators</span>
+      <span class="avatar" role="button" tabindex="0" aria-label="Profile menu, Reviewer view. Switch view lives here">LH</span>
+    </span>
+  </header>
+  <nav class="rail" aria-label="Reviewer navigation">
+    <div class="nav"><a href="#" class="on" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 12l3 3 5-6"/></svg><span>Approvals</span><span class="count" aria-label="14 waiting">14</span></a><a href="#" class="" ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.5-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 010 7M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/></svg><span>Students</span></a></div>
+    <p class="railnote">Reviewer view. Proposed 2-row nav.</p>
+  </nav>
+  <main id="main-content" tabindex="-1">
+<div class="ph"><div><h1>Approvals</h1><p>Evaluations held before they count. Approve to count them, or return with a reason.</p></div><div class="actions"><span class="sample"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 8h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Sample data</span></div></div>
+<section class="hero" aria-labelledby="rv-t">
+  <div class="glyph neutral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 2h6l1-2h5"/></svg></div>
+  <div><div class="big num" id="rv-t">20 <small>evaluations in 14 submissions wait for you</small></div>
+  <div class="sent">2 have waited more than 10 days. 5 of the 14 come from T. Brandt, RN, whose evaluations are returned or fall short 3.5 times as often as average.</div>
+  <div class="sub"><a href="#" class="btn btn-outline btn-xs">Start with the oldest</a><a href="#" class="link">Show T. Brandt's 5</a></div></div>
+  <div></div>
+</section>
+<div class="g12" style="margin-top:24px">
+  <div class="s7"><article class="card"><div class="hd"><h2>How long have they waited?</h2><span class="q">Each square is a submission, labelled with days waiting</span></div><div class="bd"><figure style="margin:0">
+    <div class="legend"><span><svg width="14" height="14"><rect x="1.5" y="1.5" width="11" height="11" rx="3" fill="var(--viz-age-3)" stroke="var(--viz-shortfall)" stroke-width="3"/></svg>From T. Brandt, RN</span><span>Nudge at 3 days; none over 14 today</span></div><svg width="612" height="92" viewBox="0 0 612 92" role="img" aria-labelledby="un-t"><title id="un-t">14 submissions by days waiting: 4 at 0 to 3 days, 5 at 4 to 7 days, 5 at 8 to 14 days, none at 15 or more. Outlined squares come from T. Brandt, RN.</title><rect x="1" y="7" width="20" height="20" rx="4" fill="var(--viz-age-2)" stroke="var(--viz-shortfall)" stroke-width="3"/><text x="11" y="21" font-size="12" text-anchor="middle" fill="var(--foreground)" font-weight="600">3</text><rect x="28" y="7" width="20" height="20" rx="4" fill="var(--viz-age-2)" /><text x="38" y="21" font-size="12" text-anchor="middle" fill="var(--foreground)" font-weight="600">2</text><rect x="55" y="7" width="20" height="20" rx="4" fill="var(--viz-age-2)" /><text x="65" y="21" font-size="12" text-anchor="middle" fill="var(--foreground)" font-weight="600">2</text><rect x="82" y="7" width="20" height="20" rx="4" fill="var(--viz-age-2)" /><text x="92" y="21" font-size="12" text-anchor="middle" fill="var(--foreground)" font-weight="600">1</text><line x1="0" x2="140" y1="38" y2="38" stroke="var(--border)"/><text x="0" y="58" font-size="13" font-weight="600" fill="var(--foreground)">4 submissions</text><text x="0" y="76" font-size="12" fill="var(--muted-foreground)">0 to 3 days</text><rect x="158" y="7" width="20" height="20" rx="4" fill="var(--viz-age-3)" stroke="var(--viz-shortfall)" stroke-width="3"/><text x="168" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">7</text><rect x="185" y="7" width="20" height="20" rx="4" fill="var(--viz-age-3)" /><text x="195" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">6</text><rect x="212" y="7" width="20" height="20" rx="4" fill="var(--viz-age-3)" stroke="var(--viz-shortfall)" stroke-width="3"/><text x="222" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">5</text><rect x="239" y="7" width="20" height="20" rx="4" fill="var(--viz-age-3)" /><text x="249" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">5</text><rect x="266" y="7" width="20" height="20" rx="4" fill="var(--viz-age-3)" /><text x="276" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">4</text><line x1="157" x2="297" y1="38" y2="38" stroke="var(--border)"/><text x="157" y="58" font-size="13" font-weight="600" fill="var(--foreground)">5 submissions</text><text x="157" y="76" font-size="12" fill="var(--muted-foreground)">4 to 7 days</text><rect x="315" y="7" width="20" height="20" rx="4" fill="var(--viz-age-4)" /><text x="325" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">14</text><rect x="342" y="7" width="20" height="20" rx="4" fill="var(--viz-age-4)" /><text x="352" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">12</text><rect x="369" y="7" width="20" height="20" rx="4" fill="var(--viz-age-4)" stroke="var(--viz-shortfall)" stroke-width="3"/><text x="379" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">9</text><rect x="396" y="7" width="20" height="20" rx="4" fill="var(--viz-age-4)" /><text x="406" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">9</text><rect x="423" y="7" width="20" height="20" rx="4" fill="var(--viz-age-4)" stroke="var(--viz-shortfall)" stroke-width="3"/><text x="433" y="21" font-size="12" text-anchor="middle" fill="var(--background)" font-weight="600">8</text><line x1="314" x2="454" y1="38" y2="38" stroke="var(--border)"/><text x="314" y="58" font-size="13" font-weight="600" fill="var(--foreground)">5 submissions</text><text x="314" y="76" font-size="12" fill="var(--muted-foreground)">8 to 14 days</text><text x="471" y="22" font-size="12" fill="var(--muted-foreground)">None</text><line x1="471" x2="611" y1="38" y2="38" stroke="var(--border)"/><text x="471" y="58" font-size="13" font-weight="600" fill="var(--foreground)">0 submissions</text><text x="471" y="76" font-size="12" fill="var(--muted-foreground)">15 days or more</text></svg>
+    <details class="tbl"><summary>Show as table</summary><table class="t"><thead><tr><th>Days waiting</th><th class="r">Submissions</th><th class="r">From T. Brandt, RN</th></tr></thead><tbody><tr><td>0 to 3</td><td class="r">4</td><td class="r">1</td></tr><tr><td>4 to 7</td><td class="r">5</td><td class="r">2</td></tr><tr><td>8 to 14</td><td class="r">5</td><td class="r">2</td></tr><tr><td>15 or more</td><td class="r">0</td><td class="r">0</td></tr></tbody></table></details></figure></div></article></div>
+  <div class="s5"><article class="card"><div class="hd"><h2>Is one evaluator an outlier?</h2></div><div class="bd"><figure style="margin:0"><figcaption class="sum">2 of 98 evaluators are returned or fall short 3 times as often as average or more. Evaluators with fewer than 30 evaluations are not compared.</figcaption><svg width="418" height="150" viewBox="0 0 418 150" role="img" aria-labelledby="ev-t"><title id="ev-t">Share of each evaluator's evaluations returned or not meeting criteria, for 98 evaluators with 30 or more evaluations. Program average 4.8 percent. T. Brandt, RN 16.7 percent on 48; K. Vance, RN 14.6 percent on 41.</title><line x1="8" x2="8" y1="14" y2="120" stroke="var(--viz-grid)"/><text x="8" y="138" font-size="12" text-anchor="start" fill="var(--muted-foreground)">0%</text><line x1="106.5" x2="106.5" y1="14" y2="120" stroke="var(--viz-grid)"/><text x="106.5" y="138" font-size="12" text-anchor="middle" fill="var(--muted-foreground)">5%</text><line x1="205" x2="205" y1="14" y2="120" stroke="var(--viz-grid)"/><text x="205" y="138" font-size="12" text-anchor="middle" fill="var(--muted-foreground)">10%</text><line x1="303.5" x2="303.5" y1="14" y2="120" stroke="var(--viz-grid)"/><text x="303.5" y="138" font-size="12" text-anchor="middle" fill="var(--muted-foreground)">15%</text><line x1="402" x2="402" y1="14" y2="120" stroke="var(--viz-grid)"/><text x="402" y="138" font-size="12" text-anchor="middle" fill="var(--muted-foreground)">20%</text><circle cx="8" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="8" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="13.392710213726383" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="13.673349973456931" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="22.585257919449354" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="23.936372869824986" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="25.356359682222823" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="32.54568669520318" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="38.40007338364608" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="44.152361349961716" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="47.739853153298604" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="48.818303602226074" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="49.94995819352567" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="53.06609576818533" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="57.0171546196239" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="57.80082764179911" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="61.354919342966745" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="61.96832912875339" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="63.173996793748806" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="66.42574318329804" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="66.48970904288814" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="67.01489011297468" cy="45" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="68.29597809369676" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="69.31590008497238" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="70.19848223967944" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="72.21074913122226" cy="87" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="73.39906323451083" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="75.77219070837833" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="77.0019109034352" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="77.95571224234533" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="78.43897586531472" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="79.23154253053013" cy="45" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="79.43937798933126" cy="87" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="80.3613079026714" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="84.63308469165582" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="86.02317208872643" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="86.59058670274914" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="87.94216899847612" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="88.46562443633098" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="88.68462128000334" cy="45" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="89.97026497201529" cy="87" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="96.68939621228725" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="97.09746408747975" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="97.9026626540022" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="98.67231288465206" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="99.81476288294886" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="100.47078588203527" cy="45" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="106.20564279327169" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="106.29739191889763" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="106.7466183152888" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="111.05788727716077" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="111.7617827645177" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="111.90237548802048" cy="45" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="112.141990132574" cy="87" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="113.1637676302949" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="115.42684534186498" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="116.49757789582014" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="116.66712894541212" cy="38" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="117.16725759388879" cy="94" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="118.53129538399168" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="119.03325747658033" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="120.33880476450082" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="120.82320384081919" cy="45" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="121.58440325752832" cy="87" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="122.10369895940181" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="122.7513743467303" cy="31" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="122.93260673672427" cy="101" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="123.6377133590309" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="123.8127726989938" cy="38" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="126.21082430269104" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="126.34267015959136" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="126.98079638654832" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="131.95478036691435" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="132.41870124050416" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="134.07992618246004" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="134.44847275881563" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="137.03254164144397" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="141.3303615471255" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="144.82900631608442" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="145.06262273510453" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="145.0914833172597" cy="52" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="146.51985312829726" cy="80" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="146.6398755697906" cy="45" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="146.84919585573022" cy="87" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="146.92599350778852" cy="38" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="147.65255818021484" cy="94" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="150.22107591579203" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="151.34540789941326" cy="31" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="151.7603772027092" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="156.28886543092318" cy="73" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="168.4929725223361" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="171.36585161270577" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="184.01490957167934" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="197.69760206475857" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="216.3197295664018" cy="66" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><circle cx="220.7890429243585" cy="59" r="3" fill="var(--viz-mark)" fill-opacity="0.55"/><line x1="102.56" x2="102.56" y1="14" y2="120" stroke="var(--foreground)" stroke-dasharray="3 3"/><text x="106.56" y="12" font-size="12" fill="var(--foreground)">Average 4.8%</text><path d="M336.99 43.5L343.49 50L336.99 56.5L330.49 50Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/><text x="336.99" y="36" font-size="12" text-anchor="middle" font-weight="600" fill="var(--status-badge-warning-fg)">T. Brandt, RN, 8 of 48</text><path d="M295.62 75.5L302.12 82L295.62 88.5L289.12 82Z" fill="var(--viz-shortfall)" stroke="var(--status-badge-warning-fg)"/><text x="295.62" y="106" font-size="12" text-anchor="middle" font-weight="600" fill="var(--status-badge-warning-fg)">K. Vance, RN, 6 of 41</text></svg>
+    <details class="tbl"><summary>Show as table</summary><table class="t"><thead><tr><th>Evaluator</th><th class="r">Evaluations</th><th class="r">Returned or did not meet</th><th class="r">Rate</th></tr></thead><tbody><tr><td><a href="#" class="link">T. Brandt, RN</a></td><td class="r">48</td><td class="r">8</td><td class="r">16.7%</td></tr><tr><td><a href="#" class="link">K. Vance, RN</a></td><td class="r">41</td><td class="r">6</td><td class="r">14.6%</td></tr><tr><td>Program, all evaluators</td><td class="r">8,879</td><td class="r">424</td><td class="r">4.8%</td></tr></tbody></table></details></figure></div></article></div>
+</div>
+<div class="tabs" role="tablist" style="margin-top:28px"><a href="#" class="on" role="tab" aria-selected="true">Awaiting approval (14)</a><a href="#" role="tab">Stalled requests (141)</a><a href="#" role="tab">Returned (64)</a></div>
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap"><span class="chip">Held because: any</span><span class="chip">Evaluator: any</span><span class="chip">Unverified evaluator</span><span class="chip">Waiting 8 days or more</span><span class="muted" style="margin-left:auto">14 submissions, oldest first</span><a href="#" class="btn btn-outline btn-xs">Approve selected</a></div>
+<div class="card" style="padding:4px 8px"><table class="t"><thead><tr><th style="width:28px"><span aria-label="Select all" role="checkbox" aria-checked="false" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></th><th>Student</th><th>Skills</th><th>Evaluator</th><th>Held because</th><th>Self and evaluator answers</th><th class="r">Waiting</th><th></th></tr></thead><tbody>
+<tr><td><span role="checkbox" aria-checked="false" aria-label="Select Amara Nwosu" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Amara Nwosu</a></td><td>Point-of-care blood glucose <span class="muted">(1)</span></td>
+<td><a href="#" class="link">J. Delgado, RN</a></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap"><strong>14 days</strong></td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Noah Whitfield" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Noah Whitfield</a></td><td>Vital signs, Oral medication administration <span class="muted">(2)</span></td>
+<td><a href="#" class="link">S. Okonkwo, RN</a></td>
+<td>Skill needs approval</td><td><span class="pill warning"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l7 12.4H1z" fill="currentColor"/><path d="M8 6v3.6M8 11.6v.1" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></svg>1 of 8 differs</span></td>
+<td class="r" style="white-space:nowrap"><strong>12 days</strong></td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Sofia Marchetti" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Sofia Marchetti</a></td><td>Sterile gloving <span class="muted">(1)</span></td>
+<td><a href="#" class="link">T. Brandt, RN</a> <span class="tag" title="Returned or did not meet criteria 3.5 times as often as average">3.5x average</span></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap"><strong>9 days</strong></td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Liam Kowalski" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Liam Kowalski</a></td><td>Sterile dressing <span class="muted">(1)</span></td>
+<td><a href="#" class="link">Dana Pryor</a> <span class="pill neutral"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 14c.6-2.8 2.6-4.2 5-4.2s4.4 1.4 5 4.2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Unverified</span></td>
+<td>New evaluator, not on roster</td><td><span class="muted">No self-rating</span></td>
+<td class="r" style="white-space:nowrap"><strong>9 days</strong></td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Jonah Petrakis" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Jonah Petrakis</a></td><td>Sterile gloving, Sterile dressing <span class="muted">(2)</span></td>
+<td><a href="#" class="link">T. Brandt, RN</a> <span class="tag" title="Returned or did not meet criteria 3.5 times as often as average">3.5x average</span></td>
+<td>Skill needs approval</td><td><span class="pill warning"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l7 12.4H1z" fill="currentColor"/><path d="M8 6v3.6M8 11.6v.1" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></svg>3 of 8 differ</span></td>
+<td class="r" style="white-space:nowrap"><strong>8 days</strong></td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Ines Calderon" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Ines Calderon</a></td><td>Sterile dressing <span class="muted">(1)</span></td>
+<td><a href="#" class="link">T. Brandt, RN</a> <span class="tag" title="Returned or did not meet criteria 3.5 times as often as average">3.5x average</span></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap">7 days</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Maya Ferreira" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Maya Ferreira</a></td><td>Point-of-care blood glucose <span class="muted">(1)</span></td>
+<td><a href="#" class="link">M. Castillo, RN</a></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap">6 days</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Rafael Osei" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Rafael Osei</a></td><td>Sterile gloving, Sterile dressing <span class="muted">(2)</span></td>
+<td><a href="#" class="link">T. Brandt, RN</a> <span class="tag" title="Returned or did not meet criteria 3.5 times as often as average">3.5x average</span></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap">5 days</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Keiko Lindqvist" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Keiko Lindqvist</a></td><td>Sterile dressing <span class="muted">(1)</span></td>
+<td><a href="#" class="link">Jon Delgado, RN</a> <span class="pill neutral"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 14c.6-2.8 2.6-4.2 5-4.2s4.4 1.4 5 4.2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>Unverified</span></td>
+<td>New evaluator, may be J. Delgado, RN</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap">5 days</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Owen Mbeki" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Owen Mbeki</a></td><td>Sterile gloving <span class="muted">(1)</span></td>
+<td><a href="#" class="link">R. Whitmore, lab instructor</a></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap">4 days</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Lena Hartmann" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Lena Hartmann</a></td><td>Sterile dressing, Sterile gloving <span class="muted">(2)</span></td>
+<td><a href="#" class="link">T. Brandt, RN</a> <span class="tag" title="Returned or did not meet criteria 3.5 times as often as average">3.5x average</span></td>
+<td>Skill needs approval</td><td><span class="pill warning"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.6l7 12.4H1z" fill="currentColor"/><path d="M8 6v3.6M8 11.6v.1" stroke="var(--background)" stroke-width="1.6" stroke-linecap="round"/></svg>1 of 8 differs</span></td>
+<td class="r" style="white-space:nowrap">3 days</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Arjun Mehta" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Arjun Mehta</a></td><td>Sterile dressing <span class="muted">(1)</span></td>
+<td><a href="#" class="link">T. Aldridge, LPN</a></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap">2 days</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Chloe Abara" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Chloe Abara</a></td><td>Sterile gloving, Sterile dressing <span class="muted">(2)</span></td>
+<td><a href="#" class="link">C. Ruiz, RN</a></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap">2 days</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr><tr><td><span role="checkbox" aria-checked="false" aria-label="Select Mateo Silva" style="display:inline-block;width:16px;height:16px;border:1.5px solid var(--border-control-3);border-radius:4px"></span></td>
+<td><a href="#" class="link" style="font-weight:500">Mateo Silva</a></td><td>Sterile gloving, Sterile dressing <span class="muted">(2)</span></td>
+<td><a href="#" class="link">P. Lindgren, RN</a></td>
+<td>Skill needs approval</td><td><span style="display:inline-flex;gap:6px;align-items:center"><span style="width:14px;height:14px;color:var(--status-badge-success-fg)"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="currentColor"/><path d="M4.8 8.2l2.1 2.1 4.3-4.6" fill="none" stroke="var(--background)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Agree</span></td>
+<td class="r" style="white-space:nowrap">1 day</td><td><a href="#" class="btn btn-ghost btn-xs">Review</a></td></tr></tbody></table></div>
+    <p class="foot">Mockup for design review. Sample data generated to match docs/knowledge/dataset-spec.md (123 students in 3 cohorts, 154 skills, 404 waiting requests). Not real people or sites.</p>
+  </main>
+</div>
+</body>
+</html>

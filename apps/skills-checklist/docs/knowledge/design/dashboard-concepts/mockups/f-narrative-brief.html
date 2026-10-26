@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Narrative brief</title>
+<meta name="description" content="Concept F: the earlier brief, tightened. One slim verdict line with three figures, two diagnose charts, and the worklist below the fold.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<link rel="stylesheet" href="dash.css">
+<style>
+.verdict{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius)}
+.vt{width:36px;height:36px;border-radius:8px;background:var(--status-badge-warning-fill);display:grid;place-items:center}
+.verdict h2{margin:0;font-size:18px;font-weight:600;line-height:1.3}
+.verdict p{margin:2px 0 0;color:var(--muted-foreground)}
+.mini{display:flex;gap:0}
+.mini a{padding:0 18px;border-left:1px solid var(--border);display:flex;flex-direction:column}
+.mini .l{font-size:12px;color:var(--muted-foreground)}
+.mini .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.mini .v small{font-size:12px;font-weight:400;color:var(--muted-foreground);margin-left:4px}
+.diag{display:grid;grid-template-columns:7fr 5fr;gap:16px;margin-top:16px}
+.lab{font-size:12px;fill:var(--muted-foreground)}
+.labd{font-size:12px;fill:var(--foreground)}
+.need{display:grid;grid-template-columns:16px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--border)}
+.need:first-child{border-top:0}
+</style>
+</head>
+<body>
+<div class="frame"><main>
+  <div class="ph"><h1>Dashboard</h1><div class="act"><span class="chip-sample">Sample data</span><button class="btn outline" type="button">Export</button></div></div>
+
+  <div class="tb" role="form" aria-label="Scope">
+    <span class="sel caret"><span class="k">Term</span><span class="v">Fall 2026</span></span>
+    <span class="sel caret"><span class="k">Cohort</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Course</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Filters</span><span class="v">0</span></span>
+    <span class="sp"></span>
+    <span class="sel caret"><span class="k">Compare with</span><span class="v">Expected now</span></span>
+    <span class="vsep"></span>
+    <span class="asof">As of Oct 26, 09:40</span>
+    <button class="btn outline icon" type="button" aria-label="Refresh figures">&#8635;</button>
+  </div>
+
+  <section class="verdict" aria-label="Verdict">
+    <span class="vt" aria-hidden="true"><span class="dia" style="width:12px;height:12px"></span></span>
+    <div><h2>28 of 123 students are behind the term clock</h2><p>19 of them are short in IV therapy. <a class="lnk" href="#" style="color:var(--foreground)">View the 28</a></p></div>
+    <div class="mini">
+      <a href="#"><span class="l">Required achieved</span><span class="v">49%<small>of 1,547</small></span></a>
+      <a href="#"><span class="l">Waiting with evaluators</span><span class="v">252<small>31 at 15+ days</small></span></a>
+      <a href="#"><span class="l">Awaiting approval</span><span class="v">20<small>3 over 10 days</small></span></a>
+    </div>
+  </section>
+
+  <div class="diag">
+    <section class="card"><div class="hd"><h2>Who is behind, and by how much?</h2><span class="meta">each mark is a student</span><a class="more" href="#">Attainment</a></div>
+      <div class="bd"><div class="legend" style="margin-bottom:6px"><span><span class="dia"></span>Behind</span><span><span class="dot" style="background:var(--viz-soft)"></span>On pace or ahead</span><span>Split by: None</span></div><div id="strip"></div></div></section>
+    <section class="card"><div class="hd"><h2>Which sections lag?</h2><span class="meta">points under expected</span><a class="more" href="#">Sections</a></div>
+      <div class="bd" id="lag"></div></section>
+  </div>
+
+  <section class="card" style="margin-top:16px" aria-label="Needs you">
+    <div class="hd"><h2>Needs you</h2><span class="meta">oldest first</span></div>
+    <div class="bd" id="needs"></div>
+  </section>
+
+  <p class="note">Concept F, narrative brief tightened. Mockup for design review; sample data. The verdict is one line and the three figures sit in the same band. Needs you still lands inside 900 px, so this concept is one region over budget unless Needs you moves below the fold or into Approvals.</p>
+</main></div>
+<script src="dash.js"></script>
+<script>
+shell('Dashboard');
+// beeswarm of 123 gaps (points from expected)
+(function(){
+  const r = prng(7), gaps = [-41,-37,-35,-31,-29,-27,-22,-20,-16];
+  while (gaps.length < 28) gaps.push(-9 - Math.round(r()*14));
+  while (gaps.length < 123) gaps.push(Math.round(-7 + r()*40 + (r()-.5)*10));
+  const W = 640, H = 210, x0 = 20, x = g => x0 + (g + 45) / 90 * (W - 40), mid = 100, cols = {};
+  let out = '';
+  [-40,-20,0,20,40].forEach(g=>{ out += `<line x1="${x(g)}" x2="${x(g)}" y1="16" y2="${H-26}" stroke="${g===0?'var(--foreground)':'var(--viz-grid)'}" stroke-width="${g===0?1.5:1}"/><text x="${x(g)}" y="${H-8}" text-anchor="middle" class="${g===0?'labd':'lab'}">${g===0?'Expected now':(g>0?'+':'')+g}</text>`; });
+  gaps.sort((a,b)=>a-b).forEach((g,i)=>{ const b = Math.round(x(g)/9); cols[b]=(cols[b]||0)+1; const k=cols[b], yy = mid + (k%2?-1:1)*Math.floor(k/2)*9; const xx=b*9;
+    out += i<28 ? `<rect x="${xx-4}" y="${yy-4}" width="8" height="8" transform="rotate(45 ${xx} ${yy})" fill="var(--viz-short)"/>` : `<circle cx="${xx}" cy="${yy}" r="3.6" fill="var(--viz-soft)"/>`; });
+  out += `<text x="${x(-44)}" y="12" class="lab">Behind</text><text x="${x(44)}" y="12" text-anchor="end" class="lab">Ahead</text>`;
+  strip.innerHTML = `<svg width="${W}" height="${H}" role="img" aria-label="28 of 123 students are behind; the furthest is 41 points under expected">${out}</svg>`;
+})();
+(function(){
+  const d=[['IV therapy',35],['Medications',15],['Oxygenation',17],['Dressings and changes',17],['Emotional and cognitive',13],['Teaching and learning',6]].sort((a,b)=>b[1]-a[1]);
+  let out='', y=14; const W=420, x0=160, sc=(W-x0-30)/40;
+  d.forEach(([n,v],i)=>{ const xe=x0+v*sc;
+    out+=`<text x="0" y="${y+4}" class="labd">${n}</text><line x1="${x0}" x2="${xe}" y1="${y}" y2="${y}" stroke="var(--viz-soft)" stroke-width="2"/>`+(i===0?`<rect x="${xe-5}" y="${y-5}" width="10" height="10" transform="rotate(45 ${xe} ${y})" fill="var(--viz-short)"/>`:`<circle cx="${xe}" cy="${y}" r="4" fill="var(--viz-ink)"/>`)+`<text x="${xe+10}" y="${y+4}" class="lab">${v}</text>`; y+=30;});
+  lag.innerHTML = `<svg width="${W}" height="186" role="img" aria-label="IV therapy is 35 points under expected; next are Oxygenation and Dressings at 17">${out}</svg><div class="muted" style="font-size:12px">4 other sections are 5 points or less under, or ahead</div>`;
+})();
+needs.innerHTML = [
+  ['dia','3 approvals have waited more than 10 days','Approvals'],
+  ['dot','4 requests stalled with evaluators, longest 34 days','Stalled requests'],
+  ['dot','3 unverified evaluators hold requests older than 8 days','Evaluators'],
+  ['dot','16 skills need configuring before students can use them','Skills'],
+].map(([g,t,l])=>`<div class="need"><span class="${g}"></span><span>${t}</span><a class="lnk muted" href="#">${l}</a></div>`).join('');
+</script>
+</body>
+</html>

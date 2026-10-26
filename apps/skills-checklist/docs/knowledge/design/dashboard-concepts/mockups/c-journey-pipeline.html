@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Journey pipeline</title>
+<meta name="description" content="Concept C: every required skill record as a pipeline through the four engine states, overall and per section, with this week's movement.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<link rel="stylesheet" href="dash.css">
+<style>
+.stages{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:var(--radius)}
+.stage{padding:14px 16px 12px;border-left:1px solid var(--border);display:grid;grid-template-rows:auto auto 64px auto;align-content:start;gap:4px;position:relative}
+.stage:first-child{border-left:0}
+.stage .l{font-size:12px;color:var(--muted-foreground);display:flex;gap:6px;align-items:center}
+.stage .v{font-size:24px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.stage .v small{font-size:13px;font-weight:400;color:var(--muted-foreground);margin-left:4px}
+.stage .d{font-size:12px;color:var(--muted-foreground)}
+.stage .flow{position:absolute;left:-11px;top:44px;width:22px;height:22px;border-radius:50%;background:var(--background);border:1px solid var(--border);display:grid;place-items:center;font-size:12px;color:var(--muted-foreground)}
+.secs{margin-top:16px}
+.srow{display:grid;grid-template-columns:220px 1fr 84px 84px 100px 84px;align-items:center;gap:12px;height:36px;border-top:1px solid var(--border);padding:0 16px;font-size:13px}
+.srow.shd{height:34px;border-top:0;color:var(--muted-foreground);font-size:12px}
+.srow .n{text-align:right;font-variant-numeric:tabular-nums}
+.srow.flag{background:var(--brand-tint-light)}
+.hatch{background-image:repeating-linear-gradient(135deg,var(--viz-soft) 0 2px,transparent 2px 5px)}
+</style>
+</head>
+<body>
+<div class="frame"><main>
+  <div class="ph"><h1>Dashboard</h1><div class="act"><span class="chip-sample">Sample data</span><button class="btn outline" type="button">Export</button></div></div>
+
+  <div class="tb" role="form" aria-label="Scope">
+    <span class="sel caret"><span class="k">Term</span><span class="v">Fall 2026</span></span>
+    <span class="sel caret"><span class="k">Cohort</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Course</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Filters</span><span class="v">0</span></span>
+    <span class="sp"></span>
+    <span class="sel caret"><span class="k">Movement</span><span class="v">Last 7 days</span></span>
+    <span class="vsep"></span>
+    <span class="asof">As of Oct 26, 09:40</span>
+    <button class="btn outline icon" type="button" aria-label="Refresh figures">&#8635;</button>
+  </div>
+
+  <div class="stages" id="stages" aria-label="1,547 required skill records by state"></div>
+
+  <section class="card secs" aria-label="By section">
+    <div class="hd"><h2>Where does each section sit?</h2><span class="meta">required skill records, 10 sections. Tick: 58% expected achieved now</span><a class="more" href="#">Open in Attainment</a></div>
+    <div class="bd" style="padding:8px 0 4px">
+      <div class="srow shd"><span>Section</span><span></span><span class="n">Achieved</span><span class="n">In progress</span><span class="n">None qualifies</span><span class="n">No evidence</span></div>
+      <div id="rows"></div>
+    </div>
+  </section>
+
+  <p class="note">Concept C, journey pipeline. Mockup for design review; sample data. Unit is a required skill record (one student, one required skill in their course): 1,547 in scope. Hatched: a request is waiting with an evaluator; waiting never counts.</p>
+</main></div>
+<script src="dash.js"></script>
+<script>
+shell('Dashboard');
+const C = ['var(--viz-ink)','var(--viz-mark)','var(--viz-soft)','var(--viz-faint)'];
+const ST = [
+  ['No evidence yet',412,118,'27%','+0','12 left this week'],
+  ['Evidence, none qualifies',96,22,'6%','+9','9 new, 3 resolved'],
+  ['In progress',279,112,'18%','+31','31 started this week'],
+  ['Achieved',760,0,'49%','+48','48 achieved this week'],
+];
+const order=[3,2,1,0]; // render No evidence -> Achieved left to right
+stages.innerHTML = order.map((ci,k)=>{ const [n,v,w,p,dl,d] = ST[k]; const bh = Math.max(v/760*60,4), wh = w/760*60;
+  return `<div class="stage">${k?'<span class="flow" aria-hidden="true">&#8250;</span>':''}<span class="l"><span class="sw" style="background:${C[ci]}"></span>${n}</span><span class="v">${v.toLocaleString()}<small>${p}</small></span>
+  <svg width="100%" height="64" viewBox="0 0 240 64" preserveAspectRatio="none" aria-hidden="true"><rect x="0" y="${64-bh}" width="240" height="${bh}" rx="3" fill="${C[ci]}" stroke="var(--viz-soft)"/>${w?`<rect x="0" y="${64-bh}" width="240" height="${wh}" fill="url(#h${k})"/>`:''}<defs><pattern id="h${k}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="${C[ci]}"/><line x1="0" y1="0" x2="0" y2="6" stroke="var(--background)" stroke-width="2.5"/></pattern></defs></svg>
+  <span class="d">${d}${w?`. ${w} waiting with an evaluator`:''}</span></div>`; }).join('');
+const S = [
+  ['Basic skills',30,8,40,168],['Safety',35,10,38,122],['Medications',45,12,37,70],['IV therapy',95,22,40,48],['Oxygenation',38,9,26,50],
+  ['Elimination',30,6,22,65],['Mobility',25,5,20,73],['Dressings and changes',40,10,22,51],['Emotional and cognitive',40,8,20,55],['Teaching and learning',34,6,14,58]];
+rows.innerHTML = S.map(([n,ne,nq,ip,a])=>{ const t=ne+nq+ip+a, w=440, segs=[[a,C[0]],[ip,C[1]],[nq,C[2]],[ne,C[3]]]; let x=0, r='';
+  segs.forEach(([v,c])=>{ const sw=v/t*w; r+=`<rect x="${x}" y="3" width="${Math.max(sw-1.5,0)}" height="12" rx="2" fill="${c}"/>`; x+=sw;});
+  const tick = .58*w, flag = a/t < .58-.2;
+  return `<div class="srow ${flag?'flag':''}"><span style="display:flex;gap:8px;align-items:center">${flag?'<span class="dia"></span>':'<span style="width:8px"></span>'}<span class="lnk">${n}</span><span class="muted">${t}</span></span>
+  <svg width="${w+10}" height="18" aria-label="${n}: ${Math.round(a/t*100)}% achieved">${r}<line x1="${tick}" x2="${tick}" y1="0" y2="18" stroke="var(--foreground)" stroke-width="1.5"/>${flag?`<text x="${tick+6}" y="-2"></text>`:''}</svg>
+  <span class="n ${flag?'short':''}">${a} <span class="muted">${Math.round(a/t*100)}%</span></span><span class="n">${ip}</span><span class="n">${nq}</span><span class="n">${ne}</span></div>`; }).join('');
+</script>
+</body>
+</html>

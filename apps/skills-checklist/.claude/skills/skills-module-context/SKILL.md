@@ -8,6 +8,7 @@ description: Load FIRST on any task in apps/skills-checklist (Prism Skills Track
 Before answering or designing anything in this product:
 
 1. Read `apps/skills-checklist/docs/README.md` (index, tags, 10 easy-to-get-wrong facts).
+2. For any design, UX, copy, chart or nav task, also read `docs/knowledge/00-design-brief.md`, `docs/knowledge/glossary.md` and `docs/knowledge/02-decisions-ledger.md` first and state that you did (skill `skills-design-brief`).
 2. Open only what the task needs:
    - *Why / so-what / strategy* → `docs/strategy/01-problem-and-why.md`
    - *Rules, states, engine* → `docs/strategy/02-domain-model-and-achievement-engine.md`

@@ -1,0 +1,145 @@
+/* Dashboard concept mockups. Token values copied from @exxatdesignux/ui 1.6.5 src/globals.css (:root and .theme-prism:not(.dark)).
+   Viz tokens marked PROPOSED are not in the DS; they are neutral ramps plus one amber for shortfall. */
+:root{
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --muted: oklch(0.9560 0.0080 345);
+  --muted-foreground: oklch(0.40 0.014 270);
+  --border: oklch(0.92 0.002 270);
+  --border-control-3: oklch(0.6533 0.0077 268.51);
+  --primary: oklch(0.3457 0.0052 286.13);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.9601 0.0120 345);
+  --accent: oklch(0.9465 0.0180 348);
+  --brand-tint: oklch(0.9695 0.0158 341.4);
+  --brand-tint-light: oklch(0.9834 0.0100 345.4);
+  --brand-tint-subtle: oklch(0.9465 0.0247 348.5);
+  --brand-color: oklch(0.57 0.24 342);
+  --brand-color-dark: oklch(0.42 0.18 342);
+  --sidebar: var(--brand-tint);
+  --sidebar-border: oklch(0.9152 0.0394 347.1);
+  --status-badge-warning-fill: oklch(0.953 0.029 80.7);
+  --status-badge-warning-fg: oklch(0.386 0.084 62.5);
+  --status-badge-neutral-fill: oklch(0.952 0 0);
+  --status-badge-neutral-fg: oklch(0.386 0 0);
+  --status-badge-success-fill: oklch(0.952 0.029 126);
+  --status-badge-success-fg: oklch(0.386 0.107 135.9);
+  --radius: 0.5rem;
+  --control-height-sm: 32px;
+  --table-row-height: 48px;
+  --shell-utility-bar-height: 42px;
+  --font-heading: "ivypresto-text", Georgia, serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* PROPOSED viz layer */
+  --viz-ink: oklch(0.42 0.016 270);
+  --viz-mark: oklch(0.56 0.014 270);
+  --viz-soft: oklch(0.80 0.008 270);
+  --viz-faint: oklch(0.92 0.004 270);
+  --viz-grid: oklch(0.95 0.002 270);
+  --viz-short: oklch(0.70 0.15 70);
+  --viz-short-ink: oklch(0.45 0.10 62);
+  --viz-seq-0: oklch(0.975 0.004 345);
+  --viz-seq-1: oklch(0.945 0.016 345);
+  --viz-seq-2: oklch(0.900 0.032 345);
+  --viz-seq-3: oklch(0.840 0.052 345);
+  --viz-seq-4: oklch(0.760 0.070 345);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--background);color:var(--foreground);font-family:var(--font-sans);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+svg{display:block}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted-foreground)}
+.short{color:var(--viz-short-ink)}
+
+/* Shell */
+.frame{width:1440px;min-height:900px;display:grid;grid-template-columns:240px 1fr;grid-template-rows:var(--shell-utility-bar-height) 1fr}
+.util{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 12px;border-bottom:1px solid var(--border)}
+.util .mark{width:22px;height:22px;border-radius:6px;background:var(--brand-color);color:var(--primary-foreground);display:grid;place-items:center;font-size:12px;font-weight:700}
+.util .prod{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}
+.util .crumb{color:var(--muted-foreground);font-size:13px}
+.util .sep{width:1px;height:18px;background:var(--border)}
+.util .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.util .search{width:260px;height:30px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;padding:0 10px;color:var(--muted-foreground);font-size:13px}
+.util .av{width:26px;height:26px;border-radius:50%;background:var(--brand-tint-subtle);display:grid;place-items:center;font-size:12px;font-weight:600}
+.rail{background:var(--sidebar);border-right:1px solid var(--sidebar-border);padding:8px}
+.rail a{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;border-radius:6px;font-size:13px}
+.rail a.on{background:var(--background);font-weight:600;box-shadow:0 0 0 1px var(--sidebar-border)}
+.rail .ct{margin-left:auto;min-width:22px;height:20px;padding:0 6px;border-radius:999px;background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg);font-size:12px;font-weight:600;display:grid;place-items:center}
+.rail .ic{width:14px;height:14px;border-radius:3px;background:var(--viz-soft)}
+.rail a.on .ic{background:var(--viz-ink)}
+main{padding:16px 24px 40px;min-width:0}
+
+/* Page header (DS PageHeader, compact) */
+.ph{display:flex;align-items:center;gap:12px;height:36px}
+.ph h1{font-family:var(--font-heading);font-weight:600;font-size:20px;line-height:1.25;letter-spacing:-0.01em;margin:0}
+.ph .sub{color:var(--muted-foreground);font-size:13px}
+.ph .act{margin-left:auto;display:flex;gap:8px;align-items:center}
+.chip-sample{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg);font-size:12px;font-weight:500}
+
+/* Buttons (DS Button size sm = 32px) */
+.btn{display:inline-flex;align-items:center;gap:6px;height:var(--control-height-sm);padding:0 12px;border-radius:6px;font-size:13px;font-weight:500;border:1px solid transparent;white-space:nowrap;background:none;font-family:inherit;color:inherit}
+.btn.outline{border-color:var(--border-control-3);background:var(--background)}
+.btn.ghost{color:var(--foreground)}
+.btn.icon{width:32px;padding:0;justify-content:center}
+.btn.xs{height:26px;padding:0 8px;font-size:12px}
+.caret::after{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px);margin-left:4px;opacity:.6}
+
+/* Toolbar: one row, 32px controls, label inside the chip (Snowflake / Shopify pattern) */
+.tb{display:flex;align-items:center;gap:8px;margin:12px 0 16px}
+.sel{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--background);white-space:nowrap}
+.sel .k{color:var(--muted-foreground)}
+.sel .v{font-weight:500}
+.sel.applied{background:var(--brand-tint-light);border-color:var(--sidebar-border)}
+.tb .sp{flex:1}
+.asof{font-size:12px;color:var(--muted-foreground);white-space:nowrap}
+.vsep{width:1px;height:20px;background:var(--border)}
+
+/* Cards */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius)}
+.card .hd{display:flex;align-items:baseline;gap:8px;padding:12px 16px 0}
+.card .hd h2{font-size:13px;font-weight:600;margin:0}
+.card .hd .meta{color:var(--muted-foreground);font-size:12px}
+.card .hd .more{margin-left:auto;font-size:12px;color:var(--muted-foreground);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-control-3)}
+.card .bd{padding:10px 16px 14px}
+.grid{display:grid;gap:16px}
+
+/* Figure strip (DS KeyMetrics variant flat size sm with chart sparkline) */
+.kpis{display:grid;border:1px solid var(--border);border-radius:var(--radius)}
+.kpi{padding:12px 16px;border-left:1px solid var(--border);display:grid;grid-template-columns:1fr auto;align-items:end;gap:2px 12px;min-width:0}
+.kpi:first-child{border-left:0}
+.kpi .l{grid-column:1/-1;font-size:12px;color:var(--muted-foreground);display:flex;gap:6px;align-items:center}
+.kpi .v{font-size:24px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:13px;font-weight:400;color:var(--muted-foreground);margin-left:4px}
+.kpi .d{grid-column:1/-1;font-size:12px;color:var(--muted-foreground)}
+.kpi.sel-on{background:var(--brand-tint-light);box-shadow:inset 0 -2px 0 var(--foreground)}
+.kpi .spark{width:84px;height:28px}
+
+/* Tabs (DS Tabs line + TabsCountBadge) */
+.tabs{display:flex;gap:20px;border-bottom:1px solid var(--border)}
+.tab{display:flex;align-items:center;gap:6px;height:36px;font-size:13px;color:var(--muted-foreground);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--foreground);font-weight:600;border-color:var(--foreground)}
+.tcb{min-width:20px;height:18px;padding:0 6px;border-radius:999px;background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg);font-size:12px;font-weight:600;display:grid;place-items:center}
+
+/* Table (DS DataTable / Table mirror) */
+table.t{width:100%;border-collapse:collapse}
+table.t th{text-align:left;font-weight:500;color:var(--muted-foreground);font-size:12px;padding:0 12px;height:36px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.t td{padding:0 12px;height:44px;border-bottom:1px solid var(--border);font-size:13px;white-space:nowrap}
+table.t tr:last-child td{border-bottom:0}
+table.t td.r,table.t th.r{text-align:right}
+.lnk{text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-control-3)}
+
+/* Status (DS StatusBadge) */
+.pill{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill.warning{background:var(--status-badge-warning-fill);color:var(--status-badge-warning-fg)}
+.pill.neutral{background:var(--status-badge-neutral-fill);color:var(--status-badge-neutral-fg)}
+.pill.success{background:var(--status-badge-success-fill);color:var(--status-badge-success-fg)}
+.dia{display:inline-block;width:8px;height:8px;background:var(--viz-short);transform:rotate(45deg);flex:none}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--viz-mark);flex:none}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted-foreground);align-items:center;flex-wrap:wrap}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px}
+
+/* Annotation for the reviewer of the mockup, outside the design */
+.note{margin-top:20px;font-size:12px;color:var(--muted-foreground);border-top:1px dashed var(--border);padding-top:10px}

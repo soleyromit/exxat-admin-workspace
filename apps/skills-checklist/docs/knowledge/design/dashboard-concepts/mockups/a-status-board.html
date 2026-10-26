@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en" class="theme-prism">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Status board</title>
+<meta name="description" content="Concept A: compact figure strip with sparklines over a grid of six small multiples, one per monitoring question.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://use.typekit.net/wuk5wqn.css">
+<link rel="stylesheet" href="dash.css">
+<style>
+.tiles{grid-template-columns:repeat(3,1fr);margin-top:16px}
+.tile{height:228px;display:flex;flex-direction:column}
+.tile .bd{flex:1;display:flex;flex-direction:column;justify-content:flex-end}
+.tile .cap{font-size:12px;color:var(--muted-foreground);margin-top:6px}
+.lab{font-size:12px;fill:var(--muted-foreground)}
+.labd{font-size:12px;fill:var(--foreground)}
+</style>
+</head>
+<body>
+<div class="frame"><main>
+  <div class="ph"><h1>Dashboard</h1><div class="act"><span class="chip-sample">Sample data</span><button class="btn outline" type="button">Export</button></div></div>
+
+  <div class="tb" role="form" aria-label="Scope">
+    <span class="sel caret"><span class="k">Term</span><span class="v">Fall 2026</span></span>
+    <span class="sel caret"><span class="k">Cohort</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Course</span><span class="v">Any</span></span>
+    <span class="sel caret"><span class="k">Filters</span><span class="v">0</span></span>
+    <span class="sp"></span>
+    <span class="sel caret"><span class="k">Compare with</span><span class="v">Expected now</span></span>
+    <span class="vsep"></span>
+    <span class="asof">As of Oct 26, 09:40</span>
+    <button class="btn outline icon" type="button" aria-label="Refresh figures">&#8635;</button>
+  </div>
+
+  <div class="kpis" style="grid-template-columns:repeat(4,1fr)">
+    <a class="kpi" href="#"><span class="l"><span class="dia"></span>Behind the term clock</span><span class="v">28<small>of 123 students</small></span><span id="s1"></span><span class="d">Up 4 since last week</span></a>
+    <a class="kpi" href="#"><span class="l">Required skills achieved</span><span class="v">49%<small>760 of 1,547</small></span><span id="s2"></span><span class="d">Expected now 58%</span></a>
+    <a class="kpi" href="#"><span class="l">Waiting with evaluators</span><span class="v">252<small>requests</small></span><span id="s3"></span><span class="d">31 waited 15 days or more</span></a>
+    <a class="kpi" href="#"><span class="l">Awaiting approval</span><span class="v">20<small>evaluations</small></span><span id="s4"></span><span class="d">3 waited over 10 days</span></a>
+  </div>
+
+  <div class="grid tiles">
+    <section class="card tile"><div class="hd"><h2>Where are the 28?</h2><span class="meta">by cohort</span><a class="more" href="#">Students</a></div><div class="bd" id="t1"></div></section>
+    <section class="card tile"><div class="hd"><h2>Are we on pace?</h2><span class="meta">required achieved, weekly</span><a class="more" href="#">Attainment</a></div><div class="bd" id="t2"></div></section>
+    <section class="card tile"><div class="hd"><h2>Which sections lag?</h2><span class="meta">points under expected</span><a class="more" href="#">Sections</a></div><div class="bd" id="t3"></div></section>
+    <section class="card tile"><div class="hd"><h2>How old are open requests?</h2><span class="meta">252 requests</span><a class="more" href="#">Stalled</a></div><div class="bd" id="t4"></div></section>
+    <section class="card tile"><div class="hd"><h2>Which sites are stale?</h2><span class="meta">oldest first, 4 of 31</span><a class="more" href="#">All sites</a></div><div class="bd" id="t5"></div></section>
+    <section class="card tile"><div class="hd"><h2>Is evidence still flowing?</h2><span class="meta">counted per week</span><a class="more" href="#">Evaluations</a></div><div class="bd" id="t6"></div></section>
+  </div>
+
+  <p class="note">Concept A, status board. Mockup for design review; sample data, not real people or sites. Each tile title is the question; each mark opens the list behind it.</p>
+</main></div>
+<script src="dash.js"></script>
+<script>
+shell('Dashboard');
+s1.outerHTML = spark([18,19,19,21,22,22,24,24,28], {amber:true});
+s2.outerHTML = spark([12,17,22,27,31,36,40,45,49]);
+s3.outerHTML = spark([190,204,215,230,238,241,247,250,252]);
+s4.outerHTML = spark([14,22,18,25,17,21,24,19,20]);
+
+const W = 340;
+// t1: cohort rows of diamonds and dots (one mark per student behind / on pace scaled 1:1 for behind)
+(function(){
+  const rows = [['Cohort 2027', 43, 19], ['Cohort 2028', 42, 8], ['Cohort 2026', 38, 1]];
+  let y = 18, out = '';
+  rows.forEach(([n, tot, b]) => {
+    out += `<text x="0" y="${y}" class="labd">${n}</text><text x="${W}" y="${y}" text-anchor="end" class="lab">${b} of ${tot}</text>`;
+    for (let i = 0; i < tot; i++) {
+      const x = 4 + i * 7.8, yy = y + 16;
+      out += i < b ? `<rect x="${x-3.5}" y="${yy-3.5}" width="7" height="7" transform="rotate(45 ${x} ${yy})" fill="var(--viz-short)"/>` : `<circle cx="${x}" cy="${yy}" r="2.6" fill="var(--viz-soft)"/>`;
+    }
+    y += 50;
+  });
+  t1.innerHTML = `<svg width="${W}" height="150" role="img" aria-label="28 students behind: 19 in Cohort 2027, 8 in 2028, 1 in 2026">${out}</svg><div class="cap">Diamond: behind the term clock</div>`;
+})();
+// t2: burn-up actual vs expected, weeks 1 to 16, today week 9
+(function(){
+  const act = [5,11,17,23,28,33,38,44,49], exp = Array.from({length:17},(_, i)=> Math.min(100, i*58/9));
+  const h = 130, x = i => 24 + i*(W-34)/16, y = v => h - 18 - v/100*(h-30);
+  const pa = act.map((v,i)=>(i?'L':'M')+x(i+1)+' '+y(v)).join(' ');
+  const pe = exp.map((v,i)=>(i?'L':'M')+x(i)+' '+y(v)).join(' ');
+  let g=''; [0,50,100].forEach(v=>{g+=`<line x1="24" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--viz-grid)"/><text x="0" y="${y(v)+4}" class="lab">${v}%</text>`});
+  t2.innerHTML = `<svg width="${W}" height="${h}" role="img" aria-label="49% achieved in week 9, expected 58%">${g}
+    <path d="${pe}" fill="none" stroke="var(--viz-soft)" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <path d="${pa}" fill="none" stroke="var(--viz-ink)" stroke-width="2"/>
+    <circle cx="${x(9)}" cy="${y(49)}" r="3.5" fill="var(--viz-short)"/>
+    <text x="${x(9)+8}" y="${y(49)+16}" class="labd">49% now</text>
+    <text x="${x(9)-6}" y="${y(62)}" text-anchor="end" class="lab">expected 58%</text>
+    <text x="24" y="${h-2}" class="lab">Week 1</text><text x="${W}" y="${h-2}" text-anchor="end" class="lab">Week 16</text></svg>`;
+})();
+// t3: lollipops of points under expected, top 5 of 10 sections
+(function(){
+  const d = [['IV therapy',35],['Oxygenation',17],['Dressings and changes',17],['Medications',15],['Emotional and cognitive',13]];
+  let out='', y=12; const x0=150, sc=(W-x0-30)/36;
+  d.forEach(([n,v],i)=>{ const xe=x0+v*sc, flag=i===0;
+    out+=`<text x="0" y="${y+4}" class="labd">${n}</text><line x1="${x0}" x2="${xe}" y1="${y}" y2="${y}" stroke="var(--viz-soft)" stroke-width="2"/>`+
+      (flag?`<rect x="${xe-5}" y="${y-5}" width="10" height="10" transform="rotate(45 ${xe} ${y})" fill="var(--viz-short)"/>`:`<circle cx="${xe}" cy="${y}" r="4" fill="var(--viz-ink)"/>`)+
+      `<text x="${xe+10}" y="${y+4}" class="lab">${v}</text>`; y+=27;});
+  t3.innerHTML = `<svg width="${W}" height="140" role="img" aria-label="IV therapy is 35 points under expected, the largest gap">${out}</svg><div class="cap">5 other sections are 6 points or less under, or ahead</div>`;
+})();
+// t4: four age columns
+(function(){
+  const d=[101,63,57,31], h=132, bw=60, gap=(W-4*bw)/3; let out='';
+  d.forEach((v,i)=>{ const bh=v/101*(h-44), x=i*(bw+gap), y=h-20-bh;
+    out+=`<rect x="${x}" y="${y}" width="${bw}" height="${bh}" rx="2" fill="${i===3?'var(--viz-short)':'var(--viz-soft)'}"/><text x="${x+bw/2}" y="${y-6}" text-anchor="middle" class="labd">${v}</text><text x="${x+bw/2}" y="${h-4}" text-anchor="middle" class="lab">${['0 to 3','4 to 7','8 to 14','15+ days'][i]}</text>`;});
+  t4.innerHTML = `<svg width="${W}" height="${h}" role="img" aria-label="Open requests by age: 101, 63, 57, and 31 at 15 days or more">${out}</svg>`;
+})();
+// t5: top 4 stale sites, age stacks
+(function(){
+  const d=[['Maple Ridge Care, 5 East',[0,0,0,7],34],['Meadowbrook Health, Infusion',[7,9,3,6],35],['Northfield Regional, Pediatrics',[1,6,3,4],35],['Maple Ridge Care, Telemetry',[0,0,1,2],30]];
+  let html='';
+  d.forEach(([n,s,old])=>{ const tot=s.reduce((a,b)=>a+b,0);
+    html+=`<div style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-top:8px"><span>${n}</span><span class="muted num">${tot}, oldest ${old} d</span><span style="grid-column:1/-1">${hstack(s.map((v,i)=>({v,c:AGE[i]})),27,{w:W,h:8})}</span></div>`;});
+  t5.innerHTML = html;
+})();
+// t6: weekly counted evaluations, 12 weeks
+(function(){
+  const d=[212,236,248,231,259,244,226,198,171,164,150,141], h=126, bw=(W-11*6)/12; let out='';
+  d.forEach((v,i)=>{ const bh=v/260*(h-30), x=i*(bw+6); out+=`<rect x="${x}" y="${h-18-bh}" width="${bw}" height="${bh}" rx="2" fill="${i>=8?'var(--viz-mark)':'var(--viz-soft)'}"/>`;});
+  out+=`<text x="0" y="${h-2}" class="lab">Aug 3</text><text x="${W}" y="${h-2}" text-anchor="end" class="lab">Oct 19</text>`;
+  t6.innerHTML = `<svg width="${W}" height="${h}" role="img" aria-label="Counted evaluations per week fell from 259 to 141 over the last 8 weeks">${out}</svg><div class="cap">141 last week, lowest this term</div>`;
+})();
+</script>
+</body>
+</html>
