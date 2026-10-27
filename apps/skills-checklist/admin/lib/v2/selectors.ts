@@ -1,7 +1,7 @@
 import type { V2State } from "./types"
 import { waitingFor } from "./preceptor"
 import { approvalsBadgeCount } from "./approvals"
-import { populationRows, populationTotals } from "./population"
+import { isConfigured, populationRows, populationTotals } from "./population"
 import { unsentEntries } from "./student"
 import { verificationRows } from "./verification"
 
@@ -16,7 +16,7 @@ const students = (s: V2State) => s.people.filter((p) => p.kind === "student")
 export const COUNTERS: CounterDef[] = [
   { id: "skills", label: "Skills in the library", value: (s) => s.skills.length },
   { id: "libraries", label: "Specialty libraries", value: (s) => new Set(s.skills.map((k) => k.specialty)).size },
-  { id: "unconfigured", label: "Skills still to configure", value: (s) => s.skills.filter((k) => !k.configured).length },
+  { id: "unconfigured", label: "Skills still to configure", value: (s) => s.skills.filter((k) => !isConfigured(k)).length },
   { id: "published", label: "Skills in use", value: (s) => s.skills.filter((k) => k.published).length },
   { id: "mapped", label: "Skills mapped to the focus course", value: (s) => s.mappings.filter((m) => m.courseId === s.course.id).length },
   // One definition with the dashboard: each student's mandatory skills from their own cohort's offerings this term.

@@ -14,7 +14,6 @@ import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { V2State } from "@/lib/v2/types"
 import { AmberNote, ErrorState, LoadingState, plural, type Opt } from "./parts"
 import { EmptyBlock } from "@/components/lab/empty-block"
-import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { useAdminData, useLists, useMappingOverlay, type AdminData } from "./use-admin-data"
 
 export interface MappingModel extends AdminData {
@@ -72,7 +71,7 @@ export function MappingFrame({ variant, children }: { variant: string; children:
   else body = children({ ...data, state, overlay, setOverlay, lists, ...model, setDidactic })
 
   return (
-    <PageFrame title="Course mapping" actions={<SampleDataBadge />}>
+    <PageFrame title="Course mapping">
       <div className="flex flex-col gap-4" data-page-type="list" data-admin-lab={`course-mapping-${variant}`}>
         {body}
       </div>

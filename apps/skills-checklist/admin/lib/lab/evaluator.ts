@@ -136,6 +136,10 @@ export interface EvRequest {
   student: { name: string; first: string }
   course: { code: string; name: string }
   where: { location: string; setting: string } | null
+  /** When the student performed the skills (EV-04): one day ("Oct 20") or a span ("Oct 18 to Oct 20"); null when not recorded. */
+  performed: string | null
+  /** The student's own words on the request (EV-04, field `studentNote`, also written by the student Send flow); empty when none. */
+  studentNote: string
   programName: string
   skills: EvSkill[]
   /** 1 for a first request; 2 or more after the student corrected and sent it again (RV-02). */
@@ -163,6 +167,15 @@ export function shortDate(iso: string): string {
   return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`
 }
 const addDays = (iso: string, n: number) => new Date(new Date(iso.length === 10 ? `${iso}T09:00:00Z` : iso).getTime() + n * 86400000).toISOString()
+
+/** "Oct 20" when every entry is from one day, "Oct 18 to Oct 20" when they span days, null when no entry is recorded (EV-04). */
+export function performedSpan(ats: string[]): string | null {
+  const days = [...new Set(ats.filter(Boolean).map((a) => a.slice(0, 10)))].sort()
+  if (!days.length) return null
+  const first = shortDate(days[0])
+  const last = shortDate(days[days.length - 1])
+  return first === last ? first : `${first} to ${last}`
+}
 
 export const firstName = (name: string): string => name.split(/[\s,]+/).filter((w) => w && !/^[A-Z]\.$/.test(w))[0] ?? name
 
@@ -247,6 +260,8 @@ export function buildRequest(s: V2State, sample: EvSample, state: EvState, o: Ev
   const entry = s.logEntries.find((e) => (x.entryIds ?? []).includes(e.id))
   const placement = s.placements.find((p) => p.studentId === student.id && p.courseId === s.course.id)
   const where = entry?.location ? { location: entry.location, setting: entry.clinicalSetting ?? placement?.setting ?? "" } : placement ? { location: placement.location, setting: placement.setting } : null
+  // EV-04: the date performed comes from the entries the request carries, never from when it was sent.
+  const performed = performedSpan(s.logEntries.filter((e) => (x.entryIds ?? []).includes(e.id)).map((e) => e.at))
   // An expired link was sent more than the 14-day lifetime ago, so its "Expired" date is before the demo day (not after it).
   const sentOn = state === "expired" ? addDays(DEMO_TODAY, -15) : x.createdAt
   return {
@@ -255,6 +270,8 @@ export function buildRequest(s: V2State, sample: EvSample, state: EvState, o: Ev
     student: { name: student.name, first: firstName(student.name) },
     course: { code: s.course.code, name: s.course.name },
     where,
+    performed,
+    studentNote: (x.studentNote ?? "").trim(),
     programName: `${s.program.school} ${s.program.name}`,
     skills,
     revision: state === "corrected" ? (x.revisions ?? 0) + 2 : 1,
@@ -455,11 +472,71 @@ export interface LabSkillRow {
   id: string
   name: string
   blocked: string | null
+  /** The program made feedback mandatory for this skill (EV-06): a result cannot be saved without it. */
+  feedbackRequired: boolean
 }
 
-export function labSessionSkills(s: V2State): LabSkillRow[] {
+/** Session skills. `requireFeedback` is the lab's "Program requires feedback" option (?fb=1), the same one the evaluator form reads. */
+export function labSessionSkills(s: V2State, requireFeedback = false): LabSkillRow[] {
   const inst = s.people.find((p) => p.id === LAB_INSTRUCTOR_ID)
-  return labSkills(s, "lab", inst).map((x) => ({ id: x.skill.id, name: x.skill.name, blocked: x.blocked }))
+  return labSkills(s, "lab", inst).map((x) => ({ id: x.skill.id, name: x.skill.name, blocked: x.blocked, feedbackRequired: requireFeedback || !!x.skill.config?.feedbackRequired }))
+}
+
+/** One result's feedback key: the same "student|skill" key as the result cell. */
+export const labCellKey = (studentId: string, skillId: string): string => `${studentId}|${skillId}`
+
+export interface LabFeedbackIssue {
+  studentId: string
+  studentName: string
+  skillId: string
+  skillName: string
+}
+
+/**
+ * EV-06: every recorded result (Met or Unmet, not absent, not blank) on a skill that requires feedback, with no feedback written.
+ * Save is blocked while this list is not empty. Absent students and unmarked cells need nothing.
+ */
+export function labFeedbackMissing(rows: RosterRow[], skills: LabSkillRow[], cells: Record<string, LabMark>, feedback: Record<string, string>): LabFeedbackIssue[] {
+  const out: LabFeedbackIssue[] = []
+  for (const k of skills) {
+    if (!k.feedbackRequired) continue
+    for (const r of rows) {
+      if (cells[`${r.id}|*`] === "absent") continue
+      const key = labCellKey(r.id, k.id)
+      const m = cells[key]
+      if (m === "met" || m === "not-met") if (!(feedback[key] ?? "").trim()) out.push({ studentId: r.id, studentName: r.name, skillId: k.id, skillName: k.name })
+    }
+  }
+  return out
+}
+
+/** The save-bar message for missing feedback, by the error formula: "{What failed}. {What to do}." */
+export function labFeedbackMessage(issues: LabFeedbackIssue[]): string {
+  if (!issues.length) return ""
+  const first = issues[0]
+  const who = issues.length === 1 ? `${first.studentName}, ${first.skillName}` : `${first.studentName} and ${issues.length - 1} more`
+  return `${issues.length} feedback missing. Write feedback for ${who}. The program requires it.`
+}
+
+/** What a saved session keeps per result: the mark and its feedback (EV-06: feedback is stored with the result). */
+export interface LabSavedResult {
+  studentId: string
+  skillId: string
+  outcome: "met" | "not-met"
+  feedback: string
+}
+
+export function labSavedResults(rows: RosterRow[], skills: LabSkillRow[], cells: Record<string, LabMark>, feedback: Record<string, string>): LabSavedResult[] {
+  const out: LabSavedResult[] = []
+  for (const r of rows) {
+    if (cells[`${r.id}|*`] === "absent") continue
+    for (const k of skills) {
+      const key = labCellKey(r.id, k.id)
+      const m = cells[key]
+      if (m === "met" || m === "not-met") out.push({ studentId: r.id, skillId: k.id, outcome: m, feedback: (feedback[key] ?? "").trim() })
+    }
+  }
+  return out
 }
 
 export type LabMark = Outcome | "absent" | null

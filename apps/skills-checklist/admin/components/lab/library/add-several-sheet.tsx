@@ -18,9 +18,9 @@ import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
-import { parseSeveral, pickerOptions, type LibraryRow, type PastedLine, type SeveralItem } from "@/lib/lab/library"
+import { parseSeveral, type LibraryRow, type PastedLine, type SeveralItem } from "@/lib/lab/library"
 import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { CategoryPicker, TagsPicker } from "./category-tag-pickers"
+import { CategoryPicker, TagsPicker, useVocabOptions } from "./category-tag-pickers"
 
 const SKIP_REASON: Record<Exclude<PastedLine["kind"], "ready">, string> = {
   "in-library": "already in the library",
@@ -42,13 +42,13 @@ export function AddSeveralSheet({ open, onOpenChange, rows, onAdd }: {
   const [guard, setGuard] = React.useState(false)
   React.useEffect(() => { if (open) { setText(""); setCategory(""); setTags([]); setAttempted(false) } }, [open])
   const names = React.useMemo(() => rows.map((r) => r.name), [rows])
-  const opts = React.useMemo(() => pickerOptions(rows), [rows])
+  const opts = useVocabOptions()
   const parsed = React.useMemo(() => parseSeveral(text, names), [text, names])
   const skipped = parsed.lines.filter((l) => l.kind !== "ready")
   const n = parsed.ready.length
   const error = attempted && n === 0 ? (parsed.lines.length ? `Every name is already in the library or repeated. Add a new ${skillNoun()} name.` : `Paste or type at least one ${skillNoun()} name.`) : undefined
   const dirty = text.trim() !== "" || category !== "" || tags.length > 0
-  const fromColumns = parsed.items.filter((it) => it.category || it.tags?.length).length
+  const fromColumns = parsed.items.filter((it) => it.category || it.tags?.length || it.description).length
 
   const requestClose = () => (dirty ? setGuard(true) : onOpenChange(false))
   const submit = () => {
@@ -62,8 +62,8 @@ export function AddSeveralSheet({ open, onOpenChange, rows, onAdd }: {
     <>
       <FloatingSheetPanel open={open} onOpenChange={(o) => (o ? onOpenChange(true) : requestClose())}>
         <FloatingSheetPanelContent contentSlot="lab-add-several" side="right" size="lg">
-          {/* CALL 10-26: this is the phase 1 bulk path, done once by the school or by the implementation team for it. */}
-          <FloatingSheetPanelHeader title={`Add several ${skillNounPlural()}`} description="For a one-time bulk add by the school or the implementation team." onClose={requestClose} />
+          {/* CALL 10-26: the phase 1 bulk path. */}
+          <FloatingSheetPanelHeader title={`Add several ${skillNounPlural()}`} onClose={requestClose} />
           <form id="lab-add-several-form" noValidate className="flex min-h-0 flex-1 flex-col" onSubmit={(e) => { e.preventDefault(); submit() }}>
             <FloatingSheetPanelBody className="flex flex-col gap-5 px-4 pt-1 pb-4">
               <Field data-invalid={!!error || undefined}>
@@ -78,17 +78,17 @@ export function AddSeveralSheet({ open, onOpenChange, rows, onAdd }: {
                   aria-describedby={error ? "several-names-error several-names-help" : "several-names-help"}
                   className="font-normal"
                 />
-                <FieldDescription id="several-names-help">Paste from an email, or from a sheet with Name, Category and Tags columns.</FieldDescription>
+                <FieldDescription id="several-names-help">Paste from an email, or from a sheet with Name, Category, Tags and Description columns.</FieldDescription>
                 {error ? <FieldError id="several-names-error">{error}</FieldError> : null}
               </Field>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                 <Field>
                   <FieldLabel id="several-category-label" htmlFor="several-category">Category for all of them</FieldLabel>
-                  <CategoryPicker id="several-category" labelId="several-category-label" value={category} options={opts.sections} onChange={setCategory} className="w-full" />
+                  <CategoryPicker id="several-category" labelId="several-category-label" value={category} options={opts.categories} inactive={opts.inactiveCategories} onChange={setCategory} className="w-full" />
                 </Field>
                 <Field>
                   <FieldLabel id="several-tags-label" htmlFor="several-tags">Tags for all of them</FieldLabel>
-                  <TagsPicker id="several-tags" labelId="several-tags-label" value={tags} options={opts.tags} onChange={setTags} />
+                  <TagsPicker id="several-tags" labelId="several-tags-label" value={tags} options={opts.tags} inactive={opts.inactiveTags} onChange={setTags} />
                 </Field>
               </div>
               {parsed.lines.length ? (
@@ -96,7 +96,7 @@ export function AddSeveralSheet({ open, onOpenChange, rows, onAdd }: {
                   <p className="text-sm text-foreground">
                     <span className="font-medium tabular-nums">{countSkills(n)}</span>
                     {" will be added, not configured."}
-                    {fromColumns ? <span className="text-muted-foreground">{` ${fromColumns} keep the category or tags from your sheet.`}</span> : null}
+                    {fromColumns ? <span className="text-muted-foreground">{` ${fromColumns} keep the category, tags or description from your sheet.`}</span> : null}
                     {skipped.length ? <span className="text-muted-foreground">{` ${skipped.length} skipped.`}</span> : null}
                   </p>
                   {skipped.length ? (

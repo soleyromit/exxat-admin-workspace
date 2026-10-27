@@ -157,7 +157,7 @@ const clickRows = []
   const ctx = await clicker.newContext({ viewport: { width: 1440, height: 900 } })
   await ctx.addInitScript(() => { try { localStorage.clear(); sessionStorage.clear() } catch { /* */ } })
   const tab = await ctx.newPage()
-  for (const [from, set, row] of [["/lab/flow/set-up-skills/configure", "2", "Dashboard"], ["/lab/flow/watch-the-cohort/drill", "3", "Skills"], ["/lab/flow/my-progress/detail", "2", "Log a skill"], ["/lab/flow/clear-approvals/review", "3", "Students"]]) {
+  for (const [from, set, row] of [["/lab/flow/set-up-skills/configure", "2", "Dashboard"], ["/lab/flow/watch-the-cohort/drill", "3", "Skills"], ["/lab/flow/my-progress/detail", "2", "My requests"], ["/lab/flow/clear-approvals/review", "3", "Students"]]) {
     if (onlyFlow) break
     try {
       await tab.goto(`${base}${from}?set=${set}&term=Fall%202026`, { waitUntil: "load", timeout: 240000 })

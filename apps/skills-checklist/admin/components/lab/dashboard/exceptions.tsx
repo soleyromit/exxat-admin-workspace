@@ -20,8 +20,9 @@ import { PersonIdentityCell } from "@exxatdesignux/ui/components/data-views/pers
 import { ageLabel, fmt, initialsOf, shortDate } from "@/lib/v2/format"
 import { EvaluatorNameBadge } from "@/components/lab/status-pill"
 import { EmptyBlock } from "@/components/lab/empty-block"
-import { LAB_BASE, drillHref, plural, studentHref, type DashboardModel, type ExceptionEvaluator, type ExceptionKind, type ExceptionRequest, type ExceptionStudent, type Exceptions } from "@/lib/lab/dashboard"
+import { drillHref, plural, studentHref, type DashboardModel, type ExceptionEvaluator, type ExceptionKind, type ExceptionRequest, type ExceptionStudent, type Exceptions } from "@/lib/lab/dashboard"
 import { withScope, type LabScope } from "@/lib/lab/scope"
+import { NEW_EVALUATORS_HREF } from "@/lib/lab/admin-ia"
 import { capitalize, skillNounPlural } from "@/lib/lab/terms"
 import type { V2State } from "@/lib/v2/types"
 
@@ -100,7 +101,7 @@ function requestColumns(scope: LabScope, kind: "old" | "approval" | "returned"):
     { key: "student", label: "Student", width: 200, cell: (r) => <PersonIdentityCell name={r.student} initials={initialsOf(r.student)} renderName={() => <StudentLink scope={scope} id={r.studentId} name={r.student} />} /> },
     { key: "skills", label: capitalize(skillNounPlural()), width: 240, cell: (r) => <span className="block truncate text-sm" title={r.skills}>{r.skills}</span> },
     ...(kind === "returned" ? [] : [evaluator]),
-    { key: "why", label: kind === "approval" ? "Held because" : kind === "returned" ? "Why it came back" : "Site", width: kind === "returned" ? 380 : 230, cell: (r) => <span className="block truncate text-sm" title={kind === "old" ? r.site : r.why}>{kind === "old" ? r.site : kind === "returned" ? r.why.replace(/^Returned by [^:]+: /, "") : r.why}</span> },
+    { key: "why", label: kind === "approval" ? "Held because" : kind === "returned" ? "Why it came back" : "Site", width: kind === "returned" ? 380 : 230, cell: (r) => <span className="block truncate text-sm" title={kind === "old" ? r.site : r.why}>{kind === "old" ? r.site : kind === "returned" ? r.why.replace(/^Sent back by [^:]+: /, "") : r.why}</span> },
     { key: "days", label: kind === "returned" ? "Since return" : "Waiting", width: 110, cell: (r) => <DaysBadge days={r.days} warnAt={kind === "approval" ? 11 : OLD_DAYS} /> },
   ]
 }
@@ -192,7 +193,7 @@ function RequestPeek({ data, scope, kind, r }: { data: V2State; scope: LabScope;
   const name = (id: string) => data.people.find((p) => p.id === id)?.name ?? "Not named yet"
   const history = [
     ...(sub?.reassignments ?? []).map((h) => ({ at: h.at, text: `Handed from ${name(h.fromId)} to ${name(h.toId)}` })),
-    ...(sub?.returns ?? []).map((h) => ({ at: h.at, text: `Returned by ${name(h.byId)}: ${h.reason}` })),
+    ...(sub?.returns ?? []).map((h) => ({ at: h.at, text: `Sent back by ${name(h.byId)}: ${h.reason}` })),
   ].sort((a, b) => (a.at < b.at ? 1 : -1))
   return (
     <div className="flex flex-col gap-4">
@@ -238,7 +239,7 @@ function EvaluatorPeek({ data, scope, model, r }: { data: V2State; scope: LabSco
         </ul>
       </section>
       <Button asChild variant="outline" size="sm" className="self-start">
-        <Link href={`${LAB_BASE}/evaluator-directory?filter=unverified`}>Adopt or merge the name</Link>
+        <Link href={NEW_EVALUATORS_HREF}>Adopt or merge the name</Link>
       </Button>
     </div>
   )

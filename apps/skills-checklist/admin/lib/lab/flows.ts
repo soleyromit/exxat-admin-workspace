@@ -40,11 +40,23 @@ export interface FlowDef {
   recommendedSet: string
   sets: OptionSet[]
   steps: FlowStep[]
+  /**
+   * A presentable walkthrough (lib/lab/walkthrough.ts): one set holding the recommended variant of each step. It is reachable
+   * by id (the flow route, its own links) but is not one of the lab's design flows: FLOWS, the index, the lab bar menu and the
+   * screen-to-flow inference never see it, so adding it changes no existing link.
+   */
+  walkthrough?: boolean
 }
 
-export const FLOWS = registry.flows as FlowDef[]
+const ALL_FLOWS = registry.flows as FlowDef[]
 
-export const findFlow = (id: string | null | undefined): FlowDef | undefined => FLOWS.find((f) => f.id === id)
+/** The lab's design flows (every flow with option sets to compare). */
+export const FLOWS = ALL_FLOWS.filter((f) => !f.walkthrough)
+
+/** Presentable walkthroughs, reachable by id only. */
+export const WALKTHROUGH_FLOWS = ALL_FLOWS.filter((f) => f.walkthrough)
+
+export const findFlow = (id: string | null | undefined): FlowDef | undefined => ALL_FLOWS.find((f) => f.id === id)
 export const flowsForPersona = (persona: string): FlowDef[] => FLOWS.filter((f) => f.persona === persona)
 export const stepOf = (flow: FlowDef, stepId: string | null | undefined): FlowStep | undefined => flow.steps.find((s) => s.id === stepId)
 export const mainSteps = (flow: FlowDef): FlowStep[] => flow.steps.filter((s) => !s.side)

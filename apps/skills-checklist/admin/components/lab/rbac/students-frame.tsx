@@ -16,7 +16,7 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@exxatdesignux/ui/components/ui/input-group"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
 import { DiamondGlyph } from "@/components/lab/viz"
 import { useReviewer, type ReviewerContext } from "@/components/lab/reviewer/use-reviewer"
 import { LINK } from "@/components/lab/reviewer/parts"
@@ -42,10 +42,10 @@ export function StudentsFrame({ variant, children, toolbar }: { variant: string;
   const applied = (["cohort", "group", "course", "cat", "tag", "loc", "setting"] as ScopeKey[]).filter((k) => !!ctx.scope[k])
 
   return (
-    <PageFrame title="Students" actions={<SampleDataBadge />}>
+    <PageFrame title="Students" subtitle={ctx.options ? <ScopeContext termName={ctx.termName} scope={ctx.scope} at={ctx.at} stale={ctx.demo === "stale"} /> : undefined} actions={<SampleDataBadge />}>
       <div className="flex flex-col gap-4" data-page-type="list" data-reviewer-students={variant}>
         {ctx.options ? (
-          <ScopeBar scope={ctx.scope} options={ctx.options} termName={ctx.termName} onChange={ctx.setScope} chipValue={ctx.chip} asOf={ctx.asOf} onRefresh={ctx.refresh} stale={ctx.demo === "stale"} showBasis={false} courseInFilters />
+          <ScopeBar scope={ctx.scope} options={ctx.options} termName={ctx.termName} onChange={ctx.setScope} chipValue={ctx.chip} showBasis={false} />
         ) : null}
         <p role="status" aria-live="polite" className="sr-only">
           {model && ctx.ready ? `${plural(rows.length, "student", "students")} shown` : "Loading students"}

@@ -3,23 +3,25 @@
 /**
  * Course mapping building blocks: the offerings list, one offering's skills with a level per skill, the required-skills coverage
  * matrix, and the skill-centric list and panel. DS DataTable throughout; the level is a DS Select; the state is glyph + word.
- * Unconfigured skills say why once (a line above the table) and show "Not configured" in the level cell [REQ IM-09].
+ * Unconfigured skills show "Not configured" in the level cell, a link to configure them [REQ IM-09] (the line above the table that repeated it was cut, 2026-10-27).
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
+import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
-import { configureHref } from "@/lib/lab/library"
+import { configureHref, notConfiguredBlock } from "@/lib/lab/library"
 import {
   LEVEL_LABEL,
   LEVEL_SOURCE_LABEL,
   type LevelSource,
   mappingLink,
   offeringById,
+  filterSkillOfferings,
   offeringsForSkill,
   setLevel,
   setLevels,
@@ -34,7 +36,7 @@ import {
   type SkillReachRow,
 } from "@/lib/lab/mapping"
 import { listsForCohort, listsHref, type SkillList } from "@/lib/lab/lists"
-import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { CLINICAL_ONLY_LABEL, INCLUDE_DIDACTIC_LABEL } from "@/lib/v2/labels"
 import type { V2State } from "@/lib/v2/types"
 import { EmptyBlock } from "@/components/lab/empty-block"
@@ -95,16 +97,19 @@ const SHOW_OPTS = [
   { value: "mandatory", label: LEVEL_LABEL.mandatory },
   { value: "recommended", label: LEVEL_LABEL.recommended },
   { value: "optional", label: LEVEL_LABEL.optional },
-  { value: "required", label: "Required on the default list" },
+  { value: "required", label: "Required to graduate" },
 ]
 
-/** A quiet "From list" beside a level inherited from a list assigned to the cohort (lib/lab/mapping.ts resolvedLevels). */
+/** A quiet "Set by list" beside a level inherited from a list assigned to the cohort (lib/lab/mapping.ts resolvedLevels), with why. */
+export const SET_BY_LIST_TIP = "This level comes from the list assigned to the cohort. Change it here for this course only."
 export function FromListTag({ source }: { source: LevelSource | null }) {
   if (source !== "list") return null
   return (
-    <span className="whitespace-nowrap text-xs text-muted-foreground" data-level-source="list">
-      {LEVEL_SOURCE_LABEL.list}
-    </span>
+    <Tip label={SET_BY_LIST_TIP}>
+      <span tabIndex={0} className="cursor-default whitespace-nowrap rounded-sm text-xs text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring" data-level-source="list">
+        {LEVEL_SOURCE_LABEL.list}
+      </span>
+    </Tip>
   )
 }
 
@@ -117,28 +122,28 @@ export function CohortAppliesLine({ lists, cohort }: { lists: SkillList[]; cohor
   if (cohort && applied.length === 0)
     return (
       <p className="text-sm text-muted-foreground" data-cohort-applies>
-        {`No list is assigned to ${cohort} yet. `}
-        <Link className={LINK} href={listsHref()}>Assign one</Link>
+        {`No ${skillNounPlural()} are assigned to ${cohort} yet. `}
+        <Link className={LINK} href={listsHref({ view: "assign" })}>Assign them</Link>
       </p>
     )
   return (
     <p className="text-sm text-muted-foreground" data-cohort-applies>
       {cohort ? (
         <>
-          {`${capitalize(skillNounPlural())} for ${cohort} already apply through `}
+          {`${cohort} gets these ${skillNounPlural()} from `}
           {applied.map((l, i) => (
             <React.Fragment key={l.id}>
               {i ? " and " : ""}
               <Link className={LINK} href={listsHref({ list: l.id })}>{l.name}</Link>
             </React.Fragment>
           ))}
-          {". Levels here are overrides."}
+          {". Levels set here apply to this course only."}
         </>
       ) : (
         <>
-          {`${capitalize(skillNounPlural())} assigned to a cohort in `}
-          <Link className={LINK} href={listsHref()}>Lists</Link>
-          {" already apply to its offerings. Levels here are overrides."}
+          {`Each cohort gets the ${skillNounPlural()} assigned to it in `}
+          <Link className={LINK} href={listsHref({ view: "assign" })}>{`Assign ${skillNounPlural()} to student groups`}</Link>
+          {". Levels set here apply to that course only."}
         </>
       )}
     </p>
@@ -166,7 +171,6 @@ export function OfferingPanel({ state, overlay, setOverlay, offering, lists, foc
   const [show, setShow] = React.useState<Show>("")
   const [note, setNote] = React.useState("")
   const [bulkNote, setBulkNote] = React.useState<{ changed: number; skipped: number; level: MapLevel } | null>(null)
-  const unconfigured = rows.filter((r) => !r.configured).length
 
   const visible = React.useMemo(() => {
     const t = q.trim().toLowerCase()
@@ -254,7 +258,6 @@ export function OfferingPanel({ state, overlay, setOverlay, offering, lists, foc
         <FilterSelect value={show} onChange={(v) => setShow(v as Show)} label="Show" allLabel={`All ${skillNounPlural()}`} options={SHOW_OPTS} className="w-52" />
         <span className="ms-auto"><LevelLegend /></span>
       </div>
-      {unconfigured ? <p className="text-xs text-muted-foreground">{`${countSkills(unconfigured)} not configured yet sit at the end. Configure them to map them.`}</p> : null}
       {bulkNote ? (
         <LocalBanner variant={bulkNote.skipped ? "warning" : "promo"} title={`${plural(bulkNote.changed, skillNoun(), skillNounPlural())} set to ${LEVEL_LABEL[bulkNote.level].toLowerCase()}`} dismissible onDismiss={() => setBulkNote(null)}>
           {bulkNote.skipped ? `${plural(bulkNote.skipped, "was", "were")} skipped because ${bulkNote.skipped === 1 ? "it is" : "they are"} not configured.` : `Applies to ${offering.code}, ${offering.term} only.`}
@@ -341,7 +344,7 @@ export function CoverageMatrix({ coverage, termName, termId }: { coverage: Cover
     <section aria-labelledby="coverage-heading" className="flex min-w-0 flex-col gap-3" data-region="coverage">
       <PaneHeading
         title={<span id="coverage-heading">{`Required ${skillNounPlural()} by ${termName} course`}</span>}
-        meta={`${fmt(coverage.required)} required on the default list · ${fmt(covered)} in at least one course`}
+        meta={`${fmt(coverage.required)} required to graduate · ${fmt(covered)} in at least one course`}
         end={<LevelLegend />}
       />
       <DataTable<CoverageRow>
@@ -351,7 +354,7 @@ export function CoverageMatrix({ coverage, termName, termId }: { coverage: Cover
         searchable={false}
         showQueryControls={false}
         edgeInset={false}
-        emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} on the default list yet`} />}
+        emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} to graduate yet`} />}
       />
     </section>
   )
@@ -411,11 +414,23 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
   )
 }
 
-export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName, lists = [], didactic = false }: { state: V2State; overlay: MappingOverlay; setOverlay: (o: MappingOverlay) => void; skill: SkillReachRow; termId: string; termName: string; lists?: SkillList[]; didactic?: boolean }) {
-  const rows = React.useMemo(() => offeringsForSkill(state, overlay, skill.id, termId, didactic, lists.length ? lists : undefined), [state, overlay, skill.id, termId, didactic, lists])
+/** Offering filters in variant B's pane [REQ CM-02]: search (course, term, academic year, cohort, year), cohort, professional year. */
+export interface OfferingFilterProps {
+  value: { q: string; cohort: string; year: string }
+  onChange: (next: Partial<{ q: string; cohort: string; year: string }>) => void
+  cohortOpts: { value: string; label: string }[]
+  yearOpts: { value: string; label: string }[]
+}
+
+export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName, lists = [], didactic = false, filter }: { state: V2State; overlay: MappingOverlay; setOverlay: (o: MappingOverlay) => void; skill: SkillReachRow; termId: string; termName: string; lists?: SkillList[]; didactic?: boolean; filter?: OfferingFilterProps }) {
+  const all = React.useMemo(() => offeringsForSkill(state, overlay, skill.id, termId, didactic, lists.length ? lists : undefined), [state, overlay, skill.id, termId, didactic, lists])
+  const f = filter?.value
+  const rows = React.useMemo(() => (f ? filterSkillOfferings(all, f) : all), [all, f])
+  const narrowed = !!(f && (f.q || f.cohort || f.year))
   const [note, setNote] = React.useState("")
-  const carriers = rows.filter((r) => r.level !== "none")
-  const mandatory = rows.filter((r) => r.level === "mandatory").length
+  // The heading counts stay on the term's offerings (the skill's reach); the filters only narrow the table below.
+  const carriers = all.filter((r) => r.level !== "none")
+  const mandatory = all.filter((r) => r.level === "mandatory").length
 
   const columns = React.useMemo<ColumnDef<SkillOfferingRow>[]>(
     () => [
@@ -451,6 +466,9 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
           </span>
         ),
       },
+      // The offering's own totals (all skills), so each offering's mapped and mandatory counts read here too [REQ CM-04].
+      { key: "mapped", label: "Mapped", width: 84, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.mapped)}</span> },
+      { key: "mandatory", label: "Mandatory", width: 100, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.mandatory)}</span> },
     ],
     [state, overlay, setOverlay, skill, termId],
   )
@@ -459,7 +477,7 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
     <section aria-labelledby="skill-heading" className="flex min-w-0 flex-col gap-3" data-region="skill">
       <PaneHeading
         title={<span id="skill-heading">{skill.name}</span>}
-        meta={`${skill.section}${skill.required ? " · Required on the default list" : ""}`}
+        meta={`${skill.section}${skill.required ? " · Required to graduate" : ""}`}
         end={
           skill.configured ? (
             <span className="text-sm" aria-label={`${carriers.length} of ${rows.length} ${termName} courses, ${mandatory} mandatory`}>
@@ -472,7 +490,7 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
       {!skill.configured ? (
         <Card size="sm" className="self-start">
           <CardContent className="flex flex-col items-start gap-2 py-1">
-            <p className="text-sm">{`This ${skillNoun()} has no evaluation model yet, so it cannot be mapped or submitted.`}</p>
+            <p className="text-sm">{notConfiguredBlock(true)}</p>
             <Button asChild variant="outline" size="sm">
               <Link href={configureHref(skill.id)}>{`Configure ${skill.name}`}</Link>
             </Button>
@@ -481,6 +499,13 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
       ) : (
         <>
           <CohortAppliesLine lists={lists} />
+          {filter ? (
+            <div role="search" aria-label="Find an offering" className="flex flex-wrap items-center gap-2" data-offering-filters>
+              <SearchField value={filter.value.q} onChange={(v) => filter.onChange({ q: v })} label="Search offerings by course, term, cohort or year" placeholder="Search offerings" className="w-56" />
+              <FilterSelect value={filter.value.cohort} onChange={(v) => filter.onChange({ cohort: v })} label="Cohort" allLabel="All cohorts" options={filter.cohortOpts} className="w-36" />
+              <FilterSelect value={filter.value.year} onChange={(v) => filter.onChange({ year: v })} label="Professional year" allLabel="All years" options={filter.yearOpts} className="w-32" />
+            </div>
+          ) : null}
           <LiveNote text={note} />
           <DataTable<SkillOfferingRow>
             key={skill.id}
@@ -490,7 +515,7 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
             searchable={false}
             showQueryControls={false}
             edgeInset={false}
-            emptyState={<EmptyBlock compact title={`No courses in ${termName} yet`} />}
+            emptyState={narrowed ? <EmptyBlock compact title="No offerings match these filters" body="Clear a filter to see more." /> : <EmptyBlock compact title={`No courses in ${termName} yet`} />}
           />
         </>
       )}

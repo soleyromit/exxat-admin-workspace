@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Noun refresh check (coordinator, 2026-10-26): change the program's noun in Settings > Naming, then, WITHOUT a reload, the
-// sidebar row and a screen title use the new noun; after a reload they still do. Usage: node scripts/lab-terms-check.mjs
+// Noun check (coordinator, 2026-10-26; no Settings UI since 2026-10-27, D-L25): set the program's noun in its stored value, then
+// the sidebar row and screen titles use it, with the right article, and survive a reload. Usage: node scripts/lab-terms-check.mjs
 // [baseUrl]. Exit 1 on failure.
 import { createRequire } from "node:module"
 
@@ -19,23 +19,26 @@ const fails = []
 const check = (name, ok, got) => { console.log(`${ok ? "PASS" : "FAIL"}  ${name}  ${JSON.stringify(got)}`); if (!ok) fails.push(name) }
 const navRows = () => page.$$eval("a[data-sidebar=menu-button]", (as) => as.map((a) => a.textContent.trim()))
 
-await page.goto(`${base}/lab/admin/settings?variant=A&tab=naming&term=Fall%202026`, { waitUntil: "load", timeout: 240000 })
+// The noun has no Settings UI (Romit 2026-10-27: "naming can be changed in the backend, so we need to remove this tab for now";
+// ledger D-L25): it is set through its stored value (lib/lab/terms.ts TERMS_KEY), as the backend would. The live refresh without a
+// reload is covered by tests/lab/settings-naming.test.ts (setTerms).
+const setNoun = async (one, many) => {
+  await page.evaluate(([o, m]) => { try { localStorage.setItem("lab:terms", JSON.stringify({ skillNoun: o, skillNounPlural: m })) } catch { /* */ } }, [one, many])
+  await page.reload({ waitUntil: "load" })
+  await page.waitForTimeout(2500)
+}
+await page.goto(`${base}/lab/admin/settings?variant=A&term=Fall%202026`, { waitUntil: "load", timeout: 240000 })
 await page.evaluate(() => { try { localStorage.removeItem("lab:terms") } catch { /* */ } })
 await page.reload({ waitUntil: "load" })
 await page.waitForTimeout(2500)
 check("starts with the default noun in the nav", (await navRows()).includes("Skills"), await navRows())
+check("Settings has no Naming tab", (await page.getByRole("tab", { name: /Naming/ }).count()) === 0, "Naming tab")
 
-// Pick an example that is not the default, then save.
-const example = page.getByRole("button", { name: "Use competency and competencies" })
 const plural = "Competencies"
 const has = (list, word) => list.some((t) => t.toLowerCase().includes(word.toLowerCase()))
-await example.click()
-await page.getByRole("button", { name: "Save names" }).click()
-await page.waitForTimeout(1500)
+await setNoun("competency", "competencies")
 const rows = await navRows()
-check(`nav row reads "${plural}" without a reload`, has(rows, plural), rows)
-const banner = await page.locator("[data-slot=local-banner], [role=status]").allTextContents()
-check("the save is confirmed on the page", has(banner, plural), banner.map((t) => t.slice(0, 60)))
+check(`nav row reads "${plural}" with the stored noun`, has(rows, plural), rows)
 
 // Client-side navigation to the library (no reload): its title uses the noun.
 await page.locator("a[data-sidebar=menu-button]", { hasText: /competencies/i }).first().click()
@@ -70,23 +73,31 @@ async function articleWalk(one, many, a) {
     if (name === "library") check(`${one}: library Add button reads "Add ${a}"`, (await page.getByRole("button", { name: `Add ${a}` }).count()) > 0, `Add ${a}`)
     if (name === "add sheet") check(`${one}: add sheet title reads "Add ${a}"`, text.includes(`Add ${a}`), text.slice(0, 0))
     if (name === "student log") {
-      const rows = await navRows()
-      check(`${one}: student nav row reads "Log ${a}"`, rows.includes(`Log ${a}`), rows)
       const h = await page.locator("main h1").first().textContent()
       check(`${one}: student log title reads "Log ${a}"`, (h ?? "").trim() === `Log ${a}`, h)
+      // Student IA (LEDGER D-L10, D-L19): the sidebar is My progress, My requests, My evaluations; "Log a skill" is the
+      // header primary on every student page, not a nav row. Checked on My progress.
+      await page.goto(`${base}/lab/student/home?variant=A&term=Fall%202026`, { waitUntil: "load", timeout: 240000 })
+      await page.waitForTimeout(2500)
+      const rows = await navRows()
+      check(`${one}: student nav has no "Log" row (My progress, My requests, My evaluations)`, !rows.some((r) => /^Log\b/.test(r)), rows)
+      const primary = await page.locator("main a[data-slot=button][data-variant=default], main button[data-slot=button][data-variant=default]").allTextContents()
+      check(`${one}: student header primary reads "Log ${a}"`, primary.map((t) => t.trim()).includes(`Log ${a}`), primary)
     }
-    if (name === "send empty state") check(`${one}: Send empty state says "Log ${a} first"`, text.includes(`Log ${a} first`), null)
+    // Log a skill and Send are one flow (LEDGER D-L10), so the empty state no longer says "Log a skill first": it says
+    // nothing is open yet, in the program's noun (components/lab/screens/student-request-a.tsx).
+    if (name === "send empty state") {
+      const title = `No ${many} open yet`
+      check(`${one}: Send empty state says "${title}"`, text.includes(title), null)
+    }
     if (name === "present list") check(`${one}: present list reads "Add ${a}"`, text.includes(`Add ${a}`), null)
   }
   void many
 }
 await articleWalk("competency", "competencies", "a competency")
-await page.goto(`${base}/lab/admin/settings?variant=A&tab=naming&term=Fall%202026`, { waitUntil: "load", timeout: 240000 })
-await page.waitForTimeout(2500)
-await page.getByRole("button", { name: "Use EPA and EPAs" }).click()
-await page.getByRole("button", { name: "Save names" }).click()
-await page.waitForTimeout(1500)
-check(`nav row reads "EPAs" after saving EPA`, has(await navRows(), "EPAs"), await navRows())
+await page.goto(`${base}/lab/admin/settings?variant=A&term=Fall%202026`, { waitUntil: "load", timeout: 240000 })
+await setNoun("EPA", "EPAs")
+check(`nav row reads "EPAs" with the stored noun EPA`, has(await navRows(), "EPAs"), await navRows())
 await articleWalk("EPA", "EPAs", "an EPA")
 
 // NAMING SWEEP (CALL 10-26 item 7, 2026-10-26): with the noun "EPA", the page's own copy (main, lab bar excluded) must not say

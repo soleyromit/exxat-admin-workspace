@@ -5,11 +5,12 @@ import { skillById } from "@/lib/v2/evidence-index"
 import { skillProgress } from "@/lib/v2/student"
 import type { Setting, Submission, V2State } from "@/lib/v2/types"
 import { APPROVAL_OLD_DAYS, approvalTotals, approvalsInScope, CAUSE_LABEL, type ApprovalEntry } from "@/lib/v2/approvals"
-import { CELL_MARGIN, MEDIAN_MARGIN, median, openRequests, populationRows, resolveTerm, type Population, type StudentRow, type TermInfo } from "@/lib/v2/population"
+import { CELL_MARGIN, MEDIAN_MARGIN, isConfigured, median, openRequests, populationRows, resolveTerm, type Population, type StudentRow, type TermInfo } from "@/lib/v2/population"
 import { EVALUATOR_KINDS } from "@/lib/v2/facts"
 import { RECORD_STATE_META } from "@/lib/v2/labels"
 import { countSkills, skillNoun, skillNounPlural } from "./terms"
 import { removeScope, toReportFilters, withScope, type Basis, type LabScope, type ScopeKey } from "./scope"
+import { NEW_EVALUATORS_HREF } from "./admin-ia"
 
 // The population calculation lives in lib/v2/population.ts (single source). Re-exported so existing imports keep working.
 export { CELL_MARGIN, MEDIAN_MARGIN, PACE_MARGIN, median, offeringsByCohort, openRequests, populationRows, populationTotals, requiredSets, requiredSkillsFor, resolveTerm, studentRow } from "@/lib/v2/population"
@@ -363,6 +364,15 @@ export function countedPerWeek(pop: Population, today: string = DEMO_TODAY, week
   })
 }
 
+/**
+ * Counted evaluations of the students in scope, by setting (clinical, lab, simulation), read from the same evidence state as
+ * countedPerWeek. Lab and simulation evidence never satisfies a clinical-setting minimum (REQ SC-12), so the split matters.
+ */
+export function countedBySetting(pop: Population): Array<{ setting: Setting; label: string; value: number }> {
+  const counted = pop.evidenceState.evaluations.filter((e) => e.status === "counted" && pop.ids.has(e.studentId))
+  return (Object.keys(SETTING_LABEL) as Setting[]).map((k) => ({ setting: k, label: SETTING_LABEL[k], value: counted.filter((e) => e.setting === k).length }))
+}
+
 export interface SectionGap {
   section: string
   pct: number
@@ -371,7 +381,7 @@ export interface SectionGap {
   gap: number
 }
 
-/** Sections (skill categories) of the scope, ordered by how far they sit under the basis (the "Which sections lag?" tile). */
+/** Sections (skill categories) of the scope, ordered by how far they sit under the basis (the "Sections furthest behind" tile). */
 export function sectionGaps(pop: Population): SectionGap[] {
   const mx = sectionMatrix(pop, "none")
   const out: SectionGap[] = []
@@ -466,7 +476,7 @@ export function buildExceptions(state: V2State, model: DashboardModel, today: st
     const ev = x.candidateIds?.[0] ?? x.assignedToId
     return { kind: "request", id: x.id, studentId: x.studentId, student: nameOf(x.studentId), skills: skills(x.skillIds), evaluator: nameOf(ev), evaluatorUnverified: unverified(ev), site: site(x.siteId), days, why }
   }
-  const old = open.filter((x) => x.daysWaiting >= 15).map((x) => toRequest(x, x.daysWaiting, x.status === "stalled" ? `Stalled, no answer in ${x.daysWaiting} days` : `No answer in ${x.daysWaiting} days`))
+  const old = open.filter((x) => x.daysWaiting >= 15).map((x) => toRequest(x, x.daysWaiting, x.status === "stalled" ? `No answer in ${x.daysWaiting} days, after a reminder` : `No answer in ${x.daysWaiting} days`))
 
   const approval: ExceptionRequest[] = approvalsIn(state, model.scope, today)
     .map((i) => ({ kind: "request" as const, id: i.key, studentId: i.studentId, student: nameOf(i.studentId), skills: skills(i.skillIds), evaluator: i.evaluatorId ? nameOf(i.evaluatorId) : "Not named yet", evaluatorUnverified: unverified(i.evaluatorId), site: site(i.item.submission?.siteId), days: i.days, why: CAUSE_LABEL[i.cause] }))
@@ -478,7 +488,7 @@ export function buildExceptions(state: V2State, model: DashboardModel, today: st
       const last = x.returns?.at(-1)
       const days = last ? daysSince(last.at, today) : x.daysWaiting
       const by = last ? nameOf(last.byId) : "A reviewer"
-      return toRequest(x, days, last?.reason ? `Returned by ${by}: ${last.reason}` : `Returned by ${by}`)
+      return toRequest(x, days, last?.reason ? `Sent back by ${by}: ${last.reason}` : `Sent back by ${by}`)
     })
     .sort((a, b) => b.days - a.days || a.id.localeCompare(b.id))
 
@@ -570,7 +580,8 @@ export const approvalsIn = (state: V2State, scope: LabScope, today: string = DEM
 
 const daysSince = (iso: string, today: string) => Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${iso.slice(0, 10)}T00:00:00Z`)) / DAY)
 
-function explain(s: V2State, scope: LabScope): Explained | null {
+/** RP-09: the sentence and the filters to remove when the scope cannot produce evidence; null when it can. Shared by every reporting screen. */
+export function explainScope(s: V2State, scope: LabScope): Explained | null {
   const f = toReportFilters(scope)
   const text = explainFilters({ ...f, course: ALL }, s)
   if (!text) return null
@@ -593,11 +604,12 @@ export function buildDashboard(state: V2State, scope: LabScope, today: string = 
   const queueTotals = approvalTotals(state, queue)
   const oldApprovals = queue.filter((q) => q.days > APPROVAL_OLD_DAYS)
   const stalled = open.filter((x) => x.status === "stalled")
-  const configured = state.skills.filter((k) => k.configured).length
+  // One definition of Configured (decision D-X31), the same as the library and lib/v2/facts.ts.
+  const configured = state.skills.filter(isConfigured).length
   const unconfigured = state.skills.length - configured
   const unverifiedHolding = new Set(open.filter((x) => x.daysWaiting > 8).flatMap((x) => [x.assignedToId, ...(x.candidateIds ?? [])]).filter((id) => state.people.some((p) => p.id === id && p.verified === false)))
   const unverified = state.people.filter((p) => EVALUATOR_KINDS.includes(p.kind) && p.verified === false).length
-  const explained = explain(state, scope)
+  const explained = explainScope(state, scope)
 
   const kind: DashboardModel["kind"] = explained ? "impossible" : rows.length === 0 ? "empty" : behind.length === 0 ? "clear" : "behind"
   const phrase = basisPhrase(basis)
@@ -639,8 +651,8 @@ export function buildDashboard(state: V2State, scope: LabScope, today: string = 
   const needsYou: NeedsYouRow[] = []
   if (stalled.length > 0) needsYou.push({ key: "stalled", text: `${plural(stalled.length, "request", "requests")} stalled with evaluators, longest ${stalled[0].daysWaiting} days`, href: drillHref(scope, { list: "requests", cond: "stalled", from: "needs-you" }), tone: "attention", age: stalled[0].daysWaiting })
   if (oldApprovals.length > 0) needsYou.push({ key: "old", text: `${plural(oldApprovals.length, "submission", "submissions")} awaiting approval for more than ${APPROVAL_OLD_DAYS} days`, href: drillHref(scope, { list: "requests", cond: "approval-old", from: "needs-you" }), tone: "attention", age: Math.max(...oldApprovals.map((q) => q.days)) })
-  if (unverifiedHolding.size > 0) needsYou.push({ key: "unverified-holding", text: `${plural(unverifiedHolding.size, "unverified evaluator holds", "unverified evaluators hold")} requests older than 8 days`, href: `${LAB_BASE}/evaluator-directory?filter=unverified`, tone: "attention", age: 8 })
-  else if (unverified > 0) needsYou.push({ key: "unverified", text: `${plural(unverified, "evaluator name", "evaluator names")} to adopt or merge`, href: `${LAB_BASE}/evaluator-directory?filter=unverified`, tone: "neutral", age: 0 })
+  if (unverifiedHolding.size > 0) needsYou.push({ key: "unverified-holding", text: `${plural(unverifiedHolding.size, "unverified evaluator holds", "unverified evaluators hold")} requests older than 8 days`, href: NEW_EVALUATORS_HREF, tone: "attention", age: 8 })
+  else if (unverified > 0) needsYou.push({ key: "unverified", text: `${plural(unverified, "evaluator name", "evaluator names")} to adopt or merge`, href: NEW_EVALUATORS_HREF, tone: "neutral", age: 0 })
   if (unconfigured > 0) needsYou.push({ key: "unconfigured", text: `${countSkills(unconfigured)} need configuring before students can use them`, href: `${LAB_BASE}/skills-library?filter=needs-configuration`, tone: "neutral", age: 0 })
   needsYou.sort((a, b) => b.age - a.age)
 
@@ -804,10 +816,10 @@ export function buildDrill(state: V2State, scope: LabScope, p: DrillParams, toda
   }
   let list = open
   const labels: string[] = []
-  if (p.cond === "stalled") { list = list.filter((x) => x.status === "stalled"); labels.push("Stalled") }
+  if (p.cond === "stalled") { list = list.filter((x) => x.status === "stalled"); labels.push("No answer after a reminder") }
   if (p.cond === "old") { list = list.filter((x) => x.daysWaiting >= 15); labels.push("15 days or more") }
   if (p.siteId) { list = list.filter((x) => x.siteId === p.siteId); labels.push(`Site: ${siteName(state, p.siteId)}`) }
-  const rows = list.map((x) => toRow(x, x.status === "stalled" ? "Stalled" : "With evaluator", x.daysWaiting))
+  const rows = list.map((x) => toRow(x, x.status === "stalled" ? "No answer after a reminder" : "With evaluator", x.daysWaiting))
   return {
     ...base,
     title: `${plural(rows.length, "request", "requests")} waiting with evaluators${p.cond === "stalled" ? ", stalled" : p.cond === "old" ? ", 15 days or more" : ""}${p.siteId ? ` at ${siteName(state, p.siteId)}` : ""}`,

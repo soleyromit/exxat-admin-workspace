@@ -73,7 +73,7 @@ export interface ApprovalRules {
 /**
  * `rows` are the queue rows already in scope (ApprovalsFrame `rowsInScope`), so the totals match the Approvals count.
  * Listed skills: every skill whose configuration asks for approval, plus every skill a rule-held submission covers. Since seed
- * 2026-10-26.4 the second set is inside the first: "Rule needs approval" comes only from skills with `config.approvalRequired`
+ * 2026-10-26.4 the second set is inside the first: "Approval required" comes only from skills with `config.approvalRequired`
  * (lib/v2/approvals.ts heldByRule) and the generator puts every stored hold on such a skill, so `setting` is true on every row
  * (tests/v2/approvals-rule.test.ts). The field stays so a skill whose flag is switched off while it still holds evidence shows.
  */

@@ -12,7 +12,8 @@ import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetT
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { bulkImpact, copySources, fromV2, ruleSentence, type LabRule } from "@/lib/lab/configure"
-import { pillSpec, skillPillValue } from "@/lib/v2/status-pill"
+import { isConfigured } from "@/lib/v2/population"
+import { STATUS_META } from "@/lib/lab/library"
 import type { V2State } from "@/lib/v2/types"
 import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
@@ -52,16 +53,20 @@ export function CopyFromDialog({ open, onOpenChange, state, skillId, onCopy }: {
   )
 }
 
-export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, onApplied }: { open: boolean; onOpenChange: (o: boolean) => void; state: V2State; skillId: string; rule: LabRule; onApplied: (summary: { skills: number; inUse: number; students: number }) => void }) {
+/**
+ * "Apply to other skills": the rule is saved to each skill picked (decision D-X31: each becomes Configured, with its own rule
+ * version). `onApplied` receives the ids so the caller writes them; Apply is disabled while the rule has problems.
+ */
+export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, blocked = false, onApplied }: { open: boolean; onOpenChange: (o: boolean) => void; state: V2State; skillId: string; rule: LabRule; /** The rule still has problems, so it cannot be saved anywhere. */ blocked?: boolean; onApplied: (summary: { ids: string[]; skills: number; configured: number; students: number }) => void }) {
   const [q, setQ] = React.useState("")
   const [picked, setPicked] = React.useState<string[]>([])
   React.useEffect(() => { if (open) { setQ(""); setPicked([]) } }, [open])
-  const all = React.useMemo(() => state.skills.filter((k) => k.id !== skillId).sort((a, b) => Number(!!a.config) - Number(!!b.config) || a.name.localeCompare(b.name)), [state, skillId])
+  const all = React.useMemo(() => state.skills.filter((k) => k.id !== skillId).sort((a, b) => Number(isConfigured(a)) - Number(isConfigured(b)) || a.name.localeCompare(b.name)), [state, skillId])
   const shown = q.trim() ? all.filter((k) => `${k.name} ${k.category}`.toLowerCase().includes(q.trim().toLowerCase())) : all
   const rows = React.useMemo(() => bulkImpact(state, picked, rule), [state, picked, rule])
-  const inUse = rows.filter((r) => r.published)
+  const inUse = rows.filter((r) => r.configured)
   const students = inUse.reduce((n, r) => n + r.changed, 0)
-  const unconfigured = all.filter((k) => !k.config).length
+  const unconfigured = all.filter((k) => !isConfigured(k)).length
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" size="lg" className="flex flex-col">
@@ -73,11 +78,11 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, onApp
           <Input type="search" aria-label={`Search ${skillNounPlural()}`} placeholder={`Search ${skillNounPlural()}`} value={q} onChange={(e) => setQ(e.target.value)} />
           <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <span>{`${unconfigured} not configured, listed first.`}</span>
-            <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setPicked(all.filter((k) => !k.config).map((k) => k.id))}>Select all not configured</Button>
+            <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setPicked(all.filter((k) => !isConfigured(k)).map((k) => k.id))}>Select all not configured</Button>
           </div>
           <ul className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border" aria-label={capitalize(skillNounPlural())}>
             {shown.map((k) => {
-              const spec = pillSpec("skill", skillPillValue(k))
+              const spec = STATUS_META[isConfigured(k) ? "configured" : "not-configured"]
               const id = `cfg-bulk-${k.id}`
               return (
                 <li key={k.id} className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0">
@@ -86,17 +91,17 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, onApp
                     <span className="block truncate">{k.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">{k.category}</span>
                   </Label>
-                  <StatusBadge label={spec.label} tone={spec.tone} icon={spec.icon} size="sm" />
+                  <StatusBadge label={spec.short} tone={spec.tone === "warning" ? "warning" : "neutral"} icon={spec.icon} size="sm" />
                 </li>
               )
             })}
             {shown.length === 0 ? <li className="p-3 text-sm text-muted-foreground">{`No ${skillNounPlural()} match "${q}".`}</li> : null}
           </ul>
           {inUse.length ? (
-            <Table containerClassName="max-h-48 overflow-y-auto rounded-md border border-border" scrollLabel={`${capitalize(skillNounPlural())} in use that change`}>
+            <Table containerClassName="max-h-48 overflow-y-auto rounded-md border border-border" scrollLabel={`Configured ${skillNounPlural()} that change`}>
               <TableHeader>
                 <TableRow>
-                  <TableHead scope="col">In use</TableHead>
+                  <TableHead scope="col">Already configured</TableHead>
                   <TableHead scope="col" className="text-end">Students who change</TableHead>
                 </TableRow>
               </TableHeader>
@@ -118,9 +123,9 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, onApp
             type="button"
             variant="default"
             size="default"
-            disabled={picked.length === 0}
+            disabled={picked.length === 0 || blocked}
             onClick={() => {
-              onApplied({ skills: picked.length, inUse: inUse.length, students })
+              onApplied({ ids: picked, skills: picked.length, configured: inUse.length, students })
               onOpenChange(false)
             }}
           >

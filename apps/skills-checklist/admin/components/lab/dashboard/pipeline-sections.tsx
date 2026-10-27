@@ -163,10 +163,10 @@ export function SectionsCard({ model, scope }: { model: PipelineModel; scope: La
   const tick = model.tick
   const summary = `${plural(model.total, `required ${skillNoun()} record`, `required ${skillNoun()} records`)} for ${plural(model.students, "student", "students")} in ${plural(model.sections.length, "section", "sections")}.${tick ? ` ${shortCount} ${shortCount === 1 ? "section sits" : "sections sit"} 8 or more points under ${tick.label.toLowerCase()}.` : ""}`
   return (
-    <Card className="py-0" data-region="sections" data-chart aria-label="Where does each section sit?" role="region">
+    <Card className="py-0" data-region="sections" data-chart aria-label="Sections by record state" role="region">
       <CardContent className="flex flex-col gap-3 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Where does each section sit?</h2>
+          <h2 className="text-sm font-semibold text-foreground">Sections by record state</h2>
           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
             {RECORD_STATES.map((st) => (
               <li key={st} className="flex items-center gap-1.5"><StateSwatch state={st} />{RECORD_STATE_LABEL[st]}</li>

@@ -28,10 +28,10 @@ A **Home** is a place to start: shortcuts, recent activity, greetings, set-up ca
 | Admin / coordinator | Program dashboard | **Dashboard** | Yes, full contract | Monitors 100+ students against required skills; Romit's directive | "Home" (a launcher word); "Overview" (says nothing about monitoring) |
 | Reviewer | Approvals | **Approvals** (badge) | Yes, a **queue dashboard**: hero, aging, then the worklist is the main body | The label names the job; the page monitors the backlog (age, outliers) and acts on rows [REQ AR-01; COMP Medtrics approval hub: batch approve, late flags, turnaround] | A separate reviewer "Dashboard" row (adds a row with nothing the queue does not show [S01 4.2]) |
 | Director | Readiness dashboard | **Dashboard** (proposal) | Yes | "Is the graduating cohort ready, what blocks them" is a population question [REQ RP-05]. Verification, if kept, becomes the worklist region, so the nav row no longer rests on a non-REQ feature [AUDIT T3] | "Verification" as the landing row (not in REQ; S01 Q-IA3 open) |
-| Student | Personal progress | **Progress** (page title "Your progress") | **No.** A personal tracker that borrows dashboard UI rules (hero figure, as-of, drill, states) but has no scope bar, no worklist bulk, no population | D1 says a dashboard is about a population; a student is one person. "Home" is the word Romit rejected; "Progress" names the question [REQ SH-04] and Aarti's "the report is the same as the launch page ... at the student level" [CALL 10-08] | "Dashboard" for students (implies monitoring others); "Home" |
+| Student | Personal progress | **My progress** (Romit 2026-10-26, [LEDGER D-L4]; this file first proposed "Progress") | **No.** A personal tracker that borrows dashboard UI rules (hero figure, as-of, drill, states) but has no scope bar, no worklist bulk, no population | D1 says a dashboard is about a population; a student is one person. "Home" is the word Romit rejected; "Progress" names the question [REQ SH-04] and Aarti's "the report is the same as the launch page ... at the student level" [CALL 10-08] | "Dashboard" for students (implies monitoring others); "Home" |
 | Evaluator | Requests page | none | No | No account, no chrome [REQ EV-01] | Any chart [S05 section 2] |
 
-Nav after this file (still 11 rows; PENDING-ROMIT on the director row): admin Dashboard, {Skills}, Approvals, Attainment · reviewer Approvals, Students · director Dashboard, Attainment · student Progress, Log, Record.
+Nav after this file (still 11 rows; PENDING-ROMIT on the director row): admin Dashboard, {Skills}, Approvals, Attainment · reviewer Approvals, Students · director Dashboard, Attainment · student My progress, Log, Record [LEDGER D-L4].
 
 ## 3. Interaction logic
 
@@ -221,7 +221,7 @@ DS: `Tabs` + `TabsCountBadge`, `DataTable` with selection and `BulkAction` "Appr
 
 Default scope: the cohort with the nearest graduation date, shown as a removable chip (the one place a cohort is preselected, because the director's question names it). Readiness split = vendored `StackedBar` (C16); records = `DataTable` grouped. Verification actions live on the student record only (Q3 stays open). If verification is dropped, the "Records by next step" region becomes "Students by next step" and the page is unchanged otherwise.
 
-### 5.5 Student: Progress (personal, not a dashboard)
+### 5.5 Student: My progress (personal, not a dashboard) [LEDGER D-L4]
 
 Hero waffle "6 of 12 required sign-offs counted", Do this next card, mandatory list with causes, Waiting on others, What changed for you [design 2.2]. Scope = one control: course `ViewSegmentedControl` "NURS 350 | All courses" [REQ SH-06]. No basis selector; pace line shown only if pace is confirmed. No peer comparison by default (S05 Q7). As-of shown only when offline or queued [S03 section 6].
 
@@ -260,7 +260,7 @@ Rule: pending never counts [REQ AE-01]; every figure obeys invariants I-1 to I-7
 | # | Question | Recommendation | Why it matters |
 |---|---|---|---|
 | Q1 | Is pace (term clock) a real program concept? | Keep as default basis with caption until confirmed; fallback All required | Drives hero, strip and blocking skill |
-| Q2 | Student landing label: "Progress" (proposed) or keep "Home"? | Progress | Romit's rename covered staff; student label was not stated |
+| Q2 | Student landing label: "Progress" (proposed) or keep "Home"? | **Resolved 2026-10-26: "My progress"** [LEDGER D-L4] | Romit chose the label; neither Progress nor Home |
 | Q3 | Director rows: Dashboard + Attainment, with Verification folded into the worklist? | Yes | Removes a nav row that rests on a non-REQ feature |
 | Q4 | Default scope on first visit: all active students (proposed) or the user's own cohort? | All active students; then remember last scope | Aarti picks a cohort [CALL 10-09]; remembering covers that |
 | Q5 | Is term a scope field? Not listed in RP-01 | Yes, via course offering | Needed for the term clock |

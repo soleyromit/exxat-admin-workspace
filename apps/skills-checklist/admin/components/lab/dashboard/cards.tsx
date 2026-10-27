@@ -27,6 +27,7 @@ import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { GapStrip, StripLegend, niceDomain, type StripLane } from "@/components/lab/dashboard/gap-strip"
 import { LINK, LINK_IN_TABLE } from "@/components/lab/link-styles"
 import { fmt } from "@/lib/v2/format"
+import { TYPE } from "@/components/lab/type-scale"
 
 // One link treatment for every lab screen (consistency audit item 7): LINK standalone (always underlined), LINK_IN_TABLE in rows.
 export { LINK, LINK_IN_TABLE } from "@/components/lab/link-styles"
@@ -63,11 +64,11 @@ export function BehindBadge({ label }: { label: string }) {
 export function HeroTile({ icon, tone }: { icon: string; tone: "behind" | "clear" }) {
   return (
     <span
-      className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg"
+      className="flex size-10 shrink-0 items-center justify-center rounded-lg"
       style={tone === "behind" ? { background: VIZ.behindWash, color: VIZ.behindInk } : { background: "var(--muted)", color: "var(--foreground)" }}
       aria-hidden="true"
     >
-      <i className={`fa-light ${icon}`} />
+      <i className={`fa-light ${icon} text-lg`} />
     </span>
   )
 }
@@ -77,15 +78,15 @@ export function HeroTile({ icon, tone }: { icon: string; tone: "behind" | "clear
  * (typographic contrast, not colour). The basis explanation lives in a Tip on the number (one place, no extra button).
  */
 export function HeroMetric({ value, rest, tip }: { value: string; rest: string; tip?: string }) {
-  const number = <span className="text-4xl font-semibold leading-none tabular-nums" data-hero-number>{value}</span>
+  const number = <span className={TYPE.figure} data-hero-number>{value}</span>
   return (
-    <h2 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 font-heading text-foreground" data-figure="hero">
+    <h2 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-foreground" data-figure="hero">
       {tip ? (
         <Tip label={tip}>
           <span tabIndex={0} className="cursor-help rounded-sm underline decoration-dotted decoration-1 underline-offset-[6px] outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`${value}. ${tip}`}>{number}</span>
         </Tip>
       ) : number}
-      <span className="font-sans text-base font-normal text-muted-foreground">{rest}</span>
+      <span className="text-sm font-normal text-muted-foreground">{rest}</span>
     </h2>
   )
 }
@@ -187,7 +188,7 @@ export function WhoIsBehindCard({ model, scope, split, onSplit, className, parti
   const zero = basis === "expected" ? { value: 0, label: "On pace" } : basis === "median" && !suppressed ? { value: 0, label: "Median" } : undefined
   return (
     <div className={className} data-region="who-behind" data-chart>
-    <ChartCard title="Who is behind, and by how much?" description={visibleSummary}>
+    <ChartCard title="Students behind, by gap" description={visibleSummary}>
       <div className="flex flex-col gap-2" id="who-behind">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <StripLegend behindLabel={flagWord} zeroLabel={zero ? (basis === "expected" ? "Expected now" : "Scope median") : undefined} />
@@ -279,7 +280,7 @@ export function BlockerCard({ model, scope, top = 5, className }: { model: Dashb
   }
   return (
     <div className={className} data-region="blockers" data-chart>
-    <ChartCard title={`Which required ${skillNoun()} blocks the most?`} description={summary}>
+    <ChartCard title={`Required ${skillNounPlural()} holding students back`} description={summary}>
       <div className="flex flex-col gap-4" id="blockers">
         {shown.length === 0 ? null : (
           <div className="flex flex-col gap-1">
@@ -383,7 +384,7 @@ export function SitesCard({ model, scope, className }: { model: DashboardModel; 
   const summary = s.requests === 0 || !first ? "No requests are waiting with evaluators in this scope." : `The oldest wait at ${first.name}: ${first.total} requests, the oldest ${first.oldest} days.`
   return (
     <div className={className} data-region="sites" data-chart>
-    <ChartCard title="Where are requests stuck?" description={summary}>
+    <ChartCard title="Requests waiting, by site" description={summary}>
       <div className="flex flex-col gap-4" id="sites">
         <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
           {AGE_BUCKETS.map((b, i) => (
@@ -512,8 +513,8 @@ export function SetupHero({ termName }: { termName: string }) {
   return (
     <Card data-dashboard-hero="no-data" id="hero" data-region="verdict">
       <CardContent className="flex flex-wrap items-center gap-x-5 gap-y-3">
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xl text-foreground" aria-hidden="true">
-          <i className="fa-light fa-user-plus" />
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground" aria-hidden="true">
+          <i className="fa-light fa-user-plus text-xl" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h2 className="text-base font-semibold text-foreground">{`No students in ${termName} yet`}</h2>

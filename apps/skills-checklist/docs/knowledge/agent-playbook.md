@@ -68,6 +68,31 @@ Channel rule: email only to people with no account (evaluators); everyone else g
 
 123 students (38 / 43 / 42), 153 to 154 skills in 10 sections, 403 evaluators, 2,141 sites (120 in the lab dataset), 8,879 evidence records. Never design or test against 12 students or 7 skills. Search first, group by section, chips removable alone, bulk by default.
 
+### A6. Leadership and stakeholder direction [00-brief section 0]
+
+| Direction | Source | On screen |
+|---|---|---|
+| Wizard and form pages use the full width with no white space | Leadership via Romit, 2026-10-27 [LEDGER D-L5, D-X30] | Fill width with structure (columns, preview panel), not stretched fields; check at 1920 as well as 1440 and 375 |
+| Category (one, optional) and Tags (many, created inline) in every Add a skill path, plus library filters | Romit relaying Sankalp, 2026-10-27 [LEDGER D-L5, D-X28] [REQ SL-03, SL-04, SL-05, SL-10] | Tags are a chip text box, not a dropdown; compact variants carry both |
+
+Rule: any new direction Romit relays from leadership, Sankalp, Arthi (Aarti) or Vishakha is recorded the same day in ledger 3b (his words, dated), in section 0 of `00-design-brief.md` and in this table, so workers read it.
+
+### A7. Requirement coverage (mandatory for every screen and every variant)
+
+Why this exists: REQ SL-03 to SL-06 and SL-10 asked for category, tags and library filters, yet the Add a skill variants dropped them, because every gate checked how screens are built and none checked whether each requirement is present on each screen and in each variant (2026-10-27).
+
+| When | Do |
+|---|---|
+| Before designing or changing a screen | List the requirement IDs the screen (every variant of it) must satisfy, quoted from `docs/source/requirements.extracted.txt`; per-screen checklist `docs/knowledge/req-coverage-lab.md` (and `.json`) once it exists; matrix `docs/strategy/04-requirements-traceability.md` (skill `skills-req-trace`) |
+| While simplifying | Keep every listed ID reachable (A8) |
+| Before claiming done | Confirm each ID is visible or reachable in EVERY variant (runtime check or file:line) and paste the Requirement coverage block (J3). The automated gate will be `node scripts/lab-req-gate.mjs` (once built); until then the manual block is required |
+
+A screen missing a required field is not done, regardless of the DS gate, density, consistency, nav crawl, terms or present checks.
+
+### A8. Simplify guardrail
+
+Simplify without removing anything a requirement asks for. Density budget is met by merging, progressive disclosure (a 'More' or a sheet) or moving to a secondary place, never by dropping a required field, filter, state or action. Compact variants (inline rows, one page, many at once) must carry the same required fields as the full variant. Worker briefs that say "cut text, fewer controls" must carry this sentence too.
+
 ---
 
 ## B. UX laws and principles (plain sentence, our rule, check)
@@ -219,13 +244,15 @@ Where text goes instead, in order: a quantity becomes a visual with the number o
 
 Theme: the app runs `theme-prism` (rose, hue 342); never violet [S04 2] [MEM prism_theme_is_pink].
 
-### E2. Layout templates (content column inside the staff shell; left aligned, never centred) [01-layout-patterns 2, 3]
+### E2. Layout templates (content column inside the staff shell) [01-layout-patterns 2, 3] [LEDGER D-X30]
+
+Wizard and form pages fill 100 percent of the content width and the full height (D-L5, D-X30, superseding the old "left aligned 960 / 720" note and D-X29); readability comes from columns and a preview panel, never from stretched fields.
 
 | Template | Use | Width | Primary | Footer | Regions |
 |---|---|---|---|---|---|
 | T1 List | Library, queues, directories | full (1136 at 1440) | Header, one filled `sm`, rightmost | DataTable bulk bar on selection | 4 |
-| T2 Wizard | Import, Configure (Set 1) | 960 (`max-w-[60rem]`) | Sticky footer, `default` size | Sticky: Back left, context (10 words) middle, primary right; `WizardProgress` sr-only | 4 |
-| T3 Form or detail | Add, settings, record detail | 720 (`max-w-[45rem]`); detail with tables 1024 | Sticky footer with summary line | Sticky | 4 (detail 5) |
+| T2 Wizard | Import, Configure (Set 1) | full; step content in two columns past 56rem, Preview panel (36 percent, min 22rem) from 1280 px [D-X30] | Sticky footer, `default` size | Sticky: Back left, context (10 words) middle, primary right; `WizardProgress` sr-only | 4 |
+| T3 Form or detail | Add, settings, record detail | full, with columns [D-X30]; one column below 1280 px | Sticky footer with summary line | Sticky | 4 (detail 5) |
 | T4 Split | Approvals B, Export A | full; `FloatingSheetPanel` `md` 32 rem, non-modal | In panel footer when a record is open; else header bulk | Panel `WorkflowFooter` | 5 (panel = 1) |
 | T5 Dashboard | Admin, director | full | Export is the only header action | none | 5 |
 
@@ -279,20 +306,20 @@ Serif `--font-heading` for the page title (and the hero number in the lab); Inte
 |---|---|---|---|---|---|---|---|---|
 | Regions | 5 | 4 | 4 | 4 | 5 | 5 | 3 | 4 |
 | Figures (hero incl.) | 4 | 0 with tabs, 3 without | 1 | 1 | 4 | 3 | 0 | 3 |
-| Charts above fold | 3 (script, D-X21; docs say 2) | 0 | 1 | 1 | 1 | 0 | 0 | 1 |
+| Charts above fold | 3 (D-X21, enforced by the script) | 0 | 1 | 1 | 1 | 0 | 0 | 1 |
 | Controls above first chart or table | 8 | 6 | 7 fields | 7 | 6 | 8 | 4 | 4 |
 | Prose words | 40 | 40 | 30 | 40 | 40 | 40 | 15 | 40 (25 phone) |
 | Filled primary | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
 | Saturated hues | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 3 |
 | Repeated sentence or figure | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
-Counting rules: a tab list is one control; a grid of small tiles is one region (max 6 tiles); a modal counts alone; a non-modal panel counts with the page; an artifact preview counts as data only inside a labelled preview frame. When a line fails, cut or move; never shrink type or spacing; never silently raise a limit; ask Romit [S07 1.1].
+Counting rules: a tab list is one control; a grid of small tiles is one region (max 6 tiles); a modal counts alone; a non-modal panel counts with the page; an artifact preview counts as data only inside a labelled preview frame. When a line fails, merge, disclose or move; never drop anything a requirement asks for (A8); never shrink type or spacing; never silently raise a limit; ask Romit [S07 1.1, 1.2].
 
 ### E7. Responsive and accessibility
 
 | Area | Rule |
 |---|---|
-| Widths | Web-first: 1440 primary, 1280, 1024, complete 375. Evaluator form designed 375-first [LEDGER D-X2] |
+| Widths | Web-first: 1440 primary, 1280, 1024, complete 375, and 1920 checked for empty space (A6). Evaluator form designed 375-first [LEDGER D-X2] |
 | Page scroll | No horizontal page scroll at any width; tables and heat-grid scroll inside their own region |
 | Charts | Switch to table version under 600 px |
 | WCAG 2.1 AA | Text 4.5:1, non-text 3:1; focus visible and returned; no state by colour alone; chart = text summary + table + keyboard |
@@ -422,12 +449,13 @@ Market risk is mobile reliability, not the web screens: never lose an entry; eva
 |---|---|---|
 | 1 Consult | Read brief, glossary, ledger, the strategy doc for the area, `granola-2026-10-26-updates.md`, the vault note `Decisions/skills-checklist/decisions/2026-10-26-skills-checklist-design-brief-decisions.md`. Say which copy you used (repo, worktree, vault) | One line: "Consulted: ... Decisions that apply: D-L1, D-X12 ..." |
 | 2 Frame | Name the job, the role, the receiver-side cue (previous role did X, next role sees Y), and the hard stops involved | 4 short lines |
+| 2b Requirements | List the requirement IDs the screen and every variant must satisfy, quoted from REQ (A7); read the leadership table (A6) | ID list with the quoted line |
 | 3 Research | Mobbin MCP (`mcp__claude_ai_Mobbin__search_screens`, `search_flows`, `search_sections`): look at the images, cite each `mobbin_url`, say what it teaches and what not to copy. Competitive digest models. At least one analogy outside SaaS explained in plain words (order tracking, boarding pass, bank ledger, flight board, pull request). For high-creativity asks, go beyond Mobbin and shadcn [MEM creative_variants_beyond_mobbin_shadcn]. If no reference exists, say so before designing [MEM call_out_no_reference] | Reference table: source, url, lesson, do not copy |
 | 4 Update first | If the ask changes something that exists, change the existing variants (list which, per letter). Add a new variant only when the question it tests is genuinely different. Check `lib/lab/screens.json` and `flows.json` before adding | "Changes A, B; no new variant because ..." |
 | 5 Concepts | At least 3 STRUCTURALLY different concepts: different mental model and primary job, not skins. Each: ASCII wireframe at 1440 (375 for student and evaluator); regions in the first viewport counted against E6; exact DS components; what is deliberately NOT on the page; risks; the question it tests; then a recommendation with the reason. Cover every region with equal craft [MEM redesign_scope_covers_all_regions]; question whether each region is needed [MEM question_structural_redundancy] | Concept table + wireframes + recommendation |
 | 6 Build | In the lab with real `@exxatdesignux/ui` components, on the E2 templates (`components/lab/layout/*`). Files: `admin/components/lab/screens/<persona>-<screen>-<letter>.tsx`, register in `lib/lab/screens.json` (question, file, pageType) and `components/lab/screens/index.ts`, place in `lib/lab/flows.json` sets. Links only via `lib/lab/links.ts`. Data only from `lib/v2/population.ts`, `approvals.ts`, `facts.ts`, `labels.ts`; no invented figure. `'use client'`, `aria-hidden` on FA icons, `aria-label` on icon-only buttons | Changed file list |
-| 7 Gates | From `apps/skills-checklist/admin`: start dev with `npx next dev --port 3017` (webpack; never Turbopack; package.json `dev` is Turbopack on 3007, do not use it for gates). Run and paste literal output: `npx vitest run`; `npx tsc --noEmit`; `node scripts/lab-ds-gate.mjs --write` then `node scripts/lab-ds-gate.mjs`; `node scripts/lab-chrome-gate.mjs`; `node tests/lab/density-budget.mjs`; `node tests/lab/consistency.mjs http://localhost:3017`; `node scripts/lab-nav-crawl.mjs`; `node scripts/lab-axe.mjs 1440 <paths>`. Take Playwright screenshots at 1440 x 900 (375 x 812 for student and evaluator) and LOOK at them before claiming anything [MEM screenshot_before_placement_decisions] | Pasted outputs + screenshot paths |
-| 8 Report | Per existing variant: what changed. New variants and why. Evidence block (J2). What was NOT verified. Open decisions touched and not decided. Your own critique and 2 to 5 further proposals [MEM proactive_design_proposals] | Report in plain text, tables over prose |
+| 7 Gates | From `apps/skills-checklist/admin`: start dev with `npx next dev --port 3017` (webpack; never Turbopack; package.json `dev` is Turbopack on 3007, do not use it for gates). Run and paste literal output: `npx vitest run`; `npx tsc --noEmit`; `node scripts/lab-ds-gate.mjs --write` then `node scripts/lab-ds-gate.mjs`; `node scripts/lab-chrome-gate.mjs`; `node tests/lab/density-budget.mjs`; `node tests/lab/consistency.mjs http://localhost:3017`; `node scripts/lab-nav-crawl.mjs`; `node scripts/lab-axe.mjs 1440 <paths>`. Take Playwright screenshots at 1920 x 1080, 1440 x 900 and 375 x 812 for every variant (not just A) and LOOK at them for empty space and missing fields before claiming anything [MEM screenshot_before_placement_decisions]. Requirement coverage block (J3); `node scripts/lab-req-gate.mjs` once built | Pasted outputs + screenshot paths + coverage block |
+| 8 Report | Per existing variant: what changed. New variants and why. Evidence block (J2), Requirement coverage block (J3), hand-back checklist (J4). What was NOT verified. Open decisions touched and not decided. Your own critique and 2 to 5 further proposals [MEM proactive_design_proposals] | Report in plain text, tables over prose |
 | 9 Record | Romit's new decisions go to `02-decisions-ledger.md` section 3b with date and his words. Durable knowledge goes to an atomic note in `~/Documents/research-repos` (schema: type, product, source, date, tags, title, summary, relevance, value, theme, status; filename `YYYY-MM-DD-slug.md`; add to the matching `MOCs/MOC-*.md`); write locally, never commit | Ledger row + vault path |
 
 **Never:** commit, push, deploy, stash or reset. **Ask Romit only** for decisions that are genuinely his (scope, an OD, a PENDING-ROMIT, reversing his own decision), in plain chat text, never a menu or AskUserQuestion [MEM no_askuserquestion_tool]. Otherwise proceed on a documented default and flag it "delegated default". Lead with the acceptance test, not a trust question. Capitalise sentence starts.
@@ -442,7 +470,7 @@ Market risk is mobile reliability, not the web screens: never lose an entry; eva
 
 ---
 
-## J. Review checklist (30 yes/no; any "no" blocks) and the evidence block
+## J. Review checklist (31 yes/no; any "no" blocks) and the evidence block
 
 | # | Check | Traces to |
 |---|---|---|
@@ -474,8 +502,9 @@ Market risk is mobile reliability, not the web screens: never lose an entry; eva
 | 26 | Layout matches its template (width, primary placement, sticky footer) and sets `data-page-type`? | E2 [01 5] |
 | 27 | DS components only, each looked up with `node tools/ds/source.mjs`; no raw button or table, no hex, no toast? | E3 [workspace CLAUDE.md] |
 | 28 | Accessible: focus visible and returned, keyboard reach, 4.5:1 text, 3:1 marks, 24 px targets (44 touch)? | E7 [S04 12] |
-| 29 | Responsive at 1440, 1024, 375 with no horizontal page scroll? | E7 [S04 10] |
+| 29 | Responsive at 1920, 1440, 1024, 375 with no horizontal page scroll, and no large empty area on wizard and form pages at 1920? | E7 A6 [S04 10] [LEDGER D-X30] |
 | 30 | Existing variants were updated before a new one was added, and the variant's sidebar matches the persona's other variants? | I step 4 [CALL 10-26 item 21] |
+| 31 | Every requirement ID listed for the screen is MET in every variant (compact variants included), shown in the Requirement coverage block? | A7 A8 |
 
 ### J2. Evidence block (required before any "done")
 
@@ -486,10 +515,31 @@ vitest: <pasted summary line>      tsc: <pasted or "0 errors">
 lab-ds-gate --write / plain: <pasted>   lab-chrome-gate: <pasted>
 density-budget: <pasted PASS/FAIL line per variant>
 consistency: <pasted>   nav-crawl: <pasted>   axe 1440: <pasted>
-Screenshots looked at: <paths, widths>
+Screenshots looked at: <paths, widths 1920 / 1440 / 375, every variant>
+Requirement coverage: <J3 block>
 Verdict: GREENLIGHT (static) | GREENLIGHT (runtime)  (runtime only with a fresh visual run)
 NOT verified: <list>    Open decisions touched, not decided: <OD-n, PENDING-ROMIT items>
 ```
+
+### J3. Requirement coverage block (required for any screen work)
+
+```
+Requirement coverage (source: docs/source/requirements.extracted.txt; checklist docs/knowledge/req-coverage-lab.md)
+| ID | Quoted requirement (short) | Variant | MET / PARTIAL / MISSING | Evidence (runtime check or file:line) |
+|---|---|---|---|---|
+| SL-03 | A skill belongs to at most one category; optional | add-skill B | MET | components/lab/...tsx:NN |
+Automated gate: node scripts/lab-req-gate.mjs (once built); until then this manual block
+```
+
+Any MISSING in any variant blocks done. PARTIAL needs a named reason and a follow-up.
+
+### J4. Before you hand back (every design or build task)
+
+- [ ] Requirement coverage block pasted, every variant, no MISSING (A7, J3)
+- [ ] Simplify guardrail held: nothing a requirement asks for was dropped to meet the density budget (A8)
+- [ ] Screenshots at 1920, 1440 and 375 looked at for empty space and missing fields
+- [ ] Every variant checked, not just A
+- [ ] Leadership and stakeholder direction respected (A6; brief section 0)
 
 ---
 
@@ -497,13 +547,15 @@ NOT verified: <list>    Open decisions touched, not decided: <OD-n, PENDING-ROMI
 
 | # | Conflict | Which wins today |
 |---|---|---|
-| K1 | Charts above the fold on a dashboard: brief and strategy 07 say 2; D-X21 and `density-budget.mjs` say 3 | The script (D-X21), a delegated default |
+| K1 | Charts above the fold on a dashboard: brief and strategy 07 said 2; D-X21 and `density-budget.mjs` say 3 | **Resolved 2026-10-27**: brief, strategy 05 and 07 and product `CLAUDE.md` item 10 now say 3 with a pointer to D-X21 (a delegated default) |
 | K2 | Requirement level: strategy 02 6.5 says Mandatory / Non-mandatory and bans recommended/optional; the Oct 26 call and `labels.ts` use Mandatory / Recommended / Optional | Call, labelled PROPOSED against REQ CM-03 |
-| K3 | Third record state: glossary and strategy 05 legend say "Not yet met" | D-L1 "In progress" |
-| K4 | Student landing: glossary and strategy 01 say "Home"; strategy 06 says "Progress" | D-L4 "My progress" |
+| K3 | Third record state: glossary and strategy 05 legend said "Not yet met" | **Resolved 2026-10-27**: both say "In progress" (D-L1) |
+| K4 | Student landing: glossary and strategy 01 said "Home"; strategy 06 said "Progress" | **Resolved 2026-10-27**: glossary, strategy 01 and 06 say "My progress" (D-L4); strategy 01 ASCII diagrams still read "Home", covered by its rename note |
 | K5 | Evaluator identity words: strategy 03 Verified / Unverified; 02 Adopted / Not yet recorded; `labels.ts` Adopted / Unverified; call adds cause "Evaluator not assigned" | `labels.ts` + call |
 | K6 | Outlier flag: strategy 05 says 3x average; D-X18 says 2x, n >= 30, 5+ returns | D-X18 |
-| K7 | Product `CLAUDE.md` digest item 8 still lists the D-L1 to D-L4 questions as PENDING | Ledger 3b (decided) |
+| K7 | Product `CLAUDE.md` digest item 8 listed the D-L1 to D-L3 questions and reopen as PENDING | **Resolved 2026-10-27**: item 8 now lists only open questions (D-L1 to D-L3 decided, reopen is delegated default D-X1) |
 | K8 | Product `CLAUDE.md` scaffold text says `theme-one`; strategy 04 says the app runs `theme-prism` | Strategy 04; verified `admin/app/layout.tsx:15` sets `theme-prism` |
 | K9 | Director landing: strategy 01 "Verification"; strategy 06 "Dashboard" (proposal) | Open (director verification not in REQ) |
 | K10 | Dev server: `package.json` `dev` is Turbopack on 3007; lab gates assume `npx next dev --port 3017` | Gates: 3017 webpack |
+| K11 | Layout width: this playbook's E2 and `01-layout-patterns` said wizard 960 / form 720, "left aligned, never centred"; D-X29 centred them; D-L5 and D-X30 fill the width | **Resolved here 2026-10-27**: D-X30 (E2 updated). `design/skill-setup-journey/01-layout-patterns.md` not edited in this pass |
+| K12 | Glossary row for the Approvals nav row said PENDING-ROMIT | **Resolved 2026-10-27**: always shown (D-L3) |

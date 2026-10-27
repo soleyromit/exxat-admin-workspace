@@ -1,69 +1,59 @@
 "use client"
 
 /**
- * Student Fix a returned or did-not-qualify submission, variant B: before and after, side by side.
- * Tests: does seeing what the evaluator or reviewer saw next to the new draft (Platinum Planner's correction view) reduce a
- * second return better than a guided column?
- * Regions (form budget 4): header · path line · what they saw (read only) · your correction or attempt (form).
+ * Student Fix a returned or did-not-qualify submission, variant B: before and after.
+ * Tests: does seeing what the evaluator or reviewer saw next to the new draft (Platinum Planner's correction view) reduce a second
+ * return better than a summary of the new one?
+ * Same page as A (compact reason banner, path said once, numbered sections, Send footer; Romit 2026-10-27 "Need a better form
+ * layout"); the column beside the form from 1280 px holds the original (read only) instead of the summary, and below 1280 px the
+ * original sits above the form. [REQ RV-01..RV-05, ST-05..ST-10, ST-12, ST-13]
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
-import { StudentFrame, type StudentFrameCtx } from "@/components/lab/student/frame"
-import { ChangeList, FixForm, NothingToFix, PathLine, ReasonBlock, useFix, useFixDraft } from "@/components/lab/student/fix"
-import { NUM_LINK, SectionTitle } from "@/components/lab/student/parts"
-import { fixTitleOf } from "@/components/lab/screens/student-fix-a"
-import { shortDate, studentHref } from "@/lib/lab/student"
+import type { StudentFrameCtx } from "@/components/lab/student/frame"
+import { FixPage } from "@/components/lab/student/fix"
+import { NUM_LINK } from "@/components/lab/student/parts"
+import { TYPE } from "@/components/lab/type-scale"
+import { shortDate, studentHref, type FixModel } from "@/lib/lab/student"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
-export function StudentFixB() {
+function Original({ f, ctx }: { f: FixModel; ctx: StudentFrameCtx }) {
   return (
-    <StudentFrame title={fixTitleOf} back={(c) => ({ label: "My requests", href: studentHref("my-requests", {}, c.studentId) })}>
-      {(ctx) => <Body ctx={ctx} />}
-    </StudentFrame>
+    <section className="flex flex-col gap-3" aria-labelledby="fix-original-h" data-region="original">
+      <h2 id="fix-original-h" className={TYPE.section}>{f.case === "attempt" ? `Attempt ${f.nextNumber - 1}` : f.origin === "waiting" ? "What you sent" : "What the reviewer saw"}</h2>
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
+        <dt className="text-muted-foreground">{capitalize(f.skillIds.length > 1 ? skillNounPlural() : skillNoun())}</dt>
+        <dd className="flex flex-col gap-0.5">
+          {f.skillIds.map((id, i) => <Link key={id} className={NUM_LINK} href={studentHref("skill-detail", { skill: id }, ctx.studentId)}>{f.skillNames[i]}</Link>)}
+        </dd>
+        <dt className="text-muted-foreground">Evaluator</dt>
+        <dd className="text-foreground">{f.evaluatorName}</dd>
+        <dt className="text-muted-foreground">Setting</dt>
+        <dd className="text-foreground">{f.setting}</dd>
+        <dt className="text-muted-foreground">{f.case === "attempt" ? "Answered" : f.origin === "waiting" ? "Sent" : "Returned"}</dt>
+        <dd className="text-foreground">{shortDate(f.reasonAt)}</dd>
+        {f.studentNote ? (
+          <>
+            <dt className="text-muted-foreground">Your note</dt>
+            <dd className="text-foreground"><q data-user-content>{f.studentNote}</q></dd>
+          </>
+        ) : null}
+      </dl>
+    </section>
   )
 }
 
-function Body({ ctx }: { ctx: StudentFrameCtx }) {
-  const f = useFix(ctx)
-  const api = useFixDraft(f)
-  if (!f) return <NothingToFix studentId={ctx.studentId} />
+export function StudentFixB() {
   return (
-    <div className="flex flex-col gap-4" data-student-lab="fix-B">
-      <div data-region="path"><PathLine f={f} /></div>
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <Card data-region="original" className="py-0 lg:col-span-5">
-          <CardContent className="flex flex-col gap-3 py-4">
-            <SectionTitle>{f.case === "correction" ? "What the reviewer saw" : "The attempt that did not count"}</SectionTitle>
-            <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-              <dt className="text-muted-foreground">{capitalize(f.skillIds.length > 1 ? skillNounPlural() : skillNoun())}</dt>
-              <dd className="flex flex-col gap-0.5">
-                {f.skillIds.map((id, i) => <Link key={id} className={NUM_LINK} href={studentHref("skill-detail", { skill: id }, ctx.studentId)}>{f.skillNames[i]}</Link>)}
-              </dd>
-              <dt className="text-muted-foreground">Evaluator</dt>
-              <dd className="text-foreground">{f.evaluatorName}</dd>
-              <dt className="text-muted-foreground">Setting</dt>
-              <dd className="text-foreground">{f.setting}</dd>
-              <dt className="text-muted-foreground">{f.case === "correction" ? "Returned" : "Answered"}</dt>
-              <dd className="text-foreground">{shortDate(f.reasonAt)}</dd>
-              {f.studentNote ? (
-                <>
-                  <dt className="text-muted-foreground">Your note</dt>
-                  <dd className="text-foreground">{f.studentNote}</dd>
-                </>
-              ) : null}
-            </dl>
-            <ReasonBlock f={f} />
-          </CardContent>
+    <FixPage
+      marker="fix-B"
+      aside={(f, api, ctx) => (api.sent ? null : <Original f={f} ctx={ctx} />)}
+      inline={(f, ctx) => (
+        <Card className="max-w-[40rem] gap-0 py-0">
+          <CardContent className="py-4"><Original f={f} ctx={ctx} /></CardContent>
         </Card>
-        <Card data-region="form" className="py-0 lg:col-span-7">
-          <CardContent className="flex flex-col gap-5 py-4">
-            <SectionTitle>{f.case === "correction" ? `Your correction, revision ${f.nextNumber}` : `Your attempt ${f.nextNumber}`}</SectionTitle>
-            {api.sent ? null : <ChangeList f={f} api={api} />}
-            <FixForm f={f} api={api} offline={ctx.demo === "offline"} studentId={ctx.studentId} />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      )}
+    />
   )
 }

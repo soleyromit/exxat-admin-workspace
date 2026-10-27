@@ -71,7 +71,9 @@ export function stepFor(flow: FlowDef, screen: string, set: string, params: Link
   }
   const preferred = prefer ? candidates.find((s) => s.id === prefer) : undefined
   if (preferred && (!preferred.params || matches(preferred))) return preferred
-  return candidates.find(matches) ?? candidates.find((s) => !s.params) ?? candidates[0]
+  // The most specific match wins (a walkthrough's Check and save, skill + step=check, beats Configure, skill alone).
+  const best = candidates.filter(matches).sort((a, b) => Object.keys(b.params?.[set] ?? {}).length - Object.keys(a.params?.[set] ?? {}).length)[0]
+  return best ?? candidates.find((s) => !s.params) ?? candidates[0]
 }
 
 /** The flow a link to `screen` uses: the page's flow when it contains the screen, else the first flow that does. */
@@ -96,7 +98,9 @@ export function labHref(screen: string, params: LinkParams = {}, ctx: LinkContex
       // a self link stays in that variant on the screen route.
       return `/lab/${persona}/${slug}${query({ variant: ctx.variant, set }, params, ctx.carry)}`
     }
-    const step = stepFor(flow, screen, set, params, sameScreen && ctx.onFlowRoute ? ctx.stepId : undefined)
+    // A walkthrough moves on by params alone (My progress -> Skills by course is the same screen with ?course=), so its
+    // self links do not prefer the page's own step.
+    const step = stepFor(flow, screen, set, params, sameScreen && ctx.onFlowRoute && !flow.walkthrough ? ctx.stepId : undefined)
     if (step) return `/lab/flow/${flow.id}/${step.id}${query({ set }, params, ctx.carry)}`
   }
 
@@ -183,9 +187,12 @@ export function navHref(screen: string, ctx: LinkContext = {}): string {
   const page = findFlow(ctx.flowId)
   const starts = (f: FlowDef) => mainSteps(f)[0]?.screen === screen
   const flow = page && starts(page) ? page : page && page.steps.some((s) => s.screen === screen) ? undefined : FLOWS.find(starts)
+  // A student's course is a place (the course view, LEDGER D-L17), not a scope filter: a nav row never carries it, so My progress
+  // from the course view lands on My progress.
+  const own: LinkParams = screen.startsWith("student/") ? { course: null } : {}
   if (flow) {
     const set = resolveSet(flow, ctx.set)
-    return `/lab/flow/${flow.id}${query({ set }, {}, ctx.carry)}`
+    return `/lab/flow/${flow.id}${query({ set }, own, ctx.carry)}`
   }
-  return labHref(screen, {}, ctx)
+  return labHref(screen, own, ctx)
 }

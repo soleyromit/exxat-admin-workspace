@@ -11,6 +11,8 @@ import { useConfigureMany } from "@/components/lab/library/configure-many"
 import { useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
 import { deleteSkill, setSkillsActive } from "@/lib/v2/admin-actions"
+import { ensureVocab } from "@/lib/v2/vocabulary"
+import type { V2State } from "@/lib/v2/types"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import {
   EMPTY_OVERLAY,
@@ -20,6 +22,8 @@ import {
   draftToSkill,
   severalDrafts,
   type SeveralItem,
+  addSkillsToStore,
+  type AddedSkill,
   type LibraryOverlay,
   type LibraryRow,
   type SkillDraft,
@@ -39,6 +43,10 @@ export interface LibraryBanner {
 const ACTOR = IDS.ross
 const at = () => `${DEMO_TODAY}T${new Date().toISOString().slice(11)}`
 
+/** SL-05: categories and tags typed in an Add a skill picker join the shared list when the skill is saved. */
+const withVocab = (s: V2State, skills: ReadonlyArray<{ category?: string; tags?: readonly string[] }>) =>
+  ensureVocab(ensureVocab(s, "categories", skills.map((k) => k.category ?? "").filter(Boolean), ACTOR, at()), "tags", skills.flatMap((k) => k.tags ?? []), ACTOR, at())
+
 export function useLibrary() {
   const store = useV2Store()
   const state = useV2State()
@@ -54,7 +62,45 @@ export function useLibrary() {
     window.addEventListener("lab:reset", onReset)
     return () => window.removeEventListener("lab:reset", onReset)
   }, [])
+  // Coming back from Configure (decision D-X31): "?skill=&saved=1" after Save configuration, "&draft=1" after Save draft, and
+  // "?saved=<n>" after several were saved at once. The row opens in the detail panel (its primary is the next step), and one
+  // banner says what happened, once per arrival.
+  const savedParam = params?.get("saved") ?? null
+  const returned = savedParam ? "saved" : params?.get("draft") ? "draft" : null
+  const returnedId = params?.get("skill") ?? null
+  const announced = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    if (!hydrated || !returned) return
+    const key = `${returned}|${returnedId ?? savedParam}`
+    if (announced.current === key) return
+    if (!returnedId) {
+      const n = Number(savedParam)
+      if (returned !== "saved" || !Number.isInteger(n) || n < 1) return
+      announced.current = key
+      setBanner({ variant: "success", title: `${countSkills(n)} configured`, body: "They can now be mapped to courses." })
+      return
+    }
+    const k = state.skills.find((x) => x.id === returnedId)
+    if (!k) return
+    announced.current = key
+    setBanner(
+      returned === "saved"
+        ? { variant: "success", title: `${k.name} is configured`, body: "It can now be mapped to courses." }
+        : { variant: "info", title: `Draft saved for ${k.name}`, body: "It stays not configured until you save the configuration." },
+    )
+  }, [hydrated, returned, returnedId, savedParam, state.skills])
   const seq = React.useRef(0)
+  // SL-05: a category or tag created in an Add a skill picker joins the shared list (Settings and every picker) on save.
+  const keepVocab = React.useCallback((skills: ReadonlyArray<{ category?: string; tags?: readonly string[] }>) => {
+    store.update((s) => withVocab(s, skills))
+  }, [store])
+  /** Added skills go to the shared store (Not configured), so Configure, mapping and every count see them at once. */
+  const keepAdded = React.useCallback((skills: AddedSkill[]) => {
+    store.update((s) => addSkillsToStore(withVocab(s, skills), skills, ACTOR, at()))
+    const ids = skills.map((k) => k.id)
+    const req = skills.filter((k) => k.requiredToGraduate).map((k) => k.id)
+    setOverlay((o) => ({ ...o, fresh: [...(o.fresh ?? []), ...ids], required: [...(o.required ?? []), ...req] }))
+  }, [store])
   const configureMany = useConfigureMany()
 
   const rows: LibraryRow[] = React.useMemo(() => (hydrated && demo !== "empty" ? buildLibrary(state, overlay) : []), [hydrated, state, overlay, demo])
@@ -66,10 +112,10 @@ export function useLibrary() {
     seq.current += 1
     const id = `lab-skill-${Date.now().toString(36)}-${seq.current}`
     const skill = draftToSkill(d, id)
-    setOverlay((o) => ({ ...o, added: [skill, ...o.added] }))
+    keepAdded([skill])
     setBanner({ variant: "success", title: `${skill.name} added`, body: "Not configured yet.", action: { label: "Configure it", href: configureHref(id) } })
     return id
-  }, [])
+  }, [keepAdded])
 
   /** Add several (add a skill, variant C): every name becomes a skill that is not configured, in one category or none. */
   const addMany = React.useCallback((items: SeveralItem[], defaults: { category: string; tags: string[] }): string[] => {
@@ -78,7 +124,7 @@ export function useLibrary() {
       seq.current += 1
       return draftToSkill(d, `lab-skill-${stamp}-${seq.current}`)
     })
-    setOverlay((o) => ({ ...o, added: [...skills, ...o.added] }))
+    keepAdded(skills)
     const ids = skills.map((k) => k.id)
     setBanner({
       variant: "success",
@@ -87,17 +133,18 @@ export function useLibrary() {
       action: (() => { const c = configureMany(ids); return { label: c.many ? "Configure them together" : c.label, href: c.href } })(),
     })
     return ids
-  }, [configureMany])
+  }, [configureMany, keepAdded])
 
   const edit = React.useCallback((id: string, d: SkillDraft) => {
+    keepVocab([draftToSkill(d, id)])
     setOverlay((o) => {
       const isAdded = o.added.some((a) => a.id === id)
       if (isAdded) return { ...o, added: o.added.map((a) => (a.id === id ? { ...a, ...draftToSkill(d, id) } : a)) }
       const s = draftToSkill(d, id)
-      return { ...o, edits: { ...o.edits, [id]: { name: s.name, section: s.section, group: s.group, category: s.category, tags: s.tags } } }
+      return { ...o, edits: { ...o.edits, [id]: { name: s.name, description: s.description ?? "", section: s.section, group: s.group, category: s.category, tags: s.tags } } }
     })
     setBanner({ variant: "success", title: "Changes saved", body: "Evaluation settings did not change." })
-  }, [])
+  }, [keepVocab])
 
   /** Store skills carry the flag; skills added by hand in this tab stay in the overlay. */
   const setActive = React.useCallback((ids: string[], active: boolean) => {
@@ -134,7 +181,7 @@ export function useLibrary() {
   const copyConfig = React.useCallback((sourceId: string, targetIds: string[]) => {
     const source = byId.get(sourceId)
     setOverlay((o) => ({ ...o, copiedFrom: { ...o.copiedFrom, ...Object.fromEntries(targetIds.filter((t) => t !== sourceId).map((t) => [t, sourceId])) } }))
-    setBanner({ variant: "success", title: `Settings copied to ${countSkills(targetIds.length)}`, body: `From ${source?.name ?? `the chosen ${skillNoun()}`}. Review each before you publish.` })
+    setBanner({ variant: "success", title: `Settings copied to ${countSkills(targetIds.length)}`, body: `From ${source?.name ?? `the chosen ${skillNoun()}`}, as drafts. Open each to check and save it.` })
   }, [byId])
 
   return { hydrated, demo, rows, counts, names, byId, overlay, banner, setBanner, add, addMany, edit, deactivate, reactivate, remove, copyConfig }

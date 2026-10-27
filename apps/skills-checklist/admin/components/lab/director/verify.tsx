@@ -20,6 +20,10 @@ import { DIRECTOR_NAME, detailHref, directorHref, evidenceHref, plural, shortDat
 import { StateBadge } from "@/components/lab/status-pill"
 import type { LabScope } from "@/lib/lab/scope"
 import { LINK, LINK_U, StatusMark } from "@/components/lab/director/parts"
+import type { V2State } from "@/lib/v2/types"
+import { evaluationViewsFor } from "@/lib/lab/evaluation-view"
+import { EvaluationSheet } from "@/components/lab/reviewer/evaluation-sheet"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 const NOTE_MAX = 1000
 
@@ -70,15 +74,46 @@ export function SkillState({ l }: { l: SkillLine }) {
   return <StateBadge state={l.state} detail={l.state === "progress" ? `(${l.counted} of ${l.need})` : undefined} />
 }
 
-export function EvidenceLink({ l, scope, studentId }: { l: SkillLine; scope: LabScope; studentId: string }) {
+/**
+ * The evidence count behind one skill. With the state it opens every evaluation of that skill in full, beside the record, read
+ * only [REQ RP-07]: the director verifies from the evidence itself, not from a count. Without it, it links to the student record.
+ */
+export function EvidenceLink({ l, scope, studentId, state }: { l: SkillLine; scope: LabScope; studentId: string; state?: V2State | null }) {
+  // RP-07: the count is a text link that opens every counted evaluation of this skill, read-only, in the shared sheet. The open
+  // sheet lives in the URL (?evidence=<skill id>) so Back closes it and the link can be shared; a link, not a button, so a list of
+  // 50 skills stays a list of links (strategy/07 detail budget).
+  const params = useSearchParams()
+  const pathname = usePathname() ?? ""
+  const router = useRouter()
+  const open = params?.get(EVIDENCE_PARAM) === l.skillId
+  const views = React.useMemo(() => (open && state ? evaluationViewsFor(state, studentId, l.skillId, true) : null), [open, state, studentId, l.skillId])
   if (l.evaluations === 0) return <span className="text-sm text-muted-foreground">No evaluations</span>
+  const text = `${plural(l.evaluations, "evaluation", "evaluations")}${l.unmet ? `, ${l.unmet} Unmet` : ""}`
+  if (state) {
+    const withParam = (v: string | null) => {
+      const q = new URLSearchParams(params?.toString() ?? "")
+      if (v) q.set(EVIDENCE_PARAM, v)
+      else q.delete(EVIDENCE_PARAM)
+      const qs = q.toString()
+      return qs ? `${pathname}?${qs}` : pathname
+    }
+    return (
+      <>
+        <Link className={`${LINK} text-sm`} href={withParam(l.skillId)} scroll={false} aria-label={`View ${text} of ${l.name}`}>
+          {text}
+        </Link>
+        {open ? <EvaluationSheet views={views} title={l.name} onClose={() => router.replace(withParam(null), { scroll: false })} /> : null}
+      </>
+    )
+  }
   return (
     <Link className={`${LINK} text-sm`} href={evidenceHref(scope, studentId, l.skillId)}>
-      {plural(l.evaluations, "evaluation", "evaluations")}
-      {l.unmet ? <span className="font-normal text-muted-foreground">{`, ${l.unmet} Unmet`}</span> : null}
+      {text}
     </Link>
   )
 }
+
+const EVIDENCE_PARAM = "evidence"
 
 /** One line under a gap: why it is a gap and what is already moving. */
 export function gapWhy(l: SkillLine): string {

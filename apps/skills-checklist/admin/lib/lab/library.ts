@@ -1,8 +1,13 @@
 import HGTC_JSON from "@/lib/v2/hgtc-library.json"
-import { MODEL_LABEL } from "@/lib/v2/config"
+// One name per model on every screen: the Configure step names (decision D-X31 wording sweep), not the v2 labels.
+import { LAB_MODEL_LABEL as MODEL_LABEL } from "./configure"
 import { evalsOfSkill } from "@/lib/v2/evidence-index"
 import { allCourses, courseLabel, trackedAgainst } from "@/lib/v2/admin-actions"
+import { isConfigured } from "@/lib/v2/population"
+import { skillNoun, skillNounPlural } from "./terms"
 import type { EvalModel, Skill, V2State } from "@/lib/v2/types"
+import { activeNames, getVocabulary } from "@/lib/v2/vocabulary"
+import { appendAudit } from "@/lib/v2/store"
 
 /**
  * Skills library model for the design lab (admin "Skills library" and "Add a skill" screens).
@@ -20,23 +25,33 @@ export const LAB_ADMIN = "/lab/admin"
 // Status
 
 /**
- * Four library states. REQ IM-09 (unconfigured), SC-19 (put into use = published), SL-02 / SL-11 (inactive).
+ * Three library states, the requirement's own (decision D-X31): Not configured [REQ IM-09, IM-10], Configured [REQ SC-01] and
+ * Inactive [REQ SL-02, SL-11]. There is no "published" stage in REQ; a configuration saved for use is Configured and can be
+ * mapped. A configuration saved part way ("Save draft") keeps the skill Not configured, with `draft` set so the row says so.
  * The lab brief asked for "Retired"; REQ SL-02 and strategy/03 5.3 say "Inactive", so the label is Inactive here.
  * Swap the label in one place if Romit prefers Retired.
  * Tones (docs/knowledge/design/visual-language.md): only "Not configured" carries a hue (amber), because it is the one state
  * the coordinator must act on; the other three are neutral and differ by glyph and word, so a page holds one state colour.
  */
-export type LibraryStatus = "not-configured" | "configured" | "published" | "inactive"
+export type LibraryStatus = "not-configured" | "configured" | "inactive"
 
 export type StatusTone = "warning" | "info" | "success" | "neutral"
 
-export const STATUS_ORDER: LibraryStatus[] = ["not-configured", "configured", "published", "inactive"]
+export const STATUS_ORDER: LibraryStatus[] = ["not-configured", "configured", "inactive"]
 
 export const STATUS_META: Record<LibraryStatus, { label: string; tone: StatusTone; icon: string; short: string }> = {
   "not-configured": { label: "Not configured", short: "Not configured", tone: "warning", icon: "fa-triangle-exclamation" },
-  configured: { label: "Configured, not published", short: "Configured", tone: "neutral", icon: "fa-circle-half-stroke" },
-  published: { label: "Published", short: "Published", tone: "neutral", icon: "fa-circle-check" },
+  configured: { label: "Configured", short: "Configured", tone: "neutral", icon: "fa-circle-check" },
   inactive: { label: "Inactive", short: "Inactive", tone: "neutral", icon: "fa-circle-minus" },
+}
+
+/**
+ * The one sentence for the IM-09 hard stop, shared by the library banner and course mapping (comprehension audit 2026-10-27:
+ * two wordings of one rule read as two rules). `one` for a single skill.
+ */
+export function notConfiguredBlock(one = false): string {
+  const noun = skillNoun()
+  return one ? `This ${noun} is not configured, so it cannot be sent or mapped.` : `${noun.charAt(0).toUpperCase()}${skillNounPlural().slice(1)} not configured cannot be sent or mapped.`
 }
 
 export const MODEL_OPTIONS: Array<{ value: EvalModel; label: string }> = (Object.keys(MODEL_LABEL) as EvalModel[]).map((m) => ({ value: m, label: MODEL_LABEL[m] }))
@@ -47,6 +62,8 @@ export const MODEL_OPTIONS: Array<{ value: EvalModel; label: string }> = (Object
 export interface LibraryRow extends Record<string, unknown> {
   id: string
   name: string
+  /** What the skill is, in the program's words [REQ SL-02]. Empty when none was given. */
+  description: string
   /** The program's top level; shown as "Category" in the UI. */
   section: string
   /** Second level under the section; empty when the program's list has none. */
@@ -55,6 +72,8 @@ export interface LibraryRow extends Record<string, unknown> {
   tags: string[]
   status: LibraryStatus
   statusLabel: string
+  /** Not configured, with a configuration saved part way (or a rule held but never saved for use): the row says "Draft saved". */
+  draft: boolean
   model: EvalModel | null
   modelLabel: string
   /** Course offerings the skill is mapped to (mandatory or non-mandatory). */
@@ -89,15 +108,21 @@ export interface LibraryOverlay {
   /** Kept for compatibility; store skills are reactivated through the shared store. */
   reactivated: string[]
   deleted: string[]
-  /** Name, section, group, category and tag edits by skill id. */
-  edits: Record<string, Partial<Pick<AddedSkill, "name" | "section" | "group" | "category" | "tags">>>
-  /** Configuration copied from another skill (IM-14): target id -> source id. The target becomes Configured, not published. */
+  /** Name, description, section, group, category and tag edits by skill id. */
+  edits: Record<string, Partial<Pick<AddedSkill, "name" | "description" | "section" | "group" | "category" | "tags">>>
+  /** Configuration copied from another skill (IM-14): target id -> source id. The target holds it as a draft to check and save. */
   copiedFrom: Record<string, string>
+  /** Skills added by hand in this session marked "Required to graduate" (a lab flag; the store has no field for it yet). */
+  required?: string[]
+  /** Skills added by hand in this session (now in the store): their rows read "New". */
+  fresh?: string[]
 }
 
 export interface AddedSkill {
   id: string
   name: string
+  /** Optional [REQ SL-02 "a skill has a name, a description and an active/inactive status"]. */
+  description?: string
   section: string
   group: string
   category: string
@@ -133,7 +158,7 @@ export function groupOf(k: Pick<Skill, "hgtc">): string {
 
 function statusOf(k: Pick<Skill, "configured" | "published">, inactive: boolean): LibraryStatus {
   if (inactive) return "inactive"
-  return k.published ? "published" : k.configured ? "configured" : "not-configured"
+  return isConfigured(k) ? "configured" : "not-configured"
 }
 
 export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVERLAY): LibraryRow[] {
@@ -156,7 +181,7 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
     .map((k0) => {
       const e = overlay.edits[k0.id]
       const cm = copied(k0.id)
-      const k = { ...k0, ...(cm !== undefined && !k0.configured ? { configured: true, model: cm } : {}) }
+      const k = { ...k0, ...(cm !== undefined && !isConfigured(k0) ? { model: cm } : {}) }
       const c = courseCount.get(k.id)
       const evidence = evalsOfSkill(state, k.id).length
       const courses = c?.all.size ?? 0
@@ -164,12 +189,14 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
       return {
         id: k.id,
         name: e?.name ?? k.name,
+        description: e?.description ?? k.description ?? "",
         section: e?.section ?? sectionOf(k),
         group: e?.group ?? groupOf(k),
         category: e?.category ?? (k.category && k.category !== "No category" ? k.category : ""),
         tags: e?.tags ?? k.tags ?? [],
         status,
         statusLabel: STATUS_META[status].short,
+        draft: status === "not-configured" && (cm !== undefined || !!state.configDrafts?.[k.id] || (k.configured && !!k.config)),
         model: k.model,
         modelLabel: k.model ? MODEL_LABEL[k.model] : "",
         courses,
@@ -178,8 +205,8 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
         source: k.batchId ? batchLabel.get(k.batchId) ?? "Import" : "Program list",
         canDelete: trackedAgainst(state, k.id).total === 0,
         unmapFrom: [...(c?.all ?? [])].map((id) => courseName.get(id) ?? id).sort(),
-        requiredToGraduate: !!k.hgtc?.required,
-        isNew: false,
+        requiredToGraduate: !!k.hgtc?.required || !!overlay.required?.includes(k.id),
+        isNew: !!overlay.fresh?.includes(k.id),
       }
     })
   const added: LibraryRow[] = overlay.added
@@ -188,16 +215,18 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
       const a = { ...a0, ...overlay.edits[a0.id] }
       const cm = copied(a.id)
       const model = cm !== undefined ? cm : a.model
-      const status: LibraryStatus = inactive.has(a.id) ? "inactive" : cm !== undefined ? "configured" : "not-configured"
+      const status: LibraryStatus = inactive.has(a.id) ? "inactive" : "not-configured"
       return {
         id: a.id,
         name: a.name,
+        description: a.description ?? "",
         section: a.section || NO_CATEGORY,
         group: a.group,
         category: a.category,
         tags: a.tags,
         status,
         statusLabel: STATUS_META[status].short,
+        draft: status === "not-configured" && (cm !== undefined || !!state.configDrafts?.[a.id]),
         model,
         modelLabel: model ? MODEL_LABEL[model] : "",
         courses: 0,
@@ -220,17 +249,15 @@ export interface LibraryCounts {
   total: number
   notConfigured: number
   configured: number
-  published: number
   inactive: number
-  /** Configured or published (ready to map), excluding inactive. */
+  /** Configured (ready to map), excluding inactive. Same as `configured`; kept for the roll-up label. */
   ready: number
 }
 
 export function countLibrary(rows: readonly LibraryRow[]): LibraryCounts {
   const by = (s: LibraryStatus) => rows.filter((r) => r.status === s).length
   const configured = by("configured")
-  const published = by("published")
-  return { total: rows.length, notConfigured: by("not-configured"), configured, published, inactive: by("inactive"), ready: configured + published }
+  return { total: rows.length, notConfigured: by("not-configured"), configured, inactive: by("inactive"), ready: configured }
 }
 
 export interface GroupNode {
@@ -273,7 +300,7 @@ export function buildTree(rows: readonly LibraryRow[]): SectionNode[] {
   })
 }
 
-/** "12 of 14 configured" counts configured or published among active skills. */
+/** "12 of 14 configured" counts configured among active skills. */
 export function rollupLabel(c: LibraryCounts): string {
   const active = c.total - c.inactive
   return `${c.ready} of ${active} configured`
@@ -285,7 +312,7 @@ export const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g
 // Board
 
 export function byStatus(rows: readonly LibraryRow[]): Record<LibraryStatus, LibraryRow[]> {
-  const out: Record<LibraryStatus, LibraryRow[]> = { "not-configured": [], configured: [], published: [], inactive: [] }
+  const out: Record<LibraryStatus, LibraryRow[]> = { "not-configured": [], configured: [], inactive: [] }
   for (const r of rows) out[r.status].push(r)
   return out
 }
@@ -308,7 +335,6 @@ export function tabCount(c: LibraryCounts, tab: LibraryTab): number {
     case "all": return c.total
     case "not-configured": return c.notConfigured
     case "configured": return c.configured
-    case "published": return c.published
     case "inactive": return c.inactive
   }
 }
@@ -336,6 +362,14 @@ export const SAVED_VIEWS: SavedView[] = [
 // ---------------------------------------------------------------------------------------------------------------------
 // Links (lab routes; the real app maps these to linkTo)
 
+/**
+ * The next skill to configure after `afterId`: the first Not configured, active row in library order (the order the library's
+ * "Configure next" banner works through), never the skill just saved. Null when every skill is configured.
+ */
+export function nextToConfigure(rows: readonly LibraryRow[], afterId: string): LibraryRow | null {
+  return rows.find((r) => r.status === "not-configured" && r.id !== afterId) ?? null
+}
+
 export const configureHref = (id: string): string => `${LAB_ADMIN}/configure-skill?skill=${encodeURIComponent(id)}`
 export const mappingHref = (id: string): string => `${LAB_ADMIN}/course-mapping?skill=${encodeURIComponent(id)}`
 export const evidenceHref = (id: string): string => `${LAB_ADMIN}/attainment?skill=${encodeURIComponent(id)}`
@@ -354,6 +388,8 @@ export const newListHref = `${LAB_ADMIN}/lists-cohorts`
  */
 export interface SkillDraft {
   name: string
+  /** Optional [REQ SL-02]. */
+  description: string
   /** Shown as "Category". Optional (REQ SL-03). */
   section: string
   group: string
@@ -364,7 +400,7 @@ export interface SkillDraft {
   requiredToGraduate: boolean
 }
 
-export const EMPTY_DRAFT: SkillDraft = { name: "", section: "", group: "", category: "", tags: [], model: null, mandatoryDefault: null, requiredToGraduate: false }
+export const EMPTY_DRAFT: SkillDraft = { name: "", description: "", section: "", group: "", category: "", tags: [], model: null, mandatoryDefault: null, requiredToGraduate: false }
 
 export type DraftErrors = Partial<Record<"name" | "section", string>>
 
@@ -397,14 +433,41 @@ export function draftToSkill(d: SkillDraft, id: string): AddedSkill {
   return {
     id,
     name: d.name.trim().replace(/\s+/g, " "),
+    ...(d.description.trim() ? { description: d.description.trim() } : {}),
     section: d.section.trim(),
     group: d.group.trim(),
-    category: d.category.trim(),
+    // The picked Category (the shared vocabulary's word) is the skill's category; a skill added by hand also sits under it in
+    // the library tree, so section follows when no file section was given.
+    category: (d.category.trim() || d.section.trim()),
     tags: mergeTags([], d.tags),
     model: d.model,
     mandatoryDefault: d.mandatoryDefault,
     requiredToGraduate: d.requiredToGraduate,
   }
+}
+
+/**
+ * Writes skills added by hand (the sheet, the inline row, add several) to the SHARED store, Not configured, no model
+ * [REQ IM-09, IM-12, SC-01, SC-02], so "Save and configure" opens Configure on the new skill and every count (Not configured,
+ * library tabs) moves with it. A blank category is stored as "No category" (category is optional, REQ SL-03).
+ */
+export function addSkillsToStore(s: V2State, added: readonly AddedSkill[], actorId: string, at: string): V2State {
+  if (!added.length) return s
+  const specialty = s.skills[0]?.specialty ?? "bsn-med-surg"
+  const skills: Skill[] = added.map((a) => ({
+    id: a.id,
+    specialty,
+    name: a.name,
+    category: a.category.trim() || NO_CATEGORY,
+    model: null,
+    configured: false,
+    published: false,
+    config: null,
+    ...(a.description ? { description: a.description } : {}),
+    tags: [...a.tags],
+  }))
+  const label = skills.length === 1 ? skills[0]!.name : `${skills.length} ${skillNounPlural()}`
+  return appendAudit({ ...s, skills: [...s.skills, ...skills] }, actorId, skills.length === 1 ? `Added ${skillNoun()}` : `Added ${skillNounPlural()}`, label, at)
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -420,11 +483,14 @@ export interface PastedLine {
   category?: string
   /** Third spreadsheet column, split on ";" or ",". */
   tags?: string[]
+  /** Fourth spreadsheet column [REQ SL-02]. */
+  description?: string
 }
 
 /** One name to add, with the category and tags its own line carried (add several). */
 export interface SeveralItem {
   name: string
+  description?: string
   category?: string
   tags?: string[]
 }
@@ -449,7 +515,8 @@ export function mergeTags(base: readonly string[], more: readonly string[]): str
 
 /**
  * Reads pasted names. A line copied from a spreadsheet keeps its cells: the first is the name, the second the category and
- * the third the tags (REQ SL-03, SL-04, SL-05), so a three-column sheet maps without a mapping step. Plain lines are names only.
+ * the third the tags (REQ SL-03, SL-04, SL-05) and the fourth the description (REQ SL-02), so a sheet maps without a mapping
+ * step. Plain lines are names only.
  */
 export function parseSeveral(text: string, existingNames: readonly string[]): { lines: PastedLine[]; ready: string[]; items: SeveralItem[] } {
   const known = new Set(existingNames.map(normName))
@@ -463,11 +530,12 @@ export function parseSeveral(text: string, existingNames: readonly string[]): { 
     const kind: PastedLine["kind"] = name.length > MAX_NAME ? "too-long" : known.has(n) ? "in-library" : seen.has(n) ? "in-paste" : "ready"
     seen.add(n)
     const category = cells.length > 1 ? cells[1]!.trim().replace(/\s+/g, " ") : ""
-    const tags = cells.length > 2 ? splitTags(cells.slice(2).join(";")) : []
-    lines.push({ line: i + 1, name, kind, ...(category ? { category } : {}), ...(tags.length ? { tags } : {}) })
+    const tags = cells.length > 2 ? splitTags(cells[2]!) : []
+    const description = cells.length > 3 ? cells.slice(3).join(" ").trim().replace(/\s+/g, " ") : ""
+    lines.push({ line: i + 1, name, kind, ...(category ? { category } : {}), ...(tags.length ? { tags } : {}), ...(description ? { description } : {}) })
   })
   const ready = lines.filter((l) => l.kind === "ready")
-  return { lines, ready: ready.map((l) => l.name), items: ready.map((l) => ({ name: l.name, ...(l.category ? { category: l.category } : {}), ...(l.tags ? { tags: l.tags } : {}) })) }
+  return { lines, ready: ready.map((l) => l.name), items: ready.map((l) => ({ name: l.name, ...(l.category ? { category: l.category } : {}), ...(l.tags ? { tags: l.tags } : {}), ...(l.description ? { description: l.description } : {}) })) }
 }
 
 /**
@@ -475,7 +543,7 @@ export function parseSeveral(text: string, existingNames: readonly string[]): { 
  * tags chosen for all are both kept, once each. Never a model (REQ SC-02).
  */
 export function severalDrafts(items: readonly SeveralItem[], defaults: { category: string; tags: readonly string[] }): SkillDraft[] {
-  return items.map((it) => ({ ...EMPTY_DRAFT, name: it.name, section: it.category?.trim() || defaults.category.trim(), tags: mergeTags(defaults.tags, it.tags ?? []) }))
+  return items.map((it) => ({ ...EMPTY_DRAFT, name: it.name, description: it.description ?? "", section: it.category?.trim() || defaults.category.trim(), tags: mergeTags(defaults.tags, it.tags ?? []) }))
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -505,6 +573,21 @@ export function filterOptions(rows: readonly LibraryRow[]): { categories: Array<
   const none = categories.findIndex((c) => c.name === NO_CATEGORY)
   if (none >= 0) categories.push(...categories.splice(none, 1))
   return { categories, tags: sorted(tags) }
+}
+
+/**
+ * The Category and Tags picker options for every Add a skill path and the edit sheet, from the ONE shared vocabulary that
+ * Settings edits (lib/v2/vocabulary.ts) [REQ SL-03 to SL-06]. Only active entries are offered for new assignment; the inactive
+ * names are returned so a skill that already carries one can show it marked "Inactive" (SL-06).
+ */
+export function vocabPickerOptions(state: V2State): { categories: string[]; tags: string[]; inactiveCategories: string[]; inactiveTags: string[] } {
+  const v = getVocabulary(state)
+  return {
+    categories: activeNames(state, "categories"),
+    tags: activeNames(state, "tags"),
+    inactiveCategories: v.categories.filter((e) => !e.active).map((e) => e.name),
+    inactiveTags: v.tags.filter((e) => !e.active).map((e) => e.name),
+  }
 }
 
 /** Options for the section, group, category and tag pickers, from the live library. */

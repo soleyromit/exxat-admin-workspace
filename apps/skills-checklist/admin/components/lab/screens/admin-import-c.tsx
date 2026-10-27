@@ -28,11 +28,10 @@ import {
   CategoryList,
   FixList,
   LIBRARY_HREF,
-  NewListField,
   NotCreatedList,
   ReadingState,
   ReviewSummary,
-  TargetLine,
+  TargetField,
   useCancel,
 } from "@/components/lab/import/import-parts"
 import { useImportSession } from "@/components/lab/import/use-import-session"
@@ -58,7 +57,7 @@ export function AdminImportC() {
   const [over, setOver] = React.useState(false)
   const files = React.useRef<HTMLInputElement>(null)
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const title = <LaterTitle>{`Import ${skillNounPlural()}`}</LaterTitle>
+  const title = <LaterTitle>Bulk upload</LaterTitle>
   const done = session.phase === "done"
 
   // A saved draft (or a hand-off from add a skill) is read once on arrival, unless a demo state asks for something else.
@@ -114,9 +113,9 @@ export function AdminImportC() {
   let footer: StickyFooterProps
   if (done) footer = { secondary: { label: "Import another list", onClick: () => { setDraft(""); saveDraft(""); session.reset() } }, primary: { label: "Open the library", href: LIBRARY_HREF } }
   else if (reviewing) {
-    const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? "Name the new list first." : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
-    footer = { summary: <TargetLine session={session} />, context: reason ? undefined : "All decided.", primary: { label: `Create ${countSkills(total)}`, onClick: session.confirm, disabled: !!reason, disabledReason: reason } }
-  } else footer = { summary: <TargetLine session={session} />, context: session.phase === "reading" ? "Reading the files" : "Nothing is created until you confirm." }
+    const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? `Name the new group of ${skillNounPlural()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
+    footer = { context: reason ? undefined : "All decided.", primary: { label: `Create ${countSkills(total)}`, onClick: session.confirm, disabled: !!reason, disabledReason: reason } }
+  } else footer = { context: session.phase === "reading" ? "Reading the files" : undefined }
 
   return (
     <div data-page-type="wizard" className="flex w-full flex-col" data-import-lab="C">
@@ -125,6 +124,7 @@ export function AdminImportC() {
           <div className="flex flex-col gap-6"><DoneBanner session={session} /><NotCreatedList session={session} /></div>
         ) : (
           <div className="flex flex-col gap-6" data-region="panel">
+            <TargetField session={session} />
             <Field>
               <FieldLabel htmlFor="import-paste">Paste the list</FieldLabel>
               <div
@@ -170,7 +170,6 @@ export function AdminImportC() {
                 {/* Files dropped here show as one line; a demo state reads the sample as if it had been pasted. */}
                 {session.fileName && !session.demo ? <FileStatus session={session} /> : null}
                 <ReviewSummary session={session} />
-                <NewListField session={session} />
                 {session.groups.length ? <FixList session={session} /> : null}
                 {/* Every skill read, by category, with its own Category and Tags (REQ SL-03, SL-04; decision D-X28). */}
                 <CategoryList session={session} />

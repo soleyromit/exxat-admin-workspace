@@ -409,14 +409,27 @@ const ROLE_OF_KIND: Partial<Record<Person["kind"], EvaluatorRole>> = { preceptor
 
 const ROLE_NAME: Record<EvaluatorRole, string> = { preceptor: "a preceptor", faculty: "faculty", "lab-instructor": "a lab instructor" }
 
-/** Why a person cannot sign off a skill performed in a clinical setting, or null when they can. */
-export function ineligibleReason(skill: Skill, person: Person): string | null {
+/**
+ * Why a person cannot sign off a skill performed in this setting, or null when they can (ST-08, EV-02: the valid roles depend on
+ * where the skill was performed AND on the roles the skill permits).
+ * - Clinical: a preceptor or faculty the skill permits; never a lab instructor.
+ * - Lab or simulation: a lab instructor, or faculty the skill permits; never a preceptor, who signs off at the placement.
+ *   [INFER] The skill's role list names the clinical roles (no published skill lists "lab instructor"), so the setting, not the
+ *   list, admits the lab instructor. The qualification checks below still apply to everyone. Lab and simulation evidence never
+ *   satisfies a clinical-setting minimum whoever signs it (SC-12, lib/v2/rules.ts).
+ */
+export function ineligibleReason(skill: Skill, person: Person, setting: Setting = "clinical"): string | null {
   const c = skill.config
   if (!c) return "This skill is not set up yet."
   const role = ROLE_OF_KIND[person.kind]
   if (!role) return "This person is not an evaluator."
-  if (role === "lab-instructor") return "Lab instructors sign off in the lab, not in clinical practice."
-  if (!c.evaluatorRoles.includes(role)) return `This skill cannot be signed off by ${ROLE_NAME[role]}.`
+  if (setting === "clinical") {
+    if (role === "lab-instructor") return "Lab instructors sign off in the lab, not in clinical practice."
+    if (!c.evaluatorRoles.includes(role)) return `This skill cannot be signed off by ${ROLE_NAME[role]}.`
+  } else {
+    if (role === "preceptor") return "Preceptors sign off at the placement, not in the lab or simulation."
+    if (role === "faculty" && !c.evaluatorRoles.includes(role)) return `This skill cannot be signed off by ${ROLE_NAME[role]}.`
+  }
   const q = c.qualification
   const have = person.credentials ?? []
   if (q.credentials.length && !q.credentials.some((x) => have.includes(x))) return `Needs ${q.credentials.join(" or ")} credential (has ${have.length ? have.join(", ") : "none on record"})`
@@ -431,12 +444,12 @@ export function ineligibleReason(skill: Skill, person: Person): string | null {
  * Preceptors and lab instructors are always listed (an unqualified one is shown disabled with the reason); faculty are listed
  * only when qualified. A student can only pick qualified evaluators.
  */
-export function evaluatorChoices(s: V2State, skillIds: string[]): EvaluatorChoice[] {
+export function evaluatorChoices(s: V2State, skillIds: string[], setting: Setting = "clinical"): EvaluatorChoice[] {
   const skills = skillIds.map((id) => s.skills.find((k) => k.id === id)).filter((k): k is Skill => !!k)
   const pool = s.people.filter((p) => p.kind === "preceptor" || p.kind === "lab-instructor" || p.kind === "reviewer" || p.kind === "director")
   const out: EvaluatorChoice[] = []
   for (const person of pool) {
-    const failed = skills.map((k) => ({ k, r: ineligibleReason(k, person) })).filter((x): x is { k: Skill; r: string } => !!x.r)
+    const failed = skills.map((k) => ({ k, r: ineligibleReason(k, person, setting) })).filter((x): x is { k: Skill; r: string } => !!x.r)
     // The same reason for every skill (a lab instructor, say) is said once, not once per skill.
     const same = failed.length === skills.length && new Set(failed.map((x) => x.r)).size === 1
     const reasons = same ? [failed[0].r] : failed.map((x) => (skills.length > 1 ? `${x.k.name}: ${x.r}` : x.r))
@@ -489,9 +502,12 @@ const nextId = (prefix: string, ids: string[]): string => {
   return `${prefix}-${max + 1}`
 }
 
-/** True when a skill can be logged at all: configured and in use (IM-09). */
+/**
+ * True when a skill can be logged or sent at all: configured, in use (IM-09) and not deactivated (SL-11: deactivating withdraws a
+ * skill from student selection; evidence already recorded against it stays on the record and is never hidden).
+ */
 export function openToLog(skill: Skill): boolean {
-  return skill.configured && skill.published && !!skill.config
+  return skill.configured && skill.published && skill.active !== false && !!skill.config
 }
 
 export const SETTING_WORD: Record<Setting, string> = { clinical: "clinical", lab: "lab", simulation: "simulation" }
@@ -510,6 +526,7 @@ export function logSkills(s: V2State, input: LogInput, at: string, studentId: st
   for (const id of input.skillIds) {
     const k = s.skills.find((x) => x.id === id)
     if (!k) return { ok: false, error: "A skill you picked is no longer in the library. Go back and pick again." }
+    if (k.active === false) return { ok: false, error: `${k.name} is no longer in use, so it cannot be logged. Its evidence stays on your record.` }
     if (!openToLog(k)) return { ok: false, error: `${k.name} is not open yet, so it cannot be logged. Your program has to put it in use first.` }
     if (input.setting === "clinical") {
       const pre = prerequisiteStatus(s, studentId, k)

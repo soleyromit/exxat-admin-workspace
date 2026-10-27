@@ -14,6 +14,8 @@ import { PageFrame } from "@/components/skills/page-header"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { approvalsHref, itemDetail, reviewItemHref, ruleCheck, type ItemDetail, type RuleCheck } from "@/lib/lab/reviewer"
 import { DecisionBanner, DecisionProvider } from "@/components/lab/reviewer/decisions"
+import { DecisionFooter, ReviewNoteProvider } from "@/components/lab/reviewer/review-parts"
+import { LINK } from "@/components/lab/link-styles"
 import { QueueSkeleton } from "@/components/lab/reviewer/parts"
 import { useReviewer, type ReviewerContext } from "@/components/lab/reviewer/use-reviewer"
 
@@ -88,9 +90,19 @@ export function ReviewItemFrame({ variant, children }: { variant: string; childr
               <span>{detail.row.skills.join(", ")}</span>
               <span aria-hidden="true">·</span>
               <span>{index >= 0 ? `${index + 1} of ${rows.length} waiting` : "Outside this scope"}</span>
+              {next ? (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <Link className={LINK} href={next.href}>{next.label}</Link>
+                </>
+              ) : null}
             </p>
             <DecisionBanner />
-            {children({ ...ctx, detail, checks, position: { index, total: rows.length }, next })}
+            <ReviewNoteProvider resetKey={detail.row.key}>
+              {children({ ...ctx, detail, checks, position: { index, total: rows.length }, next })}
+              {/* One footer contract on every review (what Approve does, Send back to student, Approve). */}
+              <DecisionFooter row={detail.row} />
+            </ReviewNoteProvider>
           </div>
         </PageFrame>
       )}

@@ -24,7 +24,7 @@ export function AdminDashboardF() {
             <Hero model={model} />
             <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
               {demo === "error" ? (
-                <CardError className="lg:col-span-7" title="Who is behind, and by how much?" onRetry={clearDemo} />
+                <CardError className="lg:col-span-7" title="Students behind, by gap" onRetry={clearDemo} />
               ) : (
                 <WhoIsBehindCard className="lg:col-span-7" model={model} scope={scope} split={split} onSplit={setSplit} partial={demo === "partial"} />
               )}

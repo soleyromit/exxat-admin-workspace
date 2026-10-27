@@ -3,6 +3,8 @@ import { NEED_UNSET_MESSAGE, qualifiesOn as engineQualifiesOn, runRule, type Eng
 import { appendAudit } from "@/lib/v2/store"
 import { heldState } from "@/lib/v2/approvals"
 import { defaultConfig } from "@/lib/v2/config"
+import { isConfigured } from "@/lib/v2/population"
+import { ratingKind, ratingOptions } from "@/lib/v2/student"
 import type { EvalModel, Evaluation, EvaluatorRole, LevelMinimum, Person, PublishedRuleSnapshot, QuestionRule, RuleChangeRecord, ScoredRule, Skill, SkillConfig, V2State } from "@/lib/v2/types"
 import { skillNoun } from "./terms"
 
@@ -28,6 +30,8 @@ export interface StudentField {
   label: string
   type: FieldType
   mandatory: boolean
+  /** The options of a choice list, two or more [REQ SC-13]. Absent for other types. */
+  choices?: string[]
 }
 
 export interface SettingMinimum {
@@ -91,14 +95,15 @@ export { LAB_MODEL_LABEL as MODEL_LABEL }
 /** The order the Model step offers them. Nothing is preselected [REQ SC-02]. */
 export const LAB_MODELS: EvalModel[] = ["binary", "question", "demonstration", "scored"]
 /** Shown with a Proposed marker: not part of the Oct 26 call. */
-export const PROPOSED_MODELS: ReadonlySet<EvalModel> = new Set<EvalModel>(["scored"])
+// Empty: REQ 4.1 and SC-07 require the scored model, so it is not a proposal (comprehension audit 2026-10-27).
+export const PROPOSED_MODELS: ReadonlySet<EvalModel> = new Set<EvalModel>()
 
 /** One line per model with an example in the client's words. */
 export const MODEL_HELP: Record<EvalModel, string> = {
-  binary: "One overall result per evaluation, such as Approved or Not approved.",
-  question: "Yes or No on each question, then one result, such as 2 of 3 answered Yes.",
-  demonstration: "How the student performed, such as Independent, With assistance or Observed.",
-  scored: "A score per question on a scale you set, such as 1 to 5.",
+  binary: "One result, such as Approved or Not approved.",
+  question: "Yes or No per question, then one result.",
+  demonstration: "Such as Independent, With assistance or Observed.",
+  scored: "A score per question, such as 1 to 5.",
 }
 
 /**
@@ -169,16 +174,19 @@ export function fromV2(skill: Pick<Skill, "model" | "config">): LabRule {
     questions: [...c.questions],
     // A rule published from the lab is read back from the shared store; the seed has none (outcome decides, as before).
     questionRule: c.questionRule ? (JSON.parse(JSON.stringify(c.questionRule)) as QuestionRule) : null,
-    scaleMax: 5,
+    // Saved settings are read back as saved [REQ SC-07, SC-13, SC-15]; the seed has none, so it reads as before.
+    scaleMax: typeof c.scaleMax === "number" ? c.scaleMax : 5,
     scoredRule: c.scoredRule ? { ...c.scoredRule } : null,
     levels: skill.model === "demonstration" ? [...c.levels] : [],
     need: a.need,
     levelMinimums: (c.levelMinimums ?? []).map((m) => ({ ...m })),
     distinctEvaluators: a.distinctEvaluators,
     settingMinimums: a.settingMinimums.map((m) => ({ ...m })),
-    studentFields: [{ label: "Date performed", type: "date", mandatory: true }],
+    studentFields: c.studentFields ? c.studentFields.map((f) => ({ ...f, ...(f.choices ? { choices: [...f.choices] } : {}) })) : [{ label: "Date performed", type: "date", mandatory: true }],
     feedbackRequired: !!c.feedbackRequired,
-    selfEvaluation: false,
+    // The seed has no flag: read it the way the student screens do (lib/lab/student2.ts selfEvalEnabled), so saving an unchanged
+    // rule changes nothing for students.
+    selfEvaluation: typeof c.selfEvaluation === "boolean" ? c.selfEvaluation : ratingKind(skill as Skill) === "levels" && ratingOptions(skill as Skill).length > 0,
     approvalRequired: !!c.approvalRequired,
     evaluatorRoles: [...c.evaluatorRoles],
     carried: {
@@ -188,6 +196,44 @@ export function fromV2(skill: Pick<Skill, "model" | "config">): LabRule {
       simulationExcluded: !c.simulation.allowed,
     },
   }
+}
+
+/**
+ * Removing a question takes it out of every rule that named it and moves later references down one, so a "must be Yes" pick
+ * never slides onto a different question [REQ AE-07]. An "at least N" rule is capped at the new count.
+ */
+export function removeQuestion(rule: LabRule, index: number): LabRule {
+  const questions = rule.questions.filter((_, i) => i !== index)
+  let questionRule = rule.questionRule
+  if (questionRule?.kind === "subset") questionRule = { kind: "subset", indices: questionRule.indices.filter((i) => i !== index).map((i) => (i > index ? i - 1 : i)) }
+  else if (questionRule?.kind === "atLeast" && questionRule.n > questions.length) questionRule = { kind: "atLeast", n: Math.max(1, questions.length) }
+  return { ...rule, questions, questionRule }
+}
+
+/**
+ * Removing a level drops the minimums that pointed at it and moves later ones down one, so "at least 2 at Independent" never
+ * becomes "at least 2 at" whatever level slid into its place [REQ AE-07]. The carried minimum level follows the same way.
+ */
+export function removeLevel(rule: LabRule, index: number): LabRule {
+  const levels = rule.levels.filter((_, i) => i !== index)
+  const levelMinimums = rule.levelMinimums.filter((m) => m.levelIndex !== index).map((m) => (m.levelIndex > index ? { ...m, levelIndex: m.levelIndex - 1 } : m))
+  const mi = rule.carried.minLevelIndex
+  const minLevelIndex = mi === null || mi === index ? null : mi > index ? mi - 1 : mi
+  return { ...rule, levels, levelMinimums, carried: { ...rule.carried, minLevelIndex } }
+}
+
+/** Swapping two levels or two questions carries every rule reference with the item it names [REQ AE-07]. */
+export function swapItems(rule: LabRule, kind: "levels" | "questions", i: number, j: number): LabRule {
+  const list = [...rule[kind]]
+  if (i < 0 || j < 0 || i >= list.length || j >= list.length) return rule
+  ;[list[i], list[j]] = [list[j]!, list[i]!]
+  const map = (x: number) => (x === i ? j : x === j ? i : x)
+  if (kind === "questions") {
+    const qr = rule.questionRule
+    return { ...rule, questions: list, questionRule: qr?.kind === "subset" ? { kind: "subset", indices: qr.indices.map(map) } : qr }
+  }
+  const mi = rule.carried.minLevelIndex
+  return { ...rule, levels: list, levelMinimums: rule.levelMinimums.map((m) => ({ ...m, levelIndex: map(m.levelIndex) })), carried: { ...rule.carried, minLevelIndex: mi === null ? null : map(mi) } }
 }
 
 /** Choosing or changing the model rebuilds what depends on it and keeps the rest [REQ SC-09, AE-07]. */
@@ -277,7 +323,7 @@ export type Audience = "admin" | "student"
  */
 export function ruleSentence(rule: LabRule, audience: Audience = "admin"): string {
   if (!rule.model) return `No rule yet. Choose how this ${skillNoun()} is evaluated.`
-  if (!hasNeed(rule)) return audience === "student" ? "The program has not set how many times yet." : "Not set yet. Your program decides."
+  if (!hasNeed(rule)) return audience === "student" ? "The program has not set how many times yet." : "Not set yet."
   const c = ruleClauses(rule)
   const parts = [c.qualifier ? `${c.total} ${c.qualifier}` : c.total, ...c.levels]
   if (c.distinct) parts.push(c.distinct)
@@ -300,7 +346,7 @@ export function carriedNotes(rule: LabRule): string[] {
   if (rule.carried.simulationExcluded) out.push("Simulation evaluations are not counted.")
   else if (rule.carried.simulationCapPercent !== null) {
     const max = Math.floor((need * rule.carried.simulationCapPercent) / 100)
-    out.push(`Simulation can supply at most ${max} of ${need}.`)
+    out.push(max === 0 ? "Simulation evidence does not count here." : `Up to ${max} of ${need} may come from simulation.`)
   }
   if (rule.carried.minLevelIndex !== null) out.push("A minimum level from the earlier rule applies.")
   return out
@@ -308,6 +354,144 @@ export function carriedNotes(rule: LabRule): string[] {
 
 /** What the evaluator is told after submitting [REQ EV-07]. */
 export const afterSubmitLine = (rule: LabRule): string => (rule.approvalRequired ? "Your evaluation goes to the program for approval before it counts." : "Your evaluation counts as soon as you submit.")
+
+// ---------------------------------------------------------------------------------------------------------------------
+// "What this means" (Romit 2026-10-27, Configure whitespace): the current choices in one or two plain sentences, plus one tiny
+// worked example. The example's verdict comes from the engine (qualifiesOn) run on a made-up evaluation, so the words can never
+// disagree with the rule. Pure, so tests can check every model.
+
+export interface Meaning {
+  lines: string[]
+  /** "Example: ..." sentence, or undefined when the choices so far give nothing to show. */
+  example?: string
+  /** The engine's verdict on the example evaluation (undefined when the example is not about counting). */
+  counts?: boolean
+}
+
+const fmtNum = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
+
+/** One evaluation in the shape the engine reads (outcome, latest version's answers or scores). */
+function fakeEvaluation(x: { outcome?: "met" | "unmet"; answers?: Array<"yes" | "no">; scores?: number[] }): Evaluation {
+  return { outcome: x.outcome ?? "unmet", versions: [{ detail: { answers: x.answers, scores: x.scores } }] } as unknown as Evaluation
+}
+
+/** What the evaluator records, said plainly, with a sample of it. */
+export function criteriaMeaning(rule: LabRule): Meaning {
+  const m = rule.model
+  if (!m) return { lines: [`Choose how this ${skillNoun()} is judged first.`] }
+  if (m === "binary") {
+    const [a, b] = rule.outcomeLabels.map((l) => l.trim())
+    const q = rule.qualifyingLabel === null ? "" : rule.outcomeLabels[rule.qualifyingLabel].trim()
+    return { lines: [`The evaluator picks one outcome: ${a || "first"} or ${b || "second"}.`, ...(q ? [`Only ${q} can count.`] : [])] }
+  }
+  if (m === "demonstration") {
+    const named = rule.levels.map((l) => l.trim()).filter(Boolean)
+    if (named.length === 0) return { lines: ["The evaluator picks one level per evaluation."] }
+    return { lines: [`The evaluator picks one of ${named.length} ${plural(named.length, "level", "levels")}, ${named[0]} lowest.`], example: `Example: the evaluator records ${named[Math.min(1, named.length - 1)]}.` }
+  }
+  const n = rule.questions.length
+  if (m === "question") {
+    const answers = Array.from({ length: Math.min(n, 3) }, (_, i) => (i === 2 ? "No" : "Yes"))
+    return { lines: [`The evaluator answers Yes or No to each of ${n} ${plural(n, "question", "questions")}.`], example: n ? `Example: ${joinAnd(answers)}.` : undefined }
+  }
+  const S = isInt(rule.scaleMax) && rule.scaleMax >= 2 ? rule.scaleMax : null
+  if (!S) return { lines: [`The evaluator scores each of ${n} ${plural(n, "question", "questions")}.`] }
+  const sample = [Math.max(1, S - 1), S, Math.max(1, S - 2)].slice(0, Math.max(1, Math.min(n, 3)))
+  return { lines: [`The evaluator scores each of ${n} ${plural(n, "question", "questions")} from 1 to ${S}.`], example: n ? `Example: ${joinAnd(sample.map(String))}.` : undefined }
+}
+
+/** The rule in plain words plus one worked example whose verdict the engine computes. */
+export function ruleMeaning(rule: LabRule): Meaning {
+  const m = rule.model
+  if (!m) return { lines: [`Choose how this ${skillNoun()} is judged first.`] }
+  const lines: string[] = []
+  lines.push(hasNeed(rule) ? `The student needs ${rule.need} ${plural(rule.need, "evaluation", "evaluations")} that count.` : "Nothing counts until you set how many evaluations are needed.")
+  const c = ruleClauses(rule)
+  const extra = [...c.levels, c.distinct ? c.distinct.replace(/^from /, "") : "", ...c.settings].filter(Boolean)
+
+  let when = ""
+  let example: string | undefined
+  let counts: boolean | undefined
+  const verdict = (e: Evaluation) => engineQualifiesOn({ model: m, questionRule: rule.questionRule, scoredRule: rule.scoredRule }, e)
+  const word = (ok: boolean) => (ok ? "counts" : "does not count")
+
+  if (m === "binary") {
+    const q = rule.qualifyingLabel === null ? "" : rule.outcomeLabels[rule.qualifyingLabel].trim()
+    const other = rule.qualifyingLabel === null ? "" : rule.outcomeLabels[rule.qualifyingLabel === 0 ? 1 : 0].trim()
+    if (q) {
+      when = `One counts when it is rated ${q}.`
+      if (other) {
+        counts = verdict(fakeEvaluation({ outcome: "unmet" }))
+        example = `Example: rated ${other}: ${word(counts)}.`
+      }
+    }
+  } else if (m === "question") {
+    const r = rule.questionRule
+    const n = rule.questions.length
+    if (r && n > 0) {
+      if (r.kind === "all") {
+        when = "One counts when every question is answered Yes."
+        const answers = Array.from({ length: n }, (_, i): "yes" | "no" => (n > 1 && i === n - 1 ? "no" : "yes"))
+        counts = verdict(fakeEvaluation({ answers }))
+        const yes = answers.filter((a) => a === "yes").length
+        example = n > 1 ? `Example: ${yes} of ${n} answered Yes: ${word(counts)}, question ${n} is No.` : `Example: answered Yes: ${word(counts)}.`
+      } else if (r.kind === "atLeast" && isInt(r.n) && r.n >= 1) {
+        when = `One counts when at least ${r.n} of ${n} questions are answered Yes.`
+        const yes = Math.max(0, Math.min(n, r.n - 1))
+        const answers = Array.from({ length: n }, (_, i): "yes" | "no" => (i < yes ? "yes" : "no"))
+        counts = verdict(fakeEvaluation({ answers }))
+        example = `Example: ${yes} of ${n} answered Yes: ${word(counts)}, ${r.n} needed.`
+      } else if (r.kind === "subset" && r.indices.length > 0) {
+        const named = [...r.indices].filter((i) => i < n).sort((a, b) => a - b)
+        when = `One counts when ${plural(named.length, "question", "questions")} ${joinAnd(named.map((i) => String(i + 1)))} ${named.length === 1 ? "is" : "are"} answered Yes.`
+        const answers = Array.from({ length: n }, (_, i): "yes" | "no" => (named.includes(i) ? "yes" : "no"))
+        counts = verdict(fakeEvaluation({ answers }))
+        example = named.length < n ? `Example: only the named ${plural(named.length, "question", "questions")} answered Yes: ${word(counts)}.` : `Example: every question answered Yes: ${word(counts)}.`
+      }
+    }
+  } else if (m === "scored") {
+    const r = rule.scoredRule
+    const S = isInt(rule.scaleMax) && rule.scaleMax >= 2 ? rule.scaleMax : null
+    const n = Math.max(1, rule.questions.length)
+    if (r && S && isInt(r.value) && r.value >= 1) {
+      const v = r.value
+      const k = Math.min(n, 3)
+      const clamp = (x: number) => Math.max(1, Math.min(S, x))
+      let scores: number[]
+      if (r.kind === "minEach") {
+        when = `One counts when every question scores at least ${v} out of ${S}.`
+        scores = k >= 3 ? [clamp(v + 1), S, clamp(v - 1)] : k === 2 ? [S, clamp(v - 1)] : [clamp(v - 1)]
+      } else if (r.kind === "average") {
+        when = `One counts when the average score is at least ${v} out of ${S}.`
+        scores = k >= 3 ? [clamp(v), clamp(v), clamp(v - 1)] : k === 2 ? [clamp(v), clamp(v - 1)] : [clamp(v - 1)]
+      } else {
+        when = `One counts when the scores add up to at least ${v}.`
+        // Spread v - 1 across k questions (each at most S): a near miss.
+        const target = Math.max(k, v - 1)
+        scores = Array.from({ length: k }, (_, i) => Math.floor(target / k) + (i < target % k ? 1 : 0)).map(clamp)
+      }
+      counts = verdict(fakeEvaluation({ scores }))
+      const sum = scores.reduce((a, b) => a + b, 0)
+      const why =
+        r.kind === "minEach"
+          ? counts ? `every question is ${v} or above` : `${scores.filter((x) => x < v).length === 1 ? "one question is" : `${scores.filter((x) => x < v).length} questions are`} below ${v}`
+          : r.kind === "average"
+            ? `the average is ${fmtNum(sum / scores.length)}`
+            : `the total is ${sum}`
+      example = `Example: scores ${joinAnd(scores.map(String))} on ${scores.length} ${plural(scores.length, "question", "questions")}: ${word(counts)}, ${why}.`
+    }
+  } else if (m === "demonstration") {
+    // The level is recorded with each evaluation; a level minimum (a condition) says how many must be at a level or above.
+    const lm = rule.levelMinimums.find((x) => rule.levels[x.levelIndex]?.trim() && isInt(x.min) && x.min >= 1)
+    if (lm && hasNeed(rule)) {
+      const level = rule.levels[lm.levelIndex].trim()
+      example = `Example: ${rule.need} ${plural(rule.need, "evaluation counts", "evaluations count")} but ${lm.min === 1 ? "none is" : `only ${lm.min - 1} ${lm.min - 1 === 1 ? "is" : "are"}`} at ${level} or above: not achieved yet.`
+    }
+  }
+  if (when) lines.push(when)
+  if (extra.length) lines.push(`It also needs ${joinAnd(extra)}.`)
+  return { lines, example, counts }
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Validation [REQ SC-02, SC-03, SC-06, SC-18]
@@ -334,7 +518,7 @@ export const SECTIONS: Array<{ id: SectionId; label: string }> = [
 ]
 
 /** The five wizard steps, three words at most. Section ids stay the engine's; only labels follow the client. */
-export const CONFIGURE_STEPS: Array<{ id: ConfigureStepId; label: string }> = [...SECTIONS, { id: "check", label: "Check" }]
+export const CONFIGURE_STEPS: Array<{ id: ConfigureStepId; label: string }> = [...SECTIONS, { id: "check", label: "Check and save" }]
 
 /**
  * The outcomes step keeps the client's name for every model [CALL 10-26 B.1]; what it holds (outcomes, questions or levels) is
@@ -352,6 +536,46 @@ export function criteriaKind(model: EvalModel | null): string {
 }
 
 export const isConfigureStep = (v: string | null | undefined): v is ConfigureStepId => CONFIGURE_STEPS.some((x) => x.id === v)
+
+/**
+ * The visible heading of each step: the question the admin answers there, with at most one short line under it (Romit
+ * 2026-10-27, "work on the content hierarchy so the steps are cleaner"). The step label stays short in the stepper; the heading
+ * never repeats it. On Check the fix list says what is left, so the lead shows only when nothing is.
+ */
+export function configureStepHead(id: ConfigureStepId, model: EvalModel | null, ready = true): { title: string; lead?: string } {
+  // No instruction lines (Romit 2026-10-27): the order of the sections already says what comes first. A lead stays only where
+  // it states a fact the fields cannot show.
+  switch (id) {
+    case "model":
+      return { title: `How is this ${skillNoun()} judged?` }
+    case "outcomes":
+      if (model === "question" || model === "scored") return { title: "What does the evaluator answer?" }
+      if (model === "demonstration") return { title: "Which levels can the evaluator choose?" }
+      return { title: "What does the evaluator record?" }
+    case "rule":
+      return { title: "When does it count?" }
+    case "signoff":
+      return { title: "Who signs, and what does the student add?", lead: "Evaluators sign through a link. They need no account." }
+    case "check":
+      return ready ? { title: "Ready to save?", lead: "Your choices, who they affect and what people see." } : { title: "What is left before saving?" }
+  }
+}
+
+/** The value chosen so far, shown under the step's label in the rail (3 words or so). Undefined while nothing is chosen. */
+export function configureStepValue(id: SectionId, rule: LabRule): string | undefined {
+  const m = rule.model
+  if (id === "model") return m ? LAB_MODEL_LABEL[m] : undefined
+  if (!m) return undefined
+  if (id === "outcomes") {
+    if (m === "binary") return rule.qualifyingLabel === null ? undefined : `${rule.outcomeLabels[rule.qualifyingLabel].trim() || "Outcome"} counts`
+    if (m === "demonstration") return rule.levels.length ? `${rule.levels.length} ${rule.levels.length === 1 ? "level" : "levels"}` : undefined
+    const n = rule.questions.filter((q) => q.trim()).length
+    return n ? `${n} ${n === 1 ? "question" : "questions"}` : undefined
+  }
+  if (id === "rule") return Number.isFinite(rule.need) && rule.need >= 1 ? `${rule.need} needed` : undefined
+  const r = rule.evaluatorRoles
+  return r.length === 0 ? undefined : r.length === 1 ? ROLE_LABEL[r[0]] : `${r.length} roles`
+}
 
 export interface RuleIssue {
   id: string
@@ -427,7 +651,7 @@ export function validateRule(rule: LabRule): RuleIssue[] {
     })
   }
 
-  if (!isInt(rule.need) || rule.need < 1) add("rule", "cfg-need", "need", "Enter how many valid attempts are needed, 1 or more.")
+  if (!isInt(rule.need) || rule.need < 1) add("rule", "cfg-need", "need", NEED_UNSET_MESSAGE)
   rule.levelMinimums.forEach((lm, i) => {
     if (lm.levelIndex < 0 || lm.levelIndex >= rule.levels.length || !rule.levels[lm.levelIndex]?.trim()) add("rule", `cfg-lmin-level-${i}`, "level", "Choose a level for this minimum.")
     if (!isInt(lm.min) || lm.min < 1) add("rule", `cfg-lmin-${i}`, "min", "Enter a level minimum of 1 or more.")
@@ -449,6 +673,7 @@ export function validateRule(rule: LabRule): RuleIssue[] {
   rule.studentFields.forEach((f, i) => {
     if (!f.label.trim()) add("signoff", `cfg-field-${i}`, "blank", `Student field ${i + 1} has no label.`)
     else if (fdup.has(i)) add("signoff", `cfg-field-${i}`, "dup", `Student field ${i + 1} repeats another label.`)
+    else if (f.type === "choice" && (f.choices ?? []).filter((x) => x.trim()).length < 2) add("signoff", `cfg-field-${i}`, "choices", `Give ${f.label.trim()} at least two choices.`)
   })
 
   if (rule.evaluatorRoles.length === 0) add("signoff", "cfg-role-preceptor", "none", "Choose at least one role that may sign off.")
@@ -836,12 +1061,14 @@ export function configDiff(before: LabRule | null, after: LabRule): Array<{ labe
 }
 
 /** Bulk apply [REQ IM-14]: impact of copying one rule onto each selected skill, one row per skill. */
-export function bulkImpact(s: V2State, skillIds: string[], rule: LabRule): Array<{ skillId: string; name: string; published: boolean; changed: number; lostAchieved: number }> {
+export function bulkImpact(s: V2State, skillIds: string[], rule: LabRule): Array<{ skillId: string; name: string; configured: boolean; changed: number; lostAchieved: number }> {
   return skillIds.map((id) => {
     const k = skillById(s, id)
-    if (!k) return { skillId: id, name: id, published: false, changed: 0, lostAchieved: 0 }
-    const im = computeImpact(s, id, fromV2(k), rule)
-    return { skillId: id, name: k.name, published: k.published, changed: im.changed.length, lostAchieved: im.lostAchieved }
+    if (!k) return { skillId: id, name: id, configured: false, changed: 0, lostAchieved: 0 }
+    const configured = isConfigured(k)
+    // A skill that is not configured has nobody's status to change: nobody can be asked against it yet [REQ IM-09].
+    const im = configured ? computeImpact(s, id, fromV2(k), rule) : null
+    return { skillId: id, name: k.name, configured, changed: im?.changed.length ?? 0, lostAchieved: im?.lostAchieved ?? 0 }
   })
 }
 
@@ -854,11 +1081,11 @@ export function affectedStudentLine(skillName: string, rule: LabRule, row: Pick<
 
 /** Configured skills offered as a copy source [REQ IM-14], same program, excluding the skill itself. */
 export function copySources(s: V2State, skillId: string): Skill[] {
-  return s.skills.filter((k) => k.id !== skillId && k.config && k.model).sort((a, b) => a.name.localeCompare(b.name))
+  return s.skills.filter((k) => k.id !== skillId && isConfigured(k) && k.config && k.model).sort((a, b) => a.name.localeCompare(b.name))
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Publish: write the rule to the shared store, where the v2 engine reads it [REQ AE-02, SC-19; decision D-X27]
+// Save configuration: write the rule to the shared store, where the v2 engine reads it [REQ SC-01, AE-02, SC-19; decisions D-X27, D-X31]
 
 /**
  * The lab rule as the skill's v2 configuration. Keeps what the lab does not edit (prerequisites, qualification, failure policy,
@@ -896,12 +1123,15 @@ export function toSkillConfig(prev: SkillConfig | null, rule: LabRule): SkillCon
     scoredRule: m === "scored" && rule.scoredRule ? { ...rule.scoredRule } : null,
     levelMinimums: rule.levelMinimums.map((x) => ({ levelIndex: x.levelIndex, min: x.min })),
     qualifyingLabel: m === "binary" ? rule.qualifyingLabel : null,
+    scaleMax: m === "scored" ? rule.scaleMax : base.scaleMax,
+    selfEvaluation: rule.selfEvaluation,
+    studentFields: rule.studentFields.map((f) => ({ label: f.label.trim(), type: f.type, mandatory: f.mandatory, ...(f.type === "choice" ? { choices: (f.choices ?? []).map((x) => x.trim()).filter(Boolean) } : {}) })),
   }
 }
 
 /** The rule version snapshot kept on the store's rule history (V2State.ruleChanges). */
 export function ruleSnapshot(rule: LabRule): PublishedRuleSnapshot {
-  if (!rule.model) throw new Error("A rule with no model cannot be published.")
+  if (!rule.model) throw new Error("A rule with no model cannot be saved as a configuration.")
   return {
     model: rule.model,
     criteriaKind: criteriaKind(rule.model),
@@ -926,11 +1156,13 @@ export type PublishWrite =
   | { ok: false; error: string; issues: RuleIssue[] }
 
 /**
- * Writes a published lab rule to the shared v2 store as the skill's live configuration plus a rule version (V2State.ruleChanges),
- * so skillProgress (and every figure built on it: student progress, dashboard, director, lists) reads it at once and after reload.
- * Refuses an invalid rule (validateRule; an unset frequency is one of the issues, never defaulted). Pure; returns a new state.
+ * "Save configuration": writes the lab rule to the shared v2 store as the skill's configuration plus a rule version
+ * (V2State.ruleChanges), so skillProgress (and every figure built on it: student progress, dashboard, director, lists) reads it at
+ * once and after reload. The skill becomes Configured (lib/v2/population.ts isConfigured) and can be mapped; any saved draft is
+ * cleared. Refuses an invalid rule (validateRule; an unset frequency is one of the issues, never defaulted) [REQ SC-18]. Pure.
+ * The v2 flags `configured` and `published` are both set because the engine still reads the pair; the UI never says "published".
  */
-export function publishLabRule(s: V2State, skillId: string, rule: LabRule, opts: { at: string; byId: string; mode: PublishMode | null }): PublishWrite {
+export function saveLabRule(s: V2State, skillId: string, rule: LabRule, opts: { at: string; byId: string; mode: PublishMode | null }): PublishWrite {
   const issues = validateRule(rule)
   if (issues.length) return { ok: false, error: issues[0]!.message, issues }
   const skill = skillById(s, skillId)
@@ -943,6 +1175,180 @@ export function publishLabRule(s: V2State, skillId: string, rule: LabRule, opts:
   const version = current + 1
   const record: RuleChangeRecord = { skillId, at: opts.at, byId: opts.byId, version, published: ruleSnapshot(rule) }
   const skills = s.skills.map((k) => (k.id === skillId ? { ...k, model: rule.model, configured: true, published: true, config } : k))
-  const next = appendAudit({ ...s, skills, ruleChanges: [...(s.ruleChanges ?? []), record] }, opts.byId, `Published rule version ${version}`, skill.name, opts.at)
+  const configDrafts = { ...(s.configDrafts ?? {}) }
+  delete configDrafts[skillId]
+  const next = appendAudit({ ...s, skills, configDrafts, ruleChanges: [...(s.ruleChanges ?? []), record] }, opts.byId, `Saved configuration, rule version ${version}`, skill.name, opts.at)
   return { ok: true, state: next, written: true, version }
+}
+
+/** Old name, kept for callers and tests written before decision D-X31. */
+export const publishLabRule = saveLabRule
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Save draft: a configuration saved part way [REQ SC-01 "configuration may be completed later", IM-10; decision D-X31]
+
+/**
+ * Keeps the rule and the step in the shared store (persisted with the rest of the state), without validating and without changing
+ * the skill: it stays Not configured, or keeps the configuration it already has, until "Save configuration". A draft is not a
+ * decision, so it is not audited (same as the v2 wizard's drafts).
+ */
+export function saveConfigDraft(s: V2State, skillId: string, rule: LabRule, step: string | null, at: string): V2State {
+  return { ...s, configDrafts: { ...(s.configDrafts ?? {}), [skillId]: { rule: copyRule(rule), step, at } } }
+}
+
+export function configDraftOf(s: V2State, skillId: string): { rule: LabRule; step: string | null; at: string } | null {
+  const d = s.configDrafts?.[skillId]
+  if (!d || !d.rule || typeof d.rule !== "object") return null
+  return { rule: { ...emptyRule(), ...(d.rule as LabRule) }, step: d.step, at: d.at }
+}
+
+export function discardConfigDraft(s: V2State, skillId: string): V2State {
+  if (!s.configDrafts?.[skillId]) return s
+  const configDrafts = { ...s.configDrafts }
+  delete configDrafts[skillId]
+  return { ...s, configDrafts }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Check: what you set up, grouped by step, each fact once [REQ SC-17, SC-19]
+
+export interface SetupGroup {
+  id: "model" | "criteria" | "rule" | "signers" | "student" | "before"
+  /** The step its Edit link opens. */
+  step: SectionId
+  label: string
+  lines: string[]
+}
+
+/** The configuration as six short groups for the Check step and the receipt. Empty values say "Not set" or "None". */
+export function setupSummary(rule: LabRule): SetupGroup[] {
+  const m = rule.model
+  const none = "Not set"
+  const criteria = !m
+    ? [none]
+    : m === "binary"
+      ? [
+          `${rule.outcomeLabels[0] || "First outcome"} or ${rule.outcomeLabels[1] || "second outcome"}`,
+          rule.qualifyingLabel === null ? "Qualifying outcome not chosen" : `${rule.outcomeLabels[rule.qualifyingLabel] || "Chosen outcome"} qualifies`,
+        ]
+      : m === "demonstration"
+        ? [rule.levels.filter((l) => l.trim()).join(", ") || "No levels yet"]
+        : [`${rule.questions.length} ${plural(rule.questions.length, "question", "questions")}${m === "scored" ? `, scored 1 to ${rule.scaleMax}` : ""}`]
+  const fields = rule.studentFields.filter((f) => f.label.trim())
+  const roles = rule.evaluatorRoles.map((r) => ROLE_LABEL[r])
+  const onOff = (b: boolean) => (b ? "Yes" : "No")
+  return [
+    { id: "model", step: "model", label: MODEL_STEP_LABEL, lines: [m ? LAB_MODEL_LABEL[m] : none] },
+    { id: "criteria", step: "outcomes", label: CRITERIA_LABEL, lines: criteria },
+    { id: "rule", step: "rule", label: HOW_MANY_LABEL, lines: m ? [ruleSentence(rule), settingNote(rule), ...carriedNotes(rule)].filter(Boolean) : [none] },
+    { id: "signers", step: "signoff", label: "Who signs", lines: [roles.length ? roles.join(", ") : "No role chosen"] },
+    { id: "student", step: "signoff", label: "What the student adds", lines: [fields.length ? fields.map((f) => `${f.label.trim()}${f.mandatory ? " (required)" : ""}`).join(", ") : "Nothing beyond the evidence"] },
+    {
+      id: "before",
+      step: "signoff",
+      label: "Before it counts",
+      lines: [`Self-evaluation first: ${onOff(rule.selfEvaluation)}. Approval: ${onOff(rule.approvalRequired)}. Feedback required: ${onOff(rule.feedbackRequired)}.`],
+    },
+  ]
+}
+
+/** Decisions still open on Check: every rule problem plus, on a rule change with evidence, the unanswered evidence choice. */
+export function openDecisions(issues: RuleIssue[], choiceAsked: boolean, mode: PublishMode | null): number {
+  return issues.length + (choiceAsked && !mode ? 1 : 0)
+}
+
+/** The Save button's disabled reason on Check (10 words or fewer), or undefined when it can save. */
+export function saveBlockedReason(issues: RuleIssue[], choiceAsked: boolean, mode: PublishMode | null): string | undefined {
+  if (issues.length > 0) return `Fix ${issues.length} ${plural(issues.length, "thing", "things")} first.`
+  if (choiceAsked && !mode) return "Choose how evidence already held is treated."
+  return undefined
+}
+
+/** One label and value on Check; `missing` marks a value still to choose, so the row reads as a gap, not as an answer. */
+export interface CheckRow {
+  label: string
+  value: string
+  missing?: boolean
+  /** What the value was under the saved rule, when this edit changes it. */
+  was?: string
+}
+
+/** The configuration as one group per wizard step, each a short list of label and value pairs (Check and the receipt). */
+export interface CheckGroup {
+  step: SectionId
+  label: string
+  rows: CheckRow[]
+}
+
+const DIFF_ROW: Record<string, string> = {
+  [MODEL_STEP_LABEL]: "Judged as",
+  [HOW_MANY_LABEL]: "Rule",
+  "Who can sign off": "Who signs",
+  "Student adds": "Student adds",
+  "Feedback required": "Feedback required",
+  "Self-evaluation first": "Self-evaluation first",
+  "Approval before it counts": "Approval before it counts",
+}
+
+/**
+ * Check's summary (decision D-X32, redesign 2026-10-27), grouped by the step that sets it, as label and value pairs rather than
+ * sentences glued together. A value still to choose says "Not chosen" and carries `missing`; with `current`, each changed row
+ * carries what it was.
+ */
+export function checkGroups(rule: LabRule, current: LabRule | null = null): CheckGroup[] {
+  const m = rule.model
+  const yesNo = (b: boolean) => (b ? "Yes" : "No")
+  const realQuestions = rule.questions.filter((q) => q.trim()).length
+  const realLevels = rule.levels.filter((l) => l.trim())
+  const criteriaRows: CheckRow[] = !m
+    ? [{ label: "Outcomes", value: "Not chosen", missing: true }]
+    : m === "binary"
+      ? [
+          { label: "Outcomes", value: `${rule.outcomeLabels[0] || "First outcome"} or ${rule.outcomeLabels[1] || "second outcome"}` },
+          rule.qualifyingLabel === null
+            ? { label: "Counts when", value: "Not chosen", missing: true }
+            : { label: "Counts when", value: rule.outcomeLabels[rule.qualifyingLabel] || "Chosen outcome" },
+        ]
+      : m === "demonstration"
+        ? [{ label: "Levels", value: realLevels.join(", ") || "None yet", missing: realLevels.length < 2 }]
+        : [
+            { label: "Questions", value: realQuestions ? `${rule.questions.length} ${plural(rule.questions.length, "question", "questions")}` : "None yet", missing: realQuestions === 0 },
+            ...(m === "scored" ? [{ label: "Scale", value: `1 to ${rule.scaleMax}` }] : []),
+          ]
+  const ruleRows: CheckRow[] = !m
+    ? [{ label: "Rule", value: "Not set", missing: true }]
+    : [
+        hasNeed(rule) ? { label: "Rule", value: ruleSentence(rule) } : { label: "Rule", value: "Not set", missing: true },
+        ...(settingNote(rule) ? [{ label: "Setting", value: settingNote(rule) }] : []),
+        ...carriedNotes(rule).map((n) => ({ label: "Kept", value: n })),
+      ]
+  const fields = rule.studentFields.filter((f) => f.label.trim())
+  const roles = rule.evaluatorRoles.map((r) => ROLE_LABEL[r])
+  const groups: CheckGroup[] = [
+    { step: "model", label: MODEL_STEP_LABEL, rows: [m ? { label: "Judged as", value: LAB_MODEL_LABEL[m] } : { label: "Judged as", value: "Not chosen", missing: true }] },
+    { step: "outcomes", label: CRITERIA_LABEL, rows: criteriaRows },
+    { step: "rule", label: HOW_MANY_LABEL, rows: ruleRows },
+    {
+      step: "signoff",
+      label: "Who signs",
+      rows: [
+        roles.length ? { label: "Who signs", value: roles.join(", ") } : { label: "Who signs", value: "Not chosen", missing: true },
+        { label: "Student adds", value: fields.length ? fields.map((f) => `${f.label.trim()}${f.mandatory ? " (required)" : ""}`).join(", ") : "Nothing beyond the evidence" },
+        { label: "Self-evaluation first", value: yesNo(rule.selfEvaluation) },
+        { label: "Approval before it counts", value: yesNo(rule.approvalRequired) },
+        { label: "Feedback required", value: yesNo(rule.feedbackRequired) },
+      ],
+    },
+  ]
+  if (current) {
+    for (const d of configDiff(current, rule)) {
+      const rowLabel = DIFF_ROW[d.label] ?? (d.label === outcomesLabel(rule.model) ? criteriaRows[0]?.label : undefined)
+      if (!rowLabel) continue
+      for (const g of groups) {
+        const row = g.rows.find((r) => r.label === rowLabel)
+        if (row) row.was = d.before === "On" ? "Yes" : d.before === "Off" ? "No" : d.before
+      }
+    }
+  }
+  return groups
 }

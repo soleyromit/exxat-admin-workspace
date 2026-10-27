@@ -1,11 +1,13 @@
 "use client"
 
 /**
- * Course mapping B (alternative): skill first. Pick one of 178 skills, see which of the term's offerings carry it and at what level,
+ * Course mapping B (alternative): skill first. Pick one of the active skills, see which of the term's offerings carry it and at what level,
  * and change the level per offering (levels may differ between offerings, REQ CM-06): mandatory, recommended, optional or not mapped,
  * each an override of the lists assigned to the offering's cohort (one line in the pane). Clinical courses only by default [CALL 10-26]. Required skills in no course sort first and are
  * the "Required in no course" filter (N-13). The library's "Not mapped" link lands here with ?skill=.
- * Regions: header, toolbar, N-13 line, skill list and skill panes. URL: ?term= &skill= &q= &show=. Demo states: ?state=loading | empty | error.
+ * The pane's offerings are searchable and filter by cohort and professional year, with each offering's mapped and mandatory counts
+ * (REQ CM-02, CM-04, same as A). Deactivated skills are not listed (REQ SL-11).
+ * Regions: header, toolbar, N-13 line, skill list and skill panes. URL: ?term= &skill= &q= &show= &oq= &cohort= &year=. Demo states: ?state=loading | empty | error.
  */
 import * as React from "react"
 import { filterOfferings, mappingLink, skillReach } from "@/lib/lab/mapping"
@@ -31,9 +33,14 @@ function SkillFirst({ m }: { m: MappingModel }) {
     const t = q.trim().toLowerCase()
     return all.filter((r) => (!t || r.haystack.includes(t)) && (show === "" || (show === "required" ? r.required : show === "gaps" ? r.required && r.carriers === 0 : !r.configured)))
   }, [all, q, show])
+  // The skill's offerings are found by search, cohort and professional year in its pane, the term above (grouped by academic year) [REQ CM-02].
+  const oq = query.get("oq")
+  const cohort = query.get("cohort")
+  const year = query.get("year")
+  const offFilter = React.useMemo(() => ({ q: oq, cohort, year }), [oq, cohort, year])
   const requested = query.get("skill")
   const selected = all.find((r) => r.id === requested) ?? rows[0]
-  const hrefFor = React.useCallback((id: string) => mappingLink({ term: m.termId, q: q || undefined, show: show || undefined, incl: m.didactic ? "didactic" : undefined, skill: id }), [m.termId, q, show, m.didactic])
+  const hrefFor = React.useCallback((id: string) => mappingLink({ term: m.termId, q: q || undefined, show: show || undefined, incl: m.didactic ? "didactic" : undefined, oq: oq || undefined, cohort: cohort || undefined, year: year || undefined, skill: id }), [m.termId, q, show, m.didactic, oq, cohort, year])
 
   return (
     <>
@@ -46,7 +53,7 @@ function SkillFirst({ m }: { m: MappingModel }) {
           label="Show"
           allLabel={`All ${skillNounPlural()}`}
           options={[
-            { value: "required", label: "Required on the default list" },
+            { value: "required", label: "Required to graduate" },
             { value: "gaps", label: "Required, in no course" },
             { value: "unconfigured", label: "Not configured" },
           ]}
@@ -67,7 +74,19 @@ function SkillFirst({ m }: { m: MappingModel }) {
             </>
           }
         />
-        {selected ? <SkillPanel state={m.state} overlay={m.overlay} setOverlay={m.setOverlay} skill={selected} termId={m.termId} termName={m.termName} lists={m.lists} didactic={m.didactic} /> : null}
+        {selected ? (
+          <SkillPanel
+            state={m.state}
+            overlay={m.overlay}
+            setOverlay={m.setOverlay}
+            skill={selected}
+            termId={m.termId}
+            termName={m.termName}
+            lists={m.lists}
+            didactic={m.didactic}
+            filter={{ value: offFilter, onChange: (n) => query.set({ ...(n.q !== undefined ? { oq: n.q || null } : {}), ...(n.cohort !== undefined ? { cohort: n.cohort || null } : {}), ...(n.year !== undefined ? { year: n.year || null } : {}) }), cohortOpts: m.cohortOpts, yearOpts: m.yearOpts }}
+          />
+        ) : null}
       </div>
     </>
   )

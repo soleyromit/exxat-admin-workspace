@@ -21,7 +21,7 @@ import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { buildTree, countLibrary, filterLibrary, pickerOptions, rollupLabel, rowsForTab, type LibraryCounts, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
+import { buildTree, countLibrary, filterLibrary, rollupLabel, rowsForTab, type LibraryCounts, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
 import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
@@ -67,7 +67,7 @@ function SkillRow({ r, handlers, indent, onOpen, selected }: { r: LibraryRow; ha
         </span>
         {r.tags.length ? <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{r.tags.join(", ")}</span></span> : null}
       </TableCell>
-      <TableCell><LibraryStatusBadge status={r.status} /></TableCell>
+      <TableCell><LibraryStatusBadge status={r.status} draft={r.draft} /></TableCell>
       <TableCell className="hidden xl:table-cell">{r.modelLabel || <span className="text-muted-foreground">Not chosen</span>}</TableCell>
       <TableCell className="tabular-nums">{r.status === "not-configured" || r.status === "inactive" ? <span className="text-muted-foreground">None</span> : r.courses ? plural(r.courses, "course", "courses") : <span className="text-muted-foreground">Not mapped</span>}</TableCell>
       <TableCell className="hidden tabular-nums xl:table-cell">{r.evidence ? r.evidence.toLocaleString("en-US") : <span className="text-muted-foreground">None</span>}</TableCell>
@@ -95,7 +95,6 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
   const query = q.trim().toLowerCase()
   const scoped = React.useMemo(() => filterLibrary(api.rows, filter), [api.rows, filter])
   const scopedCounts = React.useMemo(() => countLibrary(scoped), [scoped])
-  const pickerOpts = React.useMemo(() => pickerOptions(api.rows), [api.rows])
   const filtered = React.useMemo(() => rowsForTab(scoped, tab).filter((r) => !query || r.name.toLowerCase().includes(query)), [scoped, tab, query])
   const tree = React.useMemo(() => {
     const t = buildTree(filtered)
@@ -224,7 +223,7 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
                         </TableRow>
                         {/* The open add row sits right under its category header, where the reader asked for it. */}
                         {isOpen && addingIn === s.name ? (
-                          <InlineAddRow category={s.name} colSpan={COLS} names={api.names} options={pickerOpts} onAdd={(d: SkillDraft) => api.add(d)} onClose={() => setAddingIn(null)} />
+                          <InlineAddRow category={s.name} colSpan={COLS} names={api.names} onAdd={(d: SkillDraft) => api.add(d)} onClose={() => setAddingIn(null)} />
                         ) : null}
                         {isOpen ? s.rows.map((r) => <SkillRow key={r.id} r={r} handlers={handlers} indent={false} onOpen={openSkill} selected={r.id === openRow?.id} />) : null}
                         {isOpen ? s.groups.map((g) => {

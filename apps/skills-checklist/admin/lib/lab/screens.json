@@ -398,13 +398,13 @@
     {
       "persona": "admin",
       "slug": "configure-skill",
-      "title": "Configure skill",
+      "title": "Configure the skill",
       "tier": 1,
       "recommended": "A",
       "variants": [
         {
           "id": "A",
-          "question": "Five steps, rule in the footer: do Model, Outcomes, Rule, Who signs and Check in one 720 px column, with the live rule always in view, get a skill configured right first time?",
+          "question": "Five steps with the live preview beside each (How it's judged, Evaluation criteria, How many times, Who signs, Check and save): does a full-width wizard that ends on Save configuration get a skill configured right first time?",
           "file": "components/lab/screens/admin-configure-skill-a.tsx",
           "pageType": "wizard"
         },
@@ -487,13 +487,13 @@
     {
       "persona": "admin",
       "slug": "rule-change-impact",
-      "title": "Rule change impact and publish",
+      "title": "Rule change impact and save",
       "tier": 3,
       "recommended": "A",
       "variants": [
         {
           "id": "A",
-          "question": "Counts first: do before and after counts, students grouped by move with the shared reason said once, and the open evidence choice make a rule change safe to publish?",
+          "question": "Counts first: do before and after counts, students grouped by move with the shared reason said once, and the open evidence choice make a rule change safe to save?",
           "file": "components/lab/screens/admin-rule-impact-a.tsx",
           "pageType": "detail"
         },
@@ -507,7 +507,6 @@
       "requiredDsComponents": [
         "PageHeader",
         "Button",
-        "Badge",
         "Table",
         "StatusBadge",
         "LocalBanner",
@@ -607,19 +606,19 @@
     {
       "persona": "admin",
       "slug": "lists-cohorts",
-      "title": "Lists and cohort assignment",
+      "title": "Groups of skills",
       "tier": 2,
       "recommended": "A",
       "variants": [
         {
           "id": "A",
-          "question": "List first: does treating each list as an object (noun, size, default, completion rule) and checking off the student groups it applies to, with group medians showing what a rule change would do, set up lists without overriding a program's established ones?",
+          "question": "One list at a time: in the set-up flow, does a page that asks only \"Which students use this list?\", with the list as context and one panel saying what the assignment does (its cohorts' clinical courses offer the skills), make assignment clear; standalone, does the lists table above the same checklist manage several lists?",
           "file": "components/lab/screens/admin-lists-cohorts-a.tsx",
           "pageType": "list"
         },
         {
           "id": "B",
-          "question": "Group first: does a student groups by lists grid, with the next new cohort as a row, make which cohort uses which list clearer than opening each list?",
+          "question": "All at once: does a student groups by lists grid, with the next new cohort as a row, make which group uses which list clearer than opening each list?",
           "file": "components/lab/screens/admin-lists-cohorts-b.tsx",
           "pageType": "list"
         }
@@ -635,35 +634,6 @@
     },
     {
       "persona": "admin",
-      "slug": "evaluator-directory",
-      "title": "Evaluator directory",
-      "tier": 2,
-      "recommended": "A",
-      "variants": [
-        {
-          "id": "A",
-          "question": "People first: can an admin find any of 174 evaluators by name, email, role, site or status, decide adopt or merge on the 14 names awaiting approval, and see return rates against the program average only where the numbers are big enough?",
-          "file": "components/lab/screens/admin-evaluator-directory-a.tsx",
-          "pageType": "list"
-        },
-        {
-          "id": "B",
-          "question": "Site first: does starting from the sites (setting, names awaiting approval, open requests) and opening one site's evaluators match how coordinators think about preceptors better than one long list?",
-          "file": "components/lab/screens/admin-evaluator-directory-b.tsx",
-          "pageType": "list"
-        }
-      ],
-      "requiredDsComponents": [
-        "PageHeader",
-        "DataTablePaginated",
-        "PersonIdentityCell",
-        "StatusBadge",
-        "Dialog",
-        "Button"
-      ]
-    },
-    {
-      "persona": "admin",
       "slug": "settings",
       "title": "Settings",
       "tier": 3,
@@ -671,13 +641,13 @@
       "variants": [
         {
           "id": "A",
-          "question": "Can an admin keep categories, tags, clinical settings (with site counts and what uses each) and lab instructors in one tabbed page, creating inline and deleting only what nothing uses?",
+          "question": "Can an admin keep clinical settings (with site counts and what uses each), every evaluator (people first: find any of 174 by name, email, role, site or status, lab instructors included) and the program's naming in one tabbed page?",
           "file": "components/lab/screens/admin-settings-a.tsx",
           "pageType": "list"
         },
         {
           "id": "B",
-          "question": "Master and detail: do three panes (lists, entries, the chosen entry with everything that uses it shown in place) make deactivate or delete a better-informed decision than tabs with a side panel?",
+          "question": "Master and detail: do panes (sections, entries, the chosen entry with everything that uses it in place; evaluators site first, opening one site's people) make decisions better informed than tabs with a side panel?",
           "file": "components/lab/screens/admin-settings-b.tsx",
           "pageType": "list"
         }
@@ -716,8 +686,60 @@
     },
     {
       "persona": "admin",
+      "slug": "categories-tags",
+      "title": "Categories and tags",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Can an admin keep the program's categories and tags in two tabbed tables (with how many skills use each), creating, renaming and deactivating inline and deleting only what nothing uses?",
+          "file": "components/lab/screens/admin-categories-tags-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "Master and detail: do three panes (the two lists, their entries, the chosen entry with every skill that uses it shown in place) make deactivate or delete a better-informed decision than tabbed tables?",
+          "file": "components/lab/screens/admin-categories-tags-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Input",
+        "Label",
+        "Button",
+        "AlertDialog",
+        "LocalBanner"
+      ],
+      "scenarios": [
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Empty",
+          "params": {
+            "state": "empty"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Error",
+          "params": {
+            "state": "error"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "admin",
       "slug": "attainment",
-      "title": "Attainment",
+      "title": "Reports",
       "tier": 2,
       "recommended": "A",
       "variants": [
@@ -833,21 +855,21 @@
       "variants": [
         {
           "id": "A",
-          "question": "Next actions first: does a short list of what to do now (returned, did not count, one away, placement ending, waiting 3+ days) under a thin verdict get a student to the next sign-off fastest?",
+          "question": "Student dashboard: do four regions that each answer one question (am I on pace, what is left per course, what waits on someone else, what to do next) get a student from a glance to the next sign-off fastest?",
           "file": "components/lab/screens/student-progress-a.tsx",
-          "pageType": "student"
+          "pageType": "dashboard"
         },
         {
           "id": "B",
-          "question": "Requirements map: does the whole list as a sections by skills mosaic, with a radar against the cohort median, show where a student stands better than a to-do list?",
+          "question": "Requirements map: do four key figures over every skill as a sections by skills mosaic, beside a radar against the cohort median, show where a student stands better than a to-do dashboard?",
           "file": "components/lab/screens/student-progress-b.tsx",
-          "pageType": "student"
+          "pageType": "dashboard"
         },
         {
           "id": "C",
-          "question": "Timeline and pace: does a pace line against the term clock, the placement end and what each course expects now help a student plan better than a list or a map?",
+          "question": "Term timeline: does leading with time (counted against the term clock, how long each request has waited, when each placement ends) help a student plan better than a to-do dashboard or a map?",
           "file": "components/lab/screens/student-progress-c.tsx",
-          "pageType": "student"
+          "pageType": "dashboard"
         }
       ],
       "requiredDsComponents": [
@@ -979,6 +1001,12 @@
           "question": "Situation first: does asking 'Is your evaluator with you?' first (with me: QR or hand over; not here: email link; paper: photo) route a student to the right method faster than choosing skills and a person first?",
           "file": "components/lab/screens/student-request-b.tsx",
           "pageType": "form"
+        },
+        {
+          "id": "C",
+          "question": "Course first (Sankalp's fulfillment path): does choosing the course, then its mandatory skills, reading the questions the program configured, rating yourself only where asked, and choosing a preceptor, faculty or lab instructor, one step per page, get a student to a correct request with no guesswork?",
+          "file": "components/lab/screens/student-request-c.tsx",
+          "pageType": "wizard"
         }
       ],
       "requiredDsComponents": [
@@ -1091,7 +1119,7 @@
       "variants": [
         {
           "id": "A",
-          "question": "Guided column: does reason, then what to change, then send, with correction or further attempt named first, get it right in one pass?",
+          "question": "Send-style form: does one compact reason banner, the path said once, three numbered sections and the Send footer get a correct resubmission in one pass?",
           "file": "components/lab/screens/student-fix-a.tsx",
           "pageType": "form"
         },
@@ -1105,11 +1133,9 @@
       "requiredDsComponents": [
         "PageHeader",
         "Button",
-        "Card",
         "Textarea",
         "RadioGroup",
         "Select",
-        "Checkbox",
         "Field",
         "LocalBanner"
       ],
@@ -1206,7 +1232,7 @@
     {
       "persona": "student",
       "slug": "record",
-      "title": "Record",
+      "title": "My evaluations",
       "tier": 2,
       "recommended": "A",
       "variants": [
@@ -1771,7 +1797,7 @@
     {
       "persona": "reviewer",
       "slug": "review-item",
-      "title": "Review item",
+      "title": "Submission",
       "tier": 1,
       "recommended": "A",
       "variants": [
@@ -2019,7 +2045,7 @@
     {
       "persona": "director",
       "slug": "reports",
-      "title": "Reports",
+      "title": "Export",
       "tier": 2,
       "recommended": "A",
       "variants": [
@@ -2062,7 +2088,7 @@
     {
       "persona": "director",
       "slug": "attainment",
-      "title": "Attainment",
+      "title": "Reports",
       "tier": 2,
       "recommended": "A",
       "variants": [

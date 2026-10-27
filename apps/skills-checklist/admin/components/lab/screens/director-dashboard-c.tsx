@@ -12,7 +12,7 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { DirectorPage } from "@/components/lab/director/frame"
 import { WorklistTable } from "@/components/lab/director/worklist"
-import { LIST_LABEL, STATUS_LABEL, filterRows, isListKey, isStatus, type ReadinessRow, type VerifyStatus } from "@/lib/lab/director"
+import { LIST_LABEL, STATUS_LABEL, filterRows, isListKey, isSkillStateList, isStatus, type ReadinessRow, type VerifyStatus } from "@/lib/lab/director"
 
 const TABS: Array<VerifyStatus | "all"> = ["ready", "changed", "blocked", "all"]
 const rank = { changed: 0, ready: 1, blocked: 2, verified: 3 } as const
@@ -33,7 +33,7 @@ export function DirectorDashboardC() {
         const fallback = list || skillName ? "all" : TABS.find((t) => counts[t] > 0) ?? "all"
         const tab = statusRaw === "all" || isStatus(statusRaw) ? statusRaw : fallback
         const rows: ReadinessRow[] = (tab === "all" ? narrowed : narrowed.filter((r) => r.status === tab)).slice().sort((a, b) => rank[a.status] - rank[b.status] || b.gaps.length - a.gaps.length || a.name.localeCompare(b.name))
-        const skillState = list === "has" || list === "progress" || list === "notmet"
+        const skillState = isSkillStateList(list)
         const chip = skillState && skillName ? `${LIST_LABEL[list!]}: ${skillName}` : [list ? LIST_LABEL[list] : null, skillName ? `Not achieved: ${skillName}` : null].filter(Boolean).join(", ") || null
         return (
           <div className="flex flex-col gap-3">

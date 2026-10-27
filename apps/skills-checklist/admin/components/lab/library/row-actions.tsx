@@ -35,10 +35,10 @@ export interface RowActionHandlers {
   onDelete: (r: LibraryRow) => void
 }
 
-export function RowActions({ row, handlers, hideConfigure = false }: { row: LibraryRow; handlers: RowActionHandlers; hideConfigure?: boolean }) {
+export function RowActions({ row, handlers, hideConfigure = false, hideMap = false }: { row: LibraryRow; handlers: RowActionHandlers; hideConfigure?: boolean; /** The detail panel's primary already maps a configured row. */ hideMap?: boolean }) {
   const block = deleteBlockReason(row)
   const inactive = row.status === "inactive"
-  const mappable = row.status === "configured" || row.status === "published"
+  const mappable = row.status === "configured" && !hideMap
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -50,7 +50,7 @@ export function RowActions({ row, handlers, hideConfigure = false }: { row: Libr
       <DropdownMenuContent align="end" className="w-60" {...railTriggerProps()}>
         {hideConfigure ? null : (
           <DropdownMenuItem asChild>
-            <Link href={configureHref(row.id)}>{row.status === "not-configured" ? "Configure" : "Open configuration"}</Link>
+            <Link href={configureHref(row.id)}>{row.status === "not-configured" ? (row.draft ? "Continue configuring" : "Configure") : "Open configuration"}</Link>
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onSelect={() => handlers.onEdit(row)}>Edit details</DropdownMenuItem>
@@ -148,7 +148,7 @@ export function CopySettingsDialog({ targets, sources, onOpenChange, onConfirm }
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{`Copy settings to ${countSkills(list.length)}`}</DialogTitle>
-          <DialogDescription>The model, achievement rule and evaluator roles are copied. Each stays unpublished until you review it.</DialogDescription>
+          <DialogDescription>The model, achievement rule and evaluator roles are copied as a draft. Each stays not configured until you check and save it.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
           <Label htmlFor="copy-source">Copy from</Label>
@@ -189,7 +189,7 @@ export function useLifecycle(api: LibraryApi) {
   const [deactivating, setDeactivating] = React.useState<LibraryRow[] | null>(null)
   const [deleting, setDeleting] = React.useState<LibraryRow | null>(null)
   const [copying, setCopying] = React.useState<LibraryRow[] | null>(null)
-  const sources = React.useMemo(() => api.rows.filter((r) => (r.status === "published" || r.status === "configured") && r.model), [api.rows])
+  const sources = React.useMemo(() => api.rows.filter((r) => r.status === "configured" && r.model), [api.rows])
   const dialogs = (
     <>
       <DeactivateDialog rows={deactivating} onOpenChange={(o) => !o && setDeactivating(null)} onConfirm={(ids) => api.deactivate(ids)} />

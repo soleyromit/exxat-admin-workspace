@@ -4,7 +4,8 @@
  * Student Skill detail, variant B: attempt ledger.
  * Tests: does a table of every attempt with a Result and Why column, the rule parts in one line above it, let a student audit
  * what counted faster than a narrative timeline?
- * Regions: header · state and parts line · ledger · side: why the last one did not count and the rule.
+ * Regions: header · state and parts line · ledger · side: why the last one did not count and the rule. Each completed attempt opens
+ * in full, read only (?evaluation=, REQ SH-07).
  */
 import { capitalize, skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
@@ -13,6 +14,7 @@ import { StudentFrame, type StudentFrameCtx } from "@/components/lab/student/fra
 import { Overlay, Parts, SectionTitle, StateLabel } from "@/components/lab/student/parts"
 import { AttemptCount, AttemptLedger, WhereItCounts, WhyNotCounted, pickSkill, skillPrimary, useAttempts } from "@/components/lab/student/skill-detail"
 import { studentHref } from "@/lib/lab/student"
+import { EVALUATION_PARAM, StudentEvaluationSheet } from "@/components/lab/student/evaluation-sheet"
 
 export function StudentSkillDetailB() {
   return (
@@ -44,9 +46,10 @@ function Body({ ctx }: { ctx: StudentFrameCtx }) {
         <Card data-region="ledger" className="py-0 lg:col-span-8">
           <CardContent className="flex flex-col gap-3 py-4">
             <SectionTitle count={rows.length}>Attempts</SectionTitle>
-            <AttemptLedger rows={rows} />
+            <AttemptLedger rows={rows} onOpen={(id) => ctx.setParams({ [EVALUATION_PARAM]: id })} />
           </CardContent>
         </Card>
+        <StudentEvaluationSheet state={ctx.state} studentId={ctx.studentId} evaluationId={ctx.param(EVALUATION_PARAM)} onClose={() => ctx.setParams({ [EVALUATION_PARAM]: null })} />
         <Card data-region="rule" className="py-0 lg:col-span-4">
           <CardContent className="flex flex-col gap-4 py-4">
             <WhyNotCounted record={r} studentId={ctx.studentId} withAction={false} />

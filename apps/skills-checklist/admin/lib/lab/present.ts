@@ -18,7 +18,8 @@ export interface MarqueeItem {
 }
 
 /**
- * The curated walk-through, in order (UX critique 2026-10-26): setup; the student lands on My progress, then logs and sends; the
+ * The curated walk-through, in order (UX critique 2026-10-26): setup; the student lands on My progress, sends for evaluation
+ * (Save for later keeps a draft) and finds it in My requests; the
  * evaluator signs and sees the payoff (counts now, or waits for approval); the reviewer clears what waits.
  */
 export const MARQUEE: MarqueeItem[] = [
@@ -28,17 +29,26 @@ export const MARQUEE: MarqueeItem[] = [
   { label: "Assign to a cohort or group", who: "Program", flow: "set-up-skills", step: "assign" },
   { label: "Course mapping", who: "Program", flow: "set-up-skills", step: "map" },
   { label: "My progress", who: "Student", flow: "my-progress", step: "home" },
-  { label: "Log a skill", who: "Student", flow: "ask-for-evaluation", step: "log" },
-  { label: "Send for evaluation", who: "Student", flow: "ask-for-evaluation", step: "send" },
+  { label: "Log a skill", who: "Student", flow: "ask-for-evaluation", step: "send" },
+  { label: "My requests", who: "Student", flow: "ask-for-evaluation", step: "requests" },
   { label: "Evaluation form", who: "Preceptor", flow: "sign-skills", step: "form" },
   { label: "Evaluation submitted", who: "Preceptor", flow: "sign-skills", step: "submitted" },
   { label: "Approvals", who: "Reviewer", flow: "clear-approvals", step: "queue" },
 ]
 
+/**
+ * Walkthroughs listed above the marquee (Romit 2026-10-27, for Sankalp): one link runs a whole job start to finish in the
+ * recommended design, driven by the product's own buttons (lib/lab/walkthrough.ts). The href is the entry route.
+ */
+export const PRESENT_WALKTHROUGHS: Array<{ label: string; who: string; href: string }> = [
+  { label: "Configuration, start to finish", who: "Program", href: "/lab/walkthrough/setup" },
+  { label: "Fulfillment, start to finish", who: "Student", href: "/lab/walkthrough/fulfillment" },
+]
+
 /** Shown, not linked: reporting is not ready for the client yet. */
 export const NOT_READY: Array<{ label: string; who: string }> = [
   { label: "Dashboard", who: "Program" },
-  { label: "Attainment", who: "Program" },
+  { label: "Reports", who: "Program" },
   { label: "Export", who: "Program" },
   { label: "Readiness and verification", who: "Program director" },
 ]

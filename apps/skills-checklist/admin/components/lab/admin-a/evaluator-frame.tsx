@@ -23,7 +23,11 @@ export interface DirectoryContext extends AdminData {
   summaryLine: React.ReactNode
 }
 
-export function EvaluatorFrame({ variant, summaryInToolbar = false, children }: { variant: string; summaryInToolbar?: boolean; children: (c: DirectoryContext) => React.ReactNode }) {
+/**
+ * `embedded`: the Settings section Evaluators (D-L24). No page header (Settings owns it), "Add an evaluator" on the section's
+ * first row, and no adopt or merge in place: unverified names link to Approvals, New evaluators (NotVerifiedLink).
+ */
+export function EvaluatorFrame({ variant, summaryInToolbar = false, embedded = false, children }: { variant: string; summaryInToolbar?: boolean; embedded?: boolean; children: (c: DirectoryContext) => React.ReactNode }) {
   const data = useAdminData()
   const adopt = useAdoptDialog(data.state)
   const [adding, setAdding] = React.useState(false)
@@ -52,8 +56,30 @@ export function EvaluatorFrame({ variant, summaryInToolbar = false, children }: 
       </>
     )
 
+  const addButton = <Button type="button" variant={embedded ? "outline" : "default"} size="sm" onClick={() => setAdding(true)}>Add an evaluator</Button>
+  if (embedded) {
+    const lead = data.ready && dir && data.demo !== "error" && data.demo !== "empty" && !summaryInToolbar ? summaryLine : null
+    return (
+      <div className="flex min-w-0 flex-col gap-4" data-admin-lab={`settings-evaluators-${variant}`} data-settings-evaluators>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">{lead}</div>
+          {addButton}
+        </div>
+        {added ? (
+          <div role="status" aria-live="polite">
+            <LocalBanner variant="promo" title={`${added} added`} dismissible onDismiss={() => setAdded(null)}>
+              Students can now choose them, and requests go to their email.
+            </LocalBanner>
+          </div>
+        ) : null}
+        {!data.ready || !data.state || !dir || data.demo === "error" || data.demo === "empty" ? body : children({ ...data, state: data.state, rows: dir.rows, summary: dir.summary, sites, openAdopt: adopt.open, summaryLine })}
+        <AddEvaluatorDialog open={adding} onOpenChange={setAdding} existing={dir?.rows ?? []} onAdded={setAdded} sites={sites} />
+      </div>
+    )
+  }
+
   return (
-    <PageFrame title="Evaluators" actions={<><SampleDataBadge /><Button type="button" variant="default" size="sm" onClick={() => setAdding(true)}>Add an evaluator</Button></>}>
+    <PageFrame title="Evaluators" actions={<><SampleDataBadge />{addButton}</>}>
       <div className="flex flex-col gap-4" data-page-type="list" data-admin-lab={`evaluator-directory-${variant}`}>
         {adopt.banner}
         {added ? (

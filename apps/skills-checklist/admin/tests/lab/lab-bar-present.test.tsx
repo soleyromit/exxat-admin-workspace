@@ -52,7 +52,7 @@ describe("present mode", () => {
   })
 
   it("links every marquee screen to a built step in its flow's recommended set, in present mode", () => {
-    expect(MARQUEE.map((m) => m.label)).toEqual(["Skills library", "Add a skill", "Configure a skill", "Assign to a cohort or group", "Course mapping", "My progress", "Log a skill", "Send for evaluation", "Evaluation form", "Evaluation submitted", "Approvals"])
+    expect(MARQUEE.map((m) => m.label)).toEqual(["Skills library", "Add a skill", "Configure a skill", "Assign to a cohort or group", "Course mapping", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"])
     for (const m of MARQUEE) {
       const href = marqueeHref(m)
       const u = new URL(href, "http://lab.test")
@@ -62,7 +62,7 @@ describe("present mode", () => {
       expect(r!.set).toBe(r!.flow.recommendedSet)
       expect(r!.planned, m.label).toBe(false)
     }
-    expect(NOT_READY.map((m) => m.label)).toEqual(["Dashboard", "Attainment", "Export", "Readiness and verification"])
+    expect(NOT_READY.map((m) => m.label)).toEqual(["Dashboard", "Reports", "Export", "Readiness and verification"])
   })
 })
 

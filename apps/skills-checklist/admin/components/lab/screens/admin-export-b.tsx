@@ -27,9 +27,10 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { fmt } from "@/lib/v2/format"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ImpossibleScopeBanner } from "@/components/lab/dashboard/impossible-scope"
 import { asOfLabel, useDashboardUrl, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
-import { BASIS_LABEL, chipValue, parseDemoState, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
+import { BASIS_LABEL, chipValue, explainScope, parseDemoState, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
 import { buildAttainment, detailColumns, detailRows, exportFormats, FORMAT_DECISION_PENDING, isAttView, scopeLines, summaryRows, toCsv, type AttView, type DetailRow, type ExportFormat } from "@/lib/lab/attainment"
 import { basisOf, type ScopeKey } from "@/lib/lab/scope"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -78,6 +79,8 @@ export function AdminExportB() {
   const file = `${stem}.${format}`
   const header = isPdf ? [`${VIEW_WORD[view]} summary`, ...lines] : [...lines, `Rows (one per evaluation): ${fmt(rows.length)}`]
   const empty = demo === "empty" || count === 0
+  // RP-09: a scope that cannot produce evidence is explained, not offered as a "0 rows" file.
+  const impossible = explainScope(state, url.scope)
 
   const run = () => {
     if (format === "csv") {
@@ -97,11 +100,13 @@ export function AdminExportB() {
   const repeat = (x: Made) => setMade((m) => [{ ...x, id: Date.now(), at: asOfLabel(new Date()) }, ...m])
 
   return (
-    <PageFrame title="Export" actions={<SampleDataBadge />}>
+    <PageFrame title="Export" subtitle={<ScopeContext termName={term.name} scope={url.scope} at={snap.at} />} actions={<SampleDataBadge />}>
       <div className="flex flex-col gap-4" data-export-lab="B" data-page-type="list" data-export-format={format} data-export-rows={count}>
-        <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={label} asOf={asOfLabel(snap.at)} onRefresh={snap.refresh} />
+        <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={label} />
         {demo === "error" ? (
           <LocalBanner variant="error" title="The export could not be prepared" retry={{ label: "Try again", onClick: () => url.setParams({ state: null }) }}>The scope is kept. Nothing was exported.</LocalBanner>
+        ) : impossible ? (
+          <ImpossibleScopeBanner state={state} scope={url.scope} onChange={url.setScope} />
         ) : (
           <div className="grid items-start gap-4 xl:grid-cols-[26rem_minmax(0,1fr)]" data-region="export">
             <Card size="sm">

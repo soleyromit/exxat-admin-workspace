@@ -19,7 +19,7 @@ import type { Skill, Submission, V2State, Verification } from "@/lib/v2/types"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { STORY } from "@/lib/v2/generate"
 import { FAR_BEHIND_MISSING, graduationStageOf, requiredToComplete, type GraduationStage } from "@/lib/v2/population"
-import { GRADUATION_STAGE_LABEL, UNMET_LABEL } from "@/lib/v2/labels"
+import { GRADUATION_STAGE_LABEL, RECORD_STATE_META, UNMET_LABEL } from "@/lib/v2/labels"
 import { fmt, plural as fmtPlural, shortDate as fmtShortDate } from "@/lib/v2/format"
 import { evalsOfStudent, evaluationById, personById, submissionsOfStudent } from "@/lib/v2/evidence-index"
 import { skillProgress } from "@/lib/v2/student"
@@ -72,10 +72,11 @@ export type DirectorSlug = "dashboard" | "verification-detail" | "reports"
 export const directorHref = (slug: DirectorSlug, scope: LabScope, extra: Record<string, string | undefined> = {}): string => `${LAB_DIRECTOR}/${slug}?${directorQuery(scope, extra)}`
 
 /** Lists behind the figures (Dashboard C reads them, so the list length equals the figure). */
-export type ListKey = "complete" | "short" | "several" | "far" | "open" | "ready" | "gaps" | "waiting" | "only" | "has" | "progress" | "notmet"
-export const LIST_LABEL: Record<ListKey, string> = { complete: GRADUATION_STAGE_LABEL.complete, short: GRADUATION_STAGE_LABEL["one-short"], several: GRADUATION_STAGE_LABEL.short, far: GRADUATION_STAGE_LABEL.far, open: "Request open", ready: "Ready to verify", gaps: "Not complete", waiting: "Request waiting", only: "Only gap", has: "Achieved", progress: "In progress", notmet: UNMET_LABEL }
+export type ListKey = "complete" | "short" | "several" | "far" | "open" | "ready" | "gaps" | "waiting" | "only" | "has" | "progress" | "notmet" | "unqualified" | "noevidence"
+export const LIST_LABEL: Record<ListKey, string> = { complete: GRADUATION_STAGE_LABEL.complete, short: GRADUATION_STAGE_LABEL["one-short"], several: GRADUATION_STAGE_LABEL.short, far: GRADUATION_STAGE_LABEL.far, open: "Request open", ready: "Ready to verify", gaps: "Not complete", waiting: "Request waiting", only: "Only gap", has: "Achieved", progress: "In progress", notmet: UNMET_LABEL, unqualified: RECORD_STATE_META.unqualified.label, noevidence: RECORD_STATE_META.none.label }
 /** Lists that read one skill's state instead of requiring the skill to be missing. */
-const SKILL_STATE_LISTS: ListKey[] = ["has", "progress", "notmet"]
+const SKILL_STATE_LISTS: ListKey[] = ["has", "progress", "notmet", "unqualified", "noevidence"]
+export const isSkillStateList = (k: ListKey | null | undefined): boolean => !!k && SKILL_STATE_LISTS.includes(k)
 export const isListKey = (v: string | null | undefined): v is ListKey => !!v && v in LIST_LABEL
 
 /** A figure's list: the dashboard with ?list= (every dashboard variant renders the shared worklist for it), same scope. */
@@ -420,6 +421,8 @@ export function filterRows(rows: ReadinessRow[], p: { list?: ListKey | null; ski
     if (p.list && SKILL_STATE_LISTS.includes(p.list)) {
       const g = r.gaps.find((x) => x.skillId === skills[0])
       if (p.status && r.status !== p.status) return false
+      if (p.list === "unqualified") return g?.state === "unqualified"
+      if (p.list === "noevidence") return g?.state === "none"
       return p.list === "has" ? !g : p.list === "progress" ? g?.state === "progress" : !!g && g.state !== "progress"
     }
     if (skills.length && !skills.every((id) => r.gaps.some((g) => g.skillId === id))) return false
@@ -505,7 +508,11 @@ export interface StudentReportRow extends Record<string, unknown> {
   name: string
   achieved: number
   progress: number
+  /** Not achieved and not in progress; always noEvidence + unqualified. Kept for the lists; the screens show the two apart. */
   notMet: number
+  /** The two engine states that notMet sums, never merged on screen [REQ AE-04]; whether to merge them is OD-03, open. */
+  noEvidence: number
+  unqualified: number
   required: number
   pct: number
 }
@@ -516,6 +523,8 @@ export interface SkillReportRow extends Record<string, unknown> {
   achieved: number
   progress: number
   notMet: number
+  noEvidence: number
+  unqualified: number
   students: number
 }
 export interface SectionReportRow extends Record<string, unknown> {
@@ -525,6 +534,8 @@ export interface SectionReportRow extends Record<string, unknown> {
   achieved: number
   progress: number
   notMet: number
+  noEvidence: number
+  unqualified: number
   records: number
   pct: number
 }
@@ -560,25 +571,32 @@ export function reportModel(m: Readiness): ReportModel {
     const ls = lineBy.get(r.id)!
     const achieved = ls.filter((l) => l.state === "achieved").length
     const progress = ls.filter((l) => l.state === "progress").length
-    return { id: r.id, name: r.name, achieved, progress, notMet: ls.length - achieved - progress, required: ls.length, pct: pct(achieved, ls.length) }
+    const unqualified = ls.filter((l) => l.state === "unqualified").length
+    const noEvidence = ls.length - achieved - progress - unqualified
+    return { id: r.id, name: r.name, achieved, progress, notMet: noEvidence + unqualified, noEvidence, unqualified, required: ls.length, pct: pct(achieved, ls.length) }
   })
   const skills: SkillReportRow[] = m.required.map((k) => {
     let achieved = 0
     let progress = 0
+    let unqualified = 0
     for (const r of m.rows) {
       const st = lineBy.get(r.id)!.find((l) => l.skillId === k.id)!.state
       if (st === "achieved") achieved += 1
       else if (st === "progress") progress += 1
+      else if (st === "unqualified") unqualified += 1
     }
-    return { id: k.id, name: k.name, section: k.category, achieved, progress, notMet: m.rows.length - achieved - progress, students: m.rows.length }
+    const noEvidence = m.rows.length - achieved - progress - unqualified
+    return { id: k.id, name: k.name, section: k.category, achieved, progress, notMet: noEvidence + unqualified, noEvidence, unqualified, students: m.rows.length }
   })
   const secMap = new Map<string, SectionReportRow>()
   for (const k of skills) {
-    const r = secMap.get(k.section) ?? { id: k.section, section: k.section, skills: 0, achieved: 0, progress: 0, notMet: 0, records: 0, pct: 0 }
+    const r = secMap.get(k.section) ?? { id: k.section, section: k.section, skills: 0, achieved: 0, progress: 0, notMet: 0, noEvidence: 0, unqualified: 0, records: 0, pct: 0 }
     r.skills += 1
     r.achieved += k.achieved
     r.progress += k.progress
     r.notMet += k.notMet
+    r.noEvidence += k.noEvidence
+    r.unqualified += k.unqualified
     r.records += k.students
     secMap.set(k.section, r)
   }

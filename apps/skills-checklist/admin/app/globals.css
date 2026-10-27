@@ -65,3 +65,13 @@
    --courses-* table tints, etc.
    Anything ABOVE this line must match this template verbatim. */
 
+/* Skills library group divider: the DS draws the group's count at the bar's far end, which in this table lands in the
+   actions column and reads as a value of that column. Here it sits beside the group label ("Airway 1"), on no column.
+   Covers the pinned clone of the divider too. Position only: the DS badge, its size, colour and aria-label are unchanged. */
+[data-library-table] div[data-dt-group-bar] > span:has(+ [data-slot="badge"]) {
+  flex: 0 1 auto;
+}
+[data-library-table] div[data-dt-group-bar] > [data-slot="badge"] {
+  margin-inline-start: 0;
+}
+

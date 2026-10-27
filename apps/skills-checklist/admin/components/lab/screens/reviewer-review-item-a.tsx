@@ -9,7 +9,7 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Separator } from "@exxatdesignux/ui/components/ui/separator"
 import { ReviewItemFrame } from "@/components/lab/reviewer/review-item-frame"
-import { CompareTable, DecisionBar, Facts, Feedback, RuleCheckLine, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { CompareTable, Facts, Feedback, ReviewNoteField, RuleCheckLine, WhyHeld } from "@/components/lab/reviewer/review-parts"
 
 export function ReviewerReviewItemA() {
   return (
@@ -21,7 +21,6 @@ export function ReviewerReviewItemA() {
             <Card size="sm" data-region="decision">
               <CardContent className="flex flex-col gap-3">
                 <WhyHeld row={d.row} />
-                <DecisionBar row={d.row} next={ctx.next} />
               </CardContent>
             </Card>
             <div className="grid gap-4 lg:grid-cols-12">
@@ -42,6 +41,8 @@ export function ReviewerReviewItemA() {
                   {ctx.checks.map((c) => <RuleCheckLine key={c.skillId} check={c} />)}
                   <Separator />
                   <Facts d={d} scope={ctx.scope} />
+                  <Separator />
+                  <ReviewNoteField />
                 </CardContent>
               </Card>
             </div>

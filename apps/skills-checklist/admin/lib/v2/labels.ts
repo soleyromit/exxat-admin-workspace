@@ -47,8 +47,17 @@ export const EVALUATION_STATUS_LABEL = {
 export const evaluationStatusLabel = (status: string): string =>
   status === "counted" ? EVALUATION_STATUS_LABEL.counted : status === "awaiting-approval" ? EVALUATION_STATUS_LABEL["awaiting-approval"] : status === "returned" ? EVALUATION_STATUS_LABEL.returned : EVALUATION_STATUS_LABEL.reopened
 
-/** The reviewer's two decisions (REQ AR-05), as recorded on an evaluation. */
-export const REVIEW_DECISION_LABEL = { approved: "Approved", returned: "Returned" } as const
+/** The reviewer's two decisions (REQ AR-05), plus the handoff "Assign to someone else" (decision D-X25: never read as a return). */
+export const REVIEW_DECISION_LABEL = { approved: "Approved", returned: "Sent back to student", reassigned: "Sent for a new evaluation" } as const
+
+/**
+ * The reviewer's second decision, as staff read it (Romit 2026-10-27: "what is Return?"). REQ AR-05 "return": it goes back to the
+ * student for correction and does not count. The student side keeps its own words ("Returned to you", lib/lab/student2.ts).
+ */
+export const SEND_BACK_LABEL = "Send back to student"
+export const SENT_BACK_LABEL = "Sent back to student"
+/** What Approve does, said once beside the button (REQ AR-05, AR-06). */
+export const APPROVE_HINT = "Counts toward progress now"
 
 /** Evaluator name lifecycle (REQ SL-09, ST-09): "Unverified" until a reviewer adopts or merges it. */
 export const EVALUATOR_NAME_LABEL = { verified: "Adopted", unverified: "Unverified" } as const

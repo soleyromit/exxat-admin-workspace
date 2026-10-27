@@ -23,6 +23,7 @@
  */
 import type { CourseOffering, MappingLevel, Skill, V2State } from "@/lib/v2/types"
 import { mapBlockReason } from "@/lib/v2/coverage"
+import { isConfigured as isConfiguredSkill } from "@/lib/v2/population"
 import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
 import { sectionOf, LAB_ADMIN } from "./library"
 import { defaultList, listsForCohort, seedLists, type ListLevel, type SkillList } from "./lists"
@@ -126,7 +127,7 @@ export function offeringById(s: V2State, id: string | null | undefined): CourseO
 
 /** Where a level came from: the cohort's list (inherited), the course mapping, or this session's edit for the offering. */
 export type LevelSource = "list" | "explicit" | "overlay"
-export const LEVEL_SOURCE_LABEL: Record<LevelSource, string> = { list: "From list", explicit: "Set for this course", overlay: "Changed here" }
+export const LEVEL_SOURCE_LABEL: Record<LevelSource, string> = { list: "Set by list", explicit: "Set for this course", overlay: "Changed here" }
 
 export interface ResolvedLevel {
   level: MapLevel
@@ -178,13 +179,35 @@ export function listBaseLevels(s: V2State, offering: CourseOffering, lists: read
   return out
 }
 
-/** Every skill with a level in an offering (including explicit "Not mapped"), with where the level came from. */
+const inactiveCache = new WeakMap<V2State, Set<string>>()
+/**
+ * Ids of deactivated skills [REQ SL-11]: "Deactivating a skill withdraws it from course mapping, from student selection and from
+ * reporting scope, while retaining evidence already recorded against it." Mapping reads every layer through this set, so a
+ * deactivated skill keeps its stored mapping rows (and its evidence) but is carried by no offering and offered on no mapping screen.
+ */
+export function inactiveSkillIds(s: V2State): Set<string> {
+  let hit = inactiveCache.get(s)
+  if (!hit) {
+    hit = new Set(s.skills.filter((k) => k.active === false).map((k) => k.id))
+    inactiveCache.set(s, hit)
+  }
+  return hit
+}
+
+/** True when a skill can appear in course mapping: it exists and is not deactivated [REQ SL-11]. */
+export const isMappable = (k: Pick<Skill, "active">): boolean => k.active !== false
+
+/**
+ * Every skill with a level in an offering (including explicit "Not mapped"), with where the level came from. Deactivated skills
+ * are skipped in all three layers [REQ SL-11]; their stored rows stay untouched and return if the skill is reactivated.
+ */
 export function resolvedLevels(s: V2State, o: MappingOverlay, offering: CourseOffering, lists: readonly SkillList[] = listsOf(s)): Map<string, ResolvedLevel> {
   const out = new Map<string, ResolvedLevel>()
+  const off = inactiveSkillIds(s)
   const explicit = baseLevels(s).get(offering.courseId)
   for (const [id, b] of listBaseLevels(s, offering, lists)) if (!explicit?.has(id)) out.set(id, { level: b.level, source: "list", listId: b.listId })
-  for (const [id, level] of explicit ?? []) out.set(id, { level, source: "explicit" })
-  for (const [id, level] of Object.entries(o[offering.id] ?? {})) out.set(id, { level, source: "overlay" })
+  for (const [id, level] of explicit ?? []) if (!off.has(id)) out.set(id, { level, source: "explicit" })
+  for (const [id, level] of Object.entries(o[offering.id] ?? {})) if (!off.has(id)) out.set(id, { level, source: "overlay" })
   return out
 }
 
@@ -314,12 +337,16 @@ export interface SkillMapRow extends Record<string, unknown> {
   haystack: string
 }
 
-const isConfigured = (k: Skill) => mapBlockReason(k) === null
+// One definition of Configured (lib/v2/population.ts, decision D-X31): a rule held but never saved for use stays a draft and
+// cannot be mapped, even though the legacy v2 mapBlockReason (configured flag only) would let it through.
+const isConfigured = (k: Skill) => isConfiguredSkill(k) && mapBlockReason(k) === null
 
 export function skillRowsFor(s: V2State, o: MappingOverlay, offering: CourseOffering, lists: readonly SkillList[] = listsOf(s)): SkillMapRow[] {
   const req = requiredIdsForCohort(lists, (s.cohorts ?? []).find((c) => c.id === offering.cohortId)?.name)
   const res = resolvedLevels(s, o, offering, lists)
+  // Deactivated skills are withdrawn from mapping [REQ SL-11]: not listed, so they cannot be set or appear mapped.
   return s.skills
+    .filter(isMappable)
     .map((k) => {
       const section = sectionOf(k)
       const r = res.get(k.id)
@@ -336,6 +363,7 @@ export type SetLevelResult = { ok: true; overlay: MappingOverlay } | { ok: false
 export function setLevel(s: V2State, o: MappingOverlay, offeringId: string, skillId: string, level: MapLevel): SetLevelResult {
   const skill = s.skills.find((k) => k.id === skillId)
   if (!skill) return { ok: false, reason: `This ${skillNoun()} is no longer in the library.` }
+  if (!isMappable(skill)) return { ok: false, reason: `This ${skillNoun()} is inactive. Reactivate it in the library to map it.` }
   if (!offeringById(s, offeringId)) return { ok: false, reason: "This offering no longer exists." }
   if (level !== "none" && !isConfigured(skill)) return { ok: false, reason: `Configure this ${skillNoun()} before mapping it.` }
   return { ok: true, overlay: { ...o, [offeringId]: { ...(o[offeringId] ?? {}), [skillId]: level } } }
@@ -421,7 +449,8 @@ export function coverage(s: V2State, o: MappingOverlay, termId: string, lists: r
   const rows: CoverageRow[] = []
   for (const id of req) {
     const k = s.skills.find((x) => x.id === id)
-    if (!k) continue
+    // A deactivated skill leaves the coverage matrix too [REQ SL-11]; it would otherwise read as "in no course".
+    if (!k || !isMappable(k)) continue
     const cells: Record<string, MapLevel> = {}
     let carriers = 0
     let mandatoryCarriers = 0
@@ -463,6 +492,7 @@ export function skillReach(s: V2State, o: MappingOverlay, termId: string, lists:
   const req = cohortRequiredIds(s, lists, offs)
   const levels = offs.map((x) => resolvedLevels(s, o, x, lists))
   return s.skills
+    .filter(isMappable)
     .map((k) => {
       let carriers = 0
       let mandatoryCarriers = 0
@@ -485,11 +515,18 @@ export interface SkillOfferingRow extends Record<string, unknown> {
   id: string
   code: string
   name: string
+  cohortId: string
   cohort: string
+  academicYear: string
   professionalYear: number
   kind: "clinical" | "didactic"
   level: MapLevel
   source: LevelSource | null
+  /** The offering's own totals, all skills, so the skill-first view also shows mapped and mandatory per offering [REQ CM-04]. */
+  mapped: number
+  mandatory: number
+  /** Same text the offering search matches in variant A (code, name, term, academic year, cohort, "year n") [REQ CM-02]. */
+  haystack: string
 }
 
 /** The term's offerings with this skill's level in each (edit per offering; levels may differ, CM-06). Clinical only unless `didactic`. */
@@ -500,9 +537,15 @@ export function offeringsForSkill(s: V2State, o: MappingOverlay, skillId: string
       const off = offeringById(s, r.id)!
       const res = resolvedLevels(s, o, off, lists).get(skillId)
       const level = res?.level ?? "none"
-      return { id: r.id, code: r.code, name: r.name, cohort: r.cohort, professionalYear: r.professionalYear, kind: r.kind, level, source: level === "none" ? null : (res?.source ?? null) }
+      return { id: r.id, code: r.code, name: r.name, cohortId: r.cohortId, cohort: r.cohort, academicYear: r.academicYear, professionalYear: r.professionalYear, kind: r.kind, level, source: level === "none" ? null : (res?.source ?? null), mapped: r.mapped, mandatory: r.mandatory, haystack: r.haystack }
     })
     .sort((a, b) => LEVELS.indexOf(a.level) - LEVELS.indexOf(b.level) || a.code.localeCompare(b.code))
+}
+
+/** Search, cohort and professional year over one skill's offerings (variant B's pane), the same rules as filterOfferings [REQ CM-02]. */
+export function filterSkillOfferings(rows: readonly SkillOfferingRow[], f: { q: string; cohort: string; year: string }): SkillOfferingRow[] {
+  const q = f.q.trim().toLowerCase()
+  return rows.filter((r) => (!f.cohort || r.cohortId === f.cohort) && (!f.year || String(r.professionalYear) === f.year) && (!q || r.haystack.includes(q)))
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

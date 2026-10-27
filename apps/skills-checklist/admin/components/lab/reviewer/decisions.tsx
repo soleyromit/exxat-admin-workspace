@@ -1,7 +1,8 @@
 "use client"
 
 /**
- * The reviewer's decisions, shared by every reviewer screen: Approve, Return with a required note (correction to the same evaluator,
+ * The reviewer's decisions, shared by every reviewer screen: Approve (counts toward progress now), Send back to student with a
+ * required reason the student sees (REQ AR-05 "return"; renamed by Romit 2026-10-27, "what is Return?") (correction to the same evaluator,
  * to a different one, or a new attempt [REQ RV-01..04]), Adopt or merge an unverified evaluator name (decision seam only [REQ SL-09]),
  * Assign to someone else (the evidence goes to another evaluator as a new request link; Oct 26 call, RV-04 pattern),
  * Request a correction on a counted evaluation (no overwrite [REQ RV-03, RV-05; strategy/03 D1]), and bulk approve with the blockers
@@ -19,6 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ABOVE_PANEL, ABOVE_PANEL_MENU } from "@/components/lab/overlay-layer"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { REASON_MAX } from "@/lib/v2/queue"
+import { SEND_BACK_LABEL } from "@/lib/v2/labels"
 import { RETURN_PATH_LABEL, bulkCheck, itemDetail, plural, type ReturnPath, type ReviewRow } from "@/lib/lab/reviewer"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { V2State } from "@/lib/v2/types"
@@ -32,8 +34,10 @@ export interface Feedback {
 }
 
 interface Api {
-  approve: (rows: ReviewRow[]) => void
-  openReturn: (row: ReviewRow) => void
+  /** Approve; `note` is the reviewer's note, kept with the evaluation (REQ AR-04). */
+  approve: (rows: ReviewRow[], note?: string) => void
+  /** Send back to student; `note` prefills the reason the student sees. */
+  openReturn: (row: ReviewRow, note?: string) => void
   openAdopt: (row: ReviewRow) => void
   openAssign: (row: ReviewRow) => void
   openCorrection: (e: { id: string; skill: string }) => void
@@ -53,26 +57,27 @@ const subject = (r: ReviewRow) => `${r.student}, ${r.skills.length > 1 ? `${r.sk
 
 export function DecisionProvider({ state, rows, onDecided, children }: { state: V2State | null; rows: ReviewRow[]; onDecided?: (keys: string[]) => void; children: React.ReactNode }) {
   const [feedback, setFeedback] = React.useState<Feedback | null>(null)
-  const [returning, setReturning] = React.useState<ReviewRow | null>(null)
+  const [returning, setReturning] = React.useState<{ row: ReviewRow; note: string } | null>(null)
   const [adopting, setAdopting] = React.useState<ReviewRow | null>(null)
   const [assigning, setAssigning] = React.useState<ReviewRow | null>(null)
   const [correcting, setCorrecting] = React.useState<{ id: string; skill: string } | null>(null)
   const [bulk, setBulk] = React.useState<{ selected: ReadonlySet<string | number>; gone: ReadonlySet<string> } | null>(null)
 
   const approve = React.useCallback(
-    (list: ReviewRow[]) => {
+    (list: ReviewRow[], note?: string) => {
       const ok = list.filter((r) => !r.block)
-      for (const r of ok) decide({ kind: "approve", key: r.key })
+      const kept = note?.trim()
+      for (const r of ok) decide({ kind: "approve", key: r.key, ...(kept ? { note: kept } : {}) })
       if (ok.length === 0) return
       onDecided?.(ok.map((r) => r.key))
-      setFeedback({ title: ok.length === 1 ? `Approved ${subject(ok[0])}` : `Approved ${plural(ok.length, "submission", "submissions")}`, body: "It counts now. The student sees it on their progress page.", tone: "promo" })
+      setFeedback({ title: ok.length === 1 ? `Approved ${subject(ok[0])}` : `Approved ${plural(ok.length, "submission", "submissions")}`, body: "It counts toward progress now. The student sees it on their progress page.", tone: "promo" })
     },
     [onDecided],
   )
 
   const api: Api = {
     approve,
-    openReturn: setReturning,
+    openReturn: (row, note = "") => setReturning({ row, note }),
     openAdopt: setAdopting,
     openAssign: setAssigning,
     openCorrection: setCorrecting,
@@ -86,13 +91,14 @@ export function DecisionProvider({ state, rows, onDecided, children }: { state: 
     <Ctx.Provider value={api}>
       {children}
       <ReturnDialog
-        row={returning}
+        row={returning?.row ?? null}
+        initialNote={returning?.note ?? ""}
         state={state}
         rows={rows}
         onClose={() => setReturning(null)}
         onDone={(row, path) => {
           onDecided?.([row.key])
-          setFeedback({ title: `Returned ${subject(row)}`, body: path === "new-attempt" ? "The student is asked for a new attempt. This one stays on the record and does not count." : "The student sees your note and sends the correction.", tone: "promo" })
+          setFeedback({ title: `Sent back to the student: ${subject(row)}`, body: path === "new-attempt" ? "They are asked for a new attempt. This one stays on the record and does not count." : "They see your reason and send a correction. It does not count until then.", tone: "promo" })
         }}
       />
       <AdoptDialog
@@ -175,7 +181,7 @@ export function DecisionBanner() {
   )
 }
 
-function ReturnDialog({ row, state, rows, onClose, onDone }: { row: ReviewRow | null; state: V2State | null; rows: ReviewRow[]; onClose: () => void; onDone: (row: ReviewRow, path: ReturnPath) => void }) {
+function ReturnDialog({ row, initialNote, state, rows, onClose, onDone }: { row: ReviewRow | null; initialNote: string; state: V2State | null; rows: ReviewRow[]; onClose: () => void; onDone: (row: ReviewRow, path: ReturnPath) => void }) {
   const [path, setPath] = React.useState<ReturnPath>("correct-same")
   const [toId, setToId] = React.useState("")
   const [note, setNote] = React.useState("")
@@ -184,15 +190,15 @@ function ReturnDialog({ row, state, rows, onClose, onDone }: { row: ReviewRow | 
     if (row) {
       setPath(row.outcome === "Unmet" ? "new-attempt" : "correct-same")
       setToId("")
-      setNote("")
+      setNote(initialNote)
       setError(null)
     }
-  }, [row])
+  }, [row, initialNote])
   const detail = React.useMemo(() => (row && state ? itemDetail(state, rows, row.key) : null), [row, state, rows])
   const submit = () => {
     if (!row) return
     const t = note.trim()
-    if (!t) return setError("Say what is wrong and what to change. The student reads this.")
+    if (!t) return setError("Add a reason. The student reads it.")
     if (t.length > REASON_MAX) return setError(`Shorten the note to ${REASON_MAX} characters or fewer.`)
     if (path === "correct-other" && !toId) return setError("Choose who gets the correction.")
     decide({ kind: "return", key: row.key, note: t, path, ...(path === "correct-other" ? { toId } : {}) })
@@ -203,8 +209,8 @@ function ReturnDialog({ row, state, rows, onClose, onDone }: { row: ReviewRow | 
     <Dialog open={!!row} onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent className={`sm:max-w-lg ${ABOVE_PANEL}`} overlayClassName={ABOVE_PANEL}>
         <DialogHeader>
-          <DialogTitle>Return {row ? subject(row) : ""}</DialogTitle>
-          <DialogDescription>It goes back to the student and does not count.</DialogDescription>
+          <DialogTitle>{SEND_BACK_LABEL}</DialogTitle>
+          <DialogDescription>{`${row ? subject(row) : ""} goes back to the student for correction. It does not count until it comes back and is approved.`}</DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); submit() }}>
           <fieldset className="flex flex-col gap-2">
@@ -221,13 +227,13 @@ function ReturnDialog({ row, state, rows, onClose, onDone }: { row: ReviewRow | 
             <p className="text-xs text-muted-foreground">{path === "new-attempt" ? "A new attempt is a separate record. This one stays as it is." : "A correction continues this record and adds one to its revision count."}</p>
           </fieldset>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="ret-note">Note to the student</Label>
+            <Label htmlFor="ret-note">Reason the student sees</Label>
             <Textarea id="ret-note" value={note} onChange={(e) => { setNote(e.target.value); setError(null) }} rows={3} aria-invalid={!!error} aria-describedby={error ? "ret-error" : undefined} />
             {error ? <p id="ret-error" className="text-xs text-foreground"><i className="fa-solid fa-triangle-exclamation me-1" style={{ color: "var(--lab-viz-behind-ink)" }} aria-hidden="true" />{error}</p> : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-            <Button type="submit" variant="default" size="sm">Return</Button>
+            <Button type="submit" variant="default" size="sm">Send back</Button>
           </DialogFooter>
         </form>
       </DialogContent>

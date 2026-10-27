@@ -415,11 +415,12 @@ export function detailRows(m: AttainmentModel, state: V2State): DetailRow[] {
         setting: settingOf(e),
         location: e.location ?? "",
         outcome: OUTCOME_LABEL[e.outcome],
-        status: evaluationStatusLabel(e.status),
+        // Held evidence sent to another evaluator is a handoff (decision D-X25), so it never exports as "Returned".
+        status: e.review?.decision === "reassigned" ? REVIEW_DECISION_LABEL.reassigned : evaluationStatusLabel(e.status),
         feedback: latest?.detail?.feedback ?? "",
         selfRating: self.rating,
         selfNote: self.note,
-        review: e.review ? REVIEW_DECISION_LABEL[e.review.decision === "approved" ? "approved" : "returned"] : "",
+        review: e.review ? REVIEW_DECISION_LABEL[e.review.decision] : "",
         reviewNote: e.review?.note ?? "",
       })
     }

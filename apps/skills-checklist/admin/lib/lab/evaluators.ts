@@ -269,10 +269,11 @@ export function settingOptions(rows: readonly SiteRow[]): string[] {
   return [...new Set(rows.map((r) => r.setting))].sort()
 }
 
-export const DIRECTORY_PATH = `${LAB_ADMIN}/evaluator-directory`
+/** The evaluator list is the Settings section Evaluators (D-L24); the former evaluator-directory URL redirects there. */
+export const DIRECTORY_PATH = `${LAB_ADMIN}/settings`
 
 export function directoryLink(p: { variant?: string; filter?: string; site?: string; role?: string; q?: string; evaluator?: string } = {}): string {
-  const q = new URLSearchParams()
+  const q = new URLSearchParams({ tab: "evaluators" })
   for (const [k, v] of Object.entries(p)) if (v) q.set(k, v)
   const s = q.toString()
   return s ? `${DIRECTORY_PATH}?${s}` : DIRECTORY_PATH

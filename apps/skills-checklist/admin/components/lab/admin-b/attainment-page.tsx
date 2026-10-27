@@ -3,12 +3,15 @@
 /**
  * Attainment: a destination, not the landing (OD-29 open; the Dashboard stays the admin landing [LEDGER D-L4]).
  *
- * Regions (strategy/07 list budget, 4): page header (title, one Export action) · the shared scope bar (one 32 px row: term,
- * cohort, Filters with course inside, as-of) · view tabs with their counts (Students, Skills, Sections and tags; RP-02 to
+ * Regions (strategy/07 list budget, 4): page header (title, one Export action) · one toolbar row (Romit 2026-10-27, "can we
+ * improve the UI here?"): the set control "Required this term | Required to graduate | All skills" (D-X12, D-X16; "All skills"
+ * on the Skills view only) then the shared scope bar's Filters button and applied chips, wrapping at 375 · view tabs with their counts (Students, Skills, Sections and tags; RP-02 to
  * RP-04; sections and tags share a tab with a "Group by" switch inside it) · the view. No headline figures: the tab counts are
  * the counts. Cohort is a filter in the scope bar, never lanes. The comparison basis is the dashboard's (it travels in the
  * URL and is named in the legend); a report page does not offer a second place to change it (density sweep 2026-10-26).
- * Table views carry one page search; the tables' own query controls stay off.
+ * Table views carry one page search; the tables' own query controls stay off. No sentence explains the order: every table
+ * opens sorted on Achieved, lowest first, and its header shows that sort (attainment-tables.tsx DEFAULT_SORT); the tab badge
+ * is the count.
  *
  * Variant A (recommended) opens on Students as the students x sections heat matrix (concept D). Variant B opens on Skills as a
  * ranked table with distribution strips, and shows Students as a table. Both share every view, the peek and the export.
@@ -22,14 +25,13 @@ import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
-import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
-import { LINK } from "@/components/lab/link-styles"
 import { fmt } from "@/lib/v2/format"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
-import { asOfLabel, timeLabel, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ImpossibleScopeBanner, useImpossibleScope } from "@/components/lab/dashboard/impossible-scope"
+import { asOfLabel, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
 import { BASIS_LABEL, chipValue, conditionLabel, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
 import { buildAttainment, isSkillsScope, peekRecords, scopeLines, unrequiredSkills, type AttView, type SkillsScope } from "@/lib/lab/attainment"
 import { SETTING_LABEL } from "@/lib/v2/reports"
@@ -43,8 +45,9 @@ import { GroupTable, SkillsTable, StudentsTable } from "@/components/lab/admin-b
 import { EvidencePeek } from "@/components/lab/admin-b/evidence-peek"
 import { ExportPanel } from "@/components/lab/admin-b/export-panel"
 import { StateLegend } from "@/components/lab/admin-b/state-viz"
-import { RequiredSetSwitch, useRequiredSet } from "@/components/lab/admin-b/required-set-switch"
+import { RequiredSetControl, useRequiredSet } from "@/components/lab/admin-b/required-set-switch"
 import { GRADUATION_STAGE_LABEL } from "@/lib/v2/labels"
+import { TYPE } from "@/components/lab/type-scale"
 
 
 const SEARCH_FROM = 40
@@ -65,10 +68,12 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
   const actionItems = [{ id: "export", label: "Export", icon: "fa-arrow-down-to-line", variant: "outline" as const, onSelect: () => setExportOpen(true) }]
   const sample = <SampleDataBadge />
   const [query, setQuery] = React.useState("")
+  // RP-09: a scope that cannot produce evidence is explained in place of the views, never shown as "0 of 5 · Behind".
+  const impossible = useImpossibleScope(snap.state, url.scope)
 
   if (!model || !snap.state || demo === "loading") {
     return (
-      <PageFrame title="Attainment" actionItems={actionItems} actions={sample}>
+      <PageFrame title="Reports" actionItems={actionItems} actions={sample}>
         <AttainmentLoading />
       </PageFrame>
     )
@@ -81,7 +86,7 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
   // Under "Required to graduate" the flag is the director's far behind (D-X11), never the term pace.
   const toGraduate = model.basis === "toGraduate"
   const behindLabel = toGraduate ? GRADUATION_STAGE_LABEL.far : "Behind"
-  const setWord = model.basisLabel.toLowerCase()
+  const notRequiredLabel = toGraduate ? "Not required to graduate" : "Not required this term"
   const empty = demo === "empty" || model.students.length === 0
   const applied = (["cohort", "group", "course", "cat", "tag", "loc", "setting"] as ScopeKey[]).filter((k) => !!url.scope[k])
   const recount = url.scope.loc || url.scope.setting ? `Counting evidence from ${[url.scope.loc, url.scope.setting ? `${SETTING_LABEL[url.scope.setting as Setting] ?? url.scope.setting} settings` : ""].filter(Boolean).join(", ")} only.` : null
@@ -99,24 +104,22 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
   const fileStem = `attainment-${term.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${url.view}`
 
   return (
-    <PageFrame title="Attainment" actionItems={actionItems} actions={sample}>
+    <PageFrame title="Reports" subtitle={<ScopeContext termName={term.name} scope={url.scope} at={snap.at} stale={demo === "stale"} />} actionItems={actionItems} actions={sample}>
       <div className="flex flex-col gap-4" data-attainment-lab={`admin-${variant}`} data-page-type="list" data-view={url.view}>
-        <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={label} asOf={asOfLabel(snap.at)} onRefresh={snap.refresh} stale={demo === "stale"} courseInFilters showBasis={false} />
-        {snap.fresh ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground" data-new-evidence>
-            <i className="fa-light fa-circle-info" aria-hidden="true" />
-            {`New evidence since ${timeLabel(snap.at)}.`}
-            <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={snap.refresh}>Refresh to update</Button>
-          </p>
-        ) : null}
-        {recount ? <p className="text-sm text-muted-foreground" data-recount>{recount}</p> : null}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-region="toolbar">
+          <RequiredSetControl basis={model.basis} allSkills={url.view === "skills" ? skillsScope === "all" : undefined} paramsFor={reqSet.paramsFor} onChange={url.setParams} />
+          <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={label} showBasis={false} />
+        </div>
+        {recount ? <p className={TYPE.helper} data-recount>{recount}</p> : null}
         {demo === "partial" ? (
-          <LocalBanner variant="info" title="Recalculating after a rule change">Some figures may move. Refresh when it finishes.</LocalBanner>
+          <LocalBanner variant="info" title="Recalculating after a rule change">Some figures may move. They update when it finishes.</LocalBanner>
         ) : null}
         {demo === "error" ? (
-          <LocalBanner variant="error" title="Attainment could not be loaded" retry={{ label: "Try again", onClick: () => url.setParams({ state: null }) }}>
+          <LocalBanner variant="error" title="Reports could not be loaded" retry={{ label: "Try again", onClick: () => url.setParams({ state: null }) }}>
             The scope and filters are kept.
           </LocalBanner>
+        ) : impossible ? (
+          <ImpossibleScopeBanner state={state} scope={url.scope} onChange={url.setScope} />
         ) : empty ? (
           <LocalBanner variant="info" title="No students in this scope">
             <span className="flex flex-col gap-2">
@@ -132,11 +135,9 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
             </span>
           </LocalBanner>
         ) : (
-          <>
-          <RequiredSetSwitch basis={model.basis} hrefFor={reqSet.hrefFor} />
           <Tabs value={tabValue} onValueChange={(v) => { setQuery(""); url.setView((v === "groups" ? "sections" : v) as AttView) }} className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <TabsList variant="line" ariaLabel="Attainment views">
+              <TabsList variant="line" ariaLabel="Report views">
                 {tabs.map((t) => (
                   <TabsTrigger key={t.id} value={t.id} data-tab={t.id}>
                     {t.label}
@@ -184,29 +185,20 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
                 <StudentsTable rows={model.students} peekHref={url.peekHref} behindLabel={behindLabel} search={search} />
               )
             ) : url.view === "skills" ? (
-              <div className="flex flex-col gap-2">
-                {/* Required this term or all (LEDGER D-X16): one sentence with its switch as a link, default required. */}
-                <p className="text-sm text-muted-foreground" data-skills-scope={skillsScope}>
-                  {skillsScope === "all"
-                    ? `All ${fmt(model.skills.length + extraSkills.length)} ${skillNounPlural()}; the ${fmt(model.skills.length)} ${setWord} come first. `
-                    : `${fmt(model.skills.length)} ${skillNounPlural()} ${setWord}, most not yet achieved first. `}
-                  <Link className={LINK} href={url.hrefWith({ skills: skillsScope === "all" ? null : "all", peek: null })} scroll={false} replace>
-                    {skillsScope === "all" ? `Show only ${setWord}` : `Show all ${skillNounPlural()}`}
-                  </Link>
-                </p>
-                <SkillsTable rows={model.skills} peekHref={url.peekHref} extra={skillsScope === "all" ? extraSkills : undefined} search={search} />
+              <div data-skills-scope={skillsScope}>
+                {/* Required set or all (LEDGER D-X16) is the toolbar's set control; the order is the table's sort state. */}
+                <SkillsTable rows={model.skills} peekHref={url.peekHref} extra={skillsScope === "all" ? extraSkills : undefined} search={search} notRequiredLabel={notRequiredLabel} />
               </div>
             ) : url.view === "sections" ? (
               <GroupTable rows={model.sectionRows} kind="section" firstLabel="Section" peekHref={url.peekHref} unitWord="records" search={search} />
             ) : (
               <div className="flex flex-col gap-3">
-                <p className="text-sm text-muted-foreground" data-tag-overlap>{`Tags overlap: ${fmt(model.multiTagged)} records count under more than one tag, so rows do not add up. ${fmt(model.untagged)} records have no tag.`}</p>
+                <p className={TYPE.helper} data-tag-overlap>{`Tags overlap: ${fmt(model.multiTagged)} records count under more than one tag, so rows do not add up. ${fmt(model.untagged)} records have no tag.`}</p>
                 <GroupTable rows={model.tagRows} kind="tag" firstLabel="Tag" peekHref={url.peekHref} unitWord="records" search={search} />
               </div>
             )}
             </TabsContent>
           </Tabs>
-          </>
         )}
       </div>
       <EvidencePeek peek={peek} data={state} evidence={model.pop.evidenceState} scope={url.scope} onClose={url.closePeek} />

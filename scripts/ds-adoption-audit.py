@@ -346,6 +346,10 @@ DOCUMENTED_HAND_ROLLS = {
     "components/lab/screens/student-record-b.tsx",
     "components/lab/screens/student-requests-b.tsx",
     "components/lab/screens/admin-skills-library-b.tsx",
+    # 2026-10-27: Check and save's read-only setup summary (checklist layout) and the
+    # student dashboard's "Show as table" fallback for the per-course squares chart.
+    "components/lab/configure/check.tsx",
+    "components/lab/student/dashboard.tsx",
     # Test harness: mounts InlineAddTrigger (renders a TableRow) inside Table/TableBody
     # so the row has a valid DOM ancestor. Not product UI.
     "tests/lab/terms-articles.test.tsx",

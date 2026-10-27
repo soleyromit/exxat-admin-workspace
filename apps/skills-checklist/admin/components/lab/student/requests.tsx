@@ -70,6 +70,16 @@ export function SkillNames({ row, studentId }: { row: RequestRow; studentId: str
   )
 }
 
+/**
+ * The row's one action: "Fix and send" on a returned request (outline: open work), "Correct and resend" on one nobody has assessed
+ * yet (ghost: available, not due; REQ RV-01). Nothing once an evaluator answered (awaiting approval or done, REQ RV-05).
+ */
+export function RowAction({ row }: { row: RequestRow }) {
+  if (row.status === "returned") return <Button asChild variant="outline" size="sm"><Link href={row.href}>{row.action}</Link></Button>
+  if (row.fix) return <Button asChild variant="ghost" size="sm" className="whitespace-nowrap"><Link href={row.fix.href}>{row.fix.label}</Link></Button>
+  return null
+}
+
 /** One request as a row: skills, status and age, link state, revision, the reason when returned, and its action. */
 export function RequestLine({ row, studentId }: { row: RequestRow; studentId: string }) {
   return (
@@ -80,9 +90,7 @@ export function RequestLine({ row, studentId }: { row: RequestRow; studentId: st
         {linkLine(row)}
       </p>
       <div className="md:col-span-1 md:flex md:justify-end">
-        {row.status === "returned" ? (
-          <Button asChild variant="outline" size="sm"><Link href={row.href}>{row.action}</Link></Button>
-        ) : null}
+        <RowAction row={row} />
       </div>
       {/* The returner's own words, quoted from the record (data, not interface copy). */}
       {row.reason ? <p className="text-sm text-foreground max-sm:line-clamp-2 md:col-span-12" data-return-reason><span className="text-muted-foreground">Reason: </span><q data-user-content>{row.reason}</q></p> : null}

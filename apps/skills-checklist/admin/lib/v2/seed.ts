@@ -22,7 +22,7 @@ import type {
 } from "./types"
 
 /** Bump when the generator changes on purpose: saved deltas made against another seed are then discarded. */
-export const SEED_VERSION = "2026-10-26.8-question-answers"
+export const SEED_VERSION = "2026-10-27.9-self-evaluation"
 
 export { DEMO_TODAY, IDS }
 
@@ -161,6 +161,14 @@ const LOCATIONS: ProgramLocation[] = [
 const GROUPS: Record<string, string[]> = { "BSN 2027": ["Group A", "Group B", "Group C"], "ABSN 2027": ["Group A", "Group B"] }
 const SECOND_COURSE: Course = { id: "crs-nurs352", code: "NURS 352", name: "Skills and Simulation Lab", term: "Fall 2026", cohort: "BSN 2027", clinicalSettings: [] }
 
+/**
+ * Skills that ask the student to rate themselves first [REQ SC-15] (SEED_VERSION 2026-10-27.9-self-evaluation). Sterile dressing
+ * change is mandatory on NURS 350 and still open for the demo student, so Sankalp's fulfillment path (course, mandatory skills,
+ * questions, self-evaluation, send) shows the self-evaluation step. Presentation only: the engine never reads the flag, so no
+ * figure in facts.ts moves.
+ */
+const SELF_EVALUATION = new Set(["sk-sterile-dressing"])
+
 function buildSkills(): Skill[] {
   const out: Skill[] = []
   for (const specialty of Object.keys(LIBRARIES) as Specialty[]) {
@@ -178,7 +186,9 @@ function buildSkills(): Skill[] {
         config: isConfigured
           ? id === IDS.ivCath
             ? structuredClone(IV_CONFIG)
-            : configFor(model)
+            : SELF_EVALUATION.has(id)
+              ? { ...configFor(model), selfEvaluation: true }
+              : configFor(model)
           : null,
       })
     }

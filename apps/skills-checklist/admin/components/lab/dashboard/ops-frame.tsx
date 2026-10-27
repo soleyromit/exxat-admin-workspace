@@ -2,7 +2,7 @@
 
 /**
  * Page chrome for concept E (sites and evaluators). Same parts as the shared DashboardPage (PageFrame with Export and the
- * Sample data chip, the shared ScopeBar, as-of and Refresh, the polite announcement, the impossible-filter and empty-scope
+ * Sample data chip, the scope subtitle with its Updated time, the shared ScopeBar, the polite announcement, the impossible-filter and empty-scope
  * banners, the demo states) with one difference: no Compare with control. Waiting has no basis to compare against
  * (dashboard-concepts README section 4 E), so an inert control would mislead. Reuses the shared hooks and ScopeBar; it
  * does not fork their logic.
@@ -16,9 +16,9 @@ import { PageFrame } from "@/components/skills/page-header"
 import type { V2State } from "@/lib/v2/types"
 import { opsExportColumns, buildDashboard, chipValue, removeKeys, type DashboardModel, type DemoState } from "@/lib/lab/dashboard"
 import { SCOPE_LABEL, removeScope, type LabScope, type ScopeKey } from "@/lib/lab/scope"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
 import { LoadingShape } from "@/components/lab/dashboard/cards"
-import { asOfLabel, timeLabel, useDashboardUrl, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
+import { useDashboardUrl, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
 import { fmt } from "@/lib/v2/format"
 
 export interface OpsContext {
@@ -50,7 +50,7 @@ export function OpsPage({ variant, children }: { variant: string; children: (ctx
   const announce = url.demo === "loading" ? "Loading dashboard" : url.demo === "clear" ? "Nothing is waiting with an evaluator" : `${fmt(model.waitingCount)} requests waiting with evaluators`
   return (
     // Sample data sits in the page header beside Export, as on every dashboard variant (consistency audit item 10).
-    <PageFrame title="Dashboard" actionItems={actionItems} actions={<SampleDataBadge />}>
+    <PageFrame title="Dashboard" subtitle={<ScopeContext termName={model.term.name} scope={url.scope} at={snap.at} stale={url.demo === "stale"} />} actionItems={actionItems} actions={<SampleDataBadge />}>
       <div className="flex flex-col gap-6" data-dashboard-lab={`admin-${variant}`} data-page-type="dashboard">
         <ScopeBar
           scope={url.scope}
@@ -58,19 +58,9 @@ export function OpsPage({ variant, children }: { variant: string; children: (ctx
           termName={model.term.name}
           onChange={url.setScope}
           chipValue={label}
-          asOf={asOfLabel(snap.at)}
-          onRefresh={snap.refresh}
-          stale={url.demo === "stale"}
           showBasis={false}
         />
         <p role="status" aria-live="polite" className="sr-only" data-announce>{announce}</p>
-        {snap.fresh ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground" data-new-evidence>
-            <i className="fa-light fa-circle-info" aria-hidden="true" />
-            {`New evidence since ${timeLabel(snap.at)}.`}
-            <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={snap.refresh}>Refresh to update</Button>
-          </p>
-        ) : null}
         {url.demo === "loading" ? (
           <LoadingShape />
         ) : model.kind === "impossible" && model.explained ? (

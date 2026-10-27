@@ -13,7 +13,7 @@ import { isReportView, reportModel, type ReportView } from "@/lib/lab/director"
 
 export function DirectorReportsA() {
   return (
-    <DirectorPage title="Reports" variant="A" pageType="list" courseInFilters announce={(m) => `Report of ${m.rows.length} students`}>
+    <DirectorPage title="Export" variant="A" pageType="list" courseInFilters announce={(m) => `Report of ${m.rows.length} students`}>
       {({ model: m, scope, param, setParams, demo }) => {
         const raw = param("view")
         const view: ReportView = isReportView(raw) ? raw : "student"

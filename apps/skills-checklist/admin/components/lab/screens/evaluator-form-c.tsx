@@ -125,7 +125,7 @@ export function EvaluatorFormC() {
                     <SheetDescription>{`${capitalize(skillNoun())} ${openIdx + 1} of ${skills.length}`}</SheetDescription>
                   </SheetHeader>
                   <div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
-                    <SelfNote skill={openSkill} student={req.student.first} />
+                    <SelfNote skill={openSkill} student={req.student.first} requestNote={req.studentNote} />
                     <SkillFields m={m} skill={openSkill} compactQuestions />
                   </div>
                   <SheetFooter className="flex-row justify-end gap-2">

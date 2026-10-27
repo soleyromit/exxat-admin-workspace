@@ -15,9 +15,10 @@ import { VIZ, DiamondGlyph } from "@/components/lab/viz"
 import { LINK } from "@/components/lab/dashboard/cards"
 import { AGE_BUCKETS, APPROVAL_BANDS, ageSplit, drillHref, lanes as laneOf, plural, type DashboardModel, type SectionGap } from "@/lib/lab/dashboard"
 import type { LabScope } from "@/lib/lab/scope"
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { LINK_IN_TABLE } from "@/components/lab/link-styles"
 import { fmt } from "@/lib/v2/format"
+import { TYPE } from "@/components/lab/type-scale"
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -64,7 +65,7 @@ export function StatusFigures({ model, series }: { model: DashboardModel; series
   ]
   return (
     <section aria-label="Key figures" id="kpis" data-figure="kpis" data-region="figures">
-      <KeyMetrics variant="flat" size="sm" showHeader={false} metrics={metrics} metricsSingleRow className="px-0 lg:px-0" />
+      <KeyMetrics variant="flat" size="sm" showHeader={false} metrics={metrics} metricsSingleRow className="overflow-visible px-0 lg:px-0" />
     </section>
   )
 }
@@ -72,10 +73,18 @@ export function StatusFigures({ model, series }: { model: DashboardModel; series
 // ---------------------------------------------------------------------------------------------------------------------
 // Tile frame
 
-function Tile({ id, title, meta, link, summary, children, table }: { id: string; title: string; meta: string; link?: { href: string; label: string; aria?: string }; summary: string; children: React.ReactNode; table: React.ReactNode }) {
+/** An inline control on the tile header (Compare with on the behind tile): the DS Select inside the vendored ChartCard. */
+export interface TileSelector {
+  label: string
+  value: string
+  options: Array<{ value: string; label: string }>
+  onChange: (v: string) => void
+}
+
+export function Tile({ id, title, meta, link, summary, children, table, selector }: { id: string; title: string; meta: string; link?: { href: string; label: string; aria?: string }; summary: string; children: React.ReactNode; table: React.ReactNode; selector?: TileSelector }) {
   return (
     <div id={id} data-chart data-tile={id} className="min-w-0">
-      <ChartCard title={title} description={meta} className="h-full">
+      <ChartCard title={title} description={meta} className="h-full" headingLevel="h3" {...(selector ? { variant: "selector" as const, filterOptions: selector.options, defaultFilter: selector.value, onFilterChange: selector.onChange, filterLabel: selector.label } : {})}>
         <div className="flex h-full flex-col gap-2">
           <p className="sr-only">{summary}</p>
           <div className="min-h-0 flex-1">{children}</div>
@@ -118,9 +127,9 @@ function Mark({ pct, y, flagged, size = 7 }: { pct: number; y: number; flagged: 
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// 1. Where are the behind students? (by cohort)
+// 1. Students behind, by cohort
 
-export function WhereBehindTile({ model, scope, partial }: { model: DashboardModel; scope: LabScope; partial?: boolean }) {
+export function WhereBehindTile({ model, scope, partial, selector }: { model: DashboardModel; scope: LabScope; partial?: boolean; selector?: TileSelector }) {
   const all = laneOf(model.pop.rows, "cohort")
   // Partial demo (06 section 4.3): two cohorts fall under 5 students, so they are suppressed and named, not drawn.
   const lanes = partial ? all.lanes.slice(0, Math.max(1, all.lanes.length - 2)) : all.lanes
@@ -132,8 +141,9 @@ export function WhereBehindTile({ model, scope, partial }: { model: DashboardMod
   return (
     <Tile
       id="tile-behind"
-      title={n === 0 ? "Is anyone behind?" : `Where are the ${n}?`}
-      meta="By cohort"
+      title="Students behind, by cohort"
+      meta={`${n} of ${plural(model.inScope, "student", "students")}`}
+      selector={selector}
       summary={summary}
       link={n > 0 ? { href: model.heroHref, label: `View the ${n}`, aria: `View the ${n} students ${word}` } : undefined}
       table={<SrTable caption="Students behind by cohort" head={["Cohort", "Behind", "Students"]} rows={shown.map((l) => [l.label, l.rows.filter((r) => r.behind).length, l.rows.length])} />}
@@ -198,7 +208,7 @@ function RankRows({ rows, max, label }: { rows: RankRow[]; max: number; label: s
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// 2. Which skill blocks the most?
+// 2. Skills holding students back
 
 export function BlockingTile({ model, scope }: { model: DashboardModel; scope: LabScope }) {
   const list = model.blockers
@@ -221,7 +231,7 @@ export function BlockingTile({ model, scope }: { model: DashboardModel; scope: L
   return (
     <Tile
       id="tile-blocking"
-      title={`Which ${skillNoun()} blocks the most?`}
+      title={`${capitalize(skillNounPlural())} holding students back`}
       meta={`Students short, of ${flagged} behind`}
       summary={summary}
       link={list.length > 0 ? { href: drillHref(scope, { list: "skills", from: "tile-blocking" }), label: `All ${list.length}`, aria: `All ${list.length} ${skillNounPlural()} short for students behind` } : undefined}
@@ -233,7 +243,7 @@ export function BlockingTile({ model, scope }: { model: DashboardModel; scope: L
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// 3. Which sections lag?
+// 3. Sections furthest behind
 
 export function SectionsTile({ model, scope, gaps }: { model: DashboardModel; scope: LabScope; gaps: SectionGap[] }) {
   const median = model.basis === "median"
@@ -249,7 +259,7 @@ export function SectionsTile({ model, scope, gaps }: { model: DashboardModel; sc
   return (
     <Tile
       id="tile-sections"
-      title="Which sections lag?"
+      title="Sections furthest behind"
       meta={meta}
       summary={summary}
       link={{ href: drillHref(scope, { list: "skills", from: "tile-sections" }), label: `Required ${skillNounPlural()}`, aria: `Required ${skillNounPlural()} in scope` }}
@@ -272,7 +282,7 @@ export function SectionsTile({ model, scope, gaps }: { model: DashboardModel; sc
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// 4. Which sites are stale?
+// 4. Oldest requests, by site
 
 export function SitesTile({ model, scope }: { model: DashboardModel; scope: LabScope }) {
   const s = model.sites
@@ -282,7 +292,7 @@ export function SitesTile({ model, scope }: { model: DashboardModel; scope: LabS
   return (
     <Tile
       id="tile-sites"
-      title="Which sites are stale?"
+      title="Oldest requests, by site"
       meta={`Oldest first, ${top.length} of ${s.sites}`}
       summary={summary}
       link={s.sites > 0 ? { href: drillHref(scope, { list: "sites", from: "tile-sites" }), label: `All ${s.sites} sites` } : undefined}
@@ -349,7 +359,7 @@ function Columns({ values, labels, flag, height = 132, valueLabels = true, ticks
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// 5. How long do approvals wait?
+// 5. Days awaiting approval
 
 export function ApprovalAgeTile({ model, scope, days }: { model: DashboardModel; scope: LabScope; days: number[] }) {
   const split = ageSplit(days, APPROVAL_BANDS)
@@ -358,7 +368,7 @@ export function ApprovalAgeTile({ model, scope, days }: { model: DashboardModel;
   return (
     <Tile
       id="tile-approval"
-      title="How long do approvals wait?"
+      title="Days awaiting approval"
       meta={`${plural(a.evaluations, "evaluation", "evaluations")}, by days waiting`}
       summary={`${split.map((p) => `${p.label}: ${p.value}`).join(", ")}.`}
       link={a.submissions > 0 ? { href: drillHref(scope, { list: "requests", cond: "approval", from: "tile-approval" }), label: `Open the ${a.submissions} submissions`, aria: `Open the ${a.submissions} submissions awaiting approval` } : undefined}
@@ -370,7 +380,7 @@ export function ApprovalAgeTile({ model, scope, days }: { model: DashboardModel;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// 6. Is evidence still flowing?
+// 6. Evaluations counted per week
 
 export function FlowTile({ scope, weeks }: { scope: LabScope; weeks: Array<{ value: number; label: string; end: string }> }) {
   const last = weeks.at(-1)?.value ?? 0
@@ -382,8 +392,8 @@ export function FlowTile({ scope, weeks }: { scope: LabScope; weeks: Array<{ val
   return (
     <Tile
       id="tile-flow"
-      title="Is evidence still flowing?"
-      meta="Evaluations counted per week"
+      title="Evaluations counted per week"
+      meta={`Last ${weeks.length} weeks`}
       summary={`${weeks.map((w) => `${w.label}: ${w.value}`).join(", ")}. ${note}`}
       link={{ href: drillHref(scope, { list: "skills", from: "tile-flow" }), label: `Required ${skillNounPlural()} achieved` }}
       table={<SrTable caption="Evaluations counted per week" head={["Week", "Counted"]} rows={weeks.map((w) => [w.label, w.value])} />}
@@ -391,6 +401,193 @@ export function FlowTile({ scope, weeks }: { scope: LabScope; weeks: Array<{ val
       <div className="flex flex-col gap-2">
         <Columns values={values} flag={(i) => (i === values.length - 1 ? "dark" : "soft")} valueLabels={false} height={118} ticks={weeks.length ? [day(weeks[0].end), day(weeks[weeks.length - 1].end)] : undefined} />
         <p className="text-xs text-muted-foreground">{note}</p>
+      </div>
+    </Tile>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Sections added 2026-10-27 (Romit: "Are there more dashboard items that you haven't considered here?"). Each is one tile:
+// one plain title, a one-line meta, a list or small chart, a table fallback and one link. Numbers come from the single
+// sources only (placementsEnding, buildExceptions, buildAttainment, countedBySetting, the dashboard model).
+
+/** A plain list row: record link on the left, its figure on the right, an optional muted second line. */
+function ListRows({ rows, label }: { rows: Array<{ key: string; name: string; href: string; aria?: string; sub?: string; value: string; flagged?: boolean }>; label: string }) {
+  return (
+    <ul className="flex flex-col gap-2" aria-label={label}>
+      {rows.map((r) => (
+        <li key={r.key} className="flex items-baseline justify-between gap-3">
+          <span className="flex min-w-0 flex-col">
+            <span className="flex min-w-0 items-center gap-1.5">
+              {r.flagged ? <DiamondGlyph /> : null}
+              <Link className={NAME_LINK} href={r.href} aria-label={r.aria}>{r.name}</Link>
+            </span>
+            {r.sub ? <span className="truncate text-xs text-muted-foreground">{r.sub}</span> : null}
+          </span>
+          <span className="shrink-0 text-sm tabular-nums text-muted-foreground">{r.value}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+export interface EndingRow { id: string; studentId: string; student: string; location: string; daysLeft: number; behind: boolean }
+
+/** Placements ending soon: students whose placement ends within the window, those behind marked (time is running out). */
+export function PlacementsEndingTile({ rows, days, scope, studentHref }: { rows: EndingRow[]; days: number; scope: LabScope; studentHref: (id: string) => string }) {
+  const behind = rows.filter((r) => r.behind).length
+  const shown = [...rows].sort((a, b) => Number(b.behind) - Number(a.behind) || a.daysLeft - b.daysLeft).slice(0, 5)
+  const summary = rows.length === 0 ? `No placement ends in the next ${days} days.` : `${plural(rows.length, "placement ends", "placements end")} within ${days} days; ${behind} of those students ${behind === 1 ? "is" : "are"} behind.`
+  return (
+    <Tile
+      id="tile-ending"
+      title="Placements ending soon"
+      meta={`Within ${days} days, ${behind} of ${rows.length} students behind`}
+      summary={summary}
+      link={behind > 0 ? { href: drillHref(scope, { list: "students", cond: "behind", from: "tile-ending" }), label: "Students behind" } : undefined}
+      table={<SrTable caption="Placements ending soon" head={["Student", "Location", "Days left", "Behind"]} rows={rows.map((r) => [r.student, r.location, r.daysLeft, r.behind ? "Yes" : "No"])} />}
+    >
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{summary}</p>
+      ) : (
+        <ListRows label="Placements ending soonest, students behind first" rows={shown.map((r) => ({ key: r.id, name: r.student, href: studentHref(r.studentId), sub: r.location, value: `${r.daysLeft} d left`, flagged: r.behind, aria: `${r.student}, ${r.location}: ${r.daysLeft} days left${r.behind ? ", behind" : ""}. Open the record` }))} />
+      )}
+    </Tile>
+  )
+}
+
+export interface StuckRequest { id: string; studentId: string; student: string; skills: string; days: number; why: string }
+
+/** Returned requests and requests waiting 15 days or more: the two queues that stall a student without anyone acting. */
+export function StuckRequestsTile({ returned, old, scope, studentHref }: { returned: StuckRequest[]; old: StuckRequest[]; scope: LabScope; studentHref: (id: string) => string }) {
+  const rows = [...returned.map((r) => ({ ...r, kind: "Returned" })), ...old.map((r) => ({ ...r, kind: "Waiting" }))].sort((a, b) => b.days - a.days).slice(0, 5)
+  const summary = `${plural(returned.length, "request", "requests")} returned to students, ${plural(old.length, "request", "requests")} waiting 15 days or more.`
+  return (
+    <Tile
+      id="tile-stuck"
+      title="Returned and long-waiting requests"
+      meta={`${returned.length} returned, ${old.length} waiting 15 days or more`}
+      summary={summary}
+      link={old.length > 0 ? { href: drillHref(scope, { list: "requests", cond: "old", from: "tile-stuck" }), label: `All ${old.length} waiting` } : undefined}
+      table={<SrTable caption="Returned and long-waiting requests" head={["Student", "Status", "Days", "Why"]} rows={[...returned.map((r) => [r.student, "Returned", r.days, r.why]), ...old.map((r) => [r.student, "Waiting", r.days, r.why])]} />}
+    >
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nothing is returned or waiting 15 days or more.</p>
+      ) : (
+        <ListRows label="Oldest first" rows={rows.map((r) => ({ key: `${r.kind}-${r.id}`, name: r.student, href: studentHref(r.studentId), sub: `${r.kind}: ${r.skills}`, value: `${r.days} d`, aria: `${r.student}, ${r.kind.toLowerCase()} ${r.days} days: ${r.why}. Open the record` }))} />
+      )}
+    </Tile>
+  )
+}
+
+export interface UnverifiedRow { id: string; name: string; site: string; requests: number; oldest: number }
+
+/** Evaluator names not yet adopted: their evidence is held for approval until someone adopts or merges the name. */
+export function UnverifiedEvaluatorsTile({ rows, total, href }: { rows: UnverifiedRow[]; total: number; href: string }) {
+  const requests = rows.reduce((t, r) => t + r.requests, 0)
+  const summary = `${plural(total, "evaluator name is", "evaluator names are")} not verified; ${rows.length} of them hold ${plural(requests, "open request", "open requests")}.`
+  return (
+    <Tile
+      id="tile-unverified"
+      title="Evaluators not yet verified"
+      meta={`${total} names, ${rows.length} holding requests`}
+      summary={summary}
+      link={total > 0 ? { href, label: `Review all ${total}` } : undefined}
+      table={<SrTable caption="Unverified evaluators holding requests" head={["Evaluator", "Site", "Requests", "Oldest, days"]} rows={rows.map((r) => [r.name, r.site, r.requests, r.oldest])} />}
+    >
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{total === 0 ? "Every evaluator name is verified." : "No unverified evaluator holds an open request."}</p>
+      ) : (
+        <ListRows label="Unverified evaluators, oldest request first" rows={rows.slice(0, 5).map((r) => ({ key: r.id, name: r.name, href, sub: r.site, value: `${r.requests}, oldest ${r.oldest} d` }))} />
+      )}
+    </Tile>
+  )
+}
+
+/** Skill set-up (REQ IM-10: how many skills still require configuration), with the next step one click away. */
+export function SetupTile({ configured, total, inactive, href }: { configured: number; total: number; inactive: number; href: string }) {
+  const not = total - configured
+  const values = [configured, not, inactive]
+  const labels = ["Configured", "Not configured", "Inactive"]
+  return (
+    <Tile
+      id="tile-setup"
+      title={`${capitalize(skillNounPlural())} set-up`}
+      meta={`${fmt(not)} of ${fmt(total)} not configured`}
+      summary={`${labels.map((l, i) => `${l}: ${values[i]}`).join(", ")}. Students cannot use ${aNoun()} until it is configured.`}
+      link={not > 0 ? { href, label: `Configure the ${fmt(not)}` } : undefined}
+      table={<SrTable caption={`${capitalize(skillNoun())} set-up`} head={["State", capitalize(skillNounPlural())]} rows={labels.map((l, i) => [l, values[i]])} />}
+    >
+      <Columns values={values} labels={labels} flag={(i) => (i === 1 && not > 0 ? "dark" : "soft")} height={120} />
+    </Tile>
+  )
+}
+
+/** Required this term next to required to graduate (decision D-X12): two sets, named, never added together. */
+export function RequiredSetsTile({ term, graduate, termHref, graduateHref }: { term: { achieved: number; total: number }; graduate: { achieved: number; total: number }; termHref: string; graduateHref: string }) {
+  const pct = (a: number, t: number) => (t === 0 ? 0 : Math.round((a / t) * 100))
+  const rows = [
+    { key: "term", name: "Required this term", href: termHref, a: term.achieved, t: term.total },
+    { key: "graduate", name: "Required to graduate", href: graduateHref, a: graduate.achieved, t: graduate.total },
+  ]
+  return (
+    <Tile
+      id="tile-required"
+      title="Required this term and to graduate"
+      meta="Student records achieved, two separate sets"
+      summary={rows.map((r) => `${r.name}: ${fmt(r.a)} of ${fmt(r.t)} records achieved, ${pct(r.a, r.t)}%`).join(". ")}
+      table={<SrTable caption="Required sets" head={["Set", "Achieved", "Records", "Share"]} rows={rows.map((r) => [r.name, r.a, r.t, `${pct(r.a, r.t)}%`])} />}
+    >
+      <dl className="grid grid-cols-2 gap-4">
+        {rows.map((r) => (
+          <div key={r.key} className="flex flex-col gap-1">
+            <dt className="text-sm text-muted-foreground">{r.name}</dt>
+            <dd className="flex flex-col gap-1">
+              <span className={TYPE.figure}>{`${pct(r.a, r.t)}%`}</span>
+              <Link className={`${LINK} text-sm`} href={r.href} aria-label={`${r.name}: ${fmt(r.a)} of ${fmt(r.t)} records achieved. Open in Reports`}>{`${fmt(r.a)} of ${fmt(r.t)}`}</Link>
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </Tile>
+  )
+}
+
+/** Counted evidence by setting: lab and simulation never satisfy a clinical-setting minimum (REQ SC-12). */
+export function SettingTile({ rows, href }: { rows: Array<{ setting: string; label: string; value: number }>; href: string }) {
+  const total = rows.reduce((t, r) => t + r.value, 0)
+  return (
+    <Tile
+      id="tile-setting"
+      title="Counted evidence by setting"
+      meta={`${fmt(total)} counted evaluations`}
+      summary={`${rows.map((r) => `${r.label}: ${r.value}`).join(", ")}. Lab and simulation evidence never counts toward a clinical-setting minimum.`}
+      link={{ href, label: "Filter by setting" }}
+      table={<SrTable caption="Counted evaluations by setting" head={["Setting", "Counted"]} rows={rows.map((r) => [r.label, r.value])} />}
+    >
+      <div className="flex flex-col gap-2">
+        <Columns values={rows.map((r) => r.value)} labels={rows.map((r) => r.label)} flag={(i) => (i === 0 ? "dark" : "soft")} height={120} />
+        <p className="text-xs text-muted-foreground">Lab and simulation never count toward a clinical-setting minimum.</p>
+      </div>
+    </Tile>
+  )
+}
+
+/** Attainment by tag (REQ RP-04): lowest share achieved first; a skill with several tags counts under each, and it says so. */
+export function TagsTile({ rows, multiTagged, href }: { rows: Array<{ key: string; label: string; achievedPct: number; total: number }>; multiTagged: number; href: string }) {
+  const low = [...rows].sort((a, b) => a.achievedPct - b.achievedPct || a.label.localeCompare(b.label)).slice(0, 5)
+  return (
+    <Tile
+      id="tile-tags"
+      title="Attainment by tag"
+      meta="Lowest share achieved first"
+      summary={`${low.map((r) => `${r.label}: ${r.achievedPct}% of ${r.total} records`).join(", ")}. Tags overlap: ${multiTagged} records carry more than one tag and count under each.`}
+      link={{ href, label: `All ${rows.length} tags` }}
+      table={<SrTable caption="Attainment by tag" head={["Tag", "Achieved", "Records"]} rows={rows.map((r) => [r.label, `${r.achievedPct}%`, r.total])} />}
+    >
+      <div className="flex flex-col gap-2">
+        <RankRows label="Tags, lowest share achieved first" max={100} rows={low.map((r) => ({ key: r.key, name: r.label, value: r.achievedPct, href, aria: `${r.label}: ${r.achievedPct}% of ${r.total} records achieved. Open in Reports` }))} />
+        <p className="text-xs text-muted-foreground">{`Tags overlap: ${fmt(multiTagged)} records count under more than one tag.`}</p>
       </div>
     </Tile>
   )

@@ -21,6 +21,7 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { fmt, initialsOf } from "@/lib/v2/format"
 import { csvColumns, DIRECTOR_NAME, detailHref, directorHref, listHref, plural, type ReportModel, type ReportView, type SectionReportRow, type SkillReportRow, type StudentReportRow } from "@/lib/lab/director"
 import type { LabScope } from "@/lib/lab/scope"
+import { RECORD_STATE_META } from "@/lib/v2/labels"
 
 export const VIEW_OPTIONS = [
   { value: "student" as const, label: "By student" },
@@ -34,13 +35,18 @@ export function ViewSwitch({ view, onChange }: { view: ReportView; onChange: (v:
 }
 
 const num = "text-sm tabular-nums"
+// Engine state words from the one label map (lib/v2/labels.ts): "Evidence does not qualify", "No evidence yet".
+const UNQ = RECORD_STATE_META.unqualified.label
+const NONE = RECORD_STATE_META.none.label
 
 function studentCols(scope: LabScope): ColumnDef<StudentReportRow>[] {
   return [
     { key: "name", label: "Student", width: 220, sortable: true, cell: (r) => <PersonIdentityCell name={r.name} initials={initialsOf(r.name)} renderName={(n) => <Link className={LINK} href={detailHref(scope, r.id)}>{n}</Link>} /> },
     { key: "achieved", label: "Achieved", width: 120, sortable: true, cell: (r) => <CountLink n={r.achieved} href={detailHref(scope, r.id)} label={`${r.name}: ${r.achieved} achieved. Open the record`} className={num} /> },
     { key: "progress", label: "In progress", width: 120, sortable: true, cell: (r) => <CountLink n={r.progress} href={detailHref(scope, r.id)} label={`${r.name}: ${r.progress} in progress. Open the record`} className={num} /> },
-    { key: "notMet", label: "Unmet", width: 120, sortable: true, cell: (r) => <CountLink n={r.notMet} href={detailHref(scope, r.id)} label={`${r.name}: ${r.notMet} unmet. Open the record`} className={num} /> },
+    // The two engine states stay apart [REQ AE-04]: never one "Unmet" column (that merge is OD-03, open).
+    { key: "unqualified", label: UNQ, width: 200, sortable: true, cell: (r) => <CountLink n={r.unqualified} href={detailHref(scope, r.id)} label={`${r.name}: ${r.unqualified} ${UNQ.toLowerCase()}. Open the record`} className={num} /> },
+    { key: "noEvidence", label: NONE, width: 130, sortable: true, cell: (r) => <CountLink n={r.noEvidence} href={detailHref(scope, r.id)} label={`${r.name}: ${r.noEvidence} ${NONE.toLowerCase()}. Open the record`} className={num} /> },
     { key: "pct", label: "Attainment", width: 120, sortable: true, cell: (r) => <span className={`${num} text-muted-foreground`}>{`${r.pct}%`}</span> },
   ]
 }
@@ -51,7 +57,8 @@ function skillCols(scope: LabScope): ColumnDef<SkillReportRow>[] {
     { key: "section", label: "Section", width: 180, sortable: true, cell: (r) => <span className="truncate text-sm text-muted-foreground">{r.section}</span> },
     { key: "achieved", label: "Achieved", width: 110, sortable: true, cell: (r) => <CountLink n={r.achieved} href={listHref(scope, { list: "has", skill: r.id })} label={`${r.achieved} students achieved ${r.name}. Open the list`} className={num} /> },
     { key: "progress", label: "In progress", width: 110, sortable: true, cell: (r) => <CountLink n={r.progress} href={listHref(scope, { list: "progress", skill: r.id })} label={`${r.progress} in progress on ${r.name}. Open the list`} className={num} /> },
-    { key: "notMet", label: "Unmet", width: 110, sortable: true, cell: (r) => <CountLink n={r.notMet} href={listHref(scope, { list: "notmet", skill: r.id })} label={`${r.notMet} unmet on ${r.name}. Open the list`} className={num} /> },
+    { key: "unqualified", label: UNQ, width: 200, sortable: true, cell: (r) => <CountLink n={r.unqualified} href={listHref(scope, { list: "unqualified", skill: r.id })} label={`${r.unqualified} with ${UNQ.toLowerCase()} on ${r.name}. Open the list`} className={num} /> },
+    { key: "noEvidence", label: NONE, width: 130, sortable: true, cell: (r) => <CountLink n={r.noEvidence} href={listHref(scope, { list: "noevidence", skill: r.id })} label={`${r.noEvidence} with ${NONE.toLowerCase()} on ${r.name}. Open the list`} className={num} /> },
   ]
 }
 
@@ -62,7 +69,8 @@ function sectionCols(scope: LabScope, variant: string): ColumnDef<SectionReportR
     { key: "skills", label: capitalize(skillNounPlural()), width: 90, sortable: true, cell: (r) => <Link className={`${LINK} ${num}`} href={bySkill(r.section)} aria-label={`${r.skills} ${skillNounPlural()} in ${r.section}. Open them`}>{fmt(r.skills)}</Link> },
     { key: "achieved", label: "Achieved", width: 110, sortable: true, cell: (r) => <span className={num}>{fmt(r.achieved)}</span> },
     { key: "progress", label: "In progress", width: 110, sortable: true, cell: (r) => <span className={num}>{fmt(r.progress)}</span> },
-    { key: "notMet", label: "Unmet", width: 110, sortable: true, cell: (r) => <span className={num}>{fmt(r.notMet)}</span> },
+    { key: "unqualified", label: UNQ, width: 200, sortable: true, cell: (r) => <span className={num}>{fmt(r.unqualified)}</span> },
+    { key: "noEvidence", label: NONE, width: 130, sortable: true, cell: (r) => <span className={num}>{fmt(r.noEvidence)}</span> },
     { key: "pct", label: "Attainment", width: 110, sortable: true, cell: (r) => <span className={`${num} text-muted-foreground`}>{`${r.pct}%`}</span> },
   ]
 }

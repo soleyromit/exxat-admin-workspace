@@ -7,31 +7,85 @@
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
+import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import type { Comparison } from "@/lib/v2/queue"
 import { recordHref, type ItemDetail, type ReviewRow, type RuleCheck, type StoryStep } from "@/lib/lab/reviewer"
 import type { LabScope } from "@/lib/lab/scope"
+import { Label } from "@exxatdesignux/ui/components/ui/label"
+import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
+import { StickyFooter } from "@/components/lab/layout/sticky-footer"
+import { TYPE } from "@/components/lab/type-scale"
+import { APPROVE_HINT, SEND_BACK_LABEL } from "@/lib/v2/labels"
+import { REASON_META } from "@/lib/lab/reviewer"
 import { EvaluatorMenu, useDecisionUi } from "@/components/lab/reviewer/decisions"
-import { AgreementMark, AgeBadge, EvaluatorName, FactList, ReasonBadge } from "@/components/lab/reviewer/parts"
+import { AgreementMark, AgeBadge, EvaluatorName, FactList } from "@/components/lab/reviewer/parts"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 import { shortDate } from "@/lib/v2/format"
 
 const dateLabel = (iso: string | null) => (iso ? shortDate(iso) : "Not recorded")
 
-/** Why held, as the first line of any detail: the badge and the cause in words. */
+/**
+ * Why it is here, the first block of any review: every cause in plain words, primary first, with what holds it (for "Approval
+ * required", the skill's setting, REQ SC-15) and the wait. Where the evaluator is not on the program's list, the one decision that
+ * fits sits beside the words (Adopt, merge or assign).
+ */
 export function WhyHeld({ row }: { row: ReviewRow }) {
   return (
-    <div className="flex flex-wrap items-center gap-2" data-why-held>
-      <ReasonBadge reason={row.reason} />
-      <span className="text-sm text-foreground">{row.why}</span>
-      <AgeBadge days={row.days} />
+    <section className="flex flex-col gap-2" aria-labelledby={`why-${row.key}`} data-why-held>
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 id={`why-${row.key}`} className={TYPE.section}>Why it is here</h2>
+        <AgeBadge days={row.days} />
+      </div>
+      <ul className="flex flex-col gap-1.5">
+        {row.because.map((b) => (
+          <li key={b.reason} className={`flex items-baseline gap-2 ${TYPE.body}`} data-because={b.reason}>
+            <i className={`fa-light ${REASON_META[b.reason].icon} shrink-0 text-xs text-muted-foreground`} aria-hidden="true" />
+            <span>{b.text}</span>
+          </li>
+        ))}
+      </ul>
+      {row.evaluatorUnverified ? (
+        <span className="self-start">
+          <EvaluatorMenu row={row} />
+        </span>
+      ) : null}
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review note (REQ AR-04): one note per open review, kept with the evaluation on Approve and offered as the reason on Send back.
+
+const NoteCtx = React.createContext<{ note: string; setNote: (v: string) => void } | null>(null)
+
+export function ReviewNoteProvider({ resetKey, children }: { resetKey: string; children: React.ReactNode }) {
+  const [note, setNote] = React.useState("")
+  React.useEffect(() => setNote(""), [resetKey])
+  const value = React.useMemo(() => ({ note, setNote }), [note])
+  return <NoteCtx.Provider value={value}>{children}</NoteCtx.Provider>
+}
+
+const useReviewNote = () => React.useContext(NoteCtx)
+
+export function ReviewNoteField({ id = "review-note" }: { id?: string }) {
+  const ctx = useReviewNote()
+  if (!ctx) return null
+  return (
+    <div className="flex flex-col gap-1.5" data-review-note>
+      <Label htmlFor={id} className={TYPE.group}>Review note, kept with the evaluation</Label>
+      <Textarea id={id} rows={2} value={ctx.note} onChange={(e) => ctx.setNote(e.target.value)} />
     </div>
   )
 }
 
-export function CompareTable({ c, compact = false }: { c: Comparison; compact?: boolean }) {
+/**
+ * Self versus evaluator, every row (AR-02, AR-03): each question, the score on each question, the level and the evaluator's
+ * outcome. The student's self-evaluation note follows the table (AR-03: "the full set of responses"), quoted as record content.
+ */
+export function CompareTable({ c, compact = false, showNote = true }: { c: Comparison; compact?: boolean; showNote?: boolean }) {
   const self = c.selfRated
   return (
     <div className="flex flex-col gap-1.5">
@@ -63,7 +117,13 @@ export function CompareTable({ c, compact = false }: { c: Comparison; compact?: 
           </TableBody>
         </Table>
       </div>
-      {self ? null : <p className="text-xs text-muted-foreground">No self-rating, so nothing to compare.</p>}
+      {self ? null : <p className="text-xs text-muted-foreground">No self-rating to compare.</p>}
+      {showNote && c.selfNote ? (
+        <blockquote className="whitespace-pre-line border-s-2 border-border ps-3 text-sm text-foreground" data-user-content data-self-note>
+          <span className="sr-only">Student note: </span>
+          {c.selfNote}
+        </blockquote>
+      ) : null}
     </div>
   )
 }
@@ -104,26 +164,39 @@ export function Facts({ d, scope }: { d: ItemDetail; scope: LabScope }) {
 }
 
 /**
- * One decision bar: Approve is the single primary action; Return is outline. Where the evaluator is not assigned (a name the program
- * has not adopted), one outline menu holds Adopt or merge and Assign to someone else (one control, strategy/07 budgets).
+ * The decision bar of a panel (Approvals B): what Approve does in words, then Send back to student (outline) and Approve (the one
+ * filled action, far right, the footer contract). The review note, when the panel has one, goes with either decision.
  */
-export function DecisionBar({ row, next, className = "" }: { row: ReviewRow; next?: { href: string; label: string } | null; className?: string }) {
+export function DecisionBar({ row, className = "" }: { row: ReviewRow; className?: string }) {
   const ui = useDecisionUi()
+  const note = useReviewNote()?.note ?? ""
   return (
-    <div className={`flex flex-wrap items-center gap-2 ${className}`} data-decision-bar>
-      {row.block ? (
-        <span className="text-sm text-muted-foreground">{row.block}</span>
-      ) : (
-        <Button type="button" variant="default" size="sm" onClick={() => ui.approve([row])}>Approve</Button>
+    <div className={`flex w-full flex-wrap items-center gap-2 ${className}`} data-decision-bar>
+      {row.block ? <span className={`me-auto ${TYPE.helper}`}>{row.block}</span> : <span className="me-auto" />}
+      <Button type="button" variant="outline" size="sm" onClick={() => ui.openReturn(row, note)}>{SEND_BACK_LABEL}</Button>
+      {row.block ? null : (
+        <Tip label={APPROVE_HINT}>
+          <Button type="button" variant="default" size="sm" onClick={() => ui.approve([row], note)} aria-describedby={`approve-hint-${row.key}`}>Approve</Button>
+        </Tip>
       )}
-      <Button type="button" variant="outline" size="sm" onClick={() => ui.openReturn(row)}>Return</Button>
-      {row.evaluatorUnverified ? <EvaluatorMenu row={row} /> : null}
-      {next ? (
-        <Button asChild variant="ghost" size="sm" className="ms-auto">
-          <Link href={next.href}>{next.label}</Link>
-        </Button>
-      ) : null}
+      <span id={`approve-hint-${row.key}`} className="sr-only">{APPROVE_HINT}</span>
     </div>
+  )
+}
+
+/**
+ * The review page's decision, on the shared sticky footer: what Approve does, Send back to student, Approve. No Back button: the
+ * breadcrumb already goes to Approvals (say it once), and the footer keeps Back's slot empty so nothing shifts.
+ */
+export function DecisionFooter({ row }: { row: ReviewRow }) {
+  const ui = useDecisionUi()
+  const note = useReviewNote()?.note ?? ""
+  return (
+    <StickyFooter
+      context={row.block ? undefined : APPROVE_HINT}
+      secondary={{ label: SEND_BACK_LABEL, onClick: () => ui.openReturn(row, note) }}
+      primary={{ label: "Approve", onClick: () => ui.approve([row], note), disabled: !!row.block, disabledReason: row.block ?? undefined }}
+    />
   )
 }
 

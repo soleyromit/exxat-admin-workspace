@@ -143,7 +143,10 @@ export interface Snapshot {
   refresh: () => void
 }
 
-/** Figures change only on Refresh (06 F2). */
+/** How long new evidence settles before the figures re-read it. */
+export const AUTO_REFRESH_MS = 1500
+
+/** Figures are read at a time and re-read on their own when new evidence arrives (supersedes 06 F2, Romit 2026-10-27). */
 export function useSnapshot(): Snapshot {
   const live = useV2State()
   const hydrated = useV2Hydrated()
@@ -152,6 +155,14 @@ export function useSnapshot(): Snapshot {
     if (hydrated && !frozen) setFrozen({ state: live, at: new Date() })
   }, [hydrated, frozen, live])
   const refresh = React.useCallback(() => setFrozen({ state: live, at: new Date() }), [live])
+  // Figures update on their own (Romit 2026-10-27: no "refresh for the latest data"). New evidence is read after a short
+  // settle, so a burst of changes moves the figures once; the header's "Updated" time says when.
+  const stale = !!frozen && fingerprint(frozen.state) !== fingerprint(live)
+  React.useEffect(() => {
+    if (!stale) return
+    const t = window.setTimeout(() => setFrozen({ state: live, at: new Date() }), AUTO_REFRESH_MS)
+    return () => window.clearTimeout(t)
+  }, [stale, live])
   return { state: frozen?.state ?? null, at: frozen?.at ?? null, fresh: !!frozen && fingerprint(frozen.state) !== fingerprint(live), refresh }
 }
 

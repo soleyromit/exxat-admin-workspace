@@ -13,10 +13,12 @@ import { VIZ } from "@/components/lab/viz"
 import { fmt } from "@/lib/v2/format"
 import { skillNounPlural } from "@/lib/lab/terms"
 import { RESULT_WORD, type RecordFilter, type RecordResult } from "@/lib/lab/student2"
+import { TYPE } from "@/components/lab/type-scale"
 
 const GLYPH: Record<RecordResult, { icon: string; color: string }> = {
   counted: { icon: "fa-solid fa-circle-check", color: "var(--foreground)" },
   "not-counted": { icon: "fa-solid fa-triangle-exclamation", color: VIZ.behindInk },
+  requested: { icon: "fa-light fa-hourglass-half", color: "var(--muted-foreground)" },
   waiting: { icon: "fa-light fa-clock", color: "var(--muted-foreground)" },
   returned: { icon: "fa-solid fa-rotate-left", color: VIZ.behindInk },
   sent: { icon: "fa-light fa-paper-plane", color: "var(--muted-foreground)" },
@@ -33,18 +35,24 @@ export function ResultLabel({ result, className }: { result: RecordResult; class
   )
 }
 
-/** Three figures (strategy 07: student 3). Each is a toggle for the result filter, so a number is where it is acted on. */
-export function RecordFigures({ counts, value, onChange }: { counts: Record<RecordResult, number>; value: RecordFilter["result"]; onChange: (r: RecordFilter["result"]) => void }) {
-  const items: Array<{ id: RecordResult; label: string }> = [
+/**
+ * The three SH-04 figures (strategy 07: list without tabs 3): submissions counted, outstanding (waiting with the evaluator,
+ * awaiting approval, or sent to someone else) and returned. Each is a toggle for the result filter, so a number is where it is
+ * acted on; outstanding and returned count each request once (lib/lab/student2.ts recordFigures), the same numbers My progress
+ * shows. "Did not count" stays one choice away in the Result filter.
+ */
+export function RecordFigures({ counts, value, onChange }: { counts: { counted: number; outstanding: number; returned: number }; value: RecordFilter["result"]; onChange: (r: RecordFilter["result"]) => void }) {
+  const items: Array<{ id: "counted" | "outstanding" | "returned"; label: string }> = [
     { id: "counted", label: "Counted" },
-    { id: "not-counted", label: "Did not count" },
-    { id: "waiting", label: "Awaiting approval" },
+    // "Waiting": the same word and number My progress shows (one unit per concept); it is REQ SH-04's "outstanding".
+    { id: "outstanding", label: "Waiting" },
+    { id: "returned", label: "Returned" },
   ]
   return (
     <div className="flex flex-wrap gap-x-6 gap-y-2" role="group" aria-label="Filter by result">
       {items.map((x) => {
         const on = value === x.id
-        const amber = x.id === "not-counted" && counts[x.id] > 0
+        const amber = x.id === "returned" && counts[x.id] > 0
         return (
           <Button
             key={x.id}
@@ -56,7 +64,7 @@ export function RecordFigures({ counts, value, onChange }: { counts: Record<Reco
             data-figure="kpi"
             className={cn("group -ms-2 h-auto flex-col items-start gap-0.5 px-2 py-1.5 text-start", on ? "bg-muted ring-1 ring-foreground" : "bg-transparent")}
           >
-            <span className="font-heading text-2xl font-semibold leading-none tabular-nums text-foreground group-hover:underline group-hover:underline-offset-4" style={amber ? { color: VIZ.behindInk } : undefined}>
+            <span className={cn(TYPE.figure, "text-foreground group-hover:underline group-hover:underline-offset-4")} style={amber ? { color: VIZ.behindInk } : undefined}>
               {fmt(counts[x.id])}
             </span>
             <span className="text-xs text-muted-foreground">{x.label}</span>
@@ -78,6 +86,7 @@ export function RecordFilters({ f, onChange, courses }: { f: RecordFilter; onCha
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All results</SelectItem>
+            <SelectItem value="outstanding">All waiting</SelectItem>
             {(Object.keys(RESULT_WORD) as RecordResult[]).map((r) => <SelectItem key={r} value={r}>{RESULT_WORD[r]}</SelectItem>)}
           </SelectContent>
         </Select>
@@ -110,7 +119,7 @@ export function RecordFilters({ f, onChange, courses }: { f: RecordFilter; onCha
  * Phone layout for one evaluation: no table, two lines (strategy: rows become 2-line cards at 375). The reason line shows only
  * when it explains something the result word does not (did not count, returned); "Counted" and "Awaiting approval" say it.
  */
-export function RecordMobileRow({ date, title, result, why }: { date: string; title?: React.ReactNode; result: RecordResult; why: string }) {
+export function RecordMobileRow({ date, title, result, why, action }: { date: string; title?: React.ReactNode; result: RecordResult; why: string; /** Opens the completed evaluation [REQ SH-07]. */ action?: React.ReactNode }) {
   return (
     <li className="flex flex-col gap-1 py-2.5">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -119,6 +128,7 @@ export function RecordMobileRow({ date, title, result, why }: { date: string; ti
         <ResultLabel result={result} className={title ? "" : "ms-auto"} />
       </div>
       {why && (result === "not-counted" || result === "returned" || result === "sent") ? <p className="text-xs text-muted-foreground">{why}</p> : null}
+      {action ?? null}
     </li>
   )
 }

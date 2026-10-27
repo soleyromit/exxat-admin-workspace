@@ -13,6 +13,7 @@ import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { DirectorPage } from "@/components/lab/director/frame"
+import type { V2State } from "@/lib/v2/types"
 import { EvidenceLink, FluxList, GapChecks, RecordLine, SkillState, VerifyAction, useVerifyFlow } from "@/components/lab/director/verify"
 import type { DirectorContext } from "@/components/lab/director/use-director"
 import { DiamondGlyph } from "@/components/lab/viz"
@@ -41,7 +42,7 @@ function Step({ n, title, count, done, children, region }: { n: number; title: s
 
 type DetailSection = DetailModel["sections"][number]
 
-function SectionLines({ s, d, scope }: { s: DetailSection; d: DetailModel; scope: Readiness["scope"] }) {
+function SectionLines({ s, d, scope, state }: { s: DetailSection; d: DetailModel; scope: Readiness["scope"]; state: V2State | null }) {
   const short = s.achieved < s.lines.length
   return (
     <li className="flex flex-col gap-1 py-2">
@@ -56,7 +57,7 @@ function SectionLines({ s, d, scope }: { s: DetailSection; d: DetailModel; scope
         {s.lines.map((l) => (
           <li key={l.skillId} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 py-1 text-sm">
             <span className="truncate text-foreground">{l.name}</span>
-            <EvidenceLink l={l} scope={scope} studentId={d.row.id} />
+            <EvidenceLink l={l} scope={scope} studentId={d.row.id} state={state} />
             <SkillState l={l} />
           </li>
         ))}
@@ -69,7 +70,7 @@ function SectionLines({ s, d, scope }: { s: DetailSection; d: DetailModel; scope
  * Sections with a gap are open (that is where a spot-check matters); sections already complete sit behind one disclosure,
  * so the step has one toggle instead of one per section (strategy/07 detail budget: 6 controls above the fold).
  */
-function Sections({ d, scope }: { d: DetailModel; scope: Readiness["scope"] }) {
+function Sections({ d, scope, state }: { d: DetailModel; scope: Readiness["scope"]; state: V2State | null }) {
   const short = d.sections.filter((s) => s.achieved < s.lines.length)
   const complete = d.sections.filter((s) => s.achieved >= s.lines.length)
   const [open, setOpen] = React.useState(false)
@@ -77,7 +78,7 @@ function Sections({ d, scope }: { d: DetailModel; scope: Readiness["scope"] }) {
     <div className="flex flex-col gap-1">
       {short.length ? (
         <ul className="flex flex-col divide-y divide-border">
-          {short.map((s) => <SectionLines key={s.section} s={s} d={d} scope={scope} />)}
+          {short.map((s) => <SectionLines key={s.section} s={s} d={d} scope={scope} state={state} />)}
         </ul>
       ) : null}
       {complete.length ? (
@@ -90,7 +91,7 @@ function Sections({ d, scope }: { d: DetailModel; scope: Readiness["scope"] }) {
           </CollapsibleTrigger>
           <CollapsibleContent>
             <ul className="flex flex-col divide-y divide-border">
-              {complete.map((s) => <SectionLines key={s.section} s={s} d={d} scope={scope} />)}
+              {complete.map((s) => <SectionLines key={s.section} s={s} d={d} scope={scope} state={state} />)}
             </ul>
           </CollapsibleContent>
         </Collapsible>
@@ -136,7 +137,7 @@ function Detail({ d, m, ctx }: { d: DetailModel; m: Readiness; ctx: DirectorCont
             The gaps above are current.
           </LocalBanner>
         ) : (
-          <Sections d={d} scope={m.scope} />
+          <Sections d={d} scope={m.scope} state={ctx.state} />
         )}
       </Step>
       <Step n={first + 2} title="Verify" done={!!flow.done} region="verify">

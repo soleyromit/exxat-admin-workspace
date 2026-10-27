@@ -11,7 +11,8 @@ import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { AGING_DAYS, REASON_META, daysLabel, plural, type HoldReason, type QueueSummary, type RecordSkill, type RecordStatus } from "@/lib/lab/reviewer"
 
-import { EVALUATION_STATUS_LABEL, SENT_FOR_NEW_EVALUATION_WORD, type RecordStateKey } from "@/lib/v2/labels"
+import { EVALUATION_STATUS_LABEL, SENT_BACK_LABEL, SENT_FOR_NEW_EVALUATION_WORD, type RecordStateKey } from "@/lib/v2/labels"
+import { TYPE } from "@/components/lab/type-scale"
 import { fmt } from "@/lib/v2/format"
 import { LINK as LINK_STANDALONE, LINK_IN_TABLE } from "@/components/lab/link-styles"
 import { OutcomeBadge, OverlayBadge, StateBadge } from "@/components/lab/status-pill"
@@ -22,7 +23,26 @@ export const LINK = LINK_IN_TABLE
 export const LINK_U = LINK_STANDALONE
 export { initialsOf } from "@/lib/v2/format"
 
-export function ReasonBadge({ reason }: { reason: HoldReason }) {
+/**
+ * Why a row is in Approvals: a small glyph and the reason in plain words ("Approval required for Foley catheter insertion",
+ * "R. Ortiz is not on your evaluator list"). Not a chip: the words carry the meaning, so they are sentence text, one line,
+ * truncated with the full line as a title (Romit 2026-10-27).
+ */
+export function ReasonBadge({ row, wrap = false }: { row: { reason: HoldReason; why: string }; wrap?: boolean }) {
+  const m = REASON_META[row.reason]
+  return (
+    <span className={`inline-flex min-w-0 max-w-full items-baseline gap-1.5 ${TYPE.body}`} data-reason={row.reason} title={wrap ? undefined : row.why}>
+      <i className={`fa-light ${m.icon} shrink-0 text-xs text-muted-foreground`} aria-hidden="true" />
+      <span className={wrap ? "min-w-0" : "min-w-0 truncate"}>{row.why}</span>
+    </span>
+  )
+}
+
+/**
+ * The cause as a short chip ("Approval required", "Evaluator not assigned"), only where a list mixes causes under one heading (the
+ * board's Aging column) and the skill and evaluator lines beside it already say which skill or person.
+ */
+export function ReasonChip({ reason }: { reason: HoldReason }) {
   const m = REASON_META[reason]
   return <StatusBadge label={m.label} tone="neutral" icon={m.icon} size="sm" />
 }
@@ -66,7 +86,8 @@ export function RecordStatusBadge({ status }: { status: RecordStatus }) {
   if (status === "Unmet") return <OutcomeBadge outcome="not-met" />
   if (status === "Not yet") return <OutcomeBadge outcome="not-yet" />
   if (status === "Awaiting approval") return <OverlayBadge overlay="awaitingApproval" />
-  if (status === "Returned") return <OverlayBadge overlay="returned" />
+  // Staff read the reviewer's decision in its own words (Romit 2026-10-27); the student keeps "Returned to you".
+  if (status === "Returned") return <StatusBadge label={SENT_BACK_LABEL} tone="warning" icon="fa-arrow-rotate-left" size="sm" />
   // Assigned to another evaluator by a reviewer: a neutral handoff, not a return.
   if (status === SENT_FOR_NEW_EVALUATION_WORD) return <StatusBadge label={status} tone="neutral" icon="fa-paper-plane" size="sm" />
   if (status === "Counted") return <StatusBadge label={EVALUATION_STATUS_LABEL.counted} tone="neutral" icon="fa-circle-check" size="sm" />
@@ -102,7 +123,7 @@ export function SummaryLine({ summary, oldestHref, agingHref }: { summary: Queue
   return (
     <p className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm text-muted-foreground" data-region="summary">
       <span data-figure>
-        <span className="text-lg font-semibold tabular-nums text-foreground">{fmt(summary.submissions)}</span> {summary.submissions === 1 ? "submission waits" : "submissions wait"}
+        <span className="font-semibold tabular-nums text-foreground">{fmt(summary.submissions)}</span> {summary.submissions === 1 ? "submission waits" : "submissions wait"}
       </span>
       <span data-figure>
         Oldest{" "}

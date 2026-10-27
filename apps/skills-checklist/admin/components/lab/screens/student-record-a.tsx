@@ -5,7 +5,8 @@
  * Tests: does a filtered list of evidence grouped under each skill, with did-not-count first and the reason on every row, match
  * how students audit their record?
  * Regions (list budget 4): header (Share record) · figures that filter · filter row · evidence table grouped by skill.
- * [REQ SH-01 every submission in order, SH-02 explicit outcome, SH-03 failed rule, SH-04 counts, SH-06 every course and narrow]
+ * [REQ SH-01 every submission in order (requests not answered yet included), SH-02 explicit outcome, SH-03 failed rule, SH-04 counted,
+ * outstanding and returned, SH-06 every course and narrow, SH-07 each completed evaluation in full, read only]
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
@@ -17,17 +18,18 @@ import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/st
 import { RecordFigures, RecordFilters, ResultLabel } from "@/components/lab/student2/record-parts"
 import { LINK_IN_TABLE, StateLabel } from "@/components/lab/student/parts"
 import { shortDate } from "@/lib/lab/student"
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { EMPTY_RECORD_FILTER, filterRecord, groupBySkill, recordAttemptLine, recordCounts, recordCourses, recordRows, student2Href, type RecordFilter } from "@/lib/lab/student2"
+import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { EMPTY_RECORD_FILTER, filterRecord, groupBySkill, recordAttemptLine, recordCourses, recordFigures, recordRows, student2Href, type RecordFilter } from "@/lib/lab/student2"
+import { EVALUATION_PARAM, StudentEvaluationSheet, ViewEvaluationButton } from "@/components/lab/student/evaluation-sheet"
 
 const GROUP_LIMIT = 12
 
 export function StudentRecordA() {
   return (
     <Student2Frame
-      title="Record"
+      title="My evaluations"
       primary={(c) => ({ label: "Share record", href: student2Href("share-record", {}, c.studentId) })}
-      empty={(c) => <EmptyBlock title="No evaluations yet" body="Each evaluation appears here with whether it counted and why." action={{ label: "Send for evaluation", href: student2Href("request-signoff", {}, c.studentId) }} />}
+      empty={(c) => <EmptyBlock title="No evaluations yet" body="Each evaluation appears here with whether it counted and why." action={{ label: `Log ${aNoun()}`, href: student2Href("request-signoff", {}, c.studentId) }} />}
     >
       {(ctx) => <BySkill ctx={ctx} />}
     </Student2Frame>
@@ -38,9 +40,13 @@ export function useRecord(ctx: Student2Ctx) {
   const rows = React.useMemo(() => recordRows(ctx.state, ctx.model), [ctx.state, ctx.model])
   const [f, setF] = React.useState<RecordFilter>(EMPTY_RECORD_FILTER)
   const shown = React.useMemo(() => filterRecord(rows, f), [rows, f])
-  const counts = React.useMemo(() => recordCounts(filterRecord(rows, { ...f, result: "all" })), [rows, f])
+  // SH-04: counted, outstanding and returned, each request once, under the other filters (never under the result filter itself).
+  const counts = React.useMemo(() => recordFigures(filterRecord(rows, { ...f, result: "all" })), [rows, f])
   const courses = React.useMemo(() => recordCourses(rows), [rows])
-  return { rows, shown, f, set: (p: Partial<RecordFilter>) => setF((x) => ({ ...x, ...p })), clear: () => setF(EMPTY_RECORD_FILTER), counts, courses }
+  // SH-07: a completed evaluation opens in full, read only, beside the list (?evaluation=, so Back closes it).
+  const openEval = (id: string) => ctx.setParams({ [EVALUATION_PARAM]: id })
+  const sheet = <StudentEvaluationSheet state={ctx.state} studentId={ctx.studentId} evaluationId={ctx.param(EVALUATION_PARAM)} onClose={() => ctx.setParams({ [EVALUATION_PARAM]: null })} />
+  return { rows, shown, f, set: (p: Partial<RecordFilter>) => setF((x) => ({ ...x, ...p })), clear: () => setF(EMPTY_RECORD_FILTER), counts, courses, openEval, sheet }
 }
 
 function BySkill({ ctx }: { ctx: Student2Ctx }) {
@@ -96,6 +102,7 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
                   <TableHead className="hidden md:table-cell">Evaluator</TableHead>
                   <TableHead className="hidden lg:table-cell">Setting</TableHead>
                   <TableHead>Why</TableHead>
+                  <TableHead className="w-36"><span className="sr-only">Evaluation</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -104,7 +111,7 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
                   return (
                     <React.Fragment key={g.skillId}>
                       <TableRow className={expanded ? "bg-muted/40 hover:bg-muted/40" : ""}>
-                        <TableCell colSpan={5} className="py-1.5">
+                        <TableCell colSpan={6} className="py-1.5">
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                             <Button type="button" variant="ghost" size="icon-sm" aria-expanded={expanded} aria-label={`${expanded ? "Hide" : "Show"} evaluations for ${g.skillName}`} onClick={() => setOpen((o) => ({ ...o, [g.skillId]: !expanded }))}>
                               <i className={cn("fa-light", expanded ? "fa-chevron-down" : "fa-chevron-right")} aria-hidden="true" />
@@ -123,6 +130,7 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
                               <TableCell className="hidden md:table-cell">{x.evaluatorName}</TableCell>
                               <TableCell className="hidden text-muted-foreground lg:table-cell">{x.setting}</TableCell>
                               <TableCell className="min-w-48 whitespace-normal text-sm">{x.why}</TableCell>
+                              <TableCell className="text-end">{x.evaluationId ? <ViewEvaluationButton name={`${x.skillName}, ${shortDate(x.date)}`} onOpen={() => r.openEval(x.evaluationId!)} /> : null}</TableCell>
                             </TableRow>
                           ))
                         : null}
@@ -140,6 +148,7 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
           ) : null}
         </CardContent>
       </Card>
+      {r.sheet}
     </div>
   )
 }

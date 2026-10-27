@@ -33,7 +33,8 @@ import {
   NotCreatedList,
   ReadingState,
   ReviewSummary,
-  TargetLine,
+  TargetField,
+  TargetSummary,
   useCancel,
 } from "@/components/lab/import/import-parts"
 import { useImportSession, type ImportSession } from "@/components/lab/import/use-import-session"
@@ -150,7 +151,7 @@ export function AdminImportB() {
   const [activeId, setActiveId] = React.useState<string | null>(null)
   const [showAll, setShowAll] = React.useState(false)
   const { onCancel, dialog } = useCancel(session, (href) => router.push(href))
-  const title = <LaterTitle>{`Import ${skillNounPlural()}`}</LaterTitle>
+  const title = <LaterTitle>Bulk upload</LaterTitle>
   const done = session.phase === "done"
   const actions = done ? undefined : <Button type="button" variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
 
@@ -170,13 +171,13 @@ export function AdminImportB() {
   let footer: StickyFooterProps | null = null
   if (done) footer = { secondary: { label: "Import another file", onClick: session.reset }, primary: { label: "Open the library", href: LIBRARY_HREF } }
   else if (reviewing) {
-    const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? "Name the new list first." : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
+    const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? `Name the new group of ${skillNounPlural()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
     footer = {
-      summary: <span className="flex flex-wrap items-center gap-x-3 gap-y-1"><TargetLine session={session} /><NameThisImport session={session} /></span>,
+      summary: <span className="flex flex-wrap items-center gap-x-3 gap-y-1"><TargetSummary session={session} /><NameThisImport session={session} /></span>,
       context: reason ? undefined : "All decided.",
       primary: { label: `Create ${countSkills(total)}`, onClick: session.confirm, disabled: !!reason, disabledReason: reason },
     }
-  } else footer = { context: session.phase === "reading" ? "Reading the file" : "Nothing is created until you confirm." }
+  } else footer = { context: session.phase === "reading" ? "Reading the file" : undefined }
 
   return (
     <div data-page-type="split" className="flex w-full flex-col" data-import-lab="B">
@@ -184,14 +185,14 @@ export function AdminImportB() {
         {done ? (
           <div className="flex max-w-[60rem] flex-col gap-6"><DoneBanner session={session} /><NotCreatedList session={session} /></div>
         ) : session.phase === "empty" ? (
-          <div className="flex max-w-[60rem] flex-col gap-4" data-region="panel">
+          <div className="flex max-w-[60rem] flex-col gap-6" data-region="panel">
+            <TargetField session={session} />
             <Dropzone onFiles={(f) => session.readFiles(f)} />
-            <TargetLine session={session} />
           </div>
         ) : session.phase === "reading" ? (
           <div className="max-w-[60rem]" data-region="panel"><ReadingState session={session} /></div>
         ) : session.phase === "failed" ? (
-          <div className="flex max-w-[60rem] flex-col gap-4" data-region="panel"><FailedState session={session} /><TargetLine session={session} /></div>
+          <div className="flex max-w-[60rem] flex-col gap-6" data-region="panel"><TargetField session={session} /><FailedState session={session} /></div>
         ) : (
           <>
             <ReviewSummary session={session} />

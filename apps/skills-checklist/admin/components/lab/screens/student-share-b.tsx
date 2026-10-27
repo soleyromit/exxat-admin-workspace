@@ -18,9 +18,10 @@ import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/st
 import { TOUCH_ROW } from "@/components/lab/student2/touch"
 import { LinkPanel, SharePreview, ShareStatus, downloadClr, useShareLink } from "@/components/lab/student2/share-parts"
 import { ShareSkeleton } from "./student-share-a"
-import { skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, skillNounPlural } from "@/lib/lab/terms"
 import { fmt } from "@/lib/v2/format"
 import { shareModel, student2Href } from "@/lib/lab/student2"
+import { TYPE } from "@/components/lab/type-scale"
 
 type Recipient = "employer" | "school" | "board"
 
@@ -35,8 +36,8 @@ export function StudentShareB() {
     <Student2Frame
       title="Share record"
       width="wide"
-      back={(c) => ({ label: "Record", href: student2Href("record", {}, c.studentId) })}
-      empty={(c) => <EmptyBlock title="Nothing to share yet" body={`Achieved ${skillNounPlural()} appear here once evaluators sign them off.`} action={{ label: "Send for evaluation", href: student2Href("request-signoff", {}, c.studentId) }} />}
+      back={(c) => ({ label: "My evaluations", href: student2Href("record", {}, c.studentId) })}
+      empty={(c) => <EmptyBlock title="Nothing to share yet" body={`Achieved ${skillNounPlural()} appear here once evaluators sign them off.`} action={{ label: `Log ${aNoun()}`, href: student2Href("request-signoff", {}, c.studentId) }} />}
       loading={<ShareSkeleton />}
     >
       {(ctx) => <RecipientFirst ctx={ctx} />}
@@ -118,7 +119,7 @@ function Figure({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col-reverse gap-0.5" data-figure="kpi">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="font-heading text-2xl font-semibold leading-none tabular-nums text-foreground">{fmt(value)}</dd>
+      <dd className={`${TYPE.figure} text-foreground`}>{fmt(value)}</dd>
     </div>
   )
 }

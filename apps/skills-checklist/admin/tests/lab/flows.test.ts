@@ -76,7 +76,7 @@ describe("flows.json", () => {
   it("matches the spec's set up skills mapping exactly", () => {
     const f = findFlow("set-up-skills")!
     // Granola 2026-10-26 items 6 and 8: Library, Add, Configure, Publish, Assign, Map; import is Phase 2, an optional side step.
-    expect(mainSteps(f).map((s) => s.label)).toEqual(["Library", "Add a skill", "Configure", "Impact and publish", "Assign to cohort or group", "Map to courses"])
+    expect(mainSteps(f).map((s) => s.label)).toEqual(["Library", "Add a skill", "Configure the skill", "Check and save", "Groups of skills", "Assign skills to student groups", "Course mapping"])
     const imp = f.steps.find((s) => s.id === "import")!
     expect(imp).toMatchObject({ side: true, after: "add", tag: "Later" })
     const row = (id: string) => ["1", "2", "3"].map((s) => variantLetter(f, f.steps.find((x) => x.id === id)!, s)).join("")
@@ -86,6 +86,10 @@ describe("flows.json", () => {
     expect(row("import")).toBe("ABC")
     expect(row("configure")).toBe("ABC")
     expect(row("assign")).toBe("ABB")
+    // Sankalp A4, optional: groups of skills before assigning; the assign step opens in assign mode by its params.
+    expect(f.steps.find((s) => s.id === "lists")).toMatchObject({ tag: "Optional" })
+    expect(row("lists")).toBe("ABB")
+    expect(resolveStep("set-up-skills", "assign", "1")!.params).toEqual({ view: "assign" })
     expect(row("publish")).toBe("ABC")
     expect(row("map")).toBe("ABA")
   })
@@ -144,11 +148,12 @@ describe("resolvers", () => {
 
   it("names previous and next steps, with ends open and side steps anchored", () => {
     const f = findFlow("set-up-skills")!
-    expect(neighbours(f, "library")).toMatchObject({ index: 1, total: 6, prev: undefined, next: { id: "add" } })
-    expect(neighbours(f, "configure")).toMatchObject({ index: 3, total: 6, prev: { id: "add" }, next: { id: "publish" } })
-    expect(neighbours(f, "import")).toMatchObject({ index: 2, total: 6, prev: { id: "add" }, next: { id: "configure" } })
-    expect(neighbours(f, "assign")).toMatchObject({ index: 5, total: 6, prev: { id: "publish" }, next: { id: "map" } })
-    expect(neighbours(f, "map")).toMatchObject({ index: 6, total: 6, prev: { id: "assign" }, next: undefined })
+    expect(neighbours(f, "library")).toMatchObject({ index: 1, total: 7, prev: undefined, next: { id: "add" } })
+    expect(neighbours(f, "configure")).toMatchObject({ index: 3, total: 7, prev: { id: "add" }, next: { id: "publish" } })
+    expect(neighbours(f, "import")).toMatchObject({ index: 2, total: 7, prev: { id: "add" }, next: { id: "configure" } })
+    expect(neighbours(f, "lists")).toMatchObject({ index: 5, total: 7, prev: { id: "publish" }, next: { id: "assign" } })
+    expect(neighbours(f, "assign")).toMatchObject({ index: 6, total: 7, prev: { id: "lists" }, next: { id: "map" } })
+    expect(neighbours(f, "map")).toMatchObject({ index: 7, total: 7, prev: { id: "assign" }, next: undefined })
     const p = findFlow("my-progress")!
     expect(neighbours(p, "offline")).toMatchObject({ index: 1, prev: { id: "home" }, next: { id: "detail" } })
   })

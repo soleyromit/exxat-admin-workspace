@@ -4,7 +4,9 @@
  * Category and Tags pickers for every Add a skill path (sheet A, inline row B, add several C) and the edit sheet.
  * REQ SL-03 (one optional category), SL-04 (any number of tags, crossing categories), SL-05 (created at the point of need,
  * no separate setup), decision D-X28. Spec: skill-setup-journey/02 section 6 (Popover + Command, last item Create "{typed}").
- * - The vocabulary is the program's own: options come from its live library (pickerOptions); nothing ships (SL-01).
+ * - The vocabulary is the program's own and shared with Settings (useVocabOptions over lib/v2/vocabulary.ts); nothing ships
+ *   (SL-01). Only active entries are offered; a value already on the skill that has since been deactivated stays, marked
+ *   "Inactive", so it can be removed deliberately (SL-06).
  * - DS has no Combobox or tag input: Category is DS Popover + Command; Tags is DS InputGroup + InputGroupInput + Badge +
  *   Button, with the suggestions in a DS Popover (registry entry in docs/governance/ds-adoption.md).
  * - Category is a single-choice select (value plus chevron): "None" clears it.
@@ -18,7 +20,19 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@exxatdesignux/ui/components/ui/command"
 import { InputGroup, InputGroupInput } from "@exxatdesignux/ui/components/ui/input-group"
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
-import { mergeTags, normName } from "@/lib/lab/library"
+import { mergeTags, normName, vocabPickerOptions } from "@/lib/lab/library"
+import { useV2State } from "@/lib/v2/react"
+
+/** The shared categories and tags (Settings writes them), for the pickers. */
+export function useVocabOptions() {
+  const state = useV2State()
+  return React.useMemo(() => vocabPickerOptions(state), [state])
+}
+
+/** "Inactive" beside a value that was deactivated after it was assigned (SL-06). */
+function InactiveMark() {
+  return <span className="shrink-0 text-xs text-muted-foreground">Inactive</span>
+}
 
 const clean = (s: string) => s.trim().replace(/\s+/g, " ")
 
@@ -32,17 +46,20 @@ export interface CategoryPickerProps {
   labelId: string
   value: string
   options: readonly string[]
+  /** Deactivated names: never offered, marked "Inactive" when already the value. */
+  inactive?: readonly string[]
   onChange: (v: string) => void
   size?: "sm" | "default"
   className?: string
 }
 
-export function CategoryPicker({ id, labelId, value, options, onChange, size = "default", className }: CategoryPickerProps) {
+export function CategoryPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", className }: CategoryPickerProps) {
+  const valueInactive = !!value && inactive.some((x) => normName(x) === normName(value))
   const [open, setOpen] = React.useState(false)
   const [q, setQ] = React.useState("")
   const typed = clean(q)
   const all = value && !options.some((o) => normName(o) === normName(value)) ? [value, ...options] : [...options]
-  const known = all.some((o) => normName(o) === normName(typed))
+  const known = [...all, ...inactive].some((o) => normName(o) === normName(typed))
   const pick = (v: string) => { onChange(v); setOpen(false); setQ("") }
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQ("") }}>
@@ -56,7 +73,10 @@ export function CategoryPicker({ id, labelId, value, options, onChange, size = "
           className={`justify-between gap-2 font-normal ${className ?? ""}`}
           data-category-picker
         >
-          <span id={`${id}-value`} className={`truncate ${value ? "" : "text-muted-foreground"}`}>{value || "None"}</span>
+          <span id={`${id}-value`} className={`flex min-w-0 items-center gap-2 ${value ? "" : "text-muted-foreground"}`}>
+            <span className="truncate">{value || "None"}</span>
+            {valueInactive ? <InactiveMark /> : null}
+          </span>
           <i className="fa-light fa-chevron-down text-xs text-muted-foreground" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
@@ -69,7 +89,7 @@ export function CategoryPicker({ id, labelId, value, options, onChange, size = "
             aria-label="Find or create a category"
           />
           <CommandList className="max-h-64">
-            <CommandEmpty>{typed ? "No category matches." : "No categories yet. Type one to create it."}</CommandEmpty>
+            {typed && !known ? null : <CommandEmpty>{typed ? "No category matches." : "No categories yet. Type one to create it."}</CommandEmpty>}
             {value || all.length ? (
               <CommandGroup>
                 {value ? <CommandItem value="__none" keywords={["none"]} onSelect={() => pick("")}><CheckMark on={false} />None</CommandItem> : null}
@@ -77,14 +97,16 @@ export function CategoryPicker({ id, labelId, value, options, onChange, size = "
                   <CommandItem key={o} value={o} onSelect={() => pick(o)}>
                     <CheckMark on={o === value} />
                     <span className="truncate">{o}</span>
+                    {o === value && valueInactive ? <InactiveMark /> : null}
                   </CommandItem>
                 ))}
               </CommandGroup>
             ) : null}
             {typed && !known ? (
               <>
-                <CommandSeparator />
-                <CommandGroup>
+                <CommandSeparator alwaysRender />
+                {/* forceMount on the group too: cmdk hides a group whose items it filtered, which hid Create "{typed}". */}
+                <CommandGroup forceMount>
                   <CommandItem forceMount value={`__create ${typed}`} onSelect={() => pick(typed)} data-create-category>
                     {`Create "${typed}"`}
                   </CommandItem>
@@ -104,6 +126,8 @@ export interface TagsPickerProps {
   labelId: string
   value: readonly string[]
   options: readonly string[]
+  /** Deactivated tags: never suggested, marked "Inactive" on a chip the skill already carries. */
+  inactive?: readonly string[]
   onChange: (tags: string[]) => void
   size?: "sm" | "default"
   describedBy?: string
@@ -119,7 +143,8 @@ const MAX_SUGGESTIONS = 8
  * the suggestions. No chevron and no dropdown trigger: Category is the select, Tags is the text box.
  * ARIA: the text box is a combobox (aria-expanded, aria-controls, aria-activedescendant) over a listbox of options.
  */
-export function TagsPicker({ id, labelId, value, options, onChange, size = "default", describedBy }: TagsPickerProps) {
+export function TagsPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", describedBy }: TagsPickerProps) {
+  const isInactive = (t: string) => inactive.some((x) => normName(x) === normName(t))
   const [text, setText] = React.useState("")
   const [open, setOpen] = React.useState(false)
   const [active, setActive] = React.useState(0)
@@ -130,7 +155,8 @@ export function TagsPicker({ id, labelId, value, options, onChange, size = "defa
   const matches = mergeTags([], options)
     .filter((o) => !has(o) && (!typed || normName(o).includes(normName(typed))))
     .slice(0, MAX_SUGGESTIONS)
-  const exact = typed && (options.some((o) => normName(o) === normName(typed)) || has(typed))
+  // An inactive tag is neither suggested nor re-created under the same name (SL-06).
+  const exact = typed && (options.some((o) => normName(o) === normName(typed)) || has(typed) || isInactive(typed))
   const rows: Array<{ kind: "tag" | "create"; label: string }> = [
     ...matches.map((m) => ({ kind: "tag" as const, label: m })),
     ...(typed && !exact ? [{ kind: "create" as const, label: typed }] : []),
@@ -190,6 +216,7 @@ export function TagsPicker({ id, labelId, value, options, onChange, size = "defa
                 <li key={t}>
                   <Badge variant="secondary" className="gap-1 pe-0.5">
                     {t}
+                    {isInactive(t) ? <InactiveMark /> : null}
                     <Button type="button" variant="ghost" size="icon-xs" aria-label={`Remove tag ${t}`} onClick={() => remove(t)}>
                       <i className="fa-light fa-xmark" aria-hidden="true" />
                     </Button>

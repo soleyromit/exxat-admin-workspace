@@ -89,16 +89,16 @@ export function EvaluatorFormB() {
                 {skills.map((k, i) => (
                   <WizardPanel key={k.id} step={i} className="flex flex-col gap-4">
                     <div id={`ev-b-step-${i}`} tabIndex={-1} className="flex items-start justify-between gap-3 outline-none">
-                      <WizardStepHeading id={k.id} className="mb-0 text-lg">{k.name}</WizardStepHeading>
+                      <WizardStepHeading id={k.id} className="mb-0">{k.name}</WizardStepHeading>
                       {k.attempt ? <Badge variant="secondary" className="shrink-0">{k.attempt.limit ? `Attempt ${k.attempt.n} of ${k.attempt.limit}` : `Attempt ${k.attempt.n}`}</Badge> : null}
                     </div>
-                    <SelfNote skill={k} student={req.student.first} />
+                    <SelfNote skill={k} student={req.student.first} requestNote={req.studentNote} />
                     <SkillFields m={{ ...m, issuesFor: (id) => (checked.has(i) || m.showErrors ? m.issues.filter((x) => x.skillId === id) : []) }} skill={k} compactQuestions />
                   </WizardPanel>
                 ))}
                 <WizardPanel step={last} className="flex flex-col gap-3">
                   <div id={`ev-b-step-${last}`} tabIndex={-1} className="outline-none">
-                    <WizardStepHeading id="review" className="mb-0 text-lg">Review</WizardStepHeading>
+                    <WizardStepHeading id="review" className="mb-0">Review</WizardStepHeading>
                   </div>
                   {m.showErrors && m.issues.length ? (
                     <div ref={m.summaryRef} tabIndex={-1} className="outline-none" data-region="errors">

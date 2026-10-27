@@ -71,7 +71,7 @@ export function RulesTable({ rows, scope, role, compact = false }: { rows: Appro
         header: () => <span className="sr-only">Change rule</span>,
         cell: (r) => (
           <Button asChild variant="ghost" size="sm">
-            <Link href={configureHref(r.skillId)} aria-label={`Change the rule for ${r.name}`}>Change rule</Link>
+            <Link href={configureHref(r.skillId)} aria-label={`Change rule for ${r.name}`}>Change rule</Link>
           </Button>
         ),
       })

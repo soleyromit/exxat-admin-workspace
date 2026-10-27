@@ -11,7 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesig
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { story } from "@/lib/lab/reviewer"
 import { ReviewItemFrame } from "@/components/lab/reviewer/review-item-frame"
-import { CompareTable, DecisionBar, Facts, Feedback, RuleCheckLine, Story } from "@/components/lab/reviewer/review-parts"
+import { CompareTable, Facts, Feedback, ReviewNoteField, RuleCheckLine, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
 
 export function ReviewerReviewItemB() {
   return (
@@ -30,8 +30,9 @@ export function ReviewerReviewItemB() {
                   <CardTitle className="text-sm font-medium">Your decision</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
+                  <WhyHeld row={d.row} />
                   {ctx.checks.map((c) => <RuleCheckLine key={c.skillId} check={c} />)}
-                  <DecisionBar row={d.row} next={ctx.next} />
+                  <ReviewNoteField />
                 </CardContent>
               </Card>
             </div>

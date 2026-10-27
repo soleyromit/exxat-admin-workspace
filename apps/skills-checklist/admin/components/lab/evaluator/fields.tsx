@@ -54,10 +54,16 @@ export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, de
   )
 }
 
-/** What the student supplied: self-rating and note (EV-04). Shown as context, quieter than the evaluator's own answers. */
-export function SelfNote({ skill, student }: { skill: EvSkill; student: string }) {
+/**
+ * What the student supplied: self-rating and note (EV-04). Shown as context, quieter than the evaluator's own answers. The note
+ * is shown in full (no clamp): it is the student's account, and the evaluator needs all of it. A note that repeats the request's
+ * own note (shown once in the header) is not said twice.
+ */
+export function SelfNote({ skill, student, requestNote = "" }: { skill: EvSkill; student: string; requestNote?: string }) {
   if (!skill.self) return null
-  const { rating, note } = skill.self
+  const { rating } = skill.self
+  const note = skill.self.note.trim() && skill.self.note.trim() !== requestNote.trim() ? skill.self.note : ""
+  if (!rating && !note) return null
   return (
     // The student's own rating and words: record content, quoted (density rule: user-authored content is data, not prose).
     <div className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-2 text-sm" data-user-content>
@@ -67,7 +73,7 @@ export function SelfNote({ skill, student }: { skill: EvSkill; student: string }
           {rating}
         </p>
       ) : null}
-      {note ? <p className="line-clamp-2 text-muted-foreground">&ldquo;{note}&rdquo;</p> : null}
+      {note ? <p className="whitespace-pre-line break-words text-muted-foreground" data-student-note>&ldquo;{note}&rdquo;</p> : null}
     </div>
   )
 }
@@ -191,9 +197,9 @@ export function StateBanners({ m, req }: { m: EvaluatorModel; req: EvRequest }) 
   )
 }
 
-/** "Maya Ferreira · NURS 350 · Harbor General, 4 West, Inpatient": who and where, in one line of data. */
+/** "NURS 350 · Harbor General, 4 West, Inpatient · Performed Oct 20": course, where and when, in one line of data (EV-04). */
 export function contextLine(req: EvRequest): string {
-  return [req.course.code, req.where ? `${req.where.location}${req.where.setting ? `, ${req.where.setting}` : ""}` : null].filter(Boolean).join(" · ")
+  return [req.course.code, req.where ? `${req.where.location}${req.where.setting ? `, ${req.where.setting}` : ""}` : null, req.performed ? `Performed ${req.performed}` : null].filter(Boolean).join(" · ")
 }
 
 export const skillsWord = (n: number) => `${n} ${n === 1 ? skillNoun() : skillNounPlural()}`
@@ -206,6 +212,13 @@ export function RequestSummary({ req, line }: { req: EvRequest; line: string }) 
   return (
     <div className="flex flex-col gap-1">
       <PageHeader title={req.student.name} subtitle={<span data-viz-label>{line}</span>} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
+      {/* The student's note on the request, in full and once (EV-04): record content, quoted, so it is data, not prose. */}
+      {req.studentNote ? (
+        <figure className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-2 text-sm" data-user-content data-request-note>
+          <figcaption className="text-muted-foreground">{`Note from ${req.student.first}`}</figcaption>
+          <blockquote className="whitespace-pre-line break-words text-foreground">&ldquo;{req.studentNote}&rdquo;</blockquote>
+        </figure>
+      ) : null}
       {req.sample ? <Badge variant="outline" className="w-fit">Lab sample</Badge> : null}
     </div>
   )

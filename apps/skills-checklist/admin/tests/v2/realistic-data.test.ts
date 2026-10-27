@@ -145,7 +145,7 @@ describe("the facts registry is unchanged by the realistic pass", () => {
     expect(facts(s)).toEqual({
       studentsTotal: 123, studentsInScope: 123, mandatoryRecords: 1547, mandatoryAchieved: 760, achievedPct: 49, behind: 28, waitingRequests: 251,
       awaitingApproval: 35, awaitingApprovalEvaluations: 41, awaitingApprovalStatusRows: 20, awaitingApprovalUnverifiedRows: 19, unverifiedEvaluators: 14,
-      skillsTotal: 178, skillsConfigured: 162, skillsNotConfigured: 16, skillsInactive: 2, requiredToGraduate: 52, evaluators: 174, sites: 120, placementsEnding: 44,
+      skillsTotal: 178, skillsConfigured: 147, skillsNotConfigured: 31, skillsInactive: 2, requiredToGraduate: 52, evaluators: 174, sites: 120, placementsEnding: 44,
     })
     expect((s.cohorts ?? []).map((c) => c.studentCount)).toEqual([38, 43, 42])
     expect(students.filter((p) => p.trackIds?.includes("trk-accelerated"))).toHaveLength(14)

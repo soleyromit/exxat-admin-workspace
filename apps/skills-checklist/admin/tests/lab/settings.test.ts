@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { createSeed } from "@/lib/v2/seed"
-import { EMPTY_SETTINGS, categoryRows, clinicalSettingRows, instructorRows, settingId, tagRows, usesOf, validateEntry } from "@/lib/lab/settings"
+import { addVocab, deleteVocab, setVocabActive } from "@/lib/v2/vocabulary"
+import { categoryRows, clinicalSettingRows, instructorRows, tagRows, usesOf, validateEntry } from "@/lib/lab/settings"
 
 const seed = createSeed()
 
@@ -37,15 +38,18 @@ describe("settings lists (SL-03 to SL-08)", () => {
     for (const r of rows) expect(usesOf(seed, "instructors", r.name, r.id)).toHaveLength(r.evaluations)
   })
 
-  it("applies the overlay: added entries are deletable, deactivated ones stay listed as inactive", () => {
+  it("categories come from the shared vocabulary: added entries are deletable, deactivated ones stay listed as inactive", () => {
     const used = categoryRows(seed)[0]
-    const o = { ...EMPTY_SETTINGS, added: [{ tab: "categories" as const, name: "Pediatrics" }], inactive: [used.id] }
-    const rows = categoryRows(seed, o)
-    const added = rows.find((r) => r.name === "Pediatrics")!
-    expect(added.isNew).toBe(true)
-    expect(added.blocked).toBeNull()
+    const added = addVocab(seed, "categories", "Pediatrics", "u", "2026-10-27T00:00:00Z")
+    if (!added.ok) throw new Error(added.error)
+    const off = setVocabActive(added.state, "categories", used.id, false, "u", "2026-10-27T00:00:00Z")
+    if (!off.ok) throw new Error(off.error)
+    const rows = categoryRows(off.state)
+    const ped = rows.find((r) => r.name === "Pediatrics")!
+    expect(ped.blocked).toBeNull()
     expect(rows.find((r) => r.id === used.id)!.active).toBe(false)
-    expect(categoryRows(seed, { ...o, deleted: [settingId("categories", "Pediatrics")] }).some((r) => r.name === "Pediatrics")).toBe(false)
+    const del = deleteVocab(off.state, "categories", ped.id, "u", "2026-10-27T00:00:00Z")
+    expect(del.ok && categoryRows(del.state).some((r) => r.name === "Pediatrics")).toBe(false)
   })
 
   it("validates inline create", () => {

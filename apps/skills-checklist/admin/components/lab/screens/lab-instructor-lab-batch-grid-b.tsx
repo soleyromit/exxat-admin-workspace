@@ -3,7 +3,8 @@
 /**
  * Lab batch grid, variant B: roll call. One skill at a time; every student is a row with touch-size answer chips (the
  * program's labels, or Absent). Mental model: taking attendance at the bench with a tablet. Same session state as A
- * (search, group, chosen skills, one count in the save bar, lab label once).
+ * (search, group, chosen skills, one count in the save bar, lab label once). Feedback (EV-06): a Feedback button per row once a
+ * result is recorded; a skill that requires it says so on the skill line, and Save names any result still missing it.
  */
 import { capitalize, skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
@@ -16,7 +17,7 @@ import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { useIsMobile } from "@exxatdesignux/ui/hooks/use-mobile"
 import { EvaluatorFrame } from "@/components/lab/evaluator/frame"
 import { ChoiceTiles } from "@/components/lab/evaluator/fields"
-import { LabHeader, LabSaveBar, LabSaved, LabToolbar } from "@/components/lab/evaluator/lab-grid-parts"
+import { FeedbackRequiredCue, LabFeedback, LabHeader, LabSaveBar, LabSaved, LabToolbar } from "@/components/lab/evaluator/lab-grid-parts"
 import { useLabGrid } from "@/components/lab/evaluator/use-lab-grid"
 
 export function LabInstructorLabBatchGridB() {
@@ -48,7 +49,10 @@ export function LabInstructorLabBatchGridB() {
             </CardContent>
             {skill ? (
               <CardContent className="flex min-h-12 items-center justify-between gap-3 border-b border-border py-2">
-                <p className="min-w-0 truncate text-sm font-medium text-foreground">{skill.name}</p>
+                <p className="flex min-w-0 flex-col">
+                  <span className="truncate text-sm font-medium text-foreground">{skill.name}</span>
+                  <FeedbackRequiredCue skill={skill} />
+                </p>
                 {/* Hidden, not disabled, once every present student has a mark (strategy/07: no disabled control above the fold). */}
                 {left > 0 ? <Button type="button" variant="outline" size="sm" onClick={() => g.fillColumn(skill.id)}>{`Mark the rest ${l.met}`}</Button> : null}
               </CardContent>
@@ -57,7 +61,7 @@ export function LabInstructorLabBatchGridB() {
               <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow>
                   <TableHead scope="col" className="ps-3">{`Student (${g.rows.length})`}</TableHead>
-                  <TableHead scope="col" className="hidden w-[15rem] md:table-cell">Result</TableHead>
+                  <TableHead scope="col" className="hidden w-[18rem] md:table-cell">Result and feedback</TableHead>
                   <TableHead scope="col" className="w-20 pe-3 text-end">Absent</TableHead>
                 </TableRow>
               </TableHeader>
@@ -73,7 +77,14 @@ export function LabInstructorLabBatchGridB() {
                             <p className="text-xs text-muted-foreground">{`${r.cohort}, ${r.group}`}</p>
                             {isMobile ? (
                               <div className="mt-2">
-                                {absent ? <span className="text-sm text-muted-foreground">Absent, no result</span> : <ChoiceTiles id={id} labelId={`${id}-label`} options={[{ value: "met", label: l.met }, { value: "not-met", label: l.notMet }]} value={g.mark(r.id, skill.id)} onChange={(v) => g.setMark(r.id, skill.id, v as "met" | "not-met")} />}
+                                {absent ? (
+                                  <span className="text-sm text-muted-foreground">Absent, no result</span>
+                                ) : (
+                                  <div className="flex flex-col gap-2">
+                                    <ChoiceTiles id={id} labelId={`${id}-label`} options={[{ value: "met", label: l.met }, { value: "not-met", label: l.notMet }]} value={g.mark(r.id, skill.id)} onChange={(v) => g.setMark(r.id, skill.id, v as "met" | "not-met")} />
+                                    {g.mark(r.id, skill.id) ? <LabFeedback g={g} row={r} skill={skill} variant="text" /> : null}
+                                  </div>
+                                )}
                               </div>
                             ) : null}
                           </TableCell>
@@ -81,7 +92,12 @@ export function LabInstructorLabBatchGridB() {
                             {isMobile ? null : absent ? (
                               <span className="text-sm text-muted-foreground">Absent, no result</span>
                             ) : (
-                              <ChoiceTiles id={id} labelId={`${id}-label`} options={[{ value: "met", label: l.met }, { value: "not-met", label: l.notMet }]} value={g.mark(r.id, skill.id)} onChange={(v) => g.setMark(r.id, skill.id, v as "met" | "not-met")} />
+                              <div className="flex items-center gap-2">
+                                <div className="min-w-0 flex-1">
+                                  <ChoiceTiles id={id} labelId={`${id}-label`} options={[{ value: "met", label: l.met }, { value: "not-met", label: l.notMet }]} value={g.mark(r.id, skill.id)} onChange={(v) => g.setMark(r.id, skill.id, v as "met" | "not-met")} />
+                                </div>
+                                {g.mark(r.id, skill.id) ? <LabFeedback g={g} row={r} skill={skill} /> : null}
+                              </div>
                             )}
                           </TableCell>
                           <TableCell className="pe-3 py-1.5 text-end">

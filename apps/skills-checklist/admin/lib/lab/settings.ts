@@ -1,4 +1,5 @@
 import type { V2State } from "@/lib/v2/types"
+import { getVocabulary } from "@/lib/v2/vocabulary"
 
 /**
  * Program settings (REQ SL-03 to SL-08; AUDIT T1: no settings screen exists, `GET /v2/admin/settings` 404).
@@ -19,37 +20,40 @@ export const isSettingsTab = (v: string | null | undefined): v is SettingsTab =>
 export const SETTINGS_TAB_LABEL: Record<SettingsTab, string> = { categories: "Categories", tags: "Tags", settings: "Clinical settings", instructors: "Lab instructors" }
 
 /**
- * Naming (CALL 10-26 item 7): what the program calls the things students get signed off on. Not a list, so it is a page
- * section beside the four lists (a tab in A, a row in B), placed last so Categories stays the default landing. The value
- * lives in lib/lab/terms.ts; every screen that calls skillNoun() or skillNounPlural() follows it.
+ * Naming has no Settings UI (Romit 2026-10-27: "naming can be changed in the backend, so we need to remove this tab for now";
+ * ledger D-L25): the program's noun is set in data (lib/lab/terms.ts keeps it and every screen follows it); an old
+ * `?tab=naming` link lands on the Settings landing.
  */
-export type SettingsSection = SettingsTab | "naming"
-export const SETTINGS_SECTIONS: SettingsSection[] = [...SETTINGS_TABS, "naming"]
+export type SettingsSection = SettingsTab | "evaluators"
+export const SETTINGS_SECTIONS: SettingsSection[] = [...SETTINGS_TABS, "evaluators"]
 export const isSettingsSection = (v: string | null | undefined): v is SettingsSection => SETTINGS_SECTIONS.includes(v as SettingsSection)
-export const NAMING_LABEL = "Naming"
-export const sectionLabel = (s: SettingsSection): string => (s === "naming" ? NAMING_LABEL : SETTINGS_TAB_LABEL[s])
-/** Helper chips under the fields: one click fills both. "Skill" is the default and the way back. */
-export const NAMING_EXAMPLES: ReadonlyArray<{ one: string; many: string }> = [
-  { one: "skill", many: "skills" },
-  { one: "competency", many: "competencies" },
-  { one: "EPA", many: "EPAs" },
-]
+/**
+ * Evaluators (Romit 2026-10-27, "sure"; ledger D-L24): the full list of people who sign (preceptors, clinical faculty, lab
+ * instructors) is a Settings section, for lookup and edits. Lab instructors are the same records (people of kind
+ * "lab-instructor" in the directory), so the former Lab instructors list is this section with the role filter set to Lab
+ * instructor; adding one is "Add an evaluator" with that role (name and email, REQ SL-08).
+ */
+export const EVALUATORS_LABEL = "Evaluators"
+export const sectionLabel = (s: SettingsSection): string => (s === "evaluators" ? EVALUATORS_LABEL : SETTINGS_TAB_LABEL[s])
 
-export interface NamingErrors {
-  one?: string
-  many?: string
+/**
+ * Two pages share these lists (Romit 2026-10-27, "why are categories and tags at Settings? When I click on them, it switches to
+ * the Skills navigation"; ledger D-L21): "Categories and tags" is its own page under Skills (admin/categories-tags) and Settings
+ * (admin/settings) keeps clinical settings and evaluators. Each page shows only its own sections; the first is its landing.
+ */
+export type SettingsScope = "vocabulary" | "program"
+export const SCOPE_SECTIONS: Record<SettingsScope, SettingsSection[]> = {
+  vocabulary: ["categories", "tags"],
+  program: ["settings", "evaluators"],
 }
-
-/** Both words are required and short. Returns no keys when the pair is valid. */
-export function validateNaming(one: string, many: string): NamingErrors {
-  const a = one.trim()
-  const b = many.trim()
-  const e: NamingErrors = {}
-  if (!a) e.one = "Enter the word for one."
-  else if (a.length > 40) e.one = "Use 40 characters or fewer."
-  if (!b) e.many = "Enter the word for more than one."
-  else if (b.length > 40) e.many = "Use 40 characters or fewer."
-  return e
+export const VOCABULARY_TITLE = "Categories and tags"
+export const isVocabularySection = (s: string | null | undefined): s is "categories" | "tags" => s === "categories" || s === "tags"
+/** The section a page of this scope shows for a raw ?tab= / ?list= value: its own section, else its first. "instructors" (the
+ *  former Lab instructors list) is the Evaluators section. */
+export function scopeSection(scope: SettingsScope, raw: string | null | undefined): SettingsSection {
+  const own = SCOPE_SECTIONS[scope]
+  const s = raw === "instructors" && own.includes("evaluators") ? "evaluators" : raw
+  return isSettingsSection(s) && own.includes(s) ? s : own[0]!
 }
 
 export interface SettingsRow extends Record<string, unknown> {
@@ -106,23 +110,43 @@ function finish<T extends SettingsRow>(rows: T[], tab: SettingsTab, overlay: Set
     })
 }
 
-export function categoryRows(s: V2State, overlay: SettingsOverlay = EMPTY_SETTINGS, noun = "skill", nouns = "skills"): CategoryRow[] {
+/**
+ * Categories and tags come from the SHARED vocabulary (lib/v2/vocabulary.ts, `state.vocabulary`), never a page-local list, so a
+ * category made here is offered in Add a skill and an inactive one is marked on the skills that keep it (REQ SL-03 to SL-06).
+ * Counts are by name over the skills. The overlay no longer applies to these two lists; it stays for clinical settings and
+ * lab instructors.
+ */
+export function categoryRows(s: V2State, _overlay: SettingsOverlay = EMPTY_SETTINGS, noun = "skill", nouns = "skills"): CategoryRow[] {
   const by = new Map<string, number>()
-  for (const k of s.skills) by.set(k.category, (by.get(k.category) ?? 0) + 1)
-  const rows: CategoryRow[] = [...by].sort((a, b) => a[0].localeCompare(b[0])).map(([name, n]) => ({ id: settingId("categories", name), name, active: true, uses: n, skills: n, blocked: n ? `Used by ${plural(n, noun, nouns)}` : null, isNew: false }))
-  return finish(rows, "categories", overlay, (name) => ({ id: settingId("categories", name), name, active: true, uses: 0, skills: 0, blocked: null, isNew: true }))
+  for (const k of s.skills) if (k.category) by.set(k.category.trim().toLowerCase(), (by.get(k.category.trim().toLowerCase()) ?? 0) + 1)
+  return getVocabulary(s).categories.map((e) => {
+    const n = by.get(e.name.trim().toLowerCase()) ?? 0
+    return { id: e.id, name: e.name, active: e.active, uses: n, skills: n, blocked: n ? `Used by ${plural(n, noun, nouns)}` : null, isNew: !s.vocabulary ? false : !SEEDED.has(e.id) && n === 0 }
+  })
 }
 
-export function tagRows(s: V2State, overlay: SettingsOverlay = EMPTY_SETTINGS, noun = "skill", nouns = "skills"): TagRow[] {
+export function tagRows(s: V2State, _overlay: SettingsOverlay = EMPTY_SETTINGS, noun = "skill", nouns = "skills"): TagRow[] {
   const by = new Map<string, { skills: number; cats: Set<string> }>()
   for (const k of s.skills) for (const t of k.tags ?? []) {
-    const x = by.get(t) ?? { skills: 0, cats: new Set<string>() }
+    const id = t.trim().toLowerCase()
+    const x = by.get(id) ?? { skills: 0, cats: new Set<string>() }
     x.skills++
     x.cats.add(k.category)
-    by.set(t, x)
+    by.set(id, x)
   }
-  const rows: TagRow[] = [...by].sort((a, b) => a[0].localeCompare(b[0])).map(([name, x]) => ({ id: settingId("tags", name), name, active: true, uses: x.skills, skills: x.skills, categories: x.cats.size, blocked: x.skills ? `Used by ${plural(x.skills, noun, nouns)}` : null, isNew: false }))
-  return finish(rows, "tags", overlay, (name) => ({ id: settingId("tags", name), name, active: true, uses: 0, skills: 0, categories: 0, blocked: null, isNew: true }))
+  return getVocabulary(s).tags.map((e) => {
+    const x = by.get(e.name.trim().toLowerCase())
+    const n = x?.skills ?? 0
+    return { id: e.id, name: e.name, active: e.active, uses: n, skills: n, categories: x?.cats.size ?? 0, blocked: n ? `Used by ${plural(n, noun, nouns)}` : null, isNew: !s.vocabulary ? false : !SEEDED.has(e.id) && n === 0 }
+  })
+}
+
+/** Ids the derived list starts with; an entry outside it, still unused, reads "New". Filled once from the first state seen. */
+const SEEDED = new Set<string>()
+export function rememberSeededVocabulary(s: V2State): void {
+  if (SEEDED.size || s.vocabulary) return
+  const v = getVocabulary(s)
+  for (const e of [...v.categories, ...v.tags]) SEEDED.add(e.id)
 }
 
 export function clinicalSettingRows(s: V2State, overlay: SettingsOverlay = EMPTY_SETTINGS, noun = "skill", nouns = "skills"): ClinicalSettingRow[] {
@@ -167,7 +191,11 @@ export function usesOf(s: V2State, tab: SettingsTab, name: string, id?: string, 
   if (tab === "settings" && what === "courses") return (s.courses ?? [s.course, ...(s.otherCourses ?? [])]).filter((c) => c.clinicalSettings.includes(name)).map((c) => ({ key: c.id, primary: `${c.code} ${c.name}`, secondary: c.cohort }))
   if (tab === "categories") return s.skills.filter((k) => k.category === name).sort((a, b) => a.name.localeCompare(b.name)).map((k) => ({ key: k.id, primary: k.name, secondary: k.configured ? "Configured" : "Not configured" }))
   if (tab === "tags") return s.skills.filter((k) => (k.tags ?? []).includes(name)).sort((a, b) => a.name.localeCompare(b.name)).map((k) => ({ key: k.id, primary: k.name, secondary: k.category }))
-  if (tab === "settings") return (s.sites ?? []).filter((x) => x.clinicalSetting === name && x.active).sort((a, b) => a.facility.localeCompare(b.facility) || a.unit.localeCompare(b.unit)).map((x) => ({ key: x.id, primary: `${x.facility}, ${x.unit}`, secondary: x.location }))
+  if (tab === "settings") return (s.sites ?? []).filter((x) => x.clinicalSetting === name && x.active).sort((a, b) => a.facility.localeCompare(b.facility) || a.unit.localeCompare(b.unit)).map((x) => {
+    const primary = `${x.facility}, ${x.unit}`
+    // Say it once: the seed's location often repeats the facility and unit, so it shows only when it adds something.
+    return { key: x.id, primary, secondary: x.location && x.location !== primary ? x.location : "" }
+  })
   const pid = (id ?? "").replace(/^instructors:/, "")
   const names = new Map(s.people.map((p) => [p.id, p.name]))
   const skill = new Map(s.skills.map((k) => [k.id, k.name]))

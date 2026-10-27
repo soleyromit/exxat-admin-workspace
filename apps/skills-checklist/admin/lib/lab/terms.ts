@@ -2,7 +2,8 @@
  * The program's noun for what a student gets signed off on. One place, so a program that says "competency" or
  * "procedure" changes one value. Lab copy never uses the word "items".
  *
- * The value is set in Settings > Naming (CALL 10-26 item 7) and kept in localStorage (key TERMS_KEY), so it survives reloads and
+ * The value is a backend setting with no admin UI (CALL 10-26 item 7; Romit 2026-10-27: "naming can be changed in the backend, so
+ * we need to remove this tab for now", ledger D-L25); in the lab it is set through `setTerms` or its stored value and kept in localStorage (key TERMS_KEY), so it survives reloads and
  * is shared by every tab (another tab's change arrives through the storage event). Blocked storage keeps it in memory for the page. This module stays free of React so server code (personas, registry) can
  * import it; the client hook that re-renders on a change is `useTerms` in components/lab/library/use-terms.ts.
  *

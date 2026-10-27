@@ -34,8 +34,9 @@ export type HeldCause = "paper" | "new-evaluator" | "disagree" | "rule"
 export const CAUSE_ORDER: HeldCause[] = ["new-evaluator", "rule", "disagree", "paper"]
 export const CAUSE_LABEL: Record<HeldCause, string> = {
   "new-evaluator": EVALUATOR_NOT_ASSIGNED_LABEL,
-  rule: "Rule needs approval",
-  disagree: "Self and evaluator disagree",
+  // Plain words for why a submission is here (Romit 2026-10-27: "what rule requires approval? I can't interpret it").
+  rule: "Approval required",
+  disagree: "Student and evaluator disagree",
   paper: "Paper form to enter",
 }
 

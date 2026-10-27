@@ -8,19 +8,19 @@ import { SECTIONS, type RuleIssue } from "@/lib/lab/configure"
 const sectionLabel = (id: RuleIssue["section"]) => SECTIONS.find((s) => s.id === id)?.label ?? ""
 
 /**
- * Error summary across steps (Check and publish). Each entry names its step and, when pressed, opens that step and focuses the
+ * Error summary across steps (Check, before Save configuration). Each entry names its step and, when pressed, opens that step and focuses the
  * field [REQ SC-18; layout rule L9]. Within one step or one page, use the shared ValidationSummary instead.
  */
-export function IssueSummary({ issues, onGo, id = "cfg-issues" }: { issues: RuleIssue[]; onGo: (i: RuleIssue) => void; id?: string }) {
+export function IssueSummary({ issues, onGo, id = "cfg-issues", autoFocus = true }: { issues: RuleIssue[]; onGo: (i: RuleIssue) => void; id?: string; /** False where the summary is part of a page the reader scrolls to (Check on one page). */ autoFocus?: boolean }) {
   const ref = React.useRef<HTMLDivElement>(null)
   const key = issues.map((i) => i.id).join("|")
   React.useEffect(() => {
-    if (key) ref.current?.focus()
-  }, [key])
+    if (key && autoFocus) ref.current?.focus()
+  }, [key, autoFocus])
   if (issues.length === 0) return null
   return (
     <div ref={ref} id={id} tabIndex={-1} className="outline-none" data-region="validation-summary">
-      <LocalBanner variant="error" title={`Fix ${issues.length} ${issues.length === 1 ? "problem" : "problems"} to publish`}>
+      <LocalBanner variant="error" title={`Fix ${issues.length} ${issues.length === 1 ? "problem" : "problems"} before saving`}>
         <ul className="flex flex-col gap-1" aria-label="Problems to fix">
           {issues.map((i) => (
             <li key={i.id}>

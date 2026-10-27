@@ -52,6 +52,7 @@ import { StudentLogA } from "./student-log-a"
 import { StudentLogB } from "./student-log-b"
 import { StudentRequestA } from "./student-request-a"
 import { StudentRequestB } from "./student-request-b"
+import { StudentRequestC } from "./student-request-c"
 import { StudentRecordA } from "./student-record-a"
 import { StudentRecordB } from "./student-record-b"
 import { StudentShareA } from "./student-share-a"
@@ -62,14 +63,14 @@ import { AdminCourseMappingA } from "./admin-course-mapping-a"
 import { AdminCourseMappingB } from "./admin-course-mapping-b"
 import { AdminListsCohortsA } from "./admin-lists-cohorts-a"
 import { AdminListsCohortsB } from "./admin-lists-cohorts-b"
-import { AdminEvaluatorDirectoryA } from "./admin-evaluator-directory-a"
-import { AdminEvaluatorDirectoryB } from "./admin-evaluator-directory-b"
 import { AdminAttainmentA } from "./admin-attainment-a"
 import { AdminAttainmentB } from "./admin-attainment-b"
 import { AdminExportA } from "./admin-export-a"
 import { AdminExportB } from "./admin-export-b"
 import { AdminSettingsA } from "./admin-settings-a"
 import { AdminSettingsB } from "./admin-settings-b"
+import { AdminCategoriesTagsA } from "./admin-categories-tags-a"
+import { AdminCategoriesTagsB } from "./admin-categories-tags-b"
 import { AdminDeactivateA } from "./admin-deactivate-a"
 import { AdminDeactivateB } from "./admin-deactivate-b"
 import { EvaluatorSubmittedB } from "./evaluator-submitted-b"
@@ -95,14 +96,14 @@ export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
   "admin/course-mapping/B": AdminCourseMappingB,
   "admin/lists-cohorts/A": AdminListsCohortsA,
   "admin/lists-cohorts/B": AdminListsCohortsB,
-  "admin/evaluator-directory/A": AdminEvaluatorDirectoryA,
-  "admin/evaluator-directory/B": AdminEvaluatorDirectoryB,
   "admin/attainment/A": AdminAttainmentA,
   "admin/attainment/B": AdminAttainmentB,
   "admin/export/A": AdminExportA,
   "admin/export/B": AdminExportB,
   "admin/settings/A": AdminSettingsA,
   "admin/settings/B": AdminSettingsB,
+  "admin/categories-tags/A": AdminCategoriesTagsA,
+  "admin/categories-tags/B": AdminCategoriesTagsB,
   "admin/retire-deactivate/A": AdminDeactivateA,
   "admin/retire-deactivate/B": AdminDeactivateB,
   "admin/dashboard/A": AdminDashboardAShared,
@@ -165,6 +166,7 @@ export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
   "student/log-skill/B": StudentLogB,
   "student/request-signoff/A": StudentRequestA,
   "student/request-signoff/B": StudentRequestB,
+  "student/request-signoff/C": StudentRequestC,
   "student/record/A": StudentRecordA,
   "student/record/B": StudentRecordB,
   "student/share-record/A": StudentShareA,

@@ -25,6 +25,8 @@ export interface DirectorContext {
   /** The store state the figures were read from, with the lab fixture. */
   state: V2State | null
   asOf: string
+  /** When the figures were read (the header subtitle's Updated time). */
+  at: Date | null
   refresh: () => void
   param: (k: string) => string | null
   setScope: (next: LabScope) => void
@@ -74,6 +76,7 @@ export function useDirector(): DirectorContext {
     model,
     state,
     asOf: asOfLabel(snap.at),
+    at: snap.at,
     refresh: snap.refresh,
     param: (k) => params?.get(k) ?? null,
     setScope,

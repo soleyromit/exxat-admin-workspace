@@ -14,6 +14,7 @@ import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { DirectorPage } from "@/components/lab/director/frame"
+import type { V2State } from "@/lib/v2/types"
 import { ChangedBanner, EvidenceLink, FluxList, GapChecks, RecordLine, SkillState, VerifyAction, useVerifyFlow } from "@/components/lab/director/verify"
 import type { DirectorContext } from "@/components/lab/director/use-director"
 import { detailModel, directorHref, shortDate, type DetailModel, type Readiness } from "@/lib/lab/director"
@@ -24,7 +25,7 @@ function titleOf(ctx: DirectorContext): string {
   return detailModel(ctx.state, m, ctx.param("student"))?.row.name ?? "Verification"
 }
 
-function RecordTable({ d, scope }: { d: DetailModel; scope: Readiness["scope"] }) {
+function RecordTable({ d, scope, state }: { d: DetailModel; scope: Readiness["scope"]; state: V2State | null }) {
   return (
     <Table>
       <TableHeader>
@@ -47,7 +48,7 @@ function RecordTable({ d, scope }: { d: DetailModel; scope: Readiness["scope"] }
               <TableRow key={l.skillId}>
                 <TableCell className="text-foreground">{l.name}</TableCell>
                 <TableCell><SkillState l={l} /></TableCell>
-                <TableCell><EvidenceLink l={l} scope={scope} studentId={d.row.id} /></TableCell>
+                <TableCell><EvidenceLink l={l} scope={scope} studentId={d.row.id} state={state} /></TableCell>
                 <TableCell className="text-end tabular-nums text-muted-foreground">{l.lastDate ? shortDate(l.lastDate) : ""}</TableCell>
               </TableRow>
             ))}
@@ -85,7 +86,7 @@ function Detail({ d, m, ctx }: { d: DetailModel; m: Readiness; ctx: DirectorCont
                 The decision panel is current.
               </LocalBanner>
             ) : (
-              <RecordTable d={d} scope={m.scope} />
+              <RecordTable d={d} scope={m.scope} state={ctx.state} />
             )}
           </CardContent>
         </Card>

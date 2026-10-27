@@ -1,0 +1,3976 @@
+[
+  {
+    "reqId": "REQ 1.4",
+    "text": "a skill must not inherit the scoring or reporting model used for competencies; relationship configurable (OD-02)",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "not audited",
+        "variants": [],
+        "status": "UNCHECKED",
+        "evidence": "No auditor checked whether a seam exists; Lists A carries 'Standards are managed in Program details.' (call #12) which touches OD-02.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "REQ 1.5",
+    "text": "evaluation method determines which achievement criteria are valid; capability must enforce this dependency",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "apps/skills-checklist/admin/lib/lab/configure.ts:194-205 withModel clears levelMinimums/questionRule/scoredRule and model-specific lists; configure.ts:498-513 engineRuleOfLab nulls questionRule/scoredRule outside their model; components/lab/configure/fields.tsx:365 level minimums only for demonstration, sentence-builder.tsx:151 same in C; validateRule per model configure.ts:387-428. Runtime: rule controls change per model in A/B/C (shots A-<model>-rule.png, B-<model>.png, C-<model>.png).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/rule-change-impact",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Reads the same LabRule and engine (admin-rule-impact-a.tsx:28 useConfigure); no independent criteria editing; edit link goes to configure step=rule.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "REQ 1.6",
+    "text": "Prism ships no skills, no categories and no taxonomy; programs define their own grouping, labels, terminology",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Library rows come from program data badged 'Sample data'; category/tag vocab derived from the program's own library (lib/lab/library.ts:511 pickerOptions, components/lab/library/category-tag-pickers.tsx:7). Naming section lets the program rename 'skills' (lib/lab/settings.ts:21-36). runtime: library A/B/C opened",
+        "selectorHint": "page.getByRole('tab',{name:/Inactive/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/starter-library",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Starting points screen offers 5 example lists by discipline (runtime: 'Example lists to copy and edit. Your program owns the copy.'); flagged PENDING-ROMIT conflict with SL-01 in components/lab/screens/admin-starter-library-a.tsx:8, lib/lab/import.ts:855; LEDGER D-X5 keeps as owned copies; tagged Later (phase 2). shot /tmp/sc-reqaudit/shots/SL-01-starter-library-A.png",
+        "selectorHint": "page.getByText('Example lists to copy and edit')",
+        "missing": "REQ says Prism supplies no library/taxonomy; screen ships example lists (unresolved REQ vs D-X5 conflict)",
+        "fix": "Get a ruling from Romit/Sankalp; until then keep it behind Later with copy-as-owned framing, never in phase 1",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "REQ 4.1",
+    "text": "Four models required initially; design should allow further models to be added",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "apps/skills-checklist/admin/lib/lab/configure.ts:83-94 LAB_MODELS binary/question/demonstration/scored all offered; runtime: four radios in A/B/C. But EvalModel is a closed union (lib/v2/types.ts) with per-model branches in validateRule/qualifiesOn/OutcomesSection, and Scored (required by REQ 4.1) carries a badge 'Proposed - Not part of the agreed criteria types yet' (configure.ts:94, fields.tsx:122,140; shots/B-scored.png).",
+        "selectorHint": "getByText('Proposed').first()",
+        "missing": "Scored labelled Proposed although REQ 4.1 requires it; adding a model is a code change (closed union), not a registry entry.",
+        "fix": "Drop or reword the Proposed badge on Scored (REQ beats CALL); record the model-registry seam.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "SL-01",
+    "text": "The skills library is program-defined. Prism does not supply a standard skills library or taxonomy.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "No shipped list; empty state offers add / add several / import (components/lab/library/library-chrome.tsx:208-226); data badged Sample data",
+        "selectorHint": "page.getByRole('button',{name:'Add a skill'})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/starter-library",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Example starter lists by discipline (admin-starter-library-a.tsx:8 PENDING-ROMIT note; D-X5). runtime opened A,B. shot /tmp/sc-reqaudit/shots/SL-01-starter-library-A.png",
+        "selectorHint": "page.getByText('Starting points')",
+        "missing": "Conflicts with SL-01 wording; D-X5 is a ledger decision, not REQ",
+        "fix": "Resolve with Sankalp; keep phase-2 'Later' gating",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "SL-02",
+    "text": "A skill has a name, a description and an active/inactive status.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MISSING",
+        "evidence": "Sheet A fields only Name/Category/Tags/Required (components/lab/library/skill-sheet.tsx:106-135); inline row B Name/Category/Tags (inline-add-row.tsx:245-266); add-several C names only (add-several-sheet.tsx:357-381). runtime: getByLabel(/Description/) count 0 in A,B,C. shot /tmp/sc-reqaudit/shots/SL-02-add-skill-A.png",
+        "selectorHint": "page.getByLabel('Description')",
+        "missing": "No Description field in any add path (Skill type already has description?: lib/v2/types.ts:221)",
+        "fix": "Add optional Description textarea to sheet A and the edit sheet; B/C may defer it to the panel, but the panel must then edit it",
+        "priority": "P0",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Status: 4 states incl. Inactive (lib/lab/library.ts:29-39), tabs/board show it (runtime tabs 'Inactive 2'). Description: not shown in SkillPanel facts (components/lab/library/skill-panel.tsx:74-98) nor editable in the edit sheet (skill-sheet.tsx mode=edit, same 4 fields)",
+        "selectorHint": "page.getByRole('tab',{name:/Inactive/})",
+        "missing": "Description absent from detail panel and edit sheet",
+        "fix": "Add a Description fact to SkillPanel and a field to the edit sheet",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "admin/retire-deactivate",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Deactivate/reactivate flows (components/lab/admin-b/retire-flow.tsx:4, lib/lab/retire.ts:9-13, lib/v2/admin-actions.ts:193 setSkillsActive). runtime opened A,B",
+        "selectorHint": "page.getByText('Why change this skill?')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SL-03",
+    "text": "Categories are program-defined. A skill belongs to at most one category; a category is optional.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Single-choice CategoryPicker with 'None' (category-tag-pickers.tsx:464-523) in sheet A (skill-sheet.tsx:122), inline row B (inline-add-row.tsx:261), add-several C (add-several-sheet.tsx:375). runtime: [data-category-picker]=1 in A,B,C and flow set-up-skills/add set 1/2/3",
+        "selectorHint": "page.locator('[data-category-picker]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Per-row CategoryPicker in review (import-parts.tsx:281); runtime: 23 pickers after expanding one category in A and C",
+        "selectorHint": "page.locator('[data-category-list] [data-category-picker]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/categories-tags",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Categories tab with counts, inline create, deactivate, delete-only-unused (lib/lab/settings.ts:113-118; admin-b/settings-page.tsx:274-310). runtime: 'Categories 45'. But Settings and the add-path pickers are separate vocabularies: pickerOptions reads library rows only (library.ts:511), Settings overlay is page-local (settings.ts:87-93) (2026-10-27, D-L21: these lists moved from Settings to their own page admin/categories-tags, same components; file references to settings-page.tsx and admin-settings-b.tsx still hold.)",
+        "selectorHint": "page.getByRole('tab',{name:/Categories/})",
+        "missing": "A category created in Settings is never offered in Add a skill, and one created in Add a skill only appears in Settings via the skill",
+        "fix": "Feed pickers and Settings from one program list in the shared store",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "SL-04",
+    "text": "Tags are program-defined and cross-cutting. A skill may carry any number, and a tag may span categories.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "TagsPicker chip input, any number (category-tag-pickers.tsx:546-684) in A (skill-sheet.tsx:126), B (inline-add-row.tsx:265), C (add-several-sheet.tsx:379). runtime [data-tags-picker]=1 each",
+        "selectorHint": "page.locator('[data-tags-picker] input')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Tags under name (library-table.tsx:62-64; admin-skills-library-b.tsx:68), Tags column (library-table.tsx:84-88), panel Tags fact (skill-panel.tsx:78-80)",
+        "selectorHint": "page.locator('[data-row-tags]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Per-row TagsPicker (import-parts.tsx:285)",
+        "selectorHint": "page.locator('[data-category-list] [data-tags-picker]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/categories-tags",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Tags tab with skills + categories spanned (lib/lab/settings.ts:120-129); runtime 'Tags 3' (2026-10-27, D-L21: these lists moved from Settings to their own page admin/categories-tags, same components; file references to settings-page.tsx and admin-settings-b.tsx still hold.)",
+        "selectorHint": "page.getByRole('tab',{name:/Tags/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SL-05",
+    "text": "A category or tag can be created at the point it is needed while defining a skill.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Create \"{typed}\" item in CategoryPicker (category-tag-pickers.tsx:508-516) and TagsPicker (:558-561). runtime: typing 'Zeta audit cat'/'Zeta audit tag' shows [data-create-category] and [data-create-tag] in A, B and C (shots SL-05-add-skill-A/B/C.png)",
+        "selectorHint": "page.locator('[data-create-category]'); page.locator('[data-create-tag]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Edit sheet uses the same pickers (skill-sheet.tsx:122-126, mode=edit)",
+        "selectorHint": "page.locator('[data-create-tag]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Same pickers per row (import-parts.tsx:281-285)",
+        "selectorHint": "page.locator('[data-category-list] [data-category-picker]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SL-06",
+    "text": "Only active categories and tags are available for assignment; one assigned but since deactivated remains on the skill, identifiable as inactive.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/categories-tags",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Deactivate marks the entry Inactive with StatusBadge and a banner 'stays where it is used, marked inactive, and is no longer offered' (admin-b/settings-page.tsx:97-98,332; admin-settings-b.tsx:100-101,249). The overlay is page-local React state (lib/lab/settings.ts:87-93) and no other screen reads it (2026-10-27, D-L21: these lists moved from Settings to their own page admin/categories-tags, same components; file references to settings-page.tsx and admin-settings-b.tsx still hold.)",
+        "selectorHint": "page.getByRole('tab',{name:/Categories/})",
+        "missing": "The banner's promise is not kept anywhere else",
+        "fix": "Lift category/tag active state into the shared store and read it in pickerOptions and skill rows",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MISSING",
+        "evidence": "CategoryPicker/TagsPicker have no active/inactive concept (props category-tag-pickers.tsx:453-462, 525-534); options = pickerOptions(rows) from library rows (lib/lab/library.ts:511-520). The only SL-06 test targets the legacy SkillsMultiPick (tests/ui/components.test.tsx:98), not the lab pickers. Code-only (deactivation state cannot cross pages). shot /tmp/sc-reqaudit/shots/SL-05-add-skill-A.png",
+        "selectorHint": "page.locator('[data-tags-picker]')",
+        "missing": "Inactive categories/tags still offered; no exclusion",
+        "fix": "Pass an inactive set to the pickers: hide inactive from suggestions; keep an already-chosen inactive one as a chip marked 'Inactive' with remove",
+        "priority": "P0",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MISSING",
+        "evidence": "Skill panel Category/Tags (skill-panel.tsx:77-80), table Tags column (library-table.tsx:84-88), tree row tags (admin-skills-library-b.tsx:68) and edit sheet render plain names; no inactive marker (grep 'inactive' in components/lab/library hits skill status only)",
+        "selectorHint": "page.locator('[data-row-tags]')",
+        "missing": "An assigned-but-deactivated category/tag is not identifiable as inactive on the skill",
+        "fix": "Render an inactive tag/category as Badge + the word 'Inactive', removable in the edit sheet",
+        "priority": "P0",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MISSING",
+        "evidence": "Import review pickers use file headings + session tags only (import-parts.tsx:247-248); a tag deactivated in Settings is not excluded",
+        "selectorHint": "page.locator('[data-category-list] [data-tags-picker]')",
+        "missing": "Same gap",
+        "fix": "Same fix as the add paths",
+        "priority": "P2",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "SL-07",
+    "text": "Clinical settings are a program-defined list, used to describe where clinical evidence was gathered.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/settings",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Clinical settings tab with sites, evidence, rules, courses using each (lib/lab/settings.ts:131-145), inline create/deactivate. runtime: 'Clinical settings 3' in A and B (?tab=settings opened)",
+        "selectorHint": "page.getByRole('tab',{name:/Clinical settings/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SL-08",
+    "text": "Lab instructors recordable without being Prism users; name and email are sufficient.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/settings",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Lab instructors tab, inline create with Name + Email (admin-b/settings-page.tsx:275-310; admin-settings-b.tsx:182-205). runtime: 'Email' field present on ?tab=instructors in A (after 'Add a lab instructor') and B (2026-10-27, D-L24: Lab instructors merged into Settings > Evaluators; add with 'Add an evaluator', role Lab instructor by default, name and email; ?tab=instructors redirects to ?tab=evaluators&role=lab-instructor.)",
+        "selectorHint": "page.getByRole('button',{name:'Add an evaluator'})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/settings",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "'Add an evaluator' opens AddEvaluatorDialog name + email + role (admin-a/evaluator-parts.tsx:274-280, evaluator-frame.tsx:69). runtime: button present in A and B (2026-10-27, D-L24: the directory is Settings > Evaluators.)",
+        "selectorHint": "page.getByRole('button',{name:'Add an evaluator'})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Student can enter a new evaluator by name and email (student2/request-parts.tsx:62-80 NewEvaluator, newEvaluatorErrors). Code-only for the field (behind a step)",
+        "selectorHint": "page.getByLabel(/Email/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SL-09",
+    "text": "A student-named lab instructor not already recorded: program sees the name and adopts it.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/settings",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Unverified names first with 'Adopt or merge' + suggested matches (admin-a/evaluator-parts.tsx:99,154,198-215; lib/lab/evaluators.ts:4-6,136-139). runtime A: 14 'Adopt or merge' buttons, '14 unverified names'; B (site first) shows '14 unverified names' and an Unverified filter (2026-10-27, D-L24: the directory is Settings > Evaluators; adopt or merge moved to Approvals, New evaluators (D-L23, D-X36); Settings shows 'Not verified' linking there.)",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Student enters a new name+email (request-parts.tsx:62), but sending is lab-local (request-parts.tsx:5 'the shared store stays read only'), so a name typed here never reaches the directory; directory shows seeded names only",
+        "selectorHint": "page.getByLabel(/Name/)",
+        "missing": "End-to-end hand-off (typed name -> directory unverified row) not wired in the lab",
+        "fix": "Write the new evaluator to the store as verified:false on send so the directory and approvals show it",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "SL-10",
+    "text": "The library must be searchable and filterable by name, category, tag and status.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Name: searchbox (library-table.tsx:218; admin-skills-library-b.tsx:142; -c.tsx:167). Category + tag: LibraryFilterMenu (library-filter.tsx:52-96) in A (via LibraryTable), B (:143), C (:168). Status: tabs in A/B (runtime 'All 178 / Not configured 16 / Configured 15 / Published 145 / Inactive 2'), board columns in C (runtime 4 [data-board-column]) plus a List view with tabs. runtime: Filter popover shows Tag and Category groups in A,B,C (shots SL-10-skills-library-A/B/C-filter.png). Flow keep-library-right set 1/2 show Filter",
+        "selectorHint": "page.getByRole('searchbox'); page.locator('[data-library-filter]'); page.getByRole('tab',{name:/Inactive/}); page.locator('[data-board-column]')",
+        "missing": "Only one category and one tag at a time (library-filter.tsx:4); acceptable",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SL-11",
+    "text": "Deactivating a skill withdraws it from course mapping, student selection and reporting scope, while retaining evidence.",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Deactivate writes the store (use-library.tsx:103-120 -> lib/v2/admin-actions.ts:193 setSkillsActive), banner 'Evidence is kept. It no longer appears in mapping, student selection or reports'; panel 'Withdrawn from mapping' (skill-panel.tsx:86-87). runtime: Inactive tab lists 'Stool' (84 evaluations) and 'Urine: Sterile Urine' (18) with evidence kept",
+        "selectorHint": "page.getByRole('tab',{name:/Inactive/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/retire-deactivate",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Impact-first deactivate/retire/delete flows (lib/lab/retire.ts:9-13; admin-b/retire-flow.tsx). runtime A,B opened",
+        "selectorHint": "page.getByText('Why change this skill?')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "reporting (dashboard/attainment)",
+        "variants": [
+          "*"
+        ],
+        "status": "MET",
+        "evidence": "isReportable excludes active===false (lib/v2/population.ts:134-137); decision D-X14; facts.skillsInactive (lib/v2/facts.ts:55); tests/lab/library.test.ts:116-120. Code-only in this audit",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "runtime: inactive 'Stool' listed and mapped Optional, 'Urine: Sterile Urine' mapped Recommended in NUR 101 (A); both listed in B. Code: skillRowsFor maps every s.skills with no active filter (lib/lab/mapping.ts:319-331); isConfigured = mapBlockReason checks configuration only (lib/v2/coverage.ts:12-17); setLevel does not block inactive (mapping.ts:336-342); setSkillsActive leaves mappings in place (admin-actions.ts:193-207); only resolvedLevels filters active (mapping.ts:167). A legacy UI test exists (tests/ui/mapping/mapping.test.tsx:378) but none for the lab. shots /tmp/sc-reqaudit/shots/SL-11-course-mapping-A.png, SL-11-course-mapping-B.png",
+        "selectorHint": "page.getByText('Stool',{exact:true})",
+        "missing": "Deactivated skills still offered and still mapped, with no inactive cue",
+        "fix": "Filter k.active!==false in skillRowsFor and the matrix rows (mapping.ts:437,478), block in setLevel; add a tests/lab/mapping.test.ts case",
+        "priority": "P0",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "runtime A: 'Stool' (Achieved) and 'Urine: Sterile Urine' offered as 'Not selected' in the picker; B: 'Search 147 skills' = 145 published + 2 inactive. Code: pickRows uses openToLog (lib/lab/student2.ts:108-112), which checks configured && published only (lib/v2/student.ts:493-495), not active. shots /tmp/sc-reqaudit/shots/SL-11-log-skill-A.png, SL-11-log-skill-B.png",
+        "selectorHint": "page.getByText('Urine: Sterile Urine',{exact:true})",
+        "missing": "Deactivated skills selectable by students",
+        "fix": "Add skill.active!==false to openToLog (also guards submit at lib/v2/student.ts:513)",
+        "priority": "P0",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "Code-only: the request picker uses the same pickRows (components/lab/student2/request-parts.tsx:31,51), so inactive skills are offered; the skill list sits behind a step the probe did not reach (shots SL-11-request-signoff-A/B.png show the first step only)",
+        "selectorHint": "page.getByText('Stool',{exact:true})",
+        "missing": "Same as log-skill",
+        "fix": "Same openToLog fix",
+        "priority": "P0",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "lead-note",
+        "variants": [],
+        "status": "N/A",
+        "evidence": "CM/ST auditor marked log-skill/request-signoff MET for 'inactive not selectable' using published===false; overruled: lib/v2/student.ts:493 openToLog checks configured && published && config only, never active.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-01",
+    "text": "Create skills in bulk by supplying an existing list.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Add several by name (phase 1 bulk path, CALL 10-26) add-several-sheet.tsx:289-424; runtime: textarea #several-names, '2 skills will be added'",
+        "selectorHint": "page.getByLabel('Names, one per line')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "File/paste import (Phase 2, 'Later' badge at runtime in A,B,C); runtime 'Create 153 skills' (A confirm), 'Create 142 skills' (B,C)",
+        "selectorHint": "page.getByRole('button',{name:/^Create \\d+/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "More menu: 'Add several by name (bulk add)', 'Start a new list', 'Import a file Later', 'Copy from a starter library Later' (library-chrome.tsx:62-90); runtime confirmed in A,B,C",
+        "selectorHint": "page.getByRole('button',{name:'More'})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-02",
+    "text": "Accepted sources include spreadsheets, word-processed documents and PDFs.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "ACCEPT='.pdf,.docx,.doc,.xlsx,.xls,.csv,.txt' (import-parts.tsx:59), hint 'PDF, Word or Excel. Any layout, no template.' (:102); C paste + drop several files (admin-import-c.tsx:151-156). Phase 2 (Later). The lab parses a simulated sample text, not real binaries",
+        "selectorHint": "page.getByText('PDF, Word or Excel')",
+        "missing": "Lab does not parse real files; acceptable for a design lab",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-03",
+    "text": "No prescribed template or column order.",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "readChecklist reads plain/numbered/bulleted lines, headings, marks (lib/lab/import.ts:189-193); tests/lab/import.test.ts:46 'reads plain lines with no number or dash as skills', :245 pasted flat list",
+        "selectorHint": "page.getByText('Any layout, no template')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "parseSeveral: plain names or Name/Category/Tags columns, no mapping step (lib/lab/library.ts:452-475)",
+        "selectorHint": "page.getByLabel('Names, one per line')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-04",
+    "text": "Interpretation identifies candidate skills and, where present, description, grouping as category, and evaluation questions/criteria.",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Skills + headings as categories + group headings as tags + the file's mark are read (lib/lab/import.ts:132-147,193-300; import-parts.tsx:276-286). No description and no evaluation questions/criteria extracted (no 'description'/'question'/'criteri' handling in lib/lab/import.ts beyond the OD-12 note at :11); runtime: no 'Description' in review A/B/C. shots IM-05-import-A/B/C.png",
+        "selectorHint": "page.locator('[data-category-list]')",
+        "missing": "Description and evaluation questions/criteria already in the source are not identified or shown for review (legacy lib/v2/import.ts:42 did propose a description)",
+        "fix": "Read a description line/column and show it per row; show detected criteria as read-only 'found in file' notes pending OD-12",
+        "priority": "P2",
+        "auditorPriority": "P1 (Phase 2)"
+      }
+    ]
+  },
+  {
+    "reqId": "IM-05",
+    "text": "Proposal reviewed with edit, rename, merge, split, discard and add before anything is created.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Present: rename (InlineInputEdit per row, import-parts.tsx:275; runtime 23 'Name for line' edits after expanding one category in A and C), category/tags edit (:281-285), discard ('Leave out', import.ts:460; bulkLeaveOut/putBack use-import-session.ts:216), merge only for in-file repeats ('Merge into the first', import.ts:471; runtime B/C), 'Add as a skill' only for unreadable lines (import.ts:460). Absent: split (no action anywhere; runtime /Split/ false), adding a new entry not in the file (no add button at runtime), merging two arbitrary rows. shots /tmp/sc-reqaudit/shots/IM-05-import-A-review.png, IM-05-import-B.png, IM-05-import-C.png",
+        "selectorHint": "page.getByRole('button',{name:/Name for line/})",
+        "missing": "Split, add a new entry, general merge",
+        "fix": "Row menu with 'Split into two' and 'Merge with...'; an 'Add a skill' row at the end of each category in review",
+        "priority": "P2",
+        "auditorPriority": "P1 (Phase 2)"
+      },
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Add several shows a live preview and skipped lines (add-several-sheet.tsx:382-400) but no per-line edit/merge/split; editing means editing the textarea",
+        "selectorHint": "page.getByLabel('What will be added')",
+        "missing": "No per-line review controls (acceptable for the phase-1 paste path if textarea editing counts as edit)",
+        "fix": "Optional: per-line rename/remove in the preview",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "IM-06",
+    "text": "Duplicates against the existing library identified; program decides skip, replace or keep both.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "findDuplicates by similarity (lib/lab/import.ts:315-357); options Skip / Keep both, Replace offered only when the library skill is not configured (import.ts:466-467); runtime B and C: ['Keep both','Skip, keep the library one'] (the sample's library twins are configured, so Replace is withheld); tests/lab/import.test.ts:110,165,182",
+        "selectorHint": "page.locator(\"[data-fix-group='duplicate-library'] [role=combobox]\")",
+        "missing": "Replace is never offered against a configured skill: a deliberate guard, but REQ says the program decides; confirm with PM",
+        "fix": "Optionally offer Replace with an impact note for configured skills",
+        "priority": "",
+        "auditorPriority": "P2"
+      },
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Add several silently skips names already in the library (lib/lab/library.ts:454 parseSeveral kind 'in-library'; SKIP_REASON add-several-sheet.tsx:313-317). runtime: a repeated name -> '1 skipped', no keep-both/replace choice. shot /tmp/sc-reqaudit/shots/IM-06-add-skill-C.png",
+        "selectorHint": "page.getByLabel('Skipped lines')",
+        "missing": "Skip is the only outcome for a duplicate in the bulk-add path",
+        "fix": "Add a per-line 'Keep both' on skipped in-library lines",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "IM-07",
+    "text": "Headings may be proposed as categories and applied to the skills beneath them, subject to review.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Heading -> category, section carried, 'section' fix group (import.ts:367,473); review grouped by file categories with a per-row CategoryPicker (import-parts.tsx:244-296); runtime: '156 skills read in 10 categories', pickers per row in A and C; C: 'A line ending in a colon starts a category'",
+        "selectorHint": "page.locator('[data-category-list]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-08",
+    "text": "Anything not interpreted is reported with its original text, not silently dropped.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "'Text could not be read' fix group with line number + best reading (import-parts.tsx:62,230-233; import.ts:691-697); furniture lines listed with original text (import-parts.tsx:297-316); NotCreatedList with reasons (:502-532; A confirm 'Not created: 3 left out, 2 joined to the line above'); B shows the whole file beside the list (admin-import-b.tsx:53-104). tests/lab/import.test.ts:72, :220. runtime: unread group in B and C",
+        "selectorHint": "page.locator(\"[data-fix-group='unread']\")",
+        "missing": "Doubt: a fully unreadable line shows 'Text could not be read' instead of the raw glyphs (deliberate); A/C show the line number as the only pointer to the original",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-09",
+    "text": "Imported skills created unconfigured and distinguishable; unconfigured cannot be mapped or submitted against.",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Status 'Not configured' badge/tab/column (lib/lab/library.ts:29-39); banner 'Skills that are not configured cannot be sent or mapped' (library-chrome.tsx:184-185) runtime A,B,C; add paths save not configured (use-library.tsx:62,78)",
+        "selectorHint": "page.getByRole('tab',{name:/Not configured/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "setLevel blocks unconfigured (lib/lab/mapping.ts:335-342); rows show 'Not configured' (admin-a/mapping-parts.tsx:207-213,257)",
+        "selectorHint": "page.getByText('Not configured')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "openToLog requires configured && published (lib/v2/student.ts:492-495); submit guard :513",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Confirm: 'Each starts not configured, so students cannot send it' (import-parts.tsx:542); done banner (:561-562); runtime A confirm and done",
+        "selectorHint": "page.locator('[data-confirm-panel]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-10",
+    "text": "See how many skills still require configuration and work through them.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "A/B tab 'Not configured 16' + banner action 'Configure 16 next' (library-chrome.tsx:184); B per-category rollup (library.ts:276-279, admin-skills-library-b.tsx:43); C 'Not configured' board column with 'Configure {n} together' (admin-skills-library-c.tsx:67). runtime A,B,C",
+        "selectorHint": "page.getByRole('link',{name:/Configure \\d+ next/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "No remaining count and no 'next not configured' step after Publish (admin-configure-skill-a.tsx:109-120; configure/use-configure.tsx:102-124). runtime: no 'N left/still to configure' text in A/B. shots /tmp/sc-reqaudit/shots/IM-10-configure-skill-A.png, IM-10-configure-skill-B.png",
+        "selectorHint": "page.getByRole('button',{name:'Publish'})",
+        "missing": "Working through the queue means returning to the library after each skill",
+        "fix": "After Publish show 'n left to configure' with 'Configure next' linking to the next not-configured skill",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Configures one or several (?skills=a,b,c from 'Configure together') (admin-configure-skill-c.tsx:6)",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-11",
+    "text": "Import repeatable, adds to the library, and it is possible to tell which skills arrived in which import.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "'Came from' = batch label / 'Program list' / 'Added by hand' (lib/lab/library.ts:151,178,206); shown in SkillPanel in every variant (skill-panel.tsx:97) and as a table column in A (library-table.tsx:90, hidden in the default saved views library.ts:332-333)",
+        "selectorHint": "page.getByText('Came from')",
+        "missing": "Not visible in list views by default; reachable via the panel",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Import name: A confirm field 'Import name ... so you can tell which skills came from this file' (import-parts.tsx:481-488; runtime A), B footer 'Name this import' popover (admin-import-b.tsx:130-145); plan 'Nothing else in your library changes' (import.ts:680); done 'Import another file' (runtime A done); tests/lab/import.test.ts:182 re-import marks repeats. Note: the lab never writes the store (use-import-session.ts:5), so imported skills never actually reach the library",
+        "selectorHint": "page.getByLabel('Import name')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "C"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "No import-name field in C (no batchName in admin-import-c.tsx; runtime getByLabel(/Import name/) = 0). shot /tmp/sc-reqaudit/shots/IM-11-import-C-clear.png",
+        "selectorHint": "page.getByLabel('Import name')",
+        "missing": "C cannot name the import; provenance falls back to the default file stem",
+        "fix": "Add ImportNameField (import-parts.tsx:481) beside NewListField in C",
+        "priority": "P2",
+        "auditorPriority": "P2 (Phase 2)"
+      }
+    ]
+  },
+  {
+    "reqId": "IM-12",
+    "text": "Creating and configuring a single skill by hand remains available.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/add-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Sheet A 'Save and configure' (skill-sheet.tsx:139-143), inline row B (inline-add-row.tsx:267), C also renders the single SkillSheet (admin-skills-library-c.tsx:136); primary 'Add a skill' on every library variant",
+        "selectorHint": "page.getByRole('button',{name:'Add a skill'})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-13",
+    "text": "Interpretation is a draft; nothing created without explicit human confirmation.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Behaviour, not copy (repeated helper removed 2026-10-27): nothing is written before Create on Confirm (session.confirm only; A Fix Next disabled until no line is open, admin-import-a.tsx footer; Accept all suggestions has Undo, import-parts.tsx FixIntro; tests/lab/import.test.ts 'Accept all fills every open line'); Create disabled with a reason until every line is decided (admin-import-a.tsx:135; tests/lab/import.test.ts:118); A has a separate Confirm step; Discard dialog 'Nothing has been created' (import-parts.tsx:569-579). runtime: 'Create 153 skills' only on A's Confirm step, 'Create 142 skills' footer in B,C. shot IM-13-import-A-clear.png",
+        "selectorHint": "page.getByRole('button',{name:/^Create \\d+/})",
+        "missing": "B/C have no separate confirm step; the footer Create is the confirmation (acceptable)",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "IM-14",
+    "text": "Copy configuration of one skill to another, or apply a configuration to several selected skills.",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/skills-library",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Copy settings dialog from the bulk selection/row (components/lab/library/row-actions.tsx:142-197; use-library.tsx:130-135); 'Configure together' (configure-many.ts)",
+        "selectorHint": "page.getByRole('button',{name:/Copy settings/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "A 'Copy from another skill' (admin-configure-skill-a.tsx:164); B copy + 'Apply to other skills' (admin-configure-skill-b.tsx:152-153, configure/bulk-apply.tsx); C several at once (admin-configure-skill-c.tsx:6)",
+        "selectorHint": "page.getByRole('menuitem',{name:/Copy from another/})",
+        "missing": "A has copy-from but not apply-to-several on the page (reachable via the library bulk bar)",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Copy from another skill works in A and B (bulk-apply.tsx:20-53, replaces the draft via fromV2). Apply to several: A has none; B 'Apply to other skills' sheet (bulk-apply.tsx:55-133) only calls onApplied, which sets a note 'Configuration applied to 1 skill.' (admin-configure-skill-b.tsx:208); nothing is written. Runtime: applied to hgtc-oxygenation-12, reopened: still 'Not configured' (shots/IM-14-configure-B-bulk-target.png). Copy also goes through fromV2, so it drops the source's student fields, self-evaluation and scale (SC-13/15/07 write-back gap).",
+        "selectorHint": "getByRole('menuitem',{name:/Apply to other/})",
+        "missing": "Apply to several is a no-op with a success message; A has no apply to several.",
+        "fix": "Wire BulkApplySheet to publishLabRule per selected skill (validate first) and add it to A's overflow.",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "Many mode (?skills=...) PublishManyDialog onPublish only sets manyDone (admin-configure-skill-c.tsx:190-193); the chosen evidence mode is ignored and no rule is written. Runtime: 4 skills, binary, 'Publish 4 skills', banner '4 skills published', but sk-pressure-injury reopens 'Not configured' (shots/IM-14-configure-C-many-target.png). C also has no 'Copy from another skill' (header actions are only Cancel, admin-configure-skill-c.tsx:129-133).",
+        "selectorHint": "getByRole('button',{name:/^Publish 4/})",
+        "missing": "False success: many-skill publish writes nothing; no copy-from in C.",
+        "fix": "Call publishLabRule for each target with the chosen mode; add Copy from to C.",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      }
+    ]
+  },
+  {
+    "reqId": "IM-15",
+    "text": "Whether interpretation proposes an evaluation model and achievement criteria is open (OD-12).",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "admin/import-ai-review",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "SEAM",
+        "evidence": "No seam: interpretation hard-codes the 'leave it to the program' branch (lib/lab/import.ts:11 'never an evaluation model or criteria (OD-12 open)'; confirmSentence 'Nothing about a model' import.ts:778; confirm copy 'Each starts not configured'). No toggle, placeholder or flagged slot for a proposed model/criteria",
+        "selectorHint": "page.locator('[data-confirm-panel]')",
+        "missing": "No seam or placeholder for the OD-12 option 'propose a model'",
+        "fix": "Add a dormant 'Suggested setup (not applied)' slot in review behind a lab flag, never preselected",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "SC-01",
+    "text": "Creating a skill and configuring it are separate; a skill may exist unconfigured",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Runtime: ?skill=sk-pressure-injury opens 'Not configured' with an empty rule in A/B/C; banner 'Students cannot send this skill and it cannot be mapped until it is published' (admin-configure-skill-a.tsx:189-191, -b.tsx:170).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-02",
+    "text": "exactly one model, chosen explicitly, no default, cannot be put in use without one",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "configure.ts:135-137 emptyRule model:null; configure.ts:382-385 'Choose an evaluation model. Nothing is chosen for you.'; configure.ts:904 ruleSnapshot throws without model; lib/lab/mapping.ts:335 unconfigured cannot be mapped. Runtime: all four cfg-model-* data-state=unchecked in A,B,C; A Next without a model shows 'Fix these to continue' (shots/SC-02-configure-A-nomodel.png). Test configure.test.ts:67.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-03",
+    "text": "binary: both labels program-defined, required, differ; which qualifies recorded explicitly",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "fields.tsx:258-299 two label inputs + 'Which outcome qualifies?' radio (qualifyingLabel null by default, configure.ts:139); validateRule configure.ts:387-393 blank/same/missing; C picks the qualifying label in the sentence (sentence-builder.tsx:56-66) with labels in the Evaluation criteria fold. Test configure.test.ts:73. Runtime ids cfg-label-0/1 and cfg-qualifying in A,B,C.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-04",
+    "text": "question and scored models: program defines and maintains the question set",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "fields.tsx:310-322 ListEditor add/edit/remove; runtime cfg-question-* and cfg-add-question in A,B,C (C inline until the first question has text, then in the fold).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-05",
+    "text": "question model qualifies on all Yes / at least N of M / named subset",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "fields.tsx:422-465 radios all/atLeast/subset with a checkbox list (cfg-qsub-*); runtime A question step: 2 subset checkboxes for 2 questions; engine rules.ts:323-329; tests configure.test.ts:278, rule-writeback.test.ts:136.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "sentence-builder.tsx:68-87 offers 'named questions' but has no control to pick which questions (QuestionRuleField lives only in RuleSection, which C never renders). Runtime: after choosing 'named questions' cfg-qsub-* count = 0 and Check and publish shows 'Fix 1 problem to publish: Tick at least one question that must be Yes.' with nothing to tick: a dead end (shots/SC-05-configure-C-subset.png).",
+        "selectorHint": "getByRole('combobox',{name:'Which answers qualify'}) then option 'named questions'",
+        "missing": "C cannot configure the named-subset rule; choosing it makes the skill unpublishable.",
+        "fix": "Render the subset checkbox list (or a multi-select of question numbers) inline in the sentence when kind=subset.",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      }
+    ]
+  },
+  {
+    "reqId": "SC-06",
+    "text": "qualification rule satisfiable (named subset not empty); usable with a large question set",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Empty subset blocked configure.ts:408; atLeast range 1..M configure.ts:407; subset list scrolls max-h-56 fields.tsx:453. No affordance for a 50-100 question set (call A.1): one input per question, no paste-many, no sections; evaluator preview truncates after 4 (live-panel.tsx:80-86). Not runtime-tested at 100 questions.",
+        "selectorHint": "",
+        "missing": "No bulk entry or grouping for large question sets; usability at 50-100 questions unverified.",
+        "fix": "Add 'Paste questions' (one per line) and test the subset picker with 100 questions.",
+        "priority": "P1",
+        "auditorPriority": "P2"
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "Subset picker missing in C (see SC-05), so an empty subset is the only reachable subset state.",
+        "selectorHint": "",
+        "missing": "Same as SC-05 C.",
+        "fix": "See SC-05.",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      }
+    ]
+  },
+  {
+    "reqId": "SC-07",
+    "text": "scored: program-configured scale; qualify by average / min on every question / total",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "UI: cfg-scale 'Scale from 1 to' (fields.tsx:323-329, validated 2..10 configure.ts:412) and cfg-srule average/minEach/total in A/B (fields.tsx:467-488) and C (sentence-builder.tsx:89-101); engine rules.ts:330-337. Write-back gap: toSkillConfig (configure.ts:868-900) never stores scaleMax and fromV2 hard-codes scaleMax 5 (configure.ts:172). Runtime B: published scored rule with scale 7 and pass mark 6, reload shows scale 5 with pass mark 6 (now out of range) (shots/SC-13-SC-15-configure-B-afterReload.png).",
+        "selectorHint": "#cfg-scale",
+        "missing": "Configured scale top is lost on publish; the reopened rule reverts to 1-5 and becomes invalid.",
+        "fix": "Add scaleMax to SkillConfig, write it in toSkillConfig, read it in fromV2.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "SC-08",
+    "text": "demonstration: program-defined, ordered levels; no fixed three-point scale",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "fields.tsx:301-308 'Levels, lowest first' ListEditor with move up/down, at least two levels (configure.ts:422); preset only fills labels and stays editable (fields.tsx:233-253). Runtime cfg-level-*, cfg-add-level, cfg-preset-independence in A,B,C.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-09",
+    "text": "criteria limited to what the model produces; changing model rebuilds criteria",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "configure.ts:194-205 withModel; fields.tsx:149-171 AlertDialog 'Change the model? The rule is rebuilt for the new model...'; C uses the same ModelSection (admin-configure-skill-c.tsx:141).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-10",
+    "text": "demonstration can require a total and a minimum at each level",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Total cfg-need (fields.tsx:364; sentence-builder.tsx:53); LevelMinimums fields.tsx:490-525; C sentence-builder.tsx:105-120,151; lmin<=need configure.ts:431-435; engine rules.ts:414. Runtime A demonstration: 'Add a level minimum' added cfg-lmin-0.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-11",
+    "text": "minimum evidence from named clinical settings, each with its own minimum, counted per setting",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "SettingMinimums fields.tsx:528-563 (A/B), sentence-builder.tsx:133-153 (C); blank/duplicate/sum>need blocked configure.ts:439-446; engine per setting rules.ts:412; test achievement.test.ts:134. Runtime: 'Add a setting minimum' in A,B,C; flow publish set=3 sentence 'with [1] in Inpatient'.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-12",
+    "text": "Lab or simulation evidence never satisfies a clinical setting requirement",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Engine rules.ts:411-412 counts only setting==='clinical' with a matching clinicalSetting; tests configure.test.ts:116 'lab never satisfies a setting', configure.test.ts:239, achievement.test.ts:113,124. UI says it: fields.tsx:560 (A/B), admin-configure-skill-c.tsx:156 (C), student preview settingNote (configure.ts:290-293); lab-instructor-only signers blocked when setting minimums exist (configure.ts:455-457; runtime B message 'a lab instructor alone cannot supply it').",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-13",
+    "text": "student submission fields: label, data type (date/short/long/number/choice list), mandatory",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "AddFieldDialog fields.tsx:584-656: label + 5 types (configure.ts:77) + Required; present in A Who signs, B section, C fold. Gaps: (1) Choice list has no way to enter the choices (runtime: one input in the dialog after choosing Choice list, shots/SC-13-configure-all-choicelist.png); (2) an added field cannot be edited, only removed (fields.tsx:689-693); (3) not persisted: toSkillConfig (configure.ts:868-900) has no studentFields and fromV2 resets to 'Date performed' (configure.ts:179). Runtime B: added 'Unit' (short text, required), published, reloaded: only 'Date performed' (shots/SC-13-SC-15-configure-B-afterReload.png).",
+        "selectorHint": "getByRole('button',{name:'Add a field'})",
+        "missing": "Choice options; editing an existing field; write-back on publish.",
+        "fix": "Add an options editor for Choice list, an edit action per field, and persist studentFields in SkillConfig.",
+        "priority": "P0",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "SC-14",
+    "text": "narrative feedback capturable on every evaluation; program decides per skill if mandatory",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "cfg-feedback toggle fields.tsx:709; persisted (configure.ts:893; runtime B reload kept it on); evaluator preview shows Feedback (required/optional) live-panel.tsx:93-96.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-15",
+    "text": "optional per skill: student self-evaluates first; admin approval before evidence counts",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Toggles cfg-self and cfg-approval in A,B,C (fields.tsx:710-711). Approval persists (configure.ts:894). Self-evaluation is not written back: SkillConfig has no flag (lib/v2/types.ts:140-181), toSkillConfig omits it, fromV2 sets selfEvaluation false (configure.ts:181); the student side infers it from levels (lib/lab/student2.ts:74-80 'SkillConfig has no flag yet'). Runtime B: toggled on, published, reloaded: off (shots/SC-13-SC-15-configure-B-afterReload.png).",
+        "selectorHint": "#cfg-self",
+        "missing": "Self-evaluation setting does not persist or drive the student flow.",
+        "fix": "Add selfEvaluation to SkillConfig, write it on publish, read it in selfEvalEnabled.",
+        "priority": "P0",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "SC-16",
+    "text": "program decides which evaluator roles may sign off each skill",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Role checkboxes preceptor/faculty/lab-instructor fields.tsx:665-679 (configure.ts:75-76); at least one required configure.ts:454; persisted evaluatorRoles configure.ts:892. Runtime cfg-role-* in A,B,C.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-17",
+    "text": "dependency model -> evidence -> qualification -> criteria apparent to the configurer",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "Model options carry a consequence line (configure.ts:97-102; C via tooltip); 'Choose how it's judged first. The criteria depend on it.' (fields.tsx:257,355); live rule sentence in the preview panel and footer (live-panel.tsx:140-234); C 'The sentence then shows what that choice can ask for.' Runtime: preview sentence updates per step (A demonstration: 'Get 3 evaluations, at least 1 at Independent or above, with 1 in Inpatient').",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/rule-change-impact",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "RuleDiff now/after (admin-rule-impact-a.tsx:16-25); runtime both show 'How many times Now ... After ...'.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SC-18",
+    "text": "unsatisfiable configuration not savable (unlabelled/duplicate questions or levels, empty subset, minimums > total)",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "validateRule configure.ts:378-459; publishLabRule refuses (configure.ts:934-935); use-configure.tsx:106 guard. Runtime B: duplicate levels + setting minimum 5 > need 2 + lab-only signer: 'Fix 4 problems to publish', not published (shots/SC-18-configure-B.png); A Next blocked per step; C 'Fix 1 problem to publish'. Tests configure.test.ts:81-95, validate.test.ts:48,94,122.",
+        "selectorHint": "",
+        "missing": "Edge: C's empty-subset error cannot be resolved inside C (SC-05). BulkApplySheet Apply (bulk-apply.tsx:117-125) does not run validateRule (moot today, it writes nothing).",
+        "fix": "Validate before bulk apply once it is wired.",
+        "priority": "",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "SC-19",
+    "text": "before use, review everything asked of student and evaluator together",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "A"
+        ],
+        "status": "MET",
+        "evidence": "Check step CheckPanel (impact.tsx:330-400): 'What you changed' (configDiff incl. roles, student fields, feedback, self-evaluation, approval), impact, Student sees + Evaluator sees side by side at 1440. Runtime shots A-<model>-check.png.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Check and publish section with CheckPanel previewColumn=false (admin-configure-skill-b.tsx:182-185) plus the preview panel with both views (runtime: panel 375px wide at 1440).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/configure-skill",
+        "variants": [
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "PublishDialog (impact.tsx:435-487): when the change affects evidence the dialog shows impact only; Student/Evaluator previews render only when there is no evidence choice (impact.tsx:462) and there is no 'What you changed' list. Many-skill dialog (admin-configure-skill-c.tsx:225-288) shows only a per-skill change table. Runtime ?change=sample&impact=open: dialog has no Student sees / Evaluator sees (shots/SC-19-configure-C-dialog.png); the page's preview panel sits behind the modal.",
+        "selectorHint": "getByRole('dialog',{name:/Publish/})",
+        "missing": "C's final review omits what the student and evaluator will be asked, and the change list, whenever existing evidence changes.",
+        "fix": "Always render ChangeList + PreviewTabs in the C publish dialog (and per skill in many mode).",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "admin/rule-change-impact",
+        "variants": [
+          "A"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Rule impact A shows rule diff + impact only; no student/evaluator view (admin-rule-impact-a.tsx). B has 'What each role sees after publish' (admin-rule-impact-b.tsx:24-59).",
+        "selectorHint": "",
+        "missing": "No preview of what the student/evaluator see in A (lower need: the configure Check covers it).",
+        "fix": "Optional: reuse B's RolePreview.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "CM-01",
+    "text": "offering identified by course code and name, term, academic year, professional year and cohorts",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "A"
+        ],
+        "status": "MET",
+        "evidence": "mapping-parts.tsx OfferingsTable row code+cohort+Year n+name; OfferingPanel meta `${term} · ${academicYear} · Year ${py} · ${cohort}`; runtime A 'NUR 101 BSN 2028 · Year 2 Fundamentals of Nursing'; tests/lab/mapping.test.ts:35",
+        "selectorHint": "getByText('NUR 101')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "mapping-parts.tsx SkillPanel offering cell shows code name + cohort · Year n only; no academic year, term only implicit from the toolbar",
+        "selectorHint": "locator('[data-region=skill]')",
+        "missing": "academic year on each offering row",
+        "fix": "Add academic year to the SkillPanel offering sub-line",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "CM-02",
+    "text": "offerings locatable by search and by cohort, term, academic year and professional year",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "A"
+        ],
+        "status": "MET",
+        "evidence": "admin-course-mapping-a.tsx toolbar: SearchField oq, Term (grouped by academic year, mapping-frame.tsx:53), Cohort, Professional year; filterOfferings haystack includes academic year (mapping.ts:70); runtime toolbar 'Fall 2026 | All cohorts | All years'; tests/lab/mapping.test.ts:51",
+        "selectorHint": "getByLabel('Search offerings by course, term, cohort or year')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "B"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "admin-course-mapping-b.tsx toolbar has skill search, Term, Show only; SkillPanel offerings table searchable={false}, no cohort/year/professional-year filter; runtime B toolbar 'Fall 2026 | All skills'",
+        "selectorHint": "locator('[data-region=skill]')",
+        "missing": "search and cohort / academic year / professional year filters for offerings",
+        "fix": "Add an offering search + cohort + professional year filter above the SkillPanel offering table",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "CM-03",
+    "text": "mapped skill marked mandatory or non-mandatory for that offering",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "LevelSelect per offering (mapping-parts.tsx OfferingPanel/SkillPanel); mandatory is a distinct level; non-mandatory split into Recommended/Optional per CALL 10-26 #9 (see callContradictions: not marked Proposed); tests/lab/mapping.test.ts:68",
+        "selectorHint": "getByText('Mandatory')",
+        "missing": "Recommended/Optional not labelled as proposed vs REQ",
+        "fix": "Tag Recommended/Optional as Proposed in the legend until the client confirms",
+        "priority": "",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "CM-04",
+    "text": "for any offering, how many skills mapped and how many mandatory",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "A"
+        ],
+        "status": "MET",
+        "evidence": "OfferingsTable columns Mapped, Mandatory; panel data-level-totals; runtime 'NUR 101 ... 142 25'; tests/lab/mapping.test.ts:63",
+        "selectorHint": "getByRole('columnheader',{name:'Mandatory'})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "B"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "SkillPanel shows per-skill carriers ('n of m courses, k mandatory'); no per-offering mapped/mandatory count anywhere in B",
+        "selectorHint": "locator('[data-region=skill]')",
+        "missing": "per-offering mapped and mandatory counts",
+        "fix": "Add Mapped / Mandatory count columns to the SkillPanel offering rows",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "CM-05",
+    "text": "mapping is expectation not eligibility; unmapped skill may be submitted and counts",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "lib/lab/student2.ts:106-115 pickRows includes every openToLog skill regardless of mapping; runtime picker 'Search 147 skills'",
+        "selectorHint": "getByPlaceholder(/Search 147/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "SkillsField uses the same pickRows (request-parts.tsx useRequestDraft)",
+        "selectorHint": "getByRole('button',{name:'Add a skill'})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "CM-06",
+    "text": "requirement level may differ between offerings for the same skill",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "setLevel(state, overlay, offeringId, skillId, level) per offering; B SkillPanel edits each offering's level; tests/lab/mapping.test.ts:97 'lets the same skill differ between offerings'",
+        "selectorHint": "locator('[data-region=skill] [role=combobox]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "CM-07",
+    "text": "one record per skill; evidence on any course counts",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "recordRows groups by skill across courses (student2.ts:286) with skillProgress per student+skill; course filter 'All courses'; skill detail 'Counts across: All your courses'",
+        "selectorHint": "getByLabel('Course')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "CM-08",
+    "text": "mappings per offering; carry-forward is OD-01",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "admin/course-mapping",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "SEAM",
+        "evidence": "lib/lab/mapping.ts:8 'Carry-forward between terms is open (OD-01): an edit applies to one offering only'; bulk banner 'Applies to <code>, <term> only'",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "ST-01",
+    "text": "see skills expected on a course, which are mandatory, and progress on each",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/home",
+        "variants": [
+          "A"
+        ],
+        "status": "PARTIAL",
+        "evidence": "progress.tsx RequiredList: required skills with state + parts; runtime 'Required skills 5'. No course grouping, non-mandatory expected skills absent",
+        "selectorHint": "locator('#required')",
+        "missing": "course context and the non-mandatory expected skills",
+        "fix": "Group the list by course (or add a course switch) and include recommended/optional rows",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "student/home",
+        "variants": [
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Mosaic of whole list / required, by section; no course dimension",
+        "selectorHint": "locator('[data-region=map]')",
+        "missing": "which course expects each skill",
+        "fix": "Add a course filter to the map",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "student/home",
+        "variants": [
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "progress.tsx:427 CourseTable shows per course counts only (Required achieved n of m); no per-skill list",
+        "selectorHint": "locator('[data-region=courses]')",
+        "missing": "the skills per course with progress on each",
+        "fix": "Make each course row expand to its skills with state",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-02",
+    "text": "submit a skill not mapped to their course",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "pickRows never restricts by mapping (student2.ts:90 comment, :106); runtime 147 skills",
+        "selectorHint": "getByPlaceholder(/Search 147/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "same SkillPicker rows",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "ST-03",
+    "text": "isolate already-submitted skills in a library of any size",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Record lists only submitted evidence, grouped by skill (A) or month (B), with search + result/setting/course filters (record-parts.tsx RecordFilters)",
+        "selectorHint": "getByLabel(/Search skills or evaluators/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "SkillPicker (log-parts.tsx) shows a state word per row but has no 'Already submitted' filter/group; only 'Likely here' + sections",
+        "selectorHint": "getByPlaceholder(/Search 147/)",
+        "missing": "a way to isolate submitted skills in the picker",
+        "fix": "Add an 'Already submitted' group or toggle to the picker",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "same SkillPicker",
+        "selectorHint": "",
+        "missing": "same",
+        "fix": "same",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-04",
+    "text": "submit several skills together",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "A multi-select picker; B 'Send N skills for evaluation' with ready rows",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "runtime result '2 skills in one request.'",
+        "selectorHint": "getByText('2 skills in one request.')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "ST-05",
+    "text": "every submission records clinical vs lab/simulation",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "WhereField radio / Where select include placements + Lab + Simulation (lib/v2/student.ts:685-695); runtime A 'Lab Practice Simulation Practice'",
+        "selectorHint": "getByText('Simulation')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "request-parts.tsx useRequestDraft filters whereChoices to setting==='clinical'; Lab/Simulation cannot be sent for evaluation at all ('not sent for sign-off', lib/v2/student.ts:692)",
+        "selectorHint": "getByLabel('At')",
+        "missing": "lab/sim evidence routed to a lab instructor (REQ EV-02)",
+        "fix": "Allow a lab/simulation setting on Send that routes to lab instructors",
+        "priority": "P0",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-06",
+    "text": "clinical setting derived from placement; single inferred, multi choose, location recorded",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "whereChoices from placements (location as label, clinicalSetting as sub-line), first preselected; runtime 3 placements listed",
+        "selectorHint": "getByText('Harbor General, 4 West')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "PlacementSelect hidden when one placement (request-parts.tsx 'Hidden when there is one placement (inferred, REQ ST-06)'); runtime 'At' select with 3",
+        "selectorHint": "getByLabel('At')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "ST-07",
+    "text": "no placement: still possible, drawing on program's full settings list",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "lib/v2/student.ts:689 falls back to program.clinicalSettings with askLocation:true, but askLocation is never read in components/lab (grep: 0 hits) so no location is captured; code-only (no no-placement student opened)",
+        "selectorHint": "",
+        "missing": "location input when no placement",
+        "fix": "Render a Location field when the chosen WhereChoice has askLocation",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "same fallback list (clinical filter keeps program settings); evaluatorsFor(location null); no location captured",
+        "selectorHint": "",
+        "missing": "location",
+        "fix": "same",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-08",
+    "text": "evaluator role constrained by setting and skill roles; told why when no valid combination",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Skill-role axis MET: evaluatorsFor uses evaluatorChoices eligible+reason, disabled radio shows reason, 'Nobody on record can sign off every skill you picked...' (log-parts.tsx EvaluatorPicker). Setting axis missing: lib/lab/student2.ts:195 skips every lab-instructor and Send is clinical-only, so setting never drives the role",
+        "selectorHint": "getByText(/Nobody on record can sign off/)",
+        "missing": "setting-driven role (lab/sim -> lab instructor)",
+        "fix": "Pass the setting into evaluatorsFor and include lab instructors for lab/sim",
+        "priority": "P0",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-09",
+    "text": "select recorded evaluator; name an unrecorded lab instructor with email",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Recorded preceptors/faculty selectable; 'Someone not listed' takes Full name + Email with validation + 'Not yet recorded' (log-parts.tsx EvaluatorPicker, student2.ts:209). Recorded lab instructors are excluded (student2.ts:195)",
+        "selectorHint": "getByText('Someone not listed')",
+        "missing": "recorded lab instructors in the list",
+        "fix": "Stop filtering lab-instructor kind; list them for lab/sim",
+        "priority": "P0",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-10",
+    "text": "required submission details captured, mandatory enforced before send",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A"
+        ],
+        "status": "MET",
+        "evidence": "detailErrors (student2.ts:63); runtime Save with Unit cleared -> 'Enter the unit.'",
+        "selectorHint": "getByText('Enter the unit.')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "missing() blocks 'Ready'; RowStatus 'Add date, unit'",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Send opens with likely skills preselected and sends with no date/unit; runtime: Send succeeded after picking only an evaluator",
+        "selectorHint": "getByRole('button',{name:'Send'})",
+        "missing": "details enforced when Send is used without Log",
+        "fix": "Require the Log details (or show DetailsFields) for skills without a saved entry",
+        "priority": "P0",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "student/fix-returned",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Further attempt is a new submission but captures no date/unit/setting (fix.tsx FixForm: Send to + note only; setting hard-coded 'Clinical' student.ts:768)",
+        "selectorHint": "getByText(/Further attempt/)",
+        "missing": "details and setting on a further attempt",
+        "fix": "Reuse DetailsFields and WhereField in the attempt path",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-11",
+    "text": "self-evaluation where configured, before the evaluator sees it",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "SelfEvalFields only for selfEvalEnabled skills (log A region 'self'; log B per entry); flag is an INFER stand-in (student2.ts:74-80)",
+        "selectorHint": "getByText('Rate yourself')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "No self-rating on Send; scopeSentence still says 'with your self-rating' for self-eval skills even when none was given (request-parts.tsx scopeSentence)",
+        "selectorHint": "locator('[data-scope-sentence]')",
+        "missing": "self-rating capture when sending without a log entry",
+        "fix": "Show SelfEvalFields for picked self-eval skills lacking a rating",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-12",
+    "text": "at most one narrative note per submission, distinct from evaluator comment",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "No note field (runtime getByLabel(/note/i) count 0; fields are Date performed, Unit, Case reference)",
+        "selectorHint": "getByLabel(/note/i)",
+        "missing": "student note field",
+        "fix": "Add one optional 'Note for the evaluator' textarea per submission",
+        "priority": "P0",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "request-parts.tsx has no note field",
+        "selectorHint": "",
+        "missing": "student note",
+        "fix": "Same field on Send",
+        "priority": "P0",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "student/fix-returned",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "fix.tsx 'Note for the evaluator (optional)' + 'Kept apart from the evaluator's own comment.'",
+        "selectorHint": "getByText('Kept apart from the evaluator')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/offline-sync",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "conflictChoices offers 'Keep both' for a note (student2.ts:581-587) -> two notes on one submission",
+        "selectorHint": "getByText('Keep both')",
+        "missing": "",
+        "fix": "Drop 'Keep both' or merge into one note",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-13",
+    "text": "confirmation of what, to whom, role, setting and location",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/request-signoff",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "RequestResult (request-parts.tsx): title 'Sent to <name>', '2 skills in one request.', next sentence. Runtime A 'Ready for Aaliyah Ashworth, RN to scan / 2 skills in one request.'; B 'Sent to Aaliyah Ashworth, RN'. No skill names, no role, no setting/location",
+        "selectorHint": "locator('[data-region=result]')",
+        "missing": "skill names, evaluator role, setting and location",
+        "fix": "Add a dl to the result: skills by name, To (name, role), Setting, Location",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Saved banner 'N skills synced to your record' with sidebar Where/Date (no role: not yet sent) - acceptable as a pre-send save",
+        "selectorHint": "getByText('Saved on this device')",
+        "missing": "skill names",
+        "fix": "",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "ST-14",
+    "text": "setting/location once per submission or per skill (OD-07)",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "SEAM",
+        "evidence": "A captures Where once per sitting; B per entry (per skill); lib/store/actions/submissions.ts:85 'OD-07 is OPEN: copied onto each submission'",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "EV-01",
+    "text": "completable without a Prism login; opens directly, no account",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "evaluator/evaluation-form, submitted, expired, invitation-email; lab-instructor/lab-batch-grid",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "components/lab/evaluator/frame.tsx:20-36 (light header, 'No account needed', no sidebar); light-frame.tsx:13-22 (no app chrome); runtime: every evaluator/lab text starts 'Harbor University BSN / No account needed', no sign-in text; email 'No account is needed'. Expired C asks for the address to send a new link (OD-18 shape, labelled not decided) - not a login.",
+        "selectorHint": "getByText('No account needed')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "EV-02",
+    "text": "preceptor, faculty, lab instructor; valid roles depend on where performed",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "engine lib/v2 + evaluator/lab screens",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "lib/v2/types.ts:138 EvaluatorRole preceptor|faculty|lab-instructor; lib/v2/student.ts:413-419 lab instructor ineligible for clinical; lib/v2/rules.ts:133-134 clinical minimum needs preceptor or faculty; lab grid header 'Lab evidence. Never counts toward a clinical setting' (lab-grid-parts.tsx:19-22, runtime). Note: faculty has no dedicated evaluator surface in the lab (uses the same form); ROLE_KINDS maps faculty to reviewer/director people (rules.ts:43-47).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "EV-03",
+    "text": "evaluator sees what the program configured; cannot alter how evaluated",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "evaluator/evaluation-form",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "components/lab/evaluator/fields.tsx:76-145 renders only skill.choices/levels/questions/feedbackRequired from config (lib/lab/evaluator.ts:220-227); no rule or model control on any form; lab Options menu is lab chrome only.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "lab-instructor/lab-batch-grid",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "use-lab-grid.tsx:34-38 labels from config; no config controls.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "EV-04",
+    "text": "student details and self-evaluation visible as context",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "evaluator/evaluation-form",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "RequestSummary (fields.tsx:205-212) shows student, course, location, setting in all three; SelfNote (fields.tsx:58-73) self-rating + note in A card, B step, C row subline ('Maya rated With assistance') and C sheet; per-question 'Student said Yes' (fields.tsx:115). Runtime A/B/C: 'Maya Ferreira / NURS 350 · Harbor General, 4 West, Inpatient / Maya rated With assistance / quoted note'. Gaps: the student's note is line-clamp-2 with no expand (fields.tsx:70), so a longer note is cut; date performed is not shown.",
+        "selectorHint": "locator('[data-user-content]')",
+        "missing": "full student note (truncated to 2 lines, no expand); date performed",
+        "fix": "Drop line-clamp or add a 'Show all' toggle on SelfNote; add the performed date to the request summary line.",
+        "priority": "P1",
+        "auditorPriority": "P2"
+      },
+      {
+        "screen": "lab-instructor/lab-batch-grid",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "N/A",
+        "evidence": "Instructor-initiated session; no student submission or self-evaluation exists.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "EV-05",
+    "text": "several skills in one sitting, each own outcome and feedback",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "evaluator/evaluation-form",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "A one card per skill with Outcome + Feedback (evaluator-form-a.tsx:43-71); B one wizard step per skill + review (evaluator-form-b.tsx:93-103); C table row outcome + per-row sheet with feedback (evaluator-form-c.tsx:79-133). Runtime A: two skills each with Outcome + Feedback textarea.",
+        "selectorHint": "getByRole('textbox')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "lab-instructor/lab-batch-grid",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Outcome per student x skill only; no feedback field anywhere (runtime: 0 textareas on A and B; use-lab-grid.tsx cells hold LabMark only).",
+        "selectorHint": "locator('textarea')",
+        "missing": "per-result feedback",
+        "fix": "Add an optional per-cell feedback affordance (popover or row sheet like form C).",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "EV-06",
+    "text": "mandatory feedback blocks submit",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "evaluator/evaluation-form",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "lib/lab/evaluator.ts:301 validate; tests/lab/evaluator.test.ts:111-114; runtime ?fb=1: A and C submit blocked with '3 answers missing ... Write feedback. The program requires it.'; B Next blocked on step 1 with the same message. Shots /tmp/sc-reqaudit/ev/crawl/evform-*-fb.png",
+        "selectorHint": "getByRole('button',{name:/^Submit/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "lab-instructor/lab-batch-grid",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "No feedback capture, so a skill configured feedbackRequired is saved without feedback: use-lab-grid.tsx save() only checks tally.results>0; runtime 0 textareas. Shots /tmp/sc-reqaudit/shots/EV-06-lab-batch-grid-A.png, -B.png",
+        "selectorHint": "getByRole('button',{name:'Save session'})",
+        "missing": "feedback field and the required-feedback block for lab skills",
+        "fix": "Read config.feedbackRequired per skill; require a note for those cells before Save session.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "EV-07",
+    "text": "evaluator told whether evidence counts now or waits for approval",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "evaluator/submitted",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "lib/lab/evaluator.ts:325-333 receipt status; runtime hold=1: A 'Waits for program approval ... Counts after program approval'; B 'Signed off. They wait for approval / Next: Awaits program approval'; C 'What Maya sees: Awaiting approval'; default/mixed: 'Counts now'.",
+        "selectorHint": "getByText('Waits for program approval')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "lab-instructor/lab-batch-grid (+ flow record-lab-session/submitted)",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Saving shows only 'Session saved. N results recorded. Saved sessions are not edited.' (lab-grid-parts.tsx:78-85); the flow's Submitted step reuses the preceptor receipt for Maya Ferreira's 2-skill request, not the lab session (runtime flow record-lab-session/submitted set 1 and 2). Shot /tmp/sc-reqaudit/shots/EV-07-record-lab-session-submitted-1.png",
+        "selectorHint": "",
+        "missing": "counts-now vs waits-for-approval per lab result; a lab-session receipt",
+        "fix": "Give LabSaved a per-skill counts/waits line (from config.approvalRequired) and point the flow step at it.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "EV-08",
+    "text": "evaluator roles fixed or program-defined (OD-06)",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "engine lib/v2",
+        "variants": [
+          "all"
+        ],
+        "status": "SEAM",
+        "evidence": "Seam weak: roles are a fixed TypeScript union (lib/v2/types.ts:138) with fixed maps ROLE_KINDS (rules.ts:43-47) and ROLE_NAME (student.ts:410); no data-driven role list. Not decided in UI (no copy claims either way).",
+        "selectorHint": "",
+        "missing": "data-driven role list seam",
+        "fix": "Move roles to a program-level list consumed by the maps, keep the three as seed.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "AR-01",
+    "text": "every awaiting evaluation with student, skill, course, setting, location, evaluator, role",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "reviewer/approvals + admin/approvals",
+        "variants": [
+          "A"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Columns Student, Skill (subline course · setting), Waiting, Why held, Evaluator (+ role) (reviewer-approvals-a.tsx:80-118); admin A renders ReviewerApprovalsA (admin-approvals-a.tsx:14-19). No location anywhere in the row; multi-skill rows show only the first skill + 'and N more'. Shots AR-01-reviewer-approvals-A.png, AR-01-admin-approvals-A.png",
+        "selectorHint": "getByRole('columnheader')",
+        "missing": "location",
+        "fix": "Add location to the skill subline ('NURS 350 · Clinical, Inpatient · Harbor General, 4 West').",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "reviewer/approvals",
+        "variants": [
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Queue columns only 'Student and skill', 'Why held', 'Waiting' (reviewer-approvals-b.tsx:46-66); course, setting, location, evaluator, role appear only in the side panel Facts after opening a row (line 104). Shot AR-01-reviewer-approvals-B.png",
+        "selectorHint": "",
+        "missing": "course, setting, location, evaluator, role in the queue list",
+        "fix": "Add an evaluator+role subline and a course/setting/location subline to the list cell.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "reviewer/approvals",
+        "variants": [
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Board cards show student, first skill, age; evaluator name only in the 'Evaluator not assigned' column and never the role; no course, setting, location (reviewer-approvals-c.tsx:66-83). Shot AR-01-reviewer-approvals-C.png",
+        "selectorHint": "locator('[data-board-column]')",
+        "missing": "course, setting, location, role; evaluator outside one column",
+        "fix": "Add one data line per card: evaluator, role · course · setting · location.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "admin/approvals",
+        "variants": [
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Aggregate rules table (Skill, Approval, Holds now, Students, Oldest, Change rule) and a sentence for other reasons; no per-evaluation list with the seven fields on this page (admin-approvals-b.tsx:24-46; runtime). Shot AR-01-admin-approvals-B.png",
+        "selectorHint": "",
+        "missing": "per-evaluation rows (relies on navigating to A)",
+        "fix": "Make 'Holds now' and each other-reason count link to the filtered triage list.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "AR-02",
+    "text": "self vs evaluator side by side incl. agreement",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "reviewer/review-item",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "MET",
+        "evidence": "CompareTable Asked | Student | Evaluator | Agreement (review-parts.tsx:34-67); runtime disagree item sub-02: A and B 'Overall Unmet Met Differs'; C 'Self and evaluator: Differs' and Answers section open by default when they differ (reviewer-review-item-c.tsx:39). Shot AR-02-reviewer-review-item-A-disagree.png. Approvals B side panel uses the same CompareTable.",
+        "selectorHint": "getByText('Differs')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "AR-03",
+    "text": "examine the full set of responses, not a summary",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "reviewer/review-item (and approvals B panel)",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Compare rows come from lib/v2/queue.ts:476-491: for level-rated skills only the level row is shown, so the evaluator's Met/Unmet outcome is absent (runtime A/C item 'Sputum': 'Asked | Evaluator / Level of supervision | Level not recorded', no outcome; B shows 'Met' only in its story line); for scored skills no per-question score row is built; Comparison.responses, .outcomeWord and .selfNote are computed (queue.ts:496-513) but never rendered (grep in components/lab: 0 uses). Feedback and facts are shown. Shots AR-03-reviewer-review-item-A.png, -C.png",
+        "selectorHint": "locator('table').first()",
+        "missing": "evaluator outcome on level-rated skills; per-question scores (scored model); the student's self-evaluation note",
+        "fix": "Render c.outcomeWord as an 'Outcome' row always, render c.responses for scores, and show c.selfNote under the compare table.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "AR-04",
+    "text": "reviewer may record a note, retained with the evaluation",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "reviewer/review-item, reviewer/approvals, admin/approvals",
+        "variants": [
+          "all"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Return requires a note (decisions.tsx:181-225; runtime Return dialog 'Note to the student'); note retained (reviewer.ts:98, export reviewNote column attainment.ts:424). Approve has no note field in any variant: ui.approve([row]) (review-parts.tsx:117; reviewer-approvals-a.tsx:132) although the model accepts one (reviewer.ts:52,94).",
+        "selectorHint": "getByRole('button',{name:'Approve'})",
+        "missing": "optional note on Approve",
+        "fix": "Add an optional note to the approve path (inline field in the decision bar or a confirm popover).",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "AR-05",
+    "text": "approve = counts; return = goes back, does not count",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "reviewer/review-item, approvals",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "decisions.tsx:68 'It counts now. The student sees it on their progress page.'; :207 'It goes back to the student and does not count.' with correction / different evaluator / new attempt paths; runtime: Return dialog text as quoted; Approve on review-item A produced banner 'Approved Mason Whitaker, Sputum. It counts now.' and advanced to the next item (queue 1 of 35 became 1 of 34).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "AR-06",
+    "text": "evidence awaiting approval excluded until approved",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "engine + reviewer screens",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "lib/v2/rules.ts:374 only status 'counted' enters runRule; lib/v2/approvals.ts:13-15 unverified-evaluator evidence read as held; runtime review-item A: 'If you approve Sputum becomes achieved: 1 of 1'; student record 'Mason Whitaker 44 skills achieved, 1 in progress. 1 awaiting approval'. Doubt: 'disagree' holds stored as counted rely on heldState; not traced end to end.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "RV-01",
+    "text": "correct and resend a returned submission, or one not yet assessed",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/fix-returned",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Runtime (stu-g-067): reason 'Choose the setting where you did this skill, then send it again.' but the form has only a checkbox 'Correct the setting or location', Send to, and 'What you changed' text; no setting/location/date control to actually correct (fix.tsx FixForm)",
+        "selectorHint": "getByText('Correct the setting or location')",
+        "missing": "editable submission fields (setting, location, date, details) in the correction",
+        "fix": "Show the original Where + details prefilled and editable in the correction form",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "student/my-requests",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "RequestLine / StatusTable render an action only when status==='returned'; a waiting (not yet assessed) request has no Edit/Correct-and-resend; fixModel only handles returned or dnq (student.ts:727-751). Runtime A: 'Indwelling urinary catheter insertion, Oral medication administration - Waiting today' with no action",
+        "selectorHint": "getByText('Waiting today')",
+        "missing": "correct-and-resend for an unassessed request",
+        "fix": "Add 'Correct and resend' on waiting (not awaiting-approval) rows routing to fix-returned in correction mode",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "RV-02",
+    "text": "correction continues same record with revision count and return reason",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/fix-returned",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "PathLine 'Correction: revision 1 of this submission.'; ReasonBlock 'Returned by Lucia Ochoa, Sep 17' + reason; fixModel keeps submissionId, nextNumber=revisions+1 (student.ts:742)",
+        "selectorHint": "getByText(/Correction: revision/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/my-requests",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "linkLine shows 'Revision n'; Reason quoted (requests.tsx RequestLine); runtime 'Reason: The signed form is missing the date...'",
+        "selectorHint": "locator('[data-return-reason]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "RV-03",
+    "text": "completed evaluation not editable; further attempt recorded separately",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "student/fix-returned",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Runtime attempt path: 'Further attempt 3, a new submission. Attempt 2 stays.' (fix.tsx PathLine); no edit control on completed evaluations in skill detail / record",
+        "selectorHint": "getByText(/Attempt 2 stays/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/skill-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "skillPrimary: dnq -> 'Make a further attempt'; no edit on counted attempts",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "RV-04",
+    "text": "either path can go to a different evaluator",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/fix-returned",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "'Someone else you have worked with' select (fix.tsx); limited to past evaluators, lab instructors excluded (student.ts:724), no 'Someone not listed' name+email; attempt path list still includes the same evaluator (runtime: S. Okonkwo appears in 'others' for the attempt)",
+        "selectorHint": "getByText('Someone else you have worked with')",
+        "missing": "any recorded evaluator / new name+email; exclude the original",
+        "fix": "Reuse EvaluatorPicker in the fix form and filter out the original evaluator",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "RV-05",
+    "text": "counted or awaiting-approval cannot be edited or resent",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "student/my-requests",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Awaiting approval rows: 'Link closed, evaluation complete', no action (requests.tsx action only for returned); runtime A 'Point-of-care blood glucose Awaiting approval, 6 days' no button",
+        "selectorHint": "getByText(/Awaiting approval, 6 days/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/skill-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "skillPrimary waiting -> 'View request' only; achieved -> no action",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "read-only table; no edit/resend/reopen (grep 'reopen' in student/reviewer texts: 0)",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/log-skill",
+        "variants": [
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "rows with requestTo ('Sent to J. Delgado') are excluded from Ready and cannot be resent",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "RV-06",
+    "text": "correction clears or retains evaluator answers (OD-08)",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "student/fix-returned",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "SEAM",
+        "evidence": "lib/lab/evaluator.ts:7,60 prefill earlier answers is a lab option, off by default, OD-08 open",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SH-01",
+    "text": "every submission for a skill, in order, identified by attempt",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/skill-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "AttemptTimeline 'Attempt 3/2/1' (A), AttemptLedger '#' column (B); student.ts:630 attempts(); runtime 'Attempt 3 Oct 26 ... Attempt 1 Oct 5'. Note: open submissions are appended after evaluations, not merged by date, and show setting 'Clinical' only (student.ts:648)",
+        "selectorHint": "getByText('Attempt 1')",
+        "missing": "",
+        "fix": "Sort attempts by date across evaluations and open submissions",
+        "priority": "",
+        "auditorPriority": "P2"
+      },
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "recordRows (student2.ts:286) lists evaluations only: open/returned submissions with no evaluation are absent; no attempt numbers",
+        "selectorHint": "locator('[data-region=evidence]')",
+        "missing": "unanswered/returned submissions and attempt numbers",
+        "fix": "Merge open submissions into recordRows with attempt n",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "SH-02",
+    "text": "explicit outcome counted / did not meet / returned / waiting with who it is with",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/skill-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "MARK words Counted / Did not count / Waiting / Returned / Sent; each attempt names the evaluator; awaiting approval says 'It counts once approved'",
+        "selectorHint": "getByText(/Waiting. Sent/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "ResultLabel + Evaluator column; awaiting approval 'Completed. It counts once a reviewer approves it.'",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/my-requests",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "grouped by evaluator (A) / evaluator column (B) with status",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SH-03",
+    "text": "failed rule stated in actionable terms",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/skill-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "WhyNotCounted failed.rule + failed.next; attempt why from p.leftOut",
+        "selectorHint": "locator('[data-why-not-counted]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "runtime 'The evaluator answered Unmet. Needs 3 Met evaluations; you have 0.'",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/home",
+        "variants": [
+          "A"
+        ],
+        "status": "MET",
+        "evidence": "Do this next 'Sterile dressing change did not count - Unmet, Oct 23. Needs 3 Met evaluations; you have 0.'",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SH-04",
+    "text": "how many submissions counted, outstanding and returned",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "RecordFigures = Counted 56 / Did not count 2 / Awaiting approval 1 (record-parts.tsx); no Returned figure and requests waiting with an evaluator are not counted (recordRows evaluations only)",
+        "selectorHint": "getByRole('group',{name:'Filter by result'})",
+        "missing": "Returned and Outstanding (waiting with evaluator + awaiting approval) counts",
+        "fix": "Figures: Counted, Outstanding, Returned (Did not count stays in the filter)",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "student/home",
+        "variants": [
+          "A",
+          "B",
+          "C"
+        ],
+        "status": "PARTIAL",
+        "evidence": "waiting + returned counts present; counted submissions not shown (hero counts achieved skills)",
+        "selectorHint": "",
+        "missing": "counted submissions",
+        "fix": "",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      },
+      {
+        "screen": "student/my-requests",
+        "variants": [
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "tabs Waiting / Returned / Done counts; Done is not 'counted'",
+        "selectorHint": "getByRole('tab')",
+        "missing": "counted",
+        "fix": "",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "SH-05",
+    "text": "progress against each named setting",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/skill-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "partsOf adds one part per named setting (student.ts:137-140) rendered by Parts; runtime home 'Inpatient 1 of 1'",
+        "selectorHint": "getByRole('list',{name:'Parts of the rule'})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "SH-06",
+    "text": "record covers every course with narrow-to-one",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "RecordFilters Course select 'All courses' + recordCourses (student2.ts:367)",
+        "selectorHint": "getByLabel('Course')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "student/skill-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "WhereItCounts says 'Counts across: All your courses'; attempts show no course and cannot be narrowed to one course",
+        "selectorHint": "getByText('All your courses')",
+        "missing": "course per attempt + narrow to one",
+        "fix": "Add course to each attempt and a course filter on the attempts list",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "SH-07",
+    "text": "see the completed evaluation including responses and feedback in full",
+    "class": "ui",
+    "screens": [
+      {
+        "screen": "student/skill-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "Attempts show only the outcome word ('Counted. Met.'); Evaluation.feedback and answers (lib/v2/types.ts:255,261) are never rendered: grep feedback/answers in components/lab/student*, screens/student-*: 0",
+        "selectorHint": "getByText('Attempt 1')",
+        "missing": "full evaluation view (per-question responses, evaluator feedback)",
+        "fix": "Make each completed attempt open a read-only evaluation sheet with answers and feedback",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "student/record",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "rows show result + why; no link to the evaluation",
+        "selectorHint": "",
+        "missing": "same",
+        "fix": "Row opens the same evaluation sheet",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-01",
+    "text": "filter by cohort, group, clinical course, category, tag, location, setting; applied evident; each removable",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/dashboard, admin/dashboard-drill, admin/attainment, admin/export, director/dashboard, director/reports, director/attainment (+ reviewer/students)",
+        "variants": [
+          "dashboard A-F",
+          "drill A,B",
+          "attainment A,B",
+          "export A,B",
+          "director dashboard A,B,C",
+          "reports A,B",
+          "director attainment A,B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "All seven filters present on every screen: Cohort select + Course select ('Clinical only') or Course inside Filters; Filters popover labels Group, Category, Tag, Location, Setting (runtime popover read on 18 of 19 screen-variants; export A popover hidden behind the open export panel, same ScopeBar code). Each popover filter has its own remove chip + Clear filters (scope-bar.tsx:159-168). But with two or more popover filters applied, the page shows only 'Filters 2' (runtime, all 19 variants with loc+cat applied: visible chips outside popover = 0); chips are visible only after opening the popover (scope-bar.tsx:6-9,135-137). Shots RP-01-admin-dashboard-A.png, RP-01-admin-attainment-A.png, RP-01-director-reports-A.png",
+        "selectorHint": "getByRole('button',{name:/^Filters/})",
+        "missing": "applied filters not evident by name when 2+ are applied (count only)",
+        "fix": "Render the applied chips (or a one-line 'Location: X · Category: Y') under the scope bar when any popover filter is set.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-02",
+    "text": "attainment by student: achieved, in progress, not met, overall",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/attainment",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "A matrix 'Achieved n of N' + per-section cells; B Students tab table with state counts (attainment-tables.tsx:88+); runtime.",
+        "selectorHint": "getByRole('tab',{name:/Students/})",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "director/reports",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "By student: Achieved | In progress | Unmet | Attainment (reports.tsx:40-44); 'Unmet' merges no-evidence and does-not-qualify (see AE-04).",
+        "selectorHint": "",
+        "missing": "four-state split",
+        "fix": "Use RECORD_STATE_META columns.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      },
+      {
+        "screen": "director/attainment",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Shared StudentMatrix / SkillsTable (rbac/director-attainment.tsx:87); runtime B four state columns.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "RP-03",
+    "text": "attainment by skill incl. mandatory when course-scoped",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/attainment",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Skills tab: 'Required for', four state columns, required-only by default with 'Show all skills' adding 'Not required this term' rows (attainment-page.tsx:186-197; attainment-tables.tsx:57-68); runtime B.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "director/reports",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "By skill: Skill, Section, Achieved, In progress, Unmet (reports.tsx:49-55); no mandatory/recommended/optional indicator when a course filter is applied. Code-only.",
+        "selectorHint": "",
+        "missing": "mandatory indicator under a course scope; four-state split",
+        "fix": "Add a level column when scope.course is set.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-04",
+    "text": "attainment by tag, overlap disclosed",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/attainment",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "attainment-page.tsx:203; runtime ?tab=tags A and B: 'Tags overlap: 43 records count under more than one tag, so rows do not add up. 1,249 records have no tag.'; tests/lab/attainment.test.ts:34.",
+        "selectorHint": "getByText(/Tags overlap/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "director/reports",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "Views By student / By skill / By section only (reports.tsx:25-30; runtime). Shot RP-04-director-reports-A.png",
+        "selectorHint": "",
+        "missing": "By tag view with overlap line",
+        "fix": "Add a By tag option reusing the admin tag table and overlap sentence.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-05",
+    "text": "from any aggregate figure reach the individuals",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/dashboard A-F, drill, attainment, director dashboard/reports/attainment",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "Dashboard figures link to drill lists (drillHref in dashboard/cards.tsx, status-tiles.tsx, exceptions.tsx, ops-sites.tsx); attainment counts open the evidence peek with that many records (attainment-tables.tsx:68,78; evidence-peek.tsx:3-11); director reports CountLink (reports.tsx:41-54). Not every figure clicked at runtime.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "RP-06",
+    "text": "from student or skill reach evidence without leaving the report",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/attainment, director/attainment",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MET",
+        "evidence": "Non-modal EvidencePeek beside the report, URL-addressed (evidence-peek.tsx:3-11, 24-36).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "director/reports, admin/dashboard-drill",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Student counts navigate away (director reports -> verification detail, reports.tsx:40-43; drill -> reviewer/student-record, dashboard.ts:565); scope carried, no search, but the evidence shown there is a summary (see RP-07).",
+        "selectorHint": "",
+        "missing": "in-report evidence",
+        "fix": "Reuse EvidencePeek on these lists.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-07",
+    "text": "any recorded evaluation viewable in full (answers, scores, feedback, student details)",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "reviewer/student-record (target of every report drill)",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "Evaluations table rows show skill, date, status, evaluator, setting only; counted/Unmet rows offer just 'Request a correction'; only awaiting rows link to a review page (record-frame.tsx:83-112; B panel same table compact, reviewer-student-record-b.tsx:65). EvidencePeek says 'The full evaluation (RP-07) opens on the student record' (evidence-peek.tsx:9) but it does not. Shots RP-07-reviewer-student-record-A.png, -B.png",
+        "selectorHint": "getByRole('row')",
+        "missing": "a full view of any completed evaluation (per-question Yes/No, scores, level, feedback, student-supplied details, self-evaluation)",
+        "fix": "Make each evaluation row open a read-only evaluation sheet built from lib/v2/queue.ts comparison() incl. responses, feedback and selfNote.",
+        "priority": "P1",
+        "auditorPriority": "P0"
+      },
+      {
+        "screen": "director/verification-detail",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "MISSING",
+        "evidence": "Evidence column is a count ('1 evaluation, 1 Unmet'), no way to open the evaluation (director/verify.tsx:74-85; runtime). Shots RP-07-director-verification-detail-A.png, -B.png",
+        "selectorHint": "",
+        "missing": "full evaluation view",
+        "fix": "Same evaluation sheet as above.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      },
+      {
+        "screen": "admin/attainment, director/attainment evidence peek",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Peek lists each evaluation's date, evaluator, setting, outcome (evidence-peek.tsx:79) then 'Open the full record' -> reviewer/student-record (summary only).",
+        "selectorHint": "",
+        "missing": "full evaluation",
+        "fix": "Link each peek evaluation to the evaluation sheet.",
+        "priority": "P2",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-08",
+    "text": "location/setting filter counts only evidence gathered there and recalculates",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/dashboard A-F, admin/attainment A,B",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "Recount in selectors (lib/lab/attainment.ts:18-19; dashboard recount line); runtime loc=Harbor Outpatient Clinic: 'Counting evidence from Harbor Outpatient Clinic only.' on dashboard A and attainment A; tests/lab/dashboard.test.ts:109.",
+        "selectorHint": "locator('[data-recount]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/dashboard-drill, admin/export, director/dashboard, director/reports, director/attainment",
+        "variants": [
+          "all"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Figures do recount (runtime director dashboard A: '1 of 52' per student under loc filter; drill 'Evaluations counted 0 of 3' under impossible combo), but no 'Counting evidence from X only' line, so the reader is not told the numbers are location-scoped.",
+        "selectorHint": "",
+        "missing": "recount statement",
+        "fix": "Render the shared recount line in drill, export, director frames.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-09",
+    "text": "impossible location+setting combination explained, not empty",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/dashboard",
+        "variants": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E",
+          "F"
+        ],
+        "status": "MET",
+        "evidence": "dashboard/frame.tsx:92, ops-frame.tsx:76, lib/lab/dashboard.ts:574-580; runtime loc=Skills lab 2&setting=clinical: 'Skills lab 2 does not offer clinical evidence, so none could have been gathered there in that setting. Clear one of the two filters.' on all six; tests/lab/dashboard.test.ts:74.",
+        "selectorHint": "getByText(/does not offer/)",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "admin/dashboard-drill, admin/attainment, admin/export, director/dashboard, director/reports, director/attainment",
+        "variants": [
+          "drill A,B",
+          "attainment A,B",
+          "export A,B",
+          "director dashboard A,B,C",
+          "reports A,B",
+          "director attainment A,B"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "Same URL renders silent zeros with no explanation: attainment A every student '0 of 5' + 'Behind' under 'Counting evidence from Skills lab 2, Clinical settings only.'; drill 'Evaluations counted 0 of 3'; export B '0 rows, one per evaluation'; director dashboard '0 complete ... 38 far behind'; director attainment B all 'No evidence yet'. explainFilters is only called from lib/lab/dashboard.ts:575 (and the v2 reports page). Shots /tmp/sc-reqaudit/shots/RP-09-*.png (13 files)",
+        "selectorHint": "",
+        "missing": "explanation + one-click remove for the offending filter",
+        "fix": "Call explain() in ScopeBar's parent frames (attainment-page, drill, export-b, director/frame) and render the same banner as dashboard/frame.tsx:92.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-10",
+    "text": "export aggregate + row-per-evaluation (feedback, settings, locations, self-evals, review notes), full filtered scope, filters recorded",
+    "class": "reporting",
+    "screens": [
+      {
+        "screen": "admin/export, admin/attainment export panel, director/attainment export",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Signed PDF summary + CSV/Excel detail with columns incl. Feedback, Setting, Location, Self-rating, Self-evaluation note, Review decision, Review note (lib/lab/attainment.ts:349,386-428); filters written in first rows (scopeLines attainment.ts:431-440, toCsv 445-452; runtime export B preview 'Term: Fall 2026 Location: Skills lab 2 Setting: Clinical Compare with ... As of'); tests/lab/attainment.test.ts:84-102. Gap: detailRows only includes 'every evaluation on a required record in scope' (attainment.ts:386-389), so evaluations on non-required skills in the filtered scope are left out.",
+        "selectorHint": "getByText('One row per evaluation')",
+        "missing": "evaluations on non-required skills within the filtered scope",
+        "fix": "Build detail rows from all reportable evaluations in scope (not m.records), or state the required-only limit in 'What it leaves out'.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "RP-11",
+    "text": "CSV or native Excel (OD-10)",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "admin/export, export panel",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "SEAM",
+        "evidence": "Seam exists: both formats offered with 'Decision pending' (attainment.ts:355-362 FORMAT_DECISION_PENDING; export-b.tsx:114; runtime 'Signed PDF CSV Excel Decision pending CSV or Excel').",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "AE-01",
+    "text": "only completed evidence counts",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "lib/v2/rules.ts runRule (the lab's engine)",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "rules.ts:374 counted = status 'counted'; approvals.ts:13-15 unverified held; tests/lab/rule-writeback.test.ts:44-60 'one engine'. Note: tests/engine/* test lib/engine, which the lab does not import (no '@/lib/engine' import in lib/lab, lib/v2, components/lab).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "AE-02",
+    "text": "current rule re-applies to evidence already held",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "lib/v2/rules.ts",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "engineRuleOf reads the published skill.config every run (rules.ts:350-368); tests/lab/rule-writeback.test.ts:110-160 (stricter/looser rule changes student screens and dashboard after publish).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "AE-03",
+    "text": "achieved only when every criterion met incl. setting minimums",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "lib/v2/rules.ts",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "rules.ts:398-403 achieved = have>=need && distinct && settings.every && levels.every; settings count only setting==='clinical' with that clinicalSetting (line 399), so lab/simulation never satisfy a clinical minimum (SC-12). Lab-specific unit tests for setting minimums on runRule not found (engine tests target lib/engine).",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "AE-04",
+    "text": "four states distinguished (D-L1 third = In progress)",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/attainment, director/attainment, reviewer/student-record, director/verification-detail, dashboards",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "lib/v2/labels.ts:7-15; runtime texts: 'In progress' 28 files, 'Evidence does not qualify' 21, 'No evidence yet' 79; 'Not yet met' 0.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      },
+      {
+        "screen": "director/reports",
+        "variants": [
+          "A",
+          "B"
+        ],
+        "status": "VARIANT-GAP",
+        "evidence": "Columns Achieved | In progress | Unmet (reports.tsx:43,54,65) merge two states under an outcome word. Shot AE-04-director-reports-B.png",
+        "selectorHint": "getByRole('columnheader',{name:'Unmet'})",
+        "missing": "'Evidence does not qualify' and 'No evidence yet' columns",
+        "fix": "Use RECORD_STATE_META labels; never the outcome word 'Unmet' for a record state.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "AE-05",
+    "text": "one record per skill shared across courses",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "lib/v2/evidence-index.ts",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "evalsOfStudentSkill keyed `${studentId}|${skillId}` with no course (evidence-index.ts:45); runRule consumes it.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "AE-06",
+    "text": "renaming labels/levels/questions does not change records or counting",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "lib/v2/rules.ts + configure",
+        "variants": [
+          "all"
+        ],
+        "status": "MET",
+        "evidence": "qualifiesOn uses e.outcome ('met'), answer arrays and levelIndex, never label text (rules.ts:326-345); evaluator receipt labels from config only. Doubt: reordering levels with the Move up/down buttons (configure/fields.tsx:180-186, 202-207) changes which label a stored levelIndex points to and does not remap levelMinimums - not a rename, but it silently re-labels existing evidence.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "AE-07",
+    "text": "removing a question or level removes it from any rule",
+    "class": "engine",
+    "screens": [
+      {
+        "screen": "admin/configure-skill (rule editor) -> lib/v2 rule",
+        "variants": [
+          "A (fields.tsx)",
+          "C (sentence-builder)"
+        ],
+        "status": "PARTIAL",
+        "evidence": "Removal filters by length only, without re-indexing: levels onChange keeps levelMinimums with levelIndex < levels.length (configure/fields.tsx:306); questions onChange keeps subset indices < questions.length (fields.tsx:320). Removing a middle level/question (ListEditor remove, fields.tsx:210) shifts later items down, so a minimum or subset index that pointed at a later item now points at a different one; carried minLevelIndex is not cascaded. Code-only, not exercised at runtime (configure is another auditor's screen). tests/engine/rule-changes.test.ts covers cascade for lib/engine only.",
+        "selectorHint": "getByRole('button',{name:/Remove level/})",
+        "missing": "index remap on removal/reorder",
+        "fix": "On remove at k: drop references to k and decrement indices > k for levelMinimums, questionRule.indices, carried.minLevelIndex; same remap on move.",
+        "priority": "P1",
+        "auditorPriority": "P1"
+      }
+    ]
+  },
+  {
+    "reqId": "AE-08",
+    "text": "report 'no evidence yet' and 'does not qualify' separately? (OD-03)",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "engine + reporting",
+        "variants": [
+          "all"
+        ],
+        "status": "SEAM",
+        "evidence": "Seam exists: four separate keys in one label map (labels.ts:7-15; dashboard.ts:832 notes OD-03 open). Inconsistent use: director reports merge them into 'Unmet' (see AE-04), effectively deciding OD-03 on that screen.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "Keep both apart everywhere until OD-03 is decided.",
+        "priority": "P2",
+        "auditorPriority": "P2"
+      }
+    ]
+  },
+  {
+    "reqId": "OD-02",
+    "text": "link to AACN Essentials or stay separate from Standards",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "not audited",
+        "variants": [],
+        "status": "UNCHECKED",
+        "evidence": "No auditor checked whether a seam exists; Lists A carries 'Standards are managed in Program details.' (call #12) which touches OD-02.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "OD-04",
+    "text": "submission details per skill or program default plus per-skill additions",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "not audited",
+        "variants": [],
+        "status": "UNCHECKED",
+        "evidence": "No auditor checked whether a seam exists; Lists A carries 'Standards are managed in Program details.' (call #12) which touches OD-02.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "OD-05",
+    "text": "external evaluator recorded in Skills or Prism-wide",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "not audited",
+        "variants": [],
+        "status": "UNCHECKED",
+        "evidence": "No auditor checked whether a seam exists; Lists A carries 'Standards are managed in Program details.' (call #12) which touches OD-02.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "OD-09",
+    "text": "self-evaluation form may differ from evaluator's or stay identical",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "not audited",
+        "variants": [],
+        "status": "UNCHECKED",
+        "evidence": "No auditor checked whether a seam exists; Lists A carries 'Standards are managed in Program details.' (call #12) which touches OD-02.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "OD-11",
+    "text": "evaluator and site dimension in reporting",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "admin/dashboard E, evaluator directory, filters",
+        "variants": [
+          "E"
+        ],
+        "status": "SEAM",
+        "evidence": "Seam exists: evaluations store evaluatorId and location (attainment.ts:299-318 detail rows carry evaluator and location; export columns); Location is a report filter; Dashboard E is an operational sites/evaluators view (stuck requests), not site-quality or evaluator-consistency attainment (ops-sites.tsx:3-12). No screen states OD-11 as decided; Dashboard E is 'outside the sets'.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  },
+  {
+    "reqId": "OD-13",
+    "text": "re-import of a skill with evidence: matched and left alone, or asked each time",
+    "class": "open-decision",
+    "screens": [
+      {
+        "screen": "not audited",
+        "variants": [],
+        "status": "UNCHECKED",
+        "evidence": "No auditor checked whether a seam exists; Lists A carries 'Standards are managed in Program details.' (call #12) which touches OD-02.",
+        "selectorHint": "",
+        "missing": "",
+        "fix": "",
+        "priority": "",
+        "auditorPriority": ""
+      }
+    ]
+  }
+]

@@ -9,7 +9,7 @@
  *
  * Why held [AUDIT T3 P1-3; BUILD-PROMPT section 7 aprqueue]: paper form with no outcome yet, new evaluator name, self and evaluator
  * disagree, or the skill's rule holds evidence for approval [REQ SC-15]. v2 sets "awaiting-approval" only through the SC-15 hold
- * (lib/v2/preceptor.ts:240), so a held evaluation with no other cause is read as "Rule needs approval" [INFER: the seed skill configs
+ * (lib/v2/preceptor.ts:240), so a held evaluation with no other cause is read as "Approval required for {skill}" [INFER: the seed skill configs
  * do not carry the flag].
  */
 import type { Evaluation, Person, Submission, V2State } from "@/lib/v2/types"
@@ -51,7 +51,7 @@ export const REASON_META: Record<HoldReason, { label: string; icon: string }> = 
 export type Decision =
   | { kind: "approve"; key: string; note?: string }
   | { kind: "return"; key: string; note: string; path: ReturnPath; toId?: string }
-  | { kind: "adopt"; evaluatorId: string; mode: "adopt" | "merge"; intoId?: string }
+  | { kind: "adopt"; evaluatorId: string; mode: "adopt" | "merge"; intoId?: string; note?: string }
   | { kind: "correction"; evaluationId: string; note: string }
   | { kind: "assign"; key: string; toId: string }
 
@@ -80,7 +80,7 @@ export function applyDecisions(s: V2State, decisions: readonly Decision[]): V2St
       state = {
         ...state,
         people: state.people.map((p) => (p.id === d.evaluatorId ? { ...p, verified: true } : p)),
-        evaluations: state.evaluations.map((e) => (ids.has(e.id) ? { ...e, status: "counted" as const, ...(d.mode === "merge" && d.intoId ? { evaluatorId: d.intoId } : {}), review: { decision: "approved" as const, byId: REVIEWER_ID, at: DECIDED_AT, note: d.mode === "merge" ? "Evaluator name merged" : "Evaluator name adopted" } } : e)),
+        evaluations: state.evaluations.map((e) => (ids.has(e.id) ? { ...e, status: "counted" as const, ...(d.mode === "merge" && d.intoId ? { evaluatorId: d.intoId } : {}), review: { decision: "approved" as const, byId: REVIEWER_ID, at: DECIDED_AT, note: d.note?.trim() || (d.mode === "merge" ? "Evaluator name merged" : "Evaluator name adopted") } } : e)),
       }
       continue
     }
@@ -156,8 +156,10 @@ export const assignNote = sentForNewEvaluationLabel
  * - A row with a request (a submission, or a photo with no outcome yet): the same request goes back out to the new evaluator
  *   (status with-evaluator, the reassignment recorded, its completion cleared).
  * - Evidence from an unadopted name with no request: a new link request carries the same skills to the new evaluator.
- * The held evaluations stay on the record, never edited (RV-03), marked returned with the note and linked to the request, so they do
- * not count, do not show as a separate return to the student, and the request is the one open thing. Nothing happens when the row
+ * The held evaluations stay on the record, never edited (RV-03), held out of counting (status "returned", the not-counting overlay
+ * every count already honours) with the review decision stored as "reassigned" (decision D-X25: a handoff, not a return), so
+ * exports and reports read "Sent for a new evaluation", never "Returned"; they do not show as a separate return to the student,
+ * and the request is the one open thing. Nothing happens when the row
  * is gone or the person is not an adopted evaluator other than the current one.
  */
 export function assignEntry(s: V2State, rowKey: string, toId: string): V2State {
@@ -203,7 +205,7 @@ export function assignEntry(s: V2State, rowKey: string, toId: string): V2State {
     submissions = [...s.submissions, request]
   }
   const ids = new Set(items.flatMap((i) => i.evaluations.map((e) => e.id)))
-  const evaluations = ids.size === 0 ? s.evaluations : s.evaluations.map((e) => (ids.has(e.id) ? { ...e, status: "returned" as const, submissionId: requestId, review: { decision: "returned" as const, byId: REVIEWER_ID, at: DECIDED_AT, note } } : e))
+  const evaluations = ids.size === 0 ? s.evaluations : s.evaluations.map((e) => (ids.has(e.id) ? { ...e, status: "returned" as const, submissionId: requestId, review: { decision: "reassigned" as const, byId: REVIEWER_ID, at: DECIDED_AT, note } } : e))
   const student = s.people.find((p) => p.id === first.studentId)?.name ?? "A student"
   return appendAudit({ ...s, submissions, evaluations }, REVIEWER_ID, "Assigned to someone else", `${student}: ${note}`, DECIDED_AT)
 }
@@ -234,7 +236,10 @@ export interface ReviewRowData {
   aging: boolean
   reason: HoldReason
   reasons: HoldReason[]
+  /** Why it is here, one plain line for the list (reasonText). */
   why: string
+  /** Every cause explained for the review, primary first (reasonExplain). */
+  because: Array<{ reason: HoldReason; text: string }>
   agreement: Agreement | "none"
   outcome: string
   revision: number
@@ -244,6 +249,24 @@ export interface ReviewRowData {
   likeKey: string | null
   evaluationIds: string[]
 }
+
+/**
+ * Where the evidence was gathered, as one row subline (REQ AR-01: course, setting and location): "NURS 350 · Clinical, Inpatient ·
+ * Mercy General". Every approvals variant prints this same line, so no variant drops a required fact.
+ */
+export const whereLine = (r: Pick<ReviewRowData, "course" | "setting" | "location">): string => [r.course, r.setting, r.location].filter(Boolean).join(" · ")
+
+/** The evaluator and their role on one line (REQ AR-01), or the name alone when the role is not recorded. */
+export const evaluatorLine = (r: Pick<ReviewRowData, "evaluator" | "evaluatorRole">): string => (r.evaluatorRole ? `${r.evaluator}, ${r.evaluatorRole}` : r.evaluator)
+
+/** The skills of a row in full, for a title or accessible name when the cell shows "first and n more". */
+export const skillsLine = (r: Pick<ReviewRowData, "skills">): string => r.skills.join(", ")
+
+/**
+ * The "Evaluator not assigned" submission that has waited longest (Oct 26 call, item 13): Admin Approvals B puts its Assign menu
+ * on the count line, so the cause is an action, not only a number. Null when none waits for that reason.
+ */
+export const oldestUnassigned = <R extends Pick<ReviewRowData, "reason" | "days">>(rows: R[]): R | null => rows.filter((r) => r.reason === "new-evaluator").sort((a, b) => b.days - a.days)[0] ?? null
 
 /** DataTable rows must be records. */
 export type ReviewRow = ReviewRowData & Record<string, unknown>
@@ -282,10 +305,10 @@ export function shownComparison(c: Comparison): Comparison {
 
 function disagreeText(cmp: Comparison[]): string {
   const row = cmp.map(shownComparison).flatMap((c) => c.rows).find((r) => r.agreement === "differed")
-  return row ? `Self: ${row.student}. Evaluator: ${row.evaluator}` : "Self and evaluator answers differ"
+  return row ? `On "${row.label}" the student said ${row.student}, the evaluator said ${row.evaluator}.` : "The student's and the evaluator's answers differ."
 }
 
-function baseRow(s: V2State, item: QueueItem, evaluations: Evaluation[], days: number): Omit<ReviewRowData, "key" | "kind" | "reason" | "reasons" | "why" | "likeKey"> {
+function baseRow(s: V2State, item: QueueItem, evaluations: Evaluation[], days: number): Omit<ReviewRowData, "key" | "kind" | "reason" | "reasons" | "why" | "because" | "likeKey"> {
   const student = personById(s, item.studentId)
   const evaluator = item.evaluatorId ? personById(s, item.evaluatorId) : undefined
   const first = evaluations[0]
@@ -319,11 +342,30 @@ function baseRow(s: V2State, item: QueueItem, evaluations: Evaluation[], days: n
   }
 }
 
-function whyFor(reason: HoldReason, row: Pick<ReviewRowData, "evaluator" | "skills">, cmp: Comparison[]): string {
-  if (reason === "paper") return "Photo of a signed form, outcome not entered"
-  if (reason === "new-evaluator") return "A student named this evaluator; not adopted yet"
+/** The skill names of a row, short: "Foley catheter insertion" or "Foley catheter insertion and 2 more". */
+const skillsShort = (skills: string[]): string => (skills.length > 1 ? `${skills[0]} and ${skills.length - 1} more` : (skills[0] ?? `this ${skillNoun()}`))
+
+/**
+ * Why a row is in Approvals, in plain words (Romit 2026-10-27: "what rule requires approval? In the list, I can't interpret it").
+ * The list prints this one line beside a small glyph; it names the skill or the person, never an internal term.
+ */
+export function reasonText(reason: HoldReason, row: Pick<ReviewRowData, "evaluator" | "skills">): string {
+  if (reason === "paper") return "Paper form: outcome not entered yet"
+  if (reason === "new-evaluator") return `${row.evaluator} is not on your evaluator list`
+  if (reason === "disagree") return "Student and evaluator disagree"
+  return `Approval required for ${skillsShort(row.skills)}`
+}
+
+/**
+ * The same cause, explained once in the review: what holds it and what the reviewer can do. For "Approval required" it names the
+ * setting that holds it (SC-15: the skill's configuration asks for approval before evidence counts).
+ */
+export function reasonExplain(reason: HoldReason, row: Pick<ReviewRowData, "evaluator" | "skills">, cmp: Comparison[]): string {
+  if (reason === "paper") return "Enter the outcome from the paper form before you approve."
+  if (reason === "new-evaluator") return `The student named ${row.evaluator}, who is not on your evaluator list yet.`
   if (reason === "disagree") return disagreeText(cmp)
-  return row.skills.length > 1 ? `These ${skillNounPlural()} need approval before they count` : `This ${skillNoun()} needs approval before it counts`
+  const names = row.skills.length ? row.skills.join(", ") : `This ${skillNoun()}`
+  return `${names}: set to need approval before evidence counts.`
 }
 
 const rowsCache = new WeakMap<V2State, ReviewRow[]>()
@@ -333,7 +375,7 @@ function rowOf(s: V2State, e: ApprovalEntry): ReviewRow {
   const merged: QueueItem = { ...e.item, skillIds: e.skillIds, evaluations: e.evaluations }
   const b = baseRow(s, merged, e.evaluations, e.days)
   const cmp = e.evaluations.map((x) => compareEvaluation(s, x))
-  const row: ReviewRow = { ...b, key: e.key, kind: e.kind, reason: e.cause, reasons: e.causes, why: whyFor(e.cause, b, cmp), likeKey: null }
+  const row: ReviewRow = { ...b, key: e.key, kind: e.kind, reason: e.cause, reasons: e.causes, why: reasonText(e.cause, b), because: e.causes.map((c) => ({ reason: c, text: reasonExplain(c, b, cmp) })), likeKey: null }
   if (e.kind === "submission") row.likeKey = !row.block && e.cause === "rule" && row.outcome === "Met" ? "rule-met" : null
   return row
 }
@@ -467,7 +509,7 @@ export function bulkCheck(rows: ReviewRow[], selected: ReadonlySet<string | numb
   for (const r of chosen) {
     if (gone.has(r.key)) blocked.push({ row: r, reason: `${REVIEWER_COLLEAGUE} approved it a moment ago, so it has left the queue.` })
     else if (r.block) blocked.push({ row: r, reason: r.block })
-    else if (!r.likeKey) blocked.push({ row: r, reason: `${REASON_META[r.reason].label}: decide it on its own.` })
+    else if (!r.likeKey) blocked.push({ row: r, reason: `${r.why}: decide it on its own.` })
     else approvable.push(r)
   }
   return { alike: chosen.length > 0 && keys.size === 1 && !keys.values().next().value?.startsWith("solo:"), approvable, blocked }
@@ -580,7 +622,7 @@ export function story(state: V2State, d: ItemDetail): StoryStep[] {
   const steps: StoryStep[] = []
   const r = d.row
   if (d.sentAt) steps.push({ id: "sent", at: d.sentAt, title: `${r.student} asked for a sign-off`, detail: `${r.method}, ${r.skills.length > 1 ? `${r.skills.length} ${skillNounPlural()}` : r.skills[0]}`, icon: "fa-paper-plane" })
-  for (const rv of d.revisions) steps.push({ id: `ret-${rv.revision}`, at: rv.at, title: `Returned by ${rv.by}`, detail: rv.reason, icon: "fa-arrow-rotate-left" })
+  for (const rv of d.revisions) steps.push({ id: `ret-${rv.revision}`, at: rv.at, title: `Sent back to the student by ${rv.by}`, detail: rv.reason, icon: "fa-arrow-rotate-left" })
   for (const e of d.evaluations) {
     for (const v of e.versions) {
       steps.push({
@@ -593,7 +635,7 @@ export function story(state: V2State, d: ItemDetail): StoryStep[] {
     }
   }
   if (r.block) steps.push({ id: "photo", at: r.since, title: "Photo of the signed form arrived", detail: "Outcome not entered yet", icon: "fa-file-image" })
-  steps.push({ id: "held", at: r.since, title: "Waiting for you", detail: r.why, icon: "fa-hourglass-half" })
+  steps.push({ id: "held", at: r.since, title: "Waiting for you", detail: REASON_META[r.reason].label, icon: "fa-hourglass-half" })
   return steps.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0))
 }
 

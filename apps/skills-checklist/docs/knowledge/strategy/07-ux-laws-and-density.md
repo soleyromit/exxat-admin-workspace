@@ -25,8 +25,14 @@
 | Before any layout (contract, mockup, JSX) | Pick the page type in section 3; write its budget row into the contract | A "Density budget" table in the contract with the target per line |
 | While composing | Spend the budget top-down: verdict first, then the 1 to 2 regions that answer the next question; anything left over goes to section 3's "one click away" table | A region list with each region's question |
 | Before claiming done | Count from the screenshot at 1440 x 900 and from the code (section 4 method); run section 6 when it exists | The filled audit row from section 4, pasted with numbers |
-| When a budget line fails | Cut or move, never shrink type, padding or spacing below the tokens in section 3 to make things fit | A cut list in the section 4 format |
+| When a budget line fails | Merge, disclose (a "More" or a sheet) or move to a secondary place, never shrink type, padding or spacing below the tokens in section 3 to make things fit, and never drop anything a requirement asks for (section 1.2) | A cut list in the section 4 format, each cut naming where the content went |
 | When a line cannot be met | Say which line, why, and ask Romit; never silently raise a limit | A line in the report under "uncertain" |
+
+### 1.2 Simplify without removing a requirement (added 2026-10-27)
+
+Simplify without removing anything a requirement asks for. Density budget is met by merging, progressive disclosure (a 'More' or a sheet) or moving to a secondary place, never by dropping a required field, filter, state or action. Compact variants (inline rows, one page, many at once) must carry the same required fields as the full variant.
+
+Why: the Add a skill variants met their budgets by dropping Category and Tags, which REQ SL-03, SL-04, SL-05 and SL-10 require (fixed in [LEDGER D-X28]). The budget counts how much shows in the first viewport; it never decides what exists. Before cutting, list the requirement IDs the screen must satisfy (`docs/knowledge/req-coverage-lab.md`, quoted from `docs/source/requirements.extracted.txt`) and keep every one reachable in every variant.
 
 Shrinking spacing to fit more is the wrong fix: density in Material is a per-component scale for tables, lists and long forms, not a way to fit more regions on a landing page [M3 density blog] [INFER for the landing-page reading].
 
@@ -78,7 +84,7 @@ Shell (left nav, utility bar) and lab chrome (variant bar, DS components panel) 
 |---|---|---|---|---|---|---| --- |
 | Regions in first viewport | **5** | **4** (header, toolbar or tabs, optional banner, table) | **4** (header, stepper, step panel, footer actions) | **5** | **3** (light header, request summary, first skill) | **4** (header, hero, do this next, list start) | **5** (header, scope bar, summary or tabs, list, and the open panel as ONE region) |
 | Headline figures (hero included) | **4** | 0 (tab counts are the counts [S06 5.3]); 3 if the page has no tabs | 0 (1 impact figure on a rule step) | 4 | 0 ("Skill 2 of 5" is position, not a figure) | **3** (counted, waiting, returned [REQ SH-04]) | 3 (the list's; none in the panel header) |
-| Charts above the fold | **2** | 0 (one in-cell viz column allowed) | 0 (1 preview on rule impact) | 1 | 0 | 1 (the hero viz) | 0 |
+| Charts above the fold | **3** ([LEDGER D-X21]; `admin/tests/lab/density-budget.mjs` enforces it; this table first said 2) | 0 (one in-cell viz column allowed) | 0 (1 preview on rule impact) | 1 | 0 | 1 (the hero viz) | 0 |
 | Interactive controls above the first chart or table (buttons, selects, tabs, toggles; links inside figures excluded) | **8** | **6** (search, up to 3 filters, view, 1 action) | **7 fields per step** | 6 | 3 per skill (outcome, feedback, attach) + Submit | 4 | **8** (page and panel together; the panel's own toolbar, such as size, previous, next, close, counts) |
 | Members per cluster (rows, tabs, KPIs, ranked marks) | 5 to 7; ranked chart top 5 to 8 + "All n" | 5 to 7 filters; 3 to 5 tabs | 5 to 7 fields per fieldset | 5 to 7 | 5 skills per sitting before "Next" [INFER] | 5 per group + "All n" | as list |
 | Prose words above the fold [S02] | **40** | 40 | 40 (12 per field helper) | 40 | **15** | **25** phone, 40 desktop | **40** (page and panel together) |
@@ -209,7 +215,7 @@ These are the allocations a designer starts from; each screen still needs its ow
 |---|---|
 | 1 | At 1440 x 900, are there at most the budgeted regions for this page type (dashboard 5, others 4, evaluator 3)? |
 | 2 | Are there at most 4 headline figures, hero included, and does no figure appear twice on the page (badge, KPI, card, worklist)? |
-| 3 | Are there at most 2 charts above the fold, and is no number drawn twice (glyph row plus chart)? |
+| 3 | Are there at most 3 charts above the fold on a dashboard ([LEDGER D-X21]), and is no number drawn twice (glyph row plus chart)? |
 | 4 | Are there at most 8 interactive controls (6 on lists) above the first chart or table, with no disabled control above the fold? |
 | 5 | Is visible prose under 40 words desktop, 25 phone, 15 evaluator, counted without data, labels or buttons? |
 | 6 | Does every sentence appear only once on the page (including Tip text versus visible captions)? |

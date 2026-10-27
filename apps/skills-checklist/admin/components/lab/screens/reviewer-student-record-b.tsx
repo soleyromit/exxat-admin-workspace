@@ -3,11 +3,13 @@
 /**
  * Student record B, one page and no tabs. What needs the reviewer comes first (evaluations awaiting approval, each a link to its
  * submission), then the student's skills; a skill opens its evaluation history in a DS FloatingSheetPanel beside the list, so the
- * reviewer keeps their place. Tests whether "held first, skills second, history on demand" beats three tabs.
+ * reviewer keeps their place; View on any evaluation shows it in full in the same panel, with Back to the history [REQ RP-07]. Tests whether "held first, skills second, history on demand" beats three tabs.
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
+import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
+import { evaluationView } from "@/lib/lab/evaluation-view"
+import { EvaluationBody } from "@/components/lab/reviewer/evaluation-sheet"
 import { reviewItemHref } from "@/lib/lab/reviewer"
 import { capitalize, skillNounPlural } from "@/lib/lab/terms"
 import { EvaluationsTable, RecordFrame, SkillsTable } from "@/components/lab/reviewer/record-frame"
@@ -18,12 +20,14 @@ import { fmt } from "@/lib/v2/format"
 
 export function ReviewerStudentRecordB() {
   return (
-    <RecordFrame variant="B">
+    <RecordFrame variant="B" evaluationInPanel={(param) => !!param("skill")}>
       {(ctx) => {
         const r = ctx.record
         const open = ctx.param("skill")
         const held = r.evaluations.filter((e) => e.status === "Awaiting approval")
         const skill = open ? r.skills.find((k) => k.skillId === open) : undefined
+        const evalId = ctx.param("evaluation")
+        const view = skill && evalId && ctx.state ? evaluationView(ctx.state, evalId) : null
         return (
           <>
             <section aria-labelledby="held-h" className="flex flex-col gap-2" data-region="held">
@@ -56,9 +60,17 @@ export function ReviewerStudentRecordB() {
               </h2>
               <SkillsTable rows={r.skills} onOpen={(id) => ctx.setParams({ skill: id })} />
             </section>
-            <FloatingSheetPanel open={!!skill} onOpenChange={(o) => (o ? null : ctx.setParams({ skill: null }))} modal={false}>
+            <FloatingSheetPanel open={!!skill} onOpenChange={(o) => (o ? null : ctx.setParams({ skill: null, evaluation: null }))} modal={false}>
               <FloatingSheetPanelContent contentSlot="lab-reviewer-record-skill" size="md">
-                {skill ? (
+                {skill && view ? (
+                  <>
+                    <FloatingSheetPanelToolbar onBack={() => ctx.setParams({ evaluation: null })} backLabel="Back to the history" />
+                    <FloatingSheetPanelHeader title={skill.skill} subtitle={`${view.student} · read only`} />
+                    <FloatingSheetPanelBody className="px-4 pb-4" data-evaluation-sheet>
+                      <EvaluationBody v={view} />
+                    </FloatingSheetPanelBody>
+                  </>
+                ) : skill ? (
                   <>
                     <FloatingSheetPanelHeader title={skill.skill} subtitle={`${skill.state} · ${skill.numbers} counted`} onClose={() => ctx.setParams({ skill: null })} />
                     <FloatingSheetPanelBody className="px-4 pb-4">

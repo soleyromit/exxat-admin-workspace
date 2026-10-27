@@ -53,8 +53,8 @@ describe.each(NOUNS)("with the noun $one", (n) => {
 
   it("nav labels use the right article and the plural", () => {
     use()
-    const log = PERSONA_BY_ID.student.nav!().find((r) => r.key === "log")!.title
-    expect(log).toBe(`Log ${n.a}`)
+    // The student has 3 rows and no "Log" row (LEDGER D-L10); Send for evaluation is the header action.
+    expect(PERSONA_BY_ID.student.nav!().map((r) => r.title)).toEqual(["My progress", "My requests", "My evaluations"])
     expect(PERSONA_BY_ID.admin.nav!().find((r) => r.key === "skills")!.title).toBe(capitalize(n.many))
     const all = [...PERSONA_BY_ID.student.nav!(), ...PERSONA_BY_ID.admin.nav!()].map((r) => r.title).join(" | ")
     expect(all).not.toMatch(BAD)
@@ -70,20 +70,20 @@ describe.each(NOUNS)("with the noun $one", (n) => {
   it("the inline add row and the add sheet title", () => {
     use()
     // Two renders: the add sheet is modal, so it hides the page behind it from the accessibility tree.
-    const row = render(<Table><TableBody><InlineAddTrigger category="Assessment" colSpan={3} onOpen={() => {}} /></TableBody></Table>)
+    const row = wrap(<Table><TableBody><InlineAddTrigger category="Assessment" colSpan={3} onOpen={() => {}} /></TableBody></Table>)
     expect(screen.getByRole("button", { name: `Add ${n.a} to Assessment` })).toBeTruthy()
     row.unmount()
-    render(<SkillSheet open onOpenChange={() => {}} rows={[]} onSave={() => {}} />)
+    wrap(<SkillSheet open onOpenChange={() => {}} rows={[]} onSave={() => {}} />)
     expect(screen.getByRole("dialog").textContent).toContain(`Add ${n.a}`)
     expect(document.body.textContent).not.toMatch(BAD)
   })
 
-  it("student log title and the Send empty state", async () => {
+  it("quick entry title and the Send empty state", async () => {
     use()
     search = new URLSearchParams("state=empty")
     const send = wrap(<StudentRequestA />)
-    await waitFor(() => expect(send.container.textContent).toContain(`Log ${n.a} first, then send it here for evaluation.`))
-    expect(screen.getByRole("link", { name: `Log ${n.a}` })).toBeTruthy()
+    await waitFor(() => expect(send.container.textContent).toContain(`Your program has not set up ${n.many} to send.`))
+    expect(screen.getByRole("link", { name: "Back to My progress" })).toBeTruthy()
     expect(send.container.textContent).not.toMatch(BAD)
     send.unmount()
     search = new URLSearchParams()

@@ -5,6 +5,8 @@
  * not recorded); "All" in a column header fills every visible present student who has no mark yet. Absent students get no
  * result. 123 students: search and group filter; the table scrolls inside its card with a sticky header and first column.
  * The count is said once, in the save bar. Lab evidence never satisfies a clinical setting (REQ SC-12), said once in the header.
+ * Feedback (EV-06): once a cell has a result, a small comment button beside it opens that result's feedback; a skill that
+ * requires feedback says so under its column name, and Save names any result still missing it.
  */
 import { skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
@@ -16,7 +18,7 @@ import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import type { LabMark } from "@/lib/lab/evaluator"
 import { EvaluatorFrame } from "@/components/lab/evaluator/frame"
-import { LabHeader, LabSaveBar, LabSaved, LabToolbar } from "@/components/lab/evaluator/lab-grid-parts"
+import { FeedbackRequiredCue, LabFeedback, LabHeader, LabSaveBar, LabSaved, LabToolbar } from "@/components/lab/evaluator/lab-grid-parts"
 import { useLabGrid } from "@/components/lab/evaluator/use-lab-grid"
 
 const CYCLE: LabMark[] = ["met", "not-met", null]
@@ -45,7 +47,10 @@ export function LabInstructorLabBatchGridA() {
                   {g.chosenSkills.map((k) => (
                     <TableHead key={k.id} scope="col" className="min-w-40 align-bottom whitespace-normal">
                       <div className="flex items-end justify-between gap-2 py-1">
-                        <span className="line-clamp-2 text-xs font-medium">{k.name}</span>
+                        <span className="flex flex-col gap-0.5">
+                          <span className="line-clamp-2 text-xs font-medium">{k.name}</span>
+                          <FeedbackRequiredCue skill={k} />
+                        </span>
                         <Button type="button" variant="ghost" size="xs" onClick={() => g.fillColumn(k.id)} aria-label={`Mark every visible student ${g.labels(k.id).met} for ${k.name}`}>All</Button>
                       </div>
                     </TableHead>
@@ -71,10 +76,13 @@ export function LabInstructorLabBatchGridA() {
                             {absent ? (
                               <span className="text-xs">Absent</span>
                             ) : (
-                              <Button type="button" variant={m ? "outline" : "ghost"} size="sm" className={cn("w-full justify-start gap-1.5 max-sm:min-h-(--control-height-touch)", !m && "text-muted-foreground")} onClick={() => g.setMark(r.id, k.id, nextMark(m))} aria-label={`${k.name}, ${r.name}: ${word}. Press to change.`}>
-                                <i className={m === "met" ? "fa-solid fa-circle-check" : m === "not-met" ? "fa-light fa-circle-xmark" : "fa-light fa-circle-dashed"} aria-hidden="true" />
-                                {m ? word : null}
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Button type="button" variant={m ? "outline" : "ghost"} size="sm" className={cn("min-w-0 flex-1 justify-start gap-1.5 max-sm:min-h-(--control-height-touch)", !m && "text-muted-foreground")} onClick={() => g.setMark(r.id, k.id, nextMark(m))} aria-label={`${k.name}, ${r.name}: ${word}. Press to change.`}>
+                                  <i className={m === "met" ? "fa-solid fa-circle-check" : m === "not-met" ? "fa-light fa-circle-xmark" : "fa-light fa-circle-dashed"} aria-hidden="true" />
+                                  {m ? word : null}
+                                </Button>
+                                {m ? <LabFeedback g={g} row={r} skill={k} /> : null}
+                              </div>
                             )}
                           </TableCell>
                         )

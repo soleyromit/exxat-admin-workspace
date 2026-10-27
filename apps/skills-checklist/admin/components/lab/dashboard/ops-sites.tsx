@@ -127,11 +127,11 @@ export function SitesTableCard({ model, scope, className }: { model: OpsModel; s
   ]
   const first = model.top[0]
   return (
-    <Card className={`py-0 ${className ?? ""}`} data-region="sites" role="region" aria-label="Where are requests stuck?">
+    <Card className={`py-0 ${className ?? ""}`} data-region="sites" role="region" aria-label="Requests waiting, by site">
       <CardContent className="flex flex-col gap-3 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">
-            Where are requests stuck? <span className="font-normal text-muted-foreground">Sites, oldest request first</span>
+            Requests waiting, by site <span className="font-normal text-muted-foreground">Sites, oldest request first</span>
           </h2>
           <Link className={`${LINK} text-sm`} href={drillHref(scope, { list: "sites", from: "ops-sites" })}>{`All ${model.sites.length} sites`}</Link>
         </div>
@@ -160,11 +160,11 @@ export function UnverifiedBadge() {
 export function HoldersCard({ model, scope, top = 6, className }: { model: OpsModel; scope: LabScope; top?: number; className?: string }) {
   const rows = model.holders.slice(0, top)
   return (
-    <Card className={`py-0 ${className ?? ""}`} data-region="holders" role="region" aria-label="Who holds the oldest?">
+    <Card className={`py-0 ${className ?? ""}`} data-region="holders" role="region" aria-label="Evaluators holding the oldest requests">
       <CardContent className="flex flex-col gap-3 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground">
-            Who holds the oldest? <span className="font-normal text-muted-foreground">Evaluators</span>
+            Evaluators holding the oldest requests <span className="font-normal text-muted-foreground">Evaluators</span>
           </h2>
           <Link className={`${LINK} text-sm`} href={opsHref(scope, { list: "holders" })}>{`All ${model.holders.length}`}</Link>
         </div>

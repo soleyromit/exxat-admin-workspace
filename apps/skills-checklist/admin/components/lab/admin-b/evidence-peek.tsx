@@ -6,7 +6,8 @@
  * matrix cell stays marked while it is open.
  *
  * - One student (a cell or a name): each required skill with its state and the evaluations behind it (date, evaluator,
- *   setting, outcome, counted or held). The full evaluation (RP-07) opens on the student record.
+ *   setting, outcome, counted or held). Each evaluation's View opens it in full, read only, on the student record (`?evaluation=`,
+ *   RP-07), so the line is a summary with the whole evaluation one click away.
  * - Many students (a skill, section or tag count): one line per record, student and state; the student opens their record.
  * The list length always equals the count that opened it.
  */
@@ -15,6 +16,7 @@ import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { studentHref } from "@/lib/lab/dashboard"
+import { recordHref } from "@/lib/lab/reviewer"
 import { recordEvidence, type PeekModel } from "@/lib/lab/attainment"
 import type { LabScope } from "@/lib/lab/scope"
 import type { V2State } from "@/lib/v2/types"
@@ -54,7 +56,7 @@ export function EvidencePeek({ peek, data, evidence, scope, onClose }: { peek: P
                       </div>
                       <StateBadge state={r.state} />
                     </div>
-                    {peek.oneStudent ? <EvidenceList data={data} evidence={evidence} studentId={r.studentId} skillId={r.skillId} /> : null}
+                    {peek.oneStudent ? <EvidenceList data={data} evidence={evidence} studentId={r.studentId} skillId={r.skillId} scope={scope} /> : null}
                   </li>
                 ))}
               </ul>
@@ -68,16 +70,18 @@ export function EvidencePeek({ peek, data, evidence, scope, onClose }: { peek: P
   )
 }
 
-function EvidenceList({ data, evidence, studentId, skillId }: { data: V2State; evidence: V2State; studentId: string; skillId: string }) {
+function EvidenceList({ data, evidence, studentId, skillId, scope }: { data: V2State; evidence: V2State; studentId: string; skillId: string; scope: LabScope }) {
   const rows = React.useMemo(() => recordEvidence(evidence, data, studentId, skillId), [evidence, data, studentId, skillId])
   if (rows.length === 0) return <p className="text-xs text-muted-foreground">No evaluations yet.</p>
   return (
     <ul className="flex flex-col gap-1 rounded-md bg-muted p-2" aria-label="Evaluations">
       {rows.map((e) => (
-        <li key={e.id} className="grid grid-cols-[3.5rem_1fr_auto] items-baseline gap-2 text-xs">
+        <li key={e.id} className="grid grid-cols-[3.5rem_1fr_auto_auto] items-baseline gap-2 text-xs">
           <span className="tabular-nums text-muted-foreground">{e.date}</span>
           <span className="min-w-0 truncate text-foreground">{`${e.evaluator} · ${e.setting}`}</span>
           <span className="text-foreground">{e.status === "Counted" ? e.outcome : `${e.outcome}, ${e.status.toLowerCase()}`}</span>
+          {/* RP-07: the whole evaluation, read only, on the student record. */}
+          <Link className={LINK_IN_TABLE} href={recordHref(scope, studentId, { evaluation: e.id })} aria-label={`View the evaluation of ${e.date}, ${e.evaluator}`}>View</Link>
         </li>
       ))}
     </ul>

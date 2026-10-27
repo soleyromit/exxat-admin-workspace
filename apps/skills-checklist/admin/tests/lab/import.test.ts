@@ -11,6 +11,10 @@ import {
   categoriesOf,
   confirmSentence,
   fixGroups,
+  fixOptions,
+  groupAccepted,
+  groupSuggestion,
+  openLines,
   linesLeft,
   notCreated,
   parsePastePayload,
@@ -215,6 +219,51 @@ describe("screen helpers (skill-setup-journey 02 section 3)", () => {
     expect(groups.reduce((t, g) => t + g.open, 0)).toBe(16)
     const after = fixGroups(review, applySuggestions(review, {}, LIB))
     expect(after.every((g) => g.open === 0)).toBe(true)
+  })
+
+  it("Accept all fills every open line with its suggestion, keeps a choice already made, and undo restores the decisions", () => {
+    const groups = fixGroups(review, {})
+    const first = groups[0].rows[0]
+    const kind = review.exceptions[first.id][0]
+    const own = toFix(review, first, fixOptions(review, first, kind, LIB)[1].value)
+    const before = { [decisionKey(first.id, kind)]: own }
+    expect(openLines(review, before)).toBe(15)
+    const after = applySuggestions(review, before, LIB)
+    expect(openLines(review, after)).toBe(0)
+    expect(linesLeft(resolve(review, after))).toBe(0)
+    // The admin's own choice is not overwritten by the suggestion.
+    expect(after[decisionKey(first.id, kind)]).toEqual(own)
+    expect(groupAccepted(review, fixGroups(review, after).find((g) => g.kind === groups[0].kind)!, after, LIB)).toBe(false)
+    // Undo puts back the snapshot: the counts return to what they were.
+    expect(fixGroups(review, before).map((g) => g.open)).toEqual(fixGroups(review, { ...before }).map((g) => g.open))
+    expect(openLines(review, before)).toBe(15)
+  })
+
+  it("accepts one group only, and marks it Accepted when every decision is its suggestion", () => {
+    const groups = fixGroups(review, {})
+    const g = groups.find((x) => x.kind === "duplicate-library")!
+    const d = applySuggestions(review, {}, LIB, { rowIds: new Set(g.rows.map((r) => r.id)) })
+    const after = fixGroups(review, d)
+    expect(after.find((x) => x.kind === "duplicate-library")!.open).toBe(0)
+    expect(after.filter((x) => x.kind !== "duplicate-library").every((x) => x.open === groups.find((y) => y.kind === x.kind)!.open)).toBe(true)
+    expect(groupAccepted(review, after.find((x) => x.kind === "duplicate-library")!, d, LIB)).toBe(true)
+  })
+
+  it("names a group's shared suggestion, and none when its lines differ (the group then opens)", () => {
+    const groups = fixGroups(review, {})
+    const unread = groups.find((g) => g.kind === "unread")!
+    expect(groupSuggestion(review, unread, LIB)).toBe("Leave out")
+    for (const g of groups) {
+      const labels = new Set(g.rows.flatMap((r) => review.exceptions[r.id].map((k) => fixOptions(review, r, k, LIB)[0].label)))
+      expect(groupSuggestion(review, g, LIB)).toBe(labels.size === 1 ? [...labels][0] : null)
+    }
+  })
+
+  it("keeps Continue blocked while any line is open: the step's count is the resolver's", () => {
+    expect(openLines(review, {})).toBe(linesLeft(resolve(review, {})))
+    const half = applySuggestions(review, {}, LIB, { kind: "unread" })
+    expect(openLines(review, half)).toBe(linesLeft(resolve(review, half)))
+    expect(openLines(review, half)).toBeGreaterThan(0)
   })
 
   it("never shows replacement glyphs: an unreadable line with no letters reads as null", () => {

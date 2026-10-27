@@ -51,7 +51,7 @@ export function EvaluatorFormA() {
                 {k.attempt ? <CardAction><Badge variant="secondary">{k.attempt.limit ? `Attempt ${k.attempt.n} of ${k.attempt.limit}` : `Attempt ${k.attempt.n}`}</Badge></CardAction> : null}
               </CardHeader>
               <CardContent className="flex flex-col gap-4">
-                <SelfNote skill={k} student={req.student.first} />
+                <SelfNote skill={k} student={req.student.first} requestNote={req.studentNote} />
                 <SkillFields m={m} skill={k} />
               </CardContent>
             </Card>

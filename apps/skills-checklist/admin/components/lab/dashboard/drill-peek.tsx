@@ -55,7 +55,7 @@ function Lines({ recs, nameOf, moreHref }: { recs: PipelineRecord[]; nameOf: (r:
       })}
       <div className="flex flex-wrap items-center gap-2">
         {recs.length > SHOW ? <Button type="button" variant="outline" size="sm" onClick={() => setAll((x) => !x)}>{all ? `Show the first ${SHOW}` : `Show all ${fmt(recs.length)}`}</Button> : null}
-        <Button asChild variant="ghost" size="sm"><Link href={moreHref}>Open in Attainment</Link></Button>
+        <Button asChild variant="ghost" size="sm"><Link href={moreHref}>Open in Reports</Link></Button>
       </div>
     </div>
   )

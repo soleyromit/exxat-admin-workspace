@@ -1,9 +1,9 @@
 "use client"
 
 /**
- * Approvals C, by-reason board. Four columns, one per cause: Evaluator not assigned, Rule needs approval, Self and evaluator disagree,
+ * Approvals C, by-reason board. Four columns, one per cause: Evaluator not assigned, Approval required, Student and evaluator disagree,
  * and Aging 8+ days (anything that old, whatever its cause, so the oldest work is one column). Each column header carries the count;
- * cards show the student, the skill and the wait, oldest first, scrolling inside the column after five. Each column carries the
+ * cards show the student, the skill, course, setting and location, the evaluator with role, and the wait, oldest first, scrolling inside the column after five. Each column carries the
  * one decision that fits it: Approve all like rows (rule), Adopt, merge or assign (evaluator not assigned; one menu for the oldest
  * card), Review one by one (disagree, aging).
  */
@@ -12,11 +12,11 @@ import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { fmt, plural } from "@/lib/v2/format"
-import { BOARD_COLUMNS, boardColumns, reviewItemHref, type BoardColumnId, type ReviewRow } from "@/lib/lab/reviewer"
+import { BOARD_COLUMNS, boardColumns, evaluatorLine, reviewItemHref, skillsLine, whereLine, type BoardColumnId, type ReviewRow } from "@/lib/lab/reviewer"
 import type { LabScope } from "@/lib/lab/scope"
 import { ApprovalsFrame } from "@/components/lab/reviewer/approvals-frame"
 import { EvaluatorMenu, useDecisionUi } from "@/components/lab/reviewer/decisions"
-import { AgeText, EvaluatorName, ReasonBadge } from "@/components/lab/reviewer/parts"
+import { AgeText, EvaluatorName, ReasonChip } from "@/components/lab/reviewer/parts"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 
 const SHOW = 5
@@ -71,14 +71,17 @@ function Column({ id, label, icon, rows, scope }: { id: BoardColumnId; label: st
                 <Link className={`${LINK} truncate text-sm`} href={reviewItemHref(scope, r.key)}>{r.student}</Link>
                 <AgeText days={r.days} />
               </span>
-              <span className="truncate text-xs text-muted-foreground" data-viz-label>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
-              {aging || id === "new-evaluator" ? (
-                <span className="flex items-center gap-2">
-                  {aging ? <ReasonBadge reason={r.reason} /> : <EvaluatorName name={r.evaluator} unrecorded={!!r.evaluatorUnverified} compact />}
-                </span>
-              ) : null}
-              {id === "disagree" ? <span className="truncate text-xs text-foreground">{r.why}</span> : null}
-              {id === "rule" && r.reason === "paper" ? <span><ReasonBadge reason="paper" /></span> : null}
+              <span className="truncate text-xs text-muted-foreground" data-viz-label title={r.skills.length > 1 ? skillsLine(r) : undefined}>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
+              {/* REQ AR-01 on every card: course, setting and location, then the evaluator with their role. */}
+              <span className="truncate text-xs text-muted-foreground" data-viz-label data-row-where title={whereLine(r)}>{whereLine(r)}</span>
+              {id === "new-evaluator" ? (
+                <EvaluatorName name={r.evaluator} role={r.evaluatorRole} unrecorded={!!r.evaluatorUnverified} compact />
+              ) : (
+                <span className="truncate text-xs text-muted-foreground" data-viz-label data-row-evaluator title={evaluatorLine(r)}>{evaluatorLine(r)}</span>
+              )}
+              {/* The column header is the reason for its cards (the skill line names what requires approval), so a card repeats
+                  it only where the column mixes causes: Aging, and a paper form inside the approval column. */}
+              {aging || r.reason === "paper" ? <span><ReasonChip reason={r.reason} /></span> : null}
             </li>
           ))}
         </ul>

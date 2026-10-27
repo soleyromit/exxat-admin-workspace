@@ -35,9 +35,9 @@ function Body({ ctx }: { ctx: OpsContext }) {
       {demo === "partial" ? <LocalBanner variant="info">{built.noSite > 0 ? `${built.noSite} ${built.noSite === 1 ? "request has" : "requests have"} no site recorded, so ${built.noSite === 1 ? "it counts" : "they count"} in Waiting but ${built.noSite === 1 ? "is" : "are"} not drawn by site.` : "Some requests have no site recorded, so they count in Waiting but are not drawn by site."}</LocalBanner> : null}
       <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
         {demo === "error" ? (
-          <Card className="py-0 xl:col-span-8" data-region="card-error" role="group" aria-label="Where are requests stuck?">
+          <Card className="py-0 xl:col-span-8" data-region="card-error" role="group" aria-label="Requests waiting, by site">
             <CardContent className="flex flex-col gap-3 py-4">
-              <h2 className="text-sm font-semibold text-foreground">Where are requests stuck?</h2>
+              <h2 className="text-sm font-semibold text-foreground">Requests waiting, by site</h2>
               <LocalBanner variant="error" title="Sites could not be loaded" retry={{ label: "Try again", onClick: clearDemo }}>
                 The figures and the evaluator list are current.
               </LocalBanner>

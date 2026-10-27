@@ -34,15 +34,22 @@ import { LibraryFilterMenu, useLibraryFilter } from "./library-filter"
 
 export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string) => void): ColumnDef<LibraryRow>[] {
   return [
+    // The DS select column (the DS convention, as in the DS starter's library table): without it `selectable` draws a
+    // group checkbox but no row checkboxes, and the group checkbox has no column slot to sit in, so it lands on the
+    // table's edge. With it, group and row checkboxes share one 40px leading column and the group label starts on the
+    // first column's text axis.
+    { key: "select", label: "", width: 40, minWidth: 40, defaultPin: "left", lockPin: true, resizable: false },
     {
       key: "name",
       label: capitalize(skillNoun()),
       width: 360,
       minWidth: 240,
       sortable: true,
+      // At most two lines (name, then one quiet line), and every row holds the two-line height, so rows are one height
+      // whatever they carry and the content sits centred in it.
       cell: (r) => (
-        <span className="flex min-w-0 flex-col py-0.5">
-          <span className="flex items-center gap-2">
+        <span className="flex min-h-10 min-w-0 flex-col justify-center gap-0.5">
+          <span className="flex min-w-0 items-center gap-2">
             {/* The name opens the detail panel; the href carries the record so it also works as a link. */}
             <Link
               className={`${LINK} truncate`}
@@ -55,12 +62,17 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
             </Link>
             {r.isNew ? <Badge variant="outline">New</Badge> : null}
           </span>
-          {r.group || r.requiredToGraduate ? (
-            <span className="truncate text-xs text-muted-foreground">{[r.group, r.requiredToGraduate ? "Required to graduate" : ""].filter(Boolean).join(", ")}</span>
-          ) : null}
-          {/* Tags under the name (02 section 7), so they show in every view without a wide extra column. */}
-          {r.tags.length ? (
-            <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{r.tags.join(", ")}</span></span>
+          {/* One quiet line under the name: group, required to graduate, then the tags (02 section 7), so tags show in
+              every view without a wide extra column and the row never grows to a third line. */}
+          {r.group || r.requiredToGraduate || r.tags.length ? (
+            <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+              {r.group || r.requiredToGraduate ? (
+                <span className="truncate">{[r.group, r.requiredToGraduate ? "Required to graduate" : ""].filter(Boolean).join(", ")}</span>
+              ) : null}
+              {r.tags.length ? (
+                <span className="flex min-w-0 items-center gap-1" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{r.tags.join(", ")}</span></span>
+              ) : null}
+            </span>
           ) : null}
         </span>
       ),
@@ -68,8 +80,8 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
     // No column filter: the tabs filter by status, search finds a name and the one Filter control (category, tag; REQ SL-10)
     // sits on the tab row, so a DS filter bar would be another way to narrow the same list (list toolbar budget, rule L3).
     { key: "section", label: "Category", width: 200, sortable: true },
-    { key: "status", label: "Status", width: 170, sortable: true, cell: (r) => <LibraryStatusBadge status={r.status} /> },
-    { key: "modelLabel", label: "How it's judged", width: 190, sortable: true, cell: (r) => (r.modelLabel ? r.modelLabel : <span className="text-muted-foreground">Not chosen</span>) },
+    { key: "status", label: "Status", width: 170, sortable: true, cell: (r) => <LibraryStatusBadge status={r.status} draft={r.draft} /> },
+    { key: "modelLabel", label: "How it's judged", width: 190, sortable: true, cell: (r) => (r.modelLabel ? <span className="block truncate" title={r.modelLabel}>{r.modelLabel}</span> : <span className="text-muted-foreground">Not chosen</span>) },
     {
       key: "courses",
       label: "Courses",

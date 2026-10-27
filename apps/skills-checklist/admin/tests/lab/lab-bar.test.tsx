@@ -57,11 +57,11 @@ describe("LabBar", () => {
     renderBar(FLOW_PROPS)
     const journey = screen.getByRole("navigation", { name: "Journey" })
     const prev = within(journey).getAllByRole("link", { name: "Previous step: Add a skill" })[0]!
-    const next = within(journey).getAllByRole("link", { name: "Next step: Impact and publish" })[0]!
+    const next = within(journey).getAllByRole("link", { name: "Next step: Check and save" })[0]!
     expect(prev.getAttribute("href")).toBe("/lab/flow/set-up-skills/add?set=1&term=Fall+2026")
     expect(next.getAttribute("href")).toBe("/lab/flow/set-up-skills/publish?set=1&term=Fall+2026")
     expect(journey.textContent).toContain("Configure")
-    expect(journey.textContent).toContain("3 of 6")
+    expect(journey.textContent).toContain("3 of 7")
   })
 
   it("disables previous on the first step and next on the last", () => {
@@ -135,7 +135,7 @@ describe("LabBar", () => {
     nav.search = "variant=B"
     renderBar({ persona: "admin", screen: "admin/configure-skill", variant: "B" })
     const journey = screen.getByRole("navigation", { name: "Journey" })
-    expect(within(journey).getAllByRole("link", { name: "Next step: Impact and publish" })[0]!.getAttribute("href")).toBe("/lab/flow/set-up-skills/publish?set=2")
+    expect(within(journey).getAllByRole("link", { name: "Next step: Check and save" })[0]!.getAttribute("href")).toBe("/lab/flow/set-up-skills/publish?set=2")
   })
 
   it("off a flow, hides the journey and switches variants like the old variant bar", () => {
@@ -182,14 +182,14 @@ describe("LabBar", () => {
   it("marks the current step and offers one dot per step", () => {
     renderBar(FLOW_PROPS)
     const journey = screen.getByRole("navigation", { name: "Journey" })
-    const current = within(journey).getAllByText("Configure").find((el) => el.getAttribute("aria-current") === "step")
+    const current = within(journey).getAllByText("Configure the skill").find((el) => el.getAttribute("aria-current") === "step")
     expect(current).toBeTruthy()
     const dots = within(journey).getByRole("list", { name: "Steps" })
     const links = within(dots).getAllByRole("link")
-    expect(links).toHaveLength(6)
+    expect(links).toHaveLength(7)
     expect(links[2]).toHaveAttribute("aria-current", "step")
     expect(links[0]).toHaveAttribute("href", "/lab/flow/set-up-skills/library?set=1&term=Fall+2026")
-    expect(within(journey).getByText("Step 3 of 6")).toBeInTheDocument()
+    expect(within(journey).getByText("Step 3 of 7")).toBeInTheDocument()
   })
 
   it("names the active set in full and keeps the others as numbers, each with a summary tooltip", async () => {

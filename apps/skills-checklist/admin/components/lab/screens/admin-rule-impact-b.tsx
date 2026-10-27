@@ -15,9 +15,10 @@ import { affectedStudentLine, HOW_MANY_LABEL, ruleSentence, type Impact, type La
 import { skillNoun } from "@/lib/lab/terms"
 import { shortDate } from "@/lib/v2/format"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
-import { AttemptExample, EVIDENCE_CHOICE_MISSING, EvidenceChoice, ImpactSummary, needsEvidenceChoice, PublishedNotice, useLiveImpact } from "@/components/lab/configure/impact"
+import { AttemptExample, EVIDENCE_CHOICE_MISSING, EvidenceChoice, ImpactSummary, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
 import { ConfigureLoading, ConfigureNotFound, SkillSubtitle } from "@/components/lab/configure/shell"
 import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
+import { ConfigureReceiptPage } from "@/components/lab/configure/check"
 import { RuleDiff } from "./admin-rule-impact-a"
 
 const DATE_LABEL = shortDate(DEMO_TODAY)
@@ -35,7 +36,7 @@ function RolePreview({ impact, skillName, rule, mode }: { impact: Impact | null;
     <Collapsible open={open} onOpenChange={setOpen} className="border-t border-border pt-3" data-role-preview>
       <CollapsibleTrigger asChild>
         <Button type="button" variant="ghost" size="sm" className="-ms-2 w-full justify-between" aria-expanded={open}>
-          <span className="text-sm font-medium text-foreground">What each role sees after publish</span>
+          <span className="text-sm font-medium text-foreground">What each role sees after saving</span>
           <i className={`fa-light ${open ? "fa-chevron-up" : "fa-chevron-down"} text-xs`} aria-hidden="true" />
         </Button>
       </CollapsibleTrigger>
@@ -64,6 +65,7 @@ export function AdminRuleImpactB() {
   if (!m.ready) return <ConfigureLoading title="Rule change" />
   if (!m.skill) return <ConfigureNotFound skillId={m.skillId} />
   const skill = m.skill
+  if (m.saved) return <ConfigureReceiptPage state={m.state} skill={skill} result={m.saved} layout="sheet" nextSkill={m.nextSkill} />
   const choice = needsEvidenceChoice(m.current, impact)
   const editHref = `/lab/admin/configure-skill?skill=${encodeURIComponent(m.skillId)}&change=sample&step=rule`
 
@@ -73,23 +75,21 @@ export function AdminRuleImpactB() {
       requestAnimationFrame(() => focusField("cfg-mode"))
       return
     }
-    m.publish(choice ? mode : null)
+    m.save(choice ? mode : null)
   }
 
   return (
     <FormPage
       title={skill.name}
       subtitle={<SkillSubtitle state={m.state} skill={skill} />}
-      banner={m.published ? <PublishedNotice skill={skill} result={m.published} onDismiss={m.dismissPublished} /> : undefined}
       footer={
         <StickyFooter
-          secondary={m.published ? undefined : { label: "Edit how many times", href: editHref }}
-          context={m.published ? "No unpublished changes." : undefined}
-          primary={m.published ? undefined : { label: "Publish", onClick: publish }}
+          secondary={{ label: "Edit how many times", href: editHref }}
+          primary={{ label: m.current ? "Save changes" : "Save configuration", onClick: publish }}
         />
       }
     >
-      {m.published ? null : (
+      {(
         // Two columns once the page is wider than 64rem (D-X30): who changes and the decision on the left, the rule and what
         // each role sees on the right.
         <div className="flex flex-col gap-8 @min-[64rem]:grid @min-[64rem]:grid-cols-2 @min-[64rem]:items-start @min-[64rem]:gap-x-10">

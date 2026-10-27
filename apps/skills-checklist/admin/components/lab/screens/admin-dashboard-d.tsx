@@ -71,10 +71,10 @@ function Body({ data, model, scope, split, setSplit, skillsAll, setSkillsAll, de
       </Card>
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         {demo === "error" ? (
-          <CardError className="lg:col-span-8" title="Where is this scope short?" onRetry={clearDemo} />
+          <CardError className="lg:col-span-8" title="Sections behind" onRetry={clearDemo} />
         ) : (
           <div className="lg:col-span-8" data-region="matrix" data-chart>
-            <ChartCard title="Where is this scope short?" description={summary}>
+            <ChartCard title="Sections behind" description={summary}>
               <div className="flex flex-col gap-3" id="matrix">
                 <div className="flex flex-wrap items-center justify-end gap-3">
                   <div className="flex items-center gap-2">

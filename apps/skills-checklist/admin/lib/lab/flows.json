@@ -46,7 +46,7 @@
         },
         {
           "id": "configure",
-          "label": "Configure",
+          "label": "Configure the skill",
           "screen": "admin/configure-skill",
           "variants": {
             "1": "A",
@@ -56,7 +56,7 @@
         },
         {
           "id": "publish",
-          "label": "Impact and publish",
+          "label": "Check and save",
           "screen": "admin/configure-skill",
           "variants": {
             "1": "A",
@@ -79,18 +79,40 @@
           }
         },
         {
-          "id": "assign",
-          "label": "Assign to cohort or group",
+          "id": "lists",
+          "label": "Groups of skills",
           "screen": "admin/lists-cohorts",
           "variants": {
             "1": "A",
             "2": "B",
             "3": "B"
+          },
+          "tag": "Optional"
+        },
+        {
+          "id": "assign",
+          "label": "Assign skills to student groups",
+          "screen": "admin/lists-cohorts",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "B"
+          },
+          "params": {
+            "1": {
+              "view": "assign"
+            },
+            "2": {
+              "view": "assign"
+            },
+            "3": {
+              "view": "assign"
+            }
           }
         },
         {
           "id": "map",
-          "label": "Map to courses",
+          "label": "Course mapping",
           "screen": "admin/course-mapping",
           "variants": {
             "1": "A",
@@ -159,7 +181,7 @@
         },
         {
           "id": "attainment",
-          "label": "Attainment",
+          "label": "Reports",
           "screen": "admin/attainment",
           "variants": {
             "1": "A",
@@ -218,8 +240,17 @@
         },
         {
           "id": "lists",
-          "label": "Lists and cohorts",
+          "label": "Groups of skills",
           "screen": "admin/lists-cohorts",
+          "variants": {
+            "1": "A",
+            "2": "B"
+          }
+        },
+        {
+          "id": "categories",
+          "label": "Categories and tags",
+          "screen": "admin/categories-tags",
           "variants": {
             "1": "A",
             "2": "B"
@@ -229,15 +260,6 @@
           "id": "settings",
           "label": "Settings",
           "screen": "admin/settings",
-          "variants": {
-            "1": "A",
-            "2": "B"
-          }
-        },
-        {
-          "id": "evaluators",
-          "label": "Evaluator directory",
-          "screen": "admin/evaluator-directory",
           "variants": {
             "1": "A",
             "2": "B"
@@ -293,32 +315,29 @@
       "sets": [
         {
           "id": "1",
-          "label": "Guided",
-          "summary": "Log, send, track by evaluator, fix in a guided column"
+          "label": "Course first",
+          "summary": "Course, its mandatory skills, self-evaluation, then send; drafts in My requests"
         },
         {
           "id": "2",
           "label": "Situational",
-          "summary": "Shift log, situation first, track by status, before and after"
+          "summary": "Situation first, track by status, before and after"
+        },
+        {
+          "id": "3",
+          "label": "One form",
+          "summary": "Send in one form, track by evaluator, fix in a guided column"
         }
       ],
       "steps": [
         {
-          "id": "log",
-          "label": "Log",
-          "screen": "student/log-skill",
-          "variants": {
-            "1": "A",
-            "2": "B"
-          }
-        },
-        {
           "id": "send",
-          "label": "Send for evaluation",
+          "label": "Log a skill",
           "screen": "student/request-signoff",
           "variants": {
-            "1": "A",
-            "2": "B"
+            "1": "C",
+            "2": "B",
+            "3": "A"
           }
         },
         {
@@ -327,7 +346,8 @@
           "screen": "student/my-requests",
           "variants": {
             "1": "A",
-            "2": "B"
+            "2": "B",
+            "3": "A"
           }
         },
         {
@@ -336,7 +356,8 @@
           "screen": "student/fix-returned",
           "variants": {
             "1": "A",
-            "2": "B"
+            "2": "B",
+            "3": "A"
           }
         }
       ]
@@ -387,7 +408,7 @@
         },
         {
           "id": "record",
-          "label": "Record",
+          "label": "My evaluations",
           "screen": "student/record",
           "variants": {
             "1": "A",
@@ -533,7 +554,7 @@
         },
         {
           "id": "reports",
-          "label": "Reports",
+          "label": "Export",
           "screen": "director/reports",
           "variants": {
             "1": "A",
@@ -543,7 +564,7 @@
         },
         {
           "id": "attainment",
-          "label": "Attainment",
+          "label": "Reports",
           "screen": "director/attainment",
           "variants": {
             "1": "A",
@@ -658,6 +679,193 @@
           "variants": {
             "1": "A",
             "2": "B"
+          }
+        }
+      ]
+    },
+    {
+      "id": "setup-walkthrough",
+      "title": "Configuration walkthrough",
+      "short": "Configure",
+      "persona": "admin",
+      "walkthrough": true,
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Recommended",
+          "summary": "The recommended design of each configuration step, in Sankalp's order"
+        }
+      ],
+      "steps": [
+        {
+          "id": "library",
+          "label": "Skills",
+          "screen": "admin/skills-library",
+          "variants": {
+            "1": "A"
+          }
+        },
+        {
+          "id": "add",
+          "label": "Add a skill",
+          "screen": "admin/add-skill",
+          "variants": {
+            "1": "A"
+          }
+        },
+        {
+          "id": "bulk",
+          "label": "Bulk upload",
+          "screen": "admin/import-ai-review",
+          "variants": {
+            "1": "A"
+          }
+        },
+        {
+          "id": "categories",
+          "label": "Categories and tags",
+          "screen": "admin/categories-tags",
+          "variants": {
+            "1": "A"
+          }
+        },
+        {
+          "id": "configure",
+          "label": "Configure the skill",
+          "screen": "admin/configure-skill",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "skill": "sk-pressure-injury"
+            }
+          }
+        },
+        {
+          "id": "publish",
+          "label": "Check and save",
+          "screen": "admin/configure-skill",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "skill": "sk-vitals",
+              "step": "check",
+              "change": "sample"
+            }
+          }
+        },
+        {
+          "id": "lists",
+          "label": "Groups of skills",
+          "screen": "admin/lists-cohorts",
+          "variants": {
+            "1": "A"
+          },
+          "tag": "Optional"
+        },
+        {
+          "id": "assign",
+          "label": "Assign skills to student groups",
+          "screen": "admin/lists-cohorts",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "view": "assign"
+            }
+          }
+        },
+        {
+          "id": "map",
+          "label": "Course mapping",
+          "screen": "admin/course-mapping",
+          "variants": {
+            "1": "A"
+          }
+        }
+      ]
+    },
+    {
+      "id": "fulfillment-walkthrough",
+      "title": "Fulfillment walkthrough",
+      "short": "Fulfill",
+      "persona": "student",
+      "walkthrough": true,
+      "recommendedSet": "1",
+      "sets": [
+        {
+          "id": "1",
+          "label": "Recommended",
+          "summary": "The recommended design of each student step, in Sankalp's order"
+        }
+      ],
+      "steps": [
+        {
+          "id": "progress",
+          "label": "My progress",
+          "screen": "student/home",
+          "variants": {
+            "1": "A"
+          }
+        },
+        {
+          "id": "course",
+          "label": "Skills by course",
+          "screen": "student/home",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "course": "crs-nurs350"
+            }
+          }
+        },
+        {
+          "id": "skills",
+          "label": "Log a skill",
+          "screen": "student/request-signoff",
+          "variants": {
+            "1": "C"
+          },
+          "params": {
+            "1": {
+              "course": "crs-nurs350",
+              "step": "skills"
+            }
+          }
+        },
+        {
+          "id": "self",
+          "label": "Self-evaluation",
+          "screen": "student/request-signoff",
+          "variants": {
+            "1": "C"
+          },
+          "params": {
+            "1": {
+              "course": "crs-nurs350",
+              "step": "self"
+            }
+          }
+        },
+        {
+          "id": "send",
+          "label": "Send for evaluation",
+          "screen": "student/request-signoff",
+          "variants": {
+            "1": "C"
+          },
+          "params": {
+            "1": {
+              "course": "crs-nurs350",
+              "step": "send"
+            }
           }
         }
       ]

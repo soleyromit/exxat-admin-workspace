@@ -21,6 +21,7 @@ All paths relative to `apps/skills-checklist/`. If they are missing in the curre
 | Components | `docs/knowledge/ds-usage-map.md` then `node tools/ds/source.mjs <Component>` (from the monorepo root) |
 | Competitors | `docs/knowledge/01-competitive-digest.md` |
 | Raw truth | `docs/source/requirements.extracted.txt` (REQ), Granola raw transcripts (never summaries) |
+| Per-screen requirement checklist | `docs/knowledge/req-coverage-lab.md` (and `.json`) once it exists; matrix `docs/strategy/04-requirements-traceability.md` (skill `skills-req-trace`) |
 
 ## 1. Operating rules
 
@@ -32,7 +33,9 @@ All paths relative to `apps/skills-checklist/`. If they are missing in the curre
 6. Ship your own critique and 2 to 5 improvement proposals with every deliverable; Romit should not be the only one spotting issues.
 7. Specs are visual: ASCII wireframes and tables over prose. Capitalise sentence starts. No em dashes anywhere.
 8. Keep this digest honest: before relying on a fact below, verify it against the file. If a doc and this prompt (or two docs) disagree, name the drift, say which source wins, and list it in your report (known drift: playbook section K).
-9. When Romit states a NEW decision, append it to `docs/knowledge/02-decisions-ledger.md` section 3b with the date and his words, and tell him. Durable knowledge goes to an atomic vault note (schema: type, product, source, date, tags, title, summary, relevance, value, theme, status; filename `YYYY-MM-DD-slug.md`; add to the matching `MOCs/MOC-*.md`); write locally, never commit.
+9. When Romit states a NEW decision, or relays a direction from leadership, Sankalp, Arthi (Aarti) or Vishakha, append it the same day to `docs/knowledge/02-decisions-ledger.md` section 3b with the date and his words, add it to "Leadership and stakeholder direction" (below and brief section 0), and tell him. Durable knowledge goes to an atomic vault note (schema: type, product, source, date, tags, title, summary, relevance, value, theme, status; filename `YYYY-MM-DD-slug.md`; add to the matching `MOCs/MOC-*.md`); write locally, never commit.
+10. **Requirement coverage is mandatory.** Before designing or changing any screen, list the requirement IDs that screen (every variant of it) must satisfy, quoted from `docs/source/requirements.extracted.txt` (per-screen checklist `docs/knowledge/req-coverage-lab.md`). Before claiming done, confirm each is visible or reachable in EVERY variant (runtime or file:line) and paste a "Requirement coverage" block (ID, variant, MET / PARTIAL / MISSING, evidence). A screen missing a required field is not done, regardless of other gates. Automated gate: `node scripts/lab-req-gate.mjs` (once built); until then the manual block is required. Detail: playbook A7, J3.
+11. **Simplify guardrail.** Simplify without removing anything a requirement asks for. Density budget is met by merging, progressive disclosure (a 'More' or a sheet) or moving to a secondary place, never by dropping a required field, filter, state or action. Compact variants (inline rows, one page, many at once) must carry the same required fields as the full variant. Put this sentence in every worker brief that asks to cut. Detail: playbook A8.
 
 ## 2. The product (digest; verify before use)
 
@@ -79,12 +82,19 @@ A program defines the skills it expects (it names them: skill, competency, EPA),
 - One link per evaluator request (D-L2).
 - Approvals row always shown (D-L3).
 - Student landing "My progress" (D-L4).
+- Wizard and form pages full width, no white space; Category and Tags separate, Tags a chip text box (D-L5).
 - Staff landing is a Dashboard, not a Home.
 - Cohort is a filter, not a default comparison (strategy 06 S2).
 - "Required is meant to be mandatory" (D-X12).
 - No inconsistencies in data or visuals (consistency gate).
 - Left nav identical across variants of a persona (call item 21).
 - Dashboards must not be crowded (strategy 07).
+
+**Leadership and stakeholder direction (brief section 0, playbook A6).**
+- Wizard and form pages use the full width with no white space (leadership via Romit, 2026-10-27, D-L5, D-X30); fill width with structure (columns, preview panel), not stretched fields; check at 1920 as well as 1440 and 375.
+- Category (one, optional) and Tags (many, created inline, chip text box) in every Add a skill path, plus library filters (Romit relaying Sankalp, 2026-10-27, D-L5, D-X28) [REQ SL-03, SL-04, SL-05, SL-10].
+- Admin IA (Romit, 2026-10-27, "yes, apply it", D-L20): Dashboard, Skills with a panel (Library, Groups of skills, Categories and tags, Course mapping), Approvals, Reports (was Attainment); Settings out of the main rows; director Dashboard, Reports.
+- Any new direction Romit relays from leadership, Sankalp, Arthi (Aarti) or Vishakha is recorded the same day in ledger 3b (his words) and here.
 
 **Key delegated defaults (3c).**
 - Request a correction, no reopen (X1).
@@ -124,6 +134,7 @@ A program defines the skills it expects (it names them: skill, competency, EPA),
 - Starter libraries vs SL-01; director verification scope and director landing.
 - Pace (term clock) as a real program concept; Sample data chip on evaluator pages.
 - Whether Arthi sees reporting screens; non-lockstep mapping; faculty-by-location data source.
+- "Apply to new evidence only" (D-X27); J9 import grouping words (applied as default in D-X28); clinical-only start (Arthi).
 
 **The lab.**
 - `/lab` (By flow, By persona), `/lab?present=1`. 38 screens, 93 variants (`admin/lib/lab/screens.json`), 10 flows with option sets (`admin/lib/lab/flows.json`; set-up-skills: 1 Guided, 2 One page, 3 Many at once).
@@ -152,7 +163,7 @@ A program defines the skills it expects (it names them: skill, competency, EPA),
 - Nielsen: visible status (as-of, Queued/Synced/Conflict), consistency (same counts everywhere, one unit per concept), error prevention (unconfigured cannot be sent; impossible filters explained), recognition (applied scope readable; live rule sentence in footer), recovery (what failed, what is kept, Try again).
 
 ### 3.2 IA and navigation
-- 11 sidebar rows: admin Dashboard, {Skills}, Approvals, Attainment; reviewer Approvals, Students; director 2 (landing open); student My progress, Log, Record; evaluator none (link target only).
+- 11 sidebar rows (D-L20, 2026-10-27): admin Dashboard, {Skills} (panel: Library, Groups of skills, Categories and tags, Course mapping), Approvals, Reports, with Settings after the main rows (DS has no sidebar footer); reviewer Approvals, Students; director Dashboard, Reports; student My progress, My requests, My evaluations; evaluator none (link target only).
 - An object earns a row only if a role starts a session there.
 - Role is a permission; one URL per record for all staff; links never change role.
 - Every record name and count links to where it is acted on, carrying `stu`, `item`, `coh`, `site`, `course`, `evaluator`, `list`; a figure opens a list of equal length with the same scope; Back restores scroll and scope; scope lives in the URL and is shared.
@@ -171,12 +182,12 @@ A program defines the skills it expects (it names them: skill, competency, EPA),
 ### 3.4 UI and visual
 - Shells: staff (DS shell, rail, utility bar, page header); student (same, bottom bar at 375); evaluator (light header once, 820 px column, no sidebar, switchers, search or account language).
 - Theme `theme-prism` (rose 342).
-- Templates: T1 list (full width, primary top right, tabs with `TabsCountBadge`, toolbar 5 controls), T2 wizard (960 px, horizontal compact Wizard 3 to 5 steps, sticky footer Back / context / primary, no visible "Step n of m"), T3 form or detail (720 px, sticky footer with summary), T4 split (`FloatingSheetPanel` md non-modal), T5 dashboard (full, Export only header action, one-row scope bar, verdict band).
+- Templates: T1 list (full width, primary top right, tabs with `TabsCountBadge`, toolbar 5 controls), T2 wizard (full width per D-X30: columns past 56rem, Preview panel from 1280 px; horizontal compact Wizard 3 to 5 steps, sticky footer Back / context / primary, no visible "Step n of m"), T3 form or detail (full width with columns per D-X30, sticky footer with summary), T4 split (`FloatingSheetPanel` md non-modal), T5 dashboard (full, Export only header action, one-row scope bar, verdict band).
 - One filled primary per screen; max 2 outline visible; max 3 header actions; overflow in a `DropdownMenu`.
 - Components: `PageHeader` via `PageFrame`, `Button` with explicit variant and size, `StatusBadge` via `StatusPill` (never `Badge` for state), `DataTable` with `emptyState`, DS `Table` for matrices, `KeyMetrics variant="flat"`, `Dialog`, `FloatingSheetPanel`/`Sheet`, `LocalBanner` (never toast), `Field*`, Popover + Command for multi-select, `FilterBar`, `ExportDrawer`, `Skeleton`, vendored `ChartCard`.
 - Colour: neutral everything; brand only on the primary and selected nav (`--brand-tint` for selected tile); amber `--chart-5` marks and `--status-badge-warning-*` badges for shortfall; red only for a hard block; never hex, raw oklch, `color-mix(in oklch`, opacity on text.
 - Type: serif page title, Inter body, 12 px floor, `uppercase tracking-wide` once at most; controls 32 px toolbars, 40 px fields, 44 px touch; rows 48 px; radius never overridden; no added shadows or glows.
-- Responsive: 1440, 1024, 375, no horizontal page scroll, charts become tables under 600 px.
+- Responsive: 1920, 1440, 1024, 375, no horizontal page scroll, no large empty area at 1920 on wizards and forms, charts become tables under 600 px.
 - A11y: WCAG 2.1 AA, glyph + word + colour, focus returned, keyboard charts, FERPA (evaluator link shows only its request; n < 5 hidden).
 
 **Density budget (1440 x 900 first viewport; shell and lab chrome excluded; `tests/lab/density-budget.mjs`)**
@@ -191,7 +202,7 @@ A program defines the skills it expects (it names them: skill, competency, EPA),
 | Primary | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
 | Repeats | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
-A tab list is one control; a tile grid is one region (max 6 tiles); a modal counts alone. When a line fails: cut or move, never shrink type or spacing, never raise a limit silently; ask Romit.
+A tab list is one control; a tile grid is one region (max 6 tiles); a modal counts alone. When a line fails: merge, disclose or move, never drop a required field, filter, state or action (rule 11), never shrink type or spacing, never raise a limit silently; ask Romit.
 
 ### 3.5 Interaction and states
 - Offline first (draft on device; Queued / Synced / Conflict; failed send keeps input).
@@ -238,13 +249,14 @@ A tab list is one control; a tile grid is one region (max 6 tiles); a modal coun
 ## 4. The variant process (for every design, screen, variant, improvement or review)
 
 1. **Consult.** One line: files read (which copy), decisions that apply.
-2. **Frame.** Job, role, receiver-side cue (previous role did X, next sees Y), hard stops involved.
+2. **Frame.** Job, role, receiver-side cue (previous role did X, next sees Y), hard stops involved, leadership direction that applies.
+2b. **Requirements.** List the requirement IDs the screen and every variant must satisfy, each quoted from REQ (rule 10). Compact variants get the same list.
 3. **Research.** Mobbin MCP (`mcp__claude_ai_Mobbin__search_screens`, `search_flows`, `search_sections`): look at the images, cite each `mobbin_url`, say what it teaches and what not to copy. Competitive digest models. One analogy outside SaaS in plain words (order tracking, boarding pass, bank ledger, flight board, pull request). For creative asks go beyond Mobbin and shadcn. No reference found: say so before designing.
 4. **Update first.** If it changes something existing, change the existing variants (list per letter). Add a new variant only when the question it tests is genuinely different.
 5. **Concepts.** At least 3 structurally different concepts (different mental model and primary job, not skins). Each: ASCII wireframe at 1440 (375 for student and evaluator), first-viewport regions counted against the budget, exact DS components, what is deliberately NOT on the page, risks, the question it tests. Equal craft on every region; question whether each region is needed. Then a recommendation with the reason.
 6. **Build** the chosen ones in the lab: `admin/components/lab/screens/<persona>-<screen>-<letter>.tsx` on the templates (`components/lab/layout/*`), register in `lib/lab/screens.json` (question, file, pageType) and `components/lab/screens/index.ts`, place in `lib/lab/flows.json` sets, links via `lib/lab/links.ts`, data only from `lib/v2/population.ts`, `approvals.ts`, `facts.ts`, `labels.ts` (never invent a figure). Before JSX run `node tools/ds/source.mjs <Component>`. `'use client'`, `aria-hidden` on FA icons, `aria-label` on icon-only buttons. A hook blocks app-code edits until `00-design-brief.md` has been read; a code gate may require a contract in `docs/build/contracts/` (skill `skills-surface-contract`).
-7. **Gates** (from `apps/skills-checklist/admin`; dev server `npx next dev --port 3017`, webpack, never Turbopack; check for leaked servers first). Paste literal output of: `npx vitest run`; `npx tsc --noEmit`; `node scripts/lab-ds-gate.mjs --write` then `node scripts/lab-ds-gate.mjs`; `node scripts/lab-chrome-gate.mjs`; `node tests/lab/density-budget.mjs`; `node tests/lab/consistency.mjs http://localhost:3017`; `node scripts/lab-nav-crawl.mjs`; `node scripts/lab-axe.mjs 1440 <paths>`. Take Playwright screenshots at 1440 x 900 (375 x 812 student and evaluator) and LOOK at them before claiming anything. A failed gate is reported, not hidden.
-8. **Report.** Per existing variant what changed; what is new and why; the evidence block; what was NOT verified; open decisions touched and not decided; your critique and 2 to 5 proposals. Verdict "GREENLIGHT (static)" unless the runtime checks ran fresh, then "GREENLIGHT (runtime)".
+7. **Gates** (from `apps/skills-checklist/admin`; dev server `npx next dev --port 3017`, webpack, never Turbopack; check for leaked servers first). Paste literal output of: `npx vitest run`; `npx tsc --noEmit`; `node scripts/lab-ds-gate.mjs --write` then `node scripts/lab-ds-gate.mjs`; `node scripts/lab-chrome-gate.mjs`; `node tests/lab/density-budget.mjs`; `node tests/lab/consistency.mjs http://localhost:3017`; `node scripts/lab-nav-crawl.mjs`; `node scripts/lab-axe.mjs 1440 <paths>`. Take Playwright screenshots at 1920 x 1080, 1440 x 900 and 375 x 812 for every variant (not just A) and LOOK at them for empty space and missing fields before claiming anything. Requirement coverage block (rule 10); `node scripts/lab-req-gate.mjs` once built. A failed gate is reported, not hidden.
+8. **Report.** Per existing variant what changed; what is new and why; the evidence block and the Requirement coverage block; what was NOT verified; open decisions touched and not decided; your critique and 2 to 5 proposals. Verdict "GREENLIGHT (static)" unless the runtime checks ran fresh, then "GREENLIGHT (runtime)".
 9. **Record.** New Romit decisions to ledger 3b (date + his words); durable knowledge to a vault note.
 
 **Concept table:** `| Concept | Mental model | Primary job | First viewport (regions/budget) | DS components | Not on the page | Risk | Question it tests |`
@@ -254,9 +266,17 @@ A tab list is one control; a tile grid is one region (max 6 tiles); a modal coun
 Consulted: <files, copy used>
 Changed: <paths>  Updated variants: <screen/letter: change>  New: <screen/letter: why>
 vitest / tsc / ds-gate (--write, plain) / chrome-gate / density / consistency / nav-crawl / axe: <pasted lines>
-Screenshots looked at: <paths, widths>
+Screenshots looked at: <paths, widths 1920 / 1440 / 375, every variant>
+Requirement coverage: | ID | Variant | MET / PARTIAL / MISSING | Evidence (runtime or file:line) |  (playbook J3)
 Verdict: GREENLIGHT (static|runtime)   NOT verified: <list>   Open decisions untouched: <list>
 ```
 
+**Before you hand back (playbook J4):**
+- [ ] Requirement coverage block pasted, every variant, no MISSING
+- [ ] Simplify guardrail held (nothing a requirement asks for was dropped)
+- [ ] Screenshots at 1920, 1440 and 375 looked at for empty space
+- [ ] Every variant checked, not just A
+- [ ] Leadership and stakeholder direction respected
+
 ## 5. Review checklist (any "no" blocks; detail in playbook section J)
-1 one job, one role · 2 no hard stop touched, ODs seamed · 3 receiver-side cue within one click · 4 tested at 123 students and 150+ skills · 5 regions within budget · 6 max 4 figures, none repeated · 7 charts within budget, no number drawn twice · 8 controls within budget, none disabled above fold · 9 prose within budget · 10 every sentence once · 11 one colour one meaning · 12 one highlight per region, ties in words · 13 one filled primary, max 2 outline, no icons on text buttons · 14 secondary one click away · 15 spacing rhythm, no nested cards, no dead block over 80 px · 16 status glyph + word + tone from the table · 17 no red for shortfall, hard block distinct from warning · 18 copy rules and banned words · 19 failed rule names the rule and next step · 20 empty, loading, error, blocked, impossible states · 21 links via `links.ts`, keys carried, no variant letters · 22 drill length equals figure, Back restores · 23 same counts everywhere from single sources · 24 every chart: question, legend, summary, table, denominators, no progress bars · 25 right shell · 26 right template and `data-page-type` · 27 DS only, looked up · 28 accessible · 29 responsive, no page scroll · 30 existing variants updated first, sidebar identical across variants.
+1 one job, one role · 2 no hard stop touched, ODs seamed · 3 receiver-side cue within one click · 4 tested at 123 students and 150+ skills · 5 regions within budget · 6 max 4 figures, none repeated · 7 charts within budget, no number drawn twice · 8 controls within budget, none disabled above fold · 9 prose within budget · 10 every sentence once · 11 one colour one meaning · 12 one highlight per region, ties in words · 13 one filled primary, max 2 outline, no icons on text buttons · 14 secondary one click away · 15 spacing rhythm, no nested cards, no dead block over 80 px · 16 status glyph + word + tone from the table · 17 no red for shortfall, hard block distinct from warning · 18 copy rules and banned words · 19 failed rule names the rule and next step · 20 empty, loading, error, blocked, impossible states · 21 links via `links.ts`, keys carried, no variant letters · 22 drill length equals figure, Back restores · 23 same counts everywhere from single sources · 24 every chart: question, legend, summary, table, denominators, no progress bars · 25 right shell · 26 right template and `data-page-type` · 27 DS only, looked up · 28 accessible · 29 responsive at 1920 / 1440 / 1024 / 375, no page scroll · 30 existing variants updated first, sidebar identical across variants · 31 every requirement ID MET in every variant (coverage block).

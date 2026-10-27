@@ -78,9 +78,8 @@ export function Student2Frame({
   const backLink = back ? back(ctx) : null
   const actions = (
     <div className="flex items-center gap-2">
-      {/* Phone: the header row cannot hold the chip, the sync state and the action without crushing the title; the chip shows from sm up. */}
-      <span className="max-sm:hidden"><SampleDataBadge /></span>
-      {showSync ? <SyncChip model={chipModel(ctx.model, demo)} offline={ctx.offline} studentId={ctx.studentId} /> : null}
+      <SampleDataBadge />
+      {showSync ? <SyncChip model={chipModel(ctx.model, demo)} offline={ctx.offline} studentId={ctx.studentId} scenario={demo === "offline" || demo === "conflict" || demo === "queued" || demo === "synced"} /> : null}
       {action && demo !== "empty" && demo !== "error" ? (
         <Button asChild variant="default" size="sm">
           <Link href={action.href}>{action.label}</Link>

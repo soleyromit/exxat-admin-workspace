@@ -3,8 +3,11 @@ import { createSeed } from "@/lib/v2/seed"
 import { skillById } from "@/lib/v2/evidence-index"
 import { buildStudent } from "@/lib/lab/student"
 import {
+  DEFAULT_METHOD,
+  METHODS,
   PROGRAM_DETAILS,
   clrDocument,
+  countsWhen,
   conflictChoices,
   detailErrors,
   evaluatorsFor,
@@ -88,12 +91,31 @@ describe("Send for evaluation", () => {
     expect(newEvaluatorErrors({ name: "Rosa Diaz", email: "rosa@hospital.org" })).toEqual({})
   })
 
-  it("says once what happens next, naming approval and offline [REQ ST-13, EV-07]", () => {
+  it("says once what happens next, naming offline; when it counts is per skill, not a generic sentence [REQ ST-13, EV-07]", () => {
     expect(nextSentence({ method: "link", who: "J. Delgado, RN", approval: false, offline: false, newName: false })).toMatch(/one email with a link to this request only/)
-    expect(nextSentence({ method: "qr", who: "J. Delgado, RN", approval: true, offline: false, newName: false })).toMatch(/after a reviewer approves/)
+    expect(nextSentence({ method: "qr", who: "J. Delgado, RN", approval: true, offline: false, newName: false })).not.toMatch(/answer Met/)
     expect(nextSentence({ method: "link", who: "J. Delgado, RN", approval: false, offline: true, newName: false })).toMatch(/^Kept on this device/)
     expect(nextSentence({ method: "photo", who: "x", approval: false, offline: false, newName: false })).toMatch(/review/)
     expect(typeof needsApproval(seed, skills)).toBe("boolean")
+  })
+
+  it("states the skill's real rule: 3 Met evaluations needed is never 'it counts when they answer Met' [REQ AE-02, SH-03]", () => {
+    const parts = (have: number, need: number) => [{ label: "Evaluations", have, need, met: have >= need }]
+    expect(countsWhen({ counted: 1, need: 3, achieved: false, parts: parts(1, 3) }, false)).toBe("Met adds 1 of the 3 Met evaluations needed (1 so far).")
+    expect(countsWhen({ counted: 0, need: 1, achieved: false, parts: parts(0, 1) }, true)).toBe("Met achieves it, after a reviewer approves it.")
+    const distinct = [...parts(1, 2), { label: "Different evaluators", have: 1, need: 2, met: false }]
+    expect(countsWhen({ counted: 1, need: 2, achieved: false, parts: distinct }, false)).toMatch(/also needs from 2 different evaluators/)
+    expect(countsWhen({ counted: 3, need: 3, achieved: true, parts: parts(3, 3) }, false)).toMatch(/^Already achieved/)
+    // Maya's Sterile dressing change needs 3 Met evaluations: the confirmation says so from her own record.
+    const r = maya.all.find((x) => x.id === "sk-sterile-dressing")!
+    expect(r.need).toBe(3)
+    expect(countsWhen({ counted: r.counted, need: r.need, achieved: r.state === "achieved", parts: r.parts }, false)).toMatch(/of the 3 Met evaluations needed/)
+  })
+
+  it("starts on Email a link, one link per request [LEDGER D-L2]; QR, hand over and photo stay choices [D-X5]", () => {
+    expect(DEFAULT_METHOD).toBe("link")
+    expect(METHODS[0].id).toBe("link")
+    expect(METHODS.map((m) => m.id).sort()).toEqual(["handover", "link", "photo", "qr"])
   })
 })
 
@@ -110,7 +132,7 @@ describe("Record", () => {
 
   it("counts and filters consistently, did-not-count groups first [REQ SH-04, SH-06]", () => {
     const c = recordCounts(rows)
-    expect(c.counted + c["not-counted"] + c.waiting + c.returned).toBe(rows.length)
+    expect(c.counted + c["not-counted"] + c.requested + c.waiting + c.returned + c.sent).toBe(rows.length)
     expect(filterRecord(rows, { ...EMPTY_RECORD_FILTER, result: "counted" })).toHaveLength(c.counted)
     const groups = groupBySkill(rows)
     expect(groups[0].notCounted).toBeGreaterThan(0)

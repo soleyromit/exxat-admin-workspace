@@ -104,7 +104,7 @@ export function verificationStatus(s: V2State, studentId: string): VerificationS
     const skill = skillOf(s, ev.skillId)?.name ?? "A skill"
     if (!now) changes.push(`${skill}: an evaluation was removed.`)
     else if (now.currentVersion !== ev.version) changes.push(`${skill}: version ${now.currentVersion} was added to an evaluation verified at version ${ev.version}.${now.status === "counted" ? "" : now.status === "reopened" ? " It is reopened and does not count until it is confirmed." : " It does not count."}`)
-    else if (now.status !== "counted") changes.push(`${skill}: an evaluation no longer counts (${now.status === "reopened" ? "reopened" : now.status === "returned" ? "returned" : "waiting for approval"}).`)
+    else if (now.status !== "counted") changes.push(`${skill}: an evaluation no longer counts (${now.status === "reopened" ? "reopened" : now.review?.decision === "reassigned" ? "sent for a new evaluation" : now.status === "returned" ? "returned" : "waiting for approval"}).`)
   }
   const known = new Set(latest.evidence.map((e) => e.evaluationId))
   const newer = countedEvaluations(s, studentId).filter((e) => !known.has(e.id)).length

@@ -2,7 +2,8 @@
 
 /**
  * Add a skill, option set 1 (docs/knowledge/design/skill-setup-journey/02 section 6): a short DS FloatingSheetPanel over
- * the library, so the list stays in view. Four fields only: Name, Category, Tags, Required to graduate.
+ * the library, so the list stays in view. Five fields: Name, Description (optional, REQ SL-02), Category, Tags, Required to
+ * graduate.
  * - MODAL (strategy/07 section 3 "Modal surfaces count alone", the same rule as the Export A panel): a half-filled form
  *   is a door in front of the work, not an inspector beside it, so the page behind is inert (Radix modal: focus trap,
  *   pointer lock, aria-hidden siblings). Escape and an outside click go through the unsaved-change guard. On close, focus
@@ -20,16 +21,17 @@
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
+import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
-import { EMPTY_DRAFT, NO_CATEGORY, findDuplicate, pickerOptions, validateDraft, type DraftErrors, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
+import { EMPTY_DRAFT, NO_CATEGORY, findDuplicate, validateDraft, type DraftErrors, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
-import { CategoryPicker, TagsPicker } from "./category-tag-pickers"
+import { CategoryPicker, TagsPicker, useVocabOptions } from "./category-tag-pickers"
 
 export function draftFromRow(r: LibraryRow): SkillDraft {
-  return { name: r.name, section: r.section === NO_CATEGORY ? "" : r.section, group: r.group, category: r.category, tags: r.tags, model: r.model, mandatoryDefault: null, requiredToGraduate: r.requiredToGraduate }
+  return { name: r.name, description: r.description, section: r.section === NO_CATEGORY ? "" : r.section, group: r.group, category: r.category, tags: r.tags, model: r.model, mandatoryDefault: null, requiredToGraduate: r.requiredToGraduate }
 }
 
 export interface SkillSheetProps {
@@ -52,7 +54,8 @@ export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, de
   const [attempted, setAttempted] = React.useState(false)
   const [guard, setGuard] = React.useState(false)
   React.useEffect(() => { if (open) { setD(initial); setErrors({}); setAttempted(false) } }, [open, initial])
-  const opts = React.useMemo(() => pickerOptions(rows), [rows])
+  // The shared categories and tags Settings edits (SL-03 to SL-06): active ones offered, inactive ones marked.
+  const opts = useVocabOptions()
   const others = React.useMemo(() => rows.filter((r) => r.id !== editing?.id), [rows, editing])
   const names = React.useMemo(() => others.map((r) => r.name), [others])
   const dirty = JSON.stringify(d) !== JSON.stringify(initial)
@@ -118,24 +121,29 @@ export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, de
                 ) : null}
               </Field>
               <Field>
-                <FieldLabel id="skill-category-label" htmlFor="skill-category">Category</FieldLabel>
-                <CategoryPicker id="skill-category" labelId="skill-category-label" value={d.section} options={opts.sections} onChange={(v) => set("section", v)} className="w-full" />
+                <FieldLabel htmlFor="skill-description">Description (optional)</FieldLabel>
+                <Textarea id="skill-description" rows={3} maxLength={600} value={d.description} onChange={(e) => set("description", e.target.value)} />
               </Field>
               <Field>
-                <FieldLabel id="skill-tags-label" htmlFor="skill-tags">Tags</FieldLabel>
-                <TagsPicker id="skill-tags" labelId="skill-tags-label" value={d.tags} options={opts.tags} onChange={(t) => set("tags", t)} describedBy="skill-tags-help" />
-                <FieldDescription id="skill-tags-help">Optional. Type to find or create one; a tag can cross categories.</FieldDescription>
+                <FieldLabel id="skill-category-label" htmlFor="skill-category">Category</FieldLabel>
+                <CategoryPicker id="skill-category" labelId="skill-category-label" value={d.category || d.section} options={opts.categories} inactive={opts.inactiveCategories} onChange={(v) => setD((p) => ({ ...p, category: v, section: v }))} className="w-full" />
+              </Field>
+              <Field>
+                <FieldLabel id="skill-tags-label" htmlFor="skill-tags">Tags (optional)</FieldLabel>
+                <TagsPicker id="skill-tags" labelId="skill-tags-label" value={d.tags} options={opts.tags} inactive={opts.inactiveTags} onChange={(t) => set("tags", t)} describedBy="skill-tags-help" />
+                <FieldDescription id="skill-tags-help">Type to find or create one.</FieldDescription>
               </Field>
               <Field orientation="horizontal" className="items-start justify-between gap-4">
                 <FieldContent>
                   <FieldLabel id="skill-required-label" htmlFor="skill-required">Required to graduate</FieldLabel>
-                  <FieldDescription>Students must achieve it before they graduate.</FieldDescription>
                 </FieldContent>
                 <ToggleSwitch id="skill-required" checked={d.requiredToGraduate} onChange={(v) => set("requiredToGraduate", v)} aria-labelledby="skill-required-label" />
               </Field>
             </FloatingSheetPanelBody>
             <FloatingSheetPanelFooter className="flex items-center justify-end gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={requestClose}>Cancel</Button>
+              {/* Add: the header's close (and Escape) is the one way out, so the footer holds the two saves only (density
+                  budget: Description, REQ SL-02, took the place of a second Cancel). */}
+              {mode === "add" ? null : <Button type="button" variant="ghost" size="sm" onClick={requestClose}>Cancel</Button>}
               {mode === "add" ? (
                 <>
                   <Button type="button" variant="outline" size="sm" onClick={() => submit("close")}>Save for later</Button>

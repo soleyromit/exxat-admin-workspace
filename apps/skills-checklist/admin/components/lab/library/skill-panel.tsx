@@ -3,7 +3,7 @@
 /**
  * Row detail for the skills library (split template T4): a non-modal DS FloatingSheetPanel over the list, so the list stays
  * in view and clickable. The record is in the URL (?skill=), Previous and Next step through the rows in view, and the one
- * primary in the panel footer is the next thing to do with that skill (Configure, Check and publish, Open configuration,
+ * primary in the panel footer is the next thing to do with that skill (Configure, Check and save, Open configuration,
  * Reactivate). Everything else (edit details, deactivate, delete) sits in the panel's overflow menu.
  */
 import { skillNoun } from "@/lib/lab/terms"
@@ -25,10 +25,10 @@ import { plural } from "@/lib/v2/format"
 import { LibraryStatusBadge } from "./library-chrome"
 import { RowActions, type RowActionHandlers } from "./row-actions"
 
+/** The next step for the row (decision D-X31): configure it (or finish the saved draft), then map it. */
 function primaryFor(r: LibraryRow): { label: string; href?: string } {
-  if (r.status === "not-configured") return { label: "Configure", href: configureHref(r.id) }
-  if (r.status === "configured") return { label: "Check and publish", href: `${configureHref(r.id)}&step=check` }
-  if (r.status === "published") return { label: "Open configuration", href: configureHref(r.id) }
+  if (r.status === "not-configured") return { label: r.draft ? "Continue configuring" : "Configure", href: configureHref(r.id) }
+  if (r.status === "configured") return { label: "Map to courses", href: mappingHref(r.id) }
   return { label: "Reactivate" }
 }
 
@@ -54,7 +54,7 @@ export function SkillPanel({ row, rows, handlers, onOpen, onClose }: {
   const prev = i > 0 ? rows[i - 1] : undefined
   const next = i >= 0 && i < rows.length - 1 ? rows[i + 1] : undefined
   const primary = row ? primaryFor(row) : null
-  const mappable = row?.status === "configured" || row?.status === "published"
+  const mappable = row?.status === "configured"
   return (
     <FloatingSheetPanel open={!!row} onOpenChange={(o) => !o && onClose()}>
       <FloatingSheetPanelContent side="right" size="md" contentSlot="lab-skill-detail">
@@ -67,12 +67,13 @@ export function SkillPanel({ row, rows, handlers, onOpen, onClose }: {
               nextLabel={`Next ${skillNoun()}`}
               closeLabel="Close"
               showSize={false}
-              actions={<RowActions row={row} handlers={handlers} hideConfigure />}
+              actions={<RowActions row={row} handlers={handlers} hideConfigure={row.status === "not-configured"} hideMap />}
             />
             <FloatingSheetPanelHeader title={row.name} />
             <FloatingSheetPanelBody className="px-4 pb-4">
               <dl className="flex flex-col divide-y divide-border">
-                <Fact term="Status"><LibraryStatusBadge status={row.status} /></Fact>
+                <Fact term="Status"><LibraryStatusBadge status={row.status} draft={row.draft} /></Fact>
+                <Fact term="Description">{row.description ? <span className="whitespace-pre-line">{row.description}</span> : <span className="text-muted-foreground">None</span>}</Fact>
                 {/* Category and tags together, so what the program grouped it under reads in one place (REQ SL-03, SL-04). */}
                 <Fact term="Category">{row.section === NO_CATEGORY ? <span className="text-muted-foreground">None</span> : row.section}</Fact>
                 <Fact term="Tags">

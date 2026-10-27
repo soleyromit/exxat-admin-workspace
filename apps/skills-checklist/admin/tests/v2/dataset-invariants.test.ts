@@ -8,6 +8,7 @@ import { homeKpis } from "@/lib/v2/home"
 import { approveItems, queueItems } from "@/lib/v2/queue"
 import { behindPace, heatmap, NO_FILTERS, paceRows, studentsIn } from "@/lib/v2/reports"
 import { buildHero, createSeed, IDS } from "@/lib/v2/seed"
+import { facts } from "@/lib/v2/facts"
 import { skillProgress, courseWork } from "@/lib/v2/student"
 import type { V2State } from "@/lib/v2/types"
 import { mandatoryProgress, mandatoryProgressForCourse, pendingReasons, verificationRows, verifyRecord } from "@/lib/v2/verification"
@@ -408,6 +409,20 @@ describe("determinism and the hand-written layer", () => {
     expect([text.length, h >>> 0]).toEqual(PINNED)
   })
 
+  it("2026-10-27.9 adds only the self-evaluation flag on sterile dressing change: without it the seed is the 2026-10-26.8 seed", () => {
+    const seed = createSeed()
+    const sk = seed.skills.find((k) => k.id === "sk-sterile-dressing")!
+    expect(sk.config?.selfEvaluation).toBe(true)
+    expect(seed.skills.filter((k) => k.config?.selfEvaluation === true).map((k) => k.id)).toEqual(["sk-sterile-dressing"])
+    delete sk.config!.selfEvaluation
+    const text = JSON.stringify(seed)
+    let h = 2166136261
+    for (let i = 0; i < text.length; i += 7) h = Math.imul(h ^ text.charCodeAt(i), 16777619)
+    expect([text.length, h >>> 0]).toEqual(PINNED_BEFORE_SELF_EVALUATION)
+    // And every figure in the facts registry is identical with and without the flag.
+    expect(facts(createSeed())).toEqual(facts(seed))
+  })
+
   it("never edits the hand-written layer: its evaluations, submissions and people are a prefix of the seed", () => {
     const hero = buildHero()
     // The hero layer itself was extended on purpose on 2026-10-26 (dataset spec section 12): Maya has one returned submission
@@ -446,5 +461,9 @@ describe("determinism and the hand-written layer", () => {
 // SEED_VERSION 2026-10-26.8-question-answers: Maya's two sterile dressing attempts (ev-maya-6, ev-maya-9) carry per-question Yes
 // and No answers (dataset spec section 14). Nothing else changed (the seed with those two details removed compared equal) and no
 // question rule is published by the seed, so every fact in facts.ts is unchanged.
+// SEED_VERSION 2026-10-27.9-self-evaluation: sterile dressing change asks for a self-evaluation (config.selfEvaluation true), so
+// the fulfillment walkthrough shows that step on a mandatory NURS 350 skill the demo student can still send. Nothing else changed:
+// the seed with that one flag removed hashes to the 2026-10-26.8 pair (test below), and the engine never reads the flag.
 // To re-pin after a pool or generator change: run this test, paste the new pair, bump SEED_VERSION.
-const PINNED: [number, number] = [4929057, 942666486]
+const PINNED: [number, number] = [4929079, 3721521206]
+const PINNED_BEFORE_SELF_EVALUATION: [number, number] = [4929057, 942666486]

@@ -1,32 +1,62 @@
 "use client"
 
 /**
- * Evaluator directory B (alternative): site first. Sites with their setting, evaluators, unverified names, open requests and
- * the oldest wait, filterable by setting (site and setting as the lens, as in RP-08); select a site to see and decide on its
- * evaluators in the pane beside it. Evaluators with no site (program faculty, lab instructors) are one row. Regions: header,
- * toolbar (the program summary on its right, list budget 4), sites and site panes. URL: ?q= &setting= &site= &filter=. Demo states: ?state=loading | empty | error.
+ * Settings > Evaluators (Romit 2026-10-27, "sure"; ledger D-L24): the full list of people who sign (preceptors, clinical faculty,
+ * lab instructors) for lookup and edits, a Settings section in place of the former evaluator directory page and the Lab
+ * instructors list (the same records: a lab instructor is an evaluator with that role, recorded by name and email, REQ SL-08).
+ * Unverified names show "Not verified", linking to Approvals, New evaluators, where they are adopted or merged (REQ SL-09). Where
+ * evaluator records live platform-wide stays open (OD-05).
+ *
+ * Settings A renders A (people first: one paginated table with search, role, site and status), Settings B renders B (site first:
+ * the sites, then one site's people). The role filter on Lab instructor is the former Lab instructors list (`?role=lab-instructor`).
+ * URL: ?q= &role= &site= &setting= &filter=. Demo states: ?state=loading | empty | error.
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
-import { directoryLink, settingOptions, siteRows, type SiteRow } from "@/lib/lab/evaluators"
+import { directoryLink, filterDirectory, settingOptions, siteRows, statusFromParam, type EvaluatorRoleKey, type SiteRow } from "@/lib/lab/evaluators"
 import { EvaluatorFrame, type DirectoryContext } from "@/components/lab/admin-a/evaluator-frame"
-import { DirectoryTable } from "@/components/lab/admin-a/evaluator-parts"
+import { DirectoryTable, RoleSelect, SiteSelect, STATUS_OPTS } from "@/components/lab/admin-a/evaluator-parts"
 import { FilterSelect, LINK, PaneHeading, SearchField, Toolbar, fmt, plural } from "@/components/lab/admin-a/parts"
 import { EmptyBlock } from "@/components/lab/empty-block"
 
-const NO_SITE = "program"
-
-export function AdminEvaluatorDirectoryB() {
-  return <EvaluatorFrame variant="B" summaryInToolbar>{(c) => <SiteFirst c={c} />}</EvaluatorFrame>
+export function EvaluatorsSection({ layout }: { layout: "people" | "sites" }) {
+  return layout === "sites" ? (
+    <EvaluatorFrame variant="B" embedded summaryInToolbar>{(c) => <SiteFirst c={c} />}</EvaluatorFrame>
+  ) : (
+    <EvaluatorFrame variant="A" embedded>{(c) => <PeopleFirst c={c} />}</EvaluatorFrame>
+  )
 }
+
+function PeopleFirst({ c }: { c: DirectoryContext }) {
+  const { query } = c
+  const q = query.get("q")
+  const role = query.get("role") as "" | EvaluatorRoleKey
+  const site = query.get("site")
+  const status = statusFromParam(query.get("filter"))
+  const rows = React.useMemo(() => filterDirectory(c.rows, { q, role, site, status }), [c.rows, q, role, site, status])
+  return (
+    <>
+      <Toolbar label="Find an evaluator">
+        <SearchField value={q} onChange={(v) => query.set({ q: v || null })} label="Search evaluators by name, email or site" placeholder="Search name or email" />
+        <RoleSelect value={role} onChange={(v) => query.set({ role: v || null })} />
+        <SiteSelect value={site} onChange={(v) => query.set({ site: v || null })} sites={c.sites} />
+        <FilterSelect value={status === "awaiting" ? "awaiting" : status} onChange={(v) => query.set({ filter: v === "awaiting" ? "unverified" : v || null })} label="Status" allLabel="Any status" options={STATUS_OPTS} className="w-48" />
+      </Toolbar>
+      <DirectoryTable rows={rows} programRate={c.summary.programRate} />
+    </>
+  )
+}
+
+const NO_SITE = "program"
 
 function SiteFirst({ c }: { c: DirectoryContext }) {
   const { query } = c
   const q = query.get("q")
   const setting = query.get("setting")
   const filter = query.get("filter")
+  const role = query.get("role") as "" | EvaluatorRoleKey
   const all = React.useMemo(() => {
     const sites = siteRows(c.state, c.rows)
     const noSite = c.rows.filter((r) => !r.siteId)
@@ -49,15 +79,17 @@ function SiteFirst({ c }: { c: DirectoryContext }) {
     const t = q.trim().toLowerCase()
     return all.filter((s) => (!t || s.haystack.includes(t)) && (!setting || s.setting === setting) && (filter !== "unverified" || s.awaiting > 0) && (filter !== "open" || s.openRequests > 0))
   }, [all, q, setting, filter])
-  const selected = sites.find((s) => s.id === query.get("site")) ?? all.find((s) => s.id === query.get("site")) ?? sites[0]
-  const people = React.useMemo(() => (selected ? c.rows.filter((r) => (selected.id === NO_SITE ? !r.siteId : r.siteId === selected.id)) : []), [c.rows, selected])
+  // The former Lab instructors list (?role=lab-instructor) opens on the program row, where lab instructors are.
+  const wanted = query.get("site") || (role === "lab-instructor" ? NO_SITE : "")
+  const selected = sites.find((s) => s.id === wanted) ?? all.find((s) => s.id === wanted) ?? sites[0]
+  const people = React.useMemo(() => (selected ? c.rows.filter((r) => (selected.id === NO_SITE ? !r.siteId : r.siteId === selected.id) && (!role || r.role === role)) : []), [c.rows, selected, role])
 
   const columns = React.useMemo<ColumnDef<SiteRow>[]>(
     () => [
       {
         key: "facility",
         label: "Site",
-        width: 196,
+        width: 170,
         sortable: true,
         cell: (s) => (
           <span className="flex min-w-0 flex-col py-0.5">
@@ -66,8 +98,8 @@ function SiteFirst({ c }: { c: DirectoryContext }) {
           </span>
         ),
       },
-      { key: "evaluators", label: "Evaluators", width: 104, sortable: true, cell: (s) => <span className="flex flex-col py-0.5"><span className="text-sm tabular-nums">{fmt(s.evaluators)}</span>{s.awaiting ? <span className="text-xs text-muted-foreground">{`${fmt(s.awaiting)} unverified`}</span> : null}</span> },
-      { key: "openRequests", label: "Open requests", width: 116, sortable: true, cell: (s) => (s.openRequests ? <span className="flex flex-col py-0.5"><span className="text-sm tabular-nums">{fmt(s.openRequests)}</span><span className="text-xs text-muted-foreground">{`oldest ${s.oldestDays} d`}</span></span> : <span className="text-sm text-muted-foreground">None</span>) },
+      { key: "evaluators", label: "Evaluators", width: 96, sortable: true, cell: (s) => <span className="flex flex-col py-0.5"><span className="text-sm tabular-nums">{fmt(s.evaluators)}</span>{s.awaiting ? <span className="text-xs text-muted-foreground">{`${fmt(s.awaiting)} unverified`}</span> : null}</span> },
+      { key: "openRequests", label: "Open requests", width: 112, sortable: true, cell: (s) => (s.openRequests ? <span className="flex flex-col py-0.5"><span className="text-sm tabular-nums">{fmt(s.openRequests)}</span><span className="text-xs text-muted-foreground">{`oldest ${s.oldestDays} d`}</span></span> : <span className="text-sm text-muted-foreground">None</span>) },
     ],
     [q, filter, selected],
   )
@@ -89,7 +121,7 @@ function SiteFirst({ c }: { c: DirectoryContext }) {
           className="w-48"
         />
       </Toolbar>
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,23.5rem)_minmax(0,1fr)]">
         <div data-region="sites" className="min-w-0">
           <DataTable<SiteRow>
             data={sites}
@@ -107,7 +139,7 @@ function SiteFirst({ c }: { c: DirectoryContext }) {
         {selected ? (
           <section aria-labelledby="site-heading" className="flex min-w-0 flex-col gap-3" data-region="site">
             <PaneHeading title={<span id="site-heading">{`${selected.facility}, ${selected.unit}`}</span>} meta={`${selected.setting} · ${plural(selected.evaluators, "evaluator", "evaluators")} · ${plural(selected.evaluations, "evaluation", "evaluations")}`} />
-            <DirectoryTable rows={people} programRate={c.summary.programRate} onAdopt={c.openAdopt} showSite={false} pageSize={25} />
+            <DirectoryTable rows={people} programRate={c.summary.programRate} showSite={false} pageSize={25} />
           </section>
         ) : null}
       </div>

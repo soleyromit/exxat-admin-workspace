@@ -3,7 +3,8 @@
 /**
  * Add a skill, option set 2 "One page": an inline row at the end of a category in the library tree. The category is
  * where the row sits and can be changed; tags can be picked or created on the same row (REQ SL-03, SL-04, SL-05; decision
- * D-X28). Category and tags stay set for the next name, so a run of skills shares them. Enter adds and keeps the row open;
+ * D-X28). The optional description (REQ SL-02) is one click away ("Add a description"), so the row stays one line by default
+ * and carries the same fields as the sheet (simplify guardrail). Category and tags stay set for the next name, so a run of skills shares them. Enter adds and keeps the row open;
  * Escape closes (with a guard when a name is typed). Required to graduate is set later from the skill's panel; the
  * evaluation model on Configure. Same name validation as the sheet (duplicates, length).
  */
@@ -15,7 +16,7 @@ import { TableCell, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { EMPTY_DRAFT, NO_CATEGORY, validateDraft, type SkillDraft } from "@/lib/lab/library"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
-import { CategoryPicker, TagsPicker } from "./category-tag-pickers"
+import { CategoryPicker, TagsPicker, useVocabOptions } from "./category-tag-pickers"
 
 /** The quiet row that opens the inline add for one category. */
 export function InlineAddTrigger({ category, colSpan, onOpen }: { category: string; colSpan: number; onOpen: () => void }) {
@@ -30,29 +31,32 @@ export function InlineAddTrigger({ category, colSpan, onOpen }: { category: stri
   )
 }
 
-export function InlineAddRow({ category, colSpan, names, options, onAdd, onClose }: {
+export function InlineAddRow({ category, colSpan, names, onAdd, onClose }: {
   category: string
   colSpan: number
   names: readonly string[]
-  /** The program's own categories and tags (pickerOptions over the live library). */
-  options: { sections: readonly string[]; tags: readonly string[] }
   onAdd: (d: SkillDraft) => void
   onClose: () => void
 }) {
   const [name, setName] = React.useState("")
   const [section, setSection] = React.useState(category === NO_CATEGORY ? "" : category)
   const [tags, setTags] = React.useState<string[]>([])
+  const [description, setDescription] = React.useState("")
+  const [showDescription, setShowDescription] = React.useState(false)
   const [error, setError] = React.useState<string | undefined>()
   const [added, setAdded] = React.useState(0)
   const [guard, setGuard] = React.useState(false)
   const ref = React.useRef<HTMLInputElement>(null)
   const id = React.useId()
+  // The shared categories and tags Settings edits (SL-03 to SL-06).
+  const options = useVocabOptions()
   const submit = () => {
     const e = validateDraft({ ...EMPTY_DRAFT, name }, names).name
     setError(e)
     if (e) return ref.current?.focus()
-    onAdd({ ...EMPTY_DRAFT, name, section, tags })
+    onAdd({ ...EMPTY_DRAFT, name, description, section, tags })
     setName("")
+    setDescription("")
     setAdded((n) => n + 1)
     ref.current?.focus()
   }
@@ -84,12 +88,22 @@ export function InlineAddRow({ category, colSpan, names, options, onAdd, onClose
           </Field>
           <Field className="w-48 gap-1">
             <FieldLabel id={`${id}-cat-label`} htmlFor={`${id}-cat`} className="text-xs">Category</FieldLabel>
-            <CategoryPicker id={`${id}-cat`} labelId={`${id}-cat-label`} value={section} options={options.sections} onChange={setSection} size="sm" className="w-full" />
+            <CategoryPicker id={`${id}-cat`} labelId={`${id}-cat-label`} value={section} options={options.categories} inactive={options.inactiveCategories} onChange={setSection} size="sm" className="w-full" />
           </Field>
           <Field className="w-72 max-w-full gap-1">
             <FieldLabel id={`${id}-tags-label`} htmlFor={`${id}-tags`} className="text-xs">Tags</FieldLabel>
-            <TagsPicker id={`${id}-tags`} labelId={`${id}-tags-label`} value={tags} options={options.tags} onChange={setTags} size="sm" />
+            <TagsPicker id={`${id}-tags`} labelId={`${id}-tags-label`} value={tags} options={options.tags} inactive={options.inactiveTags} onChange={setTags} size="sm" />
           </Field>
+          {showDescription ? (
+            <Field className="w-full max-w-2xl gap-1">
+              <FieldLabel htmlFor={`${id}-desc`} className="text-xs">Description</FieldLabel>
+              <Input id={`${id}-desc`} className="h-8" value={description} maxLength={600} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" />
+            </Field>
+          ) : (
+            <Button type="button" variant="link" size="sm" className="h-8 px-0" onClick={() => setShowDescription(true)}>
+              Add a description
+            </Button>
+          )}
           <Button type="submit" variant="default" size="sm">Add</Button>
           <Button type="button" variant="ghost" size="sm" onClick={close}>Done</Button>
           <p id={`${id}-help`} className="basis-full text-xs text-muted-foreground" aria-live="polite">

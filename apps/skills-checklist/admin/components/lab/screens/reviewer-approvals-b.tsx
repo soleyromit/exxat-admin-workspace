@@ -15,12 +15,12 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { initialsOf } from "@/lib/v2/format"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader, FloatingSheetPanelToolbar } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { Separator } from "@exxatdesignux/ui/components/ui/separator"
-import { itemDetail, reviewItemHref, ruleCheck, type ReviewRow } from "@/lib/lab/reviewer"
+import { evaluatorLine, itemDetail, reviewItemHref, ruleCheck, skillsLine, whereLine, type ReviewRow } from "@/lib/lab/reviewer"
 import { skillNoun } from "@/lib/lab/terms"
 import { ApprovalsFrame, type ApprovalsContext } from "@/components/lab/reviewer/approvals-frame"
 import { AgeText, ReasonBadge, SummaryLine } from "@/components/lab/reviewer/parts"
 import { LINK as LINK_U } from "@/components/lab/link-styles"
-import { CompareTable, DecisionBar, Facts, Feedback, RuleCheckLine, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { CompareTable, DecisionBar, Facts, Feedback, ReviewNoteField, ReviewNoteProvider, RuleCheckLine, WhyHeld } from "@/components/lab/reviewer/review-parts"
 
 export function ReviewerApprovalsB() {
   return <ApprovalsFrame variant="B">{(ctx) => <Split ctx={ctx} />}</ApprovalsFrame>
@@ -47,7 +47,7 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
     {
       key: "student",
       label: `Student and ${skillNoun()}`,
-      width: 240,
+      width: 280,
       cell: (r) => (
         <PersonIdentityCell
           name={r.student}
@@ -55,13 +55,26 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
           renderName={(n) => (
             <span className="flex min-w-0 flex-col">
               <span className="truncate">{n}</span>
-              <span className="truncate text-xs font-normal text-muted-foreground">{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
+              <span className="truncate text-xs font-normal text-muted-foreground" title={r.skills.length > 1 ? skillsLine(r) : undefined}>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
+              {/* REQ AR-01: course, setting and location on the queue row itself, not only in the panel. */}
+              <span className="truncate text-xs font-normal text-muted-foreground" title={whereLine(r)} data-row-where>{whereLine(r)}</span>
             </span>
           )}
         />
       ),
     },
-    { key: "why", label: "Why held", width: 196, cell: (r) => <ReasonBadge reason={r.reason} /> },
+    {
+      key: "why",
+      label: "Waiting because",
+      width: 212,
+      // The evaluator and role sit under the cause (REQ AR-01): a compact facts line instead of another column in the narrow queue.
+      cell: (r) => (
+        <span className="flex min-w-0 flex-col items-start gap-1 py-0.5">
+          <ReasonBadge row={r} wrap />
+          <span className="max-w-full truncate text-xs text-muted-foreground" title={evaluatorLine(r)} data-row-evaluator>{evaluatorLine(r)}</span>
+        </span>
+      ),
+    },
     { key: "days", label: "Waiting", width: 92, cell: (r) => <AgeText days={r.days} /> },
   ]
 
@@ -85,7 +98,7 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
       <FloatingSheetPanel open={!!detail} onOpenChange={(o) => (o ? null : go(null))} modal={false}>
         <FloatingSheetPanelContent contentSlot="lab-reviewer-split" size="md">
           {detail ? (
-            <>
+            <ReviewNoteProvider resetKey={detail.row.key}>
               {/* Split-view budget (strategy/07 section 3): the queue beside the panel is the navigator and a decision moves to the
                   next submission, so the panel keeps Close only (no size menu, no Previous/Next that repeat the visible list). */}
               <FloatingSheetPanelToolbar showSize={false} closeLabel="Close submission" />
@@ -103,11 +116,13 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
                 <Separator />
                 <Facts d={detail} scope={ctx.scope} />
                 <Link className={`${LINK_U} self-start text-sm`} href={reviewItemHref(ctx.scope, detail.row.key)}>Open the full submission</Link>
+                <Separator />
+                <ReviewNoteField id="split-review-note" />
               </FloatingSheetPanelBody>
               <FloatingSheetPanelFooter>
                 <DecisionBar row={detail.row} />
               </FloatingSheetPanelFooter>
-            </>
+            </ReviewNoteProvider>
           ) : null}
         </FloatingSheetPanelContent>
       </FloatingSheetPanel>

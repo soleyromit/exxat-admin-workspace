@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesig
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { VIZ } from "@/components/lab/viz"
+import { TYPE } from "@/components/lab/type-scale"
 import { ageLabel, type Part, type SkillRecord, type SkillState } from "@/lib/lab/student"
 import { RECORD_STATE_META, STUDENT_STATE_LABEL, type RecordStateKey } from "@/lib/v2/labels"
 
@@ -106,7 +107,7 @@ export function RequiredRing({ records, size = 112, label }: { records: Array<Pi
           return <path key={i} d={arc(from, from + (to - from) * share)} fill="none" stroke={x.state === "achieved" ? "var(--foreground)" : "var(--border-control-3)"} strokeWidth={8} />
         })
       )}
-      <text x={c} y={c - 2} textAnchor="middle" className="fill-foreground font-heading" style={{ fontSize: size * 0.24, fontWeight: 600 }}>
+      <text x={c} y={c - 2} textAnchor="middle" className="fill-foreground" style={{ fontSize: size * 0.24, fontWeight: 600 }}>
         {achieved}
       </text>
       <text x={c} y={c + size * 0.16} textAnchor="middle" className="fill-muted-foreground" style={{ fontSize: 12 }}>
@@ -171,8 +172,8 @@ export function ShowAsTable({ label, children }: { label: string; children: Reac
 /** A figure that is a link to where it is acted on. */
 export function FigureLink({ href, value, label, amber = false }: { href: string; value: number; label: string; amber?: boolean }) {
   return (
-    <Link href={href} className="group flex flex-col gap-0.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring" data-figure="kpi">
-      <span className="font-heading text-2xl font-semibold leading-none tabular-nums text-foreground group-hover:underline group-hover:underline-offset-4" style={amber && value > 0 ? { color: VIZ.behindInk } : undefined}>
+    <Link href={href} className="group flex flex-col gap-0.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring" data-figure="kpi" data-figure-label={label} data-figure-value={value}>
+      <span className={cn(TYPE.figure, "text-foreground group-hover:underline group-hover:underline-offset-4")} style={amber && value > 0 ? { color: VIZ.behindInk } : undefined}>
         {value}
       </span>
       <span className="text-xs text-muted-foreground">{label}</span>
@@ -182,7 +183,7 @@ export function FigureLink({ href, value, label, amber = false }: { href: string
 
 export function SectionTitle({ children, count, id }: { children: React.ReactNode; count?: number; id?: string }) {
   return (
-    <h2 id={id} className="flex items-baseline gap-2 text-base font-semibold text-foreground">
+    <h2 id={id} className={cn("flex items-baseline gap-2", TYPE.section)}>
       {children}
       {count !== undefined ? <span className="text-xs font-normal tabular-nums text-muted-foreground">{count}</span> : null}
     </h2>

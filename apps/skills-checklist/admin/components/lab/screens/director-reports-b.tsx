@@ -82,7 +82,7 @@ function Preview({ m, r, view, chip }: { m: Readiness; r: ReportModel; view: Rep
 
 export function DirectorReportsB() {
   return (
-    <DirectorPage title="Reports" variant="B" pageType="list" courseInFilters announce={(m) => `Report of ${m.rows.length} students`}>
+    <DirectorPage title="Export" variant="B" pageType="list" courseInFilters announce={(m) => `Report of ${m.rows.length} students`}>
       {({ model: m, scope, param, setParams, demo, chip }) => {
         const raw = param("view")
         const view: ReportView = isReportView(raw) ? raw : "student"

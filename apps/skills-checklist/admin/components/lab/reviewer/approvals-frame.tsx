@@ -13,7 +13,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { LINK } from "@/components/lab/link-styles"
 import { SCOPE_LABEL, removeScope, type ScopeKey } from "@/lib/lab/scope"
@@ -21,13 +21,23 @@ import { approvalsHref, plural, queueOrder, type ReviewRow } from "@/lib/lab/rev
 import { skillNounPlural } from "@/lib/lab/terms"
 import { DecisionBanner, DecisionProvider } from "@/components/lab/reviewer/decisions"
 import { QueueSkeleton } from "@/components/lab/reviewer/parts"
+import { TYPE } from "@/components/lab/type-scale"
+import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
+import { NEW_EVALUATORS_LEAD, NewEvaluatorsPanel } from "@/components/lab/reviewer/new-evaluators"
+import { newEvaluatorRows } from "@/lib/lab/new-evaluators"
+import { facts } from "@/lib/v2/facts"
 import { useReviewer, type ReviewerContext } from "@/components/lab/reviewer/use-reviewer"
 
 export interface ApprovalsContext extends ReviewerContext {
   rowsInScope: ReviewRow[]
   /** A variant with a side rail says when it is open, so the page leaves room for it and nothing sits under it. */
   setRail: (open: boolean) => void
+  /** Admin Approvals with the Evaluations and New evaluators tabs: the tab count is the queue figure, so no summary line (list budget, figures 0 with tabs). */
+  tabbed: boolean
 }
+
+/** Set by the admin Approvals variants: the page shows the Evaluations and New evaluators tabs. The reviewer's page does not. */
+export const ApprovalsTabsContext = React.createContext(false)
 
 export function ApprovalsFrame({ variant, children }: { variant: string; children: (ctx: ApprovalsContext) => React.ReactNode }) {
   const ctx = useReviewer()
@@ -37,61 +47,97 @@ export function ApprovalsFrame({ variant, children }: { variant: string; childre
   const rowsInScope = ctx.demo === "clear" || ctx.demo === "norule" ? [] : live
   const applied = (["cohort", "group", "course"] as ScopeKey[]).filter((k) => !!ctx.scope[k])
   const [rail, setRail] = React.useState(false)
+  // Admin Approvals carries a second tab, New evaluators (Romit 2026-10-27). Its count is the facts registry's
+  // unverifiedEvaluators, the same figure as the dashboard tile "Evaluators not yet verified".
+  const tabbed = React.useContext(ApprovalsTabsContext)
+  const tab = tabbed && ctx.param("tab") === "new-evaluators" ? "new-evaluators" : "evaluations"
+  const newRows = React.useMemo(() => (tabbed && ctx.state ? newEvaluatorRows(ctx.state) : []), [tabbed, ctx.state])
+  const newCount = tabbed && ctx.state ? facts(ctx.state).unverifiedEvaluators : 0
+
+  const evaluationsBody = (
+    <>
+      {ctx.options ? (
+        <ScopeBar
+          scope={ctx.scope}
+          options={ctx.options}
+          termName={ctx.termName}
+          onChange={ctx.setScope}
+          chipValue={ctx.chip}
+          showBasis={false}
+          moreKeys={[]}
+        />
+      ) : null}
+      <p role="status" aria-live="polite" className="sr-only">
+        {ctx.ready ? `${plural(rowsInScope.length, "submission waits", "submissions wait")} for approval` : "Loading approvals"}
+      </p>
+      {/* The one line of explanation on Approvals (Romit 2026-10-27): what this list is for. */}
+      <p className={TYPE.helper} data-approvals-lead>These evaluations count only after you approve them.</p>
+      <DecisionBanner />
+      {!ctx.ready ? (
+        <QueueSkeleton />
+      ) : ctx.demo === "norule" ? (
+        <Calm icon="fa-scale-balanced" title={`No ${skillNounPlural()} ask for approval`} body="Evidence counts as soon as an evaluator signs." />
+      ) : ctx.demo === "clear" ? (
+        <Calm icon="fa-circle-check" title="All clear" body={`Nothing waits for you in ${ctx.termName}. New submissions appear here oldest first.`} />
+      ) : rowsInScope.length === 0 && applied.length ? (
+        <LocalBanner variant="info" title="No submissions in this scope">
+          <span className="flex flex-col gap-2">
+            <span>{`${ctx.scoped?.total ?? 0} wait outside it. Remove a filter to see them.`}</span>
+            <span className="flex flex-wrap gap-2">
+              {applied.map((k) => (
+                <Button key={k} type="button" variant="outline" size="sm" onClick={() => ctx.setScope(removeScope(ctx.scope, k))}>
+                  {`Remove ${SCOPE_LABEL[k].toLowerCase()}`}
+                </Button>
+              ))}
+            </span>
+          </span>
+        </LocalBanner>
+      ) : rowsInScope.length === 0 ? (
+        <Calm icon="fa-circle-check" title="All clear" body={`Nothing waits for you in ${ctx.termName}.`} />
+      ) : (
+        <>
+          {children({ ...ctx, rowsInScope, setRail, tabbed })}
+          {ctx.scoped && ctx.scoped.earlier > 0 && ctx.scoped.earlierTerm ? (
+            <p className="text-sm text-muted-foreground" data-earlier>
+              {`${plural(ctx.scoped.earlier, "more submission waits", "more submissions wait")} from earlier terms. `}
+              <Link className={LINK} href={approvalsHref({ ...ctx.scope, term: ctx.scoped.earlierTerm }, { variant })}>{`Show ${ctx.scoped.earlierTerm}`}</Link>
+            </p>
+          ) : null}
+        </>
+      )}
+    </>
+  )
+  // The "New evaluators" tab: names students typed, confirmed or merged here. Not scoped by term or course (a name is the
+  // program's, not a cohort's), so the scope bar belongs to the Evaluations tab only.
+  const newBody = (
+    <>
+      <p className={TYPE.helper} data-approvals-lead>{NEW_EVALUATORS_LEAD}</p>
+      {!ctx.ready || !ctx.state ? <QueueSkeleton /> : <NewEvaluatorsPanel state={ctx.state} rows={newRows} scope={ctx.scope} />}
+    </>
+  )
 
   return (
-    <PageFrame title="Approvals" actions={<SampleDataBadge />}>
+    <PageFrame title="Approvals" subtitle={ctx.options ? <ScopeContext termName={ctx.termName} scope={ctx.scope} at={ctx.at} stale={ctx.demo === "stale"} /> : undefined} actions={<SampleDataBadge />}>
       <DecisionProvider state={ctx.state} rows={rowsInScope}>
         <div className={`flex flex-col gap-4 ${rail ? "lg:pe-[33rem]" : ""}`} data-page-type="list" data-reviewer-lab={`approvals-${variant}`}>
-          {ctx.options ? (
-            <ScopeBar
-              scope={ctx.scope}
-              options={ctx.options}
-              termName={ctx.termName}
-              onChange={ctx.setScope}
-              chipValue={ctx.chip}
-              asOf={ctx.asOf}
-              onRefresh={ctx.refresh}
-              stale={ctx.demo === "stale"}
-              showBasis={false}
-              moreKeys={[]}
-              courseInFilters
-            />
-          ) : null}
-          <p role="status" aria-live="polite" className="sr-only">
-            {ctx.ready ? `${plural(rowsInScope.length, "submission waits", "submissions wait")} for approval` : "Loading approvals"}
-          </p>
-          <DecisionBanner />
-          {!ctx.ready ? (
-            <QueueSkeleton />
-          ) : ctx.demo === "norule" ? (
-            <Calm icon="fa-scale-balanced" title={`No ${skillNounPlural()} ask for approval`} body="Evidence counts as soon as an evaluator signs. Submissions wait here only when a rule asks for approval or the evaluator is not assigned." />
-          ) : ctx.demo === "clear" ? (
-            <Calm icon="fa-circle-check" title="All clear" body={`Nothing waits for you in ${ctx.termName}. New submissions appear here oldest first.`} />
-          ) : rowsInScope.length === 0 && applied.length ? (
-            <LocalBanner variant="info" title="No submissions in this scope">
-              <span className="flex flex-col gap-2">
-                <span>{`${ctx.scoped?.total ?? 0} wait outside it. Remove a filter to see them.`}</span>
-                <span className="flex flex-wrap gap-2">
-                  {applied.map((k) => (
-                    <Button key={k} type="button" variant="outline" size="sm" onClick={() => ctx.setScope(removeScope(ctx.scope, k))}>
-                      {`Remove ${SCOPE_LABEL[k].toLowerCase()}`}
-                    </Button>
-                  ))}
-                </span>
-              </span>
-            </LocalBanner>
-          ) : rowsInScope.length === 0 ? (
-            <Calm icon="fa-circle-check" title="All clear" body={`Nothing waits for you in ${ctx.termName}.`} />
+          {tabbed ? (
+            <Tabs value={tab} onValueChange={(v) => ctx.setParams({ tab: v === "new-evaluators" ? "new-evaluators" : null })} className="flex flex-col gap-4">
+              <TabsList variant="line" ariaLabel="Approvals">
+                <TabsTrigger value="evaluations" data-tab="evaluations">
+                  Evaluations
+                  <TabsCountBadge count={rowsInScope.length} />
+                </TabsTrigger>
+                <TabsTrigger value="new-evaluators" data-tab="new-evaluators">
+                  New evaluators
+                  <TabsCountBadge count={newCount} />
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value={tab} className="mt-0 flex flex-col gap-4">
+                {tab === "new-evaluators" ? newBody : evaluationsBody}
+              </TabsContent>
+            </Tabs>
           ) : (
-            <>
-              {children({ ...ctx, rowsInScope, setRail })}
-              {ctx.scoped && ctx.scoped.earlier > 0 && ctx.scoped.earlierTerm ? (
-                <p className="text-sm text-muted-foreground" data-earlier>
-                  {`${plural(ctx.scoped.earlier, "more submission waits", "more submissions wait")} from earlier terms. `}
-                  <Link className={LINK} href={approvalsHref({ ...ctx.scope, term: ctx.scoped.earlierTerm }, { variant })}>{`Show ${ctx.scoped.earlierTerm}`}</Link>
-                </p>
-              ) : null}
-            </>
+            evaluationsBody
           )}
         </div>
       </DecisionProvider>

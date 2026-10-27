@@ -1,11 +1,12 @@
 "use client"
 
 /**
- * State for the configure-a-skill lab screens. The draft lives in component state until Publish. Publish (re-apply) writes the rule
- * to the shared v2 store (lib/lab/configure.ts publishLabRule, persisted as a delta): the skill's live configuration plus a rule
- * version, which the one engine (lib/v2/rules.ts) reads for student progress, the dashboard, the director and the lists. "New
- * evidence only" is not decided (PENDING-ROMIT), so it stays a lab-only preview and writes nothing. Impact is recomputed from the
- * real evidence index on every edit.
+ * State for the configure-a-skill lab screens (decision D-X31). Edits live in component state. "Save draft" keeps them in the
+ * shared store (lib/lab/configure.ts saveConfigDraft, persisted with the state) without changing the skill's status, so reopening
+ * resumes where the admin stopped. "Save configuration" (re-apply) writes the rule to the shared v2 store (saveLabRule): the
+ * skill's configuration plus a rule version, which the one engine (lib/v2/rules.ts) reads for student progress, the dashboard, the
+ * director and the lists; the skill becomes Configured and can be mapped. "New evidence only" is not decided (PENDING-ROMIT), so
+ * it stays a lab-only preview and writes nothing. Impact is recomputed from the real evidence index on every edit.
  * URL: ?skill=<id> (default Oral medication administration) · ?change=sample (a stricter rule, for review) · ?state=loading.
  */
 import * as React from "react"
@@ -13,13 +14,15 @@ import { useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import { skillById } from "@/lib/v2/evidence-index"
-import { computeImpact, fromV2, publishLabRule, sampleChange, validateRule, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { computeImpact, configDraftOf, discardConfigDraft, emptyRule, fromV2, sampleChange, saveConfigDraft, saveLabRule, validateRule, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { buildLibrary, nextToConfigure, type LibraryRow } from "@/lib/lab/library"
+import { isConfigured } from "@/lib/v2/population"
 import type { Skill, V2State } from "@/lib/v2/types"
 
 export const DEFAULT_SKILL = "sk-med-admin"
 export const UNCONFIGURED_SKILL = "sk-pressure-injury"
 
-export interface PublishedResult {
+export interface SavedResult {
   mode: PublishMode | null
   impact: Impact
   rule: LabRule
@@ -33,19 +36,28 @@ export interface ConfigureModel {
   state: V2State
   skillId: string
   skill: Skill | undefined
-  /** The rule students see today (null when the skill is not configured). */
+  /** The rule students see today (null when the skill is not configured, including a skill that only has a draft). */
   current: LabRule | null
   rule: LabRule
   setRule: (next: LabRule | ((r: LabRule) => LabRule)) => void
   reset: () => void
-  /** The draft differs from what the page opened with and has not been published. */
+  /** The edits differ from what was last saved (configuration or draft). */
   dirty: boolean
   issues: RuleIssue[]
   /** Live impact with evidence re-applied, for the panel. */
   impact: Impact | null
-  published: PublishedResult | null
-  publish: (mode: PublishMode | null) => void
-  dismissPublished: () => void
+  /** The draft saved in the shared store, if any (where the admin stopped and when). */
+  draft: { step: string | null; at: string } | null
+  /** Keep the edits as a draft; the skill's status does not change. */
+  saveDraft: (step: string | null) => void
+  /** Drop the saved draft (and the edits) and go back to the saved configuration. */
+  discardDraft: () => void
+  /** Set once "Save configuration" has run; the page then shows the receipt. */
+  saved: SavedResult | null
+  save: (mode: PublishMode | null) => void
+  dismissSaved: () => void
+  /** The next Not configured skill in library order after this one, for "Configure next". */
+  nextSkill: LibraryRow | null
   settings: string[]
 }
 
@@ -62,14 +74,19 @@ export function useConfigure(opts: { defaultSample?: boolean; skillId?: string }
   const settings = state.program.clinicalSettings
 
   const [override, setOverride] = React.useState<LabRule | null>(null)
-  const current = React.useMemo(() => override ?? (skill?.config && skill.model ? fromV2(skill) : null), [skill, override])
+  const current = React.useMemo(() => override ?? (skill && isConfigured(skill) && skill.config && skill.model ? fromV2(skill) : null), [skill, override])
+  const savedDraft = React.useMemo(() => (hydrated ? configDraftOf(state, skillId) : null), [hydrated, state, skillId])
   const initial = React.useCallback((): LabRule => {
-    const base = skill ? fromV2(skill) : fromV2({ model: null, config: null })
-    return wantSample && skill?.config ? sampleChange(base, settings) : base
-  }, [skill, wantSample, settings])
+    if (savedDraft) return savedDraft.rule
+    // A skill that is not configured has no earlier rule, so nothing is carried from one (Romit 2026-10-27: "Limits from the
+    // earlier rule" showed on a Not configured skill).
+    const v2 = skill ? fromV2(skill) : fromV2({ model: null, config: null })
+    const base = skill && isConfigured(skill) ? v2 : { ...v2, carried: emptyRule().carried }
+    return wantSample && skill && isConfigured(skill) && skill.config ? sampleChange(base, settings) : base
+  }, [skill, wantSample, settings, savedDraft])
 
   const [rule, setRuleState] = React.useState<LabRule>(() => fromV2({ model: null, config: null }))
-  const [published, setPublished] = React.useState<PublishedResult | null>(null)
+  const [published, setPublished] = React.useState<SavedResult | null>(null)
   const seededFor = React.useRef<string | null>(null)
   React.useEffect(() => {
     if (!skill) return
@@ -99,6 +116,21 @@ export function useConfigure(opts: { defaultSample?: boolean; skillId?: string }
   const issues = React.useMemo(() => validateRule(rule), [rule])
   const impact = React.useMemo(() => (skill && rule.model ? computeImpact(state, skill.id, current ?? fromV2({ model: null, config: null }), rule, "reapply") : null), [state, skill, current, rule])
 
+  const saveDraft = React.useCallback(
+    (step: string | null) => {
+      if (!skill) return
+      const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
+      store.update((s) => saveConfigDraft(s, skill.id, rule, step, at))
+    },
+    [skill, store, rule],
+  )
+  const discardDraft = React.useCallback(() => {
+    if (!skill) return
+    store.update((s) => discardConfigDraft(s, skill.id))
+    const base = fromV2(skill)
+    setRuleState(base)
+  }, [skill, store])
+
   const publish = React.useCallback(
     (mode: PublishMode | null) => {
       if (!skill) return
@@ -109,19 +141,21 @@ export function useConfigure(opts: { defaultSample?: boolean; skillId?: string }
       let written = false
       let version: number | null = null
       store.update((s) => {
-        const r = publishLabRule(s, skill.id, rule, { at, byId: IDS.ross, mode })
+        const r = saveLabRule(s, skill.id, rule, { at, byId: IDS.ross, mode })
         if (!r.ok || !r.written) return s
         written = true
         version = r.version
         return r.state
       })
       setPublished({ mode, impact: im, rule, written, version })
-      // In the lab the published rule becomes the baseline, so the panel reads "no change" afterwards. With new-only the
-      // existing states are kept, so the old rule stays the baseline for display.
+      // The saved rule becomes the baseline, so the panel reads "no change" afterwards. With new-only the existing states are
+      // kept, so the old rule stays the baseline for display.
       if (mode !== "new-only") setOverride(rule)
     },
     [skill, state, store, current, rule],
   )
+
+  const nextSkill = React.useMemo(() => (published && skill ? nextToConfigure(buildLibrary(state), skill.id) : null), [published, skill, state])
 
   return {
     ready: hydrated && demo !== "loading",
@@ -135,9 +169,13 @@ export function useConfigure(opts: { defaultSample?: boolean; skillId?: string }
     dirty: dirty && !published,
     issues,
     impact,
-    published,
-    publish,
-    dismissPublished: () => setPublished(null),
+    draft: savedDraft ? { step: savedDraft.step, at: savedDraft.at } : null,
+    saveDraft,
+    discardDraft,
+    saved: published,
+    save: publish,
+    dismissSaved: () => setPublished(null),
+    nextSkill,
     settings,
   }
 }

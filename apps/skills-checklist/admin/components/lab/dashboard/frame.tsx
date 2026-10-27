@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * Page chrome shared by every admin dashboard variant (strategy/06 section 4.1): PageHeader with one action (Export) and the
- * Sample data chip, the scope bar, the quiet "New evidence since" line, the evidence-recount line, the impossible-filter and
+ * Page chrome shared by every admin dashboard variant (strategy/06 section 4.1): PageHeader with one action (Export), the
+ * Sample data chip and the scope subtitle (term, courses, Updated time; figures update on their own), the Filters row, the evidence-recount line, the impossible-filter and
  * empty-scope explanations, the polite announcement, and the demo states. The variant only lays out the regions.
  */
 import * as React from "react"
@@ -15,9 +15,9 @@ import type { V2State } from "@/lib/v2/types"
 import { DASHBOARD_EXPORT_COLUMNS, buildDashboard, chipValue, removeKeys, withClearState, type DashboardModel, type DemoState, type Split } from "@/lib/lab/dashboard"
 import { skillNounPlural } from "@/lib/lab/terms"
 import { SCOPE_LABEL, removeScope, type LabScope, type ScopeKey } from "@/lib/lab/scope"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
 import { LoadingShape } from "@/components/lab/dashboard/cards"
-import { asOfLabel, timeLabel, useDashboardUrl, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
+import { useDashboardUrl, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
 
 export interface DashboardContext {
   model: DashboardModel
@@ -30,9 +30,14 @@ export interface DashboardContext {
   setParams: (p: Record<string, string | null>) => void
   param: (k: string) => string | null
   clearDemo: () => void
+  /** Set the comparison basis (for a chart that carries its own Compare with control). */
+  setScope: (next: LabScope) => void
 }
 
-export function DashboardPage({ title = "Dashboard", variant, children }: { title?: string; variant: string; children: (ctx: DashboardContext) => React.ReactNode }) {
+/**
+ * `basisInChart`: the variant puts Compare with on the chart it changes (variant A, the behind tile), so Filters leaves it out.
+ */
+export function DashboardPage({ title = "Dashboard", variant, basisInChart = false, children }: { title?: string; variant: string; basisInChart?: boolean; children: (ctx: DashboardContext) => React.ReactNode }) {
   const url = useDashboardUrl()
   const snap = useSnapshot()
   const [exportOpen, setExportOpen] = React.useState(false)
@@ -61,12 +66,13 @@ export function DashboardPage({ title = "Dashboard", variant, children }: { titl
     setParams: url.setParams,
     param: url.param,
     clearDemo: () => url.setParams({ state: null }),
+    setScope: url.setScope,
   }
   const applied = (["cohort", "group", "course", "cat", "tag", "loc", "setting"] as ScopeKey[]).filter((k) => !!url.scope[k])
 
   return (
-    // Sample data sits in the page header beside Export (concept frame), so the scope bar stays one row of controls.
-    <PageFrame title={header} actionItems={actionItems} actions={sample}>
+    // Header: title, the scope it reads and when (subtitle), Export and Sample data. One Filters row below it.
+    <PageFrame title={header} subtitle={<ScopeContext termName={model.term.name} scope={url.scope} at={snap.at} stale={url.demo === "stale"} />} actionItems={actionItems} actions={sample}>
       <div className="flex flex-col gap-6" data-dashboard-lab={`admin-${variant}`} data-page-type="dashboard">
         <ScopeBar
           scope={url.scope}
@@ -74,18 +80,9 @@ export function DashboardPage({ title = "Dashboard", variant, children }: { titl
           termName={model.term.name}
           onChange={url.setScope}
           chipValue={(k, v) => (snap.state ? chipValue(snap.state, k, v) : v)}
-          asOf={asOfLabel(snap.at)}
-          onRefresh={snap.refresh}
-          stale={url.demo === "stale"}
+          showBasis={!basisInChart}
         />
         <p role="status" aria-live="polite" className="sr-only" data-announce>{url.demo === "loading" ? "Loading dashboard" : model.announce}</p>
-        {snap.fresh ? (
-          <p className="flex items-center gap-2 text-sm text-muted-foreground" data-new-evidence>
-            <i className="fa-light fa-circle-info" aria-hidden="true" />
-            {`New evidence since ${timeLabel(snap.at)}.`}
-            <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={snap.refresh}>Refresh to update</Button>
-          </p>
-        ) : null}
         {model.recount ? <p className="text-sm text-muted-foreground" data-recount>{model.recount}</p> : null}
         {url.demo === "loading" ? (
           <LoadingShape />

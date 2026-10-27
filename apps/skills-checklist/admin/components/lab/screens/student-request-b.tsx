@@ -5,7 +5,8 @@
  * Tests: does asking "Is your evaluator with you?" first (with me: QR or hand over; not here: email link; paper: photo) route a
  * student to the right method faster than choosing skills and a person first?
  * Regions (form budget 4): header · the situation (three choices) · the rest of the request, shown once a situation is chosen.
- * Same draft, checks and result as variant A; only the order and the mental model differ.
+ * Same draft, checks and result as variant A (where, details, note, the failed-Send summary and the confirmation list); only the
+ * order and the mental model differ [REQ ST-05..ST-10, ST-12, ST-13, SL-11, EV-02].
  */
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -16,9 +17,9 @@ import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radi
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/student2/frame"
 import { EvaluatorPicker, MethodTiles, TOUCH_ROW } from "@/components/lab/student2/log-parts"
-import { PhotoField, PlacementSelect, RequestResult, SkillsField, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
+import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart, SendIssues, SkillsField, WherePick, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
 import { FormSkeleton } from "./student-log-a"
-import { aNoun } from "@/lib/lab/terms"
+import { aNoun, skillNounPlural } from "@/lib/lab/terms"
 import { METHODS, methodById, needsApproval, student2Href } from "@/lib/lab/student2"
 
 type Situation = "with-me" | "not-here" | "paper"
@@ -32,9 +33,9 @@ const SITUATIONS: Array<{ id: Situation; title: string; sub: string; icon: strin
 export function StudentRequestB() {
   return (
     <Student2Frame
-      title="Send for evaluation"
+      title={`Log ${aNoun()}`}
       width="wide"
-      empty={(c) => <EmptyBlock title="Nothing to send yet" body={`Log ${aNoun()} first, then send it here for evaluation.`} action={{ label: `Log ${aNoun()}`, href: student2Href("log-skill", {}, c.studentId) }} />}
+      empty={(c) => <EmptyBlock title={`No ${skillNounPlural()} open yet`} body={`Your program has not set up ${skillNounPlural()} to send. Check back once it has.`} action={{ label: "Back to My progress", href: student2Href("home", {}, c.studentId) }} />}
       loading={<FormSkeleton />}
     >
       {(ctx) => <SituationFirst ctx={ctx} />}
@@ -44,7 +45,8 @@ export function StudentRequestB() {
 
 function SituationFirst({ ctx }: { ctx: Student2Ctx }) {
   const d = useRequestDraft(ctx)
-  const [sit, setSit] = React.useState<Situation | null>(null)
+  // Continuing a draft reopens on the situation its method implies.
+  const [sit, setSit] = React.useState<Situation | null>(() => (d.draftId ? (d.method === "photo" ? "paper" : d.method === "link" ? "not-here" : "with-me") : null))
   if (d.result) return <RequestResult d={d} r={d.result} />
   const choose = (v: Situation) => {
     setSit(v)
@@ -54,6 +56,7 @@ function SituationFirst({ ctx }: { ctx: Student2Ctx }) {
   const counts = d.method === "photo" ? "It counts after review." : needsApproval(d.s, d.skills) ? "It counts after approval." : "It counts when they answer Met."
   return (
     <form className="flex flex-col gap-5" noValidate onSubmit={(e) => { e.preventDefault(); d.send() }} data-student-lab="request-B">
+      <SendIssues d={d} />
       <Card className="gap-0 py-0" data-region="situation">
         <CardContent className="py-4">
           <FieldSet>
@@ -81,19 +84,27 @@ function SituationFirst({ ctx }: { ctx: Student2Ctx }) {
           <CardContent className="flex flex-col gap-5 py-4">
             {sit === "with-me" ? <MethodTiles value={d.method} onChange={d.setMethod} offline={d.offline} methods={METHODS.filter((x) => x.inPerson)} /> : null}
             <div className="flex flex-col gap-3">
-              <PlacementSelect choices={d.clinicalWhere} value={d.whereVal} onChange={d.setWhere} />
+              <WherePick d={d} />
               <EvaluatorPicker options={d.options} value={d.who} onChange={d.setWho} fresh={d.fresh} onFresh={d.setFresh} errors={d.freshErrors} showErrors={d.tried} compact />
               {d.tried && d.errors.who ? <FieldError>{d.errors.who}</FieldError> : null}
             </div>
             <div className="border-t border-border pt-4">
               <SkillsField d={d} picks={d.picks} />
             </div>
+            <SelfEvalPart d={d} />
+            <div className="border-t border-border pt-4">
+              <DetailsAndNote d={d} />
+            </div>
             {sit === "paper" ? <PhotoField d={d} /> : null}
             <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
               {/* Replaces the count sentence (the count is on the skills heading): what the evaluator sees, then when it counts. */}
               <p className="text-sm text-muted-foreground" data-scope-sentence>{`${scopeSentence(d)} ${counts}`}</p>
-              <Button type="submit" variant="default" size="default" className="w-full sm:w-auto max-sm:h-11">{d.offline && !m.offline ? "Keep and send later" : "Send"}</Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button type="button" variant="outline" size="default" className="w-full sm:w-auto max-sm:h-11" onClick={() => d.saveForLater()}>Save for later</Button>
+                <Button type="submit" variant="default" size="default" className="w-full sm:w-auto max-sm:h-11">{d.offline && !m.offline ? "Keep and send later" : "Send"}</Button>
+              </div>
             </div>
+            <SavedForLater d={d} />
           </CardContent>
         </Card>
       ) : null}

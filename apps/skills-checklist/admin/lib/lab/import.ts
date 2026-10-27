@@ -717,6 +717,33 @@ export function fixGroups(review: Review, decisions: Decisions): FixGroup[] {
   }).filter((g) => g.rows.length > 0)
 }
 
+/**
+ * The one suggestion every line in a group shares (its label), or null when the lines differ. A group with one shared suggestion
+ * starts folded (one Accept decides it); a mixed group opens, because those lines need a person to look (Romit 2026-10-27).
+ */
+export function groupSuggestion(review: Review, group: FixGroup, library: LibrarySkill[]): string | null {
+  const labels = new Set<string>()
+  for (const r of group.rows) {
+    for (const k of review.exceptions[r.id] ?? []) labels.add(fixOptions(review, r, k, library)[0].label)
+    if (labels.size > 1) return null
+  }
+  return labels.size === 1 ? [...labels][0] : null
+}
+
+/** True when every decision in the group is made and each one is the suggestion ("Accepted"), not a person's own choice. */
+export function groupAccepted(review: Review, group: FixGroup, decisions: Decisions, library: LibrarySkill[]): boolean {
+  return group.rows.every((r) =>
+    (review.exceptions[r.id] ?? []).every((k) => {
+      const d = decisions[decisionKey(r.id, k)]
+      return !!d && fixValue(d) === fixValue(suggestedFix(review, r, k, library))
+    }),
+  )
+}
+
+/** Lines with at least one decision still open (the fix step's own count, before resolving). */
+export const openLines = (review: Review, decisions: Decisions): number =>
+  review.rows.filter((r) => (review.exceptions[r.id] ?? []).some((k) => !decisions[decisionKey(r.id, k)])).length
+
 /** Lines that need a decision before Create (the resolver's own count). */
 export const linesLeft = (resolved: ResolvedRow[]): number => resolved.filter((r) => r.status === "look").length
 

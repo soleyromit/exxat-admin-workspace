@@ -391,7 +391,9 @@ describe("compare (AR-02, AR-03)", () => {
     const base = s.evaluations.find((e) => e.id === "ev-maya-1")!
     const e: Evaluation = { ...base, id: "ev-t-q", skillId: "sk-sterile-dressing", submissionId: "sub-maya-1", versions: [{ version: 1, outcome: "met", at: AT, by: IDS.delgado, reason: null, detail: { feedback: "", answers: ["yes", "no", "no"] } }] }
     const c = compareEvaluation(s, e)
-    expect(c.rows.map((r) => r.agreement)).toEqual(["agreed", "differed", "agreed"])
+    expect(c.rows.map((r) => r.agreement)).toEqual(["agreed", "differed", "agreed", "not-comparable"])
+    // AR-03: the evaluator's outcome follows the answers, never compared with a self-rating.
+    expect(c.rows[3]).toMatchObject({ label: "Outcome", student: "Not asked", evaluator: "Met" })
     expect(c.overall).toBe("differed")
     expect(c.rows[1]).toMatchObject({ student: "Yes", evaluator: "No" })
   })

@@ -191,7 +191,7 @@ describe("configure: impact over the real dataset (123 students)", () => {
 
 describe("configure: five steps and where each check lives", () => {
   it("has five short steps named the way the client says them, Check last", () => {
-    expect(CONFIGURE_STEPS.map((x) => x.label)).toEqual(["How it's judged", "Evaluation criteria", "How many times", "Who signs", "Check"])
+    expect(CONFIGURE_STEPS.map((x) => x.label)).toEqual(["How it's judged", "Evaluation criteria", "How many times", "Who signs", "Check and save"])
     expect(CONFIGURE_STEPS.map((x) => x.id)).toEqual(["model", "outcomes", "rule", "signoff", "check"])
     expect(CONFIGURE_STEPS.every((x) => x.label.split(" ").length <= 3)).toBe(true)
     // The step keeps one name for every model; what it holds is named inside it.
@@ -253,7 +253,7 @@ describe("configure: ties are said once (J7)", () => {
 describe("configure: Oct 26 call updates", () => {
   it("offers the three criteria types in the client's words first, Scored fourth and Proposed, nothing preselected", () => {
     expect(LAB_MODELS.map((m) => MODEL_LABEL[m])).toEqual(["Approved or not approved", "Questions, then a final result", "Independence level", "Scored"])
-    expect([...PROPOSED_MODELS]).toEqual(["scored"])
+    expect([...PROPOSED_MODELS]).toEqual([])
     expect(emptyRule().model).toBeNull()
   })
   it("presets fill labels only, stay editable, and never choose what qualifies", () => {
@@ -272,7 +272,7 @@ describe("configure: Oct 26 call updates", () => {
     const r = withModel(emptyRule(), "binary")
     expect(hasNeed(r)).toBe(false)
     expect(validateRule({ ...r, qualifyingLabel: 0, evaluatorRoles: ["preceptor"] }).map((i) => i.id)).toEqual(["cfg-need:need"])
-    expect(ruleSentence({ ...r, qualifyingLabel: 0 })).toBe("Not set yet. Your program decides.")
+    expect(ruleSentence({ ...r, qualifyingLabel: 0 })).toBe("Not set yet.")
     expect(ruleSentence({ ...r, qualifyingLabel: 0, need: 3, levelMinimums: [] })).toBe("Get 3 evaluations rated Met.")
   })
   it("a valid attempt can need at least 2 of 3 questions answered Yes: validated, in the sentence and in the engine", () => {

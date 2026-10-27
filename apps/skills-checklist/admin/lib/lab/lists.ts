@@ -12,6 +12,8 @@
 import type { Person, V2State } from "@/lib/v2/types"
 import { skillProgress } from "@/lib/v2/student"
 import { SAMPLE_CUSTOM_GROUPS, TRACK_GROUP_PREFIX, customGroup, customGroupValue, graduationYearOf, matchesRule, type CustomGroup, type GroupRule } from "@/lib/v2/filters"
+import { isConfigured as isConfiguredSkill } from "@/lib/v2/population"
+import { mapBlockReason } from "@/lib/v2/coverage"
 import { LAB_ADMIN } from "./library"
 
 export type ListStatus = "live" | "draft"
@@ -39,6 +41,12 @@ export interface SkillList {
    * per-offering edits override it (lib/lab/mapping.ts resolvedLevels). Absent on the seeded lists.
    */
   levels?: Partial<Record<string, ListLevel>>
+  /**
+   * Skills assigned one at a time to one student group, with no group of skills set up (Sankalp's Thursday flow A5). Stored as a
+   * live list of its own (one per group, id `ind:<groupId>`), so course mapping's cohort inheritance (D-X27) reads it exactly like
+   * a group of skills; it never shows in the groups of skills table, pickers or the default.
+   */
+  individual?: boolean
 }
 
 /** The per-course levels a list can give its skills by inheritance. */
@@ -180,7 +188,9 @@ export function seedLists(s: V2State): SkillList[] {
     },
     {
       id: "list-clinical-2027",
-      name: "Clinical skills checklist, 2027 standard",
+      // A neutral name (Sankalp 2026-10-27 review): a list named after a standard contradicted "Standards are managed in Program
+      // details". The id stays so saved overlays keep working.
+      name: "Revised clinical skills checklist",
       noun: "skill",
       nounPlural: "skills",
       skillIds: checklist.map((k) => k.id),
@@ -189,7 +199,7 @@ export function seedLists(s: V2State): SkillList[] {
       isDefault: false,
       groupIds: [],
       minTotal: 120,
-      standard: "Program checklist, 2027 edition",
+      standard: "",
     },
   ]
   // The live default list's minimum comes from the data, not a fixed 120 (UX critique 2026-10-26: with 120 of 154 every group
@@ -198,6 +208,17 @@ export function seedLists(s: V2State): SkillList[] {
   lists[0]!.minTotal = clinicalMin
   lists[2]!.minTotal = clinicalMin
   return lists
+}
+
+/**
+ * The live lists that carry a skill and the student groups they are assigned to, for Configure's "Who it affects" (decision D-X27:
+ * a configured skill on a live list reaches the clinical offerings of its assigned cohorts at the list's level, or Optional).
+ */
+export function listsCarrying(s: V2State, skillId: string, lists: readonly SkillList[] = seedLists(s)): Array<{ list: SkillList; level: ListLevel; groups: string[] }> {
+  const groups = studentGroups(s)
+  return lists
+    .filter((l) => l.status === "live" && l.skillIds.includes(skillId))
+    .map((l) => ({ list: l, level: l.levels?.[skillId] ?? "optional", groups: groups.filter((g) => l.groupIds.includes(g.id)).map((g) => g.label) }))
 }
 
 /**
@@ -235,7 +256,45 @@ export const listById = (lists: readonly SkillList[], id: string | null | undefi
 
 /** The default list, or the first live one. Its required skills are what course mapping checks coverage against. */
 export function defaultList(lists: readonly SkillList[]): SkillList | undefined {
-  return lists.find((l) => l.isDefault) ?? lists.find((l) => l.status === "live")
+  return lists.find((l) => l.isDefault) ?? lists.find((l) => l.status === "live" && !l.individual)
+}
+
+/** The program's groups of skills (what the Lists page and pickers show): every list except the per-group individual sets. */
+export const skillGroups = (lists: readonly SkillList[]): SkillList[] => lists.filter((l) => !l.individual)
+
+export const individualListId = (groupId: string): string => `ind:${groupId}`
+
+/** Skills assigned one at a time to a group (empty when none). */
+export const individualSkillsFor = (lists: readonly SkillList[], groupId: string): string[] => listById(lists, individualListId(groupId))?.skillIds ?? []
+
+/**
+ * Replace the skills assigned one at a time to a group. An empty set removes the group's individual list. Required to graduate
+ * stays with the groups of skills (an individual assignment names no required set), and the level is Optional by inheritance until
+ * course mapping sets one.
+ */
+export function setIndividualSkills(lists: readonly SkillList[], group: Pick<StudentGroup, "id" | "label">, skillIds: readonly string[], noun: { noun: string; nounPlural: string }): SkillList[] {
+  const id = individualListId(group.id)
+  const rest = lists.filter((l) => l.id !== id)
+  if (!skillIds.length) return rest
+  const prev = listById(lists, id)
+  return [
+    ...rest,
+    {
+      id,
+      name: `Individual ${noun.nounPlural} for ${group.label}`,
+      noun: noun.noun,
+      nounPlural: noun.nounPlural,
+      skillIds: [...new Set(skillIds)],
+      requiredIds: [],
+      status: "live",
+      isDefault: false,
+      groupIds: [group.id],
+      minTotal: 0,
+      standard: "",
+      individual: true,
+      ...(prev?.levels ? { levels: prev.levels } : {}),
+    },
+  ]
 }
 
 export const countNoun = (l: Pick<SkillList, "noun" | "nounPlural">, n: number): string => `${n.toLocaleString("en-US")} ${n === 1 ? l.noun : l.nounPlural}`
@@ -428,6 +487,56 @@ export function createList(lists: readonly SkillList[], input: NewListInput, id:
 export function skillsOnNoList(s: V2State, lists: readonly SkillList[]): number {
   const on = new Set(lists.flatMap((l) => l.skillIds))
   return s.skills.filter((k) => !on.has(k.id)).length
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// What an assignment does (the "Assign to cohort or group" step, Sankalp 2026-10-27: one job, its consequence in one sentence)
+
+/**
+ * The skills on a list that a cohort's clinical courses pick up now: configured and active, the same test as course mapping's
+ * inheritance (lib/lab/mapping.ts listBaseLevels; REQ IM-09, decision D-X14). The rest join once they are configured.
+ */
+export function inheritableSkillIds(s: V2State, list: Pick<SkillList, "skillIds">): string[] {
+  const usable = new Set(s.skills.filter((k) => k.active !== false && isConfiguredSkill(k) && mapBlockReason(k) === null).map((k) => k.id))
+  return list.skillIds.filter((id) => usable.has(id))
+}
+
+/** Clinical course offerings of a cohort group; null for a track or a custom group, which no offering names (decision D-X27). */
+export function clinicalOfferingsFor(s: V2State, group: Pick<StudentGroup, "id" | "kind" | "label">): number | null {
+  if (group.kind !== "cohort") return null
+  const cohort = (s.cohorts ?? []).find((c) => cohortGroupId(c.name) === group.id)
+  if (!cohort) return 0
+  const kind = new Map((s.courses ?? []).map((c) => [c.id, c.kind]))
+  return (s.offerings ?? []).filter((o) => o.cohortId === cohort.id && (kind.get(o.courseId) ?? "clinical") === "clinical").length
+}
+
+export interface AssignmentSummary {
+  /** Groups the list is assigned to, and the distinct students in them. */
+  groups: number
+  students: number
+  /** Assigned cohorts and their clinical course offerings (where the skills become available). */
+  cohorts: number
+  clinicalCourses: number
+  /** Assigned tracks and custom groups: their students see the list, no course picks it up by itself. */
+  otherGroups: number
+  /** Skills those courses offer now, and skills that join once configured. */
+  offered: number
+  waiting: number
+}
+
+export function assignmentSummary(s: V2State, list: SkillList, groups: readonly StudentGroup[]): AssignmentSummary {
+  const on = groups.filter((g) => list.groupIds.includes(g.id))
+  const students = new Set(on.flatMap((g) => g.studentIds))
+  const offered = inheritableSkillIds(s, list).length
+  let clinicalCourses = 0
+  let cohorts = 0
+  for (const g of on) {
+    const n = clinicalOfferingsFor(s, g)
+    if (n === null) continue
+    cohorts++
+    clinicalCourses += n
+  }
+  return { groups: on.length, students: students.size, cohorts, clinicalCourses, otherGroups: on.length - cohorts, offered, waiting: list.skillIds.length - offered }
 }
 
 export const groupLabel = (groups: readonly StudentGroup[], id: string): string => groups.find((g) => g.id === id)?.label ?? id

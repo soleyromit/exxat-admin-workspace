@@ -178,6 +178,15 @@ export interface SkillConfig {
   levelMinimums?: LevelMinimum[]
   /** Which outcome label qualifies [REQ SC-03]; presentation only, the engine reads the recorded outcome [REQ AE-06]. */
   qualifyingLabel?: 0 | 1 | null
+  /** Scored model: the top of the program's response scale, 2 to 10 [REQ SC-07]. Absent on the seed: 5. */
+  scaleMax?: number
+  /** The student rates themselves before the evaluator sees it [REQ SC-15]. Absent means no self-evaluation. */
+  selfEvaluation?: boolean
+  /**
+   * What the student supplies when sending [REQ SC-13]: label, data type, mandatory, and the choices of a choice list. Absent on
+   * the seed: one mandatory "Date performed".
+   */
+  studentFields?: Array<{ label: string; type: "date" | "short" | "long" | "number" | "choice"; mandatory: boolean; choices?: string[] }>
 }
 
 /** Question model qualification [REQ SC-05]: every question Yes, at least `n` Yes, or every named question (0-based) Yes. */
@@ -197,6 +206,15 @@ export interface SkillDraft {
   /** Wizard step, 1 to 7. */
   step: number
   copiedFromSkillId?: string
+}
+
+/** A configuration saved part way (lab Configure "Save draft"). */
+export interface ConfigDraftRecord {
+  rule: unknown
+  /** The step or section the admin was on, so reopening resumes there. */
+  step: string | null
+  /** ISO time saved. */
+  at: string
 }
 
 export interface ImportBatch {
@@ -301,7 +319,7 @@ export interface Evaluation {
   /** The site the evidence was gathered at. Absent on the hand-written history. */
   siteId?: string
   /** Stage 4: the reviewer's latest decision and note (AR-04, AR-05). Earlier returns stay on the request. */
-  review?: { decision: "approved" | "returned"; byId: string; at: string; note: string }
+  review?: { decision: "approved" | "returned" | "reassigned"; byId: string; at: string; note: string }
   /** The student's self-evaluation sent with the request (RP-10: the row-per-evaluation export carries it). */
   self?: SelfEvaluation
 }
@@ -410,6 +428,13 @@ export interface LogEntry {
   note: string
   at: string
   requestId: string | null
+  /**
+   * Lab draft (2026-10-27, "Save for later" in Send for evaluation): the request as the student left it, so it can be continued
+   * from My requests, Drafts, without typing it again. `where` is the choice value Send preselects; `date` is when it was performed
+   * (the entry's `at` is when it was saved); `course` and `step` reopen Send at the step it was left; `who` and `method` keep the
+   * evaluator choice. Present only on lab drafts. Not evidence until it is sent and an evaluator answers. [INFER]
+   */
+  sitting?: { where: string; date: string; unit: string; case: string; course?: string; step?: string; who?: string; method?: string; answers?: Record<string, Array<"yes" | "no" | null>> }
 }
 
 /** A lab check-off recorded by a lab instructor (a prerequisite, SC-15 family). */
@@ -569,6 +594,12 @@ export interface V2State {
   batches: ImportBatch[]
   /** Skill id -> wizard draft. */
   drafts: Record<string, SkillDraft>
+  /**
+   * Skill id -> configuration saved part way through the lab Configure screens ("Save draft", decision D-X31). A draft never
+   * changes the skill's status: the skill stays Not configured (or keeps its saved rule) until "Save configuration". `rule` is
+   * a lib/lab/configure.ts LabRule, typed loosely here so the data layer does not import the lab. Optional so older state loads.
+   */
+  configDrafts?: Record<string, ConfigDraftRecord>
   /** Walkthrough step id -> ISO time the presenter marked it reviewed. */
   stepsReviewed: Record<string, string>
   /** Stage 2: student placements, log entries, lab check-offs, the phone's state and the log flow draft. */
@@ -596,4 +627,20 @@ export interface V2State {
   courses?: Course[]
   offerings?: CourseOffering[]
   sites?: Site[]
+  /**
+   * The program's categories and tags (REQ SL-03 to SL-06), one shared list read by Settings, the Add a skill pickers, the library
+   * and the report filters. Optional: absent in the seed, so getVocabulary (lib/v2/vocabulary.ts) derives it from the skills.
+   */
+  vocabulary?: Vocabulary
+}
+
+/** One category or tag. Skills reference it by name; `active` false keeps it on skills, marked inactive, and stops new use (SL-06). */
+export interface VocabEntry {
+  id: string
+  name: string
+  active: boolean
+}
+export interface Vocabulary {
+  categories: VocabEntry[]
+  tags: VocabEntry[]
 }

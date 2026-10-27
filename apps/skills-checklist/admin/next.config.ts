@@ -5,6 +5,9 @@ import { LEGACY_REDIRECTS } from './lib/redirects'
 // Mirrors apps/pce/admin (known-good) without the studentUX alias: this product
 // uses @exxatdesignux/ui for every surface (docs/build/contracts/00-cross-cutting.md §13).
 const nextConfig: NextConfig = {
+  // Several dev servers can run from this folder at once (parallel agents); each may set its own build folder so they do
+  // not overwrite each other's chunks. Unset means the default .next.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   // Local dev only: pin the tracing root so Next does not crawl a stray parent lockfile.
   // On Vercel the platform sets the root; overriding it breaks output tracing.
   ...(process.env.VERCEL

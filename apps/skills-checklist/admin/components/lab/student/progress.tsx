@@ -5,6 +5,7 @@
  * accessible name) and a "Show as table" fallback; every "did not count" names the failed rule in numbers and the next step.
  */
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
@@ -12,8 +13,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { VIZ } from "@/components/lab/viz"
-import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { NEXT_LIMIT, ageLabel, shortDate, studentHref, type NextAction, type SkillRecord, type StudentModel } from "@/lib/lab/student"
+import { usePresent } from "@/components/lab/lab-bar/present"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
+import { Field, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
+import { REQUIRED_SET_LABEL } from "@/lib/v2/population"
+import { NEXT_LIMIT, ageLabel, shortDate, studentHref, type CourseExpectation, type NextAction, type SkillRecord, type StudentModel } from "@/lib/lab/student"
+
+/** D-X12: the student's required set is always named. My progress reads mandatory skills on current courses: "Required this term". */
+export const REQUIRED_THIS_TERM = REQUIRED_SET_LABEL.thisTerm
 import { FigureLink, LINK_IN_TABLE, NUM_LINK, useSvgFont, Overlay, Parts, RequiredRing, RingLegend, SectionTitle, ShowAsTable, StateLabel, stateWord } from "@/components/lab/student/parts"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -21,7 +30,8 @@ import { FigureLink, LINK_IN_TABLE, NUM_LINK, useSvgFont, Overlay, Parts, Requir
 
 export function ProgressHero({ model, studentId, compact = false }: { model: StudentModel; studentId: string; compact?: boolean }) {
   const c = model.counts
-  const summary = `${c.achieved} of ${c.required} required ${skillNounPlural()} achieved. ${c.waiting} waiting, ${c.returned} returned.`
+  // D-X12: name the required set. This hero reads "Required this term" (mandatory on the student's current courses), never "Required to graduate".
+  const summary = `${c.achieved} of ${c.required} ${skillNounPlural()} ${REQUIRED_THIS_TERM.toLowerCase()} achieved. ${c.waiting} waiting, ${c.returned} returned.`
   return (
     <Card data-region="hero" className="h-full py-0">
       <CardContent className={cn("flex h-full items-center gap-5 py-4", compact ? "gap-4" : "gap-6")}>
@@ -30,7 +40,7 @@ export function ProgressHero({ model, studentId, compact = false }: { model: Stu
         </Link>
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-base font-semibold text-foreground">{`Required ${skillNounPlural()} achieved`}</h2>
+            <h2 className="text-base font-semibold text-foreground">{`${REQUIRED_THIS_TERM}, achieved`}</h2>
             <p className={cn("inline-flex items-center gap-1.5 text-sm", model.behind ? "font-medium" : "text-muted-foreground")} style={model.behind ? { color: VIZ.behindInk } : undefined}>
               {model.behind ? <i className="fa-solid fa-diamond text-xs" aria-hidden="true" /> : null}
               {model.verdict}
@@ -72,6 +82,7 @@ export function PlacementLine({ model }: { model: StudentModel; studentId: strin
 
 const NEXT_ICON: Record<NextAction["kind"], string> = {
   returned: "fa-rotate-left",
+  logged: "fa-paper-plane",
   dnq: "fa-triangle-exclamation",
   conflict: "fa-code-compare",
   "one-away": "fa-flag-checkered",
@@ -85,14 +96,20 @@ const NEXT_ICON: Record<NextAction["kind"], string> = {
  * submission (who returned it and why: the student must not have to open it to learn the reason); the other details are one tap
  * away on the page the action opens, so the phone viewport stays calm.
  */
-export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next" }: { model: StudentModel; limit?: number; title?: string }) {
+export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next", exclude = [], className }: { model: StudentModel; limit?: number; title?: string; /** Kinds another region already shows (say it once). */ exclude?: NextAction["kind"][]; className?: string }) {
   const [more, setMore] = React.useState(false)
-  const list = more ? model.next : model.next.slice(0, limit)
-  const hidden = model.next.length - limit
+  const { present } = usePresent()
+  const params = useSearchParams()
+  // Offline sync is pending scope: the seeded "entry has two versions" is a scenario, so it shows only when a sync demo state is
+  // asked for, and never in present mode (same rule as the sync chip; 2026-10-27 sweep).
+  const syncDemo = ["offline", "conflict"].includes(params?.get("state") ?? "")
+  const all = model.next.filter((a) => !exclude.includes(a.kind) && !(a.kind === "conflict" && (present || !syncDemo)))
+  const list = more ? all : all.slice(0, limit)
+  const hidden = all.length - limit
   return (
-    <Card data-region="next" className="gap-0 py-0">
+    <Card data-region="next" className={cn("gap-0 py-0", className)}>
       <CardContent className="flex flex-col gap-1 py-4">
-        <SectionTitle count={model.next.length}>{title}</SectionTitle>
+        <SectionTitle count={all.length}>{title}</SectionTitle>
         {list.length === 0 ? (
           <p className="py-2 text-sm text-muted-foreground">{`Nothing needs you now. Every required ${skillNoun()} is achieved or waiting.`}</p>
         ) : (
@@ -103,7 +120,8 @@ export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next" 
                 <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <h3 className="text-sm font-medium text-foreground">{a.title}</h3>
-                    <p className={cn("text-sm text-muted-foreground", a.kind === "dnq" ? "" : a.kind === "returned" ? "max-sm:line-clamp-2" : "max-sm:hidden")} data-next-detail={a.kind}>
+                    {/* The detail names who and why (returned), the failed rule (did not count) or the numbers; a conflict's title says it all. */}
+                    <p className={cn("text-sm text-muted-foreground", a.kind === "conflict" ? "hidden" : a.kind === "dnq" ? "" : a.kind === "returned" ? "max-sm:line-clamp-2" : "max-sm:hidden")} data-next-detail={a.kind}>
                       {a.kind === "returned" && a.who && a.detail.startsWith(`${a.who}: `) ? (
                         <>
                           <span className="max-sm:hidden">{`${a.who}: `}</span>
@@ -114,12 +132,15 @@ export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next" 
                           <span className="max-sm:hidden">{a.lead}</span>
                           {a.detail.slice(a.lead.length)}
                         </>
+                      ) : a.kind === "one-away" && exclude.includes("waiting") ? (
+                        // Who holds it and for how long is the Waiting region's job on this page (say it once): the fraction only.
+                        a.detail.split(". ")[0]
                       ) : (
                         a.detail
                       )}
                     </p>
                   </div>
-                  <Button asChild variant="outline" size="sm" className="shrink-0 self-start sm:self-center">
+                  <Button asChild variant="link" size="sm" className="h-auto shrink-0 self-start px-0 sm:self-center">
                     <Link href={a.href}>{a.action}</Link>
                   </Button>
                 </div>
@@ -174,17 +195,106 @@ export function SkillRows({ records, studentId, showParts = true }: { records: S
   )
 }
 
-export function RequiredList({ model, studentId, title }: { model: StudentModel; studentId: string; title?: string }) {
+/**
+ * The required list, or one course's expected skills [REQ ST-01]: "Required this term" by default (D-X12), and a course choice that
+ * lists every skill that course expects, mandatory first, then recommended and optional, with progress on each.
+ */
+export function RequiredList({ model, studentId, title, courseId = null }: { model: StudentModel; studentId: string; title?: string; /** ?course= : the course whose expected skills are listed. */ courseId?: string | null }) {
+  const course = model.courses.find((c) => c.id === courseId) ?? null
   return (
     <Card data-region="list" className="gap-0 py-0" id="required">
       <CardContent className="flex flex-col gap-1 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <SectionTitle count={model.required.length}>{title ?? `Required ${skillNounPlural()}`}</SectionTitle>
-          <RingLegend />
+          <SectionTitle count={course ? course.skills.length : model.required.length}>{course ? `${course.code} expects` : title ?? REQUIRED_THIS_TERM}</SectionTitle>
+          {course ? null : <RingLegend />}
         </div>
-        <SkillRows records={model.required} studentId={studentId} />
+        {course ? <CourseSkillList model={model} course={course} studentId={studentId} /> : <SkillRows records={model.required} studentId={studentId} />}
+        {/* What each course expects (ST-01), as course links closing the list: one click away, and the first viewport keeps its
+            next actions (student budget 4 controls; links in text are not controls). */}
+        <nav aria-label="What each course expects" className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-border pt-3 text-sm" data-course-links>
+          <span className="text-muted-foreground">By course:</span>
+          {course ? <Link className={NUM_LINK} href={`${studentHref("home", {}, studentId)}#required`}>{REQUIRED_THIS_TERM}</Link> : null}
+          {model.courses.filter((c) => c.skills.length > 0).map((c) => (
+            <Link key={c.id} className={cn(NUM_LINK, "tabular-nums", c.id === course?.id ? "font-semibold" : "")} aria-current={c.id === course?.id ? "true" : undefined} href={`${studentHref("home", { course: c.id }, studentId)}#required`}>{c.code}</Link>
+          ))}
+        </nav>
       </CardContent>
     </Card>
+  )
+}
+
+/** "Required this term" or one course [REQ ST-01]. Only courses that expect at least one skill are offered. */
+export function CourseSelect({ model, value, onChange, allLabel = REQUIRED_THIS_TERM, id = "progress-course" }: { model: StudentModel; value: string; onChange: (v: string) => void; allLabel?: string; id?: string }) {
+  const courses = model.courses.filter((c) => c.skills.length > 0)
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger id={id} size="sm" className="w-full sm:w-56" aria-label="Show">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="required">{allLabel}</SelectItem>
+        {courses.map((c) => <SelectItem key={c.id} value={c.id}>{`${c.code}, ${countSkills(c.skills.length)}`}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  )
+}
+
+/**
+ * The course view's own switch: courses only, labelled "Course"; choosing one stays on the course view (Romit 2026-10-27). My
+ * progress itself has no course select; its course rows link here.
+ */
+export function CourseSwitch({ model, value, onChange, id = "course-switch" }: { model: StudentModel; value: string; onChange: (v: string) => void; id?: string }) {
+  const courses = model.courses.filter((c) => c.skills.length > 0)
+  return (
+    <Field className="w-full sm:w-72">
+      <FieldLabel htmlFor={id}>Course</FieldLabel>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger id={id} size="sm" className="w-full">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {courses.map((c) => <SelectItem key={c.id} value={c.id}>{`${c.code}, ${countSkills(c.skills.length)}`}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </Field>
+  )
+}
+
+const LEVEL_LIMIT = 5
+
+/**
+ * One course's expected skills by level [REQ ST-01]: which are mandatory (the only level "Required this term" reads, D-X12),
+ * recommended and optional, each row with its state and rule parts. A level over 8 rows shows the first 5 and "Show all n".
+ */
+export function CourseSkillList({ model, course, studentId }: { model: StudentModel; course: CourseExpectation; studentId: string }) {
+  const [open, setOpen] = React.useState<Record<string, boolean>>({})
+  const rec = new Map(model.all.map((r) => [r.id, r]))
+  const levels = (["mandatory", "recommended", "optional"] as const)
+    .map((level) => ({ level, records: course.skills.filter((x) => x.level === level).map((x) => rec.get(x.id)).filter((r): r is SkillRecord => !!r) }))
+    .filter((g) => g.records.length > 0)
+  if (levels.length === 0) return <p className="py-2 text-sm text-muted-foreground">{`${course.code} expects no ${skillNounPlural()} yet.`}</p>
+  // One Send per page: the header's Send for evaluation opens on this course with its open mandatory skills chosen [Thursday S2].
+  return (
+    <div className="flex flex-col gap-3" data-course-skills={course.id}>
+      {levels.map((g) => {
+        const achieved = g.records.filter((r) => r.state === "achieved").length
+        const all = open[g.level] || g.records.length <= 8
+        return (
+          <section key={g.level} className="flex flex-col" aria-label={`${MAPPING_LEVEL_LABEL[g.level]} on ${course.code}`}>
+            <h3 className="flex items-baseline gap-2 border-b border-border pb-1.5 pt-2 text-sm font-semibold text-foreground">
+              {MAPPING_LEVEL_LABEL[g.level]}
+              <span className="text-xs font-normal tabular-nums text-muted-foreground" data-viz-label>{`${achieved} of ${g.records.length} achieved`}</span>
+            </h3>
+            <SkillRows records={all ? g.records : g.records.slice(0, LEVEL_LIMIT)} studentId={studentId} />
+            {g.records.length > 8 ? (
+              <Button type="button" variant="ghost" size="sm" className="self-start" aria-expanded={all} onClick={() => setOpen((o) => ({ ...o, [g.level]: !all }))}>
+                {all ? "Show fewer" : `Show all ${g.records.length}`}
+              </Button>
+            ) : null}
+          </section>
+        )
+      })}
+    </div>
   )
 }
 
@@ -221,7 +331,8 @@ export function Mosaic({ records, studentId }: { records: SkillRecord[]; student
         ))}
         <li className="inline-flex items-center gap-1.5"><span className="block rounded-sm border" style={{ width: 12, height: 12, ...REQUIRED_RING, borderColor: "var(--border-control)" }} aria-hidden="true" />Required</li>
       </ul>
-      <div role="img" aria-label={summary} data-chart="mosaic" className="flex flex-col gap-2">
+      {/* A group, not role="img": each cell is a link to its skill (axe nested-interactive). The summary is the group's name. */}
+      <div role="group" aria-label={summary} data-chart="mosaic" className="flex flex-col gap-2">
         {sections.map((s) => (
           <div key={s.name} className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1 md:grid-cols-[minmax(0,13rem)_3.5rem_1fr]">
             <span className="truncate text-xs text-foreground" title={s.name} data-viz-label>{s.name}</span>
@@ -327,12 +438,12 @@ export function SectionRadar({ model }: { model: StudentModel }) {
 // ---------------------------------------------------------------------------------------------------------------------
 // Pace (variant C): counted toward required rules by week, against the term clock
 
-export function PaceChart({ model }: { model: StudentModel }) {
+export function PaceChart({ model, height = 220 }: { model: StudentModel; height?: number }) {
   const pts = model.pace
   const W = 640
   const [svgRef, fs] = useSvgFont(W)
   const step = fs > 20 ? 4 : 2
-  const H = 220
+  const H = height
   const pad = { l: Math.round(fs * 1.6) + 10, r: 16, t: Math.round(fs) + 4, b: Math.round(fs) + 16 }
   const max = Math.max(1, ...pts.map((p) => Math.max(p.expected, p.counted)), model.row?.needed ?? 0)
   const x = (i: number) => pad.l + (i / Math.max(1, pts.length - 1)) * (W - pad.l - pad.r)
@@ -368,8 +479,8 @@ export function PaceChart({ model }: { model: StudentModel }) {
         ) : null}
       </svg>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
-        <li className="inline-flex items-center gap-1.5"><span className="block h-0.5 w-4" style={{ background: "var(--foreground)" }} aria-hidden="true" />Counted toward required</li>
-        <li className="inline-flex items-center gap-1.5"><span className="block h-0 w-4 border-t border-dashed" style={{ borderColor: "var(--foreground)" }} aria-hidden="true" />Expected by the term clock</li>
+        <li className="inline-flex items-center gap-1.5"><span className="block h-0.5 w-4" style={{ background: "var(--foreground)" }} aria-hidden="true" />Counted</li>
+        <li className="inline-flex items-center gap-1.5"><span className="block h-0 w-4 border-t border-dashed" style={{ borderColor: "var(--foreground)" }} aria-hidden="true" />Expected, term clock</li>
       </ul>
       <ShowAsTable label="Pace by week">
         <Table>
@@ -424,25 +535,41 @@ export function PlacementList({ model, studentId }: { model: StudentModel; stude
   )
 }
 
-export function CourseTable({ model, studentId }: { model: StudentModel; studentId: string }) {
+/**
+ * What each course expects now, one row per course; each row opens the course's skills by level with progress on each [REQ ST-01].
+ * "Mandatory achieved" is the course's own mandatory set (the only level "Required this term" reads, D-X12).
+ */
+export function CourseTable({ model, studentId, mandatoryCell, placement = false, compact = false }: { model: StudentModel; studentId: string; /** Draw the mandatory column (variant C: one square per skill). */ mandatoryCell?: (c: CourseExpectation) => React.ReactNode; /** Show when the course's placement ends (variant C merges the placements card here). */ placement?: boolean; /** Narrow column (variant C): course name in the row's tooltip only, no "other achieved" column. */ compact?: boolean }) {
+  const [open, setOpen] = React.useState<string | null>(null)
+  const placeOf = (id: string) => model.placements.filter((p) => p.courseId === id).sort((a, b) => a.daysLeft - b.daysLeft)[0]
+  const cols = (placement ? 5 : 4) - (compact ? 1 : 0)
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Course</TableHead>
-          <TableHead className="text-end">Required achieved</TableHead>
+          <TableHead className={mandatoryCell ? "" : "text-end"}>Mandatory achieved</TableHead>
           <TableHead className="text-end">Evaluations now</TableHead>
-          <TableHead className="hidden text-end md:table-cell">Optional achieved</TableHead>
+          {compact ? null : <TableHead className="hidden text-end md:table-cell">Recommended or optional achieved</TableHead>}
+          {placement ? <TableHead className="hidden lg:table-cell">Placement ends</TableHead> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
         {model.courses.map((c) => (
-          <TableRow key={c.id}>
+          <React.Fragment key={c.id}>
+          <TableRow>
             <TableCell>
-              <span className="font-medium text-foreground">{c.code}</span>
-              <span className="ms-2 hidden text-muted-foreground lg:inline">{c.name}</span>
+              <span className="inline-flex items-center gap-1">
+                {c.skills.length ? (
+                  <Button type="button" variant="ghost" size="icon-sm" aria-expanded={open === c.id} aria-controls={`course-skills-${c.id}`} aria-label={`${open === c.id ? "Hide" : "Show"} the ${countSkills(c.skills.length)} ${c.code} expects`} onClick={() => setOpen((o) => (o === c.id ? null : c.id))}>
+                    <i className={cn("fa-light", open === c.id ? "fa-chevron-down" : "fa-chevron-right")} aria-hidden="true" />
+                  </Button>
+                ) : null}
+                <span className="font-medium text-foreground">{c.code}</span>
+              </span>
+              {compact ? null : <span className="ms-2 hidden text-muted-foreground lg:inline">{c.name}</span>}
             </TableCell>
-            <TableCell className="text-end tabular-nums">{c.mandatory ? <Link className={NUM_LINK} href={studentHref("record", {}, studentId)}>{`${c.mandatoryAchieved} of ${c.mandatory}`}</Link> : <span className="text-muted-foreground">None</span>}</TableCell>
+            <TableCell className={mandatoryCell ? "" : "text-end tabular-nums"}>{c.mandatory ? (mandatoryCell ? mandatoryCell(c) : <Link className={NUM_LINK} href={studentHref("record", {}, studentId)}>{`${c.mandatoryAchieved} of ${c.mandatory}`}</Link>) : <span className="text-muted-foreground">None</span>}</TableCell>
             <TableCell className="text-end tabular-nums">
               {c.needed ? (
                 <span className="inline-flex items-center justify-end gap-1.5" style={c.behind ? { color: VIZ.behindInk } : undefined}>
@@ -452,10 +579,27 @@ export function CourseTable({ model, studentId }: { model: StudentModel; student
                 </span>
               ) : <span className="text-muted-foreground">None expected</span>}
             </TableCell>
-            <TableCell className="hidden text-end tabular-nums md:table-cell">{c.optional ? `${c.optionalAchieved} of ${c.optional}` : "None"}</TableCell>
+            {compact ? null : <TableCell className="hidden text-end tabular-nums md:table-cell">{c.optional ? `${c.optionalAchieved} of ${c.optional}` : "None"}</TableCell>}
+            {placement ? <PlacementCell p={placeOf(c.id)} /> : null}
           </TableRow>
+          {open === c.id ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={cols} id={`course-skills-${c.id}`} className="whitespace-normal bg-muted/30 px-4 py-2">
+                <CourseSkillList model={model} course={c} studentId={studentId} />
+              </TableCell>
+            </TableRow>
+          ) : null}
+          </React.Fragment>
         ))}
       </TableBody>
     </Table>
+  )
+}
+
+function PlacementCell({ p }: { p: StudentModel["placements"][number] | undefined }) {
+  return (
+    <TableCell className="hidden tabular-nums lg:table-cell">
+      {p ? <span style={p.soon ? { color: VIZ.behindInk } : undefined}>{`${shortDate(p.ends)}, ${ageLabel(p.daysLeft)}`}</span> : <span className="text-muted-foreground">None</span>}
+    </TableCell>
   )
 }

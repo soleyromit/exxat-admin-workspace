@@ -16,17 +16,18 @@ import { RecordFigures, RecordFilters, RecordMobileRow, ResultLabel } from "@/co
 import { LINK_IN_TABLE } from "@/components/lab/student/parts"
 import { useRecord } from "./student-record-a"
 import { shortDate } from "@/lib/lab/student"
-import { skillNoun } from "@/lib/lab/terms"
+import { aNoun, skillNoun } from "@/lib/lab/terms"
 import { groupByMonth, groupBySkill, recordAttemptLine, student2Href } from "@/lib/lab/student2"
+import { ViewEvaluationButton } from "@/components/lab/student/evaluation-sheet"
 
 const ROW_LIMIT = 40
 
 export function StudentRecordB() {
   return (
     <Student2Frame
-      title="Record"
+      title="My evaluations"
       primary={(c) => ({ label: "Share record", href: student2Href("share-record", {}, c.studentId) })}
-      empty={(c) => <EmptyBlock title="No evaluations yet" body="Each evaluation appears here with whether it counted and why." action={{ label: "Send for evaluation", href: student2Href("request-signoff", {}, c.studentId) }} />}
+      empty={(c) => <EmptyBlock title="No evaluations yet" body="Each evaluation appears here with whether it counted and why." action={{ label: `Log ${aNoun()}`, href: student2Href("request-signoff", {}, c.studentId) }} />}
     >
       {(ctx) => <Ledger ctx={ctx} />}
     </Student2Frame>
@@ -74,7 +75,7 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
             <div className="flex flex-col px-4 sm:hidden">
               {months.map((mo) => (
                 <section key={mo.key} aria-label={mo.label} className="flex flex-col">
-                  <h3 className="border-b border-border py-2 text-xs font-semibold text-foreground">{`${mo.label} · ${mo.rows.length}`}</h3>
+                  <h3 className="border-b border-border py-2 text-sm font-semibold text-foreground">{`${mo.label} · ${mo.rows.length}`}</h3>
                   <ul className="flex flex-col divide-y divide-border">
                     {mo.rows.map((x) => <RecordMobileRow key={x.id} date={shortDate(x.date)} title={<><Link href={student2Href("skill-detail", { skill: x.skillId }, ctx.studentId)} className={LINK_IN_TABLE}>{x.skillName}</Link>{attemptText(x) ? <span className="block text-xs tabular-nums text-muted-foreground" data-attempt-line>{attemptText(x)}</span> : null}</>} result={x.result} why={x.result === "not-counted" && !whyShown.has(x.id) ? "" : x.why} />)}
                   </ul>
@@ -89,13 +90,14 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
                   <TableHead className="w-40">Result</TableHead>
                   <TableHead className="hidden lg:table-cell">Evaluator</TableHead>
                   <TableHead className="hidden md:table-cell">Why</TableHead>
+                  <TableHead className="w-36"><span className="sr-only">Evaluation</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {months.map((mo) => (
                   <React.Fragment key={mo.key}>
                     <TableRow className="bg-muted/40 hover:bg-muted/40">
-                      <TableCell colSpan={5} className="py-1.5 text-xs font-semibold text-foreground">{`${mo.label} · ${mo.rows.length}`}</TableCell>
+                      <TableCell colSpan={6} className="py-1.5 text-xs font-semibold text-foreground">{`${mo.label} · ${mo.rows.length}`}</TableCell>
                     </TableRow>
                     {mo.rows.map((x) => (
                       <TableRow key={x.id}>
@@ -108,6 +110,7 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
                         <TableCell className="align-top"><ResultLabel result={x.result} /></TableCell>
                         <TableCell className="hidden align-top lg:table-cell">{x.evaluatorName}</TableCell>
                         <TableCell className="hidden min-w-48 whitespace-normal align-top text-sm md:table-cell">{x.why}</TableCell>
+                        <TableCell className="align-top text-end">{x.evaluationId ? <ViewEvaluationButton name={`${x.skillName}, ${shortDate(x.date)}`} onOpen={() => r.openEval(x.evaluationId!)} /> : null}</TableCell>
                       </TableRow>
                     ))}
                   </React.Fragment>
@@ -123,6 +126,7 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
           ) : null}
         </CardContent>
       </Card>
+      {r.sheet}
     </div>
   )
 }

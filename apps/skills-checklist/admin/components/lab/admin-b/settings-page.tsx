@@ -1,8 +1,13 @@
 "use client"
 
 /**
- * Settings (REQ SL-03 to SL-08; AUDIT T1 "no settings screen"). Four program-defined lists on DS Tabs with their counts:
- * Categories, Tags, Clinical settings (site counts and what uses each), Lab instructors.
+ * Program-defined lists on DS Tabs with their counts (REQ SL-03 to SL-08; AUDIT T1 "no settings screen"), one component for two
+ * pages (D-L21, Romit 2026-10-27: "why are categories and tags at Settings?"):
+ * - scope "vocabulary": Categories and tags (admin/categories-tags A), its own page under Skills, Thursday step A2. Categories
+ *   and tags are created, renamed, deactivated and deleted in the SHARED store (lib/v2/vocabulary.ts), so Add a skill offers
+ *   the same list (SL-03 to SL-06).
+ * - scope "program": Settings (admin/settings A): Clinical settings (site counts and what uses each), Evaluators (every person
+ *   who signs, lab instructors included; components/lab/admin-a/evaluators-section.tsx, D-L24). Naming has no UI (D-L25).
  *
  * Regions (strategy/07 list budget, 4): header · tabs · one toolbar row (search, then "Add a {noun}", which opens the inline
  * name field one click away) · the DataTable. Delete is offered only while an entry is unused; otherwise the menu names what
@@ -32,32 +37,38 @@ import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, 
 import { PageFrame } from "@/components/skills/page-header"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { parseDemoState } from "@/lib/lab/dashboard"
-import { EMPTY_SETTINGS, NAMING_EXAMPLES, SETTINGS_SECTIONS, categoryRows, clinicalSettingRows, instructorRows, isSettingsSection, isSettingsTab, sectionLabel, settingId, tagRows, usesOf, validateEntry, validateNaming, type NamingErrors, type SettingUse, type SettingsOverlay, type SettingsRow, type SettingsTab } from "@/lib/lab/settings"
-import { aNoun, setTerms, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { useVocabularyActions, isVocabKind, RenameDialog, renamedText } from "@/components/lab/admin-b/use-vocabulary"
+import { EMPTY_SETTINGS, rememberSeededVocabulary, SCOPE_SECTIONS, VOCABULARY_TITLE, categoryRows, clinicalSettingRows, instructorRows, isSettingsTab, scopeSection, sectionLabel, settingId, tagRows, usesOf, validateEntry, type SettingUse, type SettingsOverlay, type SettingsRow, type SettingsScope, type SettingsSection, type SettingsTab } from "@/lib/lab/settings"
+import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { useTerms } from "@/components/lab/library/use-terms"
-import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { EvaluatorsSection } from "@/components/lab/admin-a/evaluators-section"
+import { directory } from "@/lib/lab/evaluators"
 
 const NOUN: Record<SettingsTab, string> = { categories: "category", tags: "tag", settings: "clinical setting", instructors: "lab instructor" }
 const NOUNS: Record<SettingsTab, string> = { categories: "categories", tags: "tags", settings: "clinical settings", instructors: "lab instructors" }
 
-export function SettingsPage() {
+/** The page's H1: "Categories and tags" for that page, the open section's name on Settings ("Clinical settings"). */
+export const scopeTitle = (scope: SettingsScope, section: SettingsSection): string => (scope === "vocabulary" ? VOCABULARY_TITLE : sectionLabel(section))
+
+export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
   const data = useV2State()
   const hydrated = useV2Hydrated()
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname() ?? ""
   const demo = parseDemoState(params?.get("state"))
-  const tabRaw = params?.get("tab")
-  const section = isSettingsSection(tabRaw) ? tabRaw : "categories"
-  const tab: SettingsTab = section === "naming" ? "categories" : section
+  const sections = SCOPE_SECTIONS[scope]
+  const section = scopeSection(scope, params?.get("tab") ?? params?.get("list"))
+  const tab: SettingsTab = section === "evaluators" ? "settings" : section
   const terms = useTerms()
   const usesParam = params?.get("uses") ?? null
   const [overlay, setOverlay] = React.useState<SettingsOverlay>(EMPTY_SETTINGS)
   const [banner, setBanner] = React.useState<{ tone: "success" | "info"; text: string } | null>(null)
-  React.useEffect(() => { const t = takeNamingSaved(); if (t) setBanner({ tone: "success", text: t }) }, [])
   const [deleting, setDeleting] = React.useState<SettingsRow | null>(null)
   const [createError, setCreateError] = React.useState<string | null>(null)
   const [query, setQuery] = React.useState("")
+  const vocab = useVocabularyActions()
+  const [renaming, setRenaming] = React.useState<SettingsRow | null>(null)
 
   const setParams = (p: Record<string, string | null>) => {
     const q = new URLSearchParams(params?.toString() ?? "")
@@ -69,14 +80,16 @@ export function SettingsPage() {
   const lists = React.useMemo(() => {
     const n = skillNoun()
     const ns = skillNounPlural()
+    rememberSeededVocabulary(data)
     return { categories: categoryRows(data, overlay, n, ns), tags: tagRows(data, overlay, n, ns), settings: clinicalSettingRows(data, overlay, n, ns), instructors: instructorRows(data, overlay) }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- terms: the noun is read inside the row builders
   }, [data, overlay, terms])
+  const evaluatorCount = React.useMemo(() => (scope === "program" ? directory(data).rows.length : 0), [data, scope])
 
   if (!hydrated || demo === "loading") {
     return (
-      <PageFrame title="Settings">
-        <div role="status" aria-busy="true" aria-label="Loading settings" className="flex flex-col gap-3">
+      <PageFrame title={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"}>
+        <div role="status" aria-busy="true" aria-label={scope === "vocabulary" ? "Loading categories and tags" : "Loading settings"} className="flex flex-col gap-3">
           <Skeleton aria-hidden="true" className="h-9 w-[28rem]" />
           <Skeleton aria-hidden="true" className="h-8 w-80" />
           {Array.from({ length: 8 }, (_, i) => <Skeleton key={i} aria-hidden="true" className="h-12 w-full" />)}
@@ -89,15 +102,32 @@ export function SettingsPage() {
   const qq = query.trim().toLowerCase()
   const rows = qq ? all.filter((r) => r.name.toLowerCase().includes(qq) || String((r as SettingsRow & { email?: string }).email ?? "").toLowerCase().includes(qq)) : all
   const names = lists[tab].map((r) => r.name)
+  // Categories and tags write to the shared store (lib/v2/vocabulary.ts); clinical settings and lab instructors stay lab-local.
   const add = (name: string, email?: string) => {
+    if (isVocabKind(tab)) {
+      const res = vocab.add(tab, name)
+      setBanner(res.ok ? { tone: "success", text: `Added "${name.trim()}". It is offered in Add ${aNoun()} now.` } : { tone: "info", text: res.error })
+      return
+    }
     setOverlay((o) => ({ ...o, added: [{ tab, name: name.trim(), email: email?.trim() }, ...o.added] }))
     setBanner({ tone: "success", text: `Added "${name.trim()}".` })
   }
   const toggle = (r: SettingsRow) => {
+    if (isVocabKind(tab)) {
+      const res = vocab.setActive(tab, r.id, !r.active)
+      if (!res.ok) return setBanner({ tone: "info", text: res.error })
+      return setBanner({ tone: "info", text: r.active ? `"${r.name}" is inactive. It stays where it is used, marked inactive, and is no longer offered.` : `"${r.name}" is active again.` })
+    }
     setOverlay((o) => (r.active ? { ...o, inactive: [...o.inactive, r.id], reactivated: o.reactivated.filter((x) => x !== r.id) } : { ...o, reactivated: [...o.reactivated, r.id], inactive: o.inactive.filter((x) => x !== r.id) }))
     setBanner({ tone: "info", text: r.active ? `"${r.name}" is inactive. It stays where it is used, marked inactive, and is no longer offered.` : `"${r.name}" is active again.` })
   }
   const remove = (r: SettingsRow) => {
+    if (isVocabKind(tab)) {
+      const res = vocab.remove(tab, r.id)
+      setBanner(res.ok ? { tone: "success", text: `Deleted "${r.name}".` } : { tone: "info", text: res.error })
+      setDeleting(null)
+      return
+    }
     setOverlay((o) => ({ ...o, deleted: [...o.deleted, r.id], added: o.added.filter((a) => settingId(a.tab, a.name) !== r.id) }))
     setBanner({ tone: "success", text: `Deleted "${r.name}".` })
     setDeleting(null)
@@ -108,14 +138,14 @@ export function SettingsPage() {
   const openUses = (r: SettingsRow, what?: SettingUse) => setParams({ uses: `${tab}|${r.id}|${what ?? ""}` })
 
   return (
-    <PageFrame title="Settings" actions={<SampleDataBadge />}>
-      <div className="flex flex-col gap-4" data-settings-lab data-page-type="list" data-tab={section}>
-        <Tabs value={section} onValueChange={(v) => { setBanner(null); setCreateError(null); setQuery(""); setParams({ tab: v === "categories" ? null : v, uses: null }) }}>
-          <TabsList variant="line" ariaLabel="Settings lists">
-            {SETTINGS_SECTIONS.map((t) => (
+    <PageFrame title={scopeTitle(scope, section)} actions={<SampleDataBadge />}>
+      <div className="flex flex-col gap-4" data-settings-lab data-settings-scope={scope} data-page-type="list" data-tab={section}>
+        <Tabs value={section} onValueChange={(v) => { setBanner(null); setCreateError(null); setQuery(""); setParams({ tab: v === sections[0] ? null : v, list: null, uses: null, ...EVALUATOR_FILTERS_OFF }) }}>
+          <TabsList variant="line" ariaLabel={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings lists"}>
+            {sections.map((t) => (
               <TabsTrigger key={t} value={t} data-tab={t}>
                 {sectionLabel(t)}
-                {t === "naming" ? null : <TabsCountBadge count={lists[t].length} />}
+                <TabsCountBadge count={t === "evaluators" ? evaluatorCount : lists[t].length} />
               </TabsTrigger>
             ))}
           </TabsList>
@@ -124,9 +154,9 @@ export function SettingsPage() {
           <TabsContent key={section} value={section} className="mt-2 flex flex-col gap-4" data-tab-panel={section}>
         {banner ? <LocalBanner variant={banner.tone} dismissible onDismiss={() => setBanner(null)}>{banner.text}</LocalBanner> : null}
         {demo === "error" ? (
-          <LocalBanner variant="error" title="Settings could not be loaded" retry={{ label: "Try again", onClick: () => setParams({ state: null }) }}>Nothing was changed.</LocalBanner>
-        ) : section === "naming" ? (
-          <NamingSection idPrefix="settings" onSaved={(text) => setBanner({ tone: "success", text })} />
+          <LocalBanner variant="error" title={`${scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"} could not be loaded`} retry={{ label: "Try again", onClick: () => setParams({ state: null }) }}>Nothing was changed.</LocalBanner>
+        ) : section === "evaluators" ? (
+          <EvaluatorsSection layout="people" />
         ) : (
           <>
             {demo === "partial" ? <LocalBanner variant="info" title="Usage counts are still loading">Delete stays off until they finish.</LocalBanner> : null}
@@ -136,12 +166,27 @@ export function SettingsPage() {
               <Input id="settings-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search ${NOUNS[tab]}`} className="h-8 w-64" />
               <InlineCreate key={tab} tab={tab} names={names} onAdd={add} error={createError} setError={setCreateError} />
             </FilterBar>
-            <SettingsTable tab={tab} rows={rows} filtered={!!qq} onClear={() => setQuery("")} partial={demo === "partial"} onToggle={toggle} onDelete={setDeleting} onUses={openUses} />
+            <SettingsTable tab={tab} rows={rows} filtered={!!qq} onClear={() => setQuery("")} partial={demo === "partial"} onToggle={toggle} onDelete={setDeleting} onUses={openUses} onRename={isVocabKind(tab) ? setRenaming : undefined} />
           </>
         )}
           </TabsContent>
         </Tabs>
       </div>
+      {isVocabKind(tab) ? (
+        <RenameDialog
+          kind={tab}
+          state={data}
+          target={renaming ? { id: renaming.id, name: renaming.name, uses: renaming.uses } : null}
+          onClose={() => setRenaming(null)}
+          onRename={(id, name) => {
+            const res = vocab.rename(tab, id, name)
+            if (!res.ok) return res.error
+            setBanner({ tone: "success", text: renamedText(renaming?.name ?? "", name.trim(), renaming?.uses ?? 0) })
+            setRenaming(null)
+            return null
+          }}
+        />
+      ) : null}
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -188,88 +233,8 @@ function usesTitle(tab: SettingsTab, n: number, what?: SettingUse): string {
   return plural(n, "active site", "active sites")
 }
 
-/**
- * Naming (CALL 10-26 item 7): what the program calls these, singular and plural. Shared by Settings A (a tab) and B (the
- * detail pane). Saving sets the noun in lib/lab/terms.ts for every screen. One filled primary, the save.
- */
-export const NAMING_SAVED_KEY = "lab:naming-saved"
-
-/** The naming confirmation kept across the re-render a noun change causes; read once. */
-export function takeNamingSaved(): string | null {
-  try {
-    const t = window.sessionStorage.getItem(NAMING_SAVED_KEY)
-    if (t) window.sessionStorage.removeItem(NAMING_SAVED_KEY)
-    return t
-  } catch { return null }
-}
-
-export function NamingSection({ idPrefix, onSaved }: { idPrefix: string; onSaved: (text: string) => void }) {
-  const terms = useTerms()
-  const [one, setOne] = React.useState(terms.skillNoun)
-  const [many, setMany] = React.useState(terms.skillNounPlural)
-  const [errors, setErrors] = React.useState<NamingErrors>({})
-  // The stored noun arrives after mount; follow it until the user types.
-  const touched = React.useRef(false)
-  React.useEffect(() => {
-    if (touched.current) return
-    setOne(terms.skillNoun)
-    setMany(terms.skillNounPlural)
-  }, [terms.skillNoun, terms.skillNounPlural])
-  const oneId = `${idPrefix}-noun-one`
-  const manyId = `${idPrefix}-noun-many`
-  const save = () => {
-    const e = validateNaming(one, many)
-    setErrors(e)
-    if (e.one) return document.getElementById(oneId)?.focus()
-    if (e.many) return document.getElementById(manyId)?.focus()
-    const text = `Every screen now says "${many.trim()}".`
-    // Saving the noun re-renders every lab screen (lab-frame TermsBoundary), which resets page state: keep the confirmation
-    // for the page that mounts next, then confirm on this one too.
-    try { window.sessionStorage.setItem(NAMING_SAVED_KEY, text) } catch { /* the banner below still shows when nothing remounts */ }
-    setTerms({ skillNoun: one, skillNounPlural: many })
-    touched.current = false
-    onSaved(text)
-  }
-  const pick = (x: { one: string; many: string }) => {
-    touched.current = true
-    setOne(x.one)
-    setMany(x.many)
-    setErrors({})
-  }
-  return (
-    <section aria-labelledby={`${idPrefix}-naming-heading`} className="flex max-w-xl flex-col gap-4" data-region="naming" data-naming>
-      <div className="flex flex-col gap-0.5">
-        <h2 id={`${idPrefix}-naming-heading`} className="text-base font-semibold text-foreground">What do you call these?</h2>
-        <p className="text-sm text-muted-foreground">Every screen uses these words, for every role.</p>
-      </div>
-      <form noValidate className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); save() }}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field data-invalid={!!errors.one || undefined}>
-            <FieldLabel htmlFor={oneId}>For one</FieldLabel>
-            <Input id={oneId} value={one} onChange={(e) => { touched.current = true; setOne(e.target.value) }} aria-invalid={!!errors.one || undefined} aria-describedby={errors.one ? `${oneId}-error` : undefined} className="h-8" />
-            {errors.one ? <FieldError id={`${oneId}-error`}>{errors.one}</FieldError> : null}
-          </Field>
-          <Field data-invalid={!!errors.many || undefined}>
-            <FieldLabel htmlFor={manyId}>For more than one</FieldLabel>
-            <Input id={manyId} value={many} onChange={(e) => { touched.current = true; setMany(e.target.value) }} aria-invalid={!!errors.many || undefined} aria-describedby={errors.many ? `${manyId}-error` : undefined} className="h-8" />
-            {errors.many ? <FieldError id={`${manyId}-error`}>{errors.many}</FieldError> : null}
-          </Field>
-        </div>
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Examples">
-          <span className="text-sm text-muted-foreground">Examples</span>
-          {NAMING_EXAMPLES.map((x) => (
-            <Button key={x.one} type="button" variant="outline" size="xs" aria-pressed={one.trim() === x.one && many.trim() === x.many} aria-label={`Use ${x.one} and ${x.many}`} onClick={() => pick(x)}>
-              {x.one}
-            </Button>
-          ))}
-        </div>
-        <div>
-          <Button type="submit" variant="default" size="sm">Save names</Button>
-        </div>
-      </form>
-    </section>
-  )
-}
+/** Leaving the Evaluators section drops its filters, so they do not ride along to another section. */
+export const EVALUATOR_FILTERS_OFF = { q: null, role: null, site: null, setting: null, filter: null } as const
 
 /** "Add a {noun}" opens the inline name field (one click away); it stays open for several entries until Cancel. */
 function InlineCreate({ tab, names, onAdd, error, setError }: { tab: SettingsTab; names: string[]; onAdd: (name: string, email?: string) => void; error: string | null; setError: (e: string | null) => void }) {
@@ -312,7 +277,7 @@ function InlineCreate({ tab, names, onAdd, error, setError }: { tab: SettingsTab
   )
 }
 
-function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDelete, onUses }: { tab: SettingsTab; rows: SettingsRow[]; filtered: boolean; onClear: () => void; partial: boolean; onToggle: (r: SettingsRow) => void; onDelete: (r: SettingsRow) => void; onUses: (r: SettingsRow, what?: SettingUse) => void }) {
+function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDelete, onUses, onRename }: { tab: SettingsTab; rows: SettingsRow[]; filtered: boolean; onClear: () => void; partial: boolean; onToggle: (r: SettingsRow) => void; onDelete: (r: SettingsRow) => void; onUses: (r: SettingsRow, what?: SettingUse) => void; onRename?: (r: SettingsRow) => void }) {
   const count = (r: SettingsRow, n: number, label: string, what?: SettingUse) =>
     n === 0 ? <span className="tabular-nums text-muted-foreground">0</span> : (
       <Button type="button" variant="link" size="sm" className={`h-auto p-0 text-sm font-normal ${NUM_LINK}`} aria-label={`${r.name}: ${label}. Open the list`} onClick={() => onUses(r, what)}>{fmt(n)}</Button>
@@ -344,6 +309,7 @@ function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDele
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
+            {onRename ? <DropdownMenuItem onSelect={() => onRename(r)}>Rename</DropdownMenuItem> : null}
             <DropdownMenuItem onSelect={() => onToggle(r)}>{r.active ? "Deactivate" : "Reactivate"}</DropdownMenuItem>
             <DropdownMenuItem disabled={!!blocked} onSelect={() => onDelete(r)} className="flex flex-col items-start gap-0">
               <span>Delete</span>

@@ -12,6 +12,7 @@
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
+import { skillNounPlural } from "@/lib/lab/terms"
 import {
   DEFAULT_LIST,
   NEW_LIBRARY,
@@ -71,6 +72,8 @@ export function useImportSession() {
   const [rowCategories, setRowCategories] = React.useState<Record<string, string>>({})
   /** Tags set for one line in review (REQ SL-04); absent = the line's group heading proposed as a tag, if any. */
   const [rowTags, setRowTags] = React.useState<Record<string, string[]>>({})
+  /** Optional description per skill read [REQ SL-02, IM-04]; empty until the program writes one. */
+  const [rowDescriptions, setRowDescriptions] = React.useState<Record<string, string>>({})
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const targets = React.useMemo(() => importTargets(state.skills), [state.skills])
@@ -79,7 +82,7 @@ export function useImportSession() {
     [state.skills, target],
   )
   const isNewList = target === NEW_LIBRARY
-  const targetLabel = isNewList ? newLibraryName.trim() || "a new list" : TARGET_LABEL[target] ?? ""
+  const targetLabel = isNewList ? newLibraryName.trim() || `a new group of ${skillNounPlural()}` : TARGET_LABEL[target] ?? ""
 
   const text = React.useMemo(() => (phase === "review" || phase === "done" ? sourceText ?? buildSampleText(scale) : ""), [phase, scale, sourceText])
   const review = React.useMemo(() => (text ? buildReview(text, library) : null), [text, library])
@@ -103,6 +106,7 @@ export function useImportSession() {
     setNames({})
     setRowCategories({})
     setRowTags({})
+    setRowDescriptions({})
   }, [])
 
   // Apply a demo state once, after the store has hydrated.
@@ -201,6 +205,8 @@ export function useImportSession() {
   const rename = React.useCallback((rowId: string, name: string) => setNames((m) => ({ ...m, [rowId]: name })), [])
   const setRowCategory = React.useCallback((rowId: string, category: string) => setRowCategories((m) => ({ ...m, [rowId]: category })), [])
   const setTagsFor = React.useCallback((rowId: string, tags: string[]) => setRowTags((m) => ({ ...m, [rowId]: tags })), [])
+  const descriptionOf = React.useCallback((rowId: string): string => rowDescriptions[rowId] ?? "", [rowDescriptions])
+  const setDescriptionFor = React.useCallback((rowId: string, d: string) => setRowDescriptions((m) => ({ ...m, [rowId]: d })), [])
 
   const bulkSuggest = React.useCallback(
     (opts: { kind?: ExceptionKind; rowIds?: ReadonlySet<string> } = {}) => { if (review) setDecisions((d) => applySuggestions(review, d, library, opts)) },
@@ -208,13 +214,15 @@ export function useImportSession() {
   )
   const bulkLeaveOut = React.useCallback((ids: Iterable<string>) => { if (review) setDecisions((d) => leaveOut(review, d, ids)) }, [review])
   const putBack = React.useCallback((id: string) => setDecisions((d) => clearDecisions(d, id)), [])
+  /** Undo for "Accept all suggestions": put back the decisions as they were before. */
+  const restoreDecisions = React.useCallback((d: Decisions) => setDecisions(d), [])
   const confirm = React.useCallback(() => setPhase("done"), [])
 
   return {
     demo, fromPaste, hydrated, phase, setPhase, scale, fileName, fileNames, sourceText, target, setTarget, isNewList, newLibraryName, setNewLibraryName,
     batchName, setBatchName, targets, library, targetLabel, review, resolved, summary, plan, groups, left, decisions, names,
-    readFiles, readText, reset: clearAll, decide, rename, bulkSuggest, bulkLeaveOut, putBack, confirm,
-    tagsOf, setRowCategory, setTagsFor,
+    readFiles, readText, reset: clearAll, decide, rename, bulkSuggest, bulkLeaveOut, putBack, restoreDecisions, confirm,
+    tagsOf, setRowCategory, setTagsFor, descriptionOf, setDescriptionFor,
   }
 }
 

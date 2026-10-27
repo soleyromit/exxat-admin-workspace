@@ -2,9 +2,8 @@
 
 /**
  * One frame for every skills library option set (list template T1, docs/knowledge/design/skill-setup-journey/01 section 2):
- * - Title zone: "Skills", ONE filled primary "Add a skill" at the top right, and one outline "More" menu that holds the
- *   many-at-once routes: phase 1 first (add several by name, start a new list), then phase 2 tagged Later (import a file,
- *   copy from a starter library).
+ * - Title zone: "Skills" and ONE split button at the top right: "Add a skill", plus a chevron menu of every way to add
+ *   (one at a time, several by name, Bulk upload tagged Later; in the lab only, copy from a starter library).
  * - One banner slot under the title: the result of the last action, or else the "not configured" warning (said once,
  *   hidden on the Not configured tab where the badge already says it).
  * - Status tabs that carry the counts (no KPI strip), with the toolbar on the same row.
@@ -19,16 +18,20 @@ import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { StatusBadge } from "@exxatdesignux/ui"
 import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
+import { ButtonGroup, ButtonGroupSeparator } from "@exxatdesignux/ui/components/ui/button-group"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { PageFrame } from "@/components/skills/page-header"
 import { LaterBadge } from "@/components/lab/import/sample-badge"
+import { usePresent } from "@/components/lab/lab-bar/present"
+import { withFrom } from "@/lib/lab/return-to"
+import { TYPE } from "@/components/lab/type-scale"
 import {
   LIBRARY_TABS,
   STATUS_META,
   configureHref,
   importHref,
   isLibraryTab,
-  newListHref,
+  notConfiguredBlock,
   starterHref,
   tabCount,
   type LibraryCounts,
@@ -45,54 +48,95 @@ export { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 /** "Add several by name": bringing in a list is the import step, in the reviewer's option set. */
 export const addSeveralHref = "/lab/admin/import-ai-review"
 
-export function LibraryStatusBadge({ status }: { status: LibraryStatus }) {
+/**
+ * The status in the requirement's words, plus a quiet "Draft saved" when a Not configured skill has a configuration saved part way
+ * (decision D-X31; REQ IM-10 "a part-configured library is a visible state of progress"). The draft is a note, not a fourth status.
+ */
+export function LibraryStatusBadge({ status, draft = false }: { status: LibraryStatus; draft?: boolean }) {
   const m = STATUS_META[status]
-  return <StatusBadge label={m.short} tone={m.tone} icon={m.icon} size="sm" surface="table" />
+  return (
+    // Chip, then the draft note stacked under it with tight spacing: a wrap-when-narrow row put the note beside the chip
+    // in a wide cell and under it in a narrow one, so rows changed height with the column width.
+    <span className="inline-flex flex-col items-start gap-0.5">
+      <StatusBadge label={m.short} tone={m.tone} icon={m.icon} size="sm" surface="table" />
+      {draft && status === "not-configured" ? <span className="text-xs text-muted-foreground" data-draft-note>Draft saved</span> : null}
+    </span>
+  )
 }
 
+/** One way to add skills, as a menu row: a leading icon, the label, and one muted line that says what it takes. */
+function AddWayRow({ icon, label, description, later = false }: { icon: string; label: string; description: string; later?: boolean }) {
+  return (
+    <>
+      <i className={`fa-light ${icon} mt-0.5 w-4 text-center text-muted-foreground`} aria-hidden="true" />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex items-center gap-2">
+          <span className={TYPE.label}>{label}</span>
+          {later ? <LaterBadge /> : null}
+        </span>
+        <span className={TYPE.meta}>{description}</span>
+      </span>
+    </>
+  )
+}
+
+const ADD_WAY_ITEM = "items-start gap-3 px-2 py-2"
+
 /**
- * Title-zone actions. `primaryElsewhere` steps "Add a skill" down to outline while a sheet or panel on the page shows its
- * own filled primary, so the screen never carries two (rule L2).
+ * Title-zone actions: ONE split button (Romit 2026-10-27, "can we do a better UI for this?"). The main part adds one skill;
+ * the chevron opens every way to add, each with what it takes: one at a time, several by name (a sheet on this page), or a
+ * file (Bulk upload, opened with ?from=skills so its breadcrumb and Cancel lead back here, lib/lab/return-to.ts).
+ * "New group of skills" is not here: it lives on Skills > Groups of skills, which has its own action and keeps ?new=1.
+ * "Copy from a starter library" is Prism-supplied content (REQ SL-01, open decision) and this menu is its only link, so it
+ * stays as the last row in the lab, under a rule, and is hidden when presenting.
+ * `primaryElsewhere` steps the whole button down to outline while a sheet or panel shows its own primary (rule L2).
  */
 export function LibraryActions({ onAdd, onAddSeveral, primaryElsewhere = false }: { onAdd: () => void; onAddSeveral?: () => void; primaryElsewhere?: boolean }) {
+  const { present } = usePresent()
+  const variant = primaryElsewhere ? "outline" : "default"
+  const several = <AddWayRow icon="fa-list" label="Add several" description="Paste a list of names" />
   return (
-    <div className="flex items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button type="button" variant="outline" size="sm">More</Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-72">
-          {/* Phase 1 first (CALL 10-26): the one-time bulk add by name, then a new list. Phase 2 routes sit under the rule,
-              each tagged Later; they stay reachable, nothing is removed. */}
-          {onAddSeveral ? (
-            <DropdownMenuItem onSelect={onAddSeveral}>Add several by name (bulk add)</DropdownMenuItem>
-          ) : (
-            <DropdownMenuItem asChild>
-              <Link href={addSeveralHref}>Add several by name (bulk add)</Link>
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem asChild>
-            <Link href={newListHref}>Start a new list</Link>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link href={importHref} className="flex w-full items-center justify-between gap-2">
-              Import a file
-              <LaterBadge />
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href={starterHref} className="flex w-full items-center justify-between gap-2">
-              Copy from a starter library
-              <LaterBadge />
-            </Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <Button type="button" variant={primaryElsewhere ? "outline" : "default"} size="sm" onClick={onAdd} data-add-skill-trigger>
+    <ButtonGroup aria-label={`Add ${skillNounPlural()}`} data-add-menu>
+      <Button type="button" variant={variant} size="sm" onClick={onAdd} data-add-skill-trigger>
         {`Add ${aNoun()}`}
       </Button>
-    </div>
+      {/* Filled halves need a visible divider; outline halves already share a border. */}
+      {primaryElsewhere ? null : <ButtonGroupSeparator className="bg-primary-foreground/30" />}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" variant={variant} size="sm" className="px-2" aria-label={`More ways to add ${skillNounPlural()}`} data-add-menu-trigger>
+            <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-72">
+          <DropdownMenuItem className={ADD_WAY_ITEM} onSelect={onAdd}>
+            <AddWayRow icon="fa-plus" label={`Add ${aNoun()}`} description="One at a time, with details" />
+          </DropdownMenuItem>
+          {onAddSeveral ? (
+            <DropdownMenuItem className={ADD_WAY_ITEM} onSelect={onAddSeveral}>{several}</DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem className={ADD_WAY_ITEM} asChild>
+              <Link href={withFrom(addSeveralHref, "skills")}>{several}</Link>
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem className={ADD_WAY_ITEM} asChild>
+            <Link href={withFrom(importHref, "skills")}>
+              <AddWayRow icon="fa-file-arrow-up" label="Bulk upload" description="From a PDF, Word or Excel file" later />
+            </Link>
+          </DropdownMenuItem>
+          {present ? null : (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className={ADD_WAY_ITEM} asChild>
+                <Link href={withFrom(starterHref, "skills")}>
+                  <AddWayRow icon="fa-copy" label="Copy from a starter library" description={`Start from a ready-made set of ${skillNounPlural()}`} later />
+                </Link>
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </ButtonGroup>
   )
 }
 
@@ -181,8 +225,8 @@ export function LibraryBanner({ api, tab }: { api: LibraryApi; tab?: LibraryTab 
     <div data-region="banner">
       {/* The action only: the "Not configured" tab already carries the figure, so the banner does not repeat it as a title
           (UX critique 2026-10-26, say it once). The action opens the first one; the configure page moves to the next. */}
-      <LocalBanner variant="warning" action={next ? { label: `Configure ${n.toLocaleString("en-US")} next`, href: configureHref(next.id) } : undefined} data-not-configured-banner>
-        {`${capitalize(skillNounPlural())} that are not configured cannot be sent or mapped.`}
+      <LocalBanner variant="warning" action={next ? { label: "Configure next", href: configureHref(next.id) } : undefined} data-not-configured-banner>
+        {notConfiguredBlock()}
       </LocalBanner>
     </div>
   )
@@ -205,25 +249,25 @@ export function LibraryLoading() {
 }
 
 /**
- * Empty library: the phase 1 ways in first (add one, add several by name), import second and tagged Later. Same box as
- * EmptyBlock; it needs three actions, so it composes the box here instead of widening the shared one-action component.
- * Every action is outline: the page's one filled primary stays "Add a skill" in the title zone.
+ * Empty library: the same three ways as the title-zone menu, with the same labels (Add a skill, Add several, Bulk upload),
+ * so the empty page and the header never disagree. Same box as EmptyBlock; it needs three actions, so it composes the box
+ * here. Every action is outline: the page's one filled primary stays the title-zone split button.
  */
 export function LibraryEmpty({ onAdd, onAddSeveral }: { onAdd?: () => void; onAddSeveral?: () => void }) {
   return (
     <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-border p-6" data-region="empty">
-      <h2 className="text-base font-semibold text-foreground">{`Your ${skillNounPlural()} library is empty`}</h2>
-      <p className="max-w-prose text-sm text-muted-foreground">{`Add one ${skillNoun()} at a time, or several by name at once.`}</p>
+      <h2 className={TYPE.section}>{`Your ${skillNounPlural()} library is empty`}</h2>
+      <p className={`max-w-prose ${TYPE.helper}`}>{`Add one ${skillNoun()} with details, paste a list of names, or upload a PDF, Word or Excel file.`}</p>
       <div className="mt-1 flex flex-wrap items-center gap-2">
         {onAdd ? <Button type="button" variant="outline" size="sm" onClick={onAdd}>{`Add ${aNoun()}`}</Button> : null}
         {onAddSeveral ? (
-          <Button type="button" variant="outline" size="sm" onClick={onAddSeveral}>Add several by name</Button>
+          <Button type="button" variant="outline" size="sm" onClick={onAddSeveral}>Add several</Button>
         ) : (
-          <Button asChild variant="outline" size="sm"><Link href={addSeveralHref}>Add several by name</Link></Button>
+          <Button asChild variant="outline" size="sm"><Link href={withFrom(addSeveralHref, "skills")}>Add several</Link></Button>
         )}
-        <Button asChild variant="ghost" size="sm">
-          <Link href={importHref} className="inline-flex items-center gap-2">
-            Import a file
+        <Button asChild variant="outline" size="sm">
+          <Link href={withFrom(importHref, "skills")} className="inline-flex items-center gap-2">
+            Bulk upload
             <LaterBadge />
           </Link>
         </Button>

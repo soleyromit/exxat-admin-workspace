@@ -11,7 +11,7 @@ import { PERSONAS } from "@/lib/lab/personas"
 import { builtVariants, screenHref, screensFor, screenKey, screenStatus, type ScreenDef } from "@/lib/lab/screens"
 import { flowHref, flowsForPersona, mainSteps, resolveStep, stepScreen, type FlowDef, type FlowStep } from "@/lib/lab/flows"
 import { lettersOutsideSets, variantCounts } from "@/lib/lab/links"
-import { MARQUEE, NOT_READY, marqueeHref } from "@/lib/lab/present"
+import { MARQUEE, NOT_READY, PRESENT_WALKTHROUGHS, marqueeHref } from "@/lib/lab/present"
 import { withNoun } from "@/lib/lab/terms"
 import { useTerms } from "@/components/lab/library/use-terms"
 import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
@@ -137,6 +137,17 @@ function MarqueeIndex() {
       actions={<span className="flex items-center gap-3"><PresentSwitch /><Button type="button" variant="ghost" size="sm" onClick={() => setPresent(false)}>Exit present mode</Button></span>}
     >
       <div className="flex max-w-3xl flex-col gap-8">
+        <section aria-labelledby="walkthrough-heading" className="flex flex-col gap-3">
+          <h2 id="walkthrough-heading" className="text-base font-semibold text-foreground">Walk through</h2>
+          <ul className="flex flex-col divide-y divide-border rounded-lg border border-border" data-walkthroughs>
+            {PRESENT_WALKTHROUGHS.map((w) => (
+              <li key={w.href} className="flex items-center justify-between gap-3 px-4 py-3">
+                <Link className={LINK} href={w.href}>{withNoun(w.label)}</Link>
+                <span className="shrink-0 text-sm text-muted-foreground">{w.who}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
         <section aria-labelledby="marquee-heading" className="flex flex-col gap-3">
           <h2 id="marquee-heading" className="text-base font-semibold text-foreground">Ready to show</h2>
           <ol className="flex flex-col divide-y divide-border rounded-lg border border-border" data-marquee>
@@ -185,7 +196,18 @@ function WorkingIndex() {
     router.replace(s ? `${pathname}?${s}` : pathname)
   }
   return (
-    <PageFrame title="Design lab" subtitle="Walk a whole job in one design direction, or open any screen on its own. Everything here is sample data." actions={<PresentSwitch />}>
+    <PageFrame
+      title="Design lab"
+      subtitle="Walk a whole job in one design direction, or open any screen on its own. Everything here is sample data."
+      actions={
+        <span className="flex items-center gap-3">
+          {PRESENT_WALKTHROUGHS.map((w) => (
+            <Button key={w.href} asChild variant="outline" size="sm"><Link href={w.href} data-walkthrough-entry>{`Walk through ${w.label.split(",")[0]!.toLowerCase()}`}</Link></Button>
+          ))}
+          <PresentSwitch />
+        </span>
+      }
+    >
       <Tabs value={view} onValueChange={setView} className="flex flex-col gap-6">
         <TabsList variant="line" ariaLabel="Lab index view">
           <TabsTrigger value="flow">By flow</TabsTrigger>
@@ -197,7 +219,7 @@ function WorkingIndex() {
             if (!flows.length) return null
             return (
               <section key={p.id} aria-labelledby={`flows-${p.id}`} className="flex flex-col gap-6">
-                <h2 id={`flows-${p.id}`} className="text-lg font-semibold text-foreground">{p.label}</h2>
+                <h2 id={`flows-${p.id}`} className="text-base font-semibold text-foreground">{p.label}</h2>
                 {flows.map((f) => <FlowSection key={f.id} flow={f} />)}
               </section>
             )

@@ -25,11 +25,12 @@ import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { PersonIdentityCell } from "@exxatdesignux/ui/components/data-views/person-identity-cell"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ImpossibleScopeBanner } from "@/components/lab/dashboard/impossible-scope"
 import { BehindBadge, ListLoadError, LoadingShape } from "@/components/lab/dashboard/cards"
 import { DrillPeek, type PeekTarget } from "@/components/lab/dashboard/drill-peek"
-import { asOfLabel, useDashboardUrl, useLoadTimeout, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
-import { buildDrill, chipValue, conditionLabel, dashboardHref, parseDemoState, pipelineRecords, populationRows, resolveTerm, scopeOptions, type DrillParams, type DrillRequest, type DrillSkill, type DrillStudent, type SiteRow } from "@/lib/lab/dashboard"
+import { useDashboardUrl, useLoadTimeout, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
+import { buildDrill, chipValue, conditionLabel, dashboardHref, explainScope, parseDemoState, pipelineRecords, populationRows, resolveTerm, scopeOptions, type DrillParams, type DrillRequest, type DrillSkill, type DrillStudent, type SiteRow } from "@/lib/lab/dashboard"
 import { basisOf } from "@/lib/lab/scope"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
@@ -91,6 +92,8 @@ export function AdminDashboardDrillB() {
   const flag = conditionLabel(basis)
   const term = resolveTerm(state, url.scope)
   const q = query.trim().toLowerCase()
+  // RP-09: a scope that cannot produce evidence is explained in place of the groups, never "0 students".
+  const impossible = explainScope(state, url.scope)
 
   let groups: Group[] = []
   let columns: unknown[] = []
@@ -146,7 +149,7 @@ export function AdminDashboardDrillB() {
   })()
 
   return (
-    <PageFrame title={model.title} actions={<SampleDataBadge />}>
+    <PageFrame title={model.title} subtitle={<ScopeContext termName={term.name} scope={url.scope} at={snap.at} />} actions={<SampleDataBadge />}>
       <div className="flex flex-col gap-4" data-drill={params.list} data-drill-count={model.count} data-drill-variant="B" data-page-type="list">
         <Breadcrumb>
           <BreadcrumbList>
@@ -156,7 +159,10 @@ export function AdminDashboardDrillB() {
           </BreadcrumbList>
         </Breadcrumb>
         {/* List budget (strategy/07): Course sits in Filters and the comparison is the dashboard's, as on variant A. */}
-        <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={(k, v) => chipValue(state, k, v)} asOf={asOfLabel(snap.at)} onRefresh={snap.refresh} courseInFilters showBasis={false} />
+        <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={(k, v) => chipValue(state, k, v)} showBasis={false} />
+        <ImpossibleScopeBanner state={state} scope={url.scope} onChange={url.setScope} />
+        {impossible ? null : (
+        <>
         <FilterBar aria-label="Condition and search" data-region="toolbar">
           {model.condition ? <ConditionLine label={model.condition.label} removeHref={url.hrefWith({ ...Object.fromEntries(Object.entries(model.condition.remove).map(([k, v]) => [k, v ?? null])), row: null })} /> : null}
           <span className="text-sm tabular-nums text-muted-foreground" aria-live="polite">{q ? `${fmt(shownCount)} of ${fmt(model.count)} ${unit}` : `${fmt(model.count)} ${unit} in ${fmt(groups.length)} ${groups.length === 1 ? "group" : "groups"}`}</span>
@@ -181,6 +187,8 @@ export function AdminDashboardDrillB() {
               <DrillPeek target={target} records={records} scope={url.scope} onClose={() => url.setParams({ row: null })} />
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </PageFrame>

@@ -1,109 +1,164 @@
 "use client"
 
 /**
- * Configure a skill, option set 3 "Many at once" (template T3 form; 02 section 4.7). The rule is ONE editable sentence at the
- * top, after a compact model choice; everything that does not fit a sentence folds into Collapsibles below. Works for one
- * skill or several (?skills=a,b,c from the library bulk bar "Configure together") [REQ IM-14]. The footer says what the
- * sentence will touch; the one primary opens the impact check in a dialog, where Publish lives.
+ * Configure a skill, option set 3 "Many at once" (template T3 form, full width per D-X30). Four numbered sections in one style
+ * (2026-10-27): how it is judged, what the evaluator records, when it counts (for Approved or not, the rule is ONE editable
+ * sentence plus a list of conditions), who signs. Works for one
+ * skill or several (?skills=a,b,c from the library bulk bar "Configure together") [REQ IM-14].
  *
- * URL: ?skill= or ?skills=a,b,c · ?impact=open · ?change=sample · ?state=loading. Listens for `lab:reset`.
+ * Save model (decision D-X31): "Save draft" keeps a single skill's edits without changing its status; Close asks before leaving
+ * with unsaved edits. "Check" replaces the sentence with the Check view on the same page (decision D-X32, layout "ledger": built
+ * for many skills): the issue summary, the setup in three compact columns with Edit (back to the sentence, the fold open), one
+ * row per skill with its status now and after saving and the students who change (the impact groups for one skill), then the
+ * two views side by side. "Save configuration" (or "Save n skills", "Save changes") writes the rule to every skill; the page then
+ * becomes the receipt.
+ *
+ * URL: ?skill= or ?skills=a,b,c · ?impact=open (opens Check) · ?change=sample · ?state=loading. Listens for `lab:reset`.
  */
 import { RulePreviewAside } from "@/components/lab/configure/live-panel"
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
-import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { cn } from "@exxatdesignux/ui/lib/utils"
+import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { FormPage, StickyFooter, ValidationSummary } from "@/components/lab/layout"
-import { bulkImpact, carriedNotes, hasNeed, HOW_MANY_LABEL, outcomesLabel, settingNote, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { bulkImpact, configureStepHead, hasNeed, ruleMeaning, saveLabRule, type LabRule, type PublishMode, type RuleIssue, type SetupGroup } from "@/lib/lab/configure"
+import { buildLibrary } from "@/lib/lab/library"
 import type { V2State } from "@/lib/v2/types"
 import { skillById } from "@/lib/v2/evidence-index"
 import { fmt } from "@/lib/v2/format"
+import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
+import { useV2Store } from "@/lib/v2/react"
 import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { ModelSection, OutcomesSection, ProposedBadge, SignOffSection, type SectionProps } from "@/components/lab/configure/fields"
-import { EVIDENCE_CHOICE_MISSING, EvidenceChoice, PublishDialog, PublishedNotice, useLiveImpact } from "@/components/lab/configure/impact"
+import { ModelSection, OutcomesSection, RuleSection, SignOffSection, WithMeaning, type SectionProps } from "@/components/lab/configure/fields"
+import { ConfigSection } from "@/components/lab/configure/section"
+import { EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
+import { CheckSection, ConfigureReceiptPage, EvidenceDecision, ManyLedger, openDecisions, PeopleSee, Readiness, ReceiptFooter, saveBlockedReason, SavedBanner, SetupSummary, WhoItAffects } from "@/components/lab/configure/check"
+import { CopyFromDialog } from "@/components/lab/configure/bulk-apply"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { SentenceBuilder } from "@/components/lab/configure/sentence-builder"
-import { CancelButton, ConfigureLoading, ConfigureNotFound, LIBRARY_HREF, SkillSubtitle } from "@/components/lab/configure/shell"
+import { ConfigureLoading, ConfigureNotFound, LeaveButton, SkillTitle } from "@/components/lab/configure/shell"
 import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
-
-/** Sections that live in the folded details. Issues in them open their fold before focus moves there. */
-const IN_OUTCOMES = (i: RuleIssue) => i.section === "outcomes" && !["cfg-qualifying"].includes(i.field)
-const IN_SIGNERS = (i: RuleIssue) => i.section === "signoff"
-
-function Fold({ title, open, onOpenChange, children }: { title: string; open: boolean; onOpenChange: (o: boolean) => void; children: React.ReactNode }) {
-  return (
-    <Collapsible open={open} onOpenChange={onOpenChange} className="border-t border-border pt-3">
-      <CollapsibleTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" className="-ms-2 w-full justify-between" aria-expanded={open}>
-          <span className="text-sm font-medium text-foreground">{title}</span>
-          <i className={`fa-light ${open ? "fa-chevron-up" : "fa-chevron-down"} text-xs`} aria-hidden="true" />
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent className="pt-4 pb-2">{children}</CollapsibleContent>
-    </Collapsible>
-  )
-}
 
 export function AdminConfigureSkillC() {
   const params = useSearchParams()
   const many = React.useMemo(() => (params?.get("skills") ?? "").split(",").map((x) => x.trim()).filter(Boolean), [params])
   const m = useConfigure({ skillId: many[0] })
+  const store = useV2Store()
   const [showErrors, setShowErrors] = React.useState(false)
-  const [outcomesOpen, setOutcomesOpen] = React.useState(false)
-  const [signersOpen, setSignersOpen] = React.useState(false)
-  const [checkOpen, setCheckOpen] = React.useState(params?.get("impact") === "open")
-  const [manyDone, setManyDone] = React.useState<number | null>(null)
+  const [checking, setChecking] = React.useState(params?.get("impact") === "open")
+  const [mode, setMode] = React.useState<PublishMode | null>(null)
+  const [modeTried, setModeTried] = React.useState(false)
+  const [manyDone, setManyDone] = React.useState<{ ids: string[]; rule: LabRule } | null>(null)
+  const [copyOpen, setCopyOpen] = React.useState(false)
+  const [note, setNote] = React.useState<string | null>(null)
   const impact = useLiveImpact(m.state, m.skill, m.current, m.rule)
 
   React.useEffect(() => {
     setShowErrors(false)
-    setOutcomesOpen(false)
-    setSignersOpen(false)
     setManyDone(null)
+    setMode(null)
+    setModeTried(false)
   }, [m.skillId])
 
   const targets = React.useMemo(() => (many.length > 1 ? many.map((id) => skillById(m.state, id)).filter((k): k is NonNullable<typeof k> => !!k) : []), [many, m.state])
+  const manyRows = React.useMemo(() => (targets.length > 1 && m.rule.model ? bulkImpact(m.state, targets.map((t) => t.id), m.rule) : []), [targets, m.state, m.rule])
+  const nextAfterMany = React.useMemo(() => {
+    if (!manyDone) return null
+    const done = new Set(manyDone.ids)
+    return buildLibrary(m.state).find((r) => r.status === "not-configured" && !done.has(r.id)) ?? null
+  }, [manyDone, m.state])
 
   if (!m.ready) return <ConfigureLoading />
   if (!m.skill) return <ConfigureNotFound skillId={m.skillId} />
   const skill = m.skill
   const isMany = targets.length > 1
+  if (m.saved && !isMany) return <ConfigureReceiptPage state={m.state} skill={skill} result={m.saved} layout="ledger" nextSkill={m.nextSkill} />
 
-  const props: SectionProps = { rule: m.rule, setRule: m.setRule, issues: m.issues, showErrors, settings: m.settings }
-  const needsQuestionsFirst = (m.rule.model === "question" || m.rule.model === "scored") && m.rule.questions.filter((q) => q.trim()).length === 0
-  const needsLevelsFirst = m.rule.model === "demonstration" && m.rule.levels.filter((l) => l.trim()).length < 2
-  const outcomesInline = needsQuestionsFirst || needsLevelsFirst
-  // While the summary lists the problems, field errors stay for screen readers only (say it once, rule L11).
-  const quietErrors = showErrors && m.issues.length > 0 ? "[&_[data-slot=field-error]]:sr-only" : undefined
-
-  const tryCheck = () => {
-    setShowErrors(true)
-    if (m.issues.length > 0) {
-      if (m.issues.some(IN_OUTCOMES)) setOutcomesOpen(true)
-      if (m.issues.some(IN_SIGNERS)) setSignersOpen(true)
-      return
-    }
-    setCheckOpen(true)
+  if (manyDone) {
+    return (
+      <FormPage
+        title={`Configure ${countSkills(manyDone.ids.length)}`}
+        subtitle={<span>{`${targets.slice(0, 2).map((t) => t.name).join(", ")}${targets.length > 2 ? ` and ${targets.length - 2} more` : ""}`}</span>}
+        banner={<SavedBanner title={`${countSkills(manyDone.ids.length)} configured`} body="Each now uses this rule and can be mapped to courses." />}
+        footer={<ReceiptFooter skillIds={manyDone.ids} nextSkill={nextAfterMany} />}
+      >
+        <div className="@container flex flex-col gap-8" data-receipt>
+          <CheckSection title="What was saved">
+            <SetupSummary rule={manyDone.rule} layout="ledger" />
+          </CheckSection>
+          <CheckSection title="Who it reaches">
+            <ManyLedger state={m.state} ids={manyDone.ids} rule={manyDone.rule} saved />
+          </CheckSection>
+          <PeopleSee skillName={targets[0]?.name ?? skill.name} rule={manyDone.rule} />
+        </div>
+      </FormPage>
+    )
   }
 
-  const banner = m.published ? (
-    <PublishedNotice skill={skill} result={m.published} onDismiss={m.dismissPublished} />
-  ) : manyDone !== null ? (
-    <div tabIndex={-1} ref={(el) => el?.focus()} className="outline-none" role="status">
-      <LocalBanner variant="success" title={`${countSkills(manyDone)} published`} dismissible onDismiss={() => setManyDone(null)} action={{ label: "Open the library", href: LIBRARY_HREF }}>
-        Each now uses this rule. Map them to courses from the library.
-      </LocalBanner>
-    </div>
-  ) : showErrors && m.issues.length > 0 ? (
-    <ValidationSummary title={`Fix ${m.issues.length} ${m.issues.length === 1 ? "problem" : "problems"} to publish`} issues={m.issues.map((i) => ({ fieldId: i.field, message: i.message }))} />
+  const props: SectionProps = { rule: m.rule, setRule: m.setRule, issues: m.issues, showErrors, settings: m.settings }
+  // While the summary lists the problems, field errors stay for screen readers only (say it once, rule L11).
+  const quietErrors = showErrors && m.issues.length > 0 ? "[&_[data-slot=field-error]]:sr-only" : undefined
+  const choice = isMany ? manyRows.some((r) => r.configured && r.changed > 0) : needsEvidenceChoice(m.current, impact)
+  const n = m.issues.length
+  const blocked = saveBlockedReason(m.issues, choice, mode)
+  const open = openDecisions(m.issues, choice, mode)
+  const partsToFix = new Set(m.issues.map((i) => i.section)).size
+
+  // Check always opens (redesign 2026-10-27): it is where what is left to fix is listed, each problem inside its card.
+  const tryCheck = () => {
+    setShowErrors(true)
+    setChecking(true)
+    window.scrollTo({ top: 0 })
+  }
+  // Edit from Check: back to the sections, focus on the part.
+  const editGroup = (step: SetupGroup["step"]) => {
+    setChecking(false)
+    requestAnimationFrame(() => focusField(step === "model" ? "cfg-model" : step === "rule" ? "cfg-need" : step === "outcomes" ? "cfg-label-0" : "cfg-role-preceptor"))
+  }
+  const goToIssue = (i: RuleIssue) => {
+    setChecking(false)
+    setShowErrors(true)
+    requestAnimationFrame(() => focusField(i.field))
+  }
+
+  const save = () => {
+    if (n > 0) return
+    if (choice && !mode) {
+      setModeTried(true)
+      requestAnimationFrame(() => focusField("cfg-mode"))
+      return
+    }
+    if (!isMany) {
+      m.save(choice ? mode : null)
+      return
+    }
+    // Several at once [REQ IM-14]: the same rule is saved to each skill, each gets its own rule version. "New evidence only" is
+    // not decided, so it writes nothing (as for one skill).
+    const ids = targets.map((t) => t.id)
+    if (mode !== "new-only") {
+      const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
+      store.update((s) => ids.reduce((acc, id) => {
+        const r = saveLabRule(acc, id, m.rule, { at, byId: IDS.ross, mode })
+        return r.ok && r.written ? r.state : acc
+      }, s))
+    }
+    setManyDone({ ids, rule: m.rule })
+  }
+
+  const banner = !checking && showErrors && n > 0 ? (
+    <ValidationSummary title={`Fix ${n} ${n === 1 ? "problem" : "problems"} before saving`} issues={m.issues.map((i) => ({ fieldId: i.field, message: i.message }))} />
+  ) : note && !checking ? (
+    <LocalBanner variant="info" dismissible onDismiss={() => setNote(null)}>
+      {note}
+    </LocalBanner>
   ) : null
 
-  // Footer: what the sentence touches (the sentence itself is the page, so it is not repeated here).
-  // From 1400 px the single-skill count moves into the preview column (D-X29), so the footer hides it there.
+  const saveLabel = isMany ? `Save ${countSkills(targets.length)}` : m.current ? "Save changes" : "Save configuration"
+
+  // Footer while editing: what the sentence touches (the sentence itself is the page, so it is not repeated here).
+  // From 1280 px the single-skill count sits in the preview column (D-X30), so the footer hides it there.
   const footerSummary = isMany ? (
     <ManySummary state={m.state} ids={targets.map((t) => t.id)} rule={m.rule} />
   ) : (
@@ -114,175 +169,125 @@ export function AdminConfigureSkillC() {
       ) : null}
     </div>
   )
+  const draftContext = !isMany && m.draft && !m.dirty ? "Draft saved." : undefined
+  const saveDraft = isMany ? undefined : { label: "Save draft", onClick: () => m.saveDraft(checking ? "check" : null) }
+  const footer = checking ? (
+    <StickyFooter
+      back={{ label: "Back to the rule", onClick: () => setChecking(false) }}
+      context={draftContext}
+      secondary={saveDraft}
+      primary={{ label: saveLabel, onClick: save, disabled: !!blocked, disabledReason: blocked }}
+    />
+  ) : (
+    <StickyFooter summary={footerSummary} context={draftContext} secondary={saveDraft} primary={{ label: isMany ? `Check ${countSkills(targets.length)}` : "Check", onClick: tryCheck }} />
+  )
 
   const subtitle = isMany ? (
     <span>{`${targets.slice(0, 2).map((t) => t.name).join(", ")}${targets.length > 2 ? ` and ${targets.length - 2} more` : ""}`}</span>
-  ) : (
-    <SkillSubtitle state={m.state} skill={skill} />
-  )
+  ) : undefined
 
   return (
     <>
-      <FormPage
-        title={isMany ? `Configure ${countSkills(targets.length)}` : skill.name}
-        subtitle={subtitle}
-        actions={
-          <div className="flex items-center gap-2">
-            <CancelButton dirty={m.dirty} />
-          </div>
-        }
-        banner={banner}
-        // D-X29: what students and evaluators will see, beside the sentence from 1400 px. The sentence is the page, so the column
-        // does not repeat it.
-        aside={<RulePreviewAside skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} impact={isMany ? null : impact} showRule={false} />}
-        footer={<StickyFooter summary={footerSummary} primary={m.published || manyDone !== null ? undefined : { label: isMany ? `Check ${countSkills(targets.length)}` : "Check and publish", onClick: tryCheck }} />}
-      >
-        <div className={cn("flex flex-col gap-6", quietErrors)} data-region="sentence">
-          <ModelSection {...props} columns={4} legend={isMany ? `How are these ${skillNounPlural()} evaluated?` : undefined} />
-          {!m.rule.model ? (
-            <p className="text-sm text-muted-foreground">Choose how it&apos;s judged. The sentence then shows what that choice can ask for.</p>
-          ) : (
-            <>
-              {outcomesInline ? (
-                <div className="flex flex-col gap-3">
-                  <p className="text-sm text-foreground">{needsLevelsFirst ? "Name at least two levels first. The rule refers to them." : "Write the questions first. The rule refers to them."}</p>
-                  <OutcomesSection {...props} />
-                </div>
-              ) : null}
-              <div className="flex flex-col gap-2">
-                <h2 className="text-sm font-medium text-foreground">{HOW_MANY_LABEL}</h2>
-                {!hasNeed(m.rule) ? <p className="text-sm text-muted-foreground" data-empty-need>Your program sets this number. Nothing is filled in for you.</p> : null}
-                <SentenceBuilder rule={m.rule} setRule={m.setRule} issues={m.issues} showErrors={showErrors} settings={m.settings} />
-                <p className="text-sm text-muted-foreground">{settingNote(m.rule) || "Lab and simulation never count toward a setting minimum."}</p>
-                {carriedNotes(m.rule).length ? (
-                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground" data-carried>
-                    <span>{`Kept from the current rule: ${carriedNotes(m.rule).join(" ")}`}</span>
-                    <ProposedBadge note="From an earlier prototype; still changes counts today." />
-                    <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => m.setRule((r) => ({ ...r, carried: { window: null, minLevelIndex: null, simulationCapPercent: null, simulationExcluded: false } }))}>
-                      Remove
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
-            </>
-          )}
+    <FormPage
+      title={isMany ? `Configure ${countSkills(targets.length)}` : <SkillTitle state={m.state} skill={skill} />}
+      subtitle={subtitle}
+      actions={
+        <div className="flex items-center gap-2">
+          <LeaveButton dirty={m.dirty} skillId={skill.id} onSaveDraft={() => m.saveDraft(checking ? "check" : null)} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label="More actions">
+                <i className="fa-light fa-ellipsis" aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setCopyOpen(true)}>{`Copy from another ${skillNoun()}`}</DropdownMenuItem>
+              {!isMany && m.draft ? <DropdownMenuItem onSelect={() => m.discardDraft()}>Discard draft</DropdownMenuItem> : null}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        {m.rule.model ? (
-          <div className={cn("flex flex-col gap-2", quietErrors)} data-region="details">
-            {outcomesInline ? null : (
-              <Fold title={outcomesLabel(m.rule.model)} open={outcomesOpen} onOpenChange={setOutcomesOpen}>
-                <OutcomesSection {...props} />
-              </Fold>
+      }
+      banner={banner}
+      // D-X30: what students and evaluators will see, beside the sentence from 1280 px. Check shows both views itself.
+      aside={checking ? undefined : <RulePreviewAside skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} impact={isMany ? null : impact} showRule={false} />}
+      footer={footer}
+    >
+      {checking ? (
+        // Layout "ledger" (redesign 2026-10-27): review cards, one per part, each problem inside its own card with Fix and the
+        // cards with problems first; the evidence decision; who it affects (one row per skill when several); the two views.
+        <div className="@container flex flex-col gap-8" data-check-layout="ledger">
+          <CheckSection
+            title={open > 0 ? `${partsToFix + (choice && !mode ? 1 : 0)} of ${4 + (choice ? 1 : 0)} parts need a decision` : "Every part is set"}
+            badge={open === 0 ? <Readiness open={0} /> : undefined}
+          >
+            {/* The evidence choice is a part to decide too: first, at the width of one card. */}
+            {choice ? <EvidenceDecision mode={mode} onMode={setMode} error={modeTried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} className="@min-[44rem]:max-w-[calc(50%-0.5rem)]" /> : null}
+            <SetupSummary rule={m.rule} current={isMany ? null : m.current} issues={m.issues} layout="ledger" onEdit={editGroup} onFix={goToIssue} />
+          </CheckSection>
+          <CheckSection title="Who it affects">
+            {isMany ? (
+              <ManyLedger state={m.state} ids={targets.map((t) => t.id)} rule={m.rule} />
+            ) : (
+              <WhoItAffects state={m.state} skill={skill} current={m.current} rule={m.rule} impact={impact} mode={mode} />
             )}
-            <Fold title="Who signs and what the student adds" open={signersOpen} onOpenChange={setSignersOpen}>
-              <SignOffSection {...props} />
-            </Fold>
-          </div>
-        ) : null}
-      </FormPage>
-      {isMany ? (
-        <PublishManyDialog
-          open={checkOpen}
-          onOpenChange={setCheckOpen}
-          state={m.state}
-          ids={targets.map((t) => t.id)}
-          rule={m.rule}
-          onPublish={() => {
-            setCheckOpen(false)
-            setManyDone(targets.length)
-          }}
-        />
+          </CheckSection>
+          {m.rule.model ? <PeopleSee skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} /> : null}
+        </div>
       ) : (
-        <PublishDialog
-          open={checkOpen}
-          onOpenChange={setCheckOpen}
-          skill={skill}
-          current={m.current}
-          rule={m.rule}
-          impact={impact}
-          onPublish={(mode) => {
-            m.publish(mode)
-            setCheckOpen(false)
+        // Numbered sections, one style (Romit 2026-10-27, "need a good and proper content hierarchy"): how it is judged, what
+        // the evaluator records, when it counts (the rule as one sentence plus conditions), who signs. Nothing folds.
+        <div className={cn("flex flex-col gap-8", quietErrors)} data-region="sentence">
+          <ConfigSection n={1} first title={isMany ? `How are these ${skillNounPlural()} judged?` : configureStepHead("model", m.rule.model).title} id="cfg-sec-model">
+            <ModelSection {...props} legendHidden />
+          </ConfigSection>
+          {m.rule.model ? (
+            <>
+              <ConfigSection n={2} title={configureStepHead("outcomes", m.rule.model).title} id="cfg-sec-outcomes">
+                <OutcomesSection {...props} legendHidden qualifyingInRule={m.rule.model === "binary"} />
+              </ConfigSection>
+              <ConfigSection n={3} title={configureStepHead("rule", m.rule.model).title} id="cfg-sec-rule">
+                {m.rule.model === "binary" ? (
+                  <WithMeaning meaning={ruleMeaning(m.rule)}>
+                    <div className="flex flex-col gap-2">
+                      {!hasNeed(m.rule) ? <p className="text-sm text-muted-foreground" data-empty-need>Your program sets this number.</p> : null}
+                      <SentenceBuilder rule={m.rule} setRule={m.setRule} issues={m.issues} showErrors={showErrors} settings={m.settings} />
+                    </div>
+                  </WithMeaning>
+                ) : (
+                  <RuleSection {...props} />
+                )}
+              </ConfigSection>
+              <ConfigSection n={4} title={configureStepHead("signoff", m.rule.model).title} lead={configureStepHead("signoff", m.rule.model).lead} id="cfg-sec-signoff">
+                <SignOffSection {...props} />
+              </ConfigSection>
+            </>
+          ) : null}
+        </div>
+      )}
+    </FormPage>
+        <CopyFromDialog
+          open={copyOpen}
+          onOpenChange={setCopyOpen}
+          state={m.state}
+          skillId={m.skillId}
+          onCopy={(rule, name) => {
+            m.setRule(rule)
+            setChecking(false)
+            setNote(`Copied from ${name}. Check the rule before saving.`)
           }}
         />
-      )}
+      
     </>
   )
 }
 
 function ManySummary({ state, ids, rule }: { state: V2State; ids: string[]; rule: LabRule }) {
   const rows = React.useMemo(() => (rule.model ? bulkImpact(state, ids, rule) : []), [state, ids, rule])
-  const inUse = rows.filter((r) => r.published)
-  const students = inUse.reduce((n, r) => n + r.changed, 0)
+  const configured = rows.filter((r) => r.configured)
+  const students = configured.reduce((n, r) => n + r.changed, 0)
   return (
     <p className="text-muted-foreground">
-      {`Applies to ${countSkills(ids.length)}. ${inUse.length === 0 ? "None is in use yet." : `${inUse.length} in use; ${students} students change.`}`}
+      {`Applies to ${countSkills(ids.length)}. ${configured.length === 0 ? "None is configured yet." : `${configured.length} already configured; ${students} students change.`}`}
     </p>
-  )
-}
-
-/** One check for many skills: one row per skill, and the evidence choice asked once for all (02 open point 6). */
-function PublishManyDialog({ open, onOpenChange, state, ids, rule, onPublish }: { open: boolean; onOpenChange: (o: boolean) => void; state: V2State; ids: string[]; rule: LabRule; onPublish: (mode: PublishMode | null) => void }) {
-  const [mode, setMode] = React.useState<PublishMode | null>(null)
-  const [tried, setTried] = React.useState(false)
-  React.useEffect(() => {
-    if (open) {
-      setMode(null)
-      setTried(false)
-    }
-  }, [open])
-  const rows = React.useMemo(() => bulkImpact(state, ids, rule), [state, ids, rule])
-  const changing = rows.filter((r) => r.published && r.changed > 0)
-  const choice = changing.length > 0
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{`Publish ${countSkills(ids.length)}?`}</DialogTitle>
-          <DialogDescription>{choice ? `${changing.reduce((n, r) => n + r.changed, 0)} students change status across ${countSkills(changing.length)}.` : "Nobody's status changes."}</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-6">
-          <Table containerClassName="max-h-72 overflow-y-auto rounded-md border border-border" scrollLabel={`Students who change, per ${skillNoun()}`}>
-            <TableHeader>
-              <TableRow>
-                <TableHead scope="col">{skillNoun().charAt(0).toUpperCase() + skillNoun().slice(1)}</TableHead>
-                <TableHead scope="col" className="text-end">
-                  Students who change
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.skillId}>
-                  <TableCell className="whitespace-normal">{r.name}</TableCell>
-                  <TableCell className="text-end tabular-nums">{r.published ? r.changed : "Not in use"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {choice ? <EvidenceChoice value={mode} onChange={setMode} error={tried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" size="default" onClick={() => onOpenChange(false)}>
-            Keep editing
-          </Button>
-          <Button
-            type="button"
-            variant="default"
-            size="default"
-            onClick={() => {
-              if (choice && !mode) {
-                setTried(true)
-                requestAnimationFrame(() => focusField("cfg-mode"))
-                return
-              }
-              onPublish(choice ? mode : null)
-            }}
-          >
-            {`Publish ${countSkills(ids.length)}`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }

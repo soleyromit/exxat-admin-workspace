@@ -12,6 +12,8 @@ Before proposing or building anything visual or textual in this product:
 3. Read `apps/skills-checklist/docs/knowledge/02-decisions-ledger.md` (what Romit has decided, and the open questions you must not decide for him).
 4. Open `01-competitive-digest.md` only when the task touches what other products do, a rule type, or a screen's rationale.
 5. At the top of your response state: "Consulted: design brief, glossary (or: not present), decisions ledger" and name any open question in the ledger your work touches.
-6. Then continue with `skills-module-context` (source precedence, ODs) and `skills-surface-contract` (before JSX).
+6. Read section 0 of the brief, "Leadership and stakeholder direction" (for example: wizard and form pages full width with no white space, D-L5, D-X30; check at 1920, 1440 and 375).
+7. List the requirement IDs each screen you touch must satisfy, in every variant, quoted from `apps/skills-checklist/docs/source/requirements.extracted.txt` (per-screen checklist `docs/knowledge/req-coverage-lab.md` once it exists). Before done, paste a "Requirement coverage" block (ID, variant, MET / PARTIAL / MISSING, evidence). Simplify without removing anything a requirement asks for: merge, disclose or move, never drop a required field, filter, state or action; compact variants carry the same required fields as the full variant.
+8. Then continue with `skills-module-context` (source precedence, ODs) and `skills-surface-contract` (before JSX).
 
 Rules while working: tag claims `[REQ id]` `[CALL]` `[COMP]` `[BUILD-PROMPT §n]` `[AUDIT Tn]` `[INFER]`; never treat an OD as decided; if the brief and a confirmed contract disagree, say so and ask Romit; add any new durable decision to the ledger and the vault.

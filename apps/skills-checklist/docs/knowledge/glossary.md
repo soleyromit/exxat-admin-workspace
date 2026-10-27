@@ -81,7 +81,9 @@ Columns: **Use** is the only word allowed in UI. **Not** lists banned alternativ
 | **evaluator** | Umbrella for the person who evaluates: **preceptor** (placement site), **clinical faculty** (program), **lab instructor** (lab or simulation; may have no Prism account). | rater, grader, assessor, supervisor, signer | all | Role names are program data `[REQ OD-06 area]` | `[REQ EV-02, SL-08]` |
 | **submission** | What a student sends to be evaluated: one or more skills performed in a setting, with the details the program requires. It is the record that moves through waiting, returned, counted. | request (for the record), ticket, form, item, entry | S, A, R, D | No | `[REQ section 6, SH-02, RV-01]` |
 | **evaluation request** (short: **request**) | The message and link that reaches an evaluator so they can complete an evaluation. A request belongs to a submission. Used only for the outbound message and the evaluator's inbox. | submission (when you mean the message), invite, ticket | P, S (when sending), R (stalled) | No | `[REQ ST-10, EV-01]` |
-| **log** (verb, noun "log entry") | A student recording that they performed a skill, before or without sending it. A log entry becomes part of a submission when sent. | record (verb), entry as a stand-alone noun in nav | S | No | `[INFER]`; REQ is silent; student calls use "log" `[CALL]` |
+| **draft** | Saved but not sent: a submission saved before sending ("Save for later" in Log a skill). Listed in My requests, Drafts; Continue reopens it in Send. Not evidence; nothing counts until it is sent. A request kept while offline is a draft too. | logged, not sent yet, entry | S | No | `[INFER]`; LEDGER D-L10, D-X32, D-L16 (2026-10-27) |
+| **My evaluations** (student page) | The student's page of evaluations: what counted and why. Formerly "Record" (LEDGER D-L19, 2026-10-27); slug `record`. | Record (as the page or nav row) | S | No | Romit 2026-10-27 |
+| **log** (verb; "Log a skill") | Record what you did: the student's one entry action, which opens the flow that ends with Send for evaluation (LEDGER D-L16). Not a sidebar row. Internal code names (`LogEntry`, `lib/lab/logged.ts`) keep it. | entry as a stand-alone noun in nav | S | No | `[INFER]`; REQ is silent; Romit 2026-10-27 |
 | **sign off** (verb only) | What an evaluator role is allowed to do for a skill. | sign-off as a noun for the record; verify; approve | A (config), S, P | No | `[REQ SL-08, EV]` `[CALL]` |
 | **level** | A program-defined, ordered level of supervision on a demonstration. | rating, grade, tier | A, P, S | Labels are program data | `[REQ SC-08]` |
 | **achievement rule** (UI: "what achievement requires"; REQ name: achievement criteria) | What must be true for a skill to count as achieved: qualifying evaluations, per-level minimums, setting minimums. | pass mark, threshold, requirements | A | No | `[REQ AE-03, section 4.2]` |
@@ -90,12 +92,12 @@ Columns: **Use** is the only word allowed in UI. **Not** lists banned alternativ
 | **Met** / **Unmet** | Default binary outcome labels. Program may rename (Pass / Fail). | Not met as the shipped default | all | Yes | `[REQ 4.1]` |
 | **Did not meet criteria** | Outcome of **one submission/evaluation** that does not qualify. Never a skill-record status. | failed, rejected, unsuccessful, Did not meet the criteria, Did not meet | S, R, D | No | `[REQ SH-02]` `[V1 DEC-003, copy test]` |
 | **Evidence does not qualify** | Skill-record state: evidence exists, none qualifies. | Not met, failed | S, A, D | No | `[REQ AE-04]` `[V1]` (OD-03 open on whether to merge it with "no evidence yet") |
-| **Not yet met** | Skill-record state: some qualifying evidence, criteria not yet met ("in progress"). | Not met yet, Not yet | S, A, D | No | `[REQ AE-04]` (OD-03) |
+| **In progress** (n of N) | Skill-record state: some qualifying evidence, criteria not yet met. Romit's word [LEDGER D-L1]; the evaluator's answer stays "Not yet". | Not yet met, Not met yet, Not yet | S, A, D | No | `[REQ AE-04]` `[LEDGER D-L1]` (OD-03 stays open) |
 | **Achieved** | Skill-record state: every criterion met. | complete, passed, done | all | No | `[REQ AE-04]` |
 | **counted** | The evidence counts toward achievement. | accepted, valid, approved (approved is the reviewer's act) | all | No | `[REQ SH-02, AE]` |
 | **waiting** (always "waiting with {name}") | Submission sent but no completed evaluation, or evaluation completed and held. Says who holds it. | pending, in limbo, in review | S, R, A | No | `[REQ SH-02]` |
 | **awaiting approval** | An evaluation is complete and held for administrator approval; excluded from achievement until approved. Only for skills with approval on. | waiting for review, pending, in the queue | A, R, S | No | `[REQ SC-15, AR-01, AE]` |
-| **approve** / **return** (return for correction) | The reviewer's two decisions on an evaluation awaiting approval. Approving counts the evidence. Returning sends it back with a reason. | reject, deny, decline, send back | A, R | No | `[REQ AR-05, SH-02]` (who corrects a returned evaluation: OD-16) |
+| **Approve** / **Send back to student** (REQ "return") | The reviewer's two decisions on an evaluation awaiting approval. Approve: "Counts toward progress now" (`APPROVE_HINT`). Send back to student: it goes back for correction with a required "Reason the student sees" and does not count (`SEND_BACK_LABEL`; past tense "Sent back to student", `REVIEW_DECISION_LABEL.returned`). Staff words only; the student reads "Returned to you". Assign to someone else is a different action (D-X25). | Return (staff UI, retired 2026-10-27, D-L22), reject, deny, decline | A, R | No | `[REQ AR-05, SH-02]` `[LEDGER D-L22]` (who corrects: OD-16) |
 | **revision** | A correction of the same submission. Continues one record, keeps a count and the return reason. Not allowed once counted or awaiting approval. | resubmit, edit, resend as a noun | S | No | `[REQ RV-01, RV-02]` |
 | **further attempt** (noun: attempt) | A new, separate submission after a completed evaluation did not meet criteria. The first stays intact. | retake, try, retry, rep | S | No | `[REQ RV-03, SH-01]` |
 | **lab or simulation** / **clinical setting** | Where the skill was performed. Lab or simulation evidence never satisfies a clinical-setting minimum. | practice room, unit type | all | Setting names are program data | `[REQ ST-05, section 4.2]` |
@@ -111,7 +113,8 @@ Columns: **Use** is the only word allowed in UI. **Not** lists banned alternativ
 | **Required set switch** ("Required this term" / "Required to graduate") | Which set an Attainment view reads; one set per view, never mixed. Defaults to "Required to graduate" for the graduating cohort, "Required this term" otherwise. URL `required=graduate` or `required=term` (renamed from `set` on 2026-10-26: `set` is the lab option set). Code: `buildAttainment(..., { basis })`, `REQUIRED_SET_OPTIONS`, `defaultRequiredSet` in `lib/lab/attainment.ts`. | required (alone) | A, D | No | `[LEDGER D-X12]` |
 | **deactivate** / **reactivate** (state: Inactive) | Takes a skill out of mapping, student selection and every report figure; evidence is kept; reversible. Written to the shared store as `Skill.active === false` (`admin-actions.setSkillsActive`), so dashboard, attainment, director, drills and facts change together and after reload. | retire, archive, remove | A | No | `[REQ SL-02, SL-11]` `[LEDGER D-X14]` |
 | **delete** (a skill) | Allowed only while nothing is tracked against the skill: no evaluation, request, practice log entry or lab check-off (`admin-actions.trackedAgainst`). A course mapping does not block it; the confirmation lists the courses it will be unmapped from, and they are unmapped (`deleteSkill`). | remove (for deactivate) | A | No | `[CALL 10-09]` `[LEDGER D-X15]` |
-| **Rule needs approval** (held cause) | An evaluation held because its skill's configuration asks for approval (`config.approvalRequired`, SC-15). Never shown for a skill without that setting; listed after any other cause on the same submission. Code: `approvals.heldByRule`. | waiting for approval, pending | A, R | No | `[REQ SC-15, AR-01]` |
+| **Approval reasons** (why a submission is in Approvals) | One plain line per row that names the skill or the person (`reasonText` in `lib/lab/reviewer.ts`): "Approval required for {skill}" (the skill's configuration asks for approval, `config.approvalRequired`, SC-15; never shown for a skill without it), "{name} is not on your evaluator list", "Student and evaluator disagree", "Paper form: outcome not entered yet". Explained once in the review (`reasonExplain`). Short group labels (`CAUSE_LABEL`): Approval required, Evaluator not assigned, Student and evaluator disagree, Paper form to enter. | Rule needs approval (retired 2026-10-27, D-L22), Self and evaluator disagree, pending | A, R | No | `[REQ SC-15, AR-01]` `[LEDGER D-L22]` |
+| **New evaluators** (admin Approvals tab) | Evaluator names students typed through "Someone not listed" that the program has not confirmed. Decisions: **Confirm** (adopt as a new evaluator) and **Merge with…** (an existing evaluator). Count = `facts().unverifiedEvaluators` = dashboard tile "Evaluators not yet verified". | unverified (in UI), pending evaluators | A | No | `[REQ SL-09, ST-09]` `[LEDGER D-L23]` (OD-05 open) |
 | **Counted / Awaiting approval / Returned / Reopened** (evaluation status) and **Approved / Returned** (review decision) | The words for one evaluation in a record, list or export. Code: `EVALUATION_STATUS_LABEL`, `evaluationStatusLabel`, `REVIEW_DECISION_LABEL` in `lib/v2/labels.ts`. "Did not count" stays the student's result word for an attempt that did not qualify (`lib/lab/student2.ts`). | Waiting for approval, Not met | A, R, S, D | No | `[REQ AR-05]` |
 | **mapped course** (UI: "course") | A skill linked to a course offering, mandatory or not. Mapping is not eligibility. | linked, attached | A, S | No | `[REQ CM-01..03]` |
 | **course offering** | A course in a term, academic year, professional year, with cohorts. | section, class | A | No | `[REQ CM-01]` |
@@ -159,33 +162,40 @@ Problems: the same three labels (Review and approve, Outcomes, Records) open the
 
 ### 3.2 Recommended set (12 rows)
 
-> **Rename note (2026-10-26):** Romit decided the staff landing page is a **Dashboard**, not a Home. Admin rows here now say Dashboard. Student "Home" is unchanged here; `strategy/06-dashboard-patterns.md` section 2 proposes "Progress" for the student and a Dashboard for the director (both PENDING-ROMIT).
+> **Rename note (2026-10-26):** Romit decided the staff landing page is a **Dashboard**, not a Home. Admin rows here now say Dashboard. The student landing is **My progress** [LEDGER D-L4] (resolves the earlier "Home" and the strategy/06 "Progress" proposal). A Dashboard for the director is still open (director verification is not in REQ).
 
 Count matches the T4 target (admin 4, reviewer 2, director 2, preceptor 0 (no sidebar; link-only entry point) [REQ EV-01], student 3: 11 sidebar rows). Row structure follows T4; labels are from this glossary. `(OD-28)` marks a label that depends on the skill noun.
 
 | Role | Row label | Opens | Page title and tabs | Replaces | Open decision |
 |---|---|---|---|---|---|
 | Admin | **Dashboard** | Admin dashboard | Dashboard. Regions: hero, KPI strip, diagnose row, Needs you (see strategy/06) | Dashboard (kept) | none |
-| Admin | **{Skills}** (plural of `{itemNoun}`) | Library | Title "{Skills}". Tabs: **Library**, **Courses**, **Add**. Sub-pages: Configure, Check and publish | Skills library, Courses | `(OD-28)` noun; the Courses-as-a-tab merge is T4's `[INFER]`, mapping is not eligibility `[REQ CM]` |
-| Admin | **Approvals** (badge) | Approval queue | Title "Approvals". Tabs: Awaiting approval (n), Stalled (n), Returned (n). Row opens "Submission" | Review and approve | PENDING-ROMIT (01-IA recommends always shown with an empty state): shown only when a skill has approval on `[REQ SC-15]`. Fallback label "Review and approve" (existing, tested, `shell.test.tsx:40`) |
-| Admin | **Attainment** | Reports | Title "Attainment". Tabs: Students, {Skills}, Evaluators. Drill-downs: a student's record, an evaluation's versions | Reports, Outcomes, Records (admin) | "Reports" is an acceptable fallback; v1 nav already says Attainment `[V1]` |
+| Admin | **{Skills}** (plural of `{itemNoun}`) | Library, with the Skills panel beside the sidebar [LEDGER D-L20, D-X33] | Title "{Skills}". Panel rows: **Library**, **Groups of {skills}**, **Categories and tags**, **Course mapping**; crumbs "{Skills} > {panel row}" | Skills library, Courses | `(OD-28)` noun; mapping is not eligibility `[REQ CM]` |
+| Admin, Skills panel | **Library** | The skills library | Title "{Skills}" (the Skills root; crumb "{Skills}") | Skills library | none |
+| Admin, Skills panel | **Groups of {skills}** | Groups of skills (lists), and its assign mode "Assign skills to student groups" | Title "Groups of {skills}"; crumb "{Skills} > Groups of {skills}" | Lists and cohorts, Lists | none (D-L6, D-X31) |
+| Admin, Skills panel | **Categories and tags** | Its own page (slug `categories-tags`), under Skills only; tabs Categories, Tags | Title "Categories and tags"; crumb "{Skills} > Categories and tags". Not in Settings; old Settings links redirect here [LEDGER D-L21, D-X34] | Settings (for this job) | none (D-L5, D-X28) |
+| Admin, Skills panel | **Course mapping** | Course mapping (Mandatory, Recommended, Optional per course offering) | Title "Course mapping"; crumb "{Skills} > Course mapping" | Map skills to courses, Mapping | Recommended is PROPOSED against REQ CM-03 |
+| Admin | **Settings** (after the main rows) | Settings on Clinical settings | Sections: Clinical settings, Evaluators (only these; Categories and tags is its own page under Skills, D-L21); no header button; crumbs "Settings > {section}", "Settings > Evaluators" | Settings row | The DS shell has no sidebar footer, so it is the trailing row group [LEDGER D-X33] |
+| Admin, Settings | **Evaluators** | Settings section: everyone who signs (preceptors, clinical faculty, lab instructors), for lookup and edits; "Add an evaluator"; an unverified row shows **Not verified**, linking to Approvals, New evaluators [LEDGER D-L24, D-X37] | Section title "Evaluators"; role filter "Lab instructor" is the former Lab instructors list | Evaluator directory (page), Lab instructors (list) | Where evaluator records live stays OD-05 |
+| Backend | **The program's noun** (`{itemNoun}`: skill, competency, EPA) | A backend setting with no admin UI (2026-10-27, Romit: "naming can be changed in the backend, so we need to remove this tab for now") [LEDGER D-L25, D-X38] | Every screen reads it (`skillNoun()`, `aNoun()`); no Naming tab in Settings | Settings > Naming | Terminology scope stays OD-28 |
+| Admin | **Approvals** (badge) | Approval queue | Title "Approvals". Tabs: Awaiting approval (n), Stalled (n), Returned (n). Row opens "Submission" | Review and approve | Always shown, with an empty state when no skill requires approval [LEDGER D-L3] `[REQ SC-15]`. Fallback label "Review and approve" (existing, tested, `shell.test.tsx:40`) |
+| Admin | **Reports** | Reports (slug `attainment`) | Title "Reports". Tabs: Students, {Skills}, Sections and tags. Drill-downs: a student's record, an evaluation's versions | Attainment (2026-10-27, D-L20), Outcomes, Records (admin) | "Attainment" stays only as a measure name (a column, "Attainment by tag") |
 | Reviewer | **Approvals** (badge) | Approval queue | as admin | Review and approve | as admin |
 | Reviewer | **Students** | Student list | Title "Students". Opens "Student record" with tabs Evaluations, Verification | Outcomes, Records | The merge is T4's `[INFER]`. Remediation tab only if kept `(REQ 14)` |
 | Director | **Verification** | Verification list (landing) | Title "Verification". Groups: Not verified, Changed since verified, Verified. Opens "Student record" | Records | Name rests on keeping the verify feature `[INFER]`; not in REQ |
-| Director | **Attainment** | Reports | as admin | Reports, Outcomes | as admin |
+| Director | **Reports** | Reports (slug `attainment`) | as admin, read-only; the director's report tables with export are titled "Export" | Attainment (D-L20), Outcomes | as admin |
 | Preceptor | **Requests** (badge) | Evaluator inbox | Title "Requests". Button "Record a lab session" opens the lab grid (a page, not a nav row) | Requests, Lab sessions | Preceptors have no login `[REQ EV-01]`; whether a nav shell shows at all is T4's question |
-| Student | **Home** | Student home | Home | Home | none |
+| Student | **My progress** | Student landing | Title "My progress" | Home | none [LEDGER D-L4] |
 | Student | **Log** | Log flow | Title "Log a {skill}". Steps: Choose, Details, Send. Includes "Your submissions (n)" and the unsent badge | Log skills, Requests | Student noun for the sent thing is OD-free but is decision 1 in 2.3 |
 | Student | **Record** | History | Title "Your record". Pace, then by-{skill} outcomes and attempts. Sub-page "Share record" | Record | "Verified record" sharing depends on keeping verification `[INFER]` |
 
 Why these words:
 
 - **Approvals** is task-first, one word, matches `[PROTO]` "Approval queue" and `[V1]` copy ("Evaluations awaiting approval"). "Review and approve" mixes two verbs and a second "Review and ..." exists (publish).
-- **Attainment** is the REQ noun for what the page shows `[REQ RP]`. "Reports" names a container, not a question.
+- **Reports** (2026-10-27, Romit, D-L20) replaced "Attainment" as the row and page name: "Attainment" read as jargon, and REQ calls the section reporting `[REQ RP]`. "Attainment" stays as the name of the measure.
 - **Verification** for the director replaces "Records", which no longer collides with the student's "Record".
 - **Students** for the reviewer says what the lookup is keyed on.
 - **Log** is the student's verb `[CALL]`; the plural noun is redundant in a nav row.
-- Admin "Dashboard" (Romit 10-26: the staff landing is a dashboard, not a Home) and student "Home" end the drift (T4 P3-3); student label proposal in strategy/06.
+- Admin "Dashboard" (Romit 10-26: the staff landing is a dashboard, not a Home) and student "My progress" [LEDGER D-L4] end the drift (T4 P3-3).
 
 ### 3.3 Landing and breadcrumbs under the new set
 
@@ -195,7 +205,7 @@ Why these words:
 | Reviewer | Approvals |
 | Director | Verification |
 | Preceptor | Requests |
-| Student | Home |
+| Student | My progress |
 
 Breadcrumb children: Approvals > **Submission**; {Skills} > **Configure** / **Check and publish**; Students > **Student record** > **Evaluation**; Verification > **Student record**; Record > **Share record**.
 
@@ -277,10 +287,10 @@ Format: `file:line` | current | proposed | reason. Lines are from the working tr
 | 56 | components/v2/outcomes/outcomes-page.tsx:30 | STATUS_WORD "Counts" | "Counted" | REQ word |
 | 57 | lib/v2/config.ts:27 | default labels ["Met", "Not met"] | ["Met", "Unmet"] | `[REQ section 4.1]` "Met/Unmet by default" |
 | 58 | lib/v2/preceptor.ts:114, 117 | fallback "Not met" | "Unmet" | as 57 |
-| 59 | lib/v2/reports.ts:97 | "Not met yet" | "Not yet met" | one order, matches `tokens.ts:17` and `[REQ AE-04]` |
-| 60 | components/v2/reports/reports-page.tsx:285 | "Not met" | "Not yet met" or "Did not meet criteria", per state shown | two states share one label today |
+| 59 | lib/v2/reports.ts:97 | "Not met yet" | "In progress" | Romit's word for the state [LEDGER D-L1] `[REQ AE-04]` |
+| 60 | components/v2/reports/reports-page.tsx:285 | "Not met" | "In progress" or "Did not meet criteria", per state shown [LEDGER D-L1] | two states share one label today |
 | 61 | lib/v2/outcomes.ts:10, preceptor.ts:122, student/history-page.tsx:48 | "Not yet, feedback only" | flag only | The evaluator's third answer is not in REQ. REQ has two binary labels; "Not yet" also names a skill-record state. `[INFER]` |
-| 62 | components/v2/outcomes/outcomes-page.tsx:27 | filter "Not yet" | "Feedback only" if 61 stays | removes clash with "Not yet met" |
+| 62 | components/v2/outcomes/outcomes-page.tsx:27 | filter "Not yet" | "Feedback only" if 61 stays | removes clash with the old "Not yet met" state label |
 | 63 | components/v2/student/student-home.tsx:107 | "Optional ({n})" | "Non-mandatory ({n})" | `[REQ CM-03]`; ux/09 bans required/optional |
 | 64 | lib/v2/types, queue.ts, student-viz.ts, queue-viz.ts, tokens.ts:10-12 | "pending" in user-visible aria text | "waiting with {name}" or "awaiting approval" | pending is not a REQ state |
 

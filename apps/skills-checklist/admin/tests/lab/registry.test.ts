@@ -84,8 +84,10 @@ describe("lab registry", () => {
   it("labels the admin and director first row Dashboard, never Home", () => {
     expect(PERSONA_BY_ID.admin.nav!()[0].title).toBe("Dashboard")
     expect(PERSONA_BY_ID.director.nav!()[0].title).toBe("Dashboard")
-    expect(PERSONA_BY_ID.admin.nav!().map((r) => r.title)).toEqual(["Dashboard", "Skills", "Approvals", "Attainment"])
+    expect(PERSONA_BY_ID.admin.nav!().map((r) => r.title)).toEqual(["Dashboard", "Skills", "Approvals", "Reports"])
     expect(PERSONA_BY_ID.reviewer.nav!().map((r) => r.title)).toEqual(["Approvals", "Students"])
+    // D-L20: "Reports" (was "Attainment") for the admin and the director; the slug stays.
+    expect(PERSONA_BY_ID.director.nav!().map((r) => [r.title, r.slug])).toEqual([["Dashboard", "dashboard"], ["Reports", "attainment"]])
   })
 
   it("registers a component and an existing file for every built variant", () => {

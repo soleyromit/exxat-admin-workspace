@@ -33,6 +33,7 @@ import { PERSONAS } from "@/lib/lab/personas"
 import { SCREENS, screenKey, screensFor, type PersonaId } from "@/lib/lab/screens"
 import { FLOWS, findFlow, flowsForPersona, mainSteps, resolveStep } from "@/lib/lab/flows"
 import { variantCounts } from "@/lib/lab/links"
+import { SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 
 afterEach(() => {
   cleanup()
@@ -83,6 +84,8 @@ function screenOfPath(path: string): string {
   return screen ? `${screen[1]}/${screen[2]}` : `unknown ${path}`
 }
 
+const PANEL_SCREENS = new Set(SKILLS_PANEL.map((i) => i.screen))
+
 /** LabFrame with children passed as the createElement argument (the lint rule forbids a children prop). */
 const Frame = LabFrame as React.ComponentType<Omit<React.ComponentProps<typeof LabFrame>, "children"> & { children?: React.ReactNode }>
 
@@ -95,7 +98,13 @@ function sidebarOf(p: Page): string[] {
   )
   const rows = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[data-sidebar=menu-button]")).map((a) => {
     const title = (a.textContent ?? "").replace(/\d+$/, "").trim() // the Approvals badge count is data, not the row
-    return `${title} -> ${screenOfPath((a.getAttribute("href") ?? "").split("?")[0]!)}`
+    let screen = screenOfPath((a.getAttribute("href") ?? "").split("?")[0]!)
+    // D-L20: on a Skills panel page the Skills row points at the page itself (the DS lights it by path and a click reopens the
+    // panel); on a Settings page the Settings row does. Either way it is that row, on its own page.
+    const own = p.frame.page.screen ?? ""
+    if (title === "Skills" && screen === own && PANEL_SCREENS.has(own)) screen = "admin/skills-library"
+    if (title === "Settings" && screen === own && own === "admin/settings") screen = "admin/settings"
+    return `${title} -> ${screen}`
   })
   unmount()
   return rows
@@ -109,6 +118,8 @@ describe("sidebar identity across variants (layout code path)", () => {
     expect(pages.length).toBeGreaterThan(0)
     // The frame renders exactly the persona's nav rows, in order, each opening its own screen.
     const expected = (PERSONAS.find((p) => p.id === persona)!.nav?.() ?? []).map((r) => `${r.title} -> ${persona}/${r.slug}`)
+    // The admin's Settings link sits after the main rows (D-L20; the DS 1.6.5 shell draws no sidebar footer).
+    if (persona === "admin") expected.push("Settings -> admin/settings")
     const first = sidebarOf(pages[0]!)
     expect(first).toEqual(expected)
     const differ: string[] = []
@@ -124,6 +135,78 @@ describe("sidebar identity across variants (layout code path)", () => {
       const s = screensFor(p.id)[0]!
       expect(sidebarOf({ label: p.id, pathname: `/lab/${s.persona}/${s.slug}`, search: "", frame: { persona: p.id, page: { screen: screenKey(s), variant: s.recommended } } })).toEqual([])
     }
+  })
+})
+
+/**
+ * D-L21 (Romit 2026-10-27, "why are categories and tags at Settings? When I click on them, it switches to the Skills
+ * navigation"): Categories and tags is its own page under Skills only; Settings keeps its own sections.
+ */
+describe("admin IA: Categories and tags under Skills, Settings on its own sections", () => {
+  /** The raw href of each row (title -> href without query) on a page. */
+  function rawRows(pathname: string, search: string, page: Record<string, string>): Record<string, string> {
+    nav.pathname = pathname
+    nav.search = search
+    const { container, unmount } = render(React.createElement(LabProviders, null, React.createElement(Frame, { persona: "admin", page }, React.createElement("div", null, "page"))))
+    const out: Record<string, string> = {}
+    for (const a of Array.from(container.querySelectorAll<HTMLAnchorElement>("a[data-sidebar=menu-button]"))) out[(a.textContent ?? "").replace(/\d+$/, "").trim()] = (a.getAttribute("href") ?? "").split("?")[0]!
+    unmount()
+    return out
+  }
+
+  it("the panel item points at the new page, not Settings", () => {
+    const item = SKILLS_PANEL.find((i) => i.key === "categories")!
+    expect(item.screen).toBe("admin/categories-tags")
+    expect(item.label()).toBe("Categories and tags")
+    expect(skillsPanelHref(item, {})).toMatch(/^\/lab\/flow\/keep-library-right\/categories\?set=1/)
+  })
+
+  it.each(["A", "B"])("on Categories and tags (%s) the Skills row and panel item are lit; Settings is not", (variant) => {
+    const params = new URLSearchParams(`variant=${variant}&tab=tags`)
+    expect(skillsPanelItemFor("admin/categories-tags", params)?.key).toBe("categories")
+    expect(isSettingsArea("admin/categories-tags", params)).toBe(false)
+    const rows = rawRows("/lab/admin/categories-tags", params.toString(), { screen: "admin/categories-tags", variant })
+    expect(rows.Skills).toBe("/lab/admin/categories-tags") // the page itself: the DS lights it by path
+    expect(rows.Settings).not.toBe("/lab/admin/categories-tags")
+  })
+
+  it.each(["settings", "evaluators"])("on Settings > %s the Settings row is lit and no panel item is", (tab) => {
+    const params = new URLSearchParams(`tab=${tab}`)
+    expect(skillsPanelItemFor("admin/settings", params)).toBeUndefined()
+    expect(isSettingsArea("admin/settings", params)).toBe(true)
+    const rows = rawRows("/lab/admin/settings", params.toString(), { screen: "admin/settings", variant: "A" })
+    expect(rows.Settings).toBe("/lab/admin/settings")
+    expect(rows.Skills).not.toBe("/lab/admin/settings")
+  })
+
+  it("crumb leaves: Settings > {section}, never Categories or Tags", () => {
+    expect(settingsLeaf("admin/settings", new URLSearchParams(""))).toBe("Clinical settings")
+    expect(settingsLeaf("admin/settings", new URLSearchParams("tab=evaluators"))).toBe("Evaluators")
+    expect(settingsLeaf("admin/settings", new URLSearchParams("tab=instructors"))).toBe("Evaluators")
+    expect(settingsLeaf("admin/settings", new URLSearchParams("list=naming"))).toBe("Clinical settings") // Naming has no UI (D-L25)
+    expect(settingsLeaf("admin/settings", new URLSearchParams("tab=categories"))).toBe("Clinical settings")
+    expect(settingsSectionOf(new URLSearchParams("tab=tags"))).toBe("settings")
+  })
+
+  it("old Settings links on Categories or Tags redirect to the new page, keeping the other params", () => {
+    expect(legacySettingsHref(new URLSearchParams("tab=categories&variant=B&term=Fall%202026"))).toBe("/lab/admin/categories-tags?variant=B&term=Fall+2026")
+    expect(legacySettingsHref(new URLSearchParams("tab=tags"))).toBe("/lab/admin/categories-tags?tab=tags")
+    expect(legacySettingsHref(new URLSearchParams("variant=B&list=tags&entry=tags%3Ax"))).toBe("/lab/admin/categories-tags?variant=B&entry=tags%3Ax&list=tags")
+    expect(legacySettingsHref(new URLSearchParams("tab=settings"))).toBeNull()
+    expect(legacySettingsHref(new URLSearchParams("tab=evaluators"))).toBeNull()
+    expect(legacySettingsHref(new URLSearchParams(""))).toBeNull()
+  })
+
+  it("D-L24: Lab instructors and the evaluator directory are the Settings section Evaluators", () => {
+    expect(legacySettingsHref(new URLSearchParams("tab=instructors&variant=B"))).toBe("/lab/admin/settings?tab=evaluators&variant=B&role=lab-instructor")
+    expect(legacyDirectoryHref(new URLSearchParams("filter=unverified&variant=B"))).toBe("/lab/admin/settings?filter=unverified&variant=B&tab=evaluators")
+    expect(legacyDirectoryHref(new URLSearchParams(""))).toBe("/lab/admin/settings?tab=evaluators")
+    expect(SCREENS.some((s) => s.slug === "evaluator-directory")).toBe(false)
+    expect(FLOWS.some((f) => f.steps.some((st) => st.screen === "admin/evaluator-directory"))).toBe(false)
+  })
+
+  it("the configuration walkthrough's Categories and tags step opens the new page", () => {
+    expect(findFlow("setup-walkthrough")!.steps.find((s) => s.id === "categories")!.screen).toBe("admin/categories-tags")
   })
 })
 

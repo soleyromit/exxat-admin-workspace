@@ -105,13 +105,12 @@ describe("StickyFooter", () => {
     expect(link).toHaveAttribute("data-variant", "default")
   })
 
-  it("moves Back next to the primary when a summary takes the left slot", () => {
+  it("keeps Back at the left edge when a summary is shown (Romit 2026-10-27: Back must never move between steps)", () => {
     const { container } = render(
-      <StickyFooter summary="Get 3 evaluations rated Met." back={{ onClick: () => {} }} primary={{ label: "Publish", onClick: () => {} }} />,
+      <StickyFooter summary="Get 3 evaluations rated Met." back={{ onClick: () => {} }} primary={{ label: "Save", onClick: () => {} }} />,
     )
     const back = screen.getByRole("button", { name: "Back" })
-    const publish = screen.getByRole("button", { name: "Publish" })
-    expect(back.closest("div")?.parentElement).toBe(publish.parentElement)
+    expect(footer(container).firstElementChild).toBe(back.parentElement)
     expect(footer(container).textContent).toContain("Get 3 evaluations rated Met.")
   })
 })
@@ -238,7 +237,7 @@ describe("full-width template and preview panel (decision D-X30, superseding the
     )
     const regions = container.querySelectorAll("[data-region=panel]")
     expect(regions).toHaveLength(1)
-    expect(regions[0]!.className).toMatch(/min-\[1280px\]:grid-cols-\[minmax\(0,1fr\)_minmax\(22rem,36%\)\]/)
+    expect(regions[0]!.className).toMatch(/min-\[1280px\]:grid-cols-\[minmax\(0,1fr\)_minmax\(20rem,34%\)\]/)
     const col = regions[0]!.querySelector("[data-preview-column]") as HTMLElement
     expect(col).not.toBeNull()
     expect(col.className).toMatch(/\bhidden\b/)
@@ -267,5 +266,44 @@ describe("layout source rules", () => {
       expect(tag, tag).toMatch(/\bvariant=/)
       expect(tag, tag).toMatch(/\bsize=/)
     }
+  })
+})
+
+describe("WizardPage hierarchy (Romit 2026-10-27: 'is it from DS?', 'steps cleaner and easier to navigate')", () => {
+  const RAIL: WizardStep[] = [
+    { id: "model", label: "How it's judged", description: "Approved or not approved" },
+    { id: "outcomes", label: "Evaluation criteria", description: "To fix" },
+    { id: "rule", label: "How many times" },
+    { id: "check", label: "Check and save" },
+  ]
+  const rail = (current = 3) =>
+    render(
+      <WizardPage title="Oral medication administration" layout="rail" stepTitle="Ready to save?" stepLead="Your choices and who they affect." steps={RAIL} current={current} onStepClick={() => {}} footer={<StickyFooter primary={{ label: "Save configuration" }} />}>
+        {RAIL.map((s, i) => <WizardPanel key={s.id} step={i}>{`${s.label} body`}</WizardPanel>)}
+      </WizardPage>,
+    )
+
+  it("uses the DS vertical numbered Wizard as a rail, with each step's value or 'To fix' as its DS description", () => {
+    const { container } = rail()
+    expect(container.querySelector('[data-wizard-layout="rail"]')).not.toBeNull()
+    const nav = screen.getByRole("navigation", { name: /4 total/ })
+    expect(nav.querySelector("ol.flex-col")).not.toBeNull()
+    expect(nav.textContent).toContain("Approved or not approved")
+    expect(nav.textContent).toContain("To fix")
+  })
+
+  it("shows ONE visible step heading (h2, the question) with one short line, and keeps the panel labelled by it", () => {
+    rail()
+    const h2 = screen.getByRole("heading", { level: 2, name: "Ready to save?" })
+    expect(h2.className).not.toContain("sr-only")
+    expect(screen.getAllByRole("heading", { level: 2 })).toHaveLength(1)
+    expect(screen.getByText("Your choices and who they affect.")).toBeInTheDocument()
+    expect(screen.getByRole("group", { name: "Ready to save?" })).toHaveTextContent("Check and save body")
+  })
+
+  it("overrides no DS Wizard markup: the old wizard-fix.css is gone and the template imports no stylesheet", () => {
+    const dir = path.join(__dirname, "../../components/lab/layout")
+    expect(fs.existsSync(path.join(dir, "wizard-fix.css"))).toBe(false)
+    expect(fs.readFileSync(path.join(dir, "wizard-page.tsx"), "utf8")).not.toMatch(/import\s+["'][^"']+\.css["']/)
   })
 })

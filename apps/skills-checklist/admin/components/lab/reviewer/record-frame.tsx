@@ -4,7 +4,9 @@
  * Chrome for the reviewer's Student record: breadcrumb Students > Student record, the student's name and cohort, the shared scope
  * carried in every link (the record is the whole student, so the scope only travels on), and the shared tables. `?student=` names
  * the student; without it the student of the oldest waiting submission opens. Counted evaluations offer "Request a correction",
- * never an edit [REQ RV-03, RV-05; strategy/03 D1].
+ * never an edit [REQ RV-03, RV-05; strategy/03 D1]. Every evaluation opens in full, read only [REQ RP-07]: `?evaluation=` names
+ * one (so the attainment peek and a pasted link land on it); `?skill=` without a skill panel opens every evaluation of that skill
+ * (the director's Evidence count). The sheet is components/lab/reviewer/evaluation-sheet.tsx.
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
@@ -25,16 +27,36 @@ import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { LINK as LINK_U } from "@/components/lab/link-styles"
 import { longDate } from "@/lib/v2/format"
+import { evaluationView, evaluationViewsFor, type EvaluationView } from "@/lib/lab/evaluation-view"
+import { EvaluationSheet } from "@/components/lab/reviewer/evaluation-sheet"
 
 export interface RecordContext extends ReviewerContext {
   record: StudentRecordModel
 }
 
+/** Opens one evaluation in full (RP-07). The record's tables call it; the frame owns the sheet and the URL. */
+const EvaluationOpenContext = React.createContext<((id: string) => void) | null>(null)
+export const useOpenEvaluation = () => React.useContext(EvaluationOpenContext)
+
 /** Records carry the year (consistency audit item 8: longDate in records). */
 const dateLabel = longDate
 
-export function RecordFrame({ variant, children }: { variant: string; children: (ctx: RecordContext) => React.ReactNode }) {
+export function RecordFrame({ variant, children, evaluationInPanel }: { variant: string; children: (ctx: RecordContext) => React.ReactNode; /** True when the variant shows the open evaluation inside its own panel (B's skill panel). */ evaluationInPanel?: (param: (k: string) => string | null) => boolean }) {
   const ctx = useReviewer()
+  const evalId = ctx.param("evaluation")
+  const skillParam = ctx.param("skill")
+  const inPanel = evaluationInPanel ? evaluationInPanel(ctx.param) : false
+  const views = React.useMemo<EvaluationView[] | null>(() => {
+    if (!ctx.state || inPanel) return null
+    if (evalId) {
+      const v = evaluationView(ctx.state, evalId)
+      return v ? [v] : null
+    }
+    const sid = ctx.param("student")
+    return skillParam && sid ? evaluationViewsFor(ctx.state, sid, skillParam) : null
+  }, [ctx, evalId, skillParam, inPanel])
+  const openEvaluation = React.useCallback((id: string) => ctx.setParams({ evaluation: id }), [ctx])
+  const closeEvaluation = React.useCallback(() => ctx.setParams({ evaluation: null, ...(evaluationInPanel ? {} : { skill: null }) }), [ctx, evaluationInPanel])
   const corrections = React.useMemo(() => new Set(ctx.decisions.flatMap((d) => (d.kind === "correction" ? [d.evaluationId] : []))), [ctx.decisions])
   const studentId = ctx.param("student") ?? ctx.scoped?.rows[0]?.studentId ?? null
   const record = React.useMemo(() => (ctx.state && studentId ? studentRecord(ctx.state, ctx.rows, studentId, corrections) : null), [ctx.state, ctx.rows, studentId, corrections])
@@ -73,8 +95,9 @@ export function RecordFrame({ variant, children }: { variant: string; children: 
         <div className="flex flex-col gap-4" data-page-type="detail" data-reviewer-lab={`student-record-${variant}`}>
           <p className="text-sm text-muted-foreground">{record.group ? `${record.cohort}, ${record.group}` : record.cohort}</p>
           <DecisionBanner />
-          {children({ ...ctx, record })}
+          <EvaluationOpenContext.Provider value={openEvaluation}>{children({ ...ctx, record })}</EvaluationOpenContext.Provider>
         </div>
+        <EvaluationSheet views={views} onClose={closeEvaluation} />
       </PageFrame>
     </DecisionProvider>
   )
@@ -82,6 +105,7 @@ export function RecordFrame({ variant, children }: { variant: string; children: 
 
 export function EvaluationsTable({ rows, scope, compact = false }: { rows: RecordEvaluation[]; scope: LabScope; compact?: boolean }) {
   const ui = useDecisionUi()
+  const openEvaluation = useOpenEvaluation()
   const columns: ColumnDef<RecordEvaluation>[] = [
     ...(compact ? [] : ([{ key: "skill", label: capitalize(skillNoun()), width: 260, sortable: true, cell: (r) => <span className="truncate text-sm font-medium">{r.skill}</span> }] as ColumnDef<RecordEvaluation>[])),
     { key: "date", label: "Date", width: compact ? 110 : 120, sortable: true, cell: (r) => <span className="text-sm tabular-nums">{dateLabel(r.date)}</span> },
@@ -91,13 +115,21 @@ export function EvaluationsTable({ rows, scope, compact = false }: { rows: Recor
     {
       key: "act",
       label: "Action",
-      width: 88,
+      width: 132,
       resizable: false,
       header: () => <span className="sr-only">Action</span>,
       cell: (r) =>
         r.queueKey ? (
           <Link className={`${LINK_U} text-sm`} href={reviewItemHref(scope, r.queueKey)}>Review</Link>
-        ) : r.status === "Counted" || r.status === "Unmet" ? (
+        ) : (
+          <span className="flex items-center gap-1">
+            {/* RP-07: every recorded evaluation opens in full, read only. */}
+            {openEvaluation ? (
+              <Button type="button" variant="link" size="sm" className="h-auto p-0" aria-label={`View ${r.skill}, ${dateLabel(r.date)}`} onClick={() => openEvaluation(r.id)} {...railTriggerProps()}>
+                View
+              </Button>
+            ) : null}
+            {r.status === "Counted" || r.status === "Unmet" ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" size="icon-sm" aria-label={`More for ${r.skill}, ${dateLabel(r.date)}`}>
@@ -108,7 +140,9 @@ export function EvaluationsTable({ rows, scope, compact = false }: { rows: Recor
               <DropdownMenuItem onSelect={() => ui.openCorrection({ id: r.id, skill: r.skill })}>Request a correction</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : null,
+            ) : null}
+          </span>
+        ),
     },
   ]
   return (

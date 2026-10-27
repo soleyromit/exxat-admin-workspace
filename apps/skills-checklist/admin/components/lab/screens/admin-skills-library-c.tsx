@@ -2,7 +2,7 @@
 
 /**
  * Admin Skills library, option set 3 "Many at once": a setup board by configuration status (Not configured, Configured,
- * Published, Inactive) on DS Card columns, with a Board or List switch (List is the set 1 table with its status tabs).
+ * Inactive) on DS Card columns, with a Board or List switch (List is the set 1 table with its status tabs).
  * Question: does seeing the setup pipeline as columns beat a flat list for working through a part-configured library?
  * Same frame as sets 1 and 2 (title zone, one banner). On the board the column headers carry the counts, so there are no
  * tabs and no KPI strip; the toolbar is one row (Board or List, search, category). "Configure {n} together" sits on the
@@ -52,7 +52,7 @@ function SkillCard({ r, onOpen, selected }: { r: LibraryRow; onOpen: (id: string
         {r.isNew ? <Badge variant="outline">New</Badge> : null}
       </span>
       <span className="truncate text-xs text-muted-foreground">
-        {[r.section, r.status === "published" && r.courses ? plural(r.courses, "course", "courses") : "", r.evidence ? plural(r.evidence, "evaluation", "evaluations") : ""].filter(Boolean).join(", ")}
+        {[r.section, r.draft ? "Draft saved" : "", r.status === "configured" && r.courses ? plural(r.courses, "course", "courses") : "", r.evidence ? plural(r.evidence, "evaluation", "evaluations") : ""].filter(Boolean).join(", ")}
       </span>
     </li>
   )
@@ -168,7 +168,7 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
               <LibraryFilterMenu rows={api.rows} value={filter} onChange={setFilter} />
             </div>
             {/* One board answers one question (where each skill is in setup), so it is one region, like a table. */}
-            <div data-region="board" role="group" aria-label={`${capitalize(skillNounPlural())} by configuration status`} className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div data-region="board" role="group" aria-label={`${capitalize(skillNounPlural())} by configuration status`} className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {STATUS_ORDER.map((s) => <Column key={s} status={s} rows={columns[s]} filtered={!!(filter.cat || filter.tag || query)} openId={openRow?.id ?? null} onOpen={open} />)}
             </div>
           </>

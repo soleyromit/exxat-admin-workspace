@@ -26,10 +26,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesig
 import { Field, FieldDescription, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { InlineInputEdit } from "@exxatdesignux/ui/components/ui/inline-edit"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
-import { Label } from "@exxatdesignux/ui/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
-import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
+import { TYPE } from "@/components/lab/type-scale"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { cn } from "@exxatdesignux/ui/lib/utils"
@@ -40,20 +38,27 @@ import {
   IMPORT_GROUPING,
   NEW_LIBRARY,
   NO_CATEGORY,
+  applySuggestions,
   categoriesOf,
   confirmSentence,
   decisionKey,
   fixContext,
   fixOptions,
   fixValue,
+  groupAccepted,
+  groupSuggestion,
+  openLines,
   notCreated,
   readableText,
   toFix,
+  type Decisions,
   type ExceptionKind,
   type FixGroup,
   type ParsedRow,
 } from "@/lib/lab/import"
 import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { FROM_PARAM, returnHref } from "@/lib/lab/return-to"
+import { useSearchParams } from "next/navigation"
 import type { ImportSession } from "./use-import-session"
 
 export const ACCEPT = ".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt"
@@ -69,13 +74,21 @@ const plural = (count: number, one: string, many: string) => `${count.toLocaleSt
 // Upload
 
 /**
- * The hero of step 1: drop or choose, nothing to set first. A label-free group with a hidden file input; the visible
- * "Choose a file" button opens it. Drag over tints the zone with the brand tint (the only tint on the page).
+ * The drop target: drop or choose. A label-free group with a hidden file input; the visible "Choose a file" button opens it.
+ * Drag over tints the zone with the brand tint (the only tint on the page).
+ * - `compact` (Import A, Romit 2026-10-27: "a huge mostly-empty box for one button"): one row, left aligned on the page's axis,
+ *   icon, "Drop a file or" and the button, one muted line under it; about 96 px tall and still a drop target.
+ * - default (B): the centred block, sized to its content.
  */
-export function Dropzone({ onFiles, multiple = false, title, hint, className }: { onFiles: (files: File[]) => void; multiple?: boolean; title?: string; hint?: string; className?: string }) {
+export function Dropzone({ onFiles, multiple = false, title, hint, compact = false, className }: { onFiles: (files: File[]) => void; multiple?: boolean; title?: string; hint?: string; compact?: boolean; className?: string }) {
   const input = React.useRef<HTMLInputElement>(null)
   const [over, setOver] = React.useState(false)
   const id = React.useId()
+  const choose = (
+    <Button type="button" variant="outline" size={compact ? "sm" : "default"} className={compact ? undefined : "mt-2"} onClick={() => input.current?.click()}>
+      {multiple ? "Choose files" : "Choose a file"}
+    </Button>
+  )
   return (
     <div
       role="group"
@@ -92,14 +105,27 @@ export function Dropzone({ onFiles, multiple = false, title, hint, className }: 
         if (files.length) onFiles(multiple ? files : files.slice(0, 1))
       }}
       className={cn(
-        "flex min-h-[17.5rem] flex-col items-center justify-center gap-2 rounded-[var(--radius)] border border-dashed px-6 py-10 text-center",
+        "rounded-[var(--radius)] border border-dashed",
+        compact ? "flex items-center gap-3 px-4 py-5" : "flex flex-col items-center justify-center gap-2 px-6 py-8 text-center",
         over ? "border-[var(--brand-color)] bg-[var(--brand-tint)]" : "border-[var(--border-control-3)] bg-[var(--background)]",
         className,
       )}
     >
-      <i className="fa-light fa-file-arrow-up text-2xl text-muted-foreground" aria-hidden="true" />
-      <p id={`${id}-title`} className="text-base font-medium text-foreground">{title ?? `Drop your ${skillNounPlural()} list here`}</p>
-      <p id={`${id}-hint`} className="text-sm text-muted-foreground">{hint ?? "PDF, Word or Excel. Any layout, no template."}</p>
+      <i className={cn("fa-light fa-file-arrow-up text-muted-foreground", compact ? "text-xl" : "text-2xl")} aria-hidden="true" />
+      {compact ? (
+        <div className="flex min-w-0 flex-col gap-1">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span id={`${id}-title`} className={TYPE.body}>{title ?? (multiple ? "Drop files or" : "Drop a file or")}</span>
+            {choose}
+          </p>
+          <p id={`${id}-hint`} className={TYPE.meta}>{hint ?? "PDF, Word or Excel"}</p>
+        </div>
+      ) : (
+        <>
+          <p id={`${id}-title`} className={TYPE.section}>{title ?? `Drop your ${skillNounPlural()} list here`}</p>
+          <p id={`${id}-hint`} className={TYPE.helper}>{hint ?? "PDF, Word or Excel, any layout."}</p>
+        </>
+      )}
       <input
         ref={input}
         type="file"
@@ -114,47 +140,74 @@ export function Dropzone({ onFiles, multiple = false, title, hint, className }: 
           e.target.value = ""
         }}
       />
-      <Button type="button" variant="outline" size="default" className="mt-2" onClick={() => input.current?.click()}>
-        {multiple ? "Choose files" : "Choose a file"}
-      </Button>
+      {compact ? null : choose}
     </div>
   )
 }
 
-/** "Adds to Medical-surgical nursing. Change": the destination list as one quiet line, changed in a popover (J1). */
-export function TargetLine({ session, className }: { session: ImportSession; className?: string }) {
-  const [open, setOpen] = React.useState(false)
+/**
+ * A numbered section inside a step, in the configure section style (components/lab/configure/section.tsx): muted number, the
+ * section title in TYPE.section, the content indented under the title. An h3, since the step heading above it is the h2.
+ */
+export function ImportSection({ n, title, id, first = false, className, children }: { n: number; title: string; id: string; first?: boolean; className?: string; children: React.ReactNode }) {
+  return (
+    <section aria-labelledby={id} className={cn("flex flex-col gap-3", !first && "border-t border-border pt-6", className)} data-import-section>
+      <h3 id={id} className={cn("flex items-baseline gap-2 leading-5", TYPE.section)}>
+        <span className="tabular-nums text-muted-foreground" aria-hidden="true">{n}</span>
+        <span>{title}</span>
+      </h3>
+      <div className="ps-5">{children}</div>
+    </section>
+  )
+}
+
+/** Sankalp's word for a list in UI copy: "group of skills" (Thursday flow A4), following the program's noun. */
+export const groupNoun = () => `group of ${skillNounPlural()}`
+
+/**
+ * The destination, asked first and in plain view (Romit 2026-10-27: "where it's going to be added is in the wrong position
+ * and can't be seen"): a Select of the groups of skills with their size, and "A new group of skills", which opens its name
+ * field inline. Repeats are checked against the chosen group (J1). `labelledBy` names it by a section title instead of its
+ * own "Add to" label.
+ */
+export function TargetField({ session, labelledBy, className }: { session: ImportSession; labelledBy?: string; className?: string }) {
   const id = React.useId()
   return (
-    <p className={cn("flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground", className)} data-target-line>
-      <span>
-        {"Adds to "}
-        <span className="text-foreground">{session.isNewList ? session.newLibraryName.trim() || "a new list" : session.targetLabel}</span>.
-      </span>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button type="button" variant="link" size="sm" className="h-auto px-1 py-0" aria-label="Change the list this import adds to">Change</Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-80">
-          <fieldset className="flex flex-col gap-3">
-            <legend className="mb-2 text-sm font-medium text-foreground">Add to</legend>
-            <RadioGroup value={session.target} onValueChange={(v) => session.setTarget(v)} aria-label="List to add to">
-              {session.targets.map((t) => (
-                <div key={t.id} className="flex items-center gap-2">
-                  <RadioGroupItem id={`${id}-${t.id}`} value={t.id} />
-                  <Label htmlFor={`${id}-${t.id}`} className="font-normal">{t.label}<span className="ms-1 tabular-nums text-muted-foreground">{t.count}</span></Label>
-                </div>
-              ))}
-              <div className="flex items-center gap-2">
-                <RadioGroupItem id={`${id}-new`} value={NEW_LIBRARY} />
-                <Label htmlFor={`${id}-new`} className="font-normal">A new list</Label>
-              </div>
-            </RadioGroup>
-            <p className="text-xs text-muted-foreground">Repeats are checked against this list.</p>
-          </fieldset>
-        </PopoverContent>
-      </Popover>
-    </p>
+    <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-end", className)} data-target-field>
+      <Field className="w-full sm:max-w-md">
+        {labelledBy ? null : <FieldLabel htmlFor={`${id}-target`}>Add to</FieldLabel>}
+        <Select value={session.target} onValueChange={(v) => session.setTarget(v)}>
+          <SelectTrigger id={`${id}-target`} className="w-full" aria-labelledby={labelledBy ? `${labelledBy} ${id}-target` : undefined}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper" align="start">
+            {session.targets.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                {t.label}
+                <span className="ms-2 tabular-nums text-muted-foreground">{countSkills(t.count)}</span>
+              </SelectItem>
+            ))}
+            <SelectItem value={NEW_LIBRARY}>{`A new ${groupNoun()}`}</SelectItem>
+          </SelectContent>
+        </Select>
+      </Field>
+      {session.isNewList ? (
+        <Field className="w-full sm:max-w-sm">
+          <FieldLabel htmlFor={`${id}-new-name`}>{`Name of the new ${groupNoun()}`}</FieldLabel>
+          <Input id={`${id}-new-name`} value={session.newLibraryName} onChange={(e) => session.setNewLibraryName(e.target.value)} placeholder="For example, Associate degree nursing" />
+        </Field>
+      ) : null}
+    </div>
+  )
+}
+
+/** "Adds to Medical-surgical nursing.": a read-only echo of the destination for a footer, where the field is not on screen. */
+export function TargetSummary({ session, className }: { session: ImportSession; className?: string }) {
+  return (
+    <span className={cn("text-sm text-muted-foreground", className)} data-target-summary>
+      {"Adds to "}
+      <span className="text-foreground">{session.targetLabel}</span>.
+    </span>
   )
 }
 
@@ -218,7 +271,7 @@ export function ReviewSummary({ session }: { session: ImportSession }) {
   const where = cats > 0 ? ` in ${plural(cats, IMPORT_GROUPING.category.toLowerCase(), IMPORT_GROUPING.categories)}` : ""
   return (
     <div className="flex flex-col gap-1" data-review-summary>
-      <p className="text-base font-medium text-foreground">
+      <p className="text-sm font-medium text-foreground">
         {`${plural(s.read, skillNoun(), skillNounPlural())} read${where}. `}
         {session.left > 0 ? `${plural(session.left, "needs", "need")} a decision.` : "Nothing needs a decision."}
       </p>
@@ -273,6 +326,8 @@ export function CategoryList({ session }: { session: ImportSession }) {
                   ) : (
                     <span className="flex min-w-0 flex-col gap-1.5">
                       <InlineInputEdit label={`Name for line ${r.row.line}`} value={r.name} onCommit={(v) => session.rename(r.row.id, v.trim())} emptyLabel="Add a name" />
+                      {/* Description (optional, REQ SL-02): same quiet inline edit as the name, so the row stays one line until used. */}
+                      <InlineInputEdit label={`Description for line ${r.row.line}`} value={session.descriptionOf(r.row.id)} onCommit={(v) => session.setDescriptionFor(r.row.id, v.trim())} emptyLabel="Add a description" />
                       {/* Category (one) and tags (any number) per skill, two different controls (REQ SL-03, SL-04; D-X28). The file's
                           heading is the proposed category and its group heading the proposed tag; both can be changed here. */}
                       <span className="grid grid-cols-1 items-start gap-2 sm:grid-cols-[12rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,32rem)]">
@@ -323,6 +378,12 @@ export function CategoryList({ session }: { session: ImportSession }) {
 
 export const fixSelectId = (rowId: string, kind: ExceptionKind) => `fix-${rowId}-${kind}`
 
+/**
+ * One grid for the whole fix list, so the group headers and the lines share columns: line number, text, choice, accept. The
+ * choice column and the accept column line up down the page (Romit 2026-10-27: "consistent alignment of the Accept column").
+ */
+const FIX_GRID = "grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4 sm:grid-cols-[2.5rem_minmax(0,1fr)_15rem_8.5rem]"
+
 function FixRow({ session, row, active, onFocusRow }: { session: ImportSession; row: ParsedRow; active?: boolean; onFocusRow?: (id: string) => void }) {
   const review = session.review!
   const kinds = (review.exceptions[row.id] ?? []).slice().sort((a, b) => EXCEPTION_ORDER_INDEX[a] - EXCEPTION_ORDER_INDEX[b])
@@ -333,64 +394,89 @@ function FixRow({ session, row, active, onFocusRow }: { session: ImportSession; 
       onFocusCapture={onFocusRow ? () => onFocusRow(row.id) : undefined}
       onClick={onFocusRow ? () => onFocusRow(row.id) : undefined}
       data-active={active ? "true" : undefined}
-      className={cn("grid grid-cols-[2.5rem_minmax(0,1fr)] items-center gap-x-4 gap-y-2 py-2.5 sm:min-h-12 sm:grid-cols-[2.5rem_minmax(0,1fr)_18.5rem]", active && "bg-muted")}
+      className={cn(FIX_GRID, "items-center gap-y-2 px-3 py-2 sm:min-h-12", active && "bg-muted")}
     >
-      <span className="font-mono text-xs tabular-nums text-muted-foreground">{row.line}</span>
+      <span className={cn("font-mono tabular-nums", TYPE.meta)}>{row.line}</span>
       <span className="flex min-w-0 flex-col gap-0.5">
         <LineText row={row} className="truncate" />
-        {contexts.length ? <span className="truncate text-xs text-muted-foreground">{contexts.join(". ")}</span> : null}
+        {contexts.length ? <span className={cn("truncate", TYPE.meta)}>{contexts.join(". ")}</span> : null}
       </span>
       <span className="col-span-2 flex flex-col gap-2 sm:col-span-1">
         {kinds.map((k) => {
           const options = fixOptions(review, row, k, session.library)
           const current = session.decisions[decisionKey(row.id, k)]
+          const [suggested, ...others] = options
           return (
             <Select key={k} value={current ? fixValue(current) : ""} onValueChange={(v) => session.decide(row.id, k, v ? toFix(review, row, v) : null)}>
               <SelectTrigger id={fixSelectId(row.id, k)} size="sm" className="w-full" aria-label={`${EXCEPTION_LABEL[k]}: what happens to line ${row.line}`}>
-                <SelectValue placeholder={`Suggested: ${options[0].label}`} />
+                <SelectValue placeholder="Choose" />
               </SelectTrigger>
-              <SelectContent>
-                {options.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              {/* The suggestion is marked inside the menu, not repeated in every closed control. */}
+              <SelectContent position="popper" align="start">
+                <SelectGroup>
+                  <SelectLabel>Suggested</SelectLabel>
+                  <SelectItem value={suggested.value}>{suggested.label}</SelectItem>
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel>Other choices</SelectLabel>
+                  {others.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectGroup>
               </SelectContent>
             </Select>
           )
         })}
       </span>
+      <span aria-hidden="true" className="hidden sm:block" />
     </li>
   )
 }
 
 const EXCEPTION_ORDER_INDEX: Record<ExceptionKind, number> = { unread: 0, "duplicate-library": 1, "duplicate-file": 2, continuation: 3, section: 4, mark: 5 }
 
+/**
+ * One group: a bordered header strip (name, count, the group's shared suggestion, one outline Accept) over its lines. The header
+ * is the group's toggle; the Accept button sits in the fixed accept column.
+ */
 function FixGroupBlock({ session, group, open, onOpenChange, activeId, onFocusRow }: { session: ImportSession; group: FixGroup; open: boolean; onOpenChange: (o: boolean) => void; activeId?: string | null; onFocusRow?: (id: string) => void }) {
   const [all, setAll] = React.useState(false)
   const headingId = React.useId()
+  const review = session.review!
+  const suggestion = React.useMemo(() => groupSuggestion(review, group, session.library), [review, group, session.library])
   const done = group.open === 0
+  const accepted = done && groupAccepted(review, group, session.decisions, session.library)
   const rows = all ? group.rows : group.rows.slice(0, GROUP_PAGE)
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange} data-fix-group={group.kind} className="flex flex-col">
-      <div className="flex min-h-10 flex-wrap items-center gap-x-3 gap-y-1 border-b border-border py-1">
+    <Collapsible open={open} onOpenChange={onOpenChange} data-fix-group={group.kind} data-fix-open={open ? "true" : undefined} className="flex flex-col">
+      <div className={cn(FIX_GRID, "min-h-12 items-center gap-y-1 bg-muted px-3 py-1.5")} data-fix-group-head>
         <CollapsibleTrigger asChild>
-          <Button type="button" variant="ghost" size="sm" className="-ms-2 gap-2 px-2" id={headingId}>
+          <Button type="button" variant="ghost" size="sm" className="col-span-2 -ms-2 w-fit justify-start gap-2 px-2" id={headingId} aria-label={`${EXCEPTION_LABEL[group.kind]}, ${plural(group.rows.length, "line", "lines")}`}>
             <i className={cn("fa-light fa-chevron-right text-xs transition-transform", open && "rotate-90")} aria-hidden="true" />
-            <span className="font-medium text-foreground">{EXCEPTION_LABEL[group.kind]}</span>
-            <span className="tabular-nums text-muted-foreground">{group.rows.length}</span>
+            <span className={TYPE.label}>{EXCEPTION_LABEL[group.kind]}</span>
+            <span className="tabular-nums text-muted-foreground">{group.rows.length.toLocaleString("en-US")}</span>
           </Button>
         </CollapsibleTrigger>
-        {done ? (
-          <StatusBadge size="sm" tone="neutral" icon="fa-check" label="Decided" />
-        ) : (
-          <Button type="button" variant="ghost" size="sm" className="ms-auto" onClick={() => session.bulkSuggest({ rowIds: new Set(group.rows.map((r) => r.id)) })}>
-            {group.open === 1 ? "Accept 1 suggestion" : `Accept ${group.open} suggestions`}
-          </Button>
-        )}
+        <span className={cn("col-span-2 truncate sm:col-span-1", TYPE.helper)}>
+          {suggestion ? `Suggested: ${suggestion}` : "Suggestions differ by line"}
+        </span>
+        <span className="col-span-2 flex sm:col-span-1 sm:justify-end">
+          {done ? (
+            <StatusBadge size="sm" tone="neutral" icon="fa-check" label={accepted ? "Accepted" : "Decided"} />
+          ) : (
+            <Button type="button" variant="outline" size="sm" onClick={() => session.bulkSuggest({ rowIds: new Set(group.rows.map((r) => r.id)) })} aria-label={`Accept the suggestion for ${plural(group.open, "line", "lines")}: ${EXCEPTION_LABEL[group.kind]}`}>
+              {`Accept ${group.open.toLocaleString("en-US")}`}
+            </Button>
+          )}
+        </span>
       </div>
       <CollapsibleContent>
-        <ul aria-labelledby={headingId} className="flex flex-col divide-y divide-border">
+        <ul aria-labelledby={headingId} className="flex flex-col divide-y divide-border border-t border-border">
           {rows.map((r) => <FixRow key={r.id} session={session} row={r} active={activeId === r.id} onFocusRow={onFocusRow} />)}
         </ul>
         {group.rows.length > GROUP_PAGE && !all ? (
-          <Button type="button" variant="link" size="sm" className="px-0" onClick={() => setAll(true)}>{`Show all ${group.rows.length.toLocaleString("en-US")} lines`}</Button>
+          <div className="border-t border-border px-3 py-1">
+            <Button type="button" variant="link" size="sm" className="px-0" onClick={() => setAll(true)}>{`Show all ${group.rows.length.toLocaleString("en-US")} lines`}</Button>
+          </div>
         ) : null}
       </CollapsibleContent>
     </Collapsible>
@@ -398,12 +484,15 @@ function FixGroupBlock({ session, group, open, onOpenChange, activeId, onFocusRo
 }
 
 /**
- * Only the lines that need a decision, one group per kind, one choice per line (J2). The first three groups with open lines
- * start open; a decided group folds to its header. `openKinds` lets a screen open groups from an error summary.
+ * Only the lines that need a decision, one group per kind, one choice per line (J2). A group whose lines share one suggestion
+ * starts folded (its header says the suggestion and one Accept decides it); a group with differing suggestions starts open,
+ * because those lines need a person. `openKinds` opens groups from elsewhere (an error summary, the file pane in B).
  */
 export function FixList({ session, activeId, openKinds, onlyOpen = false, onFocusRow }: { session: ImportSession; activeId?: string | null; openKinds?: ExceptionKind[]; onlyOpen?: boolean; onFocusRow?: (id: string) => void }) {
   const groups = session.groups.filter((g) => !onlyOpen || g.open > 0)
-  const [open, setOpen] = React.useState<Set<ExceptionKind>>(() => new Set(session.groups.filter((g) => g.open > 0).slice(0, 3).map((g) => g.kind)))
+  const [open, setOpen] = React.useState<Set<ExceptionKind>>(() =>
+    new Set(session.review ? session.groups.filter((g) => g.open > 0 && !groupSuggestion(session.review!, g, session.library)).map((g) => g.kind) : []),
+  )
   React.useEffect(() => {
     if (openKinds?.length) setOpen((o) => new Set([...o, ...openKinds]))
   }, [openKinds])
@@ -415,7 +504,7 @@ export function FixList({ session, activeId, openKinds, onlyOpen = false, onFocu
   }, [activeId, session.groups, session.review])
   if (groups.length === 0) return null
   return (
-    <div className="flex flex-col gap-4" data-fix-list>
+    <div className="flex flex-col divide-y divide-border overflow-hidden rounded-[var(--radius)] border border-border" data-fix-list>
       {groups.map((g) => (
         <FixGroupBlock
           key={g.kind}
@@ -431,12 +520,50 @@ export function FixList({ session, activeId, openKinds, onlyOpen = false, onFocu
   )
 }
 
-/** The intro line of the fix step. */
+/** "154 lines need a decision · 152 have a suggestion": the fix step's one line under its title. */
+export function fixCountsLine(session: ImportSession): string {
+  const review = session.review
+  if (!review) return ""
+  const total = session.groups.reduce((t, g) => t + g.rows.length, 0)
+  if (session.left === 0) return `${plural(total, "line", "lines")}, every one decided.`
+  return `${plural(session.left, "line needs", "lines need")} a decision. Each has a suggestion.`
+}
+
+/**
+ * The fix step's top: the counts line, "Accept all suggestions" where it is seen, and after it the result in a LocalBanner with
+ * Undo. Accepting fills only undecided lines; a choice the admin made stays. Nothing is created here: Confirm still follows.
+ */
 export function FixIntro({ session }: { session: ImportSession }) {
+  const [undo, setUndo] = React.useState<{ before: Decisions; accepted: number } | null>(null)
+  const review = session.review
+  if (!review) return null
+  const acceptAll = () => {
+    const before = session.decisions
+    const accepted = openLines(review, before) - openLines(review, applySuggestions(review, before, session.library))
+    session.bulkSuggest()
+    setUndo({ before, accepted })
+  }
+  const stillOpen = session.left
   return (
-    <div className="flex flex-col gap-1">
-      <p className="text-base font-medium text-foreground">{session.left > 0 ? `${plural(session.left, "line needs", "lines need")} a decision.` : "Every line has a decision."}</p>
-      <p className="text-sm text-muted-foreground">A suggestion is shown for each. Nothing is created until you confirm.</p>
+    <div className="flex flex-col gap-4" data-fix-intro>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className={TYPE.body} data-fix-counts>{fixCountsLine(session)}</p>
+        {session.left > 0 ? (
+          <Button type="button" variant="outline" size="sm" onClick={acceptAll} data-accept-all>Accept all suggestions</Button>
+        ) : null}
+      </div>
+      {undo ? (
+        <LocalBanner
+          variant="success"
+          title={`Accepted ${plural(undo.accepted, "suggestion", "suggestions")}.`}
+          action={{ label: "Undo", onClick: () => { session.restoreDecisions(undo.before); setUndo(null) } }}
+          dismissible
+          onDismiss={() => setUndo(null)}
+          data-accept-all-result
+        >
+          {stillOpen > 0 ? `${plural(stillOpen, "line still needs", "lines still need")} a choice.` : undefined}
+        </LocalBanner>
+      ) : null}
     </div>
   )
 }
@@ -492,7 +619,7 @@ export function NewListField({ session }: { session: ImportSession }) {
   if (!session.isNewList) return null
   return (
     <Field className="max-w-md">
-      <FieldLabel htmlFor="import-new-list">List name</FieldLabel>
+      <FieldLabel htmlFor="import-new-list">{`Name of the new ${groupNoun()}`}</FieldLabel>
       <Input id="import-new-list" value={session.newLibraryName} onChange={(e) => session.setNewLibraryName(e.target.value)} placeholder="For example, Associate degree nursing" />
     </Field>
   )
@@ -536,7 +663,7 @@ export function ConfirmPanel({ session }: { session: ImportSession }) {
   return (
     <div className="flex flex-col gap-6" data-confirm-panel>
       <div className="flex flex-col gap-1">
-        <p className="text-base font-medium text-foreground" data-plan-sentence>
+        <p className="text-sm font-medium text-foreground" data-plan-sentence>
           {confirmSentence(session.plan, session.targetLabel, { one: skillNoun(), many: skillNounPlural() })}
         </p>
         <p className="text-sm text-muted-foreground">Each starts not configured, so students cannot send it until you configure it.</p>
@@ -586,8 +713,10 @@ export function DiscardDialog({ open, onOpenChange, onDiscard }: { open: boolean
 /** The title-zone Cancel. With a file read it confirms first; otherwise it goes back to the library. */
 export function useCancel(session: ImportSession, go: (href: string) => void) {
   const [asking, setAsking] = React.useState(false)
+  // Back where the admin came from (?from=skills from the library's More menu), else the library.
+  const back = returnHref(useSearchParams()?.get(FROM_PARAM), LIBRARY_HREF)
   const hasWork = session.phase === "review" || session.phase === "reading"
-  const onCancel = () => (hasWork ? setAsking(true) : go(LIBRARY_HREF))
-  const dialog = <DiscardDialog open={asking} onOpenChange={setAsking} onDiscard={() => { session.reset(); go(LIBRARY_HREF) }} />
+  const onCancel = () => (hasWork ? setAsking(true) : go(back))
+  const dialog = <DiscardDialog open={asking} onOpenChange={setAsking} onDiscard={() => { session.reset(); go(back) }} />
   return { onCancel, dialog }
 }

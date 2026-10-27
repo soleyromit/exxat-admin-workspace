@@ -21,6 +21,7 @@ import type { PersonaId } from "@/lib/lab/screens"
 import { PersonaRadioItems, personaTarget } from "./persona-switcher"
 import { useLabBar, type LabBarModel, type LabBarProps } from "./use-lab-bar"
 import { PresentControls, usePresent } from "./present"
+import { useWalkthrough } from "./walkthrough-controls"
 import type { Scenario } from "./scenarios"
 
 /**
@@ -43,6 +44,9 @@ import type { Scenario } from "./scenarios"
 export function LabBar(props: LabBarProps) {
   // Present mode (granola 2026-10-26): the bar is never shown to the client; only a small exit control remains.
   const { present } = usePresent()
+  // A walkthrough step (lib/lab/walkthrough.ts) carries its presenter control in the utility bar instead (lab-frame).
+  const walkthrough = useWalkthrough()
+  if (walkthrough) return null
   return present ? <PresentControls /> : <WorkingBar {...props} />
 }
 

@@ -134,7 +134,7 @@ WHY: the v2 audit found blue squares and green dots meaning "counted" on the sam
 | Status | Meaning | Colour token | Glyph + word | Texture | Counts toward attainment |
 |---|---|---|---|---|---|
 | Counted (met) | Qualifies under the current rule [REQ AE-01, AE-02] | `--status-badge-success-*` | check-circle "Met" | solid | Yes |
-| Not yet met (PENDING-ROMIT, see 02-content 6.4) | Some qualifying evidence, criteria not met [REQ AE-04] | `--status-badge-info-*` | half-circle "Not yet met" | solid | Partial |
+| In progress (n of N) (Romit's word, [LEDGER D-L1]; was "Not yet met") | Some qualifying evidence, criteria not met [REQ AE-04] | `--status-badge-info-*` | half-circle "In progress" | solid | Partial |
 | Did not qualify | Evidence exists, none qualifies [REQ AE-04, SH-02] | `--status-badge-warning-*` (amber) | triangle "Did not meet" | solid | No |
 | Pending (waiting or awaiting approval) | Overlay, with who holds it [REQ AE-06] | `--status-badge-neutral-*` | clock "Waiting for X" | hatched 45 degrees | Never |
 | Returned | Overlay: sent back for correction [REQ AR-05, RV-02] | neutral outline | return-arrow "Returned" | dotted outline | Never |
@@ -212,7 +212,7 @@ CHECK: vitest coarse timers on `paceRows` + `heatmap` after warm-up; Lighthouse 
 
 ## 10. Per-screen chart plan
 
-Principle: landing = hero sentence, then at most 2 charts, then the worklist. Fewer rows of nav [LEDGER D-A] means fewer places to hang a chart, so each landing earns its content.
+Principle: landing = hero sentence, then the charts within the budget (at most 3 above the fold on a dashboard, [LEDGER D-X21] and `admin/tests/lab/density-budget.mjs`; this section first said 2), then the worklist. Fewer rows of nav [LEDGER D-A] means fewer places to hang a chart, so each landing earns its content.
 
 ### 10.1 Admin / coordinator landing (Dashboard)
 
@@ -266,7 +266,7 @@ Hero: "5 of 14 waiting items come from one evaluator who returns 3.5x average"
 + Queue table (worklist): age chip, held because, oldest first, bulk approve +
 ```
 
-### 10.5 Student home (web-first, adapts to phone) [PENDING-ROMIT Q2 in ledger]
+### 10.5 Student My progress (web-first, adapts to phone) [LEDGER D-L4; web-first is delegated default D-X2, Romit's confirmation still open]
 
 ```
 Hero: "6 of 12 counted. 2 waiting. 1 returned. 1 sign-off from Sterile dressing."

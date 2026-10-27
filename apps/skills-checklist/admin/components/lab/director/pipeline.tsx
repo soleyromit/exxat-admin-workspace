@@ -15,6 +15,7 @@ import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { VIZ } from "@/components/lab/viz"
 import { LINK } from "@/components/lab/director/parts"
 import { FAR_BEHIND_MISSING, GRADUATION_LIST, GRADUATION_STAGES, GRADUATION_STAGE_LABEL, listHref, plural, type GraduationStage, type Readiness } from "@/lib/lab/director"
+import { TYPE } from "@/components/lab/type-scale"
 
 export const FILL: Record<GraduationStage, string> = { complete: "var(--muted-foreground)", "one-short": VIZ.behind, short: VIZ.behind, far: VIZ.behind }
 /** Hatching on the overlay: background stripes across the fill (no color-mix). */
@@ -55,7 +56,7 @@ export function ReadinessPipeline({ m, demoPartial = false }: { m: Readiness; de
         <div className="flex flex-wrap items-start justify-between gap-4">
           <h2 className="text-base font-semibold text-foreground">{`Graduation readiness, ${cohort}`}</h2>
           <Link href={listHref(m.scope, { list: "ready" })} className={`${LINK} flex items-baseline gap-2`} data-figure>
-            <span className="text-2xl font-semibold tabular-nums">{m.readyToVerify}</span>
+            <span className={TYPE.figure}>{m.readyToVerify}</span>
             <span className="text-sm font-normal text-muted-foreground">ready to verify</span>
           </Link>
         </div>
@@ -72,7 +73,7 @@ export function ReadinessPipeline({ m, demoPartial = false }: { m: Readiness; de
               <div key={st} data-band={st} className={`flex min-w-0 flex-col gap-2 ${st !== "complete" ? "md:border-s md:border-border md:ps-6" : ""}`}>
                 <div className="flex flex-col" data-figure>
                   <span className="flex items-baseline gap-2">
-                    <Link href={listHref(m.scope, { list: GRADUATION_LIST[st] })} className={`${LINK} text-2xl font-semibold tabular-nums`} aria-label={`${members.length} ${GRADUATION_STAGE_LABEL[st].toLowerCase()}. Open the list`}>
+                    <Link href={listHref(m.scope, { list: GRADUATION_LIST[st] })} className={`${LINK} ${TYPE.figure}`} aria-label={`${members.length} ${GRADUATION_STAGE_LABEL[st].toLowerCase()}. Open the list`}>
                       {members.length}
                     </Link>
                     <Tip label={STAGE_HINT[st]}>

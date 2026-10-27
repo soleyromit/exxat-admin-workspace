@@ -24,14 +24,15 @@ type Option = { value: string; label: string }
 const lineTabsListClass = "h-auto w-full gap-0 rounded-none justify-start !items-end"
 const tabTriggerClass = "h-auto min-w-0 flex-none flex-row items-center gap-2 px-3 pt-2 pb-3 text-muted-foreground data-active:text-foreground"
 
-function ChartCardHeader({ title, description, headingLevel, filterOptions, filter, onFilter }: { title: string; description: string; headingLevel: "h2" | "h3"; filterOptions?: Option[]; filter?: string; onFilter?: (v: string) => void }) {
+function ChartCardHeader({ title, description, headingLevel, filterOptions, filter, onFilter, filterLabel }: { title: string; description: string; headingLevel: "h2" | "h3"; filterOptions?: Option[]; filter?: string; onFilter?: (v: string) => void; filterLabel?: string }) {
   const Heading = headingLevel
   const hasSelector = Array.isArray(filterOptions) && filterOptions.length > 0 && !!onFilter
   return (
     <CardHeader className="shrink-0 pb-2">
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
-          <CardTitle asChild className="text-sm font-semibold leading-tight">
+          {/* Section title of the one lab type scale (components/lab/type-scale.ts, 2026-10-27): every card title is the same size. */}
+          <CardTitle asChild className="text-base font-semibold leading-tight">
             <Heading>{title}</Heading>
           </CardTitle>
           <CardDescription className="mt-0.5">{description}</CardDescription>
@@ -39,7 +40,7 @@ function ChartCardHeader({ title, description, headingLevel, filterOptions, filt
         {hasSelector ? (
           <div className="flex shrink-0 items-center gap-1.5">
             <Select value={filter || filterOptions![0]?.value} onValueChange={(v) => onFilter!(v)}>
-              <SelectTrigger className="h-8 w-auto min-w-[9rem] shrink-0 text-sm" aria-label={`${title}: choose a view`}>
+              <SelectTrigger className="h-8 w-auto min-w-[9rem] shrink-0 text-sm" aria-label={filterLabel ?? `${title}: choose a view`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="end" sideOffset={4}>
@@ -74,6 +75,7 @@ export function ChartCard({
   defaultFilter,
   onFilterChange,
   tabOptions,
+  filterLabel,
 }: {
   title: string
   description: string
@@ -87,6 +89,8 @@ export function ChartCard({
   onFilterChange?: (value: string) => void
   /** tabs variant: the tabs; the selected value is passed to the children function */
   tabOptions?: Option[]
+  /** selector variant: the select's accessible name (default "{title}: choose a view") */
+  filterLabel?: string
 }) {
   const [filter, setFilter] = React.useState(() => initialFilter(variant, defaultFilter, filterOptions, tabOptions))
 
@@ -133,7 +137,7 @@ export function ChartCard({
 
   return (
     <Card className={shell} role="figure" aria-label={title}>
-      <ChartCardHeader title={title} description={description} headingLevel={headingLevel} filterOptions={variant === "selector" ? filterOptions : undefined} filter={filter} onFilter={handleFilter} />
+      <ChartCardHeader title={title} description={description} headingLevel={headingLevel} filterOptions={variant === "selector" ? filterOptions : undefined} filter={filter} onFilter={handleFilter} filterLabel={filterLabel} />
       <CardContent className="flex min-h-0 flex-1 flex-col pb-4">{resolve(filter)}</CardContent>
     </Card>
   )

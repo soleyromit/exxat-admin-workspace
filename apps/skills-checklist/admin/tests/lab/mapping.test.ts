@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { createSeed } from "@/lib/v2/seed"
+import { isConfigured } from "@/lib/v2/population"
 import { labState } from "@/lib/lab/reviewer"
 import {
   academicYear,
@@ -83,19 +84,20 @@ describe("mapping one offering", () => {
   const off = (s.offerings ?? []).find((o) => o.termId === term)!
   it("lists every skill in a stable order, unconfigured ones last and marked", () => {
     const r = skillRowsFor(s, EMPTY_MAPPING_OVERLAY, off)
-    expect(r.length).toBe(178)
-    expect(r.slice(-16).every((x) => !x.configured)).toBe(true)
-    expect(r.filter((x) => !x.configured).length).toBe(16)
+    expect(r.length).toBe(176) // 178 in the library less the 2 deactivated (REQ SL-11)
+    // 16 never configured plus 15 that hold a rule never saved for use (Not configured with Draft saved, decision D-X31).
+    expect(r.slice(-31).every((x) => !x.configured)).toBe(true)
+    expect(r.filter((x) => !x.configured).length).toBe(31)
   })
   it("refuses to map an unconfigured skill and allows unmapping it", () => {
-    const unconf = s.skills.find((k) => !k.configured)!
+    const unconf = s.skills.find((k) => !isConfigured(k))!
     const r = setLevel(s, EMPTY_MAPPING_OVERLAY, off.id, unconf.id, "mandatory")
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.reason).toMatch(/Configure/)
     expect(setLevel(s, EMPTY_MAPPING_OVERLAY, off.id, unconf.id, "none").ok).toBe(true)
   })
   it("lets the same skill differ between offerings and changes only the edited offering", () => {
-    const k = s.skills.find((x) => x.configured)!
+    const k = s.skills.find((x) => isConfigured(x))!
     const other = (s.offerings ?? []).find((o) => o.courseId === off.courseId && o.id !== off.id)!
     const r = setLevel(s, EMPTY_MAPPING_OVERLAY, off.id, k.id, "mandatory")
     expect(r.ok).toBe(true)
@@ -134,7 +136,7 @@ describe("coverage of required skills (N-13), explicit layer only", () => {
   })
   it("skill-centric view finds the same required skills in no course as coverage", () => {
     const reach = skillReach(s, EMPTY_MAPPING_OVERLAY, term, unassigned)
-    expect(reach.length).toBe(178)
+    expect(reach.length).toBe(176) // deactivated skills are withdrawn (REQ SL-11)
     const gaps = reach.filter((r) => r.required && r.carriers === 0).map((r) => r.id).sort()
     expect(gaps).toEqual(c.gaps.map((g) => g.id).sort())
     const k = reach.find((r) => r.carriers > 0)!
@@ -155,7 +157,7 @@ describe("cohort inheritance: lists give every clinical offering of the cohort a
   const list = assigned.find((l) => l.id === "list-competencies")!
   const usable = list.skillIds.filter((id) => {
     const k = s.skills.find((x) => x.id === id)!
-    return k.active !== false && mapBlockReason(k) === null
+    return k.active !== false && isConfigured(k) && mapBlockReason(k) === null
   })
   const explicitIn = (courseId: string) => new Set(s.mappings.filter((m) => m.courseId === courseId).map((m) => m.skillId))
 

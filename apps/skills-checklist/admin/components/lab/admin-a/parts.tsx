@@ -169,7 +169,7 @@ export function LevelGlyph({ level, size = 10 }: { level: MapLevel; size?: numbe
 export function LevelSelect({ value, onChange, label, size = "sm" }: { value: MapLevel; onChange: (v: MapLevel) => void; label: string; size?: "sm" | "default" }) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v as MapLevel)}>
-      <SelectTrigger size={size} className="w-40" aria-label={label}>
+      <SelectTrigger size={size} className="w-44" aria-label={label}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

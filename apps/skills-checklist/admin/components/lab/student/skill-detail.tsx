@@ -4,6 +4,7 @@
  * Skill detail pieces (build prompt stuitem): the rule in one plain sentence, its parts as fractions, the attempt timeline or
  * ledger, and why something did not count with the failed rule in numbers and the next step [REQ SH-01..SH-03, AE-04].
  */
+import { aNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -13,6 +14,7 @@ import { VIZ } from "@/components/lab/viz"
 import { ATTEMPT_WORD, attemptCountLine, attempts, shortDate, studentHref, type AttemptRow, type SkillRecord, type StudentModel } from "@/lib/lab/student"
 import type { V2State } from "@/lib/v2/types"
 import type { StudentFrameCtx } from "@/components/lab/student/frame"
+import { ViewEvaluationButton } from "@/components/lab/student/evaluation-sheet"
 
 /** The skill in the URL (?skill=), else the first required skill in progress, else the first required skill. */
 export function pickSkill(ctx: StudentFrameCtx): SkillRecord | null {
@@ -24,11 +26,13 @@ export function pickSkill(ctx: StudentFrameCtx): SkillRecord | null {
 /** The page's one filled action, by state: fix a return, make a further attempt, view the open request, or send. */
 export function skillPrimary(r: SkillRecord | null, studentId: string): { label: string; href: string } | null {
   if (!r) return null
+  // Deactivated [REQ SL-11]: nothing new can be sent for it; an open request can still be viewed.
+  if (r.active === false) return r.waiting ? { label: "View request", href: studentHref("my-requests", {}, studentId) } : null
   if (r.returned) return { label: "Fix and send", href: studentHref("fix-returned", { submission: r.returned.submissionId }, studentId) }
   if (r.waiting) return { label: "View request", href: studentHref("my-requests", {}, studentId) }
   if (r.state === "achieved") return null
   if (r.state === "dnq") return { label: "Make a further attempt", href: studentHref("fix-returned", { skill: r.id }, studentId) }
-  return { label: "Send for evaluation", href: studentHref("request-signoff", { skill: r.id }, studentId) }
+  return { label: `Log ${aNoun()}`, href: studentHref("request-signoff", { skill: r.id }, studentId) }
 }
 
 export function useAttempts(state: V2State, studentId: string, skillId: string | undefined): AttemptRow[] {
@@ -69,7 +73,7 @@ export function AttemptCount({ state, studentId, skillId }: { state: V2State; st
 const COUNTS_PLAIN = "Counts toward the rule."
 
 /** Vertical timeline, newest first. Each attempt says who, where, the answer, and why it counted or did not. */
-export function AttemptTimeline({ rows }: { rows: AttemptRow[] }) {
+export function AttemptTimeline({ rows, onOpen }: { rows: AttemptRow[]; /** Opens a completed evaluation in full, read only [REQ SH-07]. */ onOpen?: (evaluationId: string) => void }) {
   if (rows.length === 0) return <p className="text-sm text-muted-foreground">No attempts yet.</p>
   const list = [...rows].reverse()
   return (
@@ -89,6 +93,7 @@ export function AttemptTimeline({ rows }: { rows: AttemptRow[] }) {
               {a.kind === "counted" && a.why === COUNTS_PLAIN ? null : <span className="text-muted-foreground">{a.why}</span>}
             </p>
           </div>
+          {a.evaluationId && onOpen ? <ViewEvaluationButton className="-me-2 shrink-0 self-start" name={`attempt ${a.n}`} onOpen={() => onOpen(a.evaluationId!)} /> : null}
         </li>
       ))}
     </ol>
@@ -96,7 +101,7 @@ export function AttemptTimeline({ rows }: { rows: AttemptRow[] }) {
 }
 
 /** Ledger view of the same attempts, for comparison (variant B). */
-export function AttemptLedger({ rows }: { rows: AttemptRow[] }) {
+export function AttemptLedger({ rows, onOpen }: { rows: AttemptRow[]; onOpen?: (evaluationId: string) => void }) {
   return (
     <Table>
       <TableHeader>
@@ -108,6 +113,7 @@ export function AttemptLedger({ rows }: { rows: AttemptRow[] }) {
           
           <TableHead>Result</TableHead>
           <TableHead className="hidden lg:table-cell">Why</TableHead>
+          {onOpen ? <TableHead className="w-36"><span className="sr-only">Evaluation</span></TableHead> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -120,9 +126,9 @@ export function AttemptLedger({ rows }: { rows: AttemptRow[] }) {
               <TableCell className="tabular-nums">{shortDate(a.date)}</TableCell>
               <TableCell>{a.evaluatorName}</TableCell>
               <TableCell className="hidden md:table-cell">{a.setting}</TableCell>
-              
               <TableCell><span className="flex flex-col gap-0.5"><AttemptMark kind={a.kind} /><span className="text-xs text-muted-foreground">{a.kind === "sent" ? a.status : a.answer}</span></span></TableCell>
               <TableCell className="hidden min-w-64 whitespace-normal text-muted-foreground lg:table-cell">{a.why}</TableCell>
+              {onOpen ? <TableCell className="text-end">{a.evaluationId ? <ViewEvaluationButton name={`attempt ${a.n}`} onOpen={() => onOpen(a.evaluationId!)} /> : null}</TableCell> : null}
             </TableRow>
           ))
         )}
@@ -142,7 +148,7 @@ export function WhyNotCounted({ record, studentId, withAction = true }: { record
       </p>
       <p className="text-sm text-foreground">{record.failed.rule}</p>
       <p className="text-sm text-foreground">{record.failed.next}</p>
-      {withAction && !record.waiting ? (
+      {withAction && !record.waiting && record.active !== false ? (
         <Button asChild variant="outline" size="sm" className="self-start">
           <Link href={studentHref("fix-returned", { skill: record.id }, studentId)}>Make a further attempt</Link>
         </Button>
@@ -159,7 +165,7 @@ export function WhereItCounts({ model, record }: { model: StudentModel; record: 
       <dt className="text-muted-foreground">Section</dt>
       <dd className="text-foreground">{record.section}</dd>
       <dt className="text-muted-foreground">Expected</dt>
-      <dd className="text-foreground">{record.required ? "Required this term" : record.level === "recommended" ? "Recommended this term" : record.level === "optional" ? "Optional this term" : "Not mapped to a current course"}</dd>
+      <dd className="text-foreground">{record.active === false ? "No longer in use. Your evidence stays in My evaluations." : record.required ? "Required this term" : record.level === "recommended" ? "Recommended this term" : record.level === "optional" ? "Optional this term" : "Not mapped to a current course"}</dd>
       {placement ? (
         <>
           <dt className="text-muted-foreground">Likely at</dt>

@@ -12,7 +12,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesig
 import { story, type RuleCheck } from "@/lib/lab/reviewer"
 import { ReviewItemFrame } from "@/components/lab/reviewer/review-item-frame"
 import { AgreementMark } from "@/components/lab/reviewer/parts"
-import { CompareTable, DecisionBar, Facts, Feedback, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { CompareTable, Facts, Feedback, ReviewNoteField, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { TYPE } from "@/components/lab/type-scale"
 
 export function ReviewerReviewItemC() {
   return (
@@ -21,7 +22,7 @@ export function ReviewerReviewItemC() {
         const d = ctx.detail
         const differ = d.comparisons.some((c) => c.overall === "differed")
         return (
-          <div className="flex max-w-3xl flex-col gap-4">
+          <div className="flex flex-col gap-4">
             <Card data-region="verdict">
               <CardContent className="flex flex-col gap-4">
                 <WhyHeld row={d.row} />
@@ -33,7 +34,7 @@ export function ReviewerReviewItemC() {
                     Self and evaluator: <AgreementMark agreement={differ ? "differed" : d.comparisons.some((c) => c.overall === "agreed") ? "agreed" : "not-comparable"} />
                   </p>
                 ) : null}
-                <DecisionBar row={d.row} next={ctx.next} />
+                <ReviewNoteField />
               </CardContent>
             </Card>
             <Section title="Answers" defaultOpen={differ}>
@@ -66,7 +67,7 @@ function Verdict({ c }: { c: RuleCheck }) {
   return (
     <div className="flex items-start gap-4" data-rule-check>
       <span className="flex min-w-24 flex-col" data-figure>
-        <span className="text-2xl font-semibold tabular-nums leading-tight">{c.numbers}</span>
+        <span className={TYPE.figure}>{c.numbers}</span>
         <span className="text-xs text-muted-foreground">after approval</span>
       </span>
       <span className="flex min-w-0 flex-col gap-0.5 pt-0.5">

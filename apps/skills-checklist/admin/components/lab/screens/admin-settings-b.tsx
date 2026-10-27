@@ -10,9 +10,13 @@
  * entry, the count that blocks it is the reason; deactivate keeps it where it is used, marked inactive (SL-06).
  * URL: ?list= · ?entry= · ?state=loading|empty|error.
  *
+ * One component for two pages (D-L21): scope "program" is Settings B (clinical settings, evaluators) and scope
+ * "vocabulary" is Categories and tags B (admin/categories-tags), its own page under Skills.
+ *
  * Regions (list budget 4): header · banner (after an action) · lists pane · entries and detail.
  */
 import * as React from "react"
+import { TYPE } from "@/components/lab/type-scale"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
@@ -31,35 +35,44 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { PageFrame } from "@/components/skills/page-header"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { parseDemoState } from "@/lib/lab/dashboard"
-import { EMPTY_SETTINGS, SETTINGS_SECTIONS, SETTINGS_TAB_LABEL, categoryRows, clinicalSettingRows, instructorRows, isSettingsSection, sectionLabel, settingId, tagRows, usesOf, validateEntry, type ClinicalSettingRow, type InstructorRow, type SettingUse, type SettingsOverlay, type SettingsRow, type SettingsTab } from "@/lib/lab/settings"
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { useVocabularyActions, isVocabKind, RenameDialog, renamedText } from "@/components/lab/admin-b/use-vocabulary"
+import { EMPTY_SETTINGS, rememberSeededVocabulary, SCOPE_SECTIONS, SETTINGS_TAB_LABEL, VOCABULARY_TITLE, categoryRows, clinicalSettingRows, instructorRows, scopeSection, sectionLabel, settingId, tagRows, usesOf, validateEntry, type ClinicalSettingRow, type InstructorRow, type SettingUse, type SettingsOverlay, type SettingsRow, type SettingsScope, type SettingsTab } from "@/lib/lab/settings"
+import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { useTerms } from "@/components/lab/library/use-terms"
-import { NamingSection, takeNamingSaved } from "@/components/lab/admin-b/settings-page"
+import { EVALUATOR_FILTERS_OFF, scopeTitle } from "@/components/lab/admin-b/settings-page"
+import { EvaluatorsSection } from "@/components/lab/admin-a/evaluators-section"
+import { directory } from "@/lib/lab/evaluators"
 
 /** A list row that opens a record: a real link (it changes the URL), selected state as aria-current, row-sized target. */
 const ROW_LINK = "flex min-h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[current]:bg-secondary aria-[current]:font-medium"
 const NOUN: Record<SettingsTab, string> = { categories: "category", tags: "tag", settings: "clinical setting", instructors: "lab instructor" }
 const NOUNS: Record<SettingsTab, string> = { categories: "categories", tags: "tags", settings: "clinical settings", instructors: "lab instructors" }
-const ICON: Record<SettingsTab | "naming", string> = { categories: "fa-folder", tags: "fa-tag", settings: "fa-hospital", instructors: "fa-user", naming: "fa-input-text" }
+const ICON: Record<SettingsTab | "evaluators", string> = { categories: "fa-folder", tags: "fa-tag", settings: "fa-hospital", instructors: "fa-user", evaluators: "fa-user-check" }
 const FIRST = 12
 
 export function AdminSettingsB() {
+  return <SettingsMasterDetail scope="program" />
+}
+
+export function SettingsMasterDetail({ scope }: { scope: SettingsScope }) {
   const data = useV2State()
   const hydrated = useV2Hydrated()
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname() ?? ""
   const demo = parseDemoState(params?.get("state"))
-  const listRaw = params?.get("list")
-  const section = isSettingsSection(listRaw) ? listRaw : "categories"
-  const tab: SettingsTab = section === "naming" ? "categories" : section
+  const listRaw = params?.get("list") ?? params?.get("tab") // ?tab= too: the Settings link names a section for either variant
+  const sections = SCOPE_SECTIONS[scope]
+  const section = scopeSection(scope, listRaw)
+  const tab: SettingsTab = section === "evaluators" ? "settings" : section
   const terms = useTerms()
   const entryParam = params?.get("entry") ?? null
   const [overlay, setOverlay] = React.useState<SettingsOverlay>(EMPTY_SETTINGS)
   const [banner, setBanner] = React.useState<{ tone: "success" | "info"; text: string } | null>(null)
-  React.useEffect(() => { const t = takeNamingSaved(); if (t) setBanner({ tone: "success", text: t }) }, [])
   const [deleting, setDeleting] = React.useState<SettingsRow | null>(null)
   const [query, setQuery] = React.useState("")
+  const vocab = useVocabularyActions()
+  const [renaming, setRenaming] = React.useState<SettingsRow | null>(null)
 
   const hrefWith = (p: Record<string, string | null>) => {
     const q = new URLSearchParams(params?.toString() ?? "")
@@ -71,14 +84,16 @@ export function AdminSettingsB() {
   const lists = React.useMemo(() => {
     const n = skillNoun()
     const ns = skillNounPlural()
+    rememberSeededVocabulary(data)
     return { categories: categoryRows(data, overlay, n, ns), tags: tagRows(data, overlay, n, ns), settings: clinicalSettingRows(data, overlay, n, ns), instructors: instructorRows(data, overlay) } as Record<SettingsTab, SettingsRow[]>
     // eslint-disable-next-line react-hooks/exhaustive-deps -- terms: the noun is read inside the row builders
   }, [data, overlay, terms])
+  const evaluatorCount = React.useMemo(() => (scope === "program" ? directory(data).rows.length : 0), [data, scope])
 
   if (!hydrated || demo === "loading") {
     return (
-      <PageFrame title="Settings">
-        <div role="status" aria-busy="true" aria-label="Loading settings" className="grid gap-4 lg:grid-cols-[14rem_20rem_minmax(0,1fr)]">
+      <PageFrame title={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"}>
+        <div role="status" aria-busy="true" aria-label={scope === "vocabulary" ? "Loading categories and tags" : "Loading settings"} className="grid gap-4 lg:grid-cols-[14rem_20rem_minmax(0,1fr)]">
           <Skeleton aria-hidden="true" className="h-48 w-full" />
           <Skeleton aria-hidden="true" className="h-96 w-full" />
           <Skeleton aria-hidden="true" className="h-96 w-full" />
@@ -91,16 +106,34 @@ export function AdminSettingsB() {
   const q = query.trim().toLowerCase()
   const rows = q ? all.filter((r) => r.name.toLowerCase().includes(q) || String((r as InstructorRow).email ?? "").toLowerCase().includes(q)) : all
   const selected = all.find((r) => r.id === entryParam) ?? all[0] ?? null
+  // Categories and tags write to the shared store (lib/v2/vocabulary.ts); clinical settings and lab instructors stay lab-local.
   const add = (name: string, email?: string) => {
+    if (isVocabKind(tab)) {
+      const res = vocab.add(tab, name)
+      if (!res.ok) return setBanner({ tone: "info", text: res.error })
+      setBanner({ tone: "success", text: `Added "${name.trim()}". It is offered in Add ${aNoun()} now.` })
+      return setParams({ entry: res.entry?.id ?? null })
+    }
     setOverlay((o) => ({ ...o, added: [{ tab, name: name.trim(), email: email?.trim() }, ...o.added] }))
     setBanner({ tone: "success", text: `Added "${name.trim()}".` })
     setParams({ entry: settingId(tab, name) })
   }
   const toggle = (r: SettingsRow) => {
+    if (isVocabKind(tab)) {
+      const res = vocab.setActive(tab, r.id, !r.active)
+      if (!res.ok) return setBanner({ tone: "info", text: res.error })
+      return setBanner({ tone: "info", text: r.active ? `"${r.name}" is inactive. It stays where it is used, marked inactive, and is no longer offered.` : `"${r.name}" is active again.` })
+    }
     setOverlay((o) => (r.active ? { ...o, inactive: [...o.inactive, r.id], reactivated: o.reactivated.filter((x) => x !== r.id) } : { ...o, reactivated: [...o.reactivated, r.id], inactive: o.inactive.filter((x) => x !== r.id) }))
     setBanner({ tone: "info", text: r.active ? `"${r.name}" is inactive. It stays where it is used, marked inactive, and is no longer offered.` : `"${r.name}" is active again.` })
   }
   const remove = (r: SettingsRow) => {
+    if (isVocabKind(tab)) {
+      const res = vocab.remove(tab, r.id)
+      setBanner(res.ok ? { tone: "success", text: `Deleted "${r.name}".` } : { tone: "info", text: res.error })
+      setDeleting(null)
+      return setParams({ entry: null })
+    }
     setOverlay((o) => ({ ...o, deleted: [...o.deleted, r.id], added: o.added.filter((a) => settingId(a.tab, a.name) !== r.id) }))
     setBanner({ tone: "success", text: `Deleted "${r.name}".` })
     setDeleting(null)
@@ -108,29 +141,27 @@ export function AdminSettingsB() {
   }
 
   return (
-    <PageFrame title="Settings" actions={<SampleDataBadge />}>
-      <div className="flex flex-col gap-4" data-settings-lab="B" data-page-type="list" data-tab={section}>
+    <PageFrame title={scopeTitle(scope, section)} actions={<SampleDataBadge />}>
+      <div className="flex flex-col gap-4" data-settings-lab="B" data-settings-scope={scope} data-page-type="list" data-tab={section}>
         {banner ? <LocalBanner variant={banner.tone} dismissible onDismiss={() => setBanner(null)}>{banner.text}</LocalBanner> : null}
         {demo === "error" ? (
-          <LocalBanner variant="error" title="Settings could not be loaded" retry={{ label: "Try again", onClick: () => setParams({ state: null }) }}>Nothing was changed.</LocalBanner>
+          <LocalBanner variant="error" title={`${scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"} could not be loaded`} retry={{ label: "Try again", onClick: () => setParams({ state: null }) }}>Nothing was changed.</LocalBanner>
         ) : (
           <div className="grid items-start gap-4 lg:grid-cols-[14rem_20rem_minmax(0,1fr)]">
-            <nav aria-label="Settings lists" className="flex flex-col gap-1" data-region="lists">
-              {/* The four lists are navigation (each is its own URL), so they are links, not buttons. */}
-              {SETTINGS_SECTIONS.map((t) => (
-                <Link key={t} href={hrefWith({ list: t === "categories" ? null : t, entry: null })} scroll={false} replace className={ROW_LINK} aria-current={t === section ? "page" : undefined} data-list={t} onClick={() => { setQuery(""); setBanner(null) }}>
+            <nav aria-label={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings lists"} className="flex flex-col gap-1" data-region="lists">
+              {/* The lists are navigation (each is its own URL), so they are links, not buttons. */}
+              {sections.map((t) => (
+                <Link key={t} href={hrefWith({ list: t === sections[0] ? null : t, tab: null, entry: null, ...EVALUATOR_FILTERS_OFF })} scroll={false} replace className={ROW_LINK} aria-current={t === section ? "page" : undefined} data-list={t} onClick={() => { setQuery(""); setBanner(null) }}>
                   <i className={`fa-light ${ICON[t]} w-4 text-muted-foreground`} aria-hidden="true" />
                   <span className="flex-1 text-start">{sectionLabel(t)}</span>
-                  {t === "naming" ? null : <TabsCountBadge count={lists[t].length} />}
+                  <TabsCountBadge count={t === "evaluators" ? evaluatorCount : lists[t].length} />
                 </Link>
               ))}
             </nav>
-            {section === "naming" ? (
-              <Card className="min-w-0 lg:col-span-2">
-                <CardContent>
-                  <NamingSection idPrefix="settings-b" onSaved={(text) => setBanner({ tone: "success", text })} />
-                </CardContent>
-              </Card>
+            {section === "evaluators" ? (
+              <div className="min-w-0 lg:col-span-2">
+                <EvaluatorsSection layout="sites" />
+              </div>
             ) : (
             <>
             <section aria-label={SETTINGS_TAB_LABEL[tab]} className="flex min-w-0 flex-col gap-3 rounded-lg border border-border p-3" data-region="entries">
@@ -157,12 +188,27 @@ export function AdminSettingsB() {
                 </ul>
               )}
             </section>
-            {selected ? <Detail tab={tab} row={selected} partial={demo === "partial"} onToggle={toggle} onDelete={setDeleting} /> : <Card size="sm"><CardContent><EmptyBlock compact title={`Choose a ${NOUN[tab]} to see what uses it`} /></CardContent></Card>}
+            {selected ? <Detail key={selected.id} tab={tab} row={selected} partial={demo === "partial"} onToggle={toggle} onDelete={setDeleting} onRename={isVocabKind(tab) ? setRenaming : undefined} /> : <Card size="sm"><CardContent><EmptyBlock compact title={`Choose a ${NOUN[tab]} to see what uses it`} /></CardContent></Card>}
             </>
             )}
           </div>
         )}
       </div>
+      {isVocabKind(tab) ? (
+        <RenameDialog
+          kind={tab}
+          state={data}
+          target={renaming ? { id: renaming.id, name: renaming.name, uses: renaming.uses } : null}
+          onClose={() => setRenaming(null)}
+          onRename={(id, name) => {
+            const res = vocab.rename(tab, id, name)
+            if (!res.ok) return res.error
+            setBanner({ tone: "success", text: renamedText(renaming?.name ?? "", name.trim(), renaming?.uses ?? 0) })
+            setRenaming(null)
+            return null
+          }}
+        />
+      ) : null}
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -230,8 +276,9 @@ function UseList({ title, lines }: { title: string; lines: Array<{ key: string; 
   )
 }
 
-function Detail({ tab, row, partial, onToggle, onDelete }: { tab: SettingsTab; row: SettingsRow; partial: boolean; onToggle: (r: SettingsRow) => void; onDelete: (r: SettingsRow) => void }) {
+function Detail({ tab, row, partial, onToggle, onDelete, onRename }: { tab: SettingsTab; row: SettingsRow; partial: boolean; onToggle: (r: SettingsRow) => void; onDelete: (r: SettingsRow) => void; onRename?: (r: SettingsRow) => void }) {
   const data = useV2State()
+  const [expanded, setExpanded] = React.useState(false)
   const blocked = partial ? "Usage counts are still loading" : row.blocked
   const sections: Array<{ title: string; what?: SettingUse }> =
     tab === "settings"
@@ -245,22 +292,37 @@ function Detail({ tab, row, partial, onToggle, onDelete }: { tab: SettingsTab; r
     <Card size="sm" className="min-w-0" data-settings-detail={row.id} data-region="detail">
       <CardHeader className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-base">{row.name}</CardTitle>
+          <CardTitle className={TYPE.section}>{row.name}</CardTitle>
           {row.active ? <span className="text-sm text-muted-foreground">Active</span> : <StatusBadge label="Inactive" tone="neutral" icon="fa-circle-minus" size="sm" />}
         </div>
         {tab === "instructors" ? <p className="text-sm text-muted-foreground">{(row as InstructorRow).email}</p> : null}
         {tab === "settings" ? <p className="text-sm text-muted-foreground">{`${plural((row as ClinicalSettingRow).evidence, "evaluation", "evaluations")} recorded in this setting.`}</p> : null}
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
-        {row.uses === 0 ? <p className="text-sm text-muted-foreground">{`Nothing uses this ${NOUN[tab]} yet.`}</p> : sections.map((s) => <UseList key={s.title} title={s.title} lines={usesOf(data, tab, row.name, row.id, s.what)} />)}
+        {row.uses === 0 ? (
+          <p className="text-sm text-muted-foreground">{`Nothing uses this ${NOUN[tab]} yet.`}</p>
+        ) : sections.length > 1 && !expanded ? (
+          // A clinical setting is used in three ways (sites, rules, courses): the counts first, the names on demand, so the
+          // landing pane is not a wall of names (strategy/07 list budget: progressive disclosure, nothing removed).
+          <div className="flex flex-col gap-2" data-uses-summary>
+            <ul className="flex flex-col gap-1">
+              {sections.map((s) => <li key={s.title} className="text-sm font-semibold text-foreground">{s.title}</li>)}
+            </ul>
+            <div><Button type="button" variant="outline" size="sm" onClick={() => setExpanded(true)}>Show what uses it</Button></div>
+          </div>
+        ) : (
+          sections.map((s) => <UseList key={s.title} title={s.title} lines={usesOf(data, tab, row.name, row.id, s.what)} />)
+        )}
         <div className="flex flex-col gap-2 border-t border-border pt-4">
           {/* Delete shows only while it can run (strategy/07: no disabled control); the line below says why it is absent. */}
           <div className="flex flex-wrap items-center gap-2">
+            {onRename ? <Button type="button" variant="outline" size="sm" onClick={() => onRename(row)}>Rename</Button> : null}
             <Button type="button" variant="outline" size="sm" onClick={() => onToggle(row)}>{row.active ? "Deactivate" : "Reactivate"}</Button>
             {blocked ? null : <Button type="button" variant="outline" size="sm" onClick={() => onDelete(row)}>Delete</Button>}
           </div>
-          <p id="settings-b-delete-why" className="text-xs text-muted-foreground">
-            {blocked ? `${blocked}, so it cannot be deleted. Deactivate keeps it where it is used and stops offering it.` : `Nothing uses it, so it can be deleted.`}
+          <p id="settings-b-delete-why" className={TYPE.helper}>
+            {/* The count is already the section title above ("Used by 1 skill"): the reason is not said twice. */}
+            {partial ? `${blocked}, so it cannot be deleted.` : blocked ? "Cannot be deleted while in use. Deactivate stops offering it." : "Nothing uses it, so it can be deleted."}
           </p>
         </div>
       </CardContent>

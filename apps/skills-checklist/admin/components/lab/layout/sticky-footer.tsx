@@ -1,8 +1,12 @@
 "use client"
 
 // Shared layout primitive (lab templates T2 wizard and T3 form, docs/knowledge/design/skill-setup-journey/01 and 03 section 6).
-// The one place a wizard step or a form puts its forward action: a 64 px bar stuck to the bottom of the page column.
-// Left: Back (or a summary line). Middle right: a short context line (aria-live). Right: ONE filled primary.
+// The one place a wizard step or a form puts its forward action: a bar stuck to the bottom of the page column.
+// ONE contract on every step, form, Check and receipt (Romit 2026-10-27, "why is the Back button at a different position after
+// every wizard step?"), left to right: Back (its slot is kept when a step has no Back, so nothing shifts), the summary line when
+// there is one, the context or blocking reason, the outline secondary (Save draft), the ONE filled primary at the far right.
+// The bar bleeds through the page gutter, is opaque with a top border and sits above the content, so nothing shows beside or
+// under it ("the fixed footer isn't completely covering the layout").
 // Below 640 px the buttons stack full width at 44 px, primary on top, and the bar pads for the safe area.
 
 import * as React from "react"
@@ -33,9 +37,9 @@ export type StickyFooterProps = {
   context?: React.ReactNode
   /** The single filled primary action. */
   primary?: StickyFooterPrimary
-  /** Rare outline secondary, placed before the primary. */
-  secondary?: StickyFooterAction
-  /** Left slot for a summary sentence (configure's rule sentence). When set, Back moves next to the primary. */
+  /** Rare outline secondary, placed before the primary. At most two (a page shows two outline buttons at most). */
+  secondary?: StickyFooterAction | StickyFooterAction[]
+  /** A summary sentence after Back (configure's rule sentence). Back never moves. */
   summary?: React.ReactNode
   className?: string
 }
@@ -87,13 +91,14 @@ function ActionButton({
 
 export function StickyFooter({ back, context, primary, secondary, summary, className }: StickyFooterProps) {
   const contextId = React.useId()
+  const secondaries = (Array.isArray(secondary) ? secondary : secondary ? [secondary] : []).slice(0, 2)
   const primaryDisabled = Boolean(primary?.disabled || primary?.loading)
   const reason = primary?.disabled && primary.disabledReason ? primary.disabledReason : null
   const contextContent = reason ?? context
   const hasContext = contextContent !== undefined && contextContent !== null && contextContent !== false
 
   const backButton = back ? (
-    <Button type="button" variant="outline" size="default" className={BUTTON_CLASS} onClick={back.onClick}>
+    <Button type="button" variant="outline" size="default" className={BUTTON_CLASS} onClick={back.onClick} data-footer-back>
       {back.label ?? "Back"}
     </Button>
   ) : null
@@ -102,17 +107,18 @@ export function StickyFooter({ back, context, primary, secondary, summary, class
     <div
       data-region="footer"
       className={cn(
-        "sticky bottom-0 z-10 flex min-h-16 flex-col gap-3 border-t border-border bg-background py-3",
+        "sticky bottom-0 z-20 -mx-4 -mb-5 flex min-h-16 flex-col gap-3 border-t border-border bg-background px-4 py-3 md:-mx-6 md:px-6",
         "pb-[max(var(--exxat-spacing-3),env(safe-area-inset-bottom))]",
         "sm:flex-row sm:items-center",
         className,
       )}
     >
-      {summary ? (
-        <div className="min-w-0 text-sm text-foreground sm:flex-1">{summary}</div>
-      ) : (
-        <div className="max-sm:order-3 sm:flex-1">{backButton}</div>
-      )}
+      {/* Back's slot: always the first child and the left edge, kept (empty) on a step without Back. */}
+      <div data-footer-back-slot className={cn("shrink-0 max-sm:order-4", back ? "" : "max-sm:hidden sm:w-[4.75rem]")}>
+        {backButton}
+      </div>
+
+      {summary ? <div className="min-w-0 text-sm text-foreground max-sm:order-3 sm:flex-1">{summary}</div> : <div aria-hidden="true" className="hidden sm:block sm:flex-1" />}
 
       {/* Always mounted so assistive tech hears changes to the line, not only its first value. */}
       <p
@@ -123,21 +129,22 @@ export function StickyFooter({ back, context, primary, secondary, summary, class
         {hasContext ? contextContent : null}
       </p>
 
-      {(summary && backButton) || secondary || primary ? (
-        <div className="flex flex-col gap-2 max-sm:order-1 sm:flex-row sm:items-center sm:gap-3">
+      {secondaries.length > 0 || primary ? (
+        <div className="flex flex-col gap-2 max-sm:order-1 sm:flex-row sm:items-center sm:gap-3" data-footer-actions>
+          {secondaries.map((a) => (
+            <ActionButton key={a.label} action={a} variant="outline" />
+          ))}
           {primary ? (
             <ActionButton
               action={primary}
               variant="default"
               type={primary.type}
-              className="sm:order-3"
+              className="max-sm:order-first"
               describedBy={hasContext ? contextId : undefined}
               disabled={primaryDisabled}
               busy={primary.loading}
             />
           ) : null}
-          {secondary ? <ActionButton action={secondary} variant="outline" className="sm:order-2" /> : null}
-          {summary && backButton ? <div className="sm:order-1">{backButton}</div> : null}
         </div>
       ) : null}
     </div>

@@ -15,15 +15,16 @@ import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { PersonIdentityCell } from "@exxatdesignux/ui/components/data-views/person-identity-cell"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ImpossibleScopeBanner } from "@/components/lab/dashboard/impossible-scope"
 import { BehindBadge, ListLoadError, LoadingShape } from "@/components/lab/dashboard/cards"
 import { LINK_IN_TABLE } from "@/components/lab/link-styles"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { ConditionLine } from "@/components/lab/dashboard/drill-peek"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { fmt, initialsOf } from "@/lib/v2/format"
-import { asOfLabel, useDashboardUrl, useLoadTimeout, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
-import { buildDrill, chipValue, conditionLabel, dashboardHref, drillHref, scopeOptions, studentHref, resolveTerm, type DrillParams, type DrillRequest, type DrillSkill, type DrillStudent } from "@/lib/lab/dashboard"
+import { useDashboardUrl, useLoadTimeout, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
+import { buildDrill, chipValue, conditionLabel, dashboardHref, drillHref, scopeOptions, studentHref, resolveTerm, type DrillParams, type DrillRequest, type DrillSkill, type DrillStudent, explainScope } from "@/lib/lab/dashboard"
 import type { SiteRow } from "@/lib/lab/dashboard"
 import { basisOf } from "@/lib/lab/scope"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -74,9 +75,10 @@ export function AdminDashboardDrill() {
   const term = resolveTerm(state, url.scope)
   const q = query.trim().toLowerCase()
   const match = <T,>(rows: T[], text: (r: T) => string): T[] => (q ? rows.filter((r) => text(r).toLowerCase().includes(q)) : rows)
+  const impossible = explainScope(state, url.scope)
 
   return (
-    <PageFrame title={model.title} actions={<SampleDataBadge />}>
+    <PageFrame title={model.title} subtitle={<ScopeContext termName={term.name} scope={url.scope} at={snap.at} />} actions={<SampleDataBadge />}>
       <div className="flex flex-col gap-4" data-drill={params.list} data-drill-count={model.count}>
         <Breadcrumb>
           <BreadcrumbList>
@@ -93,7 +95,11 @@ export function AdminDashboardDrill() {
         </Breadcrumb>
         {/* List budget (strategy/07): Course sits in Filters and the comparison is the dashboard's (named in the condition
             line below, changed on the dashboard), so the visible row is term, cohort, Filters, Refresh, then the table search. */}
-        <ScopeBar scope={url.scope} options={options} termName={term.name} onChange={url.setScope} chipValue={(k, v) => chipValue(state, k, v)} asOf={asOfLabel(snap.at)} onRefresh={snap.refresh} courseInFilters showBasis={false} />
+        <ScopeBar scope={url.scope} options={options} termName={term.name} onChange={url.setScope} chipValue={(k, v) => chipValue(state, k, v)} showBasis={false} />
+        {/* RP-09: a scope that cannot produce evidence is explained in place of the list, never "0 of 3" rows. */}
+        <ImpossibleScopeBanner state={state} scope={url.scope} onChange={url.setScope} />
+        {impossible ? null : (
+        <>
         {/* Condition and search on one row (the same row as variant B); the table's own query controls stay off, so the page
             has one search, not two filter systems. */}
         <FilterBar aria-label="Condition and search">
@@ -108,6 +114,8 @@ export function AdminDashboardDrill() {
         {url.demo !== "error" && model.skills ? <SkillsTable rows={match(model.skills, (r) => `${r.name} ${r.category}`)} scope={url.scope} /> : null}
         {url.demo !== "error" && model.sites ? <SitesTable rows={match(model.sites, (r) => r.name)} scope={url.scope} /> : null}
         {url.demo !== "error" && model.requests ? <RequestsTable rows={match(model.requests, (r) => `${r.student} ${r.evaluator} ${r.skills} ${r.site}`)} scope={url.scope} /> : null}
+        </>
+        )}
       </div>
     </PageFrame>
   )

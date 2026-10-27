@@ -8,6 +8,7 @@ import { appendAudit } from "./store"
 import { flushQueue, queueChange } from "./sync"
 import { evaluatorChoices, ineligibleReason, PHOTO_MAX_KB, ratingKind, reviewerId, studentHistory, type Attempt, type EvaluatorChoice } from "./student"
 import type { Evaluation, Outcome, Person, Skill, Submission, V2State } from "./types"
+import { OUTCOME_LABEL } from "./labels"
 
 /**
  * Stage 4: the review queue. Items awaiting approval (AR-01), side-by-side comparison (AR-02, AR-03), approve (AR-05, AR-06), return with
@@ -459,6 +460,11 @@ export interface Comparison {
   feedback: string
 }
 
+/** Label of the evaluator's outcome row when the skill also records a level, answers or scores (AR-03). */
+export const OUTCOME_ROW_LABEL = "Outcome"
+/** Student cell for a row the student is not asked to rate (an outcome or a score). */
+export const NOT_ASKED = "Not asked"
+
 const yn = (a: "yes" | "no" | null | undefined) => (a === "yes" ? "Yes" : a === "no" ? "No" : "Not answered")
 
 export function compareEvaluation(s: V2State, e: Evaluation): Comparison {
@@ -488,6 +494,15 @@ export function compareEvaluation(s: V2State, e: Evaluation): Comparison {
       rows.push({ label: q, student: mine ? yn(mine) : none, evaluator: d?.answers ? yn(theirs) : "Not recorded", agreement: mine && theirs ? (mine === theirs ? "agreed" : "differed") : "not-comparable" })
     })
   }
+  // Scored model (AR-03, RP-07): the score given on each question, never only the total. Students do not self-score.
+  if (skill && c && skill.model === "scored") {
+    c.questions.forEach((q, i) => {
+      const score = d?.scores?.[i]
+      rows.push({ label: q, student: NOT_ASKED, evaluator: d?.scores ? (score !== null && score !== undefined ? `${score}` : "Not scored") : "Not recorded", agreement: "not-comparable" })
+    })
+  }
+  // The evaluator's outcome beside the level, questions or scores (AR-03): a level alone does not say whether it was Met.
+  if (rows.length > 0 && kind !== "outcome") rows.push({ label: OUTCOME_ROW_LABEL, student: NOT_ASKED, evaluator: OUTCOME_LABEL[e.outcome], agreement: "not-comparable" })
   if (rows.length === 0) rows.push({ label: "Overall", student: entry ? "No self-rating for this skill" : none, evaluator: OUTCOME_WORD[e.outcome], agreement: "not-comparable" })
 
   const comparable = rows.filter((r) => r.agreement !== "not-comparable")

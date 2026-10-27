@@ -56,6 +56,22 @@ const grab = (text, re) => {
   const m = text.match(re)
   return m ? m.slice(1).map(num) : null
 }
+// My progress A (student dashboard, 2026-10-27): the hero "N of M" on Mandatory skills by course carries data-required-achieved /
+// data-required-total; the Waiting and Returned figures are FigureLinks carrying data-figure-label / data-figure-value.
+async function homeFigures() {
+  return page.evaluate(() => {
+    const hero = document.querySelector("[data-required-achieved][data-required-total]")
+    const fig = (label) => {
+      const el = document.querySelector(`[data-figure-label="${label}"][data-figure-value]`)
+      return el ? [Number(el.getAttribute("data-figure-value"))] : null
+    }
+    return {
+      ach: hero ? [Number(hero.getAttribute("data-required-achieved")), Number(hero.getAttribute("data-required-total"))] : null,
+      wait: fig("Waiting"),
+      ret: fig("Returned to you"),
+    }
+  })
+}
 async function rowText(name) {
   return page.evaluate((who) => {
     const rows = [...document.querySelectorAll("tr, [role=row]")]
@@ -111,17 +127,19 @@ for (const scope of [{ id: "all", q: TERM }, { id: "BSN 2027", q: `${TERM}&cohor
   if (scope.id === "all") check("Students total: hero says of 123 (every student is in the current term)", { hero: heroA?.[1], expected: 123 })
 
   if (mayaRow) {
-    const home = await open(`/lab/student/home`)
-    const ach = grab(home.text, /(\d+)\s*of (\d+)\s*Required skills achieved/)
-    const wait = grab(home.text, /\n(\d+)\s*\nWaiting\b/)
-    const ret = grab(home.text, /\n(\d+)\s*\nReturned\b/)
+    await open(`/lab/student/home`)
+    const homeFig = await homeFigures()
+    const ach = homeFig.ach
+    const wait = homeFig.wait
+    const ret = homeFig.ret
     const inRow = ach ? (mayaRow.includes(`${ach[0]} of ${ach[1]}`) ? ach[0] : -1) : null
     check(`Maya: required achieved on her home = her dashboard drill row${tag}`, { home: ach?.[0], drillRow: inRow })
     if (scope.id === "all") {
       const reqs = await open(`/lab/student/my-requests`)
-      const openN = grab(reqs.text, /Waiting and returned\s+(\d+)/)
-      check("Maya: waiting + returned on her home = open rows on My requests", { home: wait && ret ? wait[0] + ret[0] : null, myRequests: openN?.[0] })
-      seen.maya = { ach, wait, ret, openN }
+      // My requests tabs (LEDGER D-L10): Drafts n, Waiting n, Returned n, Done n.
+      const tabs = grab(reqs.text, /Drafts\s*\d+\s*Waiting\s*(\d+)\s*Returned\s*(\d+)/)
+      check("Maya: waiting + returned on her home = open rows on My requests", { home: wait && ret ? wait[0] + ret[0] : null, myRequests: tabs ? tabs[0] + tabs[1] : null })
+      seen.maya = { ach, wait, ret, openN: tabs ? [tabs[0] + tabs[1]] : null }
     }
   }
 }
@@ -174,14 +192,14 @@ for (const [label, group] of [["Group A", "Group+A"], ["custom group Enrolled in
 }
 {
   const def = await open(`/lab/admin/dashboard?${TERM}&variant=A`)
-  const kind = await page.evaluate(() => document.querySelector("#scope-course")?.getAttribute("data-course-kind") ?? null)
+  const kind = await page.evaluate(() => document.querySelector("[data-scope-context] [data-course-kind]")?.getAttribute("data-course-kind") ?? null)
   const defHero = grab(def.text, /(\d[\d,]*) of (\d[\d,]*) students? (?:is|are)? ?behind/)
   const defAch = grab(def.text, /Required skills achieved\s+(\d+)%\s+(\d[\d,]*) of (\d[\d,]*)/)
   const did = await open(`/lab/admin/dashboard?${TERM}&incl=didactic&variant=A`)
-  const didKind = await page.evaluate(() => document.querySelector("#scope-course")?.getAttribute("data-course-kind") ?? null)
+  const didKind = await page.evaluate(() => document.querySelector("[data-scope-context] [data-course-kind]")?.getAttribute("data-course-kind") ?? null)
   const didHero = grab(did.text, /(\d[\d,]*) of (\d[\d,]*) students? (?:is|are)? ?behind/)
   const didAch = grab(did.text, /Required skills achieved\s+(\d+)%\s+(\d[\d,]*) of (\d[\d,]*)/)
-  check("Clinical only: the scope bar Course reads Clinical only by default and switches when didactic is included", { clinicalDefault: kind === "clinical" ? 1 : 0, allWithDidactic: didKind === "all" ? 1 : 0, expected: 1 })
+  check("Clinical only: the header subtitle reads Clinical courses by default and switches when didactic is included", { clinicalDefault: kind === "clinical" ? 1 : 0, allWithDidactic: didKind === "all" ? 1 : 0, expected: 1 })
   check("Clinical only: behind and students in scope are the same with didactic included", { behind: defHero?.[0], behindWithDidactic: didHero?.[0] })
   check("Clinical only: Required this term records are the same with didactic included", { records: defAch?.[2], recordsWithDidactic: didAch?.[2] })
   await open(`/lab/admin/course-mapping?${TERM}&variant=A`)
@@ -205,8 +223,8 @@ for (const [label, group] of [["Group A", "Group+A"], ["custom group Enrolled in
 // drill and the student's own waiting count. Every one must move by exactly one.
 const WRITE_ITEM = "sub-07"
 const WRITE_STUDENT = "stu-05"
-const homeBefore = await open(`/lab/student/home?student=${WRITE_STUDENT}`)
-const waitBefore = grab(homeBefore.text, /\n(\d+)\s*\nWaiting\b/)
+await open(`/lab/student/home?student=${WRITE_STUDENT}`)
+const waitBefore = (await homeFigures()).wait
 await open(`/lab/reviewer/review-item?${TERM}&item=${WRITE_ITEM}`)
 const approveBtn = page.getByRole("button", { name: "Approve", exact: true }).first()
 const clicked = (await approveBtn.count()) > 0
@@ -220,8 +238,8 @@ const aAfter = await open(`/lab/admin/dashboard?${TERM}&variant=A`)
 const kpiAfter = grab(aAfter.text, /Awaiting approval\s+(\d[\d,]*)/)
 const dAfter = await open(`/lab/admin/dashboard-drill?${TERM}&list=requests&cond=approval`)
 const drillAfter = grab(dAfter.text, /(\d[\d,]*) submissions? awaiting approval/)
-const homeAfter = await open(`/lab/student/home?student=${WRITE_STUDENT}`)
-const waitAfter = grab(homeAfter.text, /\n(\d+)\s*\nWaiting\b/)
+await open(`/lab/student/home?student=${WRITE_STUDENT}`)
+const waitAfter = (await homeFigures()).wait
 const before = seen.all.queueN?.[0]
 check(`Write: approve ${WRITE_ITEM}, then badge = queue = dashboard figure = drill = before minus 1 (after reload)`, {
   expected: clicked && before != null ? before - 1 : null,
@@ -318,26 +336,33 @@ seen.assign = { assigned, asgQueueBefore, asgBadgeBefore, waitingBase }
   const dashBefore = await open(`/lab/admin/dashboard?${TERM}&variant=A`)
   const achBefore = grab(dashBefore.text, /Required skills achieved\s+(\d+)%\s+(\d[\d,]*) of (\d[\d,]*)/)
   await open(`/lab/admin/configure-skill?skill=${SK}&variant=B`)
+  // Configure B (redesign 2026-10-27): the footer primary reads "Save configuration" ("Save changes" on a configured skill); on a
+  // rule change that reaches students it stays disabled until the evidence choice is made ("Re-evaluate it now" writes the rule).
+  // The page then becomes the receipt ([data-receipt], banner [data-saved]) carrying the impact it applied as data attributes.
   let published = false
   let changedSaid = null
+  let gained = null
   const atLeast = page.locator("label[for=cfg-qrule-atleast]").first()
   if ((await atLeast.count()) > 0) {
     await atLeast.click()
-    const pub = page.getByRole("button", { name: "Publish", exact: true }).first()
-    await pub.click()
-    await page.waitForTimeout(800)
+    await page.waitForTimeout(500)
+    // From 1280 px the evidence choice lives in the decision panel, which replaces the preview only while Check is in view.
+    await page.evaluate(() => document.getElementById("cfg-sec-check")?.scrollIntoView({ block: "start" }))
+    await page.waitForSelector("label[for=cfg-mode-reapply]", { timeout: 5_000 }).catch(() => null)
     const reapply = page.locator("label[for=cfg-mode-reapply]").first()
-    if ((await reapply.count()) > 0 && !(await page.locator("[data-published]").count())) {
-      await reapply.click()
-      await pub.click()
-    }
-    await page.waitForSelector("[data-published]", { timeout: 15_000 }).catch(() => null)
-    published = (await page.locator("[data-published]").count()) > 0
-    changedSaid = await page.evaluate(() => {
-      const t = document.querySelector("[data-published]")?.textContent ?? ""
-      const m = t.match(/(\d+) students? now sees?/)
-      return m ? Number(m[1]) : /see this .* as configured/.test(t) ? 0 : null
+    if ((await reapply.count()) > 0) await reapply.click()
+    const save = page.getByRole("button", { name: /^Save (configuration|changes)$/ }).first()
+    await save.click({ timeout: 15_000 })
+    await page.waitForSelector("[data-receipt]", { timeout: 15_000 }).catch(() => null)
+    const receipt = await page.evaluate(() => {
+      const r = document.querySelector("[data-receipt]")
+      if (!r) return null
+      const n = (k) => Number(r.getAttribute(k))
+      return { written: r.getAttribute("data-written") === "true", changed: n("data-changed-count"), gained: n("data-gained-achieved"), lost: n("data-lost-achieved") }
     })
+    published = !!receipt?.written
+    changedSaid = receipt ? receipt.changed : null
+    gained = receipt ? receipt.gained - receipt.lost : null
   }
   const lineAfter = await lineOf()
   const dashAfter = await open(`/lab/admin/dashboard?${TERM}&variant=A`)
@@ -348,8 +373,8 @@ seen.assign = { assigned, asgQueueBefore, asgBadgeBefore, waitingBase }
     expected: 1,
   })
   check("Rule write-back: students the impact said would change = students whose record changed (Maya)", { impact: changedSaid, changed: lineAfter !== lineBefore ? 1 : 0 })
-  check("Rule write-back: dashboard Required achieved moves by the impact's gains (0: Maya is still short)", { before: achBefore?.[1], after: achAfter?.[1] })
-  seen.ruleWriteBack = { lineBefore, lineAfter, published, changedSaid, achBefore, achAfter }
+  check("Rule write-back: dashboard Required achieved = before + the impact's net gains (0: Maya is still short)", { expected: achBefore && gained != null ? achBefore[1] + gained : null, after: achAfter?.[1] })
+  seen.ruleWriteBack = { lineBefore, lineAfter, published, changedSaid, gained, achBefore, achAfter }
 }
 // Leave the shared store as the seed for the next run.
 await page.evaluate(() => { try { localStorage.clear(); sessionStorage.clear() } catch { /* storage blocked */ } })

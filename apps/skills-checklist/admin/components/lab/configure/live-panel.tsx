@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/compo
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
-import { afterSubmitLine, carriedNotes, HOW_MANY_LABEL, ruleSentence, settingNote, type Impact, type LabRule, type RecordState } from "@/lib/lab/configure"
+import { afterSubmitLine, attemptLine, carriedNotes, HOW_MANY_LABEL, ruleSentence, settingNote, type Impact, type LabRule, type RecordState } from "@/lib/lab/configure"
 import { StateBadge as RecordStateBadge } from "@/components/lab/status-pill"
 import type { RecordStateKey } from "@/lib/v2/labels"
 import { fmt } from "@/lib/v2/format"
@@ -193,7 +193,9 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
     <aside aria-labelledby={`${id}-h`} className="flex flex-col gap-4" data-rule-preview>
       <h2 id={`${id}-h`} className="text-sm font-semibold text-foreground">Preview</h2>
       <div className="flex flex-col gap-1">
-        {showRule ? (
+        {/* Say it once (Romit 2026-10-27, "too many text"): when the student card below shows the rule and the setting note,
+            the panel does not repeat them above it; limits kept from the earlier rule are listed in Check and save. */}
+        {showRule && !(rule.model && showPreviews) ? (
           <>
             <p className="text-sm text-foreground">
               {rule.model ? <span className="text-muted-foreground">{`${HOW_MANY_LABEL}: `}</span> : null}
@@ -215,6 +217,13 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
           ) : null}
         </div>
       </div>
+      {/* How attempts count, from one real record under the edited rule ("5 attempts, 2 not approved: 3 count") [CALL 10-26 #4]. */}
+      {impact?.example && rule.model && attemptLine(rule, impact.example) ? (
+        <p className="text-sm text-foreground" data-attempt-line>
+          <span className="text-muted-foreground">Example: </span>
+          <span className="tabular-nums">{`${attemptLine(rule, impact.example)}.`}</span>
+        </p>
+      ) : null}
       {/* Both views at once (D-X30): the panel has the room, so no tabs to switch between. */}
       {rule.model && showPreviews ? (
         <div className="flex flex-col gap-3">
@@ -228,7 +237,7 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
           </section>
         </div>
       ) : null}
-      {!rule.model ? <p className="text-sm text-muted-foreground">What students and evaluators see appears once you choose how it&apos;s judged.</p> : null}
+      {/* Without a model the rule line above already says "Choose how it's judged first."; nothing else to add. */}
     </aside>
   )
 }

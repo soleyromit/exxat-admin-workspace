@@ -1,29 +1,22 @@
 "use client"
 
 /**
- * Check and publish [REQ SC-19, AE-02; strategy 03 section 9; 02 section 4.5]. What you changed, one headline figure, the
- * before and after counts, the students grouped by the move they make with what they share said ONCE (J7), and the open choice
- * of how evidence already held is treated (PENDING-ROMIT AE-02 versus option B: nothing preselected, marked "Decision pending").
- * After publish: one success banner in view, the next step (map to courses) and the line affected students see.
+ * Rule-change impact pieces for Check and the rule impact pages [REQ SC-19, AE-02; strategy 03 section 9]: one headline figure,
+ * the before and after counts, the students grouped by the move they make with what they share said ONCE (J7), and the open
+ * choice of how evidence already held is treated (PENDING-ROMIT AE-02 versus option B: nothing preselected, marked "Decision
+ * pending"). Check itself and the receipt after "Save configuration" live in ./check.tsx (decisions D-X31, D-X32).
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { FieldError, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
-import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
-import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import {
-  affectedStudentLine,
   attemptLine,
   computeImpact,
-  configDiff,
   partSentence,
   fromV2,
   groupImpact,
@@ -40,26 +33,22 @@ import { EMPTY_SCOPE } from "@/lib/lab/scope"
 import { skillNoun } from "@/lib/lab/terms"
 import type { Skill, V2State } from "@/lib/v2/types"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
-import { fmt, shortDate } from "@/lib/v2/format"
-import { DEMO_TODAY } from "@/lib/v2/seed-core"
-import { PreviewTabs, StateBadge, StudentPreview, EvaluatorPreview } from "./live-panel"
-import { mappingHref } from "./shell"
-import { focusField } from "./use-configure"
+import { fmt } from "@/lib/v2/format"
+import { StateBadge } from "./live-panel"
 
-const DATE_LABEL = shortDate(DEMO_TODAY)
 const NONE = fromV2({ model: null, config: null })
 
 export function useLiveImpact(state: V2State, skill: Skill | undefined, current: LabRule | null, rule: LabRule): Impact | null {
   return React.useMemo(() => (skill && rule.model ? computeImpact(state, skill.id, current ?? NONE, rule, "reapply") : null), [state, skill, current, rule])
 }
 
-/** The evidence choice is asked only when a published rule changes who qualifies and someone has evidence [REQ AE-02, AE-06]. */
+/** The evidence choice is asked only when a saved rule changes who qualifies and someone has evidence [REQ AE-02, AE-06]. */
 export const needsEvidenceChoice = (current: LabRule | null, impact: Impact | null) => !!current && !!impact?.ruleChanged && impact.withEvidence > 0
 
 /** One figure (wizard budget): the headline above the table. */
 export function impactHeadline(current: LabRule | null, impact: Impact | null): string {
-  if (!current) return "Not in use yet, so publishing changes nobody's status."
-  if (!impact || impact.withEvidence === 0) return "No evidence recorded yet, so publishing changes nobody's status."
+  if (!current) return "Not configured yet, so saving changes nobody's status."
+  if (!impact || impact.withEvidence === 0) return "No evidence recorded yet, so saving changes nobody's status."
   if (!impact.ruleChanged || impact.changed.length === 0) return "Nobody's status changes."
   return `${fmt(impact.changed.length)} of ${fmt(impact.withEvidence)} students with evidence change status.`
 }
@@ -71,8 +60,8 @@ function changeWord(n: number): string {
 
 export function ImpactTable({ impact }: { impact: Impact }) {
   return (
-    <Table containerClassName="rounded-md border border-border" scrollLabel="Status before and after publish">
-      <TableCaption className="sr-only">{`Students by status on this ${skillNoun()}, now and after publish. ${impact.students} students.`}</TableCaption>
+    <Table containerClassName="rounded-md border border-border" scrollLabel="Status now and after saving">
+      <TableCaption className="sr-only">{`Students by status on this ${skillNoun()}, now and after saving. ${impact.students} students.`}</TableCaption>
       <TableHeader>
         <TableRow>
           <TableHead scope="col">Status</TableHead>
@@ -199,20 +188,14 @@ function ImpactGroupBlock({ g, expanded }: { g: ImpactGroup; expanded: boolean }
   )
 }
 
-/** The open choice. Neither option is preselected; publishing asks for it explicitly. */
+/** The open choice. Neither option is preselected; saving asks for it explicitly. */
 export function EvidenceChoice({ value, onChange, error }: { value: PublishMode | null; onChange: (m: PublishMode) => void; error?: string }) {
+  // The open decision (D-X27) is a lab note only (screens.json); the product shows the two options, never a "pending" label.
   return (
     <FieldSet className="flex flex-col gap-3" data-pending-choice>
-      <div className="flex flex-wrap items-center gap-2">
-        <FieldLegend variant="label" className="mb-0">
-          Evidence already held
-        </FieldLegend>
-        <Tip label="How a rule change treats existing evidence is not decided. Both options are shown so their effect can be compared.">
-          <Badge variant="outline" tabIndex={0}>
-            Decision pending
-          </Badge>
-        </Tip>
-      </div>
+      <FieldLegend variant="label" className="mb-0">
+        Evidence already held
+      </FieldLegend>
       <RadioGroup
         id="cfg-mode"
         tabIndex={-1}
@@ -226,14 +209,14 @@ export function EvidenceChoice({ value, onChange, error }: { value: PublishMode 
           <RadioGroupItem id="cfg-mode-reapply" value="reapply" className="mt-0.5" />
           <div className="flex flex-col">
             <Label htmlFor="cfg-mode-reapply">Re-evaluate it now</Label>
-            <span className="text-sm text-muted-foreground">Status is recalculated with the new rule.</span>
+            <span className="text-sm text-muted-foreground">Status is recalculated now.</span>
           </div>
         </div>
         <div className="flex items-start gap-2">
           <RadioGroupItem id="cfg-mode-new" value="new-only" className="mt-0.5" />
           <div className="flex flex-col">
             <Label htmlFor="cfg-mode-new">Apply to new evidence only</Label>
-            <span className="text-sm text-muted-foreground">Current status stays; later evaluations use the new rule.</span>
+            <span className="text-sm text-muted-foreground">Status stays; later evaluations use it.</span>
           </div>
         </div>
       </RadioGroup>
@@ -244,30 +227,11 @@ export function EvidenceChoice({ value, onChange, error }: { value: PublishMode 
 
 export const EVIDENCE_CHOICE_MISSING = "Choose how evidence already held is treated."
 
-/** "What you changed": only the settings that differ, as now and after. */
-export function ChangeList({ current, rule }: { current: LabRule | null; rule: LabRule }) {
-  const rows = configDiff(current, rule)
-  if (rows.length === 0) return <p className="text-sm text-muted-foreground">No unpublished changes.</p>
-  return (
-    <dl className="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-[10rem_1fr]" data-change-list>
-      {rows.map((r) => (
-        <React.Fragment key={r.label}>
-          <dt className="text-muted-foreground">{r.label}</dt>
-          <dd className="flex flex-col gap-0.5">
-            <span className="font-medium text-foreground">{r.after}</span>
-            {current ? <span className="text-muted-foreground">{`Was: ${r.before}`}</span> : null}
-          </dd>
-        </React.Fragment>
-      ))}
-    </dl>
-  )
-}
-
 /**
  * Impact for one skill: headline, then counts or people first. `lead="counts"` opens on the before and after table with the
  * groups folded; `lead="people"` opens on the groups with their students listed and folds the table.
  */
-export function ImpactSummary({ current, impact, lead = "counts" }: { current: LabRule | null; impact: Impact | null; lead?: "counts" | "people" }) {
+export function ImpactSummary({ current, impact, lead = "counts", expandPeople = true }: { current: LabRule | null; impact: Impact | null; lead?: "counts" | "people"; /** False keeps each group's students one click away (Check side column). */ expandPeople?: boolean }) {
   const show = !!current && !!impact && impact.ruleChanged && impact.withEvidence > 0
   const [tableOpen, setTableOpen] = React.useState(false)
   return (
@@ -283,7 +247,7 @@ export function ImpactSummary({ current, impact, lead = "counts" }: { current: L
           </>
         ) : (
           <>
-            <ImpactGroups impact={impact} expanded />
+            <ImpactGroups impact={impact} expanded={expandPeople} />
             <Collapsible open={tableOpen} onOpenChange={setTableOpen}>
               <CollapsibleTrigger asChild>
                 <Button type="button" variant="link" size="sm" className="h-auto p-0" aria-expanded={tableOpen}>
@@ -321,167 +285,7 @@ export function WhoSees({ impact }: { impact: Impact | null }) {
   const verified = impact?.changedVerified ?? 0
   return (
     <p className="text-sm text-muted-foreground" data-who-sees>
-      {`Completed evaluations stay as recorded; students who change see the new rule.${verified > 0 ? ` ${verified} verified ${verified === 1 ? "record shows" : "records show"} Changed since verified.` : ""}`}
+      {`Completed evaluations stay as recorded.${verified > 0 ? ` ${verified} verified ${verified === 1 ? "record shows" : "records show"} Changed since verified.` : ""}`}
     </p>
-  )
-}
-
-/** Step 5 of set 1 and section 5 of set 2: tabs What changes, Student sees, Evaluator sees (J6). */
-export function CheckPanel({
-  skill,
-  current,
-  rule,
-  impact,
-  mode,
-  onMode,
-  modeError,
-  previewColumn = true,
-}: {
-  skill: Skill
-  current: LabRule | null
-  rule: LabRule
-  impact: Impact | null
-  mode: PublishMode | null
-  onMode: (m: PublishMode) => void
-  modeError?: string
-  /**
-   * From 1280 px (decision D-X30) the student and evaluator views sit in a full-height column beside "What changes" instead
-   * of behind tabs. False when the page already has that column (Configure set 2's preview panel).
-   */
-  previewColumn?: boolean
-}) {
-  const choice = needsEvidenceChoice(current, impact)
-  const tabs = (
-    <Tabs defaultValue="changes" className="min-w-0 min-[1280px]:[&>*:first-child]:hidden">
-      {/* The tab list is for narrow screens only; from 1280 px "What changes" shows on its own and the views sit beside it. */}
-      <TabsList variant="line" ariaLabel="Check before publishing">
-        <TabsTrigger value="changes">What changes</TabsTrigger>
-        <TabsTrigger value="student">Student sees</TabsTrigger>
-        <TabsTrigger value="evaluator">Evaluator sees</TabsTrigger>
-      </TabsList>
-      <TabsContent value="changes" className="flex flex-col gap-8 pt-4 min-[1280px]:pt-0">
-        <section aria-labelledby="cfg-changed-heading" className="flex flex-col gap-3">
-          <h3 id="cfg-changed-heading" className="text-sm font-medium text-foreground">
-            What you changed
-          </h3>
-          <ChangeList current={current} rule={rule} />
-          <AttemptExample rule={rule} impact={impact} />
-        </section>
-        <ImpactSummary current={current} impact={impact} />
-        {choice ? <EvidenceChoice value={mode} onChange={onMode} error={modeError} /> : null}
-        {current ? <WhoSees impact={mode === "new-only" ? null : impact} /> : null}
-      </TabsContent>
-      <TabsContent value="student" className="pt-4">
-        <StudentPreview skillName={skill.name} rule={rule} />
-      </TabsContent>
-      <TabsContent value="evaluator" className="pt-4">
-        <EvaluatorPreview skillName={skill.name} rule={rule} />
-      </TabsContent>
-    </Tabs>
-  )
-  if (!previewColumn) return tabs
-  return (
-    <div className="grid flex-1 grid-cols-1 gap-6 min-[1280px]:grid-cols-[minmax(0,1fr)_minmax(22rem,36%)]">
-      {tabs}
-      <div className="hidden rounded-[var(--radius)] border border-border min-[1280px]:block">
-        <div className="sticky top-4 flex flex-col gap-4 p-4">
-          <section aria-labelledby="cfg-check-student" className="flex flex-col gap-2">
-            <h3 id="cfg-check-student" className="text-sm font-medium text-foreground">Student sees</h3>
-            <StudentPreview skillName={skill.name} rule={rule} />
-          </section>
-          <section aria-labelledby="cfg-check-evaluator" className="flex flex-col gap-2">
-            <h3 id="cfg-check-evaluator" className="text-sm font-medium text-foreground">Evaluator sees</h3>
-            <EvaluatorPreview skillName={skill.name} rule={rule} />
-          </section>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/** After publish: one banner in view (focused), the next step, then the line affected students see. In-product only [REQ 14]. */
-export function PublishedNotice({ skill, result, onDismiss }: { skill: Skill; result: { mode: PublishMode | null; impact: Impact; rule: LabRule }; onDismiss: () => void }) {
-  const ref = React.useRef<HTMLDivElement>(null)
-  React.useEffect(() => {
-    ref.current?.scrollIntoView({ block: "start" })
-    ref.current?.focus({ preventScroll: true })
-  }, [result])
-  const n = result.impact.changed.length
-  const body =
-    n === 0
-      ? result.mode === "new-only"
-        ? "Nobody's status changed. Later evaluations use the new rule."
-        : `Students and evaluators see this ${skillNoun()} as configured.`
-      : `${n} ${n === 1 ? "student now sees" : "students now see"} what is left on this ${skillNoun()}.`
-  const first = result.impact.changed[0] ?? null
-  return (
-    <div ref={ref} tabIndex={-1} role="status" className="flex flex-col gap-3 outline-none" data-published>
-      <LocalBanner variant="success" title={`${skill.name} is published`} dismissible onDismiss={onDismiss} action={{ label: "Map to courses", href: mappingHref(skill.id) }}>
-        {body}
-      </LocalBanner>
-      {n > 0 ? (
-        <section aria-labelledby="cfg-affected-heading" className="flex flex-col gap-2">
-          <h3 id="cfg-affected-heading" className="text-sm font-medium text-foreground">
-            What affected students see
-          </h3>
-          <p className="rounded-md border border-border p-3 text-sm text-foreground">{affectedStudentLine(skill.name, result.rule, first, DATE_LABEL)}</p>
-        </section>
-      ) : null}
-    </div>
-  )
-}
-
-/** Set 3, one skill: the same check in a dialog over the sentence page. One primary, Publish. */
-export function PublishDialog({ open, onOpenChange, skill, current, rule, impact, onPublish }: { open: boolean; onOpenChange: (o: boolean) => void; skill: Skill; current: LabRule | null; rule: LabRule; impact: Impact | null; onPublish: (mode: PublishMode | null) => void }) {
-  const [mode, setMode] = React.useState<PublishMode | null>(null)
-  const [tried, setTried] = React.useState(false)
-  React.useEffect(() => {
-    if (open) {
-      setMode(null)
-      setTried(false)
-    }
-  }, [open])
-  const choice = needsEvidenceChoice(current, impact)
-  const keepRef = React.useRef<HTMLButtonElement>(null)
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl" onOpenAutoFocus={(e) => { e.preventDefault(); keepRef.current?.focus() }}>
-        <DialogHeader>
-          <DialogTitle>{`Publish ${skill.name}?`}</DialogTitle>
-          <DialogDescription>{impactHeadline(current, impact)}</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-6">
-          <AttemptExample rule={rule} impact={impact} />
-          {choice && impact ? (
-            <>
-              <ImpactTable impact={impact} />
-              <ImpactGroups impact={impact} />
-              <EvidenceChoice value={mode} onChange={setMode} error={tried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} />
-            </>
-          ) : null}
-          {!choice ? <PreviewTabs skillName={skill.name} rule={rule} /> : null}
-        </div>
-        <DialogFooter>
-          <Button ref={keepRef} type="button" variant="outline" size="default" onClick={() => onOpenChange(false)}>
-            Keep editing
-          </Button>
-          <Button
-            type="button"
-            variant="default"
-            size="default"
-            onClick={() => {
-              if (choice && !mode) {
-                setTried(true)
-                requestAnimationFrame(() => focusField("cfg-mode"))
-                return
-              }
-              onPublish(choice ? mode : null)
-            }}
-          >
-            Publish
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }

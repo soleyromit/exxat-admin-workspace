@@ -4,7 +4,8 @@
  * Chrome shared by the director screens: PageHeader (20 px serif title, no subtitle prose), the shared scope bar on one row
  * (term, cohort, course unless the screen moves it into Filters, Filters, as-of with Refresh; no Compare with, the director does not compare against a
  * clock), the polite announcement, and the states every screen gets the same way: loading (final-shape skeleton), empty scope
- * (names the filters, one Remove each), no required skills (?state=empty), stale (the scope bar's own badge). A screen lays out
+ * (names the filters, one Remove each), a scope that cannot produce evidence (explained with one Remove per filter, REQ RP-09),
+ * no required skills (?state=empty), stale (the scope bar's own badge). A screen lays out
  * only its own regions; error and partial are per region and live in the screen.
  */
 import { skillNounPlural } from "@/lib/lab/terms"
@@ -12,7 +13,8 @@ import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import type { PageHeaderActionItem } from "@exxatdesignux/ui/components/ui/page-header"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ImpossibleScopeBanner, useImpossibleScope } from "@/components/lab/dashboard/impossible-scope"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { Calm, DirectorSkeleton } from "@/components/lab/director/parts"
 import { useDirector, type DirectorContext } from "@/components/lab/director/use-director"
@@ -31,28 +33,31 @@ export interface DirectorPageProps {
   width?: "full" | "wide"
   /** List-shaped screens move Course into the scope bar's Filters popover (strategy/07 list budget). */
   courseInFilters?: boolean
+  /** A control that shares the scope bar's row, before Filters (Reports: the required-set control). */
+  toolbar?: (ctx: DirectorContext) => React.ReactNode
 }
 
-export function DirectorPage({ title, variant, pageType, actionItems, showScope = true, announce, children, width = "full", courseInFilters = false }: DirectorPageProps) {
+export function DirectorPage({ title, variant, pageType, actionItems, showScope = true, announce, children, width = "full", toolbar }: DirectorPageProps) {
   const ctx = useDirector()
   const m = ctx.model
   const applied = (["cohort", "group", "course", "cat", "tag", "loc", "setting"] as ScopeKey[]).filter((k) => !!ctx.scope[k])
+  // RP-09: a scope that cannot produce evidence is explained in place of the figures (never silent zeros). Scope pages only.
+  const impossible = useImpossibleScope(showScope ? ctx.state : null, ctx.scope)
   return (
-    <PageFrame title={typeof title === "function" ? title(ctx) : title} actionItems={actionItems} actions={<SampleDataBadge />} width={width}>
+    <PageFrame title={typeof title === "function" ? title(ctx) : title} subtitle={showScope && m ? <ScopeContext termName={m.population.term.name} scope={ctx.scope} at={ctx.at} stale={ctx.demo === "stale"} /> : undefined} actionItems={actionItems} actions={<SampleDataBadge />} width={width}>
       <div className="flex flex-col gap-4" data-page-type={pageType} data-director-lab={variant}>
         {showScope && m ? (
-          <ScopeBar
-            scope={ctx.scope}
-            options={m.options}
-            termName={m.population.term.name}
-            onChange={ctx.setScope}
-            chipValue={ctx.chip}
-            asOf={ctx.asOf}
-            onRefresh={ctx.refresh}
-            stale={ctx.demo === "stale"}
-            showBasis={false}
-            courseInFilters={courseInFilters}
-          />
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-region="toolbar">
+            {toolbar ? toolbar(ctx) : null}
+            <ScopeBar
+              scope={ctx.scope}
+              options={m.options}
+              termName={m.population.term.name}
+              onChange={ctx.setScope}
+              chipValue={ctx.chip}
+              showBasis={false}
+            />
+          </div>
         ) : null}
         <p role="status" aria-live="polite" className="sr-only">
           {!ctx.ready || !m ? "Loading" : announce ? announce(m) : `${plural(m.rows.length, "student", "students")} in scope`}
@@ -61,6 +66,8 @@ export function DirectorPage({ title, variant, pageType, actionItems, showScope 
           <DirectorSkeleton />
         ) : ctx.demo === "empty" || m.required.length === 0 ? (
           <Calm icon="fa-list-check" title={`No ${skillNounPlural()} are marked required for graduation`} body={`Readiness appears here once the program marks which ${skillNounPlural()} each student must achieve before graduating.`} />
+        ) : impossible ? (
+          <ImpossibleScopeBanner state={ctx.state} scope={ctx.scope} onChange={ctx.setScope} />
         ) : m.rows.length === 0 ? (
           <Calm icon="fa-filter" title="No students in this scope" body={`${ctx.scope.cohort || "These filters"} ${ctx.scope.course ? "with this course " : ""}match nobody in ${m.population.term.name}.`}>
             <span className="flex flex-wrap gap-2 pt-1">

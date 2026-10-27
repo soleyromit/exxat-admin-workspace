@@ -255,6 +255,23 @@ Brand pink says "this is the action" or "this is the selected one". It never say
 | Density | Staff tables: 40 px controls, rows about 44 to 56 px with two-line cells allowed. Dense rows `px-3 py-2` only in the heat-grid and lab grid | Scale needs [BUILD-PROMPT §6] |
 | Touch targets | At least 44 px on student and evaluator surfaces (`--control-height-touch`), 56 px in handover mode [new-components #24]; WCAG 2.5.8 minimum 24 px for staff desktop | Gloved or one-handed use on a clinical floor [INFER] |
 | Avatar disc | DS `AvatarInitials size="sm"` (24 px) or larger; below that drop initials | [MEMORY avatar_initials_disc_floor] |
+
+### 8.1 Type scale (2026-10-27)
+
+Romit, on a Configure screenshot: "this hierarchy looks bad, with different text sizes used, too many text again", and "this is the problem I am seeing in each page that Sankalp's talking about". One scale, read from the DS, spelled out once in `admin/components/lab/type-scale.ts` (`TYPE`); nothing else in `components/lab` writes a size above `text-base`.
+
+| Step | Use | Class (rendered at 1440) | DS source |
+|---|---|---|---|
+| Page title | The H1, one per page | DS `PageHeader` via `PageFrame` (`PAGE_TITLE_TYPE_CLASS`: serif, `text-lg sm:text-xl`, semibold; 20 px) | `page-header.tsx` |
+| Section title | Every h2: section, card, chart (`ChartCard`), pane, wizard aside, field legend used as a heading | `TYPE.section` = `text-base font-semibold` (16 px) | `CardTitle` size, made bold |
+| Group or label | h3 inside a section (`TYPE.group`, semibold) and field labels (`TYPE.label`, medium) | `text-sm` (14 px) | DS `Label` |
+| Body | Rows, values, sentences | `text-sm` (14 px) | DS `Card` body |
+| Helper | One line at most under a field or block | `TYPE.helper` = `text-sm text-muted-foreground` (14 px) | DS `FieldDescription` |
+| Meta | Data labels in rows, charts and legends only, never a sentence | `TYPE.meta` = `text-xs text-muted-foreground` (12 px floor) | `--text-xs` |
+| Figure | Every KPI and hero number, one size, sans (never the serif) | `TYPE.figure` = `text-2xl font-semibold leading-none tabular-nums` (24 px) | `KeyMetrics` md strip value |
+
+Rules: the serif is the page title's face only; no sentence is larger than body; every section title on a page is the same size; a number and its label never mix the serif and the sans. Enforced by `admin/tests/lab/typography.test.ts` (fails on raw `text-lg` to `text-6xl` outside an icon `<i>`, on `font-heading` outside a heading, and on the rendered strings "Proposed" or "Decision pending" outside lab chrome). Measured after the sweep: the walkthrough pages render only 12, 14, 16, 20 (serif, H1) and 24 px text.
+
 ---
 ## 9. Iconography
 - Font Awesome (Pro kit), `fa-light` default, `fa-solid` for filled states (check, selected) [exxat-fontawesome-icons skill; ds-shell-anatomy]. No Lucide.

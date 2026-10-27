@@ -84,6 +84,8 @@ export interface ReviewerContext {
   options: ScopeOptions | null
   termName: string
   asOf: string
+  /** When the figures were read (the header subtitle's Updated time). */
+  at: Date | null
   refresh: () => void
   fresh: boolean
   demo: ReviewerDemo | null
@@ -126,6 +128,7 @@ export function useReviewer(): ReviewerContext {
     options,
     termName,
     asOf: asOfLabel(snap.at),
+    at: snap.at,
     refresh: snap.refresh,
     fresh: snap.fresh,
     demo,

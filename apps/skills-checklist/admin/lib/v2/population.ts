@@ -134,7 +134,15 @@ const LEVEL_RANK: Record<RequiredSkill["level"], number> = { mandatory: 0, recom
  * A skill that can count in any report figure: configured, published (put into use) and not deactivated (SL-11, decision D-X14).
  * The single filter every required set and every figure goes through.
  */
-export const isReportable = (k: Pick<Skill, "configured" | "published" | "active">): boolean => k.configured && k.published && k.active !== false
+/**
+ * The one definition of "Configured" (REQ SC-01, IM-09, IM-10; decision D-X31): the skill has a saved, complete configuration that
+ * students can be asked against and that can be mapped. The data layer still carries two flags from v2 (`configured`, `published`);
+ * a skill with `configured` but not `published` holds a rule that was never saved for use, which the lab shows as Not configured
+ * with "Draft saved". Library status, mapping, facts and reports all read this, so no figure counts the two flags apart.
+ */
+export const isConfigured = (k: Pick<Skill, "configured" | "published">): boolean => k.configured && k.published
+
+export const isReportable = (k: Pick<Skill, "configured" | "published" | "active">): boolean => isConfigured(k) && k.active !== false
 
 /**
  * The two required sets (decision D-X12). They answer different questions and are never mixed in one figure.

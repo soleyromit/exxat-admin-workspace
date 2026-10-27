@@ -1,7 +1,7 @@
 import { approvalTotals, approvalsInScope } from "./approvals"
 import { students } from "./filters"
 import { placementsEnding, PLACEMENT_ENDING_DAYS } from "./placements"
-import { DEFAULT_SCOPE, openRequests, populationRows, populationTotals, requiredToComplete, type PopulationScope } from "./population"
+import { DEFAULT_SCOPE, isConfigured, openRequests, populationRows, populationTotals, requiredToComplete, type PopulationScope } from "./population"
 import { DEMO_TODAY } from "./seed-core"
 import type { Person, V2State } from "./types"
 
@@ -80,8 +80,8 @@ export const FACT_SOURCE: Record<keyof Facts, string> = {
   awaitingApprovalUnverifiedRows: "approvals.approvalTotals().unverifiedRows",
   unverifiedEvaluators: "people (evaluator kinds) with verified === false",
   skillsTotal: "state.skills.length",
-  skillsConfigured: "state.skills.filter(configured).length",
-  skillsNotConfigured: "state.skills.filter(!configured).length",
+  skillsConfigured: "state.skills.filter(isConfigured).length",
+  skillsNotConfigured: "state.skills.filter(!isConfigured).length",
   skillsInactive: "state.skills.filter(active === false).length",
   requiredToGraduate: "population.requiredToComplete(state).length",
   evaluators: "people with an evaluator kind",
@@ -100,7 +100,7 @@ export function facts(state: V2State, scope: PopulationScope = DEFAULT_SCOPE, to
   const queue = approvalsInScope(state, scope, today)
   const qt = approvalTotals(state, queue.entries)
   const evaluators = state.people.filter((p) => EVALUATOR_KINDS.includes(p.kind))
-  const configured = state.skills.filter((k) => k.configured).length
+  const configured = state.skills.filter(isConfigured).length
   const out: Facts = {
     studentsTotal: students(state).length,
     studentsInScope: tot.students,

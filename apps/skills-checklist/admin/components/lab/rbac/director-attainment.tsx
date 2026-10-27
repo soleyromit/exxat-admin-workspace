@@ -7,7 +7,7 @@
  * own (components/lab/director/frame.tsx): the cohort is preselected to the graduating cohort and stays a filter. Above the view, a
  * readiness line for that cohort from the same model the director dashboard uses (buildReadiness), each figure a link to the list,
  * in the four graduation bands (D-X11). The view is read against "Required to graduate" by default for the graduating cohort
- * (D-X12, `defaultRequiredSet`), so the matrix totals equal the readiness line; "Required this term" is one link away (`set`).
+ * (D-X12, `defaultRequiredSet`), so the matrix totals equal the readiness line; "Required this term" (and "All skills" on the skills view) sit in the set control on the scope bar's row (`required`, `skills`).
  * Director and verification are v2 proposals, not REQ [AUDIT T3]; nothing here verifies.
  */
 import * as React from "react"
@@ -22,11 +22,13 @@ import { SkillsTable } from "@/components/lab/admin-b/attainment-tables"
 import { EvidencePeek } from "@/components/lab/admin-b/evidence-peek"
 import { ExportPanel } from "@/components/lab/admin-b/export-panel"
 import { StateLegend } from "@/components/lab/admin-b/state-viz"
-import { RequiredSetSwitch, useRequiredSet } from "@/components/lab/admin-b/required-set-switch"
+import { RequiredSetControl, useRequiredSet } from "@/components/lab/admin-b/required-set-switch"
+import { TYPE } from "@/components/lab/type-scale"
+import { fmt } from "@/lib/v2/format"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { DiamondGlyph, VIZ } from "@/components/lab/viz"
 import { BASIS_LABEL, conditionLabel } from "@/lib/lab/dashboard"
-import { buildAttainment, peekRecords, scopeLines, type AttView } from "@/lib/lab/attainment"
+import { buildAttainment, isSkillsScope, peekRecords, scopeLines, unrequiredSkills, type AttView } from "@/lib/lab/attainment"
 import { GRADUATION_LIST, GRADUATION_STAGES, GRADUATION_STAGE_LABEL, listHref, plural, type GraduationStage, type Readiness } from "@/lib/lab/director"
 import { basisOf } from "@/lib/lab/scope"
 import { can } from "@/lib/lab/rbac"
@@ -39,10 +41,18 @@ export function DirectorAttainment({ variant, view }: { variant: string; view: D
   const [exportOpen, setExportOpen] = React.useState(false)
   const actionItems = can(ROLE, "export") ? [{ id: "export", label: "Export", icon: "fa-arrow-down-to-line", variant: "outline" as const, onSelect: () => setExportOpen(true) }] : []
   return (
-    <DirectorPage title="Attainment" variant={`attainment-${variant}`} pageType="list" courseInFilters actionItems={actionItems} announce={(m) => `${plural(m.rows.length, "student", "students")} in scope`}>
+    <DirectorPage title="Reports" variant={`attainment-${variant}`} pageType="list" courseInFilters actionItems={actionItems} announce={(m) => `${plural(m.rows.length, "student", "students")} in scope`} toolbar={(ctx) => <SetControl ctx={ctx} view={view} />}>
       {(ctx) => <Body ctx={ctx} view={view} exportOpen={exportOpen} setExportOpen={setExportOpen} />}
     </DirectorPage>
   )
+}
+
+/** The required-set control on the scope bar's row (D-X12): "All skills" (D-X16) on the skills view only. */
+function SetControl({ ctx, view }: { ctx: DirectorContext; view: DirectorView }) {
+  const url = useAttainmentUrl(view === "matrix" ? "students" : "skills")
+  const reqSet = useRequiredSet(ctx.state, ctx.scope, url.param, url.hrefWith)
+  const raw = url.param("skills")
+  return <RequiredSetControl basis={reqSet.basis} allSkills={view === "skills" ? (isSkillsScope(raw) ? raw : "required") === "all" : undefined} paramsFor={reqSet.paramsFor} onChange={url.setParams} />
 }
 
 function Body({ ctx, view, exportOpen, setExportOpen }: { ctx: DirectorContext & { model: Readiness }; view: DirectorView; exportOpen: boolean; setExportOpen: (o: boolean) => void }) {
@@ -53,6 +63,9 @@ function Body({ ctx, view, exportOpen, setExportOpen }: { ctx: DirectorContext &
   const reqSet = useRequiredSet(state, ctx.scope, url.param, url.hrefWith)
   const model = React.useMemo(() => (state ? buildAttainment(state, ctx.scope, undefined, { basis: reqSet.basis }) : null), [state, ctx.scope, reqSet.basis])
   const peek = React.useMemo(() => (model && state && url.peek ? peekRecords(model, state, url.peek) : null), [model, state, url.peek])
+  const skillsRaw = url.param("skills")
+  const allSkills = view === "skills" && skillsRaw === "all"
+  const extraSkills = React.useMemo(() => (model && state && allSkills ? unrequiredSkills(state, model) : []), [model, state, allSkills])
   if (!model || !state) return null
   const term = ctx.model.population.term
   const lines = [...scopeLines(ctx.scope, term.name, BASIS_LABEL[basisOf(ctx.scope)], ctx.asOf, ctx.chip), `Required set: ${model.basisLabel}`]
@@ -63,12 +76,11 @@ function Body({ ctx, view, exportOpen, setExportOpen }: { ctx: DirectorContext &
     <>
       <ReadinessLine ctx={ctx} />
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h2 className="text-sm font-semibold text-foreground">
-            {view === "matrix" ? `Students by section · ${model.students.length}` : `${capitalize(skillNounPlural())}, most not achieved first · ${model.skills.length}`}
-          </h2>
-          <RequiredSetSwitch basis={model.basis} hrefFor={reqSet.hrefFor} />
-        </div>
+        {/* Title with a quiet count; the order is the table's sort state (Achieved, lowest first), not a phrase. */}
+        <h2 className={`flex items-baseline gap-2 ${TYPE.section}`}>
+          {view === "matrix" ? "Students by section" : capitalize(skillNounPlural())}
+          <span className={`${TYPE.meta} tabular-nums font-normal`} data-view-count>{fmt(view === "matrix" ? model.students.length : model.skills.length + extraSkills.length)}</span>
+        </h2>
         {view === "matrix" ? (
           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
             {MATRIX_BINS.map((b) => (
@@ -84,7 +96,7 @@ function Body({ ctx, view, exportOpen, setExportOpen }: { ctx: DirectorContext &
         )}
       </div>
       <div data-region="view">
-        {view === "matrix" ? <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} /> : <SkillsTable rows={model.skills} peekHref={url.peekHref} />}
+        {view === "matrix" ? <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} /> : <SkillsTable rows={model.skills} peekHref={url.peekHref} extra={allSkills ? extraSkills : undefined} notRequiredLabel={toGraduate ? "Not required to graduate" : "Not required this term"} />}
       </div>
       <EvidencePeek peek={peek} data={state} evidence={model.pop.evidenceState} scope={ctx.scope} onClose={url.closePeek} />
       {can(ROLE, "export") ? <ExportPanel open={exportOpen} onOpenChange={setExportOpen} model={model} data={state} view={attView} scopeLines={lines} fileStem={fileStem} /> : null}

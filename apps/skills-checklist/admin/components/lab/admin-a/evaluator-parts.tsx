@@ -30,6 +30,8 @@ import { addedEvaluatorsStore } from "./use-admin-data"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { EvaluatorNameBadge } from "@/components/lab/status-pill"
 import { EVALUATOR_NAME_LABEL } from "@/lib/v2/labels"
+import { Badge } from "@exxatdesignux/ui/components/ui/badge"
+import { NEW_EVALUATORS_HREF } from "@/lib/lab/admin-ia"
 
 export { initialsOf } from "@/lib/v2/format"
 import { initialsOf } from "@/lib/v2/format"
@@ -82,7 +84,22 @@ export function RateCell({ row, programRate }: { row: EvaluatorRow; programRate:
 // ---------------------------------------------------------------------------------------------------------------------
 // Directory table (variant A, and inside a site in variant B)
 
-export function directoryColumns(programRate: number, onAdopt: (r: EvaluatorRow) => void, opts: { showSite?: boolean } = {}): ColumnDef<EvaluatorRow>[] {
+/**
+ * An unverified name in the Settings list (D-L24): a small "Not verified" badge that opens Approvals, New evaluators, where the
+ * name is adopted or merged. The list is for lookup and edits; the decision lives in Approvals.
+ */
+export function NotVerifiedLink({ name }: { name: string }) {
+  return (
+    <Badge asChild variant="outline">
+      <Link href={NEW_EVALUATORS_HREF} aria-label={`${name}: not verified. Decide in Approvals, New evaluators`} data-not-verified>
+        Not verified
+      </Link>
+    </Badge>
+  )
+}
+
+/** Without `onAdopt` (the Settings list) unverified rows link to Approvals instead of deciding in place, and there is no Decide column. */
+export function directoryColumns(programRate: number, onAdopt: ((r: EvaluatorRow) => void) | undefined, opts: { showSite?: boolean } = {}): ColumnDef<EvaluatorRow>[] {
   const cols: ColumnDef<EvaluatorRow>[] = [
     {
       key: "name",
@@ -95,7 +112,9 @@ export function directoryColumns(programRate: number, onAdopt: (r: EvaluatorRow)
   const compact = opts.showSite === false
   if (!compact) cols.push({ key: "site", label: "Role and site", width: 190, sortable: true, cell: (r) => <span className="flex min-w-0 flex-col py-0.5"><span className="truncate">{r.roleLabel}</span><span className="truncate text-xs text-muted-foreground">{r.site}</span></span> })
   cols.push(
-    compact
+    !onAdopt
+      ? { key: "verified", label: "Status", width: 150, cell: (r) => (r.verified ? <VerifiedBadge verified /> : <NotVerifiedLink name={r.name} />) }
+      : compact
       ? { key: "verified", label: "Status", width: 160, cell: (r) => (r.verified ? <VerifiedBadge verified /> : <Button type="button" variant="outline" size="sm" onClick={() => onAdopt(r)} aria-label={`Adopt or merge ${r.name}, ${EVALUATOR_NAME_LABEL.unverified.toLowerCase()}`}>Adopt or merge</Button>) }
       : { key: "verified", label: "Status", width: 172, cell: (r) => <VerifiedBadge verified={r.verified} /> },
     {
@@ -151,13 +170,13 @@ export function directoryColumns(programRate: number, onAdopt: (r: EvaluatorRow)
       defaultPin: "right",
       lockPin: true,
       header: () => <span className="sr-only">Decide</span>,
-      cell: (r) => (!r.verified ? <Button type="button" variant="outline" size="sm" onClick={() => onAdopt(r)} aria-label={`Adopt or merge ${r.name}`}>Adopt or merge</Button> : null),
+      cell: (r) => (!r.verified && onAdopt ? <Button type="button" variant="outline" size="sm" onClick={() => onAdopt(r)} aria-label={`Adopt or merge ${r.name}`}>Adopt or merge</Button> : null),
     },
     )
-  return cols
+  return onAdopt ? cols : cols.filter((c) => c.key !== "actions")
 }
 
-export function DirectoryTable({ rows, programRate, onAdopt, showSite, pageSize = 25 }: { rows: EvaluatorRow[]; programRate: number; onAdopt: (r: EvaluatorRow) => void; showSite?: boolean; pageSize?: number }) {
+export function DirectoryTable({ rows, programRate, onAdopt, showSite, pageSize = 25 }: { rows: EvaluatorRow[]; programRate: number; onAdopt?: (r: EvaluatorRow) => void; showSite?: boolean; pageSize?: number }) {
   const columns = React.useMemo(() => directoryColumns(programRate, onAdopt, { showSite }), [programRate, onAdopt, showSite])
   return (
     <div data-region="table">

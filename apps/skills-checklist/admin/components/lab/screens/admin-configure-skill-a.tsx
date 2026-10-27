@@ -1,11 +1,16 @@
 "use client"
 
 /**
- * Configure a skill, option set 1 "Guided" (template T2 wizard at form width; docs/knowledge/design/skill-setup-journey/02
- * section 4). Five one-word steps (Model, Outcomes, Rule, Who signs, Check) in ONE 720 px working column. The live rule
- * sentence sits in the sticky footer, not in a third column; the student and evaluator preview opens from a small popover.
- * Check and publish is the last step: what changes, who flips (grouped by move, ties said once), the open evidence choice
- * with nothing preselected, and one primary, Publish.
+ * Configure a skill, option set 1 "Guided" (template T2 wizard, full width per D-X30). Five one-word steps (How it's judged,
+ * Evaluation criteria, How many times, Who signs, Check). From 1280 px the live Preview panel sits beside each step.
+ *
+ * Save model (decision D-X31, REQ SC-01: a skill is Not configured or Configured; there is no publish stage):
+ * - Every step's footer has "Save draft" (outline): the edits are kept in the shared store and the skill keeps its status.
+ * - Close in the title asks before leaving with unsaved edits: save a draft and leave, discard, or keep editing.
+ * - Check (decision D-X32, layout "sheet"): the issue summary on top, then "What you set up" (six groups, each with Edit that
+ *   opens the step and comes back to Check) beside "Who it affects", then the student and evaluator views side by side. One
+ *   primary, "Save configuration" ("Save changes" on a configured skill), disabled with its reason until nothing is missing.
+ * - After saving the page becomes the receipt: no stepper, no Close, no Back; Done, Map to courses, Configure next.
  *
  * URL: ?skill= (default Oral medication administration) · ?step=model|outcomes|rule|signoff|check · ?change=sample ·
  * ?state=loading. Listens for the lab `lab:reset` event (use-configure).
@@ -18,14 +23,18 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { WizardPanel, type WizardStep } from "@exxatdesignux/ui/components/ui/wizard"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { StickyFooter, ValidationSummary, WizardPage } from "@/components/lab/layout"
-import { CONFIGURE_STEPS, isConfigureStep, outcomesLabel, type ConfigureStepId, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { CONFIGURE_STEPS, configureStepHead, configureStepValue, isConfigureStep, outcomesLabel, type ConfigureStepId, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
 import { skillNoun } from "@/lib/lab/terms"
 import { SECTION_BODY, type SectionProps } from "@/components/lab/configure/fields"
-import { IssueSummary } from "@/components/lab/configure/issue-summary"
 import { RuleFooterSummary, RulePreviewAside } from "@/components/lab/configure/live-panel"
-import { CheckPanel, EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, PublishedNotice, useLiveImpact } from "@/components/lab/configure/impact"
-import { CopyFromDialog } from "@/components/lab/configure/bulk-apply"
-import { CancelButton, ConfigureLoading, ConfigureNotFound, SkillSubtitle } from "@/components/lab/configure/shell"
+import { EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
+import { CheckCard, CheckSection, ConfigureReceiptPage, EvidenceDecision, FixList, openDecisions, PreviewCard, Readiness, saveBlockedReason, SetupSummary, WhoItAffects } from "@/components/lab/configure/check"
+import { BulkApplySheet, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
+import { saveLabRule } from "@/lib/lab/configure"
+import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
+import { useV2Store } from "@/lib/v2/react"
+import { skillNounPlural } from "@/lib/lab/terms"
+import { ConfigureLoading, ConfigureNotFound, LeaveButton, SkillTitle } from "@/components/lab/configure/shell"
 import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
 
 const CHECK = CONFIGURE_STEPS.length - 1
@@ -49,25 +58,32 @@ export function AdminConfigureSkillA() {
   const [mode, setMode] = React.useState<PublishMode | null>(null)
   const [modeTried, setModeTried] = React.useState(false)
   const [copyOpen, setCopyOpen] = React.useState(false)
+  const [bulkOpen, setBulkOpen] = React.useState(false)
+  const store = useV2Store()
   const [note, setNote] = React.useState<string | null>(null)
   const [pendingFocus, setPendingFocus] = React.useState<string | null>(null)
+  // Set by an Edit link on Check: the step's primary then reads "Back to Check" (no Back x4).
+  const [returnToCheck, setReturnToCheck] = React.useState(false)
   const impact = useLiveImpact(m.state, m.skill, m.current, m.rule)
 
-  // A new skill (or a deep link to a step) starts the wizard over.
+  // A new skill (or a deep link to a step) starts the wizard over; a saved draft resumes at its step.
   const hasModel = !!m.rule.model
+  const draftStep = m.draft?.step ?? null
   const seeded = React.useRef<string | null>(null)
   React.useEffect(() => {
     if (!m.skill) return
     const key = `${m.skill.id}|${askedStep ?? ""}|${hasModel}`
     if (seeded.current === key) return
     seeded.current = key
-    const i = isConfigureStep(askedStep) && hasModel ? CONFIGURE_STEPS.findIndex((s) => s.id === askedStep) : 0
+    const want = isConfigureStep(askedStep) ? askedStep : isConfigureStep(draftStep) ? draftStep : null
+    const i = want && hasModel ? CONFIGURE_STEPS.findIndex((s) => s.id === want) : 0
     setStep(i)
     setVisited(new Set(CONFIGURE_STEPS.slice(0, i).map((s) => s.id)))
     setTried(new Set())
     setMode(null)
     setModeTried(false)
-  }, [m.skill, askedStep, hasModel])
+    setReturnToCheck(false)
+  }, [m.skill, askedStep, hasModel, draftStep])
 
   React.useEffect(() => {
     if (!pendingFocus) return
@@ -79,81 +95,105 @@ export function AdminConfigureSkillA() {
   if (!m.ready) return <ConfigureLoading />
   if (!m.skill) return <ConfigureNotFound skillId={m.skillId} />
   const skill = m.skill
+  if (m.saved) return <ConfigureReceiptPage state={m.state} skill={skill} result={m.saved} layout="sheet" nextSkill={m.nextSkill} />
 
   const stepId = CONFIGURE_STEPS[step].id
   const onCheck = stepId === "check"
   const issuesIn = (id: ConfigureStepId) => (id === "check" ? m.issues : m.issues.filter((i) => i.section === id))
-  const steps: WizardStep[] = CONFIGURE_STEPS.map((s) => ({
-    id: s.id,
-    label: s.id === "outcomes" ? outcomesLabel(m.rule.model) : s.label,
-    error: s.id !== "check" && (visited.has(s.id) || tried.has(s.id) || tried.has("check")) && issuesIn(s.id).length > 0,
-  }))
+  // A step's problems show once the admin has been there, tried to move on, or reached Check.
+  const flagged = (id: ConfigureStepId) => id !== "check" && (visited.has(id) || tried.has(id) || onCheck) && issuesIn(id).length > 0
+  // The DS rail shows each step's description under its label: the value chosen so far, or "To fix". The DS Wizard ticks every
+  // earlier step and cannot mark one as unresolved, so the words carry that state (WizardPage header note).
+  const steps: WizardStep[] = CONFIGURE_STEPS.map((s) => {
+    const description = s.id === "check" ? undefined : flagged(s.id) && s.id !== stepId ? "To fix" : configureStepValue(s.id, m.rule)
+    return {
+      id: s.id,
+      label: s.id === "outcomes" ? outcomesLabel(m.rule.model) : s.label,
+      ...(description ? { description } : {}),
+      error: flagged(s.id),
+    }
+  })
   const choice = needsEvidenceChoice(m.current, impact)
+  const open = openDecisions(m.issues, choice, mode)
+  const blocked = saveBlockedReason(m.issues, choice, mode)
 
   const goTo = (i: number, focus?: string) => {
     if (!hasModel && i > 0) return
     setVisited((prev) => new Set(prev).add(stepId))
     setStep(i)
+    if (CONFIGURE_STEPS[i].id === "check") setReturnToCheck(false)
     if (focus) setPendingFocus(focus)
     else focusStepHeading(CONFIGURE_STEPS[i].id)
   }
-  const goToIssue = (i: RuleIssue) => goTo(CONFIGURE_STEPS.findIndex((s) => s.id === i.section), i.field)
+  const goToIssue = (i: RuleIssue) => {
+    setReturnToCheck(true)
+    goTo(CONFIGURE_STEPS.findIndex((s) => s.id === i.section), i.field)
+  }
 
   const next = () => {
-    if (issuesIn(stepId).length > 0) {
+    if (issuesIn(stepId).length > 0 && !returnToCheck) {
       setTried((prev) => new Set(prev).add(stepId))
       return
     }
-    goTo(Math.min(CHECK, step + 1))
+    goTo(returnToCheck ? CHECK : Math.min(CHECK, step + 1))
   }
-  const publish = () => {
-    if (m.issues.length > 0) {
-      setTried((prev) => new Set(prev).add("check"))
-      return
-    }
+  const save = () => {
+    if (m.issues.length > 0) return
     if (choice && !mode) {
       setModeTried(true)
       requestAnimationFrame(() => focusField("cfg-mode"))
       return
     }
-    m.publish(choice ? mode : null)
+    m.save(choice ? mode : null)
   }
 
-  const showErrors = visited.has(stepId) || tried.has(stepId) || tried.has("check")
-  const props: SectionProps = { rule: m.rule, setRule: m.setRule, issues: m.issues, showErrors, settings: m.settings }
+  const showErrors = visited.has(stepId) || tried.has(stepId) || returnToCheck
+  // The step heading asks the question, so the model legend stays for screen readers only (say it once).
+  const props: SectionProps = { rule: m.rule, setRule: m.setRule, issues: m.issues, showErrors, settings: m.settings, legendHidden: true }
+  const head = configureStepHead(stepId, m.rule.model, m.issues.length === 0)
 
-  // One banner at most under the stepper: the published notice, a copied-from note, or the error summary after a failed continue.
+  // One banner at most under the step heading: on Check the issue summary (question 2), on a step the error summary after a failed
+  // continue, or a copied-from note.
   const stepIssues = issuesIn(stepId)
-  const summaryShown = !m.published && tried.has(stepId) && stepIssues.length > 0
-  const banner = m.published ? (
-    <PublishedNotice skill={skill} result={m.published} onDismiss={m.dismissPublished} />
-  ) : onCheck && tried.has("check") && m.issues.length > 0 ? (
-    <IssueSummary issues={m.issues} onGo={goToIssue} />
-  ) : !onCheck && tried.has(stepId) && stepIssues.length > 0 ? (
-    <ValidationSummary issues={stepIssues.map((i) => ({ fieldId: i.field, message: i.message }))} />
-  ) : note ? (
-    <LocalBanner variant="info" dismissible onDismiss={() => setNote(null)}>
-      {note}
-    </LocalBanner>
-  ) : null
+  const summaryShown = !onCheck && tried.has(stepId) && stepIssues.length > 0
+  const banner =
+    onCheck && m.issues.length > 0 ? (
+      <FixList issues={m.issues} onFix={goToIssue} />
+    ) : summaryShown ? (
+      <ValidationSummary issues={stepIssues.map((i) => ({ fieldId: i.field, message: i.message }))} />
+    ) : note ? (
+      <LocalBanner variant="info" dismissible onDismiss={() => setNote(null)}>
+        {note}
+      </LocalBanner>
+    ) : null
 
-  const footer = (
+  const saveLabel = m.current ? "Save changes" : "Save configuration"
+  const draftContext = m.draft && !m.dirty ? "Draft saved." : undefined
+  const footer = onCheck ? (
+    // Check: no rule line (the summary above says it once). Save is disabled, with its reason, until nothing is missing.
     <StickyFooter
-      summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} showPreview={!onCheck} showChange={!onCheck} onSeeChange={hasModel ? () => goTo(CHECK) : undefined} asideWide={!onCheck} />}
-      back={step > 0 ? { onClick: () => goTo(step - 1) } : undefined}
-      context={onCheck && m.published ? "No unpublished changes." : undefined}
-      primary={onCheck ? (m.published ? undefined : { label: "Publish", onClick: publish }) : { label: "Next", onClick: next }}
+      back={{ onClick: () => goTo(step - 1) }}
+      context={draftContext}
+      secondary={{ label: "Save draft", onClick: () => m.saveDraft(stepId) }}
+      primary={{ label: saveLabel, onClick: save, disabled: !!blocked, disabledReason: blocked }}
+    />
+  ) : (
+    <StickyFooter
+      summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} showPreview showChange onSeeChange={hasModel ? () => goTo(CHECK) : undefined} asideWide />}
+      back={step > 0 && !returnToCheck ? { onClick: () => goTo(step - 1) } : undefined}
+      context={draftContext}
+      secondary={{ label: "Save draft", onClick: () => m.saveDraft(stepId) }}
+      primary={{ label: returnToCheck ? "Back to Check" : "Next", onClick: next }}
     />
   )
 
   return (
     <>
       <WizardPage
-        title={skill.name}
-        subtitle={<SkillSubtitle state={m.state} skill={skill} />}
+        title={<SkillTitle state={m.state} skill={skill} />}
         actions={
           <div className="flex items-center gap-2">
-            <CancelButton dirty={m.dirty} />
+            <LeaveButton dirty={m.dirty} skillId={skill.id} onSaveDraft={() => m.saveDraft(stepId)} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="ghost" size="icon-sm" aria-label="More actions">
@@ -162,12 +202,19 @@ export function AdminConfigureSkillA() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => setCopyOpen(true)}>{`Copy from another ${skillNoun()}`}</DropdownMenuItem>
+                <DropdownMenuItem disabled={!m.rule.model} onSelect={() => setBulkOpen(true)}>{`Apply to other ${skillNounPlural()}`}</DropdownMenuItem>
+                {m.draft ? <DropdownMenuItem onSelect={() => m.discardDraft()}>Discard draft</DropdownMenuItem> : null}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         }
         width="form"
-        // D-X29: the live preview beside every step from 1400 px; Check already shows the previews, so it takes both columns.
+        // Layout "rail" (Romit 2026-10-27, "the steps cleaner and easier to navigate"): DS vertical Wizard in a left rail with
+        // the chosen value under each step, one visible step question beside it.
+        layout="rail"
+        stepTitle={head.title}
+        stepLead={head.lead}
+        // D-X30: the live preview beside every step from 1280 px; Check shows the views itself, so it takes the full width.
         aside={onCheck ? null : <RulePreviewAside skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={hasModel ? () => goTo(CHECK) : undefined} />}
         steps={steps}
         current={step}
@@ -180,16 +227,39 @@ export function AdminConfigureSkillA() {
           // While the summary lists the problems, field errors stay for screen readers only (say it once, rule L11).
           <WizardPanel key={s.id} step={i} className={cn("flex flex-col gap-6 pb-8", summaryShown && "[&_[data-slot=field-error]]:sr-only")}>
             {s.id === "check" ? (
-              m.published ? null : (
-                <CheckPanel skill={skill} current={m.current} rule={m.rule} impact={impact} mode={mode} onMode={setMode} modeError={modeTried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} />
-              )
+              // Layout "sheet" (redesign 2026-10-27): what to fix sits in the banner above; here the open decision first, then
+              // the choices per step, beside a sticky aside with who it affects and the preview (secondary).
+              <div className="@container" data-check-layout="sheet">
+                <div className="grid grid-cols-1 gap-6 @min-[64rem]:grid-cols-[minmax(0,1fr)_minmax(20rem,36%)]">
+                  <div className="flex min-w-0 flex-col gap-6">
+                    {choice ? <EvidenceDecision mode={mode} onMode={setMode} error={modeTried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
+                    {/* The banner above already counts what is left; the badge only says when nothing is. */}
+                    <CheckSection title="Your choices" badge={open === 0 ? <Readiness open={0} /> : undefined}>
+                      <SetupSummary
+                        rule={m.rule}
+                        current={m.current}
+                        issues={m.issues}
+                        layout="sheet"
+                        onEdit={(stepIdOf) => {
+                          setReturnToCheck(true)
+                          goTo(CONFIGURE_STEPS.findIndex((x) => x.id === stepIdOf))
+                        }}
+                      />
+                    </CheckSection>
+                  </div>
+                  {/* Not sticky: with the students listed it can be taller than the viewport, and a sticky column would hide its end. */}
+                  <div className="flex min-w-0 flex-col gap-6" data-check-aside>
+                    <CheckCard title="Who it affects">
+                      <WhoItAffects state={m.state} skill={skill} current={m.current} rule={m.rule} impact={impact} mode={mode} lead="people" />
+                    </CheckCard>
+                    {m.rule.model ? <PreviewCard skillName={skill.name} rule={m.rule} /> : null}
+                  </div>
+                </div>
+              </div>
             ) : (
-              <>
-                {SECTION_BODY[s.id](props)}
-                {s.id === "model" && !m.current ? (
-                  <LocalBanner variant="info">{`Students cannot send this ${skillNoun()} and it cannot be mapped until it is published.`}</LocalBanner>
-                ) : null}
-              </>
+              // The "Not configured" chip in the subtitle carries the consequence (cannot be sent or mapped) in its tooltip, so
+              // no banner repeats it [REQ IM-09].
+              SECTION_BODY[s.id](props)
             )}
           </WizardPanel>
         ))}
@@ -201,7 +271,24 @@ export function AdminConfigureSkillA() {
         skillId={m.skillId}
         onCopy={(rule, name) => {
           m.setRule(rule)
-          setNote(`Copied from ${name}. Check each step before publishing.`)
+          setNote(`Copied from ${name}. Check each step before saving.`)
+        }}
+      />
+      <BulkApplySheet
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        state={m.state}
+        skillId={m.skillId}
+        rule={m.rule}
+        blocked={m.issues.length > 0}
+        onApplied={(x) => {
+          // Saved to each skill picked, each with its own rule version (decision D-X31) [REQ IM-14].
+          const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
+          store.update((s) => x.ids.reduce((acc, id) => {
+            const r = saveLabRule(acc, id, m.rule, { at, byId: IDS.ross, mode: "reapply" })
+            return r.ok && r.written ? r.state : acc
+          }, s))
+          setNote(`Configuration saved to ${x.skills} ${x.skills === 1 ? skillNoun() : skillNounPlural()}. They are configured and can be mapped.${x.configured ? ` ${x.configured} were already configured; ${x.students} students changed status.` : ""}`)
         }}
       />
     </>

@@ -9,6 +9,7 @@
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { cn } from "@exxatdesignux/ui/lib/utils"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
@@ -27,11 +28,13 @@ export interface StudentFrameCtx extends StudentPageCtx {
 /**
  * Sync status in one chip: a conflict wins (amber, links to the fix), then queued, then synced. Hidden in present mode: offline
  * sync is pending scope, so the client walk-through does not show a "1 conflict" it cannot explain (the Sample data chip stays).
+ * Outside present mode it shows only when a sync scenario is asked for (?state=offline, conflict, queued, synced): the seeded
+ * conflict is a scenario, not product state, so it never sits in the header of an ordinary page (2026-10-27 sweep).
  */
-export function SyncChip({ model, offline, studentId }: { model: StudentModel; offline: boolean; studentId: string }) {
+export function SyncChip({ model, offline, studentId, scenario = false }: { model: StudentModel; offline: boolean; studentId: string; /** A sync demo state is on. */ scenario?: boolean }) {
   const { present } = usePresent()
   const s = model.sync
-  if (present) return null
+  if (present || !scenario) return null
   if (s.conflict > 0) {
     return (
       <Link href={studentHref("offline-sync", {}, studentId)} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`${s.conflict} conflict: open sync to choose a version`} data-sync-chip="conflict">
@@ -49,6 +52,7 @@ export function StudentFrame({
   primary,
   showSync = true,
   back,
+  subtitle,
   children,
 }: {
   title: string | ((ctx: StudentFrameCtx) => string)
@@ -57,7 +61,9 @@ export function StudentFrame({
   primary?: { label: string; href: string } | ((ctx: StudentFrameCtx) => { label: string; href: string } | null) | null
   showSync?: boolean
   /** A quiet way back to where the student came from. */
-  back?: (ctx: StudentFrameCtx) => { label: string; href: string }
+  back?: (ctx: StudentFrameCtx) => { label: string; href: string; /** Phone only: the breadcrumb says it from md up. */ phoneOnly?: boolean } | null
+  /** Context under the title (the course view: "Skills by course"). */
+  subtitle?: (ctx: StudentFrameCtx) => string | null
   children: (ctx: StudentFrameCtx) => React.ReactNode
 }) {
   const ctx = useStudentPage()
@@ -67,7 +73,7 @@ export function StudentFrame({
   const heading = typeof title === "function" ? (full ? title(full) : "") : title
   const backLink = back && full ? back(full) : null
   const lead = backLink ? (
-    <Button asChild variant="ghost" size="sm" className="-ms-2 self-start text-muted-foreground">
+    <Button asChild variant="ghost" size="sm" className={cn("-ms-2 self-start text-muted-foreground", backLink.phoneOnly ? "md:hidden" : "")}>
       <Link href={backLink.href}>
         <i className="fa-light fa-arrow-left" aria-hidden="true" />
         {backLink.label}
@@ -77,9 +83,8 @@ export function StudentFrame({
 
   const actions = model ? (
     <div className="flex items-center gap-2">
-      {/* Phone: the header row cannot hold the chip, the sync state and the action without crushing the title; the chip shows from sm up. */}
-      <span className="max-sm:hidden"><SampleDataBadge /></span>
-      {showSync ? <SyncChip model={model} offline={demo === "offline"} studentId={studentId} /> : null}
+      <SampleDataBadge />
+      {showSync ? <SyncChip model={model} offline={demo === "offline"} studentId={studentId} scenario={demo === "offline"} /> : null}
       {action && demo !== "empty" ? (
         <Button asChild variant="default" size="sm">
           <Link href={action.href}>{action.label}</Link>
@@ -98,7 +103,7 @@ export function StudentFrame({
   }
 
   return (
-    <PageFrame title={heading} width={width} actions={actions} lead={lead}>
+    <PageFrame title={heading} subtitle={subtitle && full ? subtitle(full) ?? undefined : undefined} width={width} actions={actions} lead={lead}>
       <div className="flex flex-col gap-6" data-page-type="student">
         {demo === "offline" ? (
           <LocalBanner variant="info" title="You are offline">
@@ -125,7 +130,7 @@ export function EmptyState({ studentId }: { studentId: string }) {
     <EmptyBlock
       title={`No ${skillNounPlural()} mapped to your courses yet`}
       body={`You can still log ${aNoun()} and send it for evaluation.`}
-      action={{ label: "Send for evaluation", href: studentHref("request-signoff", {}, studentId) }}
+      action={{ label: `Log ${aNoun()}`, href: studentHref("request-signoff", {}, studentId) }}
     />
   )
 }

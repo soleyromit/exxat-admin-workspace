@@ -6,7 +6,7 @@
  * tags chosen for all, or the Category and Tags cells of a line pasted from a sheet (decision D-X28);
  * names already in the library or repeated in the list are skipped and shown. Success offers to configure them together.
  * Question: when a coordinator has 5 to 30 names in an email, is pasting them all at once faster than adding one at a time?
- * CALL 10-26: this is the phase 1 bulk path (a one-time bulk add by the school or the implementation team); import is phase 2.
+ * CALL 10-26: this is the phase 1 bulk path; import (file upload) is phase 2.
  */
 import { SkillsLibraryBoardPage } from "@/components/lab/screens/admin-skills-library-c"
 

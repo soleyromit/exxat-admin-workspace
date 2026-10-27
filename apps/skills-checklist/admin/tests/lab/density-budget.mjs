@@ -41,7 +41,7 @@
 //            form labels, headings (h1 to h3), legends, status badges, tooltips, anything inside a table, grid, figure, chart, SVG or
 //            [data-figure], description-list terms and values (dt is a label like th, dd is data like td), anything tagged
 //            [data-viz-label] (names, axis titles, data labels), user-authored content quoted from the record (blockquote, q,
-//            [data-user-content]: evaluator feedback, a student's note; it is record data, not interface copy), the scope bar, screen-reader-only text, and tokens that are pure
+//            [data-user-content]: evaluator feedback, a student's note; it is record data, not interface copy), the scope bar and its header subtitle ([data-scope-context]: term, courses and the Updated time moved out of the scope bar 2026-10-27, same content), screen-reader-only text, and tokens that are pure
 //            numbers. SHORT-LABEL RULE: inside a chart, a list item or a table row, a text node of 3 words or fewer is a data label
 //            (a name, a category, a state word) and does not count; longer text in those places is prose and counts. Budget: 40 words at 1440 on every staff and student type, 25 for a student page at 375 (strategy/07 K4),
 //            15 on every evaluator surface.
@@ -99,8 +99,8 @@ const TERM = "Fall%202026"
 const PAGE_TYPE = {
   "admin/dashboard": "dashboard", "admin/dashboard-drill": "list", "admin/skills-library": "list", "admin/add-skill": "form",
   "admin/import-ai-review": "wizard", "admin/starter-library": "list", "admin/configure-skill": "form", "admin/rule-change-impact": "detail",
-  "admin/retire-deactivate": "form", "admin/course-mapping": "list", "admin/lists-cohorts": "list", "admin/evaluator-directory": "list",
-  "admin/settings": "list", "admin/attainment": "dashboard", "admin/export": "form", "admin/approvals": "list",
+  "admin/retire-deactivate": "form", "admin/course-mapping": "list", "admin/lists-cohorts": "list",
+  "admin/settings": "list", "admin/categories-tags": "list", "admin/attainment": "dashboard", "admin/export": "form", "admin/approvals": "list",
   "student/home": "student", "student/log-skill": "form", "student/request-signoff": "form", "student/my-requests": "list",
   "student/fix-returned": "form", "student/skill-detail": "detail", "student/record": "list", "student/share-record": "detail",
   "student/offline-sync": "list",
@@ -273,7 +273,7 @@ function measure({ FOLD, TYPE }) {
   const controlBudgetEval = 3 * Math.max(1, outcomeGroups) + 1
 
   // ---- Prose words
-  const skip = "button, a, label, th, td, [role=cell], [role=gridcell], [role=rowheader], [role=columnheader], [role=tab], table, [role=table], [role=grid], figure, svg, [data-figure], [data-scope-bar], h1, h2, h3, legend, [aria-label=Legend], [data-slot=badge], dt, dd, [data-viz-label], blockquote, q, [data-user-content], [data-artifact-preview], [role=tooltip], [aria-hidden=true], option, [role=option], .sr-only, " + EXCL
+  const skip = "button, a, label, th, td, [role=cell], [role=gridcell], [role=rowheader], [role=columnheader], [role=tab], table, [role=table], [role=grid], figure, svg, [data-figure], [data-scope-bar], [data-scope-context], h1, h2, h3, legend, [aria-label=Legend], [data-slot=badge], dt, dd, [data-viz-label], blockquote, q, [data-user-content], [data-artifact-preview], [role=tooltip], [aria-hidden=true], option, [role=option], .sr-only, " + EXCL
   const SHORT_LABEL_CTX = "[data-chart], [data-slot=chart], li, [role=listitem], [role=row]"
   const sentences = []
   const wordSources = []
@@ -303,7 +303,8 @@ function measure({ FOLD, TYPE }) {
 
   // ---- Primary actions
   const primary = all("[data-slot=button][data-variant=default]").filter(above)
-  const primaryN = new Set(primary).size
+  // A DS ButtonGroup split button (main action plus its "more ways" chevron) is ONE primary action, not two.
+  const primaryN = new Set(primary.map((b) => b.closest("[data-slot=button-group]") ?? b)).size
 
   // ---- Hues: resolved by the browser, painted over white, read back as sRGB, then OKLCH.
   const cv = document.createElement("canvas"); cv.width = cv.height = 1

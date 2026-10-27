@@ -315,7 +315,7 @@ export interface RuleRun {
   leftOut: Record<string, string>
 }
 
-export const NEED_UNSET_MESSAGE = "Enter how many valid attempts are needed, 1 or more."
+export const NEED_UNSET_MESSAGE = "Enter how many evaluations that count are needed, 1 or more."
 
 /**
  * One evaluation is a valid attempt on its own answers [REQ SC-05, SC-07]: the published question rule over the recorded Yes and No

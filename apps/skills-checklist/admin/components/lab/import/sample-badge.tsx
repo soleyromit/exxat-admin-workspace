@@ -1,18 +1,25 @@
+"use client"
+
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { PAGE_TITLE_TYPE_CLASS } from "@exxatdesignux/ui/components/ui/page-header"
-import { SAMPLE_DATA_LABEL } from "@/lib/v2/labels"
 import { LATER_LABEL } from "@/lib/lab/import"
+import { usePresent } from "@/components/lab/lab-bar/present"
 
 /**
- * Every lab screen that shows invented or sample content says so (consistency audit item 10). Canonical placement: the
- * PageFrame actions slot (top right of the page header), never the scope bar or the page body.
+ * Retired (Romit 2026-10-27: "remove sample data tags from everywhere"; LEDGER D-L11, supersedes the label part of D-X23). The
+ * chip renders nothing in any mode; call sites stay so the change is one line to reverse. The data is still fictional (D-X23).
  */
-export function SampleDataBadge() {
-  return <Badge variant="outline">{SAMPLE_DATA_LABEL}</Badge>
+export function SampleDataBadge(): null {
+  return null
 }
 
-/** Marks a phase 2 route (import a file, starting points) wherever it is offered or shown. Calm, never a warning colour. */
+/**
+ * Marks a phase 2 route (import a file, starting points) wherever it is offered or shown. Calm, never a warning colour. A lab
+ * label: present mode hides it, like every internal label (Romit 2026-10-27, walkthrough text cut).
+ */
 export function LaterBadge({ className }: { className?: string }) {
+  const { present } = usePresent()
+  if (present) return null
   return <Badge variant="secondary" className={className}>{LATER_LABEL}</Badge>
 }
 

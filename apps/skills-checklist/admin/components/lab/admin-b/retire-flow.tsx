@@ -31,6 +31,7 @@ import { fmt } from "@/lib/v2/format"
 import { NUM_LINK } from "@/components/lab/link-styles"
 import { EMPTY_SCOPE } from "@/lib/lab/scope"
 import { attainmentHref, peekParam } from "@/lib/lab/attainment"
+import { TYPE } from "@/components/lab/type-scale"
 
 
 export interface RetireResult {
@@ -99,7 +100,7 @@ export function RetireFlow({ impact, cohorts, existingLists, layout, partial, in
         {figures.map((f) => (
           <div key={f.label} className="flex flex-col gap-0.5" data-impact-figure={f.label}>
             <dt className="text-xs text-muted-foreground">{f.label}</dt>
-            <dd className="text-xl font-semibold tabular-nums text-foreground">
+            <dd className={`${TYPE.figure} text-foreground`}>
               {partial ? <Skeleton aria-hidden="true" className="h-7 w-12" /> : f.href ? <Link href={f.href} className={NUM_LINK}>{fmt(f.n)}</Link> : fmt(f.n)}
             </dd>
           </div>

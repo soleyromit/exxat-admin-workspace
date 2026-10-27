@@ -81,7 +81,7 @@ A **destination** has a nav row or a tab, because someone starts a task there. A
 
 ### 3.1 The proposal (12 destinations)
 
-> **Rename note (2026-10-26):** the admin landing is a **Dashboard**, not a Home [ROMIT 10-26]. Interaction and region rules: `06-dashboard-patterns.md`. Student "Home" stays here; 06 section 2 proposes "Progress" for the student and a director Dashboard (both PENDING-ROMIT).
+> **Rename note (2026-10-26):** the admin landing is a **Dashboard**, not a Home [ROMIT 10-26]. Interaction and region rules: `06-dashboard-patterns.md`. The student landing is **My progress** [LEDGER D-L4], replacing the earlier "Home" here and the "Progress" proposal in 06; where this file still says student "Home" (hop table, diagrams), read My progress. A director Dashboard is still open.
 
 Count: admin 4 + reviewer 2 + director 2 + student 3 = **11 sidebar rows**, plus the **evaluator inbox** (a page, not a row) = 12. T4 counted the evaluator as 1; I count the page and not the row, because an evaluator with no account has no sidebar [REQ EV-01] [AUDIT T4 P1-3]. Today: 19 rows [AUDIT T4].
 
@@ -95,7 +95,7 @@ Count: admin 4 + reviewer 2 + director 2 + student 3 = **11 sidebar rows**, plus
 | Reviewer | **Students** | Look up one student: evaluations, history | |
 | Director | **Verification** | Confirm a record can be shared (PENDING-ROMIT: feature not in REQ) | Yes |
 | Director | **Attainment** | Cohort readiness; find who is behind | |
-| Student | **Home** | What is left, what is waiting, do this next | Yes |
+| Student | **My progress** | What is left, what is waiting, do this next [LEDGER D-L4] | Yes |
 | Student | **Log** | Log a skill and send it for evaluation; unsent badge | |
 | Student | **Record** | Every submission, outcome and reason; share | |
 | Evaluator | (no rows) **Requests** page | Sign what was asked, in one sitting | Link target |
@@ -188,7 +188,7 @@ Attainment              as admin
 
 **Student**
 ```
-Home      progress, Do this next, waiting (with whom), returned (why)
+My progress  progress, Do this next, waiting (with whom), returned (why)
 Log       choose skills -> details -> send for evaluation ; "Your submissions (n)"
 Record    by {skill}: submissions, attempts, outcomes, failed-rule reasons ; course filter [REQ SH-06]
   Skill   -> Submission -> Evaluation (full) 
@@ -212,7 +212,7 @@ Email link  -> Requests (all open, grouped by student)
 | `{Skills}` tabs Library, Courses, Evaluators, Clinical settings (4) | Lists the REQ treats as supporting lists [REQ section 2] reduced from [UX-03]'s five (Skills, Categories, Tags, Settings, Lab instructors) | Categories and Tags as tabs: [REQ SL-05] wants inline creation at the point of need; manage them from a sheet on the Library filter |
 | Evaluation and Verification as sub-pages with breadcrumbs | They are reached from a record, never a start point | Sheets over the report: fine for peek, but evaluation full responses need a URL to share and to return to [REQ RP-07] |
 | Configure as its own route | Heavy form with live preview [REQ SC-19] [UX-03] | A modal: the prototype used one; too small for the dependency chain model -> evidence -> rule [REQ SC-09] |
-| One landing per role, named in the catalogue | Reviewer lands on queue (their job); director on Verification (06 proposes a director Dashboard); admin Dashboard; student Home | A shared "Home" for reviewer: no top questions to answer there [RESEARCH-v2 4.1] |
+| One landing per role, named in the catalogue | Reviewer lands on queue (their job); director on Verification (06 proposes a director Dashboard); admin Dashboard; student My progress [LEDGER D-L4] | A shared "Home" for reviewer: no top questions to answer there [RESEARCH-v2 4.1] |
 
 **Review check:** open any page. Can you name its object, its parent in two clicks, and which tab you are on without reading the title?
 
@@ -291,14 +291,14 @@ Principle (IA-5, [LEDGER D-C]): **the state already propagates (the v2 store is 
 
 | # | From -> to | Receiver's entry point | Cue the receiver must see | Cue the sender must see | Evidence of the gap today |
 |---|---|---|---|---|---|
-| 1 | Admin publishes and maps -> student | Student Home | "{n} new {skills} in {course}" on Home, once, dismissible by viewing | Admin banner: "Map it to {course} next" (exists) | Skill appears silently; the old "not open yet" banner just vanishes [AUDIT T4 hop 1] |
+| 1 | Admin publishes and maps -> student | Student My progress | "{n} new {skills} in {course}" on Home, once, dismissible by viewing | Admin banner: "Map it to {course} next" (exists) | Skill appears silently; the old "not open yet" banner just vanishes [AUDIT T4 hop 1] |
 | 2 | Student sends -> evaluator | **Email** with one link; link opens the Requests page listing every open request for that evaluator across students, then the form | Subject names the student and the count; body lists skills [BUILD-PROMPT evinvite] | Student: "Sent to {name}" and row "Waiting for {name}, {n} days" | v2 reaches the receiver only by switching role; no email surface [AUDIT T4 hop 3, T3 evinvite] |
 | 3 | Evaluator submits -> engine | none (system) | Receipt states "Counted" or "Held for approval" per skill [REQ EV-07] | Receipt has "Back to requests" and the next request if any | Dead end after submit [AUDIT T4 hop 4] |
-| 4 | Evaluation -> student | Student Home, nav badge on Record | "J. Delgado signed 2 skills. 2 counted." (what changed, with whom) | n/a | Student home still said "Fix 1 sync conflict" [AUDIT T4 hop 4, P0-1] |
+| 4 | Evaluation -> student | Student My progress, nav badge on Record | "J. Delgado signed 2 skills. 2 counted." (what changed, with whom) | n/a | Student home still said "Fix 1 sync conflict" [AUDIT T4 hop 4, P0-1] |
 | 5 | Held evaluation -> reviewer | Approvals badge, queue row | **Why held** column: "Skill requires approval" / "New evaluator name" / "Paper form" [BUILD-PROMPT aprqueue] | Evaluator told at submit that it is held [REQ EV-07] | Status says "Ready to approve" (readiness, not cause) [AUDIT T3 gap 3] |
 | 6 | Reviewer approves or returns -> student | Home "Do this next" for returns; badge on Record for approvals | Return: who, why, what to do ("Fix and send again"); approve: "Counted" line | Reviewer lands back on the next queue row, not a dead "Approved" page | Approve gave the student no signal [AUDIT T4 hop 6] |
 | 7 | Counted evidence -> director | Verification row | Group "Ready to verify" or "Changed since verified"; nothing is ready by default | n/a | All 12 students sat in one "Has unmet mandatory skills" group [AUDIT T4 hop 8] |
-| 8 | Director verifies -> student | Record header chip | "Verified, version {n}" (only if verification is kept) | Director returns to the next ready record | Student Home had 0 mentions of verification [AUDIT T4 hop 9] |
+| 8 | Director verifies -> student | Record header chip | "Verified, version {n}" (only if verification is kept) | Director returns to the next ready record | Student My progress had 0 mentions of verification [AUDIT T4 hop 9] |
 | 9 | Everything -> reports | Attainment | Figures change; the label states what is counted ("Counted evidence only") | n/a | Verified count absent from reports [AUDIT T4 P2-5] |
 
 **Why "badge plus first-row cue" and not notifications.** REQ section 14 puts notifications out of scope [REQ 14], and the build prompt lists nudges as Recommendation with a digest cap of one per person per day [BUILD-PROMPT §10]. So the cue is **in-product at the entry point the receiver already opens**, and the only outbound message in v1 is the evaluator invitation. If notifications are later added they reuse the same cue text (02 section 9).
@@ -387,7 +387,7 @@ Staff and student are persona-prefixed (the build prompt's `/skills/{persona}/{s
 | `/staff/attainment/skills` | Skills view | admin, director | same | same |
 | `/staff/attainment/evaluators` | Evaluators view | admin, director | same | same |
 | `/staff/sites/{id}` | Site snapshot | all staff | `site` | none |
-| `/student` | Home | student | | `/v2/student` |
+| `/student` | My progress | student | | `/v2/student` |
 | `/student/log` | Log | student | `item` | `/v2/student/pick-and-rate`, `/request-signoff` |
 | `/student/record` | Record | student | `course` | `/v2/student/history` |
 | `/student/record/{skillId}` | Skill record | student | `item` | none |
