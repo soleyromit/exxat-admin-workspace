@@ -400,7 +400,7 @@ export function draftToSkill(d: SkillDraft, id: string): AddedSkill {
     section: d.section.trim(),
     group: d.group.trim(),
     category: d.category.trim(),
-    tags: d.tags,
+    tags: mergeTags([], d.tags),
     model: d.model,
     mandatoryDefault: d.mandatoryDefault,
     requiredToGraduate: d.requiredToGraduate,
@@ -416,24 +416,95 @@ export interface PastedLine {
   name: string
   /** ready: will be added; in-library: repeats a skill already in the library; in-paste: repeats an earlier line; too-long. */
   kind: "ready" | "in-library" | "in-paste" | "too-long"
+  /** Second spreadsheet column, when the line was pasted from one (Name, Category, Tags). */
+  category?: string
+  /** Third spreadsheet column, split on ";" or ",". */
+  tags?: string[]
+}
+
+/** One name to add, with the category and tags its own line carried (add several). */
+export interface SeveralItem {
+  name: string
+  category?: string
+  tags?: string[]
 }
 
 /** Strips bullets, numbering and tabs a spreadsheet or email adds ("1. ", "- ", "* ", "•"). */
 const cleanLine = (raw: string): string => raw.replace(/\t+/g, " ").replace(/^\s*(?:[-*•]+|\(?\d{1,3}[.)])\s+/, "").trim().replace(/\s+/g, " ")
 
-export function parseSeveral(text: string, existingNames: readonly string[]): { lines: PastedLine[]; ready: string[] } {
+/** Splits a tags cell ("Infection prevention; Invasive procedures") into distinct tags, first spelling kept. */
+export function splitTags(cell: string): string[] {
+  return mergeTags([], cell.split(/[;,]/))
+}
+
+/** Adds tags to a list once each, case and space insensitive, keeping the first spelling and the order. */
+export function mergeTags(base: readonly string[], more: readonly string[]): string[] {
+  const out = [...base]
+  for (const raw of more) {
+    const t = raw.trim().replace(/\s+/g, " ")
+    if (t && !out.some((x) => normName(x) === normName(t))) out.push(t)
+  }
+  return out
+}
+
+/**
+ * Reads pasted names. A line copied from a spreadsheet keeps its cells: the first is the name, the second the category and
+ * the third the tags (REQ SL-03, SL-04, SL-05), so a three-column sheet maps without a mapping step. Plain lines are names only.
+ */
+export function parseSeveral(text: string, existingNames: readonly string[]): { lines: PastedLine[]; ready: string[]; items: SeveralItem[] } {
   const known = new Set(existingNames.map(normName))
   const seen = new Set<string>()
   const lines: PastedLine[] = []
   text.split(/\r?\n/).forEach((raw, i) => {
-    const name = cleanLine(raw)
+    const cells = raw.split("\t")
+    const name = cleanLine(cells.length > 1 ? cells[0]! : raw)
     if (!name) return
     const n = normName(name)
     const kind: PastedLine["kind"] = name.length > MAX_NAME ? "too-long" : known.has(n) ? "in-library" : seen.has(n) ? "in-paste" : "ready"
     seen.add(n)
-    lines.push({ line: i + 1, name, kind })
+    const category = cells.length > 1 ? cells[1]!.trim().replace(/\s+/g, " ") : ""
+    const tags = cells.length > 2 ? splitTags(cells.slice(2).join(";")) : []
+    lines.push({ line: i + 1, name, kind, ...(category ? { category } : {}), ...(tags.length ? { tags } : {}) })
   })
-  return { lines, ready: lines.filter((l) => l.kind === "ready").map((l) => l.name) }
+  const ready = lines.filter((l) => l.kind === "ready")
+  return { lines, ready: ready.map((l) => l.name), items: ready.map((l) => ({ name: l.name, ...(l.category ? { category: l.category } : {}), ...(l.tags ? { tags: l.tags } : {}) })) }
+}
+
+/**
+ * The drafts add several creates: a line's own category wins over the one chosen for all; tags from the line and the
+ * tags chosen for all are both kept, once each. Never a model (REQ SC-02).
+ */
+export function severalDrafts(items: readonly SeveralItem[], defaults: { category: string; tags: readonly string[] }): SkillDraft[] {
+  return items.map((it) => ({ ...EMPTY_DRAFT, name: it.name, section: it.category?.trim() || defaults.category.trim(), tags: mergeTags(defaults.tags, it.tags ?? []) }))
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Category and tag filter (REQ SL-10: searchable and filterable by name, category, tag and status). One category and one
+// tag at a time, like the report filters (lib/v2/reports.ts), so a filter reads as one sentence.
+
+export interface LibraryFilter {
+  /** A category name, or NO_CATEGORY for skills without one. */
+  cat: string | null
+  tag: string | null
+}
+
+export function filterLibrary(rows: readonly LibraryRow[], f: LibraryFilter): LibraryRow[] {
+  return rows.filter((r) => (!f.cat || r.section === f.cat) && (!f.tag || r.tags.some((t) => normName(t) === normName(f.tag!))))
+}
+
+/** Categories (with "No category" last when any skill has none) and tags, with how many skills carry each. */
+export function filterOptions(rows: readonly LibraryRow[]): { categories: Array<{ name: string; count: number }>; tags: Array<{ name: string; count: number }> } {
+  const cats = new Map<string, number>()
+  const tags = new Map<string, number>()
+  for (const r of rows) {
+    cats.set(r.section, (cats.get(r.section) ?? 0) + 1)
+    for (const t of r.tags) tags.set(t, (tags.get(t) ?? 0) + 1)
+  }
+  const sorted = (m: Map<string, number>) => [...m].map(([name, count]) => ({ name, count })).sort((a, b) => a.name.localeCompare(b.name))
+  const categories = sorted(cats)
+  const none = categories.findIndex((c) => c.name === NO_CATEGORY)
+  if (none >= 0) categories.push(...categories.splice(none, 1))
+  return { categories, tags: sorted(tags) }
 }
 
 /** Options for the section, group, category and tag pickers, from the live library. */
@@ -445,6 +516,6 @@ export function pickerOptions(rows: readonly LibraryRow[]) {
     sections: uniq(rows.map((r) => r.section).filter((s) => s !== NO_CATEGORY)),
     groupsBySection,
     categories: uniq(rows.map((r) => r.category)),
-    tags: uniq(rows.flatMap((r) => r.tags)),
+    tags: mergeTags([], rows.flatMap((r) => r.tags)).sort((a, b) => a.localeCompare(b)),
   }
 }

@@ -2,15 +2,18 @@ import * as React from "react"
 import { PageHeader, type PageHeaderActionItem } from "@exxatdesignux/ui/components/ui/page-header"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 
-export type PageFrameWidth = "full" | "reading" | "wide" | "form" | "wizard"
+export type PageFrameWidth = "full" | "reading" | "wide" | "form" | "wizard" | "form-preview"
 
 const WIDTH_CLASS: Record<PageFrameWidth, string> = {
   full: "",
   reading: "max-w-3xl",
   wide: "max-w-5xl",
-  // Lab templates T3 and T2 (docs/knowledge/design/skill-setup-journey/01 section 2): 720 px form, 960 px wizard.
-  form: "max-w-[45rem]",
-  wizard: "max-w-[60rem]",
+  // Lab templates T3 and T2 (docs/knowledge/design/skill-setup-journey/01 section 2): 720 px form, 960 px wizard, centred in the
+  // page (decision D-X29: a left-hugging column left half of a wide screen blank).
+  form: "mx-auto max-w-[45rem]",
+  wizard: "mx-auto max-w-[60rem]",
+  // Configure (D-X29): the 720 px form plus a 320 px live preview beside it from 1400 px; one 720 px column below that.
+  "form-preview": "mx-auto max-w-[45rem] min-[1400px]:max-w-[68rem]",
 }
 
 /**
@@ -20,8 +23,9 @@ const WIDTH_CLASS: Record<PageFrameWidth, string> = {
  *
  * - `actionItems`: the only way v2 pages put commands in the header (DS responsive action row). At most one filled primary
  *   per page, at most two `row` items, everything else `overflow`. `actions` stays for v1 callers only.
- * - `width`: `full` (lists, dashboards), `reading` (max-w-3xl, forms and detail), `wide` (max-w-5xl, side by side). Always
- *   left aligned, never centred, so the title and the body share one left edge.
+ * - `width`: `full` (lists, dashboards), `reading` (max-w-3xl, forms and detail), `wide` (max-w-5xl, side by side), and the
+ *   lab templates `form` (720), `wizard` (960) and `form-preview` (720 plus a 320 preview column from 1400 px). The template
+ *   widths are centred in the page (decision D-X29); the title and the body still share one left edge.
  * - `lead`: content above the header inside the same column (the student sync strip and device banners).
  * - `gutter`: `responsive` (px-4 below 768px, px-6 from 768px) is the default; `fixed` keeps the old px-6 for v1 pages.
  */

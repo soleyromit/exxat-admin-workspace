@@ -2923,11 +2923,6 @@
     "via": "components/lab/library/skill-panel"
    },
    {
-    "name": "Badge",
-    "from": "@exxatdesignux/ui/components/ui/badge",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/library/library-chrome"
@@ -2958,9 +2953,49 @@
     "via": "components/lab/library/row-actions"
    },
    {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "ColumnDef",
     "from": "@exxatdesignux/ui/components/data-table/types",
     "via": "components/lab/library/library-table"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
    },
    {
     "name": "DataTable",
@@ -3283,6 +3318,21 @@
     "via": "components/skills/page-header"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverTrigger",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/library/row-actions"
@@ -3295,17 +3345,7 @@
    {
     "name": "Select",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "Select",
-    "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectContent",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectContent",
@@ -3315,32 +3355,12 @@
    {
     "name": "SelectItem",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectItem",
-    "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectSeparator",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectTrigger",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectValue",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectValue",
@@ -3641,11 +3661,6 @@
     "via": "components/lab/library/skill-panel"
    },
    {
-    "name": "Badge",
-    "from": "@exxatdesignux/ui/components/ui/badge",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/empty-block"
@@ -3674,6 +3689,46 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/library/add-several-sheet"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
    },
    {
     "name": "Dialog",
@@ -3926,6 +3981,21 @@
     "via": "components/skills/page-header"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverTrigger",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/library/row-actions"
@@ -3941,19 +4011,9 @@
     "via": "components/lab/library/row-actions"
    },
    {
-    "name": "Select",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "SelectContent",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectContent",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectItem",
@@ -3961,34 +4021,14 @@
     "via": "components/lab/library/row-actions"
    },
    {
-    "name": "SelectItem",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectSeparator",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectValue",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
    },
    {
     "name": "SelectValue",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
+    "via": "components/lab/library/row-actions"
    },
    {
     "name": "Skeleton",
@@ -4076,26 +4116,6 @@
    {
     "name": "Input",
     "from": "@exxatdesignux/ui/components/ui/input"
-   },
-   {
-    "name": "Select",
-    "from": "@exxatdesignux/ui/components/ui/select"
-   },
-   {
-    "name": "SelectContent",
-    "from": "@exxatdesignux/ui/components/ui/select"
-   },
-   {
-    "name": "SelectItem",
-    "from": "@exxatdesignux/ui/components/ui/select"
-   },
-   {
-    "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select"
-   },
-   {
-    "name": "SelectValue",
-    "from": "@exxatdesignux/ui/components/ui/select"
    },
    {
     "name": "ViewSegmentedControl",
@@ -4239,11 +4259,6 @@
     "via": "components/lab/library/skill-panel"
    },
    {
-    "name": "Badge",
-    "from": "@exxatdesignux/ui/components/ui/badge",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/empty-block"
@@ -4274,9 +4289,49 @@
     "via": "components/lab/library/skill-sheet"
    },
    {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "ColumnDef",
     "from": "@exxatdesignux/ui/components/data-table/types",
     "via": "components/lab/library/library-table"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
    },
    {
     "name": "DataTable",
@@ -4599,6 +4654,21 @@
     "via": "components/skills/page-header"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverTrigger",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/library/row-actions"
@@ -4614,19 +4684,9 @@
     "via": "components/lab/library/row-actions"
    },
    {
-    "name": "Select",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "SelectContent",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectContent",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectItem",
@@ -4634,34 +4694,14 @@
     "via": "components/lab/library/row-actions"
    },
    {
-    "name": "SelectItem",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectSeparator",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectValue",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
    },
    {
     "name": "SelectValue",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
+    "via": "components/lab/library/row-actions"
    },
    {
     "name": "Skeleton",
@@ -4849,11 +4889,6 @@
     "via": "components/lab/library/skill-panel"
    },
    {
-    "name": "Badge",
-    "from": "@exxatdesignux/ui/components/ui/badge",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/library/library-chrome"
@@ -4884,9 +4919,49 @@
     "via": "components/lab/library/row-actions"
    },
    {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "ColumnDef",
     "from": "@exxatdesignux/ui/components/data-table/types",
     "via": "components/lab/library/library-table"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
    },
    {
     "name": "DataTable",
@@ -5209,6 +5284,21 @@
     "via": "components/skills/page-header"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverTrigger",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/library/row-actions"
@@ -5221,17 +5311,7 @@
    {
     "name": "Select",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "Select",
-    "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectContent",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectContent",
@@ -5241,32 +5321,12 @@
    {
     "name": "SelectItem",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectItem",
-    "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectSeparator",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectTrigger",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectValue",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectValue",
@@ -5499,11 +5559,6 @@
     "via": "components/lab/library/skill-panel"
    },
    {
-    "name": "Badge",
-    "from": "@exxatdesignux/ui/components/ui/badge",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/screens/admin-skills-library-b"
@@ -5537,6 +5592,46 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/library/add-several-sheet"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
    },
    {
     "name": "Dialog",
@@ -5834,6 +5929,21 @@
     "via": "components/skills/page-header"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverTrigger",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/library/row-actions"
@@ -5849,19 +5959,9 @@
     "via": "components/lab/library/row-actions"
    },
    {
-    "name": "Select",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "SelectContent",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectContent",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "SelectItem",
@@ -5869,34 +5969,14 @@
     "via": "components/lab/library/row-actions"
    },
    {
-    "name": "SelectItem",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectSeparator",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectValue",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
    },
    {
     "name": "SelectValue",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
+    "via": "components/lab/library/row-actions"
    },
    {
     "name": "Skeleton",
@@ -6134,11 +6214,6 @@
     "via": "components/lab/library/skill-panel"
    },
    {
-    "name": "Badge",
-    "from": "@exxatdesignux/ui/components/ui/badge",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/screens/admin-skills-library-c"
@@ -6174,6 +6249,11 @@
     "via": "components/lab/library/skill-sheet"
    },
    {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "Card",
     "from": "@exxatdesignux/ui/components/ui/card",
     "via": "components/lab/screens/admin-skills-library-c"
@@ -6197,6 +6277,41 @@
     "name": "ColumnDef",
     "from": "@exxatdesignux/ui/components/data-table/types",
     "via": "components/lab/library/library-table"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/library-filter"
    },
    {
     "name": "DataTable",
@@ -6524,6 +6639,21 @@
     "via": "components/skills/page-header"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
+    "name": "PopoverTrigger",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/library-filter"
+   },
+   {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/library/row-actions"
@@ -6536,37 +6666,12 @@
    {
     "name": "Select",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/screens/admin-skills-library-c"
-   },
-   {
-    "name": "Select",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "Select",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectContent",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/screens/admin-skills-library-c"
-   },
-   {
-    "name": "SelectContent",
-    "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
    },
    {
     "name": "SelectContent",
     "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectItem",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/screens/admin-skills-library-c"
+    "via": "components/lab/library/row-actions"
    },
    {
     "name": "SelectItem",
@@ -6574,44 +6679,14 @@
     "via": "components/lab/library/row-actions"
    },
    {
-    "name": "SelectItem",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectSeparator",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/screens/admin-skills-library-c"
-   },
-   {
     "name": "SelectTrigger",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
    },
    {
-    "name": "SelectTrigger",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
-   },
-   {
-    "name": "SelectValue",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/screens/admin-skills-library-c"
-   },
-   {
     "name": "SelectValue",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/library/row-actions"
-   },
-   {
-    "name": "SelectValue",
-    "from": "@exxatdesignux/ui/components/ui/select",
-    "via": "components/lab/library/skill-sheet"
    },
    {
     "name": "Skeleton",
@@ -9239,6 +9314,11 @@
    {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/configure/fields"
    },
    {
@@ -9414,6 +9494,11 @@
    {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "Label",
+    "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/configure/fields"
    },
    {
@@ -9432,6 +9517,26 @@
     "via": "components/skills/page-header"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "PopoverTrigger",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "RadioGroup",
+    "from": "@exxatdesignux/ui/components/ui/radio-group",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/configure/fields"
@@ -9440,6 +9545,11 @@
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/configure/impact"
+   },
+   {
+    "name": "RadioGroupItem",
+    "from": "@exxatdesignux/ui/components/ui/radio-group",
+    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "RadioGroupItem",
@@ -9509,6 +9619,16 @@
    {
     "name": "StatusBadge",
     "from": "@exxatdesignux/ui/components/ui/status-badge",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "StatusBadge",
+    "from": "@exxatdesignux/ui/components/ui/status-badge",
+    "via": "components/lab/status-pill"
+   },
+   {
+    "name": "StatusBadge",
+    "from": "@exxatdesignux/ui/components/ui/status-badge",
     "via": "components/lab/configure/shell"
    },
    {
@@ -9549,7 +9669,17 @@
    {
     "name": "Tabs",
     "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "Tabs",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/lab/configure/impact"
+   },
+   {
+    "name": "TabsContent",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "TabsContent",
@@ -9559,12 +9689,32 @@
    {
     "name": "TabsList",
     "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "TabsList",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/lab/configure/impact"
    },
    {
     "name": "TabsTrigger",
     "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "TabsTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/lab/configure/impact"
+   },
+   {
+    "name": "Textarea",
+    "from": "@exxatdesignux/ui/components/ui/textarea",
+    "via": "components/lab/configure/live-panel"
+   },
+   {
+    "name": "Tip",
+    "from": "@exxatdesignux/ui/components/ui/tip",
+    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "Tip",

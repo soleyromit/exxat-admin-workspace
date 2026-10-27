@@ -19,7 +19,7 @@ import { FormPage, StickyFooter, ValidationSummary } from "@/components/lab/layo
 import { CONFIGURE_STEPS, outcomesLabel, type ConfigureStepId, type PublishMode } from "@/lib/lab/configure"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { SECTION_BODY, type SectionProps } from "@/components/lab/configure/fields"
-import { RuleFooterSummary } from "@/components/lab/configure/live-panel"
+import { RuleFooterSummary, RulePreviewAside } from "@/components/lab/configure/live-panel"
 import { CheckPanel, EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, PublishedNotice, useLiveImpact } from "@/components/lab/configure/impact"
 import { BulkApplySheet, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
 import { CancelButton, ConfigureLoading, ConfigureNotFound, SkillSubtitle } from "@/components/lab/configure/shell"
@@ -156,9 +156,11 @@ export function AdminConfigureSkillB() {
           </div>
         }
         banner={banner}
+        // D-X29: the live preview beside the page from 1400 px; its previews step aside while Check (which shows them) is in view.
+        aside={<RulePreviewAside skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")} showPreviews={active !== "check"} />}
         footer={
           <StickyFooter
-            summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")} />}
+            summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")} asideWide />}
             context={m.published ? "No unpublished changes." : undefined}
             primary={m.published ? undefined : { label: "Publish", onClick: publish }}
           />

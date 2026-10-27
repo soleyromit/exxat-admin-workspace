@@ -69,10 +69,15 @@ export function SkillPanel({ row, rows, handlers, onOpen, onClose }: {
               showSize={false}
               actions={<RowActions row={row} handlers={handlers} hideConfigure />}
             />
-            <FloatingSheetPanelHeader title={row.name} subtitle={row.section === NO_CATEGORY ? undefined : row.section} />
+            <FloatingSheetPanelHeader title={row.name} />
             <FloatingSheetPanelBody className="px-4 pb-4">
               <dl className="flex flex-col divide-y divide-border">
                 <Fact term="Status"><LibraryStatusBadge status={row.status} /></Fact>
+                {/* Category and tags together, so what the program grouped it under reads in one place (REQ SL-03, SL-04). */}
+                <Fact term="Category">{row.section === NO_CATEGORY ? <span className="text-muted-foreground">None</span> : row.section}</Fact>
+                <Fact term="Tags">
+                  {row.tags.length ? <span className="flex flex-wrap gap-1">{row.tags.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}</span> : <span className="text-muted-foreground">None</span>}
+                </Fact>
                 <Fact term="Required to graduate">{row.requiredToGraduate ? "Yes" : "No"}</Fact>
                 <Fact term="How it's judged">{row.modelLabel || <span className="text-muted-foreground">Chosen when you configure it</span>}</Fact>
                 <Fact term="Courses">
@@ -88,9 +93,6 @@ export function SkillPanel({ row, rows, handlers, onOpen, onClose }: {
                 </Fact>
                 <Fact term="Evaluations">
                   {row.evidence ? <Link className={NUM_LINK} href={evidenceHref(row.id)}>{plural(row.evidence, "evaluation", "evaluations")}</Link> : <span className="text-muted-foreground">None yet</span>}
-                </Fact>
-                <Fact term="Tags">
-                  {row.tags.length ? <span className="flex flex-wrap gap-1">{row.tags.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}</span> : <span className="text-muted-foreground">None</span>}
                 </Fact>
                 <Fact term="Came from">{row.source}</Fact>
               </dl>

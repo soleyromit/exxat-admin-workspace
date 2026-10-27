@@ -11,7 +11,7 @@
  */
 import * as React from "react"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
-import { configureHref, rowsForTab, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
+import { configureHref, countLibrary, filterLibrary, rowsForTab, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
 import { LibraryFrame, LibraryTabs, useOpenSkill, useStatusTab } from "@/components/lab/library/library-chrome"
 import { LibraryTable } from "@/components/lab/library/library-table"
 import { SkillPanel } from "@/components/lab/library/skill-panel"
@@ -19,6 +19,7 @@ import { SkillSheet } from "@/components/lab/library/skill-sheet"
 import { AddSeveralSheet } from "@/components/lab/library/add-several-sheet"
 import { useLifecycle, useStableHandlers } from "@/components/lab/library/row-actions"
 import { useLibrary } from "@/components/lab/library/use-library"
+import { useLibraryFilter } from "@/components/lab/library/library-filter"
 
 export function SkillsLibraryTablePage({ startAdding = false }: { startAdding?: boolean }) {
   const api = useLibrary()
@@ -37,6 +38,9 @@ export function SkillsLibraryTablePage({ startAdding = false }: { startAdding?: 
 
   const handlers = useStableHandlers(api, life, setEditing)
   const visible = React.useMemo(() => rowsForTab(api.rows, tab), [api.rows, tab])
+  // The tabs count what the category and tag filter leaves, so a tab's number equals the rows under it.
+  const [filter] = useLibraryFilter()
+  const tabCounts = React.useMemo(() => countLibrary(filterLibrary(api.rows, filter)), [api.rows, filter])
   const openRow = openId ? api.byId.get(openId) ?? null : null
   const open = React.useCallback((id: string) => { setAdding(false); setAddingSeveral(false); setOpenId(id) }, [setOpenId])
 
@@ -48,7 +52,7 @@ export function SkillsLibraryTablePage({ startAdding = false }: { startAdding?: 
   const overlays = (
     <>
       {/* The phase 1 bulk add opens in place, so "Add several by name" never routes into the phase 2 import. */}
-      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(names, cat) => api.addMany(names, cat)} />
+      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addMany(items, d)} />
       <SkillSheet open={adding} onOpenChange={setAdding} rows={api.rows} onSave={save} onOpenExisting={open} />
       <SkillSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} rows={api.rows} mode="edit" editing={editing} onSave={(d) => editing && api.edit(editing.id, d)} />
       <SkillPanel row={adding || addingSeveral ? null : openRow} rows={inView.length ? inView : visible} handlers={handlers} onOpen={open} onClose={() => setOpenId(null)} />
@@ -78,7 +82,7 @@ export function SkillsLibraryTablePage({ startAdding = false }: { startAdding?: 
           onClearTab={() => setTab("all")}
           onRowsInView={setInView}
           renderFrame={(toolbar, table) => (
-            <LibraryTabs counts={api.counts} value={tab} onChange={setTab} toolbar={toolbar}>
+            <LibraryTabs counts={tabCounts} value={tab} onChange={setTab} toolbar={toolbar}>
               {table}
             </LibraryTabs>
           )}

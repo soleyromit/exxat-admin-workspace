@@ -24,12 +24,13 @@ import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { useTableState } from "@exxatdesignux/ui/components/data-table/use-table-state"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
-import { SAVED_VIEWS, type LibraryRow, type LibraryTab, type SavedView } from "@/lib/lab/library"
+import { SAVED_VIEWS, filterLibrary, type LibraryRow, type LibraryTab, type SavedView } from "@/lib/lab/library"
 import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { fmt, plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { LINK, LibraryStatusBadge } from "./library-chrome"
 import { RowActions, type RowActionHandlers } from "./row-actions"
+import { LibraryFilterMenu, useLibraryFilter } from "./library-filter"
 
 export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string) => void): ColumnDef<LibraryRow>[] {
   return [
@@ -57,11 +58,15 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
           {r.group || r.requiredToGraduate ? (
             <span className="truncate text-xs text-muted-foreground">{[r.group, r.requiredToGraduate ? "Required to graduate" : ""].filter(Boolean).join(", ")}</span>
           ) : null}
+          {/* Tags under the name (02 section 7), so they show in every view without a wide extra column. */}
+          {r.tags.length ? (
+            <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{r.tags.join(", ")}</span></span>
+          ) : null}
         </span>
       ),
     },
-    // No column filter: the tabs filter by status, the default view groups by category and search finds a name, so a
-    // filter bar would be a fourth way to narrow the same list (list toolbar budget, rule L3).
+    // No column filter: the tabs filter by status, search finds a name and the one Filter control (category, tag; REQ SL-10)
+    // sits on the tab row, so a DS filter bar would be another way to narrow the same list (list toolbar budget, rule L3).
     { key: "section", label: "Category", width: 200, sortable: true },
     { key: "status", label: "Status", width: 170, sortable: true, cell: (r) => <LibraryStatusBadge status={r.status} /> },
     { key: "modelLabel", label: "How it's judged", width: 190, sortable: true, cell: (r) => (r.modelLabel ? r.modelLabel : <span className="text-muted-foreground">Not chosen</span>) },
@@ -117,7 +122,9 @@ export interface LibraryTableProps {
 
 export function LibraryTable({ rows, visible, tab, handlers, openId, onOpen, onCopySettings, onClearTab, renderFrame, onRowsInView }: LibraryTableProps) {
   const columns = React.useMemo(() => libraryColumns(handlers, onOpen), [handlers, onOpen])
-  const ts = useTableState<LibraryRow>(visible, columns)
+  const [filter, setFilter] = useLibraryFilter()
+  const data = React.useMemo(() => filterLibrary(visible, filter), [visible, filter])
+  const ts = useTableState<LibraryRow>(data, columns)
   const [viewId, setViewId] = React.useState(SAVED_VIEWS[0]!.id)
   const [custom, setCustom] = React.useState<SavedView[]>([])
   const [naming, setNaming] = React.useState(false)
@@ -209,15 +216,16 @@ export function LibraryTable({ rows, visible, tab, handlers, openId, onOpen, onC
   const toolbar = (
     <div className="flex items-center gap-2" data-library-toolbar>
       <Input type="search" value={ts.search} onChange={(e) => ts.setSearch(e.target.value)} placeholder={`Search ${skillNounPlural()}`} aria-label={`Search ${skillNoun()} names`} className="h-8 w-56" />
+      <LibraryFilterMenu rows={rows} value={filter} onChange={setFilter} />
       {viewMenu}
     </div>
   )
 
-  const filtersOn = ts.search.trim() !== "" || ts.activeFilters.some((f) => f.values.length > 0)
+  const filtersOn = ts.search.trim() !== "" || ts.activeFilters.some((f) => f.values.length > 0) || !!(filter.cat || filter.tag)
   const table = (
     <div role="region" aria-label={`${capitalize(skillNoun())} library, ${countSkills(inView.length)}`} data-library-table>
       <DataTable<LibraryRow>
-        data={visible}
+        data={data}
         columns={columns}
         state={ts}
         getRowId={(r) => r.id}
@@ -233,7 +241,7 @@ export function LibraryTable({ rows, visible, tab, handlers, openId, onOpen, onC
         lazyLoading={{ enabled: true, threshold: 80, chunkSize: 40, loadingLabel: "Loading more" }}
         emptyState={
           filtersOn ? (
-            <EmptyBlock compact title={`No ${skillNounPlural()} match this search`} action={{ label: "Clear search and filters" }} onAction={() => { ts.setActiveFilters([]); ts.setSearch("") }} />
+            <EmptyBlock compact title={`No ${skillNounPlural()} match this search`} action={{ label: "Clear search and filters" }} onAction={() => { ts.setActiveFilters([]); ts.setSearch(""); setFilter({ cat: null, tag: null }) }} />
           ) : (
             <EmptyBlock compact title={`No ${skillNounPlural()} in this tab`} action={{ label: "Show all" }} onAction={onClearTab} />
           )

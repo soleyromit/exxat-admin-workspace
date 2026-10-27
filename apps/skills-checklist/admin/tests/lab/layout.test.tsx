@@ -216,6 +216,39 @@ describe("FormPage", () => {
   })
 })
 
+describe("centred template and preview column (decision D-X29)", () => {
+  const frameOf = (el: HTMLElement) => el.querySelector("[data-page-type] > div") as HTMLElement
+
+  it("centres the wizard and form columns instead of hugging the left edge", () => {
+    const { container: w } = render(<Wizard />)
+    expect(frameOf(w).className).toMatch(/\bmx-auto\b/)
+    const { container: f } = render(<FormPage title="Settings"><p>Body</p></FormPage>)
+    expect(frameOf(f).className).toMatch(/\bmx-auto\b/)
+  })
+
+  it("puts the preview beside the step inside the one step region, hidden below 1400 px", () => {
+    const { container } = render(
+      <WizardPage title="Configure" steps={STEPS} current={1} aside={<aside>Preview</aside>} footer={<StickyFooter primary={{ label: "Next" }} />}>
+        {STEPS.map((s, i) => <WizardPanel key={s.id} step={i}>{`${s.label} body`}</WizardPanel>)}
+      </WizardPage>,
+    )
+    expect(frameOf(container).className).toMatch(/min-\[1400px\]:max-w-\[68rem\]/)
+    const regions = container.querySelectorAll("[data-region=panel]")
+    expect(regions).toHaveLength(1)
+    const col = regions[0]!.querySelector("[data-preview-column]") as HTMLElement
+    expect(col).not.toBeNull()
+    expect(col.className).toMatch(/\bhidden\b/)
+    expect(col.className).toMatch(/min-\[1400px\]:block/)
+  })
+
+  it("keeps the wide frame but lets the step use both columns when a step passes no preview", () => {
+    const { container } = render(<FormPage title="Configure" aside={null}><p>Check</p></FormPage>)
+    expect(frameOf(container).className).toMatch(/min-\[1400px\]:max-w-\[68rem\]/)
+    expect(container.querySelector("[data-preview-column]")).toBeNull()
+    expect(container.querySelector("[data-region=panel] > div")!.className).toMatch(/min-\[1400px\]:col-span-2/)
+  })
+})
+
 describe("layout source rules", () => {
   const dir = path.resolve(__dirname, "../../components/lab/layout")
   const files = fs.readdirSync(dir).filter((f) => f.endsWith(".tsx"))

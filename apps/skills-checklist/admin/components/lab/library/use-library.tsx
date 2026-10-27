@@ -13,12 +13,13 @@ import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
 import { deleteSkill, setSkillsActive } from "@/lib/v2/admin-actions"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import {
-  EMPTY_DRAFT,
   EMPTY_OVERLAY,
   configureHref,
   buildLibrary,
   countLibrary,
   draftToSkill,
+  severalDrafts,
+  type SeveralItem,
   type LibraryOverlay,
   type LibraryRow,
   type SkillDraft,
@@ -71,11 +72,11 @@ export function useLibrary() {
   }, [])
 
   /** Add several (add a skill, variant C): every name becomes a skill that is not configured, in one category or none. */
-  const addMany = React.useCallback((names: string[], section: string): string[] => {
+  const addMany = React.useCallback((items: SeveralItem[], defaults: { category: string; tags: string[] }): string[] => {
     const stamp = Date.now().toString(36)
-    const skills = names.map((name) => {
+    const skills = severalDrafts(items, defaults).map((d) => {
       seq.current += 1
-      return draftToSkill({ ...EMPTY_DRAFT, name, section }, `lab-skill-${stamp}-${seq.current}`)
+      return draftToSkill(d, `lab-skill-${stamp}-${seq.current}`)
     })
     setOverlay((o) => ({ ...o, added: [...skills, ...o.added] }))
     const ids = skills.map((k) => k.id)

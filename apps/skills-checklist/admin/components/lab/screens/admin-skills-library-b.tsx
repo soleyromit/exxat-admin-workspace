@@ -21,7 +21,7 @@ import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { buildTree, rollupLabel, rowsForTab, type LibraryCounts, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
+import { buildTree, countLibrary, filterLibrary, pickerOptions, rollupLabel, rowsForTab, type LibraryCounts, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
 import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
@@ -32,6 +32,7 @@ import { SkillPanel } from "@/components/lab/library/skill-panel"
 import { SkillSheet } from "@/components/lab/library/skill-sheet"
 import { AddSeveralSheet } from "@/components/lab/library/add-several-sheet"
 import { useLibrary } from "@/components/lab/library/use-library"
+import { LibraryFilterMenu, useLibraryFilter } from "@/components/lab/library/library-filter"
 
 const COLS = 6
 
@@ -64,6 +65,7 @@ function SkillRow({ r, handlers, indent, onOpen, selected }: { r: LibraryRow; ha
           </Link>
           {r.isNew ? <Badge variant="outline">New</Badge> : null}
         </span>
+        {r.tags.length ? <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{r.tags.join(", ")}</span></span> : null}
       </TableCell>
       <TableCell><LibraryStatusBadge status={r.status} /></TableCell>
       <TableCell className="hidden xl:table-cell">{r.modelLabel || <span className="text-muted-foreground">Not chosen</span>}</TableCell>
@@ -89,8 +91,12 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
   const [editing, setEditing] = React.useState<LibraryRow | null>(null)
   const handlers = useStableHandlers(api, life, setEditing)
 
+  const [filter, setFilter] = useLibraryFilter()
   const query = q.trim().toLowerCase()
-  const filtered = React.useMemo(() => rowsForTab(api.rows, tab).filter((r) => !query || r.name.toLowerCase().includes(query)), [api.rows, tab, query])
+  const scoped = React.useMemo(() => filterLibrary(api.rows, filter), [api.rows, filter])
+  const scopedCounts = React.useMemo(() => countLibrary(scoped), [scoped])
+  const pickerOpts = React.useMemo(() => pickerOptions(api.rows), [api.rows])
+  const filtered = React.useMemo(() => rowsForTab(scoped, tab).filter((r) => !query || r.name.toLowerCase().includes(query)), [scoped, tab, query])
   const tree = React.useMemo(() => {
     const t = buildTree(filtered)
     return sort === "setup" ? [...t].sort((a, b) => b.counts.notConfigured - a.counts.notConfigured) : t
@@ -102,7 +108,8 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
     // First load opens the categories that still need setup; a search or a tab opens every match.
     if (!seeded.current && tree.length) { seeded.current = true; setOpen(tree.filter((s) => s.counts.notConfigured > 0).map((s) => s.key)) }
   }, [tree])
-  React.useEffect(() => { if (query || tab !== "all") { setOpen(tree.map((s) => s.key)); setGroupOpen({}) } }, [query, tab, tree])
+  const narrowed = !!(query || tab !== "all" || filter.cat || filter.tag)
+  React.useEffect(() => { if (narrowed) { setOpen(tree.map((s) => s.key)); setGroupOpen({}) } }, [narrowed, tree])
   // Add a skill B: the inline row opens in the first category that still needs setup.
   const started = React.useRef(false)
   React.useEffect(() => {
@@ -123,7 +130,7 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
   const overlays = (
     <>
       {/* The phase 1 bulk add opens in place, so "Add several by name" never routes into the phase 2 import. */}
-      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(names, cat) => api.addMany(names, cat)} />
+      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addMany(items, d)} />
       <SkillSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} rows={api.rows} mode="edit" editing={editing} onSave={(d) => editing && api.edit(editing.id, d)} />
       <SkillPanel row={addingSeveral ? null : openRow} rows={flat} handlers={handlers} onOpen={openSkill} onClose={() => setOpenId(null)} />
       {life.dialogs}
@@ -133,6 +140,7 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
   const toolbar = (
     <>
       <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${skillNounPlural()}`} aria-label={`Search ${skillNoun()} names`} className="h-8 w-56" />
+      <LibraryFilterMenu rows={api.rows} value={filter} onChange={setFilter} />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button type="button" variant="ghost" size="sm" aria-label={`Sort: ${sort === "setup" ? "Most to set up first" : "Library order"}`}>
@@ -164,9 +172,9 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
       pageType={addingSeveral || openRow ? "split" : "list"}
     >
       <div data-library-lab="B">
-        <LibraryTabs counts={api.counts} value={tab} onChange={setTab} toolbar={toolbar}>
+        <LibraryTabs counts={scopedCounts} value={tab} onChange={setTab} toolbar={toolbar}>
           {tree.length === 0 ? (
-            <EmptyBlock title={`No ${skillNounPlural()} match this search`} action={{ label: "Clear search" }} onAction={() => { setQ(""); setTab("all") }} />
+            <EmptyBlock title={`No ${skillNounPlural()} match this search`} action={{ label: "Clear search and filters" }} onAction={() => { setQ(""); setTab("all"); setFilter({ cat: null, tag: null }) }} />
           ) : (
             <div className="overflow-hidden rounded-lg border border-border">
               <Table aria-label={`${capitalize(skillNoun())} library by category, ${countSkills(filtered.length)}`}>
@@ -216,7 +224,7 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
                         </TableRow>
                         {/* The open add row sits right under its category header, where the reader asked for it. */}
                         {isOpen && addingIn === s.name ? (
-                          <InlineAddRow category={s.name} colSpan={COLS} names={api.names} onAdd={(d: SkillDraft) => api.add(d)} onClose={() => setAddingIn(null)} />
+                          <InlineAddRow category={s.name} colSpan={COLS} names={api.names} options={pickerOpts} onAdd={(d: SkillDraft) => api.add(d)} onClose={() => setAddingIn(null)} />
                         ) : null}
                         {isOpen ? s.rows.map((r) => <SkillRow key={r.id} r={r} handlers={handlers} indent={false} onOpen={openSkill} selected={r.id === openRow?.id} />) : null}
                         {isOpen ? s.groups.map((g) => {

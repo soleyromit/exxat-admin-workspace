@@ -216,7 +216,7 @@
         },
         {
           "id": "B",
-          "question": "Inline row in a category: when adding several skills by hand, is type, Enter, repeat worth deferring tags and required to graduate?",
+          "question": "Inline row in a category: when adding several skills by hand, is type, Enter, repeat (category and tags kept for the next name) worth deferring required to graduate?",
           "file": "components/lab/screens/admin-add-skill-b.tsx",
           "pageType": "form"
         },

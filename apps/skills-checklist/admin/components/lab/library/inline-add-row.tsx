@@ -2,9 +2,10 @@
 
 /**
  * Add a skill, option set 2 "One page": an inline row at the end of a category in the library tree. The category is
- * implied by where the row sits; Enter adds and keeps the row open for the next name; Escape closes (with a guard when a
- * name is typed). Tags, description and required to graduate are set later from the skill's panel; the evaluation model
- * on Configure. Same name validation as the sheet (duplicates, length).
+ * where the row sits and can be changed; tags can be picked or created on the same row (REQ SL-03, SL-04, SL-05; decision
+ * D-X28). Category and tags stay set for the next name, so a run of skills shares them. Enter adds and keeps the row open;
+ * Escape closes (with a guard when a name is typed). Required to graduate is set later from the skill's panel; the
+ * evaluation model on Configure. Same name validation as the sheet (duplicates, length).
  */
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -14,6 +15,7 @@ import { TableCell, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { EMPTY_DRAFT, NO_CATEGORY, validateDraft, type SkillDraft } from "@/lib/lab/library"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
+import { CategoryPicker, TagsPicker } from "./category-tag-pickers"
 
 /** The quiet row that opens the inline add for one category. */
 export function InlineAddTrigger({ category, colSpan, onOpen }: { category: string; colSpan: number; onOpen: () => void }) {
@@ -28,14 +30,18 @@ export function InlineAddTrigger({ category, colSpan, onOpen }: { category: stri
   )
 }
 
-export function InlineAddRow({ category, colSpan, names, onAdd, onClose }: {
+export function InlineAddRow({ category, colSpan, names, options, onAdd, onClose }: {
   category: string
   colSpan: number
   names: readonly string[]
+  /** The program's own categories and tags (pickerOptions over the live library). */
+  options: { sections: readonly string[]; tags: readonly string[] }
   onAdd: (d: SkillDraft) => void
   onClose: () => void
 }) {
   const [name, setName] = React.useState("")
+  const [section, setSection] = React.useState(category === NO_CATEGORY ? "" : category)
+  const [tags, setTags] = React.useState<string[]>([])
   const [error, setError] = React.useState<string | undefined>()
   const [added, setAdded] = React.useState(0)
   const [guard, setGuard] = React.useState(false)
@@ -45,7 +51,7 @@ export function InlineAddRow({ category, colSpan, names, onAdd, onClose }: {
     const e = validateDraft({ ...EMPTY_DRAFT, name }, names).name
     setError(e)
     if (e) return ref.current?.focus()
-    onAdd({ ...EMPTY_DRAFT, name, section: category === NO_CATEGORY ? "" : category })
+    onAdd({ ...EMPTY_DRAFT, name, section, tags })
     setName("")
     setAdded((n) => n + 1)
     ref.current?.focus()
@@ -61,7 +67,7 @@ export function InlineAddRow({ category, colSpan, names, onAdd, onClose }: {
           onSubmit={(e) => { e.preventDefault(); submit() }}
           onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); close() } }}
         >
-          <Field className="w-96 max-w-full" data-invalid={!!error || undefined}>
+          <Field className="w-80 max-w-full" data-invalid={!!error || undefined}>
             <FieldLabel htmlFor={`${id}-name`} className="sr-only">{`New ${skillNoun()} name in ${category}`}</FieldLabel>
             <Input
               ref={ref}
@@ -75,6 +81,10 @@ export function InlineAddRow({ category, colSpan, names, onAdd, onClose }: {
             />
             {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
           </Field>
+          <span id={`${id}-cat-label`} className="sr-only">Category</span>
+          <CategoryPicker id={`${id}-cat`} labelId={`${id}-cat-label`} value={section} options={options.sections} onChange={setSection} size="sm" className="w-48" />
+          <span id={`${id}-tags-label`} className="sr-only">Tags</span>
+          <TagsPicker id={`${id}-tags`} labelId={`${id}-tags-label`} value={tags} options={options.tags} onChange={setTags} size="sm" />
           <Button type="submit" variant="default" size="sm">Add</Button>
           <Button type="button" variant="ghost" size="sm" onClick={close}>Done</Button>
           <p id={`${id}-help`} className="basis-full text-xs text-muted-foreground" aria-live="polite">

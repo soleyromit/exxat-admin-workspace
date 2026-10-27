@@ -16,6 +16,10 @@ import {
   NO_CATEGORY,
   findDuplicate,
   parseSeveral,
+  severalDrafts,
+  mergeTags,
+  filterLibrary,
+  filterOptions,
   pickerOptions,
   rollupLabel,
   rowsForTab,
@@ -135,6 +139,49 @@ describe("lab skills library model", () => {
     expect(p.lines.map((l) => l.kind)).toEqual(["ready", "in-paste", "ready", "in-library", "too-long"])
     expect(p.lines[2]!.line).toBe(4)
     expect(parseSeveral("  \n\n", []).lines).toEqual([])
+  })
+
+  it("keeps a sheet's Category and Tags columns when names are pasted from one (REQ SL-03, SL-04, SL-05)", () => {
+    const text = "Chest tube care\tRespiratory\tPatient safety; Invasive procedures\nWound packing\t\tinfection prevention, Infection prevention\nTracheostomy suctioning"
+    const p = parseSeveral(text, rows.map((r) => r.name))
+    expect(p.items).toEqual([
+      { name: "Chest tube care", category: "Respiratory", tags: ["Patient safety", "Invasive procedures"] },
+      { name: "Wound packing", tags: ["infection prevention"] },
+      { name: "Tracheostomy suctioning" },
+    ])
+    // A line's own category wins; tags chosen for all are merged once each (case insensitive).
+    const drafts = severalDrafts(p.items, { category: "Basic care", tags: ["Patient safety", "Year 1"] })
+    expect(drafts.map((d) => [d.section, d.tags])).toEqual([
+      ["Respiratory", ["Patient safety", "Year 1", "Invasive procedures"]],
+      ["Basic care", ["Patient safety", "Year 1", "infection prevention"]],
+      ["Basic care", ["Patient safety", "Year 1"]],
+    ])
+    expect(drafts.every((d) => d.model === null)).toBe(true)
+  })
+
+  it("stores the category and tags the add forms set on the new skill", () => {
+    const d = { ...EMPTY_DRAFT, name: "Chest tube care", section: "Respiratory", tags: ["Patient safety", " patient  safety ", "Invasive procedures"] }
+    const lib = buildLibrary(state, { ...EMPTY_OVERLAY, added: [draftToSkill(d, "lab-skill-x")] })
+    const row = lib.find((r) => r.id === "lab-skill-x")!
+    expect(row.section).toBe("Respiratory")
+    expect(row.tags).toEqual(["Patient safety", "Invasive procedures"])
+    expect(pickerOptions(lib).sections).toContain("Respiratory")
+    expect(pickerOptions(lib).tags).toContain("Invasive procedures")
+    expect(mergeTags(["A"], ["a", "B"])).toEqual(["A", "B"])
+  })
+
+  it("filters the library by one category and one tag (REQ SL-10), and the options carry their counts", () => {
+    const withTags = rows.filter((r) => r.tags.length)
+    const opts = filterOptions(rows)
+    const cat = rows[0]!.section
+    expect(filterLibrary(rows, { cat, tag: null }).every((r) => r.section === cat)).toBe(true)
+    expect(filterLibrary(rows, { cat, tag: null }).length).toBe(opts.categories.find((c) => c.name === cat)!.count)
+    expect(opts.categories.reduce((n, c) => n + c.count, 0)).toBe(rows.length)
+    if (withTags.length) {
+      const tag = withTags[0]!.tags[0]!
+      expect(filterLibrary(rows, { cat: null, tag }).length).toBe(opts.tags.find((t) => t.name === tag)!.count)
+    }
+    expect(filterLibrary(rows, { cat: null, tag: null })).toHaveLength(rows.length)
   })
 
   it("never assumes a default evaluation model", () => {

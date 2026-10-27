@@ -3,6 +3,8 @@
 /**
  * Add a skill, option set 3 "Many at once": add several by name. A coordinator pastes or types 5 to 30 names (from an email
  * or a spreadsheet column); each becomes a skill that is not configured, in one category or none (REQ IM-12, IM-09, SL-03).
+ * - Category and tags for all of them (REQ SL-03, SL-04, SL-05; decision D-X28); a line pasted from a sheet keeps its own
+ *   Category and Tags cells (parseSeveral), and its own category wins over the one chosen for all.
  * - Live check as you type: how many will be added, and which lines are skipped (already in the library, repeated in the
  *   list, too long), so nothing is created twice (REQ IM-06 spirit; the same normalised-name rule as the add sheet).
  * - One filled primary "Add {n} skills". A failed attempt shows a FieldError and moves focus to the list (one field, so no
@@ -16,9 +18,9 @@ import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
-import { parseSeveral, pickerOptions, type LibraryRow, type PastedLine } from "@/lib/lab/library"
+import { parseSeveral, pickerOptions, type LibraryRow, type PastedLine, type SeveralItem } from "@/lib/lab/library"
 import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { CreatableSelect } from "./skill-sheet"
+import { CategoryPicker, TagsPicker } from "./category-tag-pickers"
 
 const SKIP_REASON: Record<Exclude<PastedLine["kind"], "ready">, string> = {
   "in-library": "already in the library",
@@ -30,26 +32,29 @@ export function AddSeveralSheet({ open, onOpenChange, rows, onAdd }: {
   open: boolean
   onOpenChange: (o: boolean) => void
   rows: readonly LibraryRow[]
-  onAdd: (names: string[], category: string) => void
+  /** Each ready line (with the category and tags its own cells carried) and the category and tags chosen for all. */
+  onAdd: (items: SeveralItem[], defaults: { category: string; tags: string[] }) => void
 }) {
   const [text, setText] = React.useState("")
   const [category, setCategory] = React.useState("")
+  const [tags, setTags] = React.useState<string[]>([])
   const [attempted, setAttempted] = React.useState(false)
   const [guard, setGuard] = React.useState(false)
-  React.useEffect(() => { if (open) { setText(""); setCategory(""); setAttempted(false) } }, [open])
+  React.useEffect(() => { if (open) { setText(""); setCategory(""); setTags([]); setAttempted(false) } }, [open])
   const names = React.useMemo(() => rows.map((r) => r.name), [rows])
   const opts = React.useMemo(() => pickerOptions(rows), [rows])
   const parsed = React.useMemo(() => parseSeveral(text, names), [text, names])
   const skipped = parsed.lines.filter((l) => l.kind !== "ready")
   const n = parsed.ready.length
   const error = attempted && n === 0 ? (parsed.lines.length ? `Every name is already in the library or repeated. Add a new ${skillNoun()} name.` : `Paste or type at least one ${skillNoun()} name.`) : undefined
-  const dirty = text.trim() !== "" || category !== ""
+  const dirty = text.trim() !== "" || category !== "" || tags.length > 0
+  const fromColumns = parsed.items.filter((it) => it.category || it.tags?.length).length
 
   const requestClose = () => (dirty ? setGuard(true) : onOpenChange(false))
   const submit = () => {
     setAttempted(true)
     if (n === 0) return document.getElementById("several-names")?.focus()
-    onAdd(parsed.ready, category)
+    onAdd(parsed.items, { category, tags })
     onOpenChange(false)
   }
 
@@ -73,18 +78,25 @@ export function AddSeveralSheet({ open, onOpenChange, rows, onAdd }: {
                   aria-describedby={error ? "several-names-error several-names-help" : "several-names-help"}
                   className="font-normal"
                 />
-                <FieldDescription id="several-names-help">Paste from a spreadsheet or an email. Bullets and numbering are removed.</FieldDescription>
+                <FieldDescription id="several-names-help">Paste from an email, or from a sheet with Name, Category and Tags columns.</FieldDescription>
                 {error ? <FieldError id="several-names-error">{error}</FieldError> : null}
               </Field>
-              <Field>
-                <FieldLabel htmlFor="several-category">Category for all of them</FieldLabel>
-                <CreatableSelect id="several-category" value={category} options={opts.sections} onChange={setCategory} placeholder="None" newLabel="New category" allowNone />
-              </Field>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel id="several-category-label" htmlFor="several-category">Category for all of them</FieldLabel>
+                  <CategoryPicker id="several-category" labelId="several-category-label" value={category} options={opts.sections} onChange={setCategory} className="w-full" />
+                </Field>
+                <Field>
+                  <FieldLabel id="several-tags-label" htmlFor="several-tags">Tags for all of them</FieldLabel>
+                  <TagsPicker id="several-tags" labelId="several-tags-label" value={tags} options={opts.tags} onChange={setTags} />
+                </Field>
+              </div>
               {parsed.lines.length ? (
                 <section aria-label="What will be added" className="flex flex-col gap-2" aria-live="polite">
                   <p className="text-sm text-foreground">
                     <span className="font-medium tabular-nums">{countSkills(n)}</span>
                     {" will be added, not configured."}
+                    {fromColumns ? <span className="text-muted-foreground">{` ${fromColumns} keep the category or tags from your sheet.`}</span> : null}
                     {skipped.length ? <span className="text-muted-foreground">{` ${skipped.length} skipped.`}</span> : null}
                   </p>
                   {skipped.length ? (

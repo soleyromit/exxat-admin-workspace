@@ -9,7 +9,8 @@
  *   returns to the page's "Add a skill" button ([data-add-skill-trigger]) even when the sheet opened by default.
  * - No evaluation model here. Configure owns it and nothing is preselected (REQ SC-01, SC-02); the skill is saved as
  *   Not configured (REQ IM-09, IM-12).
- * - Category and tags can be created at the point of need (REQ SL-05). Category is optional (REQ SL-03).
+ * - Category (one, optional, REQ SL-03) and tags (any number, REQ SL-04) are picked from the program's own lists or created
+ *   in the picker (REQ SL-05; components/lab/library/category-tag-pickers.tsx, decision D-X28).
  * - Errors: a FieldError under the name and focus moved to it after a failed save; a repeated name offers "Open it".
  *   Name is the only field that can fail, so a ValidationSummary above it would say the same sentence twice (rule L11).
  * - Unsaved-change guard on close. Success is a LocalBanner on the library (never a toast).
@@ -18,95 +19,14 @@
  */
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { EMPTY_DRAFT, NO_CATEGORY, findDuplicate, pickerOptions, validateDraft, type DraftErrors, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
-
-const NEW = "__new"
-const NONE = "__none"
-
-/** DS Select of existing values with "New ..." that swaps to an Input (create at the point of need). */
-export function CreatableSelect({ id, value, options, onChange, placeholder, newLabel, allowNone, invalid, describedBy }: {
-  id: string
-  value: string
-  options: string[]
-  onChange: (v: string) => void
-  placeholder: string
-  newLabel: string
-  allowNone?: boolean
-  invalid?: boolean
-  describedBy?: string
-}) {
-  const known = value === "" || options.includes(value)
-  const [creating, setCreating] = React.useState(!known)
-  React.useEffect(() => { if (value === "") setCreating(false) }, [value])
-  if (creating) {
-    return (
-      <div className="flex items-center gap-2">
-        <Input id={id} autoFocus value={value} onChange={(e) => onChange(e.target.value)} placeholder={newLabel} aria-invalid={invalid || undefined} aria-describedby={describedBy} />
-        <Button type="button" variant="ghost" size="sm" onClick={() => { setCreating(false); onChange("") }}>Pick existing</Button>
-      </div>
-    )
-  }
-  return (
-    <Select value={value === "" ? (allowNone ? NONE : undefined) : value} onValueChange={(v) => { if (v === NEW) { setCreating(true); onChange("") } else onChange(v === NONE ? "" : v) }}>
-      <SelectTrigger id={id} className="w-full" aria-invalid={invalid || undefined} aria-describedby={describedBy}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent className="z-[90] max-h-72">
-        {allowNone ? <SelectItem value={NONE}>None</SelectItem> : null}
-        {options.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-        <SelectSeparator />
-        <SelectItem value={NEW}>{newLabel}</SelectItem>
-      </SelectContent>
-    </Select>
-  )
-}
-
-function TagInput({ id, tags, suggestions, onChange }: { id: string; tags: string[]; suggestions: string[]; onChange: (t: string[]) => void }) {
-  const [text, setText] = React.useState("")
-  const add = (raw: string) => {
-    const t = raw.trim()
-    if (!t || tags.some((x) => x.toLowerCase() === t.toLowerCase())) return setText("")
-    onChange([...tags, t])
-    setText("")
-  }
-  return (
-    <div className="flex flex-col gap-2">
-      <Input
-        id={id}
-        list={`${id}-list`}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === ",") { e.preventDefault(); add(text) } }}
-        onBlur={() => add(text)}
-        placeholder="Type a tag and press Enter"
-        aria-describedby={`${id}-help`}
-      />
-      <datalist id={`${id}-list`}>{suggestions.map((s) => <option key={s} value={s} />)}</datalist>
-      {tags.length ? (
-        <ul className="flex flex-wrap gap-1.5" aria-label="Tags">
-          {tags.map((t) => (
-            <li key={t}>
-              <Badge variant="secondary" className="gap-1 pe-0.5">
-                {t}
-                <Button type="button" variant="ghost" size="icon-xs" aria-label={`Remove tag ${t}`} onClick={() => onChange(tags.filter((x) => x !== t))}>
-                  <i className="fa-light fa-xmark" aria-hidden="true" />
-                </Button>
-              </Badge>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  )
-}
+import { CategoryPicker, TagsPicker } from "./category-tag-pickers"
 
 export function draftFromRow(r: LibraryRow): SkillDraft {
   return { name: r.name, section: r.section === NO_CATEGORY ? "" : r.section, group: r.group, category: r.category, tags: r.tags, model: r.model, mandatoryDefault: null, requiredToGraduate: r.requiredToGraduate }
@@ -198,13 +118,13 @@ export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, de
                 ) : null}
               </Field>
               <Field>
-                <FieldLabel htmlFor="skill-category">Category</FieldLabel>
-                <CreatableSelect id="skill-category" value={d.section} options={opts.sections} onChange={(v) => set("section", v)} placeholder="None" newLabel="New category" allowNone />
+                <FieldLabel id="skill-category-label" htmlFor="skill-category">Category</FieldLabel>
+                <CategoryPicker id="skill-category" labelId="skill-category-label" value={d.section} options={opts.sections} onChange={(v) => set("section", v)} className="w-full" />
               </Field>
               <Field>
-                <FieldLabel htmlFor="skill-tags">Tags</FieldLabel>
-                <TagInput id="skill-tags" tags={d.tags} suggestions={opts.tags} onChange={(t) => set("tags", t)} />
-                <FieldDescription id="skill-tags-help">Optional. A tag can cross categories.</FieldDescription>
+                <FieldLabel id="skill-tags-label" htmlFor="skill-tags">Tags</FieldLabel>
+                <TagsPicker id="skill-tags" labelId="skill-tags-label" value={d.tags} options={opts.tags} onChange={(t) => set("tags", t)} describedBy="skill-tags-help" />
+                <FieldDescription id="skill-tags-help">Optional. Pick or type a new one; a tag can cross categories.</FieldDescription>
               </Field>
               <Field orientation="horizontal" className="items-start justify-between gap-4">
                 <FieldContent>

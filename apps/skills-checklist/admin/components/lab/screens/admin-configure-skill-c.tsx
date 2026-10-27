@@ -8,6 +8,7 @@
  *
  * URL: ?skill= or ?skills=a,b,c · ?impact=open · ?change=sample · ?state=loading. Listens for `lab:reset`.
  */
+import { RulePreviewAside } from "@/components/lab/configure/live-panel"
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -102,10 +103,11 @@ export function AdminConfigureSkillC() {
   ) : null
 
   // Footer: what the sentence touches (the sentence itself is the page, so it is not repeated here).
+  // From 1400 px the single-skill count moves into the preview column (D-X29), so the footer hides it there.
   const footerSummary = isMany ? (
     <ManySummary state={m.state} ids={targets.map((t) => t.id)} rule={m.rule} />
   ) : (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground min-[1400px]:hidden">
       {impact && impact.withEvidence > 0 ? <span className="tabular-nums">{`Today ${fmt(impact.before.achieved)} of ${fmt(impact.students)} achieved`}</span> : <span>{`No evidence on this ${skillNoun()} yet.`}</span>}
       {impact?.ruleChanged && impact.changed.length > 0 ? (
         <StatusBadge label={`${impact.changed.length} students change`} tone={impact.lostAchieved > 0 ? "warning" : "neutral"} icon={impact.lostAchieved > 0 ? "fa-triangle-exclamation" : "fa-circle-info"} size="sm" />
@@ -130,6 +132,9 @@ export function AdminConfigureSkillC() {
           </div>
         }
         banner={banner}
+        // D-X29: what students and evaluators will see, beside the sentence from 1400 px. The sentence is the page, so the column
+        // does not repeat it.
+        aside={<RulePreviewAside skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} impact={isMany ? null : impact} showRule={false} />}
         footer={<StickyFooter summary={footerSummary} primary={m.published || manyDone !== null ? undefined : { label: isMany ? `Check ${countSkills(targets.length)}` : "Check and publish", onClick: tryCheck }} />}
       >
         <div className={cn("flex flex-col gap-6", quietErrors)} data-region="sentence">

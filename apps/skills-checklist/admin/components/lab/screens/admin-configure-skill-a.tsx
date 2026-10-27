@@ -22,7 +22,7 @@ import { CONFIGURE_STEPS, isConfigureStep, outcomesLabel, type ConfigureStepId, 
 import { skillNoun } from "@/lib/lab/terms"
 import { SECTION_BODY, type SectionProps } from "@/components/lab/configure/fields"
 import { IssueSummary } from "@/components/lab/configure/issue-summary"
-import { RuleFooterSummary } from "@/components/lab/configure/live-panel"
+import { RuleFooterSummary, RulePreviewAside } from "@/components/lab/configure/live-panel"
 import { CheckPanel, EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, PublishedNotice, useLiveImpact } from "@/components/lab/configure/impact"
 import { CopyFromDialog } from "@/components/lab/configure/bulk-apply"
 import { CancelButton, ConfigureLoading, ConfigureNotFound, SkillSubtitle } from "@/components/lab/configure/shell"
@@ -139,7 +139,7 @@ export function AdminConfigureSkillA() {
 
   const footer = (
     <StickyFooter
-      summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} showPreview={!onCheck} showChange={!onCheck} onSeeChange={hasModel ? () => goTo(CHECK) : undefined} />}
+      summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} showPreview={!onCheck} showChange={!onCheck} onSeeChange={hasModel ? () => goTo(CHECK) : undefined} asideWide={!onCheck} />}
       back={step > 0 ? { onClick: () => goTo(step - 1) } : undefined}
       context={onCheck && m.published ? "No unpublished changes." : undefined}
       primary={onCheck ? (m.published ? undefined : { label: "Publish", onClick: publish }) : { label: "Next", onClick: next }}
@@ -167,6 +167,8 @@ export function AdminConfigureSkillA() {
           </div>
         }
         width="form"
+        // D-X29: the live preview beside every step from 1400 px; Check already shows the previews, so it takes both columns.
+        aside={onCheck ? null : <RulePreviewAside skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={hasModel ? () => goTo(CHECK) : undefined} />}
         steps={steps}
         current={step}
         linear={!hasModel}

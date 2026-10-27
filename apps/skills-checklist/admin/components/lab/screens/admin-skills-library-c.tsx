@@ -18,10 +18,9 @@ import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { STATUS_META, STATUS_ORDER, byStatus, configureHref, rowsForTab, type LibraryRow, type LibraryStatus, type SkillDraft } from "@/lib/lab/library"
+import { STATUS_META, STATUS_ORDER, byStatus, configureHref, countLibrary, filterLibrary, rowsForTab, type LibraryRow, type LibraryStatus, type SkillDraft } from "@/lib/lab/library"
 import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
@@ -32,9 +31,9 @@ import { useLifecycle, useStableHandlers } from "@/components/lab/library/row-ac
 import { SkillPanel } from "@/components/lab/library/skill-panel"
 import { SkillSheet } from "@/components/lab/library/skill-sheet"
 import { useLibrary } from "@/components/lab/library/use-library"
+import { LibraryFilterMenu, useLibraryFilter } from "@/components/lab/library/library-filter"
 
 const PAGE = 30
-const ALL = "__all"
 
 /** A board card: name (opens the detail panel), category, one or two facts. */
 function SkillCard({ r, onOpen, selected }: { r: LibraryRow; onOpen: (id: string) => void; selected: boolean }) {
@@ -106,7 +105,7 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
   const [tab, setTab] = useStatusTab()
   const [openId, setOpenId] = useOpenSkill()
   const [q, setQ] = React.useState("")
-  const [section, setSection] = React.useState(ALL)
+  const [filter, setFilter] = useLibraryFilter()
   const [adding, setAdding] = React.useState(false)
   const [addingSeveral, setAddingSeveral] = React.useState(false)
   const [editing, setEditing] = React.useState<LibraryRow | null>(null)
@@ -117,9 +116,10 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
     if (startAdding && api.hydrated && !started.current) { started.current = true; setAddingSeveral(true) }
   }, [startAdding, api.hydrated])
 
-  const sections = React.useMemo(() => [...new Set(api.rows.map((r) => r.section))].sort((a, b) => a.localeCompare(b)), [api.rows])
   const query = q.trim().toLowerCase()
-  const filtered = React.useMemo(() => api.rows.filter((r) => (section === ALL || r.section === section) && (!query || r.name.toLowerCase().includes(query))), [api.rows, section, query])
+  const scoped = React.useMemo(() => filterLibrary(api.rows, filter), [api.rows, filter])
+  const tabCounts = React.useMemo(() => countLibrary(scoped), [scoped])
+  const filtered = React.useMemo(() => scoped.filter((r) => !query || r.name.toLowerCase().includes(query)), [scoped, query])
   const columns = React.useMemo(() => byStatus(filtered), [filtered])
   const boardOrder = React.useMemo(() => STATUS_ORDER.flatMap((s) => columns[s]), [columns])
   const visible = React.useMemo(() => rowsForTab(api.rows, tab), [api.rows, tab])
@@ -132,7 +132,7 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
   }
   const overlays = (
     <>
-      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(names, cat) => api.addMany(names, cat)} />
+      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addMany(items, d)} />
       <SkillSheet open={adding} onOpenChange={setAdding} rows={api.rows} onSave={save} onOpenExisting={open} />
       <SkillSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} rows={api.rows} mode="edit" editing={editing} onSave={(d) => editing && api.edit(editing.id, d)} />
       <SkillPanel row={adding || addingSeveral ? null : openRow} rows={view === "board" ? boardOrder : inView.length ? inView : visible} handlers={handlers} onOpen={open} onClose={() => setOpenId(null)} />
@@ -165,19 +165,11 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
             <div className="flex flex-wrap items-center gap-2" data-library-toolbar>
               {viewSwitch}
               <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${skillNounPlural()}`} aria-label={`Search ${skillNoun()} names`} className="h-8 w-60" />
-              <Select value={section} onValueChange={setSection}>
-                <SelectTrigger size="sm" className="w-56" aria-label="Category">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  <SelectItem value={ALL}>All categories</SelectItem>
-                  {sections.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <LibraryFilterMenu rows={api.rows} value={filter} onChange={setFilter} />
             </div>
             {/* One board answers one question (where each skill is in setup), so it is one region, like a table. */}
             <div data-region="board" role="group" aria-label={`${capitalize(skillNounPlural())} by configuration status`} className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {STATUS_ORDER.map((s) => <Column key={s} status={s} rows={columns[s]} filtered={section !== ALL || !!query} openId={openRow?.id ?? null} onOpen={open} />)}
+              {STATUS_ORDER.map((s) => <Column key={s} status={s} rows={columns[s]} filtered={!!(filter.cat || filter.tag || query)} openId={openRow?.id ?? null} onOpen={open} />)}
             </div>
           </>
         ) : (
@@ -192,7 +184,7 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
             onClearTab={() => setTab("all")}
             onRowsInView={setInView}
             renderFrame={(toolbar, table) => (
-              <LibraryTabs counts={api.counts} value={tab} onChange={setTab} toolbar={<>{viewSwitch}{toolbar}</>}>
+              <LibraryTabs counts={tabCounts} value={tab} onChange={setTab} toolbar={<>{viewSwitch}{toolbar}</>}>
                 {table}
               </LibraryTabs>
             )}

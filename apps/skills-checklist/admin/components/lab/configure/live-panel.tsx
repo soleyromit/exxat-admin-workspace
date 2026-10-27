@@ -1,9 +1,12 @@
 "use client"
 
 /**
- * The live rule, in the footer instead of a third column (02 section 4, J5): one line with the rule sentence [REQ SC-17], then
- * today's count and, when the draft changes achievement, a small amber jump to Check. What the student and evaluator will see
- * [REQ SC-19, EV-03, EV-07] opens from a small popover, so it never competes with the form.
+ * The live rule [REQ SC-17], today's count and, when the draft changes achievement, a small amber jump to Check, plus what the
+ * student and evaluator will see [REQ SC-19, EV-03, EV-07].
+ * - From 1400 px (decision D-X29) all of it sits in RulePreviewAside, a sticky column beside the form, so a wide screen is not
+ *   half blank and the preview is read, not hunted for. The footer then carries only Back and the primary.
+ * - Below 1400 px it stays in the footer (02 section 4, J5): one line, and the previews open from a small popover.
+ * Each fact shows in one place at a time (the footer copy is hidden exactly where the aside appears).
  */
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -34,7 +37,7 @@ export function fullRuleText(rule: LabRule): string {
 export function StudentPreview({ skillName, rule }: { skillName: string; rule: LabRule }) {
   const fields = rule.studentFields.filter((f) => f.label.trim())
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="student">
+    <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="student" data-artifact-preview>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-foreground">{skillName}</p>
         <StateBadge state="no-evidence" />
@@ -61,7 +64,7 @@ export function EvaluatorPreview({ skillName, rule }: { skillName: string; rule:
   const uid = React.useId()
   const name = (base: string) => `prev-${uid}-${base}`
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="evaluator" aria-label="Evaluator form preview, read only">
+    <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="evaluator" data-artifact-preview aria-label="Evaluator form preview, read only">
       <p className="text-sm font-semibold text-foreground">{skillName}</p>
       {rule.model === "binary" ? (
         <RadioGroup disabled aria-label="Outcome" className="flex flex-wrap gap-4">
@@ -142,12 +145,12 @@ export function PreviewPopover({ skillName, rule }: { skillName: string; rule: L
  * Footer summary: the live sentence (one line, full text in a tooltip, announced politely), then today's count, the amber
  * "n students change" jump to Check, and the preview popover. Each fact appears once on the page.
  */
-export function RuleFooterSummary({ skillName, rule, impact, onSeeChange, showPreview = true, showChange = true }: { skillName: string; rule: LabRule; impact: Impact | null; onSeeChange?: () => void; showPreview?: boolean; showChange?: boolean }) {
+export function RuleFooterSummary({ skillName, rule, impact, onSeeChange, showPreview = true, showChange = true, asideWide = false }: { skillName: string; rule: LabRule; impact: Impact | null; onSeeChange?: () => void; showPreview?: boolean; showChange?: boolean; /** RulePreviewAside shows all of this from 1400 px, so the footer hides it there. */ asideWide?: boolean }) {
   const sentence = rule.model ? ruleSentence(rule) : "Choose how it's judged first."
   const changed = impact?.ruleChanged ? impact.changed.length : 0
   const loses = (impact?.lostAchieved ?? 0) > 0
   return (
-    <div className="flex min-w-0 flex-col gap-0.5" data-rule-sentence>
+    <div className={`flex min-w-0 flex-col gap-0.5 ${asideWide ? "min-[1400px]:hidden" : ""}`} data-rule-sentence>
       <Tip label={fullRuleText(rule) || sentence} side="top">
         <p tabIndex={0} className="truncate font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
           {rule.model ? <span className="font-normal text-muted-foreground">{`${HOW_MANY_LABEL}: `}</span> : null}
@@ -171,5 +174,57 @@ export function RuleFooterSummary({ skillName, rule, impact, onSeeChange, showPr
         {showPreview && rule.model ? <PreviewPopover skillName={skillName} rule={rule} /> : null}
       </div>
     </div>
+  )
+}
+
+/**
+ * The preview column (decision D-X29), shown from 1400 px beside a configure form: the live rule in full (never truncated),
+ * today's count with the change jump, and what the student and evaluator will see, read only. Sticky, so it stays beside the
+ * field being edited.
+ */
+export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRule = true, showPreviews = true }: {
+  skillName: string
+  rule: LabRule
+  impact: Impact | null
+  onSeeChange?: () => void
+  /** False where the rule sentence is already the page (Configure C builds it inline). */
+  showRule?: boolean
+  /** False while the page's own Check section (with the same previews) is in view. */
+  showPreviews?: boolean
+}) {
+  const sentence = rule.model ? ruleSentence(rule) : "Choose how it's judged first."
+  const extra = [settingNote(rule), ...carriedNotes(rule)].filter(Boolean).join(" ")
+  const changed = impact?.ruleChanged ? impact.changed.length : 0
+  const loses = (impact?.lostAchieved ?? 0) > 0
+  const id = React.useId()
+  return (
+    <aside aria-labelledby={`${id}-h`} className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4" data-rule-preview>
+      <h2 id={`${id}-h`} className="text-sm font-semibold text-foreground">Preview</h2>
+      <div className="flex flex-col gap-1">
+        {showRule ? (
+          <>
+            <p className="text-sm text-foreground">
+              {rule.model ? <span className="text-muted-foreground">{`${HOW_MANY_LABEL}: `}</span> : null}
+              {sentence}
+            </p>
+            {extra ? <p className="text-sm text-muted-foreground">{extra}</p> : null}
+          </>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          {impact && impact.withEvidence > 0 ? <span className="tabular-nums">{`Today ${fmt(impact.before.achieved)} of ${fmt(impact.students)} achieved`}</span> : null}
+          {changed > 0 ? (
+            onSeeChange ? (
+              <Button type="button" variant="ghost" size="xs" className="h-auto p-0" onClick={onSeeChange} aria-label={`${changed} students change status. Open Check.`}>
+                <StatusBadge label={`${changed} ${changed === 1 ? "student changes" : "students change"}`} tone={loses ? "warning" : "neutral"} icon={loses ? "fa-triangle-exclamation" : "fa-circle-info"} size="sm" />
+              </Button>
+            ) : (
+              <StatusBadge label={`${changed} ${changed === 1 ? "student changes" : "students change"}`} tone={loses ? "warning" : "neutral"} icon={loses ? "fa-triangle-exclamation" : "fa-circle-info"} size="sm" />
+            )
+          ) : null}
+        </div>
+      </div>
+      {rule.model && showPreviews ? <PreviewTabs skillName={skillName} rule={rule} /> : null}
+      {!rule.model ? <p className="text-sm text-muted-foreground">What students and evaluators see appears once you choose how it&apos;s judged.</p> : null}
+    </aside>
   )
 }
