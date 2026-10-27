@@ -3,7 +3,8 @@
 // Shared layout primitive: lab template T3, form page (docs/knowledge/design/skill-setup-journey/01 section 2, 03 section 6).
 // PageFrame (720 px, single column) > optional validation summary under the title > sections of 7 fields or fewer
 // (32 px between sections, 16 px between fields) > a sticky footer with the summary line and the one primary.
-// Centred in the page (decision D-X29); with `aside` the live preview sits beside the form from 1400 px (see WizardPage).
+// Full content width and height (decision D-X30); with `aside` the live preview panel sits beside the form from 1280 px
+// (see PreviewColumns in wizard-page.tsx).
 
 import * as React from "react"
 import { FieldDescription, FieldGroup, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
@@ -24,7 +25,7 @@ export type FormPageProps = {
   banner?: React.ReactNode
   /** A <StickyFooter summary={...} primary={...} />. */
   footer?: React.ReactNode
-  /** A live preview beside the form from 1400 px (decision D-X29); null keeps the wide frame with no preview. */
+  /** A live preview panel beside the form from 1280 px (decision D-X30); null keeps the two-column frame with no preview. */
   aside?: React.ReactNode
   /** FormSection blocks. */
   children: React.ReactNode
@@ -32,8 +33,8 @@ export type FormPageProps = {
 
 export function FormPage({ title, subtitle, actions, actionItems, banner, footer, aside, children }: FormPageProps) {
   return (
-    <div data-page-type="form" className="flex w-full flex-col">
-      <PageFrame title={title} subtitle={subtitle} actions={actions} actionItems={actionItems} width={aside !== undefined ? "form-preview" : "form"}>
+    <div data-page-type="form" className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
+      <PageFrame title={title} subtitle={subtitle} actions={actions} actionItems={actionItems} width="form" className="flex-1">
         {banner ? <div data-region="banner">{banner}</div> : null}
         <PreviewColumns aside={aside} className="flex flex-col gap-8 pt-2">
           {children}

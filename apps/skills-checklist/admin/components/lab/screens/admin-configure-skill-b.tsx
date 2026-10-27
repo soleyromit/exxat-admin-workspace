@@ -156,8 +156,8 @@ export function AdminConfigureSkillB() {
           </div>
         }
         banner={banner}
-        // D-X29: the live preview beside the page from 1400 px; its previews step aside while Check (which shows them) is in view.
-        aside={<RulePreviewAside skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")} showPreviews={active !== "check"} />}
+        // D-X29/D-X30: the live preview panel beside the page from 1280 px; Check uses it too (its own tabs are narrow only).
+        aside={<RulePreviewAside skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")}  />}
         footer={
           <StickyFooter
             summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")} asideWide />}
@@ -181,7 +181,7 @@ export function AdminConfigureSkillB() {
             </h2>
             {s.id === "check" ? (
               m.published ? null : (
-                <CheckPanel skill={skill} current={m.current} rule={m.rule} impact={impact} mode={mode} onMode={setMode} modeError={modeTried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} />
+                <CheckPanel previewColumn={false} skill={skill} current={m.current} rule={m.rule} impact={impact} mode={mode} onMode={setMode} modeError={modeTried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} />
               )
             ) : (
               SECTION_BODY[s.id](props)

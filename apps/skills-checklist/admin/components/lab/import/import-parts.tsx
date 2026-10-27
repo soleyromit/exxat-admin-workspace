@@ -6,6 +6,8 @@
  * Copy: sentence case, verb plus object, one helper line per region, no "items", figures come from the engine.
  */
 import * as React from "react"
+import { CategoryPicker, TagsPicker } from "@/components/lab/library/category-tag-pickers"
+import { mergeTags } from "@/lib/lab/library"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@exxatdesignux/ui/components/ui/accordion"
 import {
   AlertDialog,
@@ -241,6 +243,9 @@ function DecisionBadge() {
  */
 export function CategoryList({ session }: { session: ImportSession }) {
   const cats = React.useMemo(() => categoriesOf(session.resolved), [session.resolved])
+  // The program's own vocabulary as read so far: the file's headings as categories, group headings and tags set here as tags.
+  const catOptions = React.useMemo(() => cats.map((c) => c.name).filter((n) => n !== NO_CATEGORY), [cats])
+  const tagOptions = React.useMemo(() => mergeTags([], session.resolved.flatMap((r) => session.tagsOf(r.row))).sort((a, b) => a.localeCompare(b)), [session])
   const furniture = session.review?.furniture ?? []
   return (
     <Accordion type="multiple" className="rounded-[var(--radius)] border border-border" data-category-list>
@@ -266,9 +271,20 @@ export function CategoryList({ session }: { session: ImportSession }) {
                   ) : r.row.unreadable && !readableText(r.row) ? (
                     <LineText row={r.row} />
                   ) : (
-                    <span className="flex min-w-0 flex-col">
+                    <span className="flex min-w-0 flex-col gap-1.5">
                       <InlineInputEdit label={`Name for line ${r.row.line}`} value={r.name} onCommit={(v) => session.rename(r.row.id, v.trim())} emptyLabel="Add a name" />
-                      {r.row.group ? <span className="text-xs text-muted-foreground">{`${IMPORT_GROUPING.tag[0].toUpperCase()}${IMPORT_GROUPING.tag.slice(1)}: ${r.row.group}`}</span> : null}
+                      {/* Category (one) and tags (any number) per skill, two different controls (REQ SL-03, SL-04; D-X28). The file's
+                          heading is the proposed category and its group heading the proposed tag; both can be changed here. */}
+                      <span className="grid grid-cols-1 items-start gap-2 sm:grid-cols-[12rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,32rem)]">
+                        <span className="flex flex-col gap-0.5">
+                          <span id={`cat-${r.row.id}-label`} className="text-xs text-muted-foreground">Category</span>
+                          <CategoryPicker id={`cat-${r.row.id}`} labelId={`cat-${r.row.id}-label`} value={r.section ?? ""} options={catOptions} onChange={(v) => session.setRowCategory(r.row.id, v)} size="sm" className="w-full" />
+                        </span>
+                        <span className="flex flex-col gap-0.5">
+                          <span id={`tags-${r.row.id}-label`} className="text-xs text-muted-foreground">Tags</span>
+                          <TagsPicker id={`tags-${r.row.id}`} labelId={`tags-${r.row.id}-label`} value={session.tagsOf(r.row)} options={tagOptions} onChange={(t) => session.setTagsFor(r.row.id, t)} size="sm" />
+                        </span>
+                      </span>
                     </span>
                   )}
                   {r.status === "look" ? <DecisionBadge /> : <span />}

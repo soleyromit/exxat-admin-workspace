@@ -124,7 +124,7 @@ export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, de
               <Field>
                 <FieldLabel id="skill-tags-label" htmlFor="skill-tags">Tags</FieldLabel>
                 <TagsPicker id="skill-tags" labelId="skill-tags-label" value={d.tags} options={opts.tags} onChange={(t) => set("tags", t)} describedBy="skill-tags-help" />
-                <FieldDescription id="skill-tags-help">Optional. Pick or type a new one; a tag can cross categories.</FieldDescription>
+                <FieldDescription id="skill-tags-help">Optional. Type to find or create one; a tag can cross categories.</FieldDescription>
               </Field>
               <Field orientation="horizontal" className="items-start justify-between gap-4">
                 <FieldContent>

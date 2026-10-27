@@ -63,12 +63,13 @@ export function InlineAddRow({ category, colSpan, names, options, onAdd, onClose
         <form
           noValidate
           aria-label={`Add ${aNoun()} to ${category}`}
-          className="flex flex-wrap items-start gap-2"
+          className="flex flex-wrap items-end gap-x-3 gap-y-2"
           onSubmit={(e) => { e.preventDefault(); submit() }}
           onKeyDown={(e) => { if (e.key === "Escape") { e.preventDefault(); close() } }}
         >
-          <Field className="w-80 max-w-full" data-invalid={!!error || undefined}>
-            <FieldLabel htmlFor={`${id}-name`} className="sr-only">{`New ${skillNoun()} name in ${category}`}</FieldLabel>
+          {/* Three labelled fields, so Category (one, a select) and Tags (many, a tag input) read as two different things. */}
+          <Field className="w-72 max-w-full gap-1" data-invalid={!!error || undefined}>
+            <FieldLabel htmlFor={`${id}-name`} className="text-xs">Name</FieldLabel>
             <Input
               ref={ref}
               id={`${id}-name`}
@@ -81,10 +82,14 @@ export function InlineAddRow({ category, colSpan, names, options, onAdd, onClose
             />
             {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
           </Field>
-          <span id={`${id}-cat-label`} className="sr-only">Category</span>
-          <CategoryPicker id={`${id}-cat`} labelId={`${id}-cat-label`} value={section} options={options.sections} onChange={setSection} size="sm" className="w-48" />
-          <span id={`${id}-tags-label`} className="sr-only">Tags</span>
-          <TagsPicker id={`${id}-tags`} labelId={`${id}-tags-label`} value={tags} options={options.tags} onChange={setTags} size="sm" />
+          <Field className="w-48 gap-1">
+            <FieldLabel id={`${id}-cat-label`} htmlFor={`${id}-cat`} className="text-xs">Category</FieldLabel>
+            <CategoryPicker id={`${id}-cat`} labelId={`${id}-cat-label`} value={section} options={options.sections} onChange={setSection} size="sm" className="w-full" />
+          </Field>
+          <Field className="w-72 max-w-full gap-1">
+            <FieldLabel id={`${id}-tags-label`} htmlFor={`${id}-tags`} className="text-xs">Tags</FieldLabel>
+            <TagsPicker id={`${id}-tags`} labelId={`${id}-tags-label`} value={tags} options={options.tags} onChange={setTags} size="sm" />
+          </Field>
           <Button type="submit" variant="default" size="sm">Add</Button>
           <Button type="button" variant="ghost" size="sm" onClick={close}>Done</Button>
           <p id={`${id}-help`} className="basis-full text-xs text-muted-foreground" aria-live="polite">

@@ -67,6 +67,10 @@ export function useImportSession() {
   const [batchName, setBatchName] = React.useState("")
   const [decisions, setDecisions] = React.useState<Decisions>({})
   const [names, setNames] = React.useState<Record<string, string>>({})
+  /** Category chosen for one line in review (REQ SL-03, SL-05; decision D-X28); absent = the file's heading. */
+  const [rowCategories, setRowCategories] = React.useState<Record<string, string>>({})
+  /** Tags set for one line in review (REQ SL-04); absent = the line's group heading proposed as a tag, if any. */
+  const [rowTags, setRowTags] = React.useState<Record<string, string[]>>({})
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const targets = React.useMemo(() => importTargets(state.skills), [state.skills])
@@ -79,7 +83,11 @@ export function useImportSession() {
 
   const text = React.useMemo(() => (phase === "review" || phase === "done" ? sourceText ?? buildSampleText(scale) : ""), [phase, scale, sourceText])
   const review = React.useMemo(() => (text ? buildReview(text, library) : null), [text, library])
-  const resolved = React.useMemo(() => (review ? resolve(review, decisions, names) : []), [review, decisions, names])
+  const resolved = React.useMemo(
+    () => (review ? resolve(review, decisions, names).map((r) => (rowCategories[r.row.id] !== undefined ? { ...r, section: rowCategories[r.row.id] || null } : r)) : []),
+    [review, decisions, names, rowCategories],
+  )
+  const tagsOf = React.useCallback((row: { id: string; group: string | null }): string[] => rowTags[row.id] ?? (row.group ? [row.group] : []), [rowTags])
   const summary = React.useMemo(() => (review ? summarize(review, resolved) : null), [review, resolved])
   const plan = React.useMemo(() => planImport(resolved), [resolved])
   const groups = React.useMemo(() => (review ? fixGroups(review, decisions) : []), [review, decisions])
@@ -93,6 +101,8 @@ export function useImportSession() {
     setSourceText(null)
     setDecisions({})
     setNames({})
+    setRowCategories({})
+    setRowTags({})
   }, [])
 
   // Apply a demo state once, after the store has hydrated.
@@ -189,6 +199,8 @@ export function useImportSession() {
   }, [])
 
   const rename = React.useCallback((rowId: string, name: string) => setNames((m) => ({ ...m, [rowId]: name })), [])
+  const setRowCategory = React.useCallback((rowId: string, category: string) => setRowCategories((m) => ({ ...m, [rowId]: category })), [])
+  const setTagsFor = React.useCallback((rowId: string, tags: string[]) => setRowTags((m) => ({ ...m, [rowId]: tags })), [])
 
   const bulkSuggest = React.useCallback(
     (opts: { kind?: ExceptionKind; rowIds?: ReadonlySet<string> } = {}) => { if (review) setDecisions((d) => applySuggestions(review, d, library, opts)) },
@@ -202,6 +214,7 @@ export function useImportSession() {
     demo, fromPaste, hydrated, phase, setPhase, scale, fileName, fileNames, sourceText, target, setTarget, isNewList, newLibraryName, setNewLibraryName,
     batchName, setBatchName, targets, library, targetLabel, review, resolved, summary, plan, groups, left, decisions, names,
     readFiles, readText, reset: clearAll, decide, rename, bulkSuggest, bulkLeaveOut, putBack, confirm,
+    tagsOf, setRowCategory, setTagsFor,
   }
 }
 

@@ -107,7 +107,7 @@ export function AdminConfigureSkillC() {
   const footerSummary = isMany ? (
     <ManySummary state={m.state} ids={targets.map((t) => t.id)} rule={m.rule} />
   ) : (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground min-[1400px]:hidden">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground min-[1280px]:hidden">
       {impact && impact.withEvidence > 0 ? <span className="tabular-nums">{`Today ${fmt(impact.before.achieved)} of ${fmt(impact.students)} achieved`}</span> : <span>{`No evidence on this ${skillNoun()} yet.`}</span>}
       {impact?.ruleChanged && impact.changed.length > 0 ? (
         <StatusBadge label={`${impact.changed.length} students change`} tone={impact.lostAchieved > 0 ? "warning" : "neutral"} icon={impact.lostAchieved > 0 ? "fa-triangle-exclamation" : "fa-circle-info"} size="sm" />

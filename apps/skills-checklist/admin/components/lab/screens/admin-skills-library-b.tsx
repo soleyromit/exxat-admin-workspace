@@ -132,7 +132,7 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
       {/* The phase 1 bulk add opens in place, so "Add several by name" never routes into the phase 2 import. */}
       <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addMany(items, d)} />
       <SkillSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} rows={api.rows} mode="edit" editing={editing} onSave={(d) => editing && api.edit(editing.id, d)} />
-      <SkillPanel row={addingSeveral ? null : openRow} rows={flat} handlers={handlers} onOpen={openSkill} onClose={() => setOpenId(null)} />
+      <SkillPanel row={addingSeveral || editing ? null : openRow} rows={flat} handlers={handlers} onOpen={openSkill} onClose={() => setOpenId(null)} />
       {life.dialogs}
     </>
   )

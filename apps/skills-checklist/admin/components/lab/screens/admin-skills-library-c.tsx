@@ -135,7 +135,7 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
       <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addMany(items, d)} />
       <SkillSheet open={adding} onOpenChange={setAdding} rows={api.rows} onSave={save} onOpenExisting={open} />
       <SkillSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} rows={api.rows} mode="edit" editing={editing} onSave={(d) => editing && api.edit(editing.id, d)} />
-      <SkillPanel row={adding || addingSeveral ? null : openRow} rows={view === "board" ? boardOrder : inView.length ? inView : visible} handlers={handlers} onOpen={open} onClose={() => setOpenId(null)} />
+      <SkillPanel row={adding || addingSeveral || editing ? null : openRow} rows={view === "board" ? boardOrder : inView.length ? inView : visible} handlers={handlers} onOpen={open} onClose={() => setOpenId(null)} />
       {life.dialogs}
     </>
   )

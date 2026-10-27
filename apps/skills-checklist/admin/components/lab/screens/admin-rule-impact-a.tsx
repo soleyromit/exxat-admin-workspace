@@ -58,20 +58,23 @@ export function AdminRuleImpactA() {
       }
     >
       {m.published ? null : (
-        <>
+        // Two columns once the page is wider than 64rem (D-X30): the rule and the decision on the left, who changes on the right.
+        <div className="flex flex-col gap-8 @min-[64rem]:grid @min-[64rem]:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] @min-[64rem]:items-start @min-[64rem]:gap-x-10">
+          <div className="flex min-w-0 flex-col gap-8">
           <section aria-labelledby="ri-rule" className="flex flex-col gap-3">
             <h2 id="ri-rule" className="text-base font-semibold text-foreground">
               {HOW_MANY_LABEL}
             </h2>
             <RuleDiff current={m.current ? ruleSentence(m.current) : null} after={ruleSentence(m.rule)} />          </section>
-          <section aria-labelledby="ri-who" className="flex flex-col gap-3">
+          {choice ? <EvidenceChoice value={mode} onChange={setMode} error={tried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
+          </div>
+          <section aria-labelledby="ri-who" className="flex min-w-0 flex-col gap-3">
             <h2 id="ri-who" className="text-base font-semibold text-foreground">
               Who changes
             </h2>
             <ImpactSummary current={m.current} impact={impact} lead="counts" />
           </section>
-          {choice ? <EvidenceChoice value={mode} onChange={setMode} error={tried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
-        </>
+        </div>
       )}
     </FormPage>
   )

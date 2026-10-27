@@ -3,19 +3,17 @@
 /**
  * The live rule [REQ SC-17], today's count and, when the draft changes achievement, a small amber jump to Check, plus what the
  * student and evaluator will see [REQ SC-19, EV-03, EV-07].
- * - From 1400 px (decision D-X29) all of it sits in RulePreviewAside, a sticky column beside the form, so a wide screen is not
- *   half blank and the preview is read, not hunted for. The footer then carries only Back and the primary.
- * - Below 1400 px it stays in the footer (02 section 4, J5): one line, and the previews open from a small popover.
+ * - From 1280 px (decisions D-X29, D-X30) all of it sits in RulePreviewAside, a full-height panel beside the form, with the
+ *   student and evaluator views both visible, so the preview is read, not hunted for. The footer then carries Back and the
+ *   primary only.
+ * - Below 1280 px it stays in the footer (02 section 4, J5): one line, and the previews open from a small popover.
  * Each fact shows in one place at a time (the footer copy is hidden exactly where the aside appears).
  */
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
-import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
-import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { afterSubmitLine, carriedNotes, HOW_MANY_LABEL, ruleSentence, settingNote, type Impact, type LabRule, type RecordState } from "@/lib/lab/configure"
 import { StateBadge as RecordStateBadge } from "@/components/lab/status-pill"
@@ -59,22 +57,23 @@ export function StudentPreview({ skillName, rule }: { skillName: string; rule: L
   )
 }
 
-/** The evaluator sees what the program configured and nothing about how achievement is judged [REQ EV-03]. */
+/**
+ * The evaluator sees what the program configured and nothing about how achievement is judged [REQ EV-03].
+ * A picture of the form, not a disabled copy of it (D-X30): option glyphs and an empty feedback box, so the preview never
+ * reads as dead controls and nothing in it can take focus.
+ */
 export function EvaluatorPreview({ skillName, rule }: { skillName: string; rule: LabRule }) {
-  const uid = React.useId()
-  const name = (base: string) => `prev-${uid}-${base}`
+  const option = (label: string, key: string) => (
+    <li key={key} className="flex items-center gap-2 text-sm text-foreground">
+      <i className="fa-light fa-circle text-xs text-muted-foreground" aria-hidden="true" />
+      {label}
+    </li>
+  )
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="evaluator" data-artifact-preview aria-label="Evaluator form preview, read only">
+    <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="evaluator" data-artifact-preview role="group" aria-label="Evaluator form preview, read only">
       <p className="text-sm font-semibold text-foreground">{skillName}</p>
       {rule.model === "binary" ? (
-        <RadioGroup disabled aria-label="Outcome" className="flex flex-wrap gap-4">
-          {[0, 1].map((i) => (
-            <div key={i} className="flex items-center gap-2">
-              <RadioGroupItem id={name(`o${i}`)} value={String(i)} />
-              <Label htmlFor={name(`o${i}`)}>{rule.outcomeLabels[i] || "Outcome"}</Label>
-            </div>
-          ))}
-        </RadioGroup>
+        <ul className="flex flex-wrap gap-4" aria-label="Outcome">{[0, 1].map((i) => option(rule.outcomeLabels[i] || "Outcome", `o${i}`))}</ul>
       ) : null}
       {rule.model === "question" || rule.model === "scored" ? (
         <ol className="flex flex-col gap-1 text-sm text-foreground">
@@ -88,19 +87,12 @@ export function EvaluatorPreview({ skillName, rule }: { skillName: string; rule:
         </ol>
       ) : null}
       {rule.model === "demonstration" ? (
-        <RadioGroup disabled aria-label="Level" className="flex flex-col gap-1.5">
-          {rule.levels.map((l, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <RadioGroupItem id={name(`l${i}`)} value={String(i)} />
-              <Label htmlFor={name(`l${i}`)}>{l.trim() || `Level ${i + 1}`}</Label>
-            </div>
-          ))}
-        </RadioGroup>
+        <ul className="flex flex-col gap-1.5" aria-label="Level">{rule.levels.map((l, i) => option(l.trim() || `Level ${i + 1}`, `l${i}`))}</ul>
       ) : null}
       {!rule.model ? <p className="text-sm text-muted-foreground">The form appears once you choose how it&apos;s judged.</p> : null}
       <div className="flex flex-col gap-1">
-        <Label htmlFor={name("fb")}>{`Feedback${rule.feedbackRequired ? " (required)" : " (optional)"}`}</Label>
-        <Textarea id={name("fb")} disabled rows={2} />
+        <p className="text-sm font-medium text-foreground">{`Feedback${rule.feedbackRequired ? " (required)" : " (optional)"}`}</p>
+        <div className="h-14 rounded-md border border-border" aria-hidden="true" />
       </div>
       <p className="text-sm text-muted-foreground">{afterSubmitLine(rule)}</p>
     </div>
@@ -150,7 +142,7 @@ export function RuleFooterSummary({ skillName, rule, impact, onSeeChange, showPr
   const changed = impact?.ruleChanged ? impact.changed.length : 0
   const loses = (impact?.lostAchieved ?? 0) > 0
   return (
-    <div className={`flex min-w-0 flex-col gap-0.5 ${asideWide ? "min-[1400px]:hidden" : ""}`} data-rule-sentence>
+    <div className={`flex min-w-0 flex-col gap-0.5 ${asideWide ? "min-[1280px]:hidden" : ""}`} data-rule-sentence>
       <Tip label={fullRuleText(rule) || sentence} side="top">
         <p tabIndex={0} className="truncate font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]">
           {rule.model ? <span className="font-normal text-muted-foreground">{`${HOW_MANY_LABEL}: `}</span> : null}
@@ -198,7 +190,7 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
   const loses = (impact?.lostAchieved ?? 0) > 0
   const id = React.useId()
   return (
-    <aside aria-labelledby={`${id}-h`} className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4" data-rule-preview>
+    <aside aria-labelledby={`${id}-h`} className="flex flex-col gap-4" data-rule-preview>
       <h2 id={`${id}-h`} className="text-sm font-semibold text-foreground">Preview</h2>
       <div className="flex flex-col gap-1">
         {showRule ? (
@@ -223,7 +215,19 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
           ) : null}
         </div>
       </div>
-      {rule.model && showPreviews ? <PreviewTabs skillName={skillName} rule={rule} /> : null}
+      {/* Both views at once (D-X30): the panel has the room, so no tabs to switch between. */}
+      {rule.model && showPreviews ? (
+        <div className="flex flex-col gap-3">
+          <section aria-labelledby={`${id}-s`} className="flex flex-col gap-2">
+            <h3 id={`${id}-s`} className="text-sm font-medium text-foreground">Student sees</h3>
+            <StudentPreview skillName={skillName} rule={rule} />
+          </section>
+          <section aria-labelledby={`${id}-e`} className="flex flex-col gap-2">
+            <h3 id={`${id}-e`} className="text-sm font-medium text-foreground">Evaluator sees</h3>
+            <EvaluatorPreview skillName={skillName} rule={rule} />
+          </section>
+        </div>
+      ) : null}
       {!rule.model ? <p className="text-sm text-muted-foreground">What students and evaluators see appears once you choose how it&apos;s judged.</p> : null}
     </aside>
   )

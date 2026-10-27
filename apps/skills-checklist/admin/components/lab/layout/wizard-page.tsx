@@ -5,8 +5,9 @@
 // and a sticky footer. No visible "Step n of m" and no visible heading that repeats the step label: the stepper already
 // says where you are. Each step panel is labelled by an sr-only WizardStepHeading so WizardPanel's aria-labelledby resolves.
 // Below 640 px the stepper collapses to one visible line: the current step name plus "3 of 4".
-// The column is centred in the page (decision D-X29). With `aside` (configure's live preview) the frame widens to 720 + 320 px
-// from 1400 px and the preview sits beside the step, sticky; below 1400 px it is hidden and the footer carries the summary.
+// Full content width and full height (decision D-X30, leadership 2026-10-27, superseding the centred column of D-X29). With
+// `aside` (configure's live preview) the step and a full-height preview panel share the width from 1280 px; below that the
+// preview is hidden and the footer carries the summary.
 
 import * as React from "react"
 import {
@@ -65,17 +66,22 @@ function warnShape(steps: WizardStep[]) {
 }
 
 /**
- * The step region, with the optional preview column (D-X29). The preview belongs to the step it previews, so both sit in one
- * [data-region="panel"]: one question ("set this and see what it does"), and the density count keeps the template's 4 regions.
+ * The step region (decision D-X30, full width). It fills the remaining height, so the footer sits at the bottom and nothing
+ * floats in a blank page. The step content is a size container: configure sections lay their blocks out in two columns once
+ * the step is wider than 56rem, so a wide screen gets structure, not stretched fields.
+ * With `aside` (configure's live preview) the region is two columns from 1280 px: the step, and a full-height preview panel
+ * (about a third of the width) whose content stays in view while the step scrolls. The preview belongs to the step it previews,
+ * so both sit in one [data-region="panel"] and the density count keeps the template's 4 regions. `aside={null}` keeps the
+ * same frame on a step that shows the previews itself (Check): the step then uses the whole width.
  */
 export function PreviewColumns({ aside, className, children }: { aside?: React.ReactNode; className?: string; children: React.ReactNode }) {
-  if (aside === undefined) return <div data-region="panel" className={className}>{children}</div>
+  if (aside === undefined) return <div data-region="panel" className={cn("@container min-w-0 flex-1", className)}>{children}</div>
   return (
-    <div data-region="panel" className="grid grid-cols-1 gap-8 min-[1400px]:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className={cn("min-w-0", aside === null && "min-[1400px]:col-span-2", className)}>{children}</div>
+    <div data-region="panel" className="grid flex-1 grid-cols-1 gap-6 min-[1280px]:grid-cols-[minmax(0,1fr)_minmax(22rem,36%)]">
+      <div className={cn("@container min-w-0", aside === null && "min-[1280px]:col-span-2", className)}>{children}</div>
       {aside ? (
-        <div className="hidden min-[1400px]:block" data-preview-column>
-          <div className="sticky top-4">{aside}</div>
+        <div className="hidden rounded-[var(--radius)] border border-border min-[1280px]:block" data-preview-column>
+          <div className="sticky top-4 p-4">{aside}</div>
         </div>
       ) : null}
     </div>
@@ -101,8 +107,8 @@ export function WizardPage({
   const active = steps[current]
 
   return (
-    <div data-page-type={width === "form" ? "form" : "wizard"} className="flex w-full flex-col">
-      <PageFrame title={title} subtitle={subtitle} actions={actions} actionItems={actionItems} width={aside !== undefined ? "form-preview" : width}>
+    <div data-page-type={width === "form" ? "form" : "wizard"} className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
+      <PageFrame title={title} subtitle={subtitle} actions={actions} actionItems={actionItems} width={width} className="flex-1">
         <Wizard
           steps={steps}
           current={current}
@@ -110,7 +116,7 @@ export function WizardPage({
           variant="compact"
           linear={linear}
           onStepClick={onStepClick}
-          className="gap-6"
+          className="flex-1 gap-6"
         >
           <div data-region="stepper" className="flex flex-col gap-1">
             <WizardNav className="hidden sm:block" />
@@ -123,7 +129,7 @@ export function WizardPage({
 
           {banner ? <div data-region="banner">{banner}</div> : null}
 
-          <WizardContent className="flex flex-col gap-4">
+          <WizardContent className="flex flex-1 flex-col gap-4">
             <PreviewColumns aside={aside}>
               {active ? (
                 <WizardStepHeading id={active.id} className="sr-only">

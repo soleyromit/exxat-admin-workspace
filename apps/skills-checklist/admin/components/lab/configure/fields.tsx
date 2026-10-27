@@ -106,7 +106,7 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
         value={rule.model ?? ""}
         onValueChange={onValue}
         aria-label="Evaluation model"
-        className={cn(columns === 4 ? "flex flex-wrap gap-x-6 gap-y-3 outline-none" : "grid gap-3 outline-none", columns === 2 && "sm:grid-cols-2")}
+        className={cn(columns === 4 ? "flex flex-wrap gap-x-6 gap-y-3 outline-none" : "grid gap-3 outline-none", columns === 2 && "sm:grid-cols-2 @min-[56rem]:grid-cols-4")}
         {...errProps("cfg-model", err)}
       >
         {MODELS.map((m) => {
@@ -257,7 +257,7 @@ export function OutcomesSection({ rule, setRule, issues, showErrors }: SectionPr
   if (!rule.model) return <p className="text-sm text-muted-foreground">Choose how it&apos;s judged first. The criteria depend on it.</p>
   if (rule.model === "binary") {
     return (
-      <div className="flex flex-col gap-6" data-section="outcomes">
+      <div className="flex flex-col gap-6 @min-[56rem]:grid @min-[56rem]:grid-cols-2 @min-[56rem]:items-start @min-[56rem]:gap-x-10" data-section="outcomes">
         <PresetChips rule={rule} setRule={setRule} />
         <div className="grid gap-4 sm:grid-cols-2">
           {[0, 1].map((i) => {
@@ -308,7 +308,7 @@ export function OutcomesSection({ rule, setRule, issues, showErrors }: SectionPr
     )
   }
   return (
-    <div className="flex flex-col gap-6" data-section="outcomes">
+    <div className="flex flex-col gap-6 @min-[56rem]:grid @min-[56rem]:grid-cols-2 @min-[56rem]:items-start @min-[56rem]:gap-x-10" data-section="outcomes">
       <FieldSet>
         <FieldLegend variant="label">Questions the evaluator answers</FieldLegend>
         <ListEditor
@@ -354,7 +354,7 @@ export function RuleSection({ rule, setRule, issues, showErrors, settings, withM
   const err = useErr(issues, showErrors)
   if (!rule.model) return <p className="text-sm text-muted-foreground">Choose how it&apos;s judged first. The rule depends on it.</p>
   return (
-    <div className="flex flex-col gap-8" data-section="rule">
+    <div className="flex flex-col gap-8 @min-[56rem]:grid @min-[56rem]:grid-cols-2 @min-[56rem]:items-start @min-[56rem]:gap-x-10" data-section="rule">
       {rule.model === "question" ? <QuestionRuleField rule={rule} setRule={setRule} err={err} /> : null}
       {rule.model === "scored" ? <ScoredRuleField rule={rule} setRule={setRule} err={err} /> : null}
       <FieldSet className="flex flex-col gap-4">
@@ -660,7 +660,7 @@ export function SignOffSection({ rule, setRule, issues, showErrors }: SectionPro
   const roleErr = err("cfg-role-preceptor")
   const [adding, setAdding] = React.useState(false)
   return (
-    <div className="flex flex-col gap-8" data-section="signoff">
+    <div className="flex flex-col gap-8 @min-[56rem]:grid @min-[56rem]:grid-cols-2 @min-[56rem]:items-start @min-[56rem]:gap-x-10" data-section="signoff">
       <FieldSet>
         <FieldLegend variant="label">Who can sign off</FieldLegend>
         <div className="flex flex-wrap gap-6">

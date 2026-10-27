@@ -335,6 +335,7 @@ export function CheckPanel({
   mode,
   onMode,
   modeError,
+  previewColumn = true,
 }: {
   skill: Skill
   current: LabRule | null
@@ -343,16 +344,22 @@ export function CheckPanel({
   mode: PublishMode | null
   onMode: (m: PublishMode) => void
   modeError?: string
+  /**
+   * From 1280 px (decision D-X30) the student and evaluator views sit in a full-height column beside "What changes" instead
+   * of behind tabs. False when the page already has that column (Configure set 2's preview panel).
+   */
+  previewColumn?: boolean
 }) {
   const choice = needsEvidenceChoice(current, impact)
-  return (
-    <Tabs defaultValue="changes">
+  const tabs = (
+    <Tabs defaultValue="changes" className="min-w-0 min-[1280px]:[&>*:first-child]:hidden">
+      {/* The tab list is for narrow screens only; from 1280 px "What changes" shows on its own and the views sit beside it. */}
       <TabsList variant="line" ariaLabel="Check before publishing">
         <TabsTrigger value="changes">What changes</TabsTrigger>
         <TabsTrigger value="student">Student sees</TabsTrigger>
         <TabsTrigger value="evaluator">Evaluator sees</TabsTrigger>
       </TabsList>
-      <TabsContent value="changes" className="flex flex-col gap-8 pt-4">
+      <TabsContent value="changes" className="flex flex-col gap-8 pt-4 min-[1280px]:pt-0">
         <section aria-labelledby="cfg-changed-heading" className="flex flex-col gap-3">
           <h3 id="cfg-changed-heading" className="text-sm font-medium text-foreground">
             What you changed
@@ -371,6 +378,24 @@ export function CheckPanel({
         <EvaluatorPreview skillName={skill.name} rule={rule} />
       </TabsContent>
     </Tabs>
+  )
+  if (!previewColumn) return tabs
+  return (
+    <div className="grid flex-1 grid-cols-1 gap-6 min-[1280px]:grid-cols-[minmax(0,1fr)_minmax(22rem,36%)]">
+      {tabs}
+      <div className="hidden rounded-[var(--radius)] border border-border min-[1280px]:block">
+        <div className="sticky top-4 flex flex-col gap-4 p-4">
+          <section aria-labelledby="cfg-check-student" className="flex flex-col gap-2">
+            <h3 id="cfg-check-student" className="text-sm font-medium text-foreground">Student sees</h3>
+            <StudentPreview skillName={skill.name} rule={rule} />
+          </section>
+          <section aria-labelledby="cfg-check-evaluator" className="flex flex-col gap-2">
+            <h3 id="cfg-check-evaluator" className="text-sm font-medium text-foreground">Evaluator sees</h3>
+            <EvaluatorPreview skillName={skill.name} rule={rule} />
+          </section>
+        </div>
+      </div>
+    </div>
   )
 }
 

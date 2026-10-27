@@ -90,18 +90,24 @@ export function AdminRuleImpactB() {
       }
     >
       {m.published ? null : (
-        <>
+        // Two columns once the page is wider than 64rem (D-X30): who changes and the decision on the left, the rule and what
+        // each role sees on the right.
+        <div className="flex flex-col gap-8 @min-[64rem]:grid @min-[64rem]:grid-cols-2 @min-[64rem]:items-start @min-[64rem]:gap-x-10">
+          <div className="flex min-w-0 flex-col gap-8">
           <ImpactSummary current={m.current} impact={impact} lead="people" />
-          <section aria-labelledby="ri-b-rule" className="flex flex-col gap-3 border-t border-border pt-6">
+          {choice ? <EvidenceChoice value={mode} onChange={setMode} error={tried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
+          </div>
+          <div className="flex min-w-0 flex-col gap-8">
+          <section aria-labelledby="ri-b-rule" className="flex flex-col gap-3 border-t border-border pt-6 @min-[64rem]:border-t-0 @min-[64rem]:pt-0">
             <h2 id="ri-b-rule" className="text-base font-semibold text-foreground">
               {`${HOW_MANY_LABEL} on this ${skillNoun()}`}
             </h2>
             <RuleDiff current={m.current ? ruleSentence(m.current) : null} after={ruleSentence(m.rule)} />
             <AttemptExample rule={m.rule} impact={impact} />
           </section>
-          {choice ? <EvidenceChoice value={mode} onChange={setMode} error={tried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
           {m.current ? <RolePreview impact={impact} skillName={skill.name} rule={m.rule} mode={mode} /> : null}
-        </>
+          </div>
+        </div>
       )}
     </FormPage>
   )

@@ -25,6 +25,7 @@ import {
   DoneBanner,
   FailedState,
   FileStatus,
+  CategoryList,
   FixList,
   LIBRARY_HREF,
   NewListField,
@@ -171,6 +172,8 @@ export function AdminImportC() {
                 <ReviewSummary session={session} />
                 <NewListField session={session} />
                 {session.groups.length ? <FixList session={session} /> : null}
+                {/* Every skill read, by category, with its own Category and Tags (REQ SL-03, SL-04; decision D-X28). */}
+                <CategoryList session={session} />
               </>
             ) : null}
           </div>

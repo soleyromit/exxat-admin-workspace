@@ -6854,6 +6854,11 @@
    {
     "name": "Badge",
     "from": "@exxatdesignux/ui/components/ui/badge",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "Badge",
+    "from": "@exxatdesignux/ui/components/ui/badge",
     "via": "components/lab/import/sample-badge"
    },
    {
@@ -6865,6 +6870,11 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Collapsible",
@@ -6880,6 +6890,41 @@
     "name": "CollapsibleTrigger",
     "from": "@exxatdesignux/ui/components/ui/collapsible",
     "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Field",
@@ -6905,6 +6950,16 @@
     "name": "Input",
     "from": "@exxatdesignux/ui/components/ui/input",
     "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Label",
@@ -6937,14 +6992,34 @@
     "via": "components/lab/import/import-parts"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "PopoverAnchor",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
     "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
     "via": "components/lab/import/import-parts"
    },
    {
     "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/import/import-parts"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "RadioGroup",
@@ -7176,6 +7251,11 @@
     "via": "components/lab/import/sample-badge"
    },
    {
+    "name": "Badge",
+    "from": "@exxatdesignux/ui/components/ui/badge",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/layout/sticky-footer"
@@ -7184,6 +7264,11 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Collapsible",
@@ -7199,6 +7284,41 @@
     "name": "CollapsibleTrigger",
     "from": "@exxatdesignux/ui/components/ui/collapsible",
     "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Field",
@@ -7226,6 +7346,16 @@
     "via": "components/lab/import/import-parts"
    },
    {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/import/import-parts"
@@ -7251,14 +7381,34 @@
     "via": "components/lab/import/import-parts"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "PopoverAnchor",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
     "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
     "via": "components/lab/import/import-parts"
    },
    {
     "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/import/import-parts"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "RadioGroup",
@@ -7436,6 +7586,11 @@
     "via": "components/lab/import/sample-badge"
    },
    {
+    "name": "Badge",
+    "from": "@exxatdesignux/ui/components/ui/badge",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/layout/sticky-footer"
@@ -7444,6 +7599,11 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Collapsible",
@@ -7459,6 +7619,41 @@
     "name": "CollapsibleTrigger",
     "from": "@exxatdesignux/ui/components/ui/collapsible",
     "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandEmpty",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandGroup",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandInput",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "CommandSeparator",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Field",
@@ -7486,6 +7681,16 @@
     "via": "components/lab/import/import-parts"
    },
    {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/import/import-parts"
@@ -7511,14 +7716,34 @@
     "via": "components/lab/import/import-parts"
    },
    {
+    "name": "Popover",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "PopoverAnchor",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
     "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "PopoverContent",
+    "from": "@exxatdesignux/ui/components/ui/popover",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
     "via": "components/lab/import/import-parts"
    },
    {
     "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/import/import-parts"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "RadioGroup",
@@ -8221,11 +8446,6 @@
    {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
-    "via": "components/lab/configure/live-panel"
-   },
-   {
-    "name": "Label",
-    "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/configure/impact"
    },
    {
@@ -8271,22 +8491,12 @@
    {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
-    "via": "components/lab/configure/live-panel"
-   },
-   {
-    "name": "RadioGroup",
-    "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/configure/impact"
    },
    {
     "name": "RadioGroupItem",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/configure/fields"
-   },
-   {
-    "name": "RadioGroupItem",
-    "from": "@exxatdesignux/ui/components/ui/radio-group",
-    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "RadioGroupItem",
@@ -8477,11 +8687,6 @@
     "name": "TabsTrigger",
     "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/lab/configure/impact"
-   },
-   {
-    "name": "Textarea",
-    "from": "@exxatdesignux/ui/components/ui/textarea",
-    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "Tip",
@@ -8870,11 +9075,6 @@
    {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
-    "via": "components/lab/configure/live-panel"
-   },
-   {
-    "name": "Label",
-    "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/configure/impact"
    },
    {
@@ -8915,22 +9115,12 @@
    {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
-    "via": "components/lab/configure/live-panel"
-   },
-   {
-    "name": "RadioGroup",
-    "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/configure/impact"
    },
    {
     "name": "RadioGroupItem",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/configure/fields"
-   },
-   {
-    "name": "RadioGroupItem",
-    "from": "@exxatdesignux/ui/components/ui/radio-group",
-    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "RadioGroupItem",
@@ -9121,11 +9311,6 @@
     "name": "TabsTrigger",
     "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/lab/configure/impact"
-   },
-   {
-    "name": "Textarea",
-    "from": "@exxatdesignux/ui/components/ui/textarea",
-    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "Tip",
@@ -9494,11 +9679,6 @@
    {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
-    "via": "components/lab/configure/live-panel"
-   },
-   {
-    "name": "Label",
-    "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/configure/fields"
    },
    {
@@ -9534,22 +9714,12 @@
    {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
-    "via": "components/lab/configure/live-panel"
-   },
-   {
-    "name": "RadioGroup",
-    "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/configure/fields"
    },
    {
     "name": "RadioGroup",
     "from": "@exxatdesignux/ui/components/ui/radio-group",
     "via": "components/lab/configure/impact"
-   },
-   {
-    "name": "RadioGroupItem",
-    "from": "@exxatdesignux/ui/components/ui/radio-group",
-    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "RadioGroupItem",
@@ -9705,11 +9875,6 @@
     "name": "TabsTrigger",
     "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/lab/configure/impact"
-   },
-   {
-    "name": "Textarea",
-    "from": "@exxatdesignux/ui/components/ui/textarea",
-    "via": "components/lab/configure/live-panel"
    },
    {
     "name": "Tip",

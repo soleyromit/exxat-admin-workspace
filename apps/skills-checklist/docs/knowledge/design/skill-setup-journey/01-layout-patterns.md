@@ -49,9 +49,11 @@ The cause is structural: there is no shared page template, so each builder chose
 
 ## 2. The five templates
 
-Widths below are the content column inside the staff shell. At 1440 the shell sidebar is 256 px and `PageFrame` pads 24 px each side, so the available column is 1136 px [CODE `page-header.tsx:46`; S04 4.3 says about 1144 px]. Columns are **left aligned**, never centred, so the title and the body share one left edge [S04 4.1].
+> **Superseded for wizards and forms (2026-10-27, decision D-X30, leadership via Romit: "For the pages where you are using wizards, I want you to use 100% layout with no white space").** T2 wizard and T3 form pages now fill the whole content width and height. The 720 and 960 px columns below are history. Readability is kept with structure, not stretched fields: the step content is a size container and configure sections lay their blocks out in two columns past 56rem; configure shows the live preview as a full-height panel (about 36 percent, minimum 22rem) beside the step from 1280 px with the student and evaluator views both visible; Check puts "What changes" and the two views side by side; rule-change impact uses two columns past 64rem. One column at 768 and 375. The short-lived centred column (D-X29) is also superseded.
 
-New `PageFrame` widths (additive change to `components/skills/page-header.tsx`, owned by builder 4 in `03`): `form` = `max-w-[45rem]` (720 px), `wizard` = `max-w-[60rem]` (960 px). Existing `reading` (768) and `wide` (1024) stay for v2 callers.
+Widths below are the content column inside the staff shell. At 1440 the shell sidebar is 256 px and `PageFrame` pads 24 px each side, so the available column is 1136 px [CODE `page-header.tsx:46`; S04 4.3 says about 1144 px]. The title and the body share one left edge [S04 4.1].
+
+`PageFrame` widths `form` and `wizard` now fill the content width like `full` (D-X30); they were `max-w-[45rem]` (720 px) and `max-w-[60rem]` (960 px). Existing `reading` (768) and `wide` (1024) stay for v2 callers.
 
 ### T1 List page
 
