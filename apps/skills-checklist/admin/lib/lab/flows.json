@@ -685,7 +685,7 @@
     },
     {
       "id": "setup-walkthrough",
-      "title": "Configuration walkthrough",
+      "title": "Admin walkthrough",
       "short": "Configure",
       "persona": "admin",
       "walkthrough": true,
@@ -792,7 +792,7 @@
     },
     {
       "id": "fulfillment-walkthrough",
-      "title": "Fulfillment walkthrough",
+      "title": "Student walkthrough",
       "short": "Fulfill",
       "persona": "student",
       "walkthrough": true,

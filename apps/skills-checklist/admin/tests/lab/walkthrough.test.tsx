@@ -113,7 +113,7 @@ describe("walkthrough definition", () => {
   })
 
   it("has one entry URL each that lands on the first step in present mode, both listed on the present index", () => {
-    expect(WALKTHROUGH_ROUTES).toEqual({ setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID })
+    expect(WALKTHROUGH_ROUTES).toEqual({ admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID })
     expect(walkthroughStart()).toBe("/lab/flow/setup-walkthrough/library?set=1&present=1")
     expect(walkthroughStart(FULFILLMENT_WALKTHROUGH_ID)).toBe("/lab/flow/fulfillment-walkthrough/progress?set=1&present=1")
     expect(PRESENT_WALKTHROUGHS.map((w) => w.href)).toEqual([WALKTHROUGH_ENTRY, FULFILLMENT_ENTRY])

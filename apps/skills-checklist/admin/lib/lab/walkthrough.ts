@@ -17,10 +17,11 @@ export const WALKTHROUGH_ID = "setup-walkthrough"
 /** The student walkthrough (Sankalp's fulfillment happy path, 2026-10-27), through Send for evaluation C (course first). */
 export const FULFILLMENT_WALKTHROUGH_ID = "fulfillment-walkthrough"
 /** Entry URLs, linked from the lab index. */
-export const WALKTHROUGH_ENTRY = "/lab/walkthrough/setup"
-export const FULFILLMENT_ENTRY = "/lab/walkthrough/fulfillment"
+export const WALKTHROUGH_ENTRY = "/lab/walkthrough/admin"
+export const FULFILLMENT_ENTRY = "/lab/walkthrough/student"
 /** Short ids the entry route accepts, to the flow they open. */
-export const WALKTHROUGH_ROUTES: Record<string, string> = { setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID }
+// Romit 2026-10-28: "instead of setup, use admin; for fulfillment, use student". The old ids still resolve so shared links keep working.
+export const WALKTHROUGH_ROUTES: Record<string, string> = { admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID }
 
 export const isWalkthrough = (flowId: string | null | undefined): boolean => !!findFlow(flowId)?.walkthrough
 

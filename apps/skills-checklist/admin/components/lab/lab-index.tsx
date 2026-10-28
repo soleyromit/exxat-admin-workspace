@@ -202,7 +202,7 @@ function WorkingIndex() {
       actions={
         <span className="flex items-center gap-3">
           {PRESENT_WALKTHROUGHS.map((w) => (
-            <Button key={w.href} asChild variant="outline" size="sm"><Link href={w.href} data-walkthrough-entry>{`Walk through ${w.label.split(",")[0]!.toLowerCase()}`}</Link></Button>
+            <Button key={w.href} asChild variant="outline" size="sm"><Link href={w.href} data-walkthrough-entry>{`${w.label.split(",")[0]!} walkthrough`}</Link></Button>
           ))}
           <PresentSwitch />
         </span>
