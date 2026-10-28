@@ -61,6 +61,8 @@ import { StudentOfflineA } from "./student-offline-a"
 import { StudentOfflineB } from "./student-offline-b"
 import { AdminCourseMappingA } from "./admin-course-mapping-a"
 import { AdminCourseMappingB } from "./admin-course-mapping-b"
+import { CourseFacultyOfferingCheckoffA } from "./course-faculty-offering-checkoff-a"
+import { CourseFacultyOfferingCheckoffB } from "./course-faculty-offering-checkoff-b"
 import { AdminListsCohortsA } from "./admin-lists-cohorts-a"
 import { AdminListsCohortsB } from "./admin-lists-cohorts-b"
 import { AdminAttainmentA } from "./admin-attainment-a"
@@ -94,6 +96,8 @@ import { DirectorAttainmentB } from "./director-attainment-b"
 export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
   "admin/course-mapping/A": AdminCourseMappingA,
   "admin/course-mapping/B": AdminCourseMappingB,
+  "course-faculty/offering-checkoff/A": CourseFacultyOfferingCheckoffA,
+  "course-faculty/offering-checkoff/B": CourseFacultyOfferingCheckoffB,
   "admin/lists-cohorts/A": AdminListsCohortsA,
   "admin/lists-cohorts/B": AdminListsCohortsB,
   "admin/attainment/A": AdminAttainmentA,
@@ -136,8 +140,8 @@ export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
   "evaluator/submitted/A": EvaluatorSubmittedA,
   "evaluator/expired/A": EvaluatorExpiredA,
   "evaluator/invitation-email/A": EvaluatorInvitationEmailA,
-  "lab-instructor/lab-batch-grid/A": LabInstructorLabBatchGridA,
-  "lab-instructor/lab-batch-grid/B": LabInstructorLabBatchGridB,
+  "course-faculty/lab-batch-grid/A": LabInstructorLabBatchGridA,
+  "course-faculty/lab-batch-grid/B": LabInstructorLabBatchGridB,
   "reviewer/approvals/A": ReviewerApprovalsA,
   "reviewer/approvals/B": ReviewerApprovalsB,
   "reviewer/approvals/C": ReviewerApprovalsC,

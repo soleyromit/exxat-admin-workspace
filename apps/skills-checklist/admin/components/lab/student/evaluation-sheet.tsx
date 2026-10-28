@@ -41,6 +41,7 @@ export function StudentEvaluationSheet({ state, studentId, evaluationId, onClose
           {v ? (
             <>
               <FactList facts={[["Outcome", `${v.outcome}, ${v.status.toLowerCase()}`], ...v.facts.map((f) => [f.label, f.value] as [string, React.ReactNode])]} />
+              {v.checkoffNote ? <p className="text-sm text-muted-foreground" data-checkoff-note>{v.checkoffNote}</p> : null}
               <section className="flex flex-col gap-1.5" aria-label="Responses">
                 <h3 className="text-sm font-semibold">Responses</h3>
                 {v.recorded ? <CompareTable c={v.comparison} compact /> : <p className="text-sm text-muted-foreground">Only the outcome was recorded for this evaluation.</p>}

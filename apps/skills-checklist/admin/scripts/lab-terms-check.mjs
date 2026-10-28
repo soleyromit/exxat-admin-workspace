@@ -115,8 +115,8 @@ const SWEEP = [
   ["evaluator form C", "/lab/evaluator/evaluation-form?variant=C"],
   ["share A", "/lab/student/share-record?variant=A"],
   ["share B", "/lab/student/share-record?variant=B"],
-  ["lab grid A", "/lab/lab-instructor/lab-batch-grid?variant=A"],
-  ["lab grid B", "/lab/lab-instructor/lab-batch-grid?variant=B"],
+  ["lab grid A", "/lab/course-faculty/lab-batch-grid?variant=A"],
+  ["lab grid B", "/lab/course-faculty/lab-batch-grid?variant=B"],
   // Not Lists: each list carries its own noun as data ("Clinical skills checklist" holds skills, "Practicum competencies" holds
   // competencies), so "154 skills" there is the list's word, not the program's.
 ]

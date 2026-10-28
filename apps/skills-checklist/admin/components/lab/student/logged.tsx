@@ -8,6 +8,7 @@
  * checkboxes and one review that groups them by who signs off, one request per group; Romit 2026-10-27, LEDGER D-L18).
  * [REQ ST-03 earlier submissions findable, ST-04 several together, ST-13 what was sent; INFER: the draft is the student's own]
  */
+import { CheckoffDone } from "@/components/lab/student/checkoff"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -98,6 +99,7 @@ export function DraftList({ rows, studentId, state, empty }: { rows: LoggedSitti
               <div className="flex min-w-0 flex-col gap-0.5">
                 <p className={TYPE.label}>{names(x.skillNames)}</p>
                 <p className={TYPE.meta}>{draftMeta(state, x)}</p>
+                <CheckoffDone s={state} studentId={studentId} ids={x.skillIds} />
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-2 ps-7 sm:ps-0">

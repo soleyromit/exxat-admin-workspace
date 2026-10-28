@@ -13,7 +13,7 @@ import { FLOWS } from "@/lib/lab/flows"
 
 const root = path.resolve(__dirname, "../..")
 const ALLOW = [/^components\/lab\/lab-bar\//, /^lib\/lab\/flows\.ts$/, /^lib\/lab\/links\.ts$/, /^lib\/lab\/screens\.ts$/]
-const PERSONAS = "admin|student|evaluator|reviewer|director|lab-instructor"
+const PERSONAS = "admin|student|evaluator|reviewer|director|course-faculty"
 const RULES: Array<{ name: string; re: RegExp }> = [
   { name: "screen URL with a variant", re: new RegExp(`/lab/(${PERSONAS})/[a-z0-9-]+\\?variant=`) },
   { name: "variant letter in a query", re: /[?&]variant=[A-F]\b/ },

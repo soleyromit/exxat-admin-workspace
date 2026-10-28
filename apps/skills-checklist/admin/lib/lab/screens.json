@@ -604,6 +604,36 @@
       ]
     },
     {
+      "persona": "course-faculty",
+      "slug": "offering-checkoff",
+      "title": "Group check-off",
+      "tier": 2,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Grid, as in Sankalp's prototype: on their course offering's Skills section, can course faculty tick the mapped skills off for the registered group in one sitting (students down, skills across), see which skills cannot be checked off and why, and see who already has evidence or an evaluation out? Open: whether this sits under Course, Learning activities or its own place; whether lab evidence counts the same as rotation evidence beyond the clinical-setting rule; whether an administrator can record a check-off on behalf of faculty (ask Aarti).",
+          "file": "components/lab/screens/course-faculty-offering-checkoff-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "One skill at a time, like a paper sign-off sheet: is picking a skill and ticking the students who showed it faster and less error-prone than the grid when the offering maps 140 skills?",
+          "file": "components/lab/screens/course-faculty-offering-checkoff-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Table",
+        "Checkbox",
+        "Button",
+        "DatePickerField",
+        "Select",
+        "LocalBanner"
+      ]
+    },
+    {
       "persona": "admin",
       "slug": "lists-cohorts",
       "title": "Groups of skills",
@@ -1710,7 +1740,7 @@
       ]
     },
     {
-      "persona": "lab-instructor",
+      "persona": "course-faculty",
       "slug": "lab-batch-grid",
       "title": "Lab batch grid",
       "tier": 2,
@@ -1718,13 +1748,13 @@
       "variants": [
         {
           "id": "A",
-          "question": "Students by skills grid: can an instructor record a 123-student cohort on several skills in one pass?",
+          "question": "Students by skills grid: can an instructor record a 123-student cohort on several skills in one pass? Not in any flow (2026-10-28): the cohort-scoped grid (contract V2-05c) is kept until Romit decides whether to retire it in favour of Group check-off.",
           "file": "components/lab/screens/lab-instructor-lab-batch-grid-a.tsx",
           "pageType": "list"
         },
         {
           "id": "B",
-          "question": "Roll call, one skill at a time with touch chips: is it faster at the bench on a tablet than the grid?",
+          "question": "Roll call, one skill at a time with touch chips: is it faster at the bench on a tablet than the grid? Not in any flow (2026-10-28), kept until Romit decides.",
           "file": "components/lab/screens/lab-instructor-lab-batch-grid-b.tsx",
           "pageType": "list"
         }

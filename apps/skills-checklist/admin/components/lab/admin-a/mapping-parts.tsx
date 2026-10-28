@@ -37,7 +37,6 @@ import {
 } from "@/lib/lab/mapping"
 import { listsForCohort, listsHref, type SkillList } from "@/lib/lab/lists"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { CLINICAL_ONLY_LABEL, INCLUDE_DIDACTIC_LABEL } from "@/lib/v2/labels"
 import type { V2State } from "@/lib/v2/types"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { AmberMark, FilterSelect, LINK, LevelGlyph, LevelLegend, LevelSelect, LiveNote, PaneHeading, SearchField, fmt, plural } from "./parts"
@@ -150,16 +149,15 @@ export function CohortAppliesLine({ lists, cohort }: { lists: SkillList[]; cohor
   )
 }
 
-/** Clinical courses first [CALL 10-26, a default pending the client]: a visible "Clinical only" state and one switch to include didactic. */
-export function CourseKindLine({ didactic, onChange, clinical, total }: { didactic: boolean; onChange: (on: boolean) => void; clinical: number; total: number }) {
+/**
+ * Clinical, or clinical and didactic, as one filter in the toolbar (Romit 2026-10-28: "too many text"): the course-kind open
+ * decision stays a control, not a sentence. The table's own count says how many offerings show.
+ */
+export function CourseKindSelect({ didactic, onChange }: { didactic: boolean; onChange: (on: boolean) => void }) {
   return (
-    <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground" data-course-kind={didactic ? "all" : "clinical"}>
-      {didactic ? <span>{`Clinical and didactic, ${fmt(total)} offerings.`}</span> : <Badge variant="outline">{CLINICAL_ONLY_LABEL}</Badge>}
-      {didactic ? null : <span>{`${fmt(clinical)} of ${fmt(total)} offerings.`}</span>}
-      <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => onChange(!didactic)}>
-        {didactic ? CLINICAL_ONLY_LABEL : INCLUDE_DIDACTIC_LABEL}
-      </Button>
-    </p>
+    <span data-course-kind={didactic ? "all" : "clinical"}>
+      <FilterSelect value={didactic ? "didactic" : ""} onChange={(v) => onChange(v === "didactic")} label="Course kind" allLabel="Clinical" options={[{ value: "didactic", label: "Clinical and didactic" }]} className="w-48" />
+    </span>
   )
 }
 
@@ -240,23 +238,17 @@ export function OfferingPanel({ state, overlay, setOverlay, offering, lists, foc
   }
 
   return (
-    <section aria-labelledby="offering-heading" className="flex min-w-0 flex-col gap-3" data-region="offering">
-      <PaneHeading
-        title={<span id="offering-heading">{`${offering.code} ${offering.name}`}</span>}
-        meta={`${offering.term} · ${offering.academicYear} · Year ${offering.professionalYear} · ${offering.cohort}`}
-        end={
-          <span className="flex items-baseline gap-4 text-sm" data-level-totals aria-label={`${offering.mapped} mapped: ${offering.mandatory} mandatory, ${offering.recommended} recommended, ${offering.optional} optional`}>
-            <span><span className="font-semibold tabular-nums">{fmt(offering.mandatory)}</span> <span className="text-muted-foreground">mandatory</span></span>
-            <span><span className="font-semibold tabular-nums">{fmt(offering.recommended)}</span> <span className="text-muted-foreground">recommended</span></span>
-            <span><span className="font-semibold tabular-nums">{fmt(offering.optional)}</span> <span className="text-muted-foreground">optional</span></span>
-          </span>
-        }
-      />
-      <CohortAppliesLine lists={lists} cohort={offering.cohort} />
+    <section aria-labelledby="offering-heading" className="flex min-w-0 flex-col gap-3" data-region="offering" data-cohort={offering.cohort}>
+      {/* Romit 2026-10-28 ("too many text, too crowded"): term, year and cohort already show in the filters and the selected row,
+          so the header is the name; the counts and the level key are one row; the "gets these from" line is gone (each row says
+          "Set by list") unless the cohort has no list, which is an action. Group check-off belongs to course faculty (Romit
+          2026-10-28), not to the admin's mapping. */}
+      <PaneHeading title={<span id="offering-heading">{`${offering.code} ${offering.name}`}</span>} />
+      <LevelLegend counts={{ mapped: offering.mapped, mandatory: offering.mandatory, recommended: offering.recommended, optional: offering.optional }} />
+      {listsForCohort(lists, offering.cohort).length === 0 ? <CohortAppliesLine lists={lists} cohort={offering.cohort} /> : null}
       <div className="flex flex-wrap items-center gap-2">
         <SearchField value={q} onChange={setQ} label={`Search ${skillNounPlural()} in ${offering.code}`} placeholder={`Search ${skillNounPlural()}`} className="w-56" />
         <FilterSelect value={show} onChange={(v) => setShow(v as Show)} label="Show" allLabel={`All ${skillNounPlural()}`} options={SHOW_OPTS} className="w-52" />
-        <span className="ms-auto"><LevelLegend /></span>
       </div>
       {bulkNote ? (
         <LocalBanner variant={bulkNote.skipped ? "warning" : "promo"} title={`${plural(bulkNote.changed, skillNoun(), skillNounPlural())} set to ${LEVEL_LABEL[bulkNote.level].toLowerCase()}`} dismissible onDismiss={() => setBulkNote(null)}>
@@ -477,7 +469,6 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
     <section aria-labelledby="skill-heading" className="flex min-w-0 flex-col gap-3" data-region="skill">
       <PaneHeading
         title={<span id="skill-heading">{skill.name}</span>}
-        meta={`${skill.section}${skill.required ? " · Required to graduate" : ""}`}
         end={
           skill.configured ? (
             <span className="text-sm" aria-label={`${carriers.length} of ${rows.length} ${termName} courses, ${mandatory} mandatory`}>
@@ -498,7 +489,6 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
         </Card>
       ) : (
         <>
-          <CohortAppliesLine lists={lists} />
           {filter ? (
             <div role="search" aria-label="Find an offering" className="flex flex-wrap items-center gap-2" data-offering-filters>
               <SearchField value={filter.value.q} onChange={(v) => filter.onChange({ q: v })} label="Search offerings by course, term, cohort or year" placeholder="Search offerings" className="w-56" />

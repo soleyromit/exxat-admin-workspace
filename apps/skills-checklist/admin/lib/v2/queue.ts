@@ -38,7 +38,7 @@ export type QueueState = "ready" | "needs-outcome"
 export interface QueueItem {
   /** The request id, or the evaluation id when the evaluation has no request. */
   key: string
-  source: "evaluator" | "paper-form"
+  source: "evaluator" | "paper-form" | "checkoff"
   state: QueueState
   submission: Submission | null
   /** Evaluations waiting for approval in this item. Empty for a photo whose outcome is not entered yet. */
@@ -76,7 +76,7 @@ export function queueItems(s: V2State): QueueItem[] {
     const first = evaluations[0]
     out.push({
       key,
-      source: first.source === "paper-form" ? "paper-form" : "evaluator",
+      source: first.source === "paper-form" ? "paper-form" : first.source === "checkoff" ? "checkoff" : "evaluator",
       state: "ready",
       submission,
       evaluations,

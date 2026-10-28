@@ -83,6 +83,6 @@ describe("AR-03: the reviewer examines the full set of responses", () => {
 
   it("renders the self-evaluation note on the review item (every variant uses CompareTable)", () => {
     expect(src("components/lab/reviewer/review-parts.tsx")).toMatch(/showNote && c\.selfNote/)
-    for (const v of ["a", "b", "c"]) expect(src(`components/lab/screens/reviewer-review-item-${v}.tsx`)).toMatch(/<CompareTable key=\{c\.evaluationId\} c=\{c\} \/>/)
+    for (const v of ["a", "b", "c"]) expect(src(`components/lab/screens/reviewer-review-item-${v}.tsx`)).toMatch(/<CompareTable key=\{c\.evaluationId\} c=\{c\}( checkoff=\{isCheckoff\(d\.row\)\})? \/>/)
   })
 })

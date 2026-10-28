@@ -405,7 +405,8 @@ export interface EvaluatorChoice {
   reasons: string[]
 }
 
-const ROLE_OF_KIND: Partial<Record<Person["kind"], EvaluatorRole>> = { preceptor: "preceptor", reviewer: "faculty", director: "faculty", "lab-instructor": "lab-instructor" }
+// Program faculty (kind "faculty") sign off as faculty, like the reviewer and director who also teach.
+const ROLE_OF_KIND: Partial<Record<Person["kind"], EvaluatorRole>> = { preceptor: "preceptor", faculty: "faculty", reviewer: "faculty", director: "faculty", "lab-instructor": "lab-instructor" }
 
 const ROLE_NAME: Record<EvaluatorRole, string> = { preceptor: "a preceptor", faculty: "faculty", "lab-instructor": "a lab instructor" }
 

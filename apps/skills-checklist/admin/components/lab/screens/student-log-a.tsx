@@ -15,6 +15,7 @@
  * Inactive skills are not offered (SL-11). The note is the one note the request carries (ST-12).
  * [REQ ST-02, ST-04..ST-07, ST-10..ST-12, SC-13, SC-15, SL-11; COMP rec 9: device first, nothing lost]
  */
+import { CheckoffDone } from "@/components/lab/student/checkoff"
 import * as React from "react"
 import { LabLink as Link, useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -126,6 +127,7 @@ function LogForm({ ctx }: { ctx: Student2Ctx }) {
           <CardContent className="flex flex-col gap-3 py-4">
             <SectionTitle id="what-h" count={skills.length || undefined}>What you did</SectionTitle>
             <SelectedSkills s={s} ids={skills} onRemove={toggle} />
+            <CheckoffDone s={s} studentId={studentId} ids={skills} />
             <SkillPicker rows={rows} selected={skills} onToggle={toggle} />
             {tried && skillError ? <FieldError>{skillError}</FieldError> : null}
           </CardContent>

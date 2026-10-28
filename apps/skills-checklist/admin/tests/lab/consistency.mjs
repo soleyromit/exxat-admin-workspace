@@ -300,7 +300,7 @@ seen.assign = { assigned, asgQueueBefore, asgBadgeBefore, waitingBase }
       const label = document.querySelector("[data-level-totals]")?.getAttribute("aria-label") ?? ""
       const m = label.match(/(\d+) mapped: (\d+) mandatory/)
       const meta = document.querySelector("[data-region=offering]")?.textContent ?? ""
-      const cohort = (meta.match(/(A?BSN \d{4})/) ?? [])[1] ?? null
+      const cohort = document.querySelector("[data-region=offering]")?.getAttribute("data-cohort") ?? (meta.match(/(A?BSN \d{4})/) ?? [])[1] ?? null
       return { mapped: m ? Number(m[1]) : null, mandatory: m ? Number(m[2]) : null, cohort, fromList: document.querySelectorAll("[data-level-source=list]").length }
     })
   }

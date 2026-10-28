@@ -18,6 +18,7 @@ import { useRecord } from "./student-record-a"
 import { shortDate } from "@/lib/lab/student"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
 import { groupByMonth, groupBySkill, recordAttemptLine, student2Href } from "@/lib/lab/student2"
+import { EvaluatorWithTag } from "@/components/lab/student/checkoff"
 import { ViewEvaluationButton } from "@/components/lab/student/evaluation-sheet"
 
 const ROW_LIMIT = 40
@@ -108,7 +109,7 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
                           <span className="mt-0.5 block text-xs text-muted-foreground md:hidden">{x.why}</span>
                         </TableCell>
                         <TableCell className="align-top"><ResultLabel result={x.result} /></TableCell>
-                        <TableCell className="hidden align-top lg:table-cell">{x.evaluatorName}</TableCell>
+                        <TableCell className="hidden align-top lg:table-cell"><EvaluatorWithTag s={ctx.state} evaluationId={x.evaluationId} name={x.evaluatorName} /></TableCell>
                         <TableCell className="hidden min-w-48 whitespace-normal align-top text-sm md:table-cell">{x.why}</TableCell>
                         <TableCell className="align-top text-end">{x.evaluationId ? <ViewEvaluationButton name={`${x.skillName}, ${shortDate(x.date)}`} onOpen={() => r.openEval(x.evaluationId!)} /> : null}</TableCell>
                       </TableRow>

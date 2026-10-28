@@ -187,6 +187,12 @@ export interface SkillConfig {
    * the seed: one mandatory "Date performed".
    */
   studentFields?: Array<{ label: string; type: "date" | "short" | "long" | "number" | "choice"; mandatory: boolean; choices?: string[] }>
+  /**
+   * Group check-off (PROTO 2026-10-28 "Group check-off"; CALL 10-28): whether faculty may tick this skill off for a whole group on the
+   * course offering page, without a student submission, and what one tick records. Absent `enabled` means the model's default
+   * (Met or Unmet and levels on; questions and scores off). `levelIndex` (levels) and `score` (scored) are the nominated values.
+   */
+  checkOff?: { enabled?: boolean; levelIndex?: number; score?: number }
 }
 
 /** Question model qualification [REQ SC-05]: every question Yes, at least `n` Yes, or every named question (0-based) Yes. */
@@ -313,7 +319,9 @@ export interface Evaluation {
   /** Stage 3: the request this evaluation completed. */
   submissionId?: string
   /** Stage 4: "paper-form" when a reviewer entered it from a signed paper form. Absent means the evaluator entered it. */
-  source?: "evaluator" | "paper-form"
+  source?: "evaluator" | "paper-form" | "checkoff"
+  /** Group check-off: the session it was recorded in (one session = one offering, date and evaluator). */
+  sessionId?: string
   /** Stage 4: the reviewer who typed a paper-form evaluation on the evaluator's behalf. */
   enteredById?: string
   /** The site the evidence was gathered at. Absent on the hand-written history. */

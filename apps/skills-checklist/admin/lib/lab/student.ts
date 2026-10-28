@@ -695,6 +695,8 @@ export interface AttemptRow {
   status?: string
   /** The completed evaluation the student can open in full, read only [REQ SH-07]; null for a request nobody has answered. */
   evaluationId: string | null
+  /** Recorded in a group check-off on the course offering, not from a student submission [PROTO; CALL 2026-10-28]. */
+  checkoff?: boolean
 }
 
 /**
@@ -724,7 +726,7 @@ export function attempts(state: V2State, studentId: string, skillId: string, tod
   const out: AttemptRow[] = []
   const evals = [...evalsOfStudentSkill(s, studentId, skillId)].sort((a, b) => (a.date < b.date ? -1 : 1))
   for (const e of evals) {
-    const base = { key: e.id, n: out.length + 1, date: e.date, answer: OUTCOME_WORD[e.outcome], evaluatorName: nameOf(s, e.evaluatorId), setting: settingText(e), revision: 0, evaluationId: e.id }
+    const base = { key: e.id, n: out.length + 1, date: e.date, answer: OUTCOME_WORD[e.outcome], evaluatorName: nameOf(s, e.evaluatorId), setting: settingText(e), revision: 0, evaluationId: e.id, checkoff: e.source === "checkoff" }
     const sentTo = sentElsewhereTo(s, e)
     if (e.status === "awaiting-approval") out.push({ ...base, kind: "waiting", why: `Completed and awaiting approval for ${ageLabel(daysBetween(e.date, today))}. It counts once approved.` })
     else if (sentTo) out.push({ ...base, kind: "sent", status: sentForNewEvaluationLabel(sentTo.name), why: `It counts after ${sentTo.name} answers Met.` })

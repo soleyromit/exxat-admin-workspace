@@ -7,6 +7,7 @@
  * request to the shared store, so it waits in My requests; offline it stays a draft until it can go. The result says once what
  * happens next, then hands off to My requests [REQ ST-03, ST-13, EV-07].
  */
+import { CheckoffDone } from "@/components/lab/student/checkoff"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -260,6 +261,7 @@ export function SkillsField({ d, picks }: { d: RequestDraft; picks: PickRow[] })
         </Popover>
       </div>
       <SelectedSkills s={d.s} ids={d.skills} onRemove={d.toggle} />
+      <CheckoffDone s={d.s} studentId={d.studentId} ids={d.skills} />
       {/* What the evaluator checks, for skills with no self-evaluation (those show it in the self-evaluation cards). */}
       {d.skills.filter((k) => !d.selfIds.includes(k)).map((k) => <EvaluatorChecks key={k} s={d.s} id={k} />)}
       {d.tried && d.errors.skills ? <FieldError>{d.errors.skills}</FieldError> : null}

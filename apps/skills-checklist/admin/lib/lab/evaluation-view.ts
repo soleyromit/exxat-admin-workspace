@@ -16,6 +16,7 @@ import { evalsOfStudentSkill, personById, skillById, submissionById } from "@/li
 import { OUTCOME_LABEL, outcomeWord } from "@/lib/v2/labels"
 import { longDate } from "@/lib/v2/format"
 import { capitalize, aNoun } from "./terms"
+import { CHECKOFF_TAG, checkoffNote } from "./course-checkoff"
 
 export interface EvaluationFact {
   label: string
@@ -43,6 +44,8 @@ export interface EvaluationView {
   studentNote: string
   /** The reviewer's decision note, when one was written (AR-04). */
   reviewNote: string
+  /** Group check-off (PROTO 2026-10-28): the note that explains there is no student submission, or null for any other source. */
+  checkoffNote: string | null
 }
 
 const STATUS_WORD: Record<Evaluation["status"], string> = { counted: "Counted", "awaiting-approval": "Awaiting approval", returned: "Returned", reopened: "Returned" }
@@ -85,6 +88,7 @@ export function evaluationView(s: V2State, evaluationId: string): EvaluationView
     { label: "Location", value: e.location ?? entry?.location ?? "Not recorded" },
     ...(course ? [{ label: "Course", value: course.code }] : []),
     ...(e.source === "paper-form" ? [{ label: "Entered from", value: "Signed paper form" }] : []),
+    ...(e.source === "checkoff" ? [{ label: "Entered from", value: CHECKOFF_TAG }] : []),
     ...(e.currentVersion > 1 ? [{ label: "Version", value: String(e.currentVersion) }] : []),
   ]
 
@@ -114,6 +118,7 @@ export function evaluationView(s: V2State, evaluationId: string): EvaluationView
     supplied,
     studentNote,
     reviewNote: (e.review?.note ?? "").trim(),
+    checkoffNote: e.source === "checkoff" ? checkoffNote(skill ?? undefined) : null,
   }
 }
 

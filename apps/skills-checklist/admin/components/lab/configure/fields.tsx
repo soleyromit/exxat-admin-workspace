@@ -34,8 +34,10 @@ import { TYPE } from "@/components/lab/type-scale"
 import { ConfigSubsection } from "./section"
 import { criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, applyPreset, FIELD_TYPE_LABEL, hasNeed, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import type { EvalModel } from "@/lib/v2/types"
-import { aNoun, skillNoun } from "@/lib/lab/terms"
+import { COURSE_FACULTY, aNoun, skillNoun } from "@/lib/lab/terms"
 import { RuleConditions, RuleNumber } from "./rule-conditions"
+import { CHECKOFF_LABEL, ruleAllowsCheckOff, ruleCheckOffOff, ruleCheckOffScore, ruleTickRecords } from "@/lib/lab/configure"
+import { AmberNote } from "@/components/lab/admin-a/parts"
 
 export interface SectionProps {
   rule: LabRule
@@ -737,7 +739,75 @@ export function SignOffSection({ rule, setRule, issues, showErrors }: SectionPro
       <ConfigSubsection n={3} title="Approval" id="cfg-signoff-approval">
         <ToggleRow id="cfg-approval" title="Approval before it counts" detail="A reviewer approves each evaluation before it counts." checked={rule.approvalRequired} onChange={(v) => setRule((r) => ({ ...r, approvalRequired: v }))} />
       </ConfigSubsection>
+
+      {rule.model ? <GroupCheckOffSection rule={rule} setRule={setRule} /> : null}
     </div>
+  )
+}
+
+/**
+ * Group check-off (PROTO 2026-10-28, Configure "Group check-off"; CALL 10-28): whether faculty can tick this skill off for a whole
+ * group on the course offering page without a student submission, and what one tick records. On by default for Met or Unmet and
+ * for levels; off for questions and scores, which the program can switch on and nominate the score. Shared by Configure A, B and C.
+ */
+export function GroupCheckOffSection({ rule, setRule }: Pick<SectionProps, "rule" | "setRule">) {
+  const allowed = ruleAllowsCheckOff(rule)
+  const co = rule.checkOff ?? { enabled: null, levelIndex: null, score: null }
+  const set = (patch: Partial<NonNullable<LabRule["checkOff"]>>) => setRule((r) => ({ ...r, checkOff: { ...(r.checkOff ?? { enabled: null, levelIndex: null, score: null }), ...patch } }))
+  const levels = rule.levels.map((l, i) => ({ i, label: l.trim() || `Level ${i + 1}` }))
+  const levelIndex = levels.length ? (co.levelIndex !== null && co.levelIndex < levels.length ? co.levelIndex : levels.length - 1) : null
+  const score = ruleCheckOffScore(rule)
+  return (
+    <ConfigSubsection n={4} title={CHECKOFF_LABEL} id="cfg-signoff-checkoff">
+      <ToggleRow
+        id="cfg-checkoff"
+        title="Allow group check-off"
+        detail={`${COURSE_FACULTY} can tick this off for a whole group on the course offering page, without a student submission.`}
+        checked={allowed}
+        onChange={(v) => set({ enabled: v })}
+      />
+      {allowed && rule.model === "demonstration" && levels.length ? (
+        <Field className="max-w-64">
+          <FieldLabel htmlFor="cfg-checkoff-level">A tick records</FieldLabel>
+          <Select value={String(levelIndex)} onValueChange={(v) => set({ levelIndex: Number(v) })}>
+            <SelectTrigger id="cfg-checkoff-level">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {levels.map((l) => (
+                <SelectItem key={l.i} value={String(l.i)}>
+                  {l.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FieldDescription>One tick cannot choose a level, so the program names one.</FieldDescription>
+        </Field>
+      ) : null}
+      {allowed && rule.model === "scored" ? (
+        <Field className="max-w-64">
+          <FieldLabel htmlFor="cfg-checkoff-score">A tick records</FieldLabel>
+          <Select value={String(score)} onValueChange={(v) => set({ score: Number(v) })}>
+            <SelectTrigger id="cfg-checkoff-score" className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: Math.max(1, rule.scaleMax || 5) }, (_, k) => k + 1).map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FieldDescription>The same score on every item.</FieldDescription>
+        </Field>
+      ) : null}
+      <p className={TYPE.helper} data-checkoff-line>
+        {allowed ? `${ruleTickRecords(rule)}. A check-off writes an ordinary evaluation and is counted by the same achievement rules.` : ruleCheckOffOff(rule)}
+      </p>
+      {allowed && rule.selfEvaluation ? <AmberNote region="">{`This ${skillNoun()} asks the student to rate themselves first. A check-off skips that step, so the two routes produce different records.`}</AmberNote> : null}
+      {allowed && (rule.model === "question" || rule.model === "scored") ? <AmberNote region="">A tick is a strong claim here: it records the same answer on every item. Confirm the program means that before allowing it.</AmberNote> : null}
+    </ConfigSubsection>
   )
 }
 

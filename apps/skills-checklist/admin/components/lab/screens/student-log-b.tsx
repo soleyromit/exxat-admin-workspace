@@ -10,6 +10,7 @@
  * inactive skills are not offered (SL-11); a missing location is asked for when no placement supplies it (ST-07).
  * Every entry is on the device from the moment it is added and shows queued, synced or conflict [COMP rec 9].
  */
+import { CheckoffDone } from "@/components/lab/student/checkoff"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -170,6 +171,7 @@ function ShiftLog({ ctx }: { ctx: Student2Ctx }) {
                         <div className="flex min-w-0 basis-full flex-col sm:basis-0 sm:flex-1">
                           <span className="truncate text-sm font-medium text-foreground">{r.name}</span>
                           <span className="truncate text-xs text-muted-foreground">{[r.where, r.at.slice(0, 10) === DEMO_TODAY ? `today ${time(r.at)}` : shortDate(r.at)].filter(Boolean).join(" · ")}</span>
+                          {r.fresh ? <CheckoffDone s={s} studentId={studentId} ids={[r.skillId]} /> : null}
                         </div>
                         <RowStatus r={r} need={need} />
                         {r.sync === "conflict" ? (

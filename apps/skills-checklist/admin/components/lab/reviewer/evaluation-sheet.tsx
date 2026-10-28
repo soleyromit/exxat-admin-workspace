@@ -18,6 +18,7 @@ export function EvaluationBody({ v }: { v: EvaluationView }) {
   return (
     <article className="flex flex-col gap-3" data-evaluation-view={v.id} aria-label={`${v.skill}, ${v.facts[0]?.value ?? ""}`}>
       <FactList facts={[["Outcome", `${v.outcome}, ${v.status.toLowerCase()}`], ...v.facts.map((f) => [f.label, f.value] as [string, React.ReactNode])]} />
+      {v.checkoffNote ? <p className="text-sm text-muted-foreground" data-checkoff-note>{v.checkoffNote}</p> : null}
       <section className="flex flex-col gap-1.5" aria-label="Responses">
         <h3 className="text-sm font-semibold">Responses</h3>
         {v.recorded ? <CompareTable c={v.comparison} compact showNote={false} /> : <p className="text-sm text-muted-foreground">Only the outcome was recorded for this evaluation.</p>}

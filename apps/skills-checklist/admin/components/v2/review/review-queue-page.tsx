@@ -205,7 +205,7 @@ export function ReviewQueuePage({ role }: { role: RoleId }) {
                     v2col<QueueItem>("setting", "Setting", 190, (i) => settingText(s, i)),
                     v2col<QueueItem>("location", "Location", 180, (i) => locationText(s, i)),
                     v2col<QueueItem>("course", "Course", 90, () => s.course.code),
-                    v2col<QueueItem>("source", "Source", 130, (i) => (i.source === "paper-form" ? "Paper form" : "Evaluator form")),
+                    v2col<QueueItem>("source", "Source", 130, (i) => (i.source === "paper-form" ? "Paper form" : i.source === "checkoff" ? "Group check-off" : "Evaluator form")),
                     v2col<QueueItem>("since", "Since", 90, (i) => fmtDay(i.since)),
                   ]}
                 />

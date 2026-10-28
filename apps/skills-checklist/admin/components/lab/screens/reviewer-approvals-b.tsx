@@ -15,10 +15,10 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { initialsOf } from "@/lib/v2/format"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader, FloatingSheetPanelToolbar } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { Separator } from "@exxatdesignux/ui/components/ui/separator"
-import { evaluatorLine, itemDetail, reviewItemHref, ruleCheck, skillsLine, whereLine, type ReviewRow } from "@/lib/lab/reviewer"
+import { isCheckoff, evaluatorLine, itemDetail, reviewItemHref, ruleCheck, skillsLine, whereLine, type ReviewRow } from "@/lib/lab/reviewer"
 import { skillNoun } from "@/lib/lab/terms"
 import { ApprovalsFrame, type ApprovalsContext } from "@/components/lab/reviewer/approvals-frame"
-import { AgeText, ReasonBadge, SummaryLine } from "@/components/lab/reviewer/parts"
+import { AgeText, CheckoffTag, ReasonBadge, SummaryLine } from "@/components/lab/reviewer/parts"
 import { LINK as LINK_U } from "@/components/lab/link-styles"
 import { CompareTable, DecisionBar, Facts, Feedback, ReviewNoteField, ReviewNoteProvider, RuleCheckLine, WhyHeld } from "@/components/lab/reviewer/review-parts"
 
@@ -58,6 +58,7 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
               <span className="truncate text-xs font-normal text-muted-foreground" title={r.skills.length > 1 ? skillsLine(r) : undefined}>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
               {/* REQ AR-01: course, setting and location on the queue row itself, not only in the panel. */}
               <span className="truncate text-xs font-normal text-muted-foreground" title={whereLine(r)} data-row-where>{whereLine(r)}</span>
+          {isCheckoff(r) ? <CheckoffTag /> : null}
             </span>
           )}
         />
@@ -110,7 +111,7 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
                 </section>
                 <Separator />
                 <section aria-label="Self and evaluator answers" className="flex flex-col gap-4">
-                  {detail.comparisons.length ? detail.comparisons.map((c) => <CompareTable key={c.evaluationId} c={c} />) : <p className="text-sm text-muted-foreground">The outcome is on the photo of the paper form and has not been entered.</p>}
+                  {detail.comparisons.length ? detail.comparisons.map((c) => <CompareTable key={c.evaluationId} c={c} checkoff={isCheckoff(detail.row)} />) : <p className="text-sm text-muted-foreground">The outcome is on the photo of the paper form and has not been entered.</p>}
                   <Feedback text={detail.feedback} />
                 </section>
                 <Separator />

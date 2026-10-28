@@ -334,6 +334,9 @@ DOCUMENTED_HAND_ROLLS = {
     "components/lab/screens/evaluator-form-c.tsx",
     "components/lab/screens/lab-instructor-lab-batch-grid-a.tsx",
     "components/lab/screens/lab-instructor-lab-batch-grid-b.tsx",
+    # Group check-off grids (per-cell DS Checkbox entry), same pattern; 2026-10-28.
+    "components/lab/screens/course-faculty-offering-checkoff-a.tsx",
+    "components/lab/screens/course-faculty-offering-checkoff-b.tsx",
     "components/lab/reviewer/review-parts.tsx",
     "components/lab/configure/impact.tsx",
     "components/lab/configure/bulk-apply.tsx",

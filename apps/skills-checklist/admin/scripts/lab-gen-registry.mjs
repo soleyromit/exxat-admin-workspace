@@ -30,7 +30,7 @@ const S = [
   ["student", "my-requests", "My requests", 3, TABLE], ["student", "fix-returned", "Fix a returned submission", 3, FORM], ["student", "skill-detail", "Skill detail", 3, DETAIL],
   ["student", "record", "My evaluations", 2, DETAIL], ["student", "share-record", "Share verified record", 3, DETAIL], ["student", "offline-sync", "Offline and sync", 3, ["PageHeader", "LocalBanner", "Card", "Button"]],
   ["evaluator", "evaluation-form", "Evaluation form", 1, FORM], ["evaluator", "submitted", "Submitted", 3, DETAIL], ["evaluator", "expired", "Expired or not for you", 3, DETAIL],
-  ["lab-instructor", "lab-batch-grid", "Lab batch grid", 3, ["PageHeader", "Table", "Checkbox", "Button"]],
+  ["course-faculty", "lab-batch-grid", "Lab batch grid", 3, ["PageHeader", "Table", "Checkbox", "Button"]],
   ["reviewer", "approvals", "Approvals queue", 3, TABLE], ["reviewer", "review-item", "Submission", 1, DETAIL], ["reviewer", "student-record", "Student record", 3, DETAIL], ["reviewer", "students", "Students", 3, TABLE],
   ["director", "dashboard", "Dashboard", 3, ["PageHeader", "KeyMetrics", "DataTable", "ChartCard"]], ["director", "verification-detail", "Verification detail", 2, DETAIL],
   ["director", "reports", "Reports", 3, ["PageHeader", "KeyMetrics", "DataTable"]], ["director", "attainment", "Attainment", 3, ["PageHeader", "DataTable", "ChartCard"]],

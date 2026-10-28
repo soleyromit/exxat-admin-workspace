@@ -12,7 +12,7 @@ function chromium() {
   }
   throw new Error("Playwright not found")
 }
-const DEFAULT = ["/lab/admin/skills-library?variant=A", "/lab/admin/skills-library?variant=B", "/lab/admin/skills-library?variant=C", "/lab/reviewer/approvals?variant=A", "/lab/reviewer/approvals?variant=B", "/lab/reviewer/approvals?variant=C", "/lab/admin/approvals?variant=A", "/lab/lab-instructor/lab-batch-grid?variant=A", "/lab/lab-instructor/lab-batch-grid?variant=B"]
+const DEFAULT = ["/lab/admin/skills-library?variant=A", "/lab/admin/skills-library?variant=B", "/lab/admin/skills-library?variant=C", "/lab/reviewer/approvals?variant=A", "/lab/reviewer/approvals?variant=B", "/lab/reviewer/approvals?variant=C", "/lab/admin/approvals?variant=A", "/lab/course-faculty/lab-batch-grid?variant=A", "/lab/course-faculty/lab-batch-grid?variant=B"]
 const paths = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT
 const base = process.env.BASE ?? "http://localhost:3017"
 const browser = await chromium().launch()

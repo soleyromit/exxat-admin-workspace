@@ -12,11 +12,11 @@ import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { fmt, plural } from "@/lib/v2/format"
-import { BOARD_COLUMNS, boardColumns, evaluatorLine, reviewItemHref, skillsLine, whereLine, type BoardColumnId, type ReviewRow } from "@/lib/lab/reviewer"
+import { isCheckoff, BOARD_COLUMNS, boardColumns, evaluatorLine, reviewItemHref, skillsLine, whereLine, type BoardColumnId, type ReviewRow } from "@/lib/lab/reviewer"
 import type { LabScope } from "@/lib/lab/scope"
 import { ApprovalsFrame } from "@/components/lab/reviewer/approvals-frame"
 import { EvaluatorMenu, useDecisionUi } from "@/components/lab/reviewer/decisions"
-import { AgeText, EvaluatorName, ReasonChip } from "@/components/lab/reviewer/parts"
+import { AgeText, CheckoffTag, EvaluatorName, ReasonChip } from "@/components/lab/reviewer/parts"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 
 const SHOW = 5
@@ -74,6 +74,7 @@ function Column({ id, label, icon, rows, scope }: { id: BoardColumnId; label: st
               <span className="truncate text-xs text-muted-foreground" data-viz-label title={r.skills.length > 1 ? skillsLine(r) : undefined}>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
               {/* REQ AR-01 on every card: course, setting and location, then the evaluator with their role. */}
               <span className="truncate text-xs text-muted-foreground" data-viz-label data-row-where title={whereLine(r)}>{whereLine(r)}</span>
+              {isCheckoff(r) ? <CheckoffTag /> : null}
               {id === "new-evaluator" ? (
                 <EvaluatorName name={r.evaluator} role={r.evaluatorRole} unrecorded={!!r.evaluatorUnverified} compact />
               ) : (

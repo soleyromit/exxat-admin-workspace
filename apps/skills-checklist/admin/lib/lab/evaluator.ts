@@ -16,6 +16,7 @@ import { binaryLabels, outcomeWord } from "@/lib/v2/labels"
 import type { EvalModel, Outcome, Person, Skill, Submission, V2State } from "@/lib/v2/types"
 import { LABEL_PRESETS, type LabelPresetId } from "./configure"
 import { aNoun, capitalize, skillNoun, skillNounPlural } from "./terms"
+import { checkOffAllowedFor, checkOffOffReason } from "./checkoff-rules"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Lab controls
@@ -479,7 +480,12 @@ export interface LabSkillRow {
 /** Session skills. `requireFeedback` is the lab's "Program requires feedback" option (?fb=1), the same one the evaluator form reads. */
 export function labSessionSkills(s: V2State, requireFeedback = false): LabSkillRow[] {
   const inst = s.people.find((p) => p.id === LAB_INSTRUCTOR_ID)
-  return labSkills(s, "lab", inst).map((x) => ({ id: x.skill.id, name: x.skill.name, blocked: x.blocked, feedbackRequired: requireFeedback || !!x.skill.config?.feedbackRequired }))
+  // The skill's own "Group check-off" setting decides whether it can be recorded for a group (PROTO 2026-10-28), the same rule
+  // the course offering's Group check-off screen reads; then the instructor's qualification.
+  return labSkills(s, "lab", inst).map((x) => {
+    const off = checkOffOffReason(x.skill.model, checkOffAllowedFor(x.skill.model, x.skill.config?.checkOff?.enabled), !!x.skill.config && x.skill.configured !== false, x.skill.config?.questions.length ?? 0)
+    return { id: x.skill.id, name: x.skill.name, blocked: off ? off.split(/(?<=\.)\s/)[0] : x.blocked, feedbackRequired: requireFeedback || !!x.skill.config?.feedbackRequired }
+  })
 }
 
 /** One result's feedback key: the same "student|skill" key as the result cell. */

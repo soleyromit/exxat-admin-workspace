@@ -151,7 +151,7 @@ function ItemBody({ s, item, role, back, onDecided }: { s: V2State; item: QueueI
               <dt className="text-muted-foreground">Evaluator</dt>
               <dd>{evaluator ? `${evaluator.name}, ${ROLE_LABEL[evaluator.kind].toLowerCase()}` : "Nobody is named yet. Choose who signed the form."}</dd>
               <dt className="text-muted-foreground">Source</dt>
-              <dd data-source={item.source}>{paper ? `Paper form${entered ? `, entered by ${name(s, entered)} for ${name(s, item.evaluations[0]?.evaluatorId)}` : ", outcome not entered yet"}` : "Evaluator form, submitted by the evaluator"}</dd>
+              <dd data-source={item.source}>{paper ? `Paper form${entered ? `, entered by ${name(s, entered)} for ${name(s, item.evaluations[0]?.evaluatorId)}` : ", outcome not entered yet"}` : item.source === "checkoff" ? "Group check-off on the course offering" : "Evaluator form, submitted by the evaluator"}</dd>
               <dt className="text-muted-foreground">Waiting since</dt>
               <dd>{fmtDay(item.since)}</dd>
               {item.revision > 0 ? (

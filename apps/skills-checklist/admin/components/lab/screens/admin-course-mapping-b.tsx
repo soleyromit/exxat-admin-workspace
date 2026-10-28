@@ -10,10 +10,10 @@
  * Regions: header, toolbar, N-13 line, skill list and skill panes. URL: ?term= &skill= &q= &show= &oq= &cohort= &year=. Demo states: ?state=loading | empty | error.
  */
 import * as React from "react"
-import { filterOfferings, mappingLink, skillReach } from "@/lib/lab/mapping"
+import { mappingLink, skillReach } from "@/lib/lab/mapping"
 import { aNoun, skillNounPlural } from "@/lib/lab/terms"
-import { MappingFrame, NoCourseNote, type MappingModel } from "@/components/lab/admin-a/mapping-frame"
-import { CourseKindLine, SkillPanel, SkillReachTable } from "@/components/lab/admin-a/mapping-parts"
+import { MappingFrame, type MappingModel } from "@/components/lab/admin-a/mapping-frame"
+import { CourseKindSelect, SkillPanel, SkillReachTable } from "@/components/lab/admin-a/mapping-parts"
 import { FilterSelect, SearchField, Toolbar } from "@/components/lab/admin-a/parts"
 
 type Show = "" | "required" | "gaps" | "unconfigured"
@@ -27,8 +27,6 @@ function SkillFirst({ m }: { m: MappingModel }) {
   const q = query.get("q")
   const show = (query.get("show") || "") as Show
   const all = React.useMemo(() => skillReach(m.state, m.overlay, m.termId, m.lists, m.didactic), [m.state, m.overlay, m.termId, m.lists, m.didactic])
-  const termTotal = React.useMemo(() => filterOfferings(m.offerings, { q: "", term: m.termId, cohort: "", year: "", didactic: true }).length, [m.offerings, m.termId])
-  const termClinical = React.useMemo(() => filterOfferings(m.offerings, { q: "", term: m.termId, cohort: "", year: "" }).length, [m.offerings, m.termId])
   const rows = React.useMemo(() => {
     const t = q.trim().toLowerCase()
     return all.filter((r) => (!t || r.haystack.includes(t)) && (show === "" || (show === "required" ? r.required : show === "gaps" ? r.required && r.carriers === 0 : !r.configured)))
@@ -54,11 +52,13 @@ function SkillFirst({ m }: { m: MappingModel }) {
           allLabel={`All ${skillNounPlural()}`}
           options={[
             { value: "required", label: "Required to graduate" },
-            { value: "gaps", label: "Required, in no course" },
+            // N-13 as a count on its own filter, not a sentence above the list (Romit 2026-10-28: "too many text").
+            { value: "gaps", label: m.cover.gaps.length ? `Required, in no course (${m.cover.gaps.length})` : "Required, in no course" },
             { value: "unconfigured", label: "Not configured" },
           ]}
           className="w-56"
         />
+        <CourseKindSelect didactic={m.didactic} onChange={m.setDidactic} />
       </Toolbar>
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
         <SkillReachTable
@@ -67,12 +67,6 @@ function SkillFirst({ m }: { m: MappingModel }) {
           termName={m.termName}
           hrefFor={hrefFor}
           onSelect={(id) => query.set({ skill: id })}
-          note={
-            <>
-              <CourseKindLine didactic={m.didactic} onChange={m.setDidactic} clinical={termClinical} total={termTotal} />
-              {show !== "gaps" ? <NoCourseNote cover={m.cover} termName={m.didactic ? m.termName : `${m.termName} clinical`} onShow={() => query.set({ show: "gaps", skill: null })} /> : null}
-            </>
-          }
         />
         {selected ? (
           <SkillPanel

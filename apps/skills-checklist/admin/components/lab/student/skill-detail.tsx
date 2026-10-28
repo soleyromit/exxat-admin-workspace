@@ -8,6 +8,8 @@ import { aNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { Badge } from "@exxatdesignux/ui/components/ui/badge"
+import { CHECKOFF_TAG } from "@/lib/lab/course-checkoff"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { VIZ } from "@/components/lab/viz"
@@ -86,6 +88,7 @@ export function AttemptTimeline({ rows, onOpen }: { rows: AttemptRow[]; /** Open
             <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
               <span className="font-medium text-foreground">{`Attempt ${a.n}`}</span>
               <span data-viz-label className="text-muted-foreground">{`${shortDate(a.date)}, ${a.evaluatorName}, ${a.setting}`}</span>
+              {a.checkoff ? <Badge variant="outline" data-checkoff-tag>{CHECKOFF_TAG}</Badge> : null}
             </p>
             <p className="text-sm text-foreground">
               <span className="font-medium" style={a.kind === "not-counted" || a.kind === "returned" ? { color: VIZ.behindInk } : undefined}>{`${a.status ?? MARK[a.kind].word}. `}</span>
@@ -124,7 +127,7 @@ export function AttemptLedger({ rows, onOpen }: { rows: AttemptRow[]; onOpen?: (
             <TableRow key={a.key}>
               <TableCell className="tabular-nums">{a.n}</TableCell>
               <TableCell className="tabular-nums">{shortDate(a.date)}</TableCell>
-              <TableCell>{a.evaluatorName}</TableCell>
+              <TableCell><span className="inline-flex flex-wrap items-center gap-1.5">{a.evaluatorName}{a.checkoff ? <Badge variant="outline" data-checkoff-tag>{CHECKOFF_TAG}</Badge> : null}</span></TableCell>
               <TableCell className="hidden md:table-cell">{a.setting}</TableCell>
               <TableCell><span className="flex flex-col gap-0.5"><AttemptMark kind={a.kind} /><span className="text-xs text-muted-foreground">{a.kind === "sent" ? a.status : a.answer}</span></span></TableCell>
               <TableCell className="hidden min-w-64 whitespace-normal text-muted-foreground lg:table-cell">{a.why}</TableCell>

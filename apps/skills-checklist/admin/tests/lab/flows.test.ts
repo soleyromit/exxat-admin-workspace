@@ -21,7 +21,7 @@ describe("flows.json", () => {
   })
 
   it("covers every persona with at least one flow", () => {
-    for (const p of ["admin", "student", "evaluator", "reviewer", "director", "lab-instructor"]) {
+    for (const p of ["admin", "student", "evaluator", "reviewer", "director", "course-faculty"]) {
       expect(FLOWS.some((f) => f.persona === p), p).toBe(true)
     }
   })
@@ -32,7 +32,9 @@ describe("flows.json", () => {
       expect(f.sets.length, f.id).toBeGreaterThanOrEqual(2)
       expect(f.sets.length, f.id).toBeLessThanOrEqual(3)
       expect(f.sets.some((s) => s.id === f.recommendedSet), f.id).toBe(true)
-      expect(mainSteps(f).length, f.id).toBeGreaterThanOrEqual(2)
+      // Record a lab session is one step by decision (Romit 2026-10-28): recording ends on the Group check-off grid's own
+      // Recorded / In review state and banner, so it has no confirmation screen after it.
+      expect(mainSteps(f).length, f.id).toBeGreaterThanOrEqual(f.id === "record-lab-session" ? 1 : 2)
       for (const s of f.sets) expect(s.label.trim().length > 0 && s.summary.trim().length > 0, `${f.id} set ${s.id}`).toBe(true)
     }
   })

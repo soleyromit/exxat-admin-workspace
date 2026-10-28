@@ -11,8 +11,8 @@
 import * as React from "react"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { coverage, filterOfferings, mappingLink } from "@/lib/lab/mapping"
-import { MappingFrame, NoCourseNote, type MappingModel } from "@/components/lab/admin-a/mapping-frame"
-import { CourseKindLine, CoverageMatrix, OfferingPanel, OfferingsTable } from "@/components/lab/admin-a/mapping-parts"
+import { MappingFrame, type MappingModel } from "@/components/lab/admin-a/mapping-frame"
+import { CourseKindSelect, CoverageMatrix, OfferingPanel, OfferingsTable } from "@/components/lab/admin-a/mapping-parts"
 import { FilterSelect, SearchField, Toolbar } from "@/components/lab/admin-a/parts"
 
 type View = "offerings" | "coverage"
@@ -29,8 +29,6 @@ function OfferingFirst({ m }: { m: MappingModel }) {
   const q = query.get("q")
   const offQ = query.get("oq")
   const rows = React.useMemo(() => filterOfferings(m.offerings, { q: offQ, term: m.termId, cohort, year, didactic: m.didactic }), [m.offerings, offQ, m.termId, cohort, year, m.didactic])
-  const termTotal = React.useMemo(() => filterOfferings(m.offerings, { q: "", term: m.termId, cohort: "", year: "", didactic: true }).length, [m.offerings, m.termId])
-  const termClinical = React.useMemo(() => filterOfferings(m.offerings, { q: "", term: m.termId, cohort: "", year: "" }).length, [m.offerings, m.termId])
   const narrowed = !!(cohort || year || offQ)
   const requested = query.get("offering")
   const selected = rows.find((r) => r.id === requested) ?? m.offerings.find((r) => r.id === requested && r.termId === m.termId && (m.didactic || r.kind === "clinical")) ?? rows[0]
@@ -51,7 +49,8 @@ function OfferingFirst({ m }: { m: MappingModel }) {
             onValueChange={(v) => query.set({ view: v === "coverage" ? "coverage" : null })}
             options={[
               { value: "offerings", label: "Offerings" },
-              { value: "coverage", label: "Coverage" },
+              // Required skills in no course of the term (N-13): a count on Coverage, which lists them, instead of a sentence here.
+              { value: "coverage", label: m.cover.gaps.length ? `Coverage (${m.cover.gaps.length})` : "Coverage" },
             ]}
           />
         }
@@ -60,12 +59,10 @@ function OfferingFirst({ m }: { m: MappingModel }) {
         <FilterSelect value={m.termId} onChange={(v) => query.set({ term: v || null, offering: null })} label="Term" options={m.termOpts} className="w-36" />
         <FilterSelect value={cohort} onChange={(v) => query.set({ cohort: v || null, offering: null })} label="Cohort" allLabel="All cohorts" options={m.cohortOpts} className="w-36" />
         <FilterSelect value={year} onChange={(v) => query.set({ year: v || null, offering: null })} label="Professional year" allLabel="All years" options={m.yearOpts} className="w-32" />
+        <CourseKindSelect didactic={m.didactic} onChange={m.setDidactic} />
       </Toolbar>
       {view === "coverage" ? (
-        <>
-          <CourseKindLine didactic={m.didactic} onChange={m.setDidactic} clinical={termClinical} total={termTotal} />
-          <CoverageMatrix coverage={narrowed ? coverage(m.state, m.overlay, m.termId, m.lists, new Set(rows.map((r) => r.id)), m.didactic) : m.cover} termName={m.termName} termId={m.termId} />
-        </>
+        <CoverageMatrix coverage={narrowed ? coverage(m.state, m.overlay, m.termId, m.lists, new Set(rows.map((r) => r.id)), m.didactic) : m.cover} termName={m.termName} termId={m.termId} />
       ) : (
         <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
           <OfferingsTable
@@ -73,13 +70,6 @@ function OfferingFirst({ m }: { m: MappingModel }) {
             selectedId={selected?.id ?? ""}
             hrefFor={hrefFor}
             onSelect={(id) => query.set({ offering: id, q: null })}
-            note={
-              <>
-                <CourseKindLine didactic={m.didactic} onChange={m.setDidactic} clinical={termClinical} total={termTotal} />
-                {/* The Coverage view in the toolbar lists them; no second control here (list budget: 6 controls). */}
-                <NoCourseNote cover={m.cover} termName={m.didactic ? m.termName : `${m.termName} clinical`} />
-              </>
-            }
           />
           {selected ? <OfferingPanel state={m.state} overlay={m.overlay} setOverlay={m.setOverlay} offering={selected} lists={m.lists} focusQuery={q ?? skillName} /> : null}
         </div>

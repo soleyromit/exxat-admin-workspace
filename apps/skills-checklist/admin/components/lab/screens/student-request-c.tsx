@@ -18,6 +18,7 @@
  * [REQ ST-01, ST-02, ST-04..ST-13, SL-11, EV-02, EV-03, SC-15; hard stops: lab evidence never meets a clinical-setting minimum,
  * evaluators have no login]
  */
+import { CheckoffDone } from "@/components/lab/student/checkoff"
 import * as React from "react"
 import { TYPE } from "@/components/lab/type-scale"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
@@ -276,6 +277,7 @@ function SkillsStep({ model, course, selected, onToggle, d }: { model: StudentMo
           </Label>
           <span className="col-start-2 text-sm @2xl:col-start-3">{r.waiting ? <span className="text-muted-foreground">{`Waiting for ${r.waiting.evaluatorName}`}</span> : <StateLabel record={r} />}</span>
           {/* The questions, read where the skill is chosen (no separate step); a self-evaluated skill shows them on its own step. */}
+          {selected.includes(r.id) ? <div className="col-span-full col-start-2"><CheckoffDone s={d.s} studentId={d.studentId} ids={[r.id]} /></div> : null}
           {selected.includes(r.id) && !d.selfIds.includes(r.id) ? <div className="col-span-full col-start-2"><EvaluatorChecks s={d.s} id={r.id} /></div> : null}
         </li>
       ))}

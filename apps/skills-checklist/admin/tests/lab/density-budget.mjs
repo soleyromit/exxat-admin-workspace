@@ -4,7 +4,7 @@
 //
 // Usage: node tests/lab/density-budget.mjs [baseUrl] [--json] [--only=persona/slug[/V],...] [--shots=dir] [--debug] [--workers=n]
 //   default base http://localhost:3017; the dev server must be running. Every route gets ?variant=X&term=Fall%202026 and a clean
-//   localStorage (cleared before any page script runs). Staff (admin, reviewer, director, lab-instructor) are measured at 1440 x 900;
+//   localStorage (cleared before any page script runs). Staff (admin, reviewer, director, course-faculty) are measured at 1440 x 900;
 //   student and evaluator at 1440 x 900 and 375 x 812. Student My requests, Fix and Record are also measured for stu-g-067 (a student
 //   with returned and did-not-count evidence), because the default student hides those states.
 // Not a vitest file on purpose (.mjs): it needs a browser and a running server. Exit 1 when any case breaks its budget.
@@ -99,13 +99,13 @@ const TERM = "Fall%202026"
 const PAGE_TYPE = {
   "admin/dashboard": "dashboard", "admin/dashboard-drill": "list", "admin/skills-library": "list", "admin/add-skill": "form",
   "admin/import-ai-review": "wizard", "admin/starter-library": "list", "admin/configure-skill": "form", "admin/rule-change-impact": "detail",
-  "admin/retire-deactivate": "form", "admin/course-mapping": "list", "admin/lists-cohorts": "list",
+  "admin/retire-deactivate": "form", "admin/course-mapping": "list", "course-faculty/offering-checkoff": "list", "admin/lists-cohorts": "list",
   "admin/settings": "list", "admin/categories-tags": "list", "admin/attainment": "dashboard", "admin/export": "form", "admin/approvals": "list",
   "student/home": "student", "student/log-skill": "form", "student/request-signoff": "form", "student/my-requests": "list",
   "student/fix-returned": "form", "student/skill-detail": "detail", "student/record": "list", "student/share-record": "detail",
   "student/offline-sync": "list",
   "evaluator/evaluation-form": "evaluator", "evaluator/submitted": "evaluator", "evaluator/expired": "evaluator", "evaluator/invitation-email": "evaluator",
-  "lab-instructor/lab-batch-grid": "list",
+  "course-faculty/lab-batch-grid": "list",
   "reviewer/approvals": "list", "reviewer/review-item": "detail", "reviewer/student-record": "detail", "reviewer/students": "list",
   "director/dashboard": "dashboard", "director/verification-detail": "detail", "director/reports": "list", "director/attainment": "dashboard",
 }
@@ -128,7 +128,7 @@ const VARIANT_TYPE = { "reviewer/approvals/B": "split", "admin/export/A": "split
 const PHONE_WORDS = 25
 // Accepted exceptions, each with its decision. Extra allowance per line.
 const EXCEPTIONS = {}
-const STAFF = new Set(["admin", "reviewer", "director", "lab-instructor"])
+const STAFF = new Set(["admin", "reviewer", "director", "course-faculty"])
 const ALT_STUDENT = { "student/my-requests": "stu-g-067", "student/fix-returned": "stu-g-067", "student/record": "stu-g-067" }
 
 const registry = JSON.parse(readFileSync(join(here, "../../lib/lab/screens.json"), "utf8")).screens

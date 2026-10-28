@@ -20,6 +20,7 @@ import { LINK_IN_TABLE, StateLabel } from "@/components/lab/student/parts"
 import { shortDate } from "@/lib/lab/student"
 import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { EMPTY_RECORD_FILTER, filterRecord, groupBySkill, recordAttemptLine, recordCourses, recordFigures, recordRows, student2Href, type RecordFilter } from "@/lib/lab/student2"
+import { EvaluatorWithTag } from "@/components/lab/student/checkoff"
 import { EVALUATION_PARAM, StudentEvaluationSheet, ViewEvaluationButton } from "@/components/lab/student/evaluation-sheet"
 
 const GROUP_LIMIT = 12
@@ -127,7 +128,7 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
                             <TableRow key={x.id}>
                               <TableCell className="tabular-nums text-muted-foreground">{shortDate(x.date)}</TableCell>
                               <TableCell><ResultLabel result={x.result} /></TableCell>
-                              <TableCell className="hidden md:table-cell">{x.evaluatorName}</TableCell>
+                              <TableCell className="hidden md:table-cell"><EvaluatorWithTag s={ctx.state} evaluationId={x.evaluationId} name={x.evaluatorName} /></TableCell>
                               <TableCell className="hidden text-muted-foreground lg:table-cell">{x.setting}</TableCell>
                               <TableCell className="min-w-48 whitespace-normal text-sm">{x.why}</TableCell>
                               <TableCell className="text-end">{x.evaluationId ? <ViewEvaluationButton name={`${x.skillName}, ${shortDate(x.date)}`} onOpen={() => r.openEval(x.evaluationId!)} /> : null}</TableCell>

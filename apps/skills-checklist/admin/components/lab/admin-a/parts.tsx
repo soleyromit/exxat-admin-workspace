@@ -23,6 +23,7 @@ import { LEVELS, LEVEL_LABEL, type MapLevel } from "@/lib/lab/mapping"
 // tables and lists, so LINK here is the in-table link (underline on hover); counts that open records use NUM_LINK.
 export { LINK_IN_TABLE as LINK, NUM_LINK } from "@/components/lab/link-styles"
 export { fmt, plural } from "@/lib/v2/format"
+import { fmt } from "@/lib/v2/format"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // URL params
@@ -189,21 +190,33 @@ export function LevelSelect({ value, onChange, label, size = "sm" }: { value: Ma
 /** One line that separates the program list's "Required to graduate" from the per-course levels (glossary, D-X12). */
 export const LEVELS_VS_GRADUATE = "Required to graduate comes from the program list. Mandatory, recommended and optional are set per course."
 
-export function LevelLegend() {
+/**
+ * The level key. With `counts` (one offering, Romit 2026-10-28 "too many text"): one row of glyph + count + word for the three
+ * levels, replacing the separate count line; "Not mapped" and "levels apply to this course only" move into the ⓘ.
+ */
+export function LevelLegend({ counts }: { counts?: { mapped: number; mandatory: number; recommended: number; optional: number } } = {}) {
+  const tip = counts ? `${LEVELS_VS_GRADUATE} Levels set here apply to this course only. ${LEVEL_LABEL.none}: not expected in this course.` : LEVELS_VS_GRADUATE
   return (
-    <span className="flex items-center gap-4 text-xs text-muted-foreground" data-level-legend>
-      <span className="flex items-center gap-4" aria-hidden="true">
-        {LEVELS.map((l) => (
+    <span
+      className={counts ? "flex flex-wrap items-center gap-4 text-sm" : "flex items-center gap-4 text-xs text-muted-foreground"}
+      data-level-legend
+      data-level-totals={counts ? "" : undefined}
+      role={counts ? "group" : undefined}
+      aria-label={counts ? `${counts.mapped} mapped: ${counts.mandatory} mandatory, ${counts.recommended} recommended, ${counts.optional} optional` : undefined}
+    >
+      <span className="flex flex-wrap items-center gap-4" aria-hidden={counts ? undefined : true}>
+        {(counts ? (["mandatory", "recommended", "optional"] as const) : LEVELS).map((l) => (
           <span key={l} className="flex items-center gap-1.5">
             <LevelGlyph level={l} />
-            {LEVEL_LABEL[l]}
+            {counts ? <span className="font-semibold tabular-nums text-foreground">{fmt(counts[l as keyof typeof counts])}</span> : null}
+            <span className={counts ? "text-muted-foreground" : undefined}>{LEVEL_LABEL[l]}</span>
           </span>
         ))}
       </span>
-      <Tip label={LEVELS_VS_GRADUATE}>
-        <span tabIndex={0} className="inline-flex size-5 items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" data-levels-tip>
+      <Tip label={tip}>
+        <span tabIndex={0} className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring" data-levels-tip>
           <i className="fa-light fa-circle-info" aria-hidden="true" />
-          <span className="sr-only">{LEVELS_VS_GRADUATE}</span>
+          <span className="sr-only">{tip}</span>
         </span>
       </Tip>
     </span>

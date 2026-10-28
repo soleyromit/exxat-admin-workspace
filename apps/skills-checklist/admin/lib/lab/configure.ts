@@ -7,6 +7,10 @@ import { isConfigured } from "@/lib/v2/population"
 import { ratingKind, ratingOptions } from "@/lib/v2/student"
 import type { EvalModel, Evaluation, EvaluatorRole, LevelMinimum, Person, PublishedRuleSnapshot, QuestionRule, RuleChangeRecord, ScoredRule, Skill, SkillConfig, V2State } from "@/lib/v2/types"
 import { skillNoun } from "./terms"
+import { checkOffAllowedFor, checkOffOffReason, checkOffScore, tickRecordsLine } from "./checkoff-rules"
+
+/** The Configure setting's name, in "Who signs", Check and save, and "What you changed". */
+export const CHECKOFF_LABEL = "Group check-off"
 
 /**
  * Configure a skill, design lab (docs/knowledge/design/configure-skill.md). Pure functions only.
@@ -61,6 +65,12 @@ export interface LabRule {
   selfEvaluation: boolean
   approvalRequired: boolean
   evaluatorRoles: EvaluatorRole[]
+  /**
+   * Group check-off (PROTO 2026-10-28): `enabled` null means the model's default (Met or Unmet and levels on, questions and scores
+   * off). `levelIndex` and `score` are what one tick records for levels and scores; null means the default (highest level, the
+   * rule's own threshold). Optional so drafts saved before it existed still load.
+   */
+  checkOff?: { enabled: boolean | null; levelIndex: number | null; score: number | null }
   /** Read-only, carried from the published v2 rule. Not in REQ. Removing them is an edit like any other. */
   carried: { window: number | null; minLevelIndex: number | null; simulationCapPercent: number | null; simulationExcluded: boolean }
 }
@@ -157,6 +167,7 @@ export function emptyRule(): LabRule {
     selfEvaluation: false,
     approvalRequired: false,
     evaluatorRoles: [],
+    checkOff: { enabled: null, levelIndex: null, score: null },
     carried: { window: null, minLevelIndex: null, simulationCapPercent: null, simulationExcluded: false },
   }
 }
@@ -189,6 +200,7 @@ export function fromV2(skill: Pick<Skill, "model" | "config">): LabRule {
     selfEvaluation: typeof c.selfEvaluation === "boolean" ? c.selfEvaluation : ratingKind(skill as Skill) === "levels" && ratingOptions(skill as Skill).length > 0,
     approvalRequired: !!c.approvalRequired,
     evaluatorRoles: [...c.evaluatorRoles],
+    checkOff: { enabled: typeof c.checkOff?.enabled === "boolean" ? c.checkOff.enabled : null, levelIndex: c.checkOff?.levelIndex ?? null, score: c.checkOff?.score ?? null },
     carried: {
       window: a.kind === "last-n" && a.window ? a.window : null,
       minLevelIndex: a.minLevelIndex,
@@ -1057,6 +1069,9 @@ export function configDiff(before: LabRule | null, after: LabRule): Array<{ labe
   push("Who can sign off", before ? roles(before) : none, roles(after))
   push("Feedback required", onOff(!!before?.feedbackRequired), onOff(after.feedbackRequired))
   push("Approval before it counts", onOff(!!before?.approvalRequired), onOff(after.approvalRequired))
+  // Compared on the choice (allowed, nominated level or score), so renaming an outcome label is not reported twice.
+  const coKey = (r: LabRule) => `${ruleAllowsCheckOff(r)}|${r.model === "demonstration" ? r.checkOff?.levelIndex ?? "" : ""}|${r.model === "scored" ? ruleCheckOffScore(r) : ""}`
+  if (!before?.model || !after.model || coKey(before) !== coKey(after)) push(CHECKOFF_LABEL, before?.model ? checkOffLine(before) : none, after.model ? checkOffLine(after) : none)
   return out
 }
 
@@ -1125,6 +1140,7 @@ export function toSkillConfig(prev: SkillConfig | null, rule: LabRule): SkillCon
     qualifyingLabel: m === "binary" ? rule.qualifyingLabel : null,
     scaleMax: m === "scored" ? rule.scaleMax : base.scaleMax,
     selfEvaluation: rule.selfEvaluation,
+    checkOff: checkOffConfig(rule),
     studentFields: rule.studentFields.map((f) => ({ label: f.label.trim(), type: f.type, mandatory: f.mandatory, ...(f.type === "choice" ? { choices: (f.choices ?? []).map((x) => x.trim()).filter(Boolean) } : {}) })),
   }
 }
@@ -1213,7 +1229,7 @@ export function discardConfigDraft(s: V2State, skillId: string): V2State {
 // Check: what you set up, grouped by step, each fact once [REQ SC-17, SC-19]
 
 export interface SetupGroup {
-  id: "model" | "criteria" | "rule" | "signers" | "student" | "before"
+  id: "model" | "criteria" | "rule" | "signers" | "student" | "before" | "checkoff"
   /** The step its Edit link opens. */
   step: SectionId
   label: string
@@ -1250,6 +1266,7 @@ export function setupSummary(rule: LabRule): SetupGroup[] {
       label: "Before it counts",
       lines: [`Self-evaluation first: ${onOff(rule.selfEvaluation)}. Feedback required: ${onOff(rule.feedbackRequired)}. Approval: ${onOff(rule.approvalRequired)}.`],
     },
+    { id: "checkoff", step: "signoff", label: CHECKOFF_LABEL, lines: [m ? checkOffLine(rule) : none] },
   ]
 }
 
@@ -1289,6 +1306,7 @@ const DIFF_ROW: Record<string, string> = {
   "Feedback required": "Feedback required",
   "Self-evaluation first": "Self-evaluation first",
   "Approval before it counts": "Approval before it counts",
+  [CHECKOFF_LABEL]: CHECKOFF_LABEL,
 }
 
 /**
@@ -1339,6 +1357,7 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
         roles.length ? { label: "Who signs", value: roles.join(", ") } : { label: "Who signs", value: "Not chosen", missing: true },
         { label: "Feedback required", value: yesNo(rule.feedbackRequired) },
         { label: "Approval before it counts", value: yesNo(rule.approvalRequired) },
+        { label: CHECKOFF_LABEL, value: m ? checkOffLine(rule) : "Not set" },
       ],
     },
   ]
@@ -1353,4 +1372,38 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
     }
   }
   return groups
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Group check-off (PROTO 2026-10-28 "Group check-off"; lib/lab/course-checkoff.ts reads the saved value). CHECKOFF_LABEL is
+// declared at the top of the file.
+
+/** True when the rule allows a group check-off (its own choice, else the model's default). */
+export const ruleAllowsCheckOff = (rule: LabRule): boolean => checkOffAllowedFor(rule.model, rule.checkOff?.enabled)
+
+/** The score one tick records under this rule. */
+export const ruleCheckOffScore = (rule: LabRule): number => checkOffScore(rule.scaleMax, rule.scoredRule, rule.checkOff?.score, rule.questions.length)
+
+/** "Records Met", "Records Independent", ...: what one tick writes under this rule. */
+export function ruleTickRecords(rule: LabRule): string {
+  return tickRecordsLine(rule.model, { outcomeLabels: rule.outcomeLabels, qualifyingLabel: rule.qualifyingLabel, levels: rule.levels, levelIndex: rule.checkOff?.levelIndex, questions: rule.questions, score: ruleCheckOffScore(rule) })
+}
+
+/** "Allowed. Records Met" or "Not allowed": one line for Check and save and "What you changed". */
+export function checkOffLine(rule: LabRule): string {
+  return ruleAllowsCheckOff(rule) ? `Allowed. ${ruleTickRecords(rule)}` : "Not allowed"
+}
+
+/** Why the rule does not allow a check-off, in the same words the course offering page uses. */
+export const ruleCheckOffOff = (rule: LabRule): string | null => checkOffOffReason(rule.model, ruleAllowsCheckOff(rule), !!rule.model, rule.questions.length)
+
+/** The saved value: the explicit choice only when the admin made one, and the nominated level or score for that model. */
+function checkOffConfig(rule: LabRule): SkillConfig["checkOff"] {
+  const c = rule.checkOff
+  if (!c) return undefined
+  const out: NonNullable<SkillConfig["checkOff"]> = {}
+  if (typeof c.enabled === "boolean") out.enabled = c.enabled
+  if (rule.model === "demonstration" && typeof c.levelIndex === "number") out.levelIndex = c.levelIndex
+  if (rule.model === "scored" && typeof c.score === "number") out.score = c.score
+  return Object.keys(out).length ? out : undefined
 }

@@ -648,7 +648,7 @@
       "id": "record-lab-session",
       "title": "Record a lab session",
       "short": "Lab session",
-      "persona": "lab-instructor",
+      "persona": "course-faculty",
       "recommendedSet": "1",
       "sets": [
         {
@@ -658,24 +658,15 @@
         },
         {
           "id": "2",
-          "label": "Roll call",
-          "summary": "One student at a time down the list"
+          "label": "One skill at a time",
+          "summary": "Pick a skill, tick the students who showed it"
         }
       ],
       "steps": [
         {
-          "id": "grid",
-          "label": "Lab batch grid",
-          "screen": "lab-instructor/lab-batch-grid",
-          "variants": {
-            "1": "A",
-            "2": "B"
-          }
-        },
-        {
-          "id": "submitted",
-          "label": "Submitted",
-          "screen": "evaluator/submitted",
+          "id": "checkoff",
+          "label": "Group check-off",
+          "screen": "course-faculty/offering-checkoff",
           "variants": {
             "1": "A",
             "2": "B"

@@ -16,6 +16,9 @@ export interface Terms {
 }
 
 export const DEFAULT_TERMS: Terms = { skillNoun: "skill", skillNounPlural: "skills" }
+
+/** The person who records a group check-off on their own course (Romit 2026-10-28): persona name and the default "Recorded by". */
+export const COURSE_FACULTY = "Course faculty"
 export const TERMS_KEY = "lab:terms"
 
 let current: Terms = DEFAULT_TERMS

@@ -5,14 +5,13 @@
  * options, the N-13 count). The variant lays out the toolbar and the body.
  */
 import * as React from "react"
-import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { PageFrame } from "@/components/skills/page-header"
 import { importHref } from "@/lib/lab/library"
 import { coverage, currentTermId, offeringRows, termOptions, type Coverage, type MappingOverlay, type OfferingRow } from "@/lib/lab/mapping"
 import type { SkillList } from "@/lib/lab/lists"
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { skillNounPlural } from "@/lib/lab/terms"
 import type { V2State } from "@/lib/v2/types"
-import { AmberNote, ErrorState, LoadingState, plural, type Opt } from "./parts"
+import { ErrorState, LoadingState, type Opt } from "./parts"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { useAdminData, useLists, useMappingOverlay, type AdminData } from "./use-admin-data"
 
@@ -76,27 +75,5 @@ export function MappingFrame({ variant, children }: { variant: string; children:
         {body}
       </div>
     </PageFrame>
-  )
-}
-
-/**
- * N-13: required skills on the default list that no offering in the term carries. A calm line, not a banner. It heads the list
- * pane it summarises (density: the list and its summary are one region, strategy/07 list budget), so it carries no region.
- */
-export function NoCourseNote({ cover, termName, onShow }: { cover: Coverage; termName: string; onShow?: () => void }) {
-  if (cover.gaps.length === 0) return null
-  return (
-    <AmberNote
-      region=""
-      action={
-        onShow ? (
-          <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={onShow}>
-            Show them
-          </Button>
-        ) : undefined
-      }
-    >
-      {`${plural(cover.gaps.length, `required ${skillNoun()} is`, `required ${skillNounPlural()} are`)} in no ${termName} course.`}
-    </AmberNote>
   )
 }

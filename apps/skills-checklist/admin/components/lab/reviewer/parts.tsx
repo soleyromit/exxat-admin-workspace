@@ -9,7 +9,7 @@ import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { StatusBadge } from "@exxatdesignux/ui"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
-import { AGING_DAYS, REASON_META, daysLabel, plural, type HoldReason, type QueueSummary, type RecordSkill, type RecordStatus } from "@/lib/lab/reviewer"
+import { AGING_DAYS, CHECKOFF_METHOD, REASON_META, daysLabel, plural, type HoldReason, type QueueSummary, type RecordSkill, type RecordStatus } from "@/lib/lab/reviewer"
 
 import { EVALUATION_STATUS_LABEL, SENT_BACK_LABEL, SENT_FOR_NEW_EVALUATION_WORD, type RecordStateKey } from "@/lib/v2/labels"
 import { TYPE } from "@/components/lab/type-scale"
@@ -45,6 +45,15 @@ export function ReasonBadge({ row, wrap = false }: { row: { reason: HoldReason; 
 export function ReasonChip({ reason }: { reason: HoldReason }) {
   const m = REASON_META[reason]
   return <StatusBadge label={m.label} tone="neutral" icon={m.icon} size="sm" />
+}
+
+/** A held group check-off, labelled the same in every list, board and review: glyph + word, neutral (a channel, not a judgement). */
+export function CheckoffTag() {
+  return (
+    <span className="self-start" data-checkoff-tag>
+      <StatusBadge label={CHECKOFF_METHOD} tone="neutral" icon="fa-users" size="sm" />
+    </span>
+  )
 }
 
 /** Glossary word for an evaluator name a student typed that the program has not adopted yet (strategy/02, student2.ts). */

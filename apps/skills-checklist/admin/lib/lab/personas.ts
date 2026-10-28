@@ -1,4 +1,4 @@
-import { skillNounPlural, capitalize } from "./terms"
+import { COURSE_FACULTY, skillNounPlural, capitalize } from "./terms"
 import type { PersonaId } from "./screens"
 
 export interface LabNavRow {
@@ -63,7 +63,12 @@ export const PERSONAS: PersonaDef[] = [
     ],
   },
   { id: "evaluator", short: "Evaluator", label: "Evaluator", chrome: "light", landing: "evaluation-form", nav: null },
-  { id: "lab-instructor", short: "Lab", label: "Lab instructor", chrome: "light", landing: "lab-batch-grid", nav: null },
+  // Course faculty (Romit 2026-10-28; CALL 10-28 Sankalp 27:40 "open their course, Learning Activities, check off"): signed in to
+  // Prism, so the shell; one row, My courses, which opens their course offering's Skills section on Group check-off.
+  {
+    id: "course-faculty", short: "Faculty", label: COURSE_FACULTY, chrome: "shell", landing: "offering-checkoff",
+    nav: () => [{ key: "courses", title: "My courses", slug: "offering-checkoff", icon: "book-open" }],
+  },
 ]
 
 export const PERSONA_BY_ID = Object.fromEntries(PERSONAS.map((p) => [p.id, p])) as Record<PersonaId, PersonaDef>

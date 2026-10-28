@@ -14,12 +14,12 @@ import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { PersonIdentityCell } from "@exxatdesignux/ui/components/data-views/person-identity-cell"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
-import { bulkCheck, recordHref, reviewItemHref, skillsLine, whereLine, type QueueSummary, type ReviewRow } from "@/lib/lab/reviewer"
+import { isCheckoff, bulkCheck, recordHref, reviewItemHref, skillsLine, whereLine, type QueueSummary, type ReviewRow } from "@/lib/lab/reviewer"
 import { capitalize, skillNoun } from "@/lib/lab/terms"
 import type { LabScope } from "@/lib/lab/scope"
 import { ApprovalsFrame, RegionError } from "@/components/lab/reviewer/approvals-frame"
 import { EvaluatorMenu, useDecisionUi } from "@/components/lab/reviewer/decisions"
-import { AgeText, EvaluatorName, ReasonBadge, SummaryLine } from "@/components/lab/reviewer/parts"
+import { AgeText, CheckoffTag, EvaluatorName, ReasonBadge, SummaryLine } from "@/components/lab/reviewer/parts"
 import { APPROVE_HINT, SEND_BACK_LABEL } from "@/lib/v2/labels"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 import { EmptyBlock } from "@/components/lab/empty-block"
@@ -101,6 +101,7 @@ export function triageColumns(scope: LabScope, ui: ReturnType<typeof useDecision
           </Link>
           {/* Course, setting and location on one subline (REQ AR-01), so the row carries every required fact without a new column. */}
           <span className="truncate text-xs text-muted-foreground" title={whereLine(r)} data-row-where>{whereLine(r)}</span>
+          {isCheckoff(r) ? <CheckoffTag /> : null}
         </span>
       ),
     },

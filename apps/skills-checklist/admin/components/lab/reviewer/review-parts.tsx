@@ -12,7 +12,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import type { Comparison } from "@/lib/v2/queue"
-import { recordHref, type ItemDetail, type ReviewRow, type RuleCheck, type StoryStep } from "@/lib/lab/reviewer"
+import { isCheckoff, recordHref, type ItemDetail, type ReviewRow, type RuleCheck, type StoryStep } from "@/lib/lab/reviewer"
 import type { LabScope } from "@/lib/lab/scope"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
@@ -21,9 +21,10 @@ import { TYPE } from "@/components/lab/type-scale"
 import { APPROVE_HINT, SEND_BACK_LABEL } from "@/lib/v2/labels"
 import { REASON_META } from "@/lib/lab/reviewer"
 import { EvaluatorMenu, useDecisionUi } from "@/components/lab/reviewer/decisions"
-import { AgreementMark, AgeBadge, EvaluatorName, FactList } from "@/components/lab/reviewer/parts"
+import { AgreementMark, AgeBadge, CheckoffTag, EvaluatorName, FactList } from "@/components/lab/reviewer/parts"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 import { shortDate } from "@/lib/v2/format"
+import { checkoffNote } from "@/lib/lab/course-checkoff"
 
 const dateLabel = (iso: string | null) => (iso ? shortDate(iso) : "Not recorded")
 
@@ -38,6 +39,7 @@ export function WhyHeld({ row }: { row: ReviewRow }) {
       <div className="flex flex-wrap items-center gap-2">
         <h2 id={`why-${row.key}`} className={TYPE.section}>Why it is here</h2>
         <AgeBadge days={row.days} />
+        {isCheckoff(row) ? <CheckoffTag /> : null}
       </div>
       <ul className="flex flex-col gap-1.5">
         {row.because.map((b) => (
@@ -47,6 +49,7 @@ export function WhyHeld({ row }: { row: ReviewRow }) {
           </li>
         ))}
       </ul>
+      {isCheckoff(row) ? <p className={`${TYPE.body} text-muted-foreground`} data-checkoff-note>{checkoffNote(row.checkoffSkill)}</p> : null}
       {row.evaluatorUnverified ? (
         <span className="self-start">
           <EvaluatorMenu row={row} />
@@ -85,7 +88,7 @@ export function ReviewNoteField({ id = "review-note" }: { id?: string }) {
  * Self versus evaluator, every row (AR-02, AR-03): each question, the score on each question, the level and the evaluator's
  * outcome. The student's self-evaluation note follows the table (AR-03: "the full set of responses"), quoted as record content.
  */
-export function CompareTable({ c, compact = false, showNote = true }: { c: Comparison; compact?: boolean; showNote?: boolean }) {
+export function CompareTable({ c, compact = false, showNote = true, checkoff = false }: { c: Comparison; compact?: boolean; showNote?: boolean; checkoff?: boolean }) {
   const self = c.selfRated
   return (
     <div className="flex flex-col gap-1.5">
@@ -117,7 +120,7 @@ export function CompareTable({ c, compact = false, showNote = true }: { c: Compa
           </TableBody>
         </Table>
       </div>
-      {self ? null : <p className="text-xs text-muted-foreground">No self-rating to compare.</p>}
+      {self || checkoff ? null : <p className="text-xs text-muted-foreground">No self-rating to compare.</p>}
       {showNote && c.selfNote ? (
         <blockquote className="whitespace-pre-line border-s-2 border-border ps-3 text-sm text-foreground" data-user-content data-self-note>
           <span className="sr-only">Student note: </span>
@@ -155,7 +158,7 @@ export function Facts({ d, scope }: { d: ItemDetail; scope: LabScope }) {
         ["Setting", r.setting],
         ["Location", r.location],
         ["Evaluator", r.evaluatorUnverified ? <EvaluatorName key="e" name={r.evaluator} unrecorded /> : `${r.evaluator}${r.evaluatorRole ? `, ${r.evaluatorRole}` : ""}`],
-        ["Sent by", r.method],
+        [isCheckoff(r) ? "Entered from" : "Sent by", r.method],
         ["Signed", dateLabel(d.completedAt)],
         ...(r.revision ? [["Revision", String(r.revision)] as [string, React.ReactNode]] : []),
       ]}

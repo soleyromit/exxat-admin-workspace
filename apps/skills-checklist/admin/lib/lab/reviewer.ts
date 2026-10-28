@@ -12,7 +12,7 @@
  * (lib/v2/preceptor.ts:240), so a held evaluation with no other cause is read as "Approval required for {skill}" [INFER: the seed skill configs
  * do not carry the flag].
  */
-import type { Evaluation, Person, Submission, V2State } from "@/lib/v2/types"
+import type { Evaluation, Person, Skill, Submission, V2State } from "@/lib/v2/types"
 import { appendAudit } from "@/lib/v2/store"
 import { approveItems, compareEvaluation, queueItems, returnItem, ROLE_LABEL, type Agreement, type Comparison, type QueueItem } from "@/lib/v2/queue"
 import { AGING_DAYS as Q_AGING_DAYS, CAUSE_LABEL, CAUSE_ORDER, NUDGE_DAYS as Q_NUDGE_DAYS, approvalEntries, approvalsInScope, heldState, type ApprovalEntry, type HeldCause } from "@/lib/v2/approvals"
@@ -231,6 +231,9 @@ export interface ReviewRowData {
   setting: string
   location: string
   method: string
+  /** For a group check-off only: the skill it records, for the note (lib/lab/course-checkoff.ts checkoffNote; not imported here,
+   *  that module reaches lib/lab/configure and would form an import cycle). */
+  checkoffSkill?: Skill
   since: string
   days: number
   aging: boolean
@@ -270,6 +273,12 @@ export const oldestUnassigned = <R extends Pick<ReviewRowData, "reason" | "days"
 
 /** DataTable rows must be records. */
 export type ReviewRow = ReviewRowData & Record<string, unknown>
+
+/** How a held group check-off reads wherever a row says how its evidence arrived. */
+export const CHECKOFF_METHOD = "Group check-off"
+
+/** True when the row's evidence came from a group check-off on the course offering: no submission, no self-evaluation. */
+export const isCheckoff = (r: Pick<ReviewRowData, "method">): boolean => r.method === CHECKOFF_METHOD
 
 const METHOD_WORD: Record<string, string> = { qr: "QR code", link: "Link", handover: "Handed over", photo: "Photo of paper form" }
 
@@ -330,7 +339,8 @@ function baseRow(s: V2State, item: QueueItem, evaluations: Evaluation[], days: n
     })(),
     setting: settingText(first),
     location: first?.location ?? "Not recorded",
-    method: item.submission ? (METHOD_WORD[item.submission.method] ?? item.submission.method) : item.source === "paper-form" ? "Paper form" : "Evaluator form",
+    method: item.submission ? (METHOD_WORD[item.submission.method] ?? item.submission.method) : item.source === "paper-form" ? "Paper form" : item.source === "checkoff" ? CHECKOFF_METHOD : "Evaluator form",
+    ...(item.source === "checkoff" && !item.submission ? { checkoffSkill: skillById(s, item.skillIds[0] ?? "") } : {}),
     since: item.since,
     days,
     aging: days >= AGING_DAYS,
@@ -628,7 +638,7 @@ export function story(state: V2State, d: ItemDetail): StoryStep[] {
       steps.push({
         id: `${e.id}-v${v.version}`,
         at: v.at,
-        title: v.version === 1 ? `${r.evaluator} signed ${skillById(state, e.skillId)?.name ?? `the ${skillNoun()}`}` : `Version ${v.version} recorded`,
+        title: v.version === 1 ? `${r.evaluator} ${isCheckoff(r) ? "recorded in a group check-off:" : "signed"} ${skillById(state, e.skillId)?.name ?? `the ${skillNoun()}`}` : `Version ${v.version} recorded`,
         detail: `${v.outcome === "met" ? "Met" : v.outcome === "not-met" ? "Unmet" : "Not yet"}${v.reason ? `. ${v.reason}` : ""}`,
         icon: v.version === 1 ? "fa-signature" : "fa-code-branch",
       })

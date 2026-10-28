@@ -9,7 +9,7 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { story } from "@/lib/lab/reviewer"
+import { isCheckoff, story } from "@/lib/lab/reviewer"
 import { ReviewItemFrame } from "@/components/lab/reviewer/review-item-frame"
 import { CompareTable, Facts, Feedback, ReviewNoteField, RuleCheckLine, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
 
@@ -38,7 +38,7 @@ export function ReviewerReviewItemB() {
             </div>
             <div className="flex flex-col gap-4 lg:col-span-5">
               <section aria-label="Answers" className="flex flex-col gap-3" data-region="answers">
-                {d.comparisons.length ? d.comparisons.map((c) => <CompareTable key={c.evaluationId} c={c} />) : <p className="text-sm text-muted-foreground">The outcome is on the photo of the paper form and has not been entered.</p>}
+                {d.comparisons.length ? d.comparisons.map((c) => <CompareTable key={c.evaluationId} c={c} checkoff={isCheckoff(d.row)} />) : <p className="text-sm text-muted-foreground">The outcome is on the photo of the paper form and has not been entered.</p>}
                 <Feedback text={d.feedback} />
               </section>
               <Details>

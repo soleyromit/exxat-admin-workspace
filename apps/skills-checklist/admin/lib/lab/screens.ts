@@ -1,6 +1,6 @@
 import registry from "./screens.json"
 
-export type PersonaId = "admin" | "student" | "evaluator" | "reviewer" | "director" | "lab-instructor"
+export type PersonaId = "admin" | "student" | "evaluator" | "reviewer" | "director" | "course-faculty"
 export type Tier = 1 | 2 | 3
 
 export interface VariantDef {
