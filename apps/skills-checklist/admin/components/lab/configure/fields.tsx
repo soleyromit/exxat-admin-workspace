@@ -31,6 +31,7 @@ import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@exxatdesignux/ui/components/ui/input-group"
 import { TYPE } from "@/components/lab/type-scale"
+import { ConfigSubsection } from "./section"
 import { criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, applyPreset, FIELD_TYPE_LABEL, hasNeed, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import type { EvalModel } from "@/lib/v2/types"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
@@ -551,7 +552,7 @@ function ScoredRuleField({ rule, setRule, err }: { rule: LabRule; setRule: Secti
 /** A toggle with its title; `detail` only when the title alone would hide a consequence (say it once). */
 function ToggleRow({ id, title, detail, checked, onChange }: { id: string; title: string; detail?: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-3">
+    <div className="flex max-w-2xl items-start justify-between gap-4 py-1">
       <div className="flex min-w-0 flex-col gap-0.5">
         <p id={`${id}-label`} className="text-sm font-medium text-foreground">
           {title}
@@ -659,72 +660,83 @@ function FieldDialog({ open, onOpenChange, onSave, taken, initial }: { open: boo
   )
 }
 
+/**
+ * Who signs, and what does the student add (Romit relaying Sankalp 2026-10-28: "What student adds position looks wrong"): one
+ * column grouped by subject, each with its own switch, in the order the work happens: 1 Student (fields, self-evaluation),
+ * 2 Evaluator (roles, feedback), 3 Approval. The full-width rule (D-L5) is met by the preview aside, not by splitting fields.
+ */
 export function SignOffSection({ rule, setRule, issues, showErrors }: SectionProps) {
   const err = useErr(issues, showErrors)
   const roleErr = err("cfg-role-preceptor")
   const [adding, setAdding] = React.useState(false)
   const [editing, setEditing] = React.useState<number | null>(null)
   return (
-    <div className="flex flex-col gap-8 @min-[56rem]:grid @min-[56rem]:grid-cols-2 @min-[56rem]:items-start @min-[56rem]:gap-x-10" data-section="signoff">
-      <FieldSet>
-        <FieldLegend variant="label">Who can sign off</FieldLegend>
-        <div className="flex flex-wrap gap-6">
-          {ROLES.map((role) => (
-            <div key={role} className="flex items-center gap-2">
-              <Checkbox
-                id={`cfg-role-${role}`}
-                checked={rule.evaluatorRoles.includes(role)}
-                onCheckedChange={(c) => setRule((r) => ({ ...r, evaluatorRoles: c ? [...r.evaluatorRoles, role] : r.evaluatorRoles.filter((x) => x !== role) }))}
-                {...errProps("cfg-role-preceptor", roleErr)}
-              />
-              <Label htmlFor={`cfg-role-${role}`}>{ROLE_LABEL[role]}</Label>
-            </div>
-          ))}
-        </div>
-        <Err id="cfg-role-preceptor" message={roleErr} />
-      </FieldSet>
-
-      <FieldSet>
-        <FieldLegend variant="label">What the student adds</FieldLegend>
-        <ul className="flex flex-col divide-y divide-border rounded-[var(--radius)] border border-border">
-          {rule.studentFields.map((f, i) => {
-            const id = `cfg-field-${i}`
-            return (
-              <li key={i} className="flex flex-col gap-1 px-3 py-2">
-                <div className="flex items-center gap-3">
-                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">{f.label.trim() || "Untitled field"}</span>
-                  <span className="text-sm text-muted-foreground">{`${FIELD_TYPE_LABEL[f.type]}${f.type === "choice" && f.choices?.length ? ` (${f.choices.length})` : ""}${f.mandatory ? ", required" : ""}`}</span>
-                  <Button type="button" variant="ghost" size="sm" aria-label={`Edit ${f.label.trim() || `field ${i + 1}`}`} onClick={() => setEditing(i)}>
-                    Edit
-                  </Button>
-                  <RemoveButton id={id} label={`Remove ${f.label.trim() || `field ${i + 1}`}`} onClick={() => setRule((r) => ({ ...r, studentFields: r.studentFields.filter((_, k) => k !== i) }))} />
-                </div>
-                <Err id={id} message={err(id)} />
-              </li>
-            )
-          })}
-          {rule.studentFields.length === 0 ? <li className="px-3 py-2 text-sm text-muted-foreground">Nothing beyond the evaluation itself.</li> : null}
-        </ul>
-        <div>
-          <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
-            Add a field
-          </Button>
-        </div>
-        <FieldDialog open={adding} onOpenChange={setAdding} taken={rule.studentFields.map((f) => f.label)} onSave={(f) => setRule((r) => ({ ...r, studentFields: [...r.studentFields, f] }))} />
-        <FieldDialog
-          open={editing !== null}
-          onOpenChange={(o) => !o && setEditing(null)}
-          taken={rule.studentFields.map((f) => f.label)}
-          initial={editing !== null ? rule.studentFields[editing] ?? null : null}
-          onSave={(f) => setRule((r) => ({ ...r, studentFields: r.studentFields.map((x, k) => (k === editing ? f : x)) }))}
-        />
-      </FieldSet>
-
-      <div className="flex flex-col divide-y divide-border" role="group" aria-label="What an evaluation needs">
-        <ToggleRow id="cfg-feedback" title="Feedback is required" checked={rule.feedbackRequired} onChange={(v) => setRule((r) => ({ ...r, feedbackRequired: v }))} />
+    <div className="flex flex-col gap-6" data-section="signoff">
+      <ConfigSubsection n={1} first title="Student" id="cfg-signoff-student">
+        <FieldSet>
+          <FieldLegend variant="label">What the student adds</FieldLegend>
+          <ul className="flex flex-col divide-y divide-border rounded-[var(--radius)] border border-border">
+            {rule.studentFields.map((f, i) => {
+              const id = `cfg-field-${i}`
+              const name = f.label.trim() || `field ${i + 1}`
+              return (
+                <li key={i} className="flex flex-col gap-1 px-3 py-1.5">
+                  <div className="flex items-center gap-3">
+                    <span className={cn("min-w-0 flex-1 truncate", TYPE.body)}>{f.label.trim() || "Untitled field"}</span>
+                    <span className={cn("w-28 shrink-0", TYPE.helper)}>{`${FIELD_TYPE_LABEL[f.type]}${f.type === "choice" && f.choices?.length ? ` (${f.choices.length})` : ""}`}</span>
+                    <span className={cn("w-20 shrink-0", TYPE.helper)}>{f.mandatory ? "Required" : "Optional"}</span>
+                    <Button type="button" variant="ghost" size="sm" aria-label={`Edit ${name}`} onClick={() => setEditing(i)}>
+                      Edit
+                    </Button>
+                    <RemoveButton id={id} label={`Remove ${name}`} onClick={() => setRule((r) => ({ ...r, studentFields: r.studentFields.filter((_, k) => k !== i) }))} />
+                  </div>
+                  <Err id={id} message={err(id)} />
+                </li>
+              )
+            })}
+            {rule.studentFields.length === 0 ? <li className={cn("px-3 py-2", TYPE.helper)}>Nothing beyond the evaluation itself.</li> : null}
+          </ul>
+          <div>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(true)}>
+              Add a field
+            </Button>
+          </div>
+          <FieldDialog open={adding} onOpenChange={setAdding} taken={rule.studentFields.map((f) => f.label)} onSave={(f) => setRule((r) => ({ ...r, studentFields: [...r.studentFields, f] }))} />
+          <FieldDialog
+            open={editing !== null}
+            onOpenChange={(o) => !o && setEditing(null)}
+            taken={rule.studentFields.map((f) => f.label)}
+            initial={editing !== null ? rule.studentFields[editing] ?? null : null}
+            onSave={(f) => setRule((r) => ({ ...r, studentFields: r.studentFields.map((x, k) => (k === editing ? f : x)) }))}
+          />
+        </FieldSet>
         <ToggleRow id="cfg-self" title="Student rates themselves first" detail="The evaluator sees it after their own answers." checked={rule.selfEvaluation} onChange={(v) => setRule((r) => ({ ...r, selfEvaluation: v }))} />
-        <ToggleRow id="cfg-approval" title="Approval before it counts" checked={rule.approvalRequired} onChange={(v) => setRule((r) => ({ ...r, approvalRequired: v }))} />
-      </div>
+      </ConfigSubsection>
+
+      <ConfigSubsection n={2} title="Evaluator" id="cfg-signoff-evaluator">
+        <FieldSet>
+          <FieldLegend variant="label">Who can sign off</FieldLegend>
+          <div className="flex flex-wrap gap-6">
+            {ROLES.map((role) => (
+              <div key={role} className="flex items-center gap-2">
+                <Checkbox
+                  id={`cfg-role-${role}`}
+                  checked={rule.evaluatorRoles.includes(role)}
+                  onCheckedChange={(c) => setRule((r) => ({ ...r, evaluatorRoles: c ? [...r.evaluatorRoles, role] : r.evaluatorRoles.filter((x) => x !== role) }))}
+                  {...errProps("cfg-role-preceptor", roleErr)}
+                />
+                <Label htmlFor={`cfg-role-${role}`}>{ROLE_LABEL[role]}</Label>
+              </div>
+            ))}
+          </div>
+          <Err id="cfg-role-preceptor" message={roleErr} />
+        </FieldSet>
+        <ToggleRow id="cfg-feedback" title="Feedback is required" checked={rule.feedbackRequired} onChange={(v) => setRule((r) => ({ ...r, feedbackRequired: v }))} />
+      </ConfigSubsection>
+
+      <ConfigSubsection n={3} title="Approval" id="cfg-signoff-approval">
+        <ToggleRow id="cfg-approval" title="Approval before it counts" detail="A reviewer approves each evaluation before it counts." checked={rule.approvalRequired} onChange={(v) => setRule((r) => ({ ...r, approvalRequired: v }))} />
+      </ConfigSubsection>
     </div>
   )
 }

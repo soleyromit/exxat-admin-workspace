@@ -46,3 +46,20 @@ export function ConfigSection({
     </section>
   )
 }
+
+/**
+ * A numbered group inside one configure step, in the same title style as ConfigSection but one heading level down (h3), so a
+ * step can group its fields by subject (Romit relaying Sankalp 2026-10-28, Who signs: 1 Student, 2 Evaluator, 3 Approval).
+ */
+export function ConfigSubsection({ n, title, id, first, children }: { n: number; title: string; id: string; first?: boolean; children: React.ReactNode }) {
+  const hid = `${id}-title`
+  return (
+    <section id={id} aria-labelledby={hid} className={cn("flex flex-col gap-3", !first && "border-t border-border pt-6")} data-config-group>
+      {/* Plain group heading (Romit 2026-10-28): no inner number, so it never competes with the step's own number. */}
+      <h3 id={hid} className={cn("leading-5", TYPE.group)} data-group-n={n}>
+        {title}
+      </h3>
+      <div className="flex max-w-2xl flex-col gap-4">{children}</div>
+    </section>
+  )
+}

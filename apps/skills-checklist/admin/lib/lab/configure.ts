@@ -1052,10 +1052,10 @@ export function configDiff(before: LabRule | null, after: LabRule): Array<{ labe
   push(MODEL_STEP_LABEL, before?.model ? LAB_MODEL_LABEL[before.model] : none, after.model ? LAB_MODEL_LABEL[after.model] : none)
   push(outcomesLabel(after.model), before?.model ? labels(before) : none, after.model ? labels(after) : none)
   if (engineKey(before ?? emptyRule()) !== engineKey(after)) push(HOW_MANY_LABEL,before?.model ? ruleSentence(before) : none, (before?.model && ruleDeltaLine(before, after)) || ruleSentence(after))
-  push("Who can sign off", before ? roles(before) : none, roles(after))
   push("Student adds", before ? fields(before) : none, fields(after))
-  push("Feedback required", onOff(!!before?.feedbackRequired), onOff(after.feedbackRequired))
   push("Self-evaluation first", onOff(!!before?.selfEvaluation), onOff(after.selfEvaluation))
+  push("Who can sign off", before ? roles(before) : none, roles(after))
+  push("Feedback required", onOff(!!before?.feedbackRequired), onOff(after.feedbackRequired))
   push("Approval before it counts", onOff(!!before?.approvalRequired), onOff(after.approvalRequired))
   return out
 }
@@ -1241,13 +1241,14 @@ export function setupSummary(rule: LabRule): SetupGroup[] {
     { id: "model", step: "model", label: MODEL_STEP_LABEL, lines: [m ? LAB_MODEL_LABEL[m] : none] },
     { id: "criteria", step: "outcomes", label: CRITERIA_LABEL, lines: criteria },
     { id: "rule", step: "rule", label: HOW_MANY_LABEL, lines: m ? [ruleSentence(rule), settingNote(rule), ...carriedNotes(rule)].filter(Boolean) : [none] },
-    { id: "signers", step: "signoff", label: "Who signs", lines: [roles.length ? roles.join(", ") : "No role chosen"] },
+    // Same order as the step's groups (2026-10-28): Student, Evaluator, Approval.
     { id: "student", step: "signoff", label: "What the student adds", lines: [fields.length ? fields.map((f) => `${f.label.trim()}${f.mandatory ? " (required)" : ""}`).join(", ") : "Nothing beyond the evidence"] },
+    { id: "signers", step: "signoff", label: "Who signs", lines: [roles.length ? roles.join(", ") : "No role chosen"] },
     {
       id: "before",
       step: "signoff",
       label: "Before it counts",
-      lines: [`Self-evaluation first: ${onOff(rule.selfEvaluation)}. Approval: ${onOff(rule.approvalRequired)}. Feedback required: ${onOff(rule.feedbackRequired)}.`],
+      lines: [`Self-evaluation first: ${onOff(rule.selfEvaluation)}. Feedback required: ${onOff(rule.feedbackRequired)}. Approval: ${onOff(rule.approvalRequired)}.`],
     },
   ]
 }
@@ -1332,11 +1333,12 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
       step: "signoff",
       label: "Who signs",
       rows: [
-        roles.length ? { label: "Who signs", value: roles.join(", ") } : { label: "Who signs", value: "Not chosen", missing: true },
+        // Student, Evaluator, Approval: the order of the step's groups (2026-10-28).
         { label: "Student adds", value: fields.length ? fields.map((f) => `${f.label.trim()}${f.mandatory ? " (required)" : ""}`).join(", ") : "Nothing beyond the evidence" },
         { label: "Self-evaluation first", value: yesNo(rule.selfEvaluation) },
-        { label: "Approval before it counts", value: yesNo(rule.approvalRequired) },
+        roles.length ? { label: "Who signs", value: roles.join(", ") } : { label: "Who signs", value: "Not chosen", missing: true },
         { label: "Feedback required", value: yesNo(rule.feedbackRequired) },
+        { label: "Approval before it counts", value: yesNo(rule.approvalRequired) },
       ],
     },
   ]

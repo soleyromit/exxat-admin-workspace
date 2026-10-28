@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/compo
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
-import { afterSubmitLine, attemptLine, carriedNotes, HOW_MANY_LABEL, ruleSentence, settingNote, type Impact, type LabRule, type RecordState } from "@/lib/lab/configure"
+import { afterSubmitLine, carriedNotes, HOW_MANY_LABEL, ruleSentence, settingNote, type Impact, type LabRule, type RecordState } from "@/lib/lab/configure"
 import { StateBadge as RecordStateBadge } from "@/components/lab/status-pill"
 import type { RecordStateKey } from "@/lib/v2/labels"
 import { fmt } from "@/lib/v2/format"
@@ -192,6 +192,7 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
   return (
     <aside aria-labelledby={`${id}-h`} className="flex flex-col gap-4" data-rule-preview>
       <h2 id={`${id}-h`} className="text-sm font-semibold text-foreground">Preview</h2>
+      {(showRule && !(rule.model && showPreviews)) || changed > 0 ? (
       <div className="flex flex-col gap-1">
         {/* Say it once (Romit 2026-10-27, "too many text"): when the student card below shows the rule and the setting note,
             the panel does not repeat them above it; limits kept from the earlier rule are listed in Check and save. */}
@@ -204,8 +205,10 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
             {extra ? <p className="text-sm text-muted-foreground">{extra}</p> : null}
           </>
         ) : null}
+        {/* Romit 2026-10-28: the preview shows only what people see. The "Today n of N achieved" figure and the attempts
+            example are gone from here ("What this means" on the count step explains the example); the change badge stays,
+            and appears only when a rule change moves students. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-          {impact && impact.withEvidence > 0 ? <span className="tabular-nums">{`Today ${fmt(impact.before.achieved)} of ${fmt(impact.students)} achieved`}</span> : null}
           {changed > 0 ? (
             onSeeChange ? (
               <Button type="button" variant="ghost" size="xs" className="h-auto p-0" onClick={onSeeChange} aria-label={`${changed} students change status. Open Check.`}>
@@ -217,12 +220,6 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
           ) : null}
         </div>
       </div>
-      {/* How attempts count, from one real record under the edited rule ("5 attempts, 2 not approved: 3 count") [CALL 10-26 #4]. */}
-      {impact?.example && rule.model && attemptLine(rule, impact.example) ? (
-        <p className="text-sm text-foreground" data-attempt-line>
-          <span className="text-muted-foreground">Example: </span>
-          <span className="tabular-nums">{`${attemptLine(rule, impact.example)}.`}</span>
-        </p>
       ) : null}
       {/* Both views at once (D-X30): the panel has the room, so no tabs to switch between. */}
       {rule.model && showPreviews ? (

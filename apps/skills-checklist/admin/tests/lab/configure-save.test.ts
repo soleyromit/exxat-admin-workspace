@@ -204,7 +204,7 @@ describe("AE-07: removing or moving a question or level keeps every rule referen
 describe("Check answers its four questions from the data", () => {
   it("summarises the setup in six groups, each pointing at the step its Edit opens", () => {
     const g = setupSummary(binaryRule())
-    expect(g.map((x) => x.id)).toEqual(["model", "criteria", "rule", "signers", "student", "before"])
+    expect(g.map((x) => x.id)).toEqual(["model", "criteria", "rule", "student", "signers", "before"])
     expect(g.map((x) => x.step)).toEqual(["model", "outcomes", "rule", "signoff", "signoff", "signoff"])
     expect(JSON.stringify(g)).not.toMatch(/publish/i)
   })
@@ -216,7 +216,7 @@ describe("Check answers its four questions from the data", () => {
     // Every row is a short pair, never a run-on sentence of several settings.
     for (const row of g.flatMap((x) => x.rows)) expect(row.label.split(" ").length).toBeLessThanOrEqual(4)
     const signoff = g.find((x) => x.step === "signoff")!.rows.map((r) => r.label)
-    expect(signoff).toEqual(["Who signs", "Student adds", "Self-evaluation first", "Approval before it counts", "Feedback required"])
+    expect(signoff).toEqual(["Student adds", "Self-evaluation first", "Who signs", "Feedback required", "Approval before it counts"])
     // A value still to choose is flagged, so the summary never reads a gap as an answer.
     expect(g.find((x) => x.step === "outcomes")!.rows.find((r) => r.label === "Counts when")).toMatchObject({ value: "Not chosen", missing: true })
     expect(g.find((x) => x.step === "rule")!.rows[0]).toMatchObject({ missing: true })

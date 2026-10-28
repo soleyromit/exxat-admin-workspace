@@ -28,10 +28,8 @@ import { TYPE } from "@/components/lab/type-scale"
 import {
   LIBRARY_TABS,
   STATUS_META,
-  configureHref,
   importHref,
   isLibraryTab,
-  notConfiguredBlock,
   starterHref,
   tabCount,
   type LibraryCounts,
@@ -218,18 +216,11 @@ export function LibraryBanner({ api, tab }: { api: LibraryApi; tab?: LibraryTab 
       </div>
     )
   }
-  const n = api.counts.notConfigured
-  if (!n || tab === "not-configured" || !api.hydrated || api.demo) return null
-  const next = api.rows.find((r) => r.status === "not-configured")
-  return (
-    <div data-region="banner">
-      {/* The action only: the "Not configured" tab already carries the figure, so the banner does not repeat it as a title
-          (UX critique 2026-10-26, say it once). The action opens the first one; the configure page moves to the next. */}
-      <LocalBanner variant="warning" action={next ? { label: "Configure next", href: configureHref(next.id) } : undefined} data-not-configured-banner>
-        {notConfiguredBlock()}
-      </LocalBanner>
-    </div>
-  )
+  // The standing "Skills not configured cannot be sent or mapped. Configure next" banner is removed for now (Romit
+  // 2026-10-28, "Remove this for now"). The rule stays visible on the Not configured tab, the row chips and their tooltip
+  // [REQ IM-09, IM-10]; the configure receipt still offers "Configure next".
+  void tab
+  return null
 }
 
 /** Skeleton in the final layout: the tab row, then table rows at 48 px. */
