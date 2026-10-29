@@ -1384,14 +1384,14 @@ export const ruleAllowsCheckOff = (rule: LabRule): boolean => checkOffAllowedFor
 /** The score one tick records under this rule. */
 export const ruleCheckOffScore = (rule: LabRule): number => checkOffScore(rule.scaleMax, rule.scoredRule, rule.checkOff?.score, rule.questions.length)
 
-/** "Records Met", "Records Independent", ...: what one tick writes under this rule. */
+/** "A tick marks the student as met", "... as independent", "... at the level: works alone": what one tick writes. */
 export function ruleTickRecords(rule: LabRule): string {
   return tickRecordsLine(rule.model, { outcomeLabels: rule.outcomeLabels, qualifyingLabel: rule.qualifyingLabel, levels: rule.levels, levelIndex: rule.checkOff?.levelIndex, questions: rule.questions, score: ruleCheckOffScore(rule) })
 }
 
-/** "Allowed. Records Met" or "Not allowed": one line for Check and save and "What you changed". */
+/** "Allowed. A tick marks the student as met." or "Not allowed": one line for Check and save and "What you changed". */
 export function checkOffLine(rule: LabRule): string {
-  return ruleAllowsCheckOff(rule) ? `Allowed. ${ruleTickRecords(rule)}` : "Not allowed"
+  return ruleAllowsCheckOff(rule) ? `Allowed. ${ruleTickRecords(rule)}.` : "Not allowed"
 }
 
 /** Why the rule does not allow a check-off, in the same words the course offering page uses. */

@@ -4,6 +4,7 @@
  * (configure -> mapping -> library -> configure is a load-time cycle).
  */
 import type { EvalModel } from "@/lib/v2/types"
+import { inSentence } from "./terms"
 
 /** Group check-off allowed by default, per model [PROTO `MS`]. */
 export const CHECKOFF_DEFAULT: Record<EvalModel, boolean> = { binary: true, demonstration: true, question: false, scored: false }
@@ -28,12 +29,31 @@ export function checkOffScore(scaleMax: number, rule: { kind: string; value: num
   return Math.min(max, Math.max(1, v))
 }
 
-/** "Records Met", "Records Independent", "Records all 4 questions answered Yes", "Records 4 on every item" [PROTO `md`]. */
+/** Level labels that start with a verb or preposition do not read after "as" ("as works alone"), so they take the colon form. */
+const NOT_A_STATE = new Set(["works", "with", "needs", "requires", "under", "without"])
+
+/** "as independent", or "at the level: works alone" when the label starts with a verb or preposition. */
+export function levelPhrase(level: string): string {
+  const l = inSentence(level.trim())
+  const first = l.split(/\s+/)[0]?.toLowerCase() ?? ""
+  return NOT_A_STATE.has(first) ? `at the level: ${l}` : `as ${l}`
+}
+
+/**
+ * What one tick writes, said as what it does to the student (Romit 2026-10-29, chose "marks the student as…"; Sankalp: "Records
+ * Works alone" read as describing a student). No closing full stop; callers add it. Labels mid-sentence go through inSentence.
+ * "A tick marks the student as met", "A tick marks the student as independent", "A tick marks the student at the level: works
+ * alone", "A tick marks every question Yes" ("Yes" is the answer button, so it keeps its case), "A tick scores the student 4 on
+ * every item".
+ */
 export function tickRecordsLine(model: EvalModel | null, p: { outcomeLabels: readonly string[]; qualifyingLabel?: 0 | 1 | null; levels: readonly string[]; levelIndex: number | null | undefined; questions: readonly string[]; score: number }): string {
-  if (model === "binary") return `Records ${p.outcomeLabels[p.qualifyingLabel ?? 0] || "Met"}`
-  if (model === "demonstration") return `Records ${p.levels[checkOffLevelIndex(p.levels, p.levelIndex)] || "a level"}`
-  if (model === "question") return `Records all ${p.questions.length} questions answered Yes`
-  if (model === "scored") return `Records ${p.score} on every item`
+  if (model === "binary") return `A tick marks the student as ${inSentence(p.outcomeLabels[p.qualifyingLabel ?? 0] || "Met")}`
+  if (model === "demonstration") {
+    const level = p.levels[checkOffLevelIndex(p.levels, p.levelIndex)]
+    return level ? `A tick marks the student ${levelPhrase(level)}` : "A tick marks the student at a level"
+  }
+  if (model === "question") return "A tick marks every question Yes"
+  if (model === "scored") return `A tick scores the student ${p.score} on every item`
   return ""
 }
 

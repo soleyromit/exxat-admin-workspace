@@ -19,6 +19,22 @@ export const DEFAULT_TERMS: Terms = { skillNoun: "skill", skillNounPlural: "skil
 
 /** The person who records a group check-off on their own course (Romit 2026-10-28): persona name and the default "Recorded by". */
 export const COURSE_FACULTY = "Course faculty"
+
+/**
+ * A program label (a level, outcome, setting or role) placed mid-sentence (Romit 2026-10-29: "A tick records the level Works
+ * alone" read like a proper noun). Lowercases the first letter, unless the first word is an acronym or all-caps token (IV, BSN,
+ * NG, RN, CPR, NURS 350) or already has a capital after its first letter. Pills, badges, cells, options and sentence starts keep the
+ * label as written; never pass a person, course or program name.
+ */
+export function inSentence(label: string): string {
+  const first = label.trim().split(/[\s/(),-]+/)[0] ?? ""
+  if (!first) return label
+  const letters = first.replace(/[^A-Za-z]/g, "")
+  if (letters.length >= 2 && letters === letters.toUpperCase()) return label
+  if (/[A-Z]/.test(first.slice(1))) return label
+  const i = label.search(/[A-Za-z]/)
+  return i < 0 ? label : label.slice(0, i) + label[i].toLowerCase() + label.slice(i + 1)
+}
 export const TERMS_KEY = "lab:terms"
 
 let current: Terms = DEFAULT_TERMS

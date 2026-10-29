@@ -125,7 +125,10 @@ export function RecordedBanner({ m }: { m: CheckoffModel }) {
  * words). What a tick records, and "Needs approval", are in the ⓘ; approval also shows as one small clock glyph.
  */
 export function SkillHead({ k }: { k: SessionSkill }) {
-  const tip = k.reason ?? `${k.records}.${k.approval ? " Needs approval." : ""}`
+  const tip = k.reason ?? `${k.records}.${k.approval ? " Check-offs for this skill go to admin review." : ""}`
+  // The ⓘ only when it adds something (Sankalp 2026-10-29): a reason, a level, questions or a score, or approval. A plain
+  // Met or Unmet column with no approval needs no explanation.
+  const showTip = !!k.reason || k.skill.model !== "binary" || k.approval
   return (
     <div className="flex flex-col gap-1 py-1.5">
       <span className={cn("line-clamp-2 text-xs font-medium", k.reason ? "text-muted-foreground" : "text-foreground")}>{k.skill.name}</span>
@@ -138,12 +141,14 @@ export function SkillHead({ k }: { k: SessionSkill }) {
             <span className="sr-only">Needs approval</span>
           </span>
         ) : null}
-        <Tip label={tip}>
-          <span tabIndex={0} className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            <i className="fa-light fa-circle-info" aria-hidden="true" />
-            <span className="sr-only">{`${k.skill.name}: ${tip}`}</span>
-          </span>
-        </Tip>
+        {showTip ? (
+          <Tip label={tip}>
+            <span tabIndex={0} className="inline-flex size-5 items-center justify-center rounded-sm text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring" data-column-tip>
+              <i className="fa-light fa-circle-info" aria-hidden="true" />
+              <span className="sr-only">{`${k.skill.name}: ${tip}`}</span>
+            </span>
+          </Tip>
+        ) : null}
       </span>
     </div>
   )

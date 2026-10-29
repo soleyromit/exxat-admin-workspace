@@ -29,7 +29,7 @@ import {
 export interface SessionSkill extends MappedSkill {
   /** null when this recorder can check it off in this session. */
   reason: string | null
-  /** "Records Met" etc. */
+  /** "A tick marks the student as met" etc. */
   records: string
   approval: boolean
   selfEvaluation: boolean
