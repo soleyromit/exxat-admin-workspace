@@ -65,7 +65,7 @@ export function useCourseNarrow(rows: AttemptRow[], value: string | null) {
   return { courses, course, shown }
 }
 
-export function AttemptCourseSelect({ courses, total, value, onChange, id }: { courses: Array<{ id: string; code: string; n: number }>; total: number; value: string; onChange: (v: string) => void; id: string }) {
+export function AttemptCourseSelect({ courses, total: _total, value, onChange, id }: { courses: Array<{ id: string; code: string; n: number }>; total: number; value: string; onChange: (v: string) => void; id: string }) {
   if (courses.length === 0) return null
   return (
     <Select value={value} onValueChange={onChange}>

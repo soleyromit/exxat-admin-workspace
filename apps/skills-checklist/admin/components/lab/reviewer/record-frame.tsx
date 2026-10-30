@@ -18,7 +18,7 @@ import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { PageFrame } from "@/components/skills/page-header"
 import { reviewItemHref, studentRecord, type RecordEvaluation, type RecordSkill, type StudentRecordModel } from "@/lib/lab/reviewer"
-import { withScope, type LabScope } from "@/lib/lab/scope"
+import { type LabScope } from "@/lib/lab/scope"
 import { capitalize, skillNoun } from "@/lib/lab/terms"
 import { DecisionBanner, DecisionProvider, useDecisionUi } from "@/components/lab/reviewer/decisions"
 import { QueueSkeleton, RecordStatusBadge, SkillStateBadge } from "@/components/lab/reviewer/parts"

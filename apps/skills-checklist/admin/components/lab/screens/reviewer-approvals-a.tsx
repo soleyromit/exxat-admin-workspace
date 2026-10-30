@@ -79,7 +79,7 @@ function BulkSlot({ rows, selected, partial }: { rows: ReviewRow[]; selected: Se
 }
 
 /** The triage columns (REQ AR-01: student, skill, course, setting, location, evaluator and role on every row). Admin Approvals B reuses them. */
-export function triageColumns(scope: LabScope, ui: ReturnType<typeof useDecisionUi>): ColumnDef<ReviewRow>[] {
+export function triageColumns(scope: LabScope, _ui: ReturnType<typeof useDecisionUi>): ColumnDef<ReviewRow>[] {
   return [
     { key: "select", label: "Select", width: 44, resizable: false },
     {

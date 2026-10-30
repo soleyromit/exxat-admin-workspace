@@ -21,7 +21,7 @@ import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { MAPPING_LEVEL_LABEL, RECORD_STATE_META } from "@/lib/v2/labels"
 import { REQUIRED_SET_LABEL } from "@/lib/v2/population"
 import { ageLabel, courseLevels, shortDate, studentHref, waitingBins, type CourseExpectation, type SkillRecord, type StudentModel, type WaitingRow } from "@/lib/lab/student"
-import { FigureLink, LINK_IN_TABLE, NUM_LINK, SectionTitle, ShowAsTable, StateGlyph, stateKey, stateWord, useSvgFont } from "@/components/lab/student/parts"
+import { FigureLink, LINK_IN_TABLE, NUM_LINK, SectionTitle, ShowAsTable, StateGlyph, stateWord, useSvgFont } from "@/components/lab/student/parts"
 import { PaceChart } from "@/components/lab/student/progress"
 
 const THIS_TERM = REQUIRED_SET_LABEL.thisTerm

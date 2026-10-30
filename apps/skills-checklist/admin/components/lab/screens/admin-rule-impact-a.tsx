@@ -9,7 +9,6 @@
  */
 import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
-import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { FormPage, StickyFooter } from "@/components/lab/layout"
 import { HOW_MANY_LABEL, ruleSentence, type LabRule, type PublishMode } from "@/lib/lab/configure"
 import { EVIDENCE_CHOICE_MISSING, EvidenceChoice, ImpactSummary, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"

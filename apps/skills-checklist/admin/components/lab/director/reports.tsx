@@ -49,7 +49,11 @@ const PROG = RECORD_STATE_META.progress.label
 export type PeekHrefFn = (ref: PeekRef) => string
 
 /** Numbers right-aligned (design review 2026-10-30, CP-6): the header and the cell share one edge. */
-const endHeader = (label: string) => () => <span className="block w-full text-end">{label}</span>
+const endHeader = (label: string) => {
+  const EndHeader = () => <span className="block w-full text-end">{label}</span>
+  EndHeader.displayName = `EndHeader(${label})`
+  return EndHeader
+}
 const end = (node: React.ReactNode) => <span className="block w-full text-end">{node}</span>
 
 /**

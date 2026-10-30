@@ -9,7 +9,7 @@ import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { StatusBadge } from "@exxatdesignux/ui"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
-import { AGING_DAYS, CHECKOFF_METHOD, REASON_META, daysLabel, plural, type HoldReason, type QueueSummary, type RecordSkill, type RecordStatus } from "@/lib/lab/reviewer"
+import { AGING_DAYS, CHECKOFF_METHOD, REASON_META, daysLabel, type HoldReason, type QueueSummary, type RecordSkill, type RecordStatus } from "@/lib/lab/reviewer"
 
 import { EVALUATION_STATUS_LABEL, SENT_BACK_LABEL, SENT_FOR_NEW_EVALUATION_WORD, type RecordStateKey } from "@/lib/v2/labels"
 import { TYPE } from "@/components/lab/type-scale"
