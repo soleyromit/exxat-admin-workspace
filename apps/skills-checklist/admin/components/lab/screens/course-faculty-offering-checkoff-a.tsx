@@ -4,8 +4,9 @@
  * Course offering, Skills: group check-off, variant A (grid; PROTO `GS`, recommended). Staff signed in to Prism (faculty or a lab
  * instructor; role is a permission, D-X8) open the offering and tick skills off for the registered group in one sitting: students
  * down, the offering's mapped skills across. A skill is available only when its configuration allows group check-off (Configure,
- * "Group check-off"); the rest show greyed "Not available" with the reason. Cells already holding qualifying evidence, or with an
- * evaluation already out, are flagged and stay tickable. Record writes ordinary evaluations; skills that need approval go to
+ * "Group check-off"); the rest are not columns, and the skills picker lists them greyed with the reason (D-L8d). A student who
+ * already qualifies shows "Already qualifies" with no checkbox (D-L8d); a cell with an evaluation already out is flagged and stays
+ * tickable. The record bar is always present, quiet until something is ticked. Record writes ordinary evaluations; skills that need approval go to
  * Approvals. At 141 mapped skills the columns are chosen with a searchable picker (default: the first six, mandatory first).
  * Contract: docs/build/contracts/V2-05d-course-checkoff.md. URL: ?offering=.
  */
@@ -15,6 +16,7 @@ import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@exxatdesignux/ui/components/ui/command"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { cn } from "@exxatdesignux/ui/lib/utils"
@@ -42,10 +44,17 @@ export function CourseFacultyOfferingCheckoffA() {
 function Grid({ m }: { m: CheckoffModel }) {
   const o = m.offeringRow!
   const [chosen, setChosen] = React.useState<string[] | null>(null)
-  const columnIds = chosen ?? m.skills.slice(0, DEFAULT_COLUMNS).map((k) => k.skill.id)
-  const columns = columnIds.map((id) => m.skills.find((k) => k.skill.id === id)).filter((k): k is NonNullable<typeof k> => !!k)
+  // Only skills this session can check off are columns (D-L8d): no column of "-". A setting change that makes a chosen skill
+  // unavailable drops it from the grid; the picker still lists it, greyed, with the reason.
+  const columnIds = (chosen ?? m.eligible.slice(0, DEFAULT_COLUMNS).map((k) => k.skill.id)).filter((id) => m.eligible.some((k) => k.skill.id === id))
+  const columns = columnIds.map((id) => m.eligible.find((k) => k.skill.id === id)).filter((k): k is NonNullable<typeof k> => !!k)
   const toggleColumn = (id: string) => setChosen(columnIds.includes(id) ? columnIds.filter((x) => x !== id) : [...columnIds, id])
   const page = m.rows.slice(0, m.shown)
+  // Phone: one skill column at a time, picked in the grid's toolbar, so the grid fits 375 px with no cut column (anatomy A10,
+  // 2026-10-30). Every chosen column stays one pick away; nothing is dropped.
+  const [phonePick, setPhonePick] = React.useState<string | null>(null)
+  const phoneId = phonePick && columnIds.includes(phonePick) ? phonePick : columnIds[0]
+  const phoneOnly = (id: string) => (id !== phoneId ? "max-sm:hidden" : "")
 
   return (
     <PageFrame title={`${o.code} ${o.name}, ${o.term}`}>
@@ -58,16 +67,26 @@ function Grid({ m }: { m: CheckoffModel }) {
         {m.eligible.length === 0 ? <NothingToCheck /> : null}
         <Card size="sm" className="gap-0 overflow-hidden py-0" data-region="grid">
           <CardContent className="flex flex-wrap items-center gap-2 border-b border-border py-2">
-            <Input type="search" value={m.query} onChange={(e) => m.setQuery(e.target.value)} placeholder="Search the roster" aria-label="Search the roster" className="h-8 w-full sm:w-56" />
+            <Input type="search" value={m.query} onChange={(e) => m.setQuery(e.target.value)} placeholder="Search the roster" aria-label="Search the roster" className="h-8 min-w-0 flex-1 sm:w-56 sm:flex-none" />
             <ColumnPicker m={m} columnIds={columnIds} onToggle={toggleColumn} />
+            {columns.length > 1 ? (
+              <Select value={phoneId} onValueChange={setPhonePick}>
+                <SelectTrigger size="sm" className="w-full sm:hidden" aria-label={`${capitalize(skillNoun())} to check off`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {columns.map((k) => <SelectItem key={k.skill.id} value={k.skill.id}>{k.skill.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : null}
             <div className="sm:ms-auto"><Legend /></div>
           </CardContent>
           <Table scrollLabel={`Students by ${skillNounPlural()}`} containerClassName="max-h-[min(62dvh,640px)] overflow-auto">
             <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
-                <TableHead scope="col" className="sticky left-0 z-10 min-w-48 bg-card ps-3">{`Student (${m.rows.length})`}</TableHead>
+                <TableHead scope="col" className="sticky left-0 z-10 min-w-32 bg-card ps-3 sm:min-w-48">{`Student (${m.rows.length})`}</TableHead>
                 {columns.map((k) => (
-                  <TableHead key={k.skill.id} scope="col" className="min-w-40 align-bottom whitespace-normal" data-column-state={k.reason ? "unavailable" : "available"}>
+                  <TableHead key={k.skill.id} scope="col" className={cn("min-w-36 align-bottom whitespace-normal", phoneOnly(k.skill.id))} data-column-state={k.reason ? "unavailable" : "available"}>
                     <SkillHead k={k} />
                   </TableHead>
                 ))}
@@ -81,7 +100,7 @@ function Grid({ m }: { m: CheckoffModel }) {
                     <p className="text-xs text-muted-foreground">{[p.cohort, p.group].filter(Boolean).join(" · ")}</p>
                   </TableHead>
                   {columns.map((k) => (
-                    <TableCell key={k.skill.id} className="py-1.5">
+                    <TableCell key={k.skill.id} className={cn("py-1.5", phoneOnly(k.skill.id))}>
                       <CheckCell m={m} studentId={p.id} studentName={p.name} k={k} />
                     </TableCell>
                   ))}
@@ -128,8 +147,8 @@ function ColumnPicker({ m, columnIds, onToggle }: { m: CheckoffModel; columnIds:
                   {g.list.map((k) => {
                     const on = columnIds.includes(k.skill.id)
                     return (
-                      <CommandItem key={k.skill.id} value={`${k.skill.name} ${k.skill.id}`} onSelect={() => onToggle(k.skill.id)} aria-selected={on}>
-                        <i className={cn("fa-light", on ? "fa-square-check" : "fa-square")} aria-hidden="true" />
+                      <CommandItem key={k.skill.id} value={`${k.skill.name} ${k.skill.id}`} onSelect={() => onToggle(k.skill.id)} aria-selected={on} disabled={!!k.reason} data-picker-unavailable={k.reason ? k.skill.id : undefined}>
+                        {k.reason ? <i className="fa-light fa-ban" aria-hidden="true" /> : <i className={cn("fa-light", on ? "fa-square-check" : "fa-square")} aria-hidden="true" />}
                         <span className="flex min-w-0 flex-col">
                           <span className={cn("truncate", k.reason && "text-muted-foreground")}>{k.skill.name}</span>
                           <span className="text-xs text-muted-foreground">{k.reason ? `${k.levelLabel} · ${shortReason(k.reason)}` : k.levelLabel}</span>

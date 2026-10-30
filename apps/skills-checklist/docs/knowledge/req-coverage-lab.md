@@ -18,6 +18,33 @@
   - SL-11: `openToLog` and `skillRowsFor` ignore `Skill.active`.
 - **One auditor verdict was overruled.** The CM/ST auditor marked "inactive skills not selectable for submission" as MET, reading inactive as `published === false`. Deactivation sets `Skill.active = false` (`lib/v2/admin-actions.ts:193-200`), and `openToLog` (`lib/v2/student.ts:493`) never checks it. SL-11 therefore stays MISSING on the student pickers.
 
+## Update 2026-10-30: Wave 1 (all P0 rows re-verified)
+All 8 P0 gaps in section 2 are now **MET**. Most were already fixed by commits 20501f64 and d38054ea (Oct 27–28); Wave 1 closed what remained and added tests:
+- **SL-02:** description in every add path; editable in the panel. Test: `tests/lab/library-sl02-sl06.test.tsx`.
+- **SL-06:** one shared vocabulary; inactive entries are not offered, and assigned ones are marked "Inactive". Same test file.
+- **SL-11:** inactive skills are out of course mapping A/B and out of the Log and Send pickers. Tests: `mapping-sl11-cm.test.ts`, `student-submission-p0.test.ts`.
+- **ST-12:** student note on Log and Send; shown in full on the evaluator form (also EV-04).
+- **ST-05/08/09:** lab and simulation route on Send with lab instructors; lab evidence carries no clinical setting.
+- **ST-10:** detail fields come from the skill's configuration, and Send is blocked until mandatory ones are filled. Browser check: `tests/lab/e2e-student-submission-p0.mjs`, 14 of 14 pass.
+- **SC-13, SC-15, SC-07:** saved and read back in A/B/C. Test: `configure-roundtrip.test.ts`.
+
+Recount after Wave 1: 62 of 123 MET (50%). SC-15 on the student side is still **PARTIAL**: seeded skills without the flag fall back to "has levels", and the same fallback exists in configure.ts:200. The counts below are the Oct 27 baseline and have not been recounted.
+
+## Update 2026-10-30: Wave 2 (P1 core)
+These requirements are now **MET**:
+- **IM-10, IM-14:** one shared save path for applying a configuration to several skills, with "N left to configure". Test: `configure-bulk-ae07.test.tsx`.
+- **SC-05:** C's question subset.
+- **AE-07:** check-off level remap on remove, move and preset.
+- **AR-03, RP-07:** one read-only evaluation renderer, `components/lab/evaluation/evaluation-view.tsx`. Tests: `evaluation-renderer.test.tsx`. The attainment peek A and the director peek share the component but were not click-tested.
+- **RP-01, RP-09, AE-04:** confirmed in all 19 reporting variants. Fixed: the director live region, the recount line on an impossible scope, and the director reports B columns. Tests: `reporting-wave2.test.tsx`.
+
+Still **PARTIAL**:
+- **SH-07:** the student record at 375 has no direct View link; it takes 2 taps via skill detail.
+- **SC-06:** no paste or select-all for 50 to 100 questions.
+- **SC-19:** rule impact A has no student or evaluator view.
+
+Recount: 71 of 123 MET (58%), or 71 of 109 (65%) excluding SEAM and UNCHECKED. Integration: tsc clean; `vitest run tests` gives 170 files, 2533 tests; the DS and chrome gates pass. One queue reason moved from rule to disagree, for `sub-g-043`, because the student's self-rating now counts in the comparison (AR-02).
+
 ## 1. Summary counts
 
 ### Per requirement (worst status across its screens)

@@ -23,7 +23,7 @@ import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { FormPage, StickyFooter, ValidationSummary } from "@/components/lab/layout"
-import { bulkImpact, configureStepHead, hasNeed, ruleMeaning, saveLabRule, type LabRule, type PublishMode, type RuleIssue, type SetupGroup } from "@/lib/lab/configure"
+import { bulkImpact, configureStepHead, hasNeed, leftToConfigure, ruleMeaning, saveLabRuleToMany, type LabRule, type PublishMode, type RuleIssue, type SetupGroup } from "@/lib/lab/configure"
 import { buildLibrary } from "@/lib/lab/library"
 import type { V2State } from "@/lib/v2/types"
 import { skillById } from "@/lib/v2/evidence-index"
@@ -35,7 +35,7 @@ import { ModelSection, OutcomesSection, RuleSection, SignOffSection, WithMeaning
 import { ConfigSection } from "@/components/lab/configure/section"
 import { EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
 import { CheckSection, ConfigureReceiptPage, EvidenceDecision, ManyLedger, openDecisions, PeopleSee, Readiness, ReceiptFooter, saveBlockedReason, SavedBanner, SetupSummary, WhoItAffects } from "@/components/lab/configure/check"
-import { CopyFromDialog } from "@/components/lab/configure/bulk-apply"
+import { BulkApplySheet, bulkAppliedNote, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { SentenceBuilder } from "@/components/lab/configure/sentence-builder"
 import { ConfigureLoading, ConfigureNotFound, LeaveButton, SkillTitle } from "@/components/lab/configure/shell"
@@ -52,6 +52,7 @@ export function AdminConfigureSkillC() {
   const [modeTried, setModeTried] = React.useState(false)
   const [manyDone, setManyDone] = React.useState<{ ids: string[]; rule: LabRule } | null>(null)
   const [copyOpen, setCopyOpen] = React.useState(false)
+  const [bulkOpen, setBulkOpen] = React.useState(false)
   const [note, setNote] = React.useState<string | null>(null)
   const impact = useLiveImpact(m.state, m.skill, m.current, m.rule)
 
@@ -82,7 +83,7 @@ export function AdminConfigureSkillC() {
         title={`Configure ${countSkills(manyDone.ids.length)}`}
         subtitle={<span>{`${targets.slice(0, 2).map((t) => t.name).join(", ")}${targets.length > 2 ? ` and ${targets.length - 2} more` : ""}`}</span>}
         banner={<SavedBanner title={`${countSkills(manyDone.ids.length)} configured`} body="Each now uses this rule and can be mapped to courses." />}
-        footer={<ReceiptFooter skillIds={manyDone.ids} nextSkill={nextAfterMany} />}
+        footer={<ReceiptFooter skillIds={manyDone.ids} nextSkill={nextAfterMany} left={leftToConfigure(m.state)} />}
       >
         <div className="@container flex flex-col gap-8" data-receipt>
           <CheckSection title="What was saved">
@@ -134,17 +135,19 @@ export function AdminConfigureSkillC() {
       m.save(choice ? mode : null)
       return
     }
-    // Several at once [REQ IM-14]: the same rule is saved to each skill, each gets its own rule version. "New evidence only" is
-    // not decided, so it writes nothing (as for one skill).
+    // Several at once [REQ IM-14]: the same rule is saved to each skill through the one-skill save path (saveLabRuleToMany), each
+    // gets its own rule version. "New evidence only" is not decided, so it writes nothing (as for one skill).
     const ids = targets.map((t) => t.id)
+    let written = ids
     if (mode !== "new-only") {
       const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
-      store.update((s) => ids.reduce((acc, id) => {
-        const r = saveLabRule(acc, id, m.rule, { at, byId: IDS.ross, mode })
-        return r.ok && r.written ? r.state : acc
-      }, s))
+      store.update((s) => {
+        const r = saveLabRuleToMany(s, ids, m.rule, { at, byId: IDS.ross, mode })
+        written = r.written
+        return r.written.length ? r.state : s
+      })
     }
-    setManyDone({ ids, rule: m.rule })
+    setManyDone({ ids: written, rule: m.rule })
   }
 
   const banner = !checking && showErrors && n > 0 ? (
@@ -194,6 +197,10 @@ export function AdminConfigureSkillC() {
       actions={
         <div className="flex items-center gap-2">
           <LeaveButton dirty={m.dirty} skillId={skill.id} onSaveDraft={() => m.saveDraft(checking ? "check" : null)} />
+          {/* One action is a button, not a one-item menu (D-L8b, Romit 2026-10-30): several at once offers only Copy. */}
+          {isMany ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => setCopyOpen(true)}>{`Copy from another ${skillNoun()}`}</Button>
+          ) : (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" size="icon-sm" aria-label="More actions">
@@ -202,14 +209,19 @@ export function AdminConfigureSkillC() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setCopyOpen(true)}>{`Copy from another ${skillNoun()}`}</DropdownMenuItem>
+              {/* Several at once is this page's own mode (?skills=); one skill offers the same through the sheet [REQ IM-14]. */}
+              {!isMany ? <DropdownMenuItem disabled={!m.rule.model} onSelect={() => setBulkOpen(true)}>{`Apply to other ${skillNounPlural()}`}</DropdownMenuItem> : null}
               {!isMany && m.draft ? <DropdownMenuItem onSelect={() => m.discardDraft()}>Discard draft</DropdownMenuItem> : null}
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </div>
       }
       banner={banner}
       // D-X30: what students and evaluators will see, beside the sentence from 1280 px. Check shows both views itself.
-      aside={checking ? undefined : <RulePreviewAside skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} impact={isMany ? null : impact} showRule={false} />}
+      // Check (SC-19): the student and evaluator views stay beside the review from 1280 px, so the admin reads what each person
+      // will be asked next to who it affects, not only the impact (2026-10-30 review). Below 1280 px they follow inline.
+      aside={checking ? (m.rule.model ? <PeopleSee skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} /> : undefined) : <RulePreviewAside skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} current={isMany ? undefined : m.current} impact={isMany ? null : impact} showRule={false} />}
       footer={footer}
     >
       {checking ? (
@@ -221,7 +233,7 @@ export function AdminConfigureSkillC() {
             badge={open === 0 ? <Readiness open={0} /> : undefined}
           >
             {/* The evidence choice is a part to decide too: first, at the width of one card. */}
-            {choice ? <EvidenceDecision mode={mode} onMode={setMode} error={modeTried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} className="@min-[44rem]:max-w-[calc(50%-0.5rem)]" /> : null}
+            {choice ? <EvidenceDecision mode={mode} onMode={setMode} error={modeTried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
             <SetupSummary rule={m.rule} current={isMany ? null : m.current} issues={m.issues} layout="ledger" onEdit={editGroup} onFix={goToIssue} />
           </CheckSection>
           <CheckSection title="Who it affects">
@@ -231,7 +243,7 @@ export function AdminConfigureSkillC() {
               <WhoItAffects state={m.state} skill={skill} current={m.current} rule={m.rule} impact={impact} mode={mode} />
             )}
           </CheckSection>
-          {m.rule.model ? <PeopleSee skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} /> : null}
+          {m.rule.model ? <PeopleSee className="min-[1280px]:hidden" skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} /> : null}
         </div>
       ) : (
         // Numbered sections, one style (Romit 2026-10-27, "need a good and proper content hierarchy"): how it is judged, what
@@ -276,7 +288,16 @@ export function AdminConfigureSkillC() {
             setNote(`Copied from ${name}. Check the rule before saving.`)
           }}
         />
-      
+        <BulkApplySheet
+          open={bulkOpen}
+          onOpenChange={setBulkOpen}
+          state={m.state}
+          skillId={m.skillId}
+          rule={m.rule}
+          blocked={m.issues.length > 0}
+          onApplied={(x) => setNote(bulkAppliedNote(x))}
+        />
+
     </>
   )
 }

@@ -81,8 +81,8 @@ describe("AR-03: the reviewer examines the full set of responses", () => {
     expect(c.rows[c.rows.length - 1]).toMatchObject({ label: "Outcome", evaluator: "Met" })
   })
 
-  it("renders the self-evaluation note on the review item (every variant uses CompareTable)", () => {
-    expect(src("components/lab/reviewer/review-parts.tsx")).toMatch(/showNote && c\.selfNote/)
-    for (const v of ["a", "b", "c"]) expect(src(`components/lab/screens/reviewer-review-item-${v}.tsx`)).toMatch(/<CompareTable key=\{c\.evaluationId\} c=\{c\}( checkoff=\{isCheckoff\(d\.row\)\})? \/>/)
+  it("renders the self-evaluation note on the review item (every variant uses the shared renderer)", () => {
+    expect(src("components/lab/evaluation/evaluation-view.tsx")).toMatch(/v\.studentNote \?/)
+    for (const v of ["a", "b", "c"]) expect(src(`components/lab/screens/reviewer-review-item-${v}.tsx`)).toMatch(/<ReviewResponses state=\{ctx\.state\} d=\{d\} \/>/)
   })
 })

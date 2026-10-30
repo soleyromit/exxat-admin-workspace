@@ -1,7 +1,7 @@
 import { approvalTotals, approvalsInScope } from "./approvals"
 import { students } from "./filters"
 import { placementsEnding, PLACEMENT_ENDING_DAYS } from "./placements"
-import { DEFAULT_SCOPE, isConfigured, openRequests, populationRows, populationTotals, requiredToComplete, type PopulationScope } from "./population"
+import { DEFAULT_SCOPE, isConfigured, openRequestsIn, populationRows, populationTotals, requiredToComplete, type PopulationScope } from "./population"
 import { DEMO_TODAY } from "./seed-core"
 import type { Person, V2State } from "./types"
 
@@ -73,7 +73,7 @@ export const FACT_SOURCE: Record<keyof Facts, string> = {
   mandatoryAchieved: "population.populationTotals().achieved",
   achievedPct: "population.populationTotals().achievedPct",
   behind: "population.populationTotals().behind",
-  waitingRequests: "population.openRequests(state, pop.ids).length",
+  waitingRequests: "population.openRequestsIn(state, pop.ids, scope).length",
   awaitingApproval: "approvals.approvalsInScope(state, scope).entries.length",
   awaitingApprovalEvaluations: "approvals.approvalTotals().evaluations",
   awaitingApprovalStatusRows: "approvals.approvalTotals().statusRows",
@@ -108,7 +108,7 @@ export function facts(state: V2State, scope: PopulationScope = DEFAULT_SCOPE, to
     mandatoryAchieved: tot.achieved,
     achievedPct: tot.achievedPct,
     behind: tot.behind,
-    waitingRequests: openRequests(state, pop.ids).length,
+    waitingRequests: openRequestsIn(state, pop.ids, scope).length,
     awaitingApproval: qt.entries,
     awaitingApprovalEvaluations: qt.evaluations,
     awaitingApprovalStatusRows: qt.statusRows,

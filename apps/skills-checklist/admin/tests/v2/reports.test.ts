@@ -382,7 +382,7 @@ describe("RP-01 and RP-08: cohort, group, course, tag and location filters", () 
 
   it("RP-09: a location that does not offer the chosen setting is explained, with the one filter to clear", () => {
     const f = F({ location: "Harbor Outpatient Clinic", clinicalSetting: "Inpatient" })
-    expect(explainFilters(f, s)).toMatch(/does not offer the Inpatient clinical setting/)
+    expect(explainFilters(f, s)).toMatch(/does not offer the inpatient clinical setting/)
     expect(conflictFix(f, s)?.keys).toEqual(["location"])
     expect(explainFilters(F({ location: "Skills lab 2", setting: "clinical" }), s)).toMatch(/does not offer clinical evidence/)
     expect(explainFilters(F({ location: "Skills lab 2", setting: "lab" }), s)).toBeNull()

@@ -10,7 +10,6 @@
 import * as React from "react"
 import { LabLink as Link, useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { PersonIdentityCell } from "@exxatdesignux/ui/components/data-views/person-identity-cell"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
@@ -18,9 +17,9 @@ import { isCheckoff, bulkCheck, recordHref, reviewItemHref, skillsLine, whereLin
 import { capitalize, skillNoun } from "@/lib/lab/terms"
 import type { LabScope } from "@/lib/lab/scope"
 import { ApprovalsFrame, RegionError } from "@/components/lab/reviewer/approvals-frame"
-import { EvaluatorMenu, useDecisionUi } from "@/components/lab/reviewer/decisions"
+import { RowActionsMenu, useDecisionUi } from "@/components/lab/reviewer/decisions"
 import { AgeText, CheckoffTag, EvaluatorName, ReasonBadge, SummaryLine } from "@/components/lab/reviewer/parts"
-import { APPROVE_HINT, SEND_BACK_LABEL } from "@/lib/v2/labels"
+import { APPROVE_HINT } from "@/lib/v2/labels"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { initialsOf } from "@/lib/v2/format"
@@ -86,30 +85,32 @@ export function triageColumns(scope: LabScope, ui: ReturnType<typeof useDecision
     {
       key: "student",
       label: "Student",
-      width: 168,
+      // Widths fit the 1440 content column (anatomy A10, 2026-10-30): no column is cut at the table edge. Names wrap at spaces,
+      // never truncate (anatomy A12, 2026-10-30).
+      width: 192,
       sortable: true,
-      cell: (r) => <PersonIdentityCell name={r.student} initials={initialsOf(r.student)} renderName={(n) => <Link className={LINK} href={recordHref(scope, r.studentId)}>{n}</Link>} />,
+      cell: (r) => <PersonIdentityCell name={r.student} initials={initialsOf(r.student)} renderName={(n) => <Link className={`${LINK} block whitespace-normal`} href={recordHref(scope, r.studentId)}>{n}</Link>} />,
     },
     {
       key: "skills",
       label: capitalize(skillNoun()),
-      width: 220,
+      width: 208,
       cell: (r) => (
         <span className="flex min-w-0 flex-col py-0.5">
-          <Link className={`${LINK} truncate`} href={reviewItemHref(scope, r.key)} title={r.skills.length > 1 ? skillsLine(r) : undefined}>
+          <Link className={`${LINK} whitespace-normal`} href={reviewItemHref(scope, r.key)} title={skillsLine(r)}>
             {r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}
           </Link>
           {/* Course, setting and location on one subline (REQ AR-01), so the row carries every required fact without a new column. */}
-          <span className="truncate text-xs text-muted-foreground" title={whereLine(r)} data-row-where>{whereLine(r)}</span>
+          <span className="whitespace-normal text-xs text-muted-foreground" title={whereLine(r)} data-row-where>{whereLine(r)}</span>
           {isCheckoff(r) ? <CheckoffTag /> : null}
         </span>
       ),
     },
-    { key: "days", label: "Waiting", width: 88, sortable: true, cell: (r) => <AgeText days={r.days} /> },
+    { key: "days", label: "Waiting", width: 100, sortable: true, cell: (r) => <AgeText days={r.days} /> },
     {
       key: "why",
       label: "Waiting because",
-      width: 210,
+      width: 200,
       // Wraps to a second line rather than cut the reason off (the words are the point, Romit 2026-10-27).
       cell: (r) => <span className="block py-1"><ReasonBadge row={r} wrap /></span>,
     },
@@ -122,31 +123,22 @@ export function triageColumns(scope: LabScope, ui: ReturnType<typeof useDecision
     },
     {
       key: "actions",
-      label: "Decide",
-      width: 236,
+      label: "Actions",
+      width: 128,
       resizable: false,
       defaultPin: "right",
       lockPin: true,
-      header: () => <span className="sr-only">Decide</span>,
-      cell: (r) =>
-        r.likeKey ? (
-          <span className="flex items-center gap-1">
-            {/* Row Approve stays outline: a filled button on every row breaks the list budget (one primary per screen,
-                strategy/07). The page's one filled action is the bulk "Approve n"; Send back is the quieter ghost. The tip says
-                what Approve does (REQ AR-05, AR-06). */}
-            <Tip label={APPROVE_HINT}>
-              <Button type="button" variant="outline" size="sm" onClick={() => ui.approve([r])} aria-label={`Approve ${r.student}, ${r.skills.join(", ")}. ${APPROVE_HINT}`}>Approve</Button>
-            </Tip>
-            <Button type="button" variant="ghost" size="sm" onClick={() => ui.openReturn(r)} aria-label={`${SEND_BACK_LABEL}: ${r.student}, ${r.skills.join(", ")}`}>{SEND_BACK_LABEL}</Button>
-          </span>
-        ) : r.reason === "new-evaluator" ? (
-          // One short menu instead of two buttons: adopt or merge the typed name, or assign the evidence to someone else.
-          <EvaluatorMenu row={r} adoptLabel={`Adopt or merge ${r.evaluator}`} />
-        ) : (
+      // One predictable layout on every row (design review 2026-10-30, others #3): Review opens the decision (full answers, the
+      // setting that holds it, Approve with its hint "Counts toward progress now", Send back, REQ AR-04..06); the row's quick
+      // decisions (Approve, Send back, or Adopt, merge, assign for a typed evaluator name) sit in one overflow beside it.
+      cell: (r) => (
+        <span className="flex items-center gap-1">
           <Button asChild variant="ghost" size="sm">
             <Link href={reviewItemHref(scope, r.key)} aria-label={`Review ${r.student}, ${r.skills.join(", ")}`}>Review</Link>
           </Button>
-        ),
+          <RowActionsMenu row={r} approveHint={APPROVE_HINT} />
+        </span>
+      ),
     },
   ]
 }

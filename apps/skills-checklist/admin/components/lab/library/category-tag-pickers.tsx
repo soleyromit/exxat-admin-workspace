@@ -29,9 +29,17 @@ export function useVocabOptions() {
   return React.useMemo(() => vocabPickerOptions(state), [state])
 }
 
-/** "Inactive" beside a value that was deactivated after it was assigned (SL-06). */
-function InactiveMark() {
-  return <span className="shrink-0 text-xs text-muted-foreground">Inactive</span>
+/**
+ * "Inactive" beside a category or tag that was deactivated after it was assigned (SL-06): glyph plus word, never colour alone.
+ * Shared by the pickers, the library rows, the skill panel and the import review.
+ */
+export function InactiveMark() {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground" data-vocab-inactive>
+      <i className="fa-light fa-circle-minus" aria-hidden="true" />
+      Inactive
+    </span>
+  )
 }
 
 const clean = (s: string) => s.trim().replace(/\s+/g, " ")
@@ -157,15 +165,19 @@ export function TagsPicker({ id, labelId, value, options, inactive = [], onChang
     .slice(0, MAX_SUGGESTIONS)
   // An inactive tag is neither suggested nor re-created under the same name (SL-06).
   const exact = typed && (options.some((o) => normName(o) === normName(typed)) || has(typed) || isInactive(typed))
-  const rows: Array<{ kind: "tag" | "create"; label: string }> = [
+  // Typing a deactivated tag's name says so, instead of offering it or creating it again (SL-06).
+  const typedInactive = !!typed && isInactive(typed) && !has(typed)
+  const rows: Array<{ kind: "tag" | "create" | "inactive"; label: string }> = [
     ...matches.map((m) => ({ kind: "tag" as const, label: m })),
     ...(typed && !exact ? [{ kind: "create" as const, label: typed }] : []),
+    ...(typedInactive ? [{ kind: "inactive" as const, label: typed }] : []),
   ]
   const shown = open && rows.length > 0
   const at = Math.min(active, Math.max(rows.length - 1, 0))
 
   const commit = (t: string) => {
     const tag = clean(t)
+    if (tag && isInactive(tag) && !has(tag)) return
     if (tag && !has(tag)) onChange(mergeTags(value, [tag]))
     setText("")
     setActive(0)
@@ -244,7 +256,7 @@ export function TagsPicker({ id, labelId, value, options, inactive = [], onChang
               if (v.includes(",")) {
                 const parts = v.split(",")
                 const last = parts.pop() ?? ""
-                const add = parts.map(clean).filter(Boolean)
+                const add = parts.map(clean).filter((x) => !!x && !isInactive(x))
                 if (add.length) onChange(mergeTags(value, add))
                 setText(last)
               } else setText(v)
@@ -271,17 +283,53 @@ export function TagsPicker({ id, labelId, value, options, inactive = [], onChang
               id={`${listId}-${i}`}
               role="option"
               aria-selected={i === at}
+              aria-disabled={r.kind === "inactive" || undefined}
               data-create-tag={r.kind === "create" || undefined}
               className={`flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm text-foreground ${i === at ? "bg-accent text-accent-foreground" : ""}`}
               onMouseDown={(e) => e.preventDefault()}
               onMouseEnter={() => setActive(i)}
               onClick={() => commit(r.label)}
             >
-              <span className="truncate">{r.kind === "create" ? `Create "${r.label}"` : r.label}</span>
+              {r.kind === "inactive" ? (
+                <span className="flex min-w-0 items-center gap-2 text-muted-foreground"><span className="truncate">{r.label}</span><InactiveMark /></span>
+              ) : (
+                <span className="truncate">{r.kind === "create" ? `Create "${r.label}"` : r.label}</span>
+              )}
             </li>
           ))}
         </ul>
       </PopoverContent>
     </Popover>
+  )
+}
+
+/** A skill's tags as chips, each deactivated one marked "Inactive" (SL-06). Read-only: the library table and the skill panel. */
+export function TagBadges({ tags, inactive = [] }: { tags: readonly string[]; inactive?: readonly string[] }) {
+  const off = new Set(inactive.map(normName))
+  return (
+    <span className="flex flex-wrap gap-1">
+      {tags.map((t) => (
+        <Badge key={t} variant="secondary" className="gap-1.5">
+          {t}
+          {off.has(normName(t)) ? <InactiveMark /> : null}
+        </Badge>
+      ))}
+    </span>
+  )
+}
+
+/** The tags line under a skill name ("tag glyph, a, b"), with a deactivated tag followed by "(inactive)" in words (SL-06). */
+export function tagLineText(tags: readonly string[], inactive: readonly string[] = []): string {
+  const off = new Set(inactive.map(normName))
+  return tags.map((t) => (off.has(normName(t)) ? `${t} (inactive)` : t)).join(", ")
+}
+
+/** A category name, followed by "Inactive" when it was deactivated after it was assigned (SL-06). */
+export function CategoryName({ name, inactive }: { name: string; inactive: boolean }) {
+  return (
+    <span className="inline-flex min-w-0 items-center gap-2">
+      <span className="truncate">{name}</span>
+      {inactive ? <InactiveMark /> : null}
+    </span>
   )
 }

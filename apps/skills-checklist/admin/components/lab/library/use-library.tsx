@@ -120,20 +120,39 @@ export function useLibrary() {
   /** Add several (add a skill, variant C): every name becomes a skill that is not configured, in one category or none. */
   const addMany = React.useCallback((items: SeveralItem[], defaults: { category: string; tags: string[] }): string[] => {
     const stamp = Date.now().toString(36)
-    const skills = severalDrafts(items, defaults).map((d) => {
+    // A line that replaces a library twin [REQ IM-06] updates that skill's details in place, keeping its id; the rest are new.
+    const fresh = items.filter((it) => !it.replaces)
+    const replacing = items.filter((it) => it.replaces)
+    const skills = severalDrafts(fresh, defaults).map((d) => {
       seq.current += 1
       return draftToSkill(d, `lab-skill-${stamp}-${seq.current}`)
     })
-    keepAdded(skills)
+    if (skills.length) keepAdded(skills)
+    if (replacing.length) {
+      const drafts = severalDrafts(replacing, defaults)
+      keepVocab(drafts.map((d, i) => draftToSkill(d, replacing[i]!.replaces!)))
+      setOverlay((o) => {
+        let next = o
+        drafts.forEach((d, i) => {
+          const id = replacing[i]!.replaces!
+          const s = draftToSkill(d, id)
+          next = next.added.some((a) => a.id === id)
+            ? { ...next, added: next.added.map((a) => (a.id === id ? { ...a, ...s } : a)) }
+            : { ...next, edits: { ...next.edits, [id]: { name: s.name, description: s.description ?? "", section: s.section, group: s.group, category: s.category, tags: s.tags } } }
+        })
+        return next
+      })
+    }
     const ids = skills.map((k) => k.id)
+    const replaced = replacing.length ? ` ${countSkills(replacing.length)} replaced.` : ""
     setBanner({
       variant: "success",
-      title: `${countSkills(ids.length)} added`,
-      body: "Not configured yet.",
-      action: (() => { const c = configureMany(ids); return { label: c.many ? "Configure them together" : c.label, href: c.href } })(),
+      title: ids.length ? `${countSkills(ids.length)} added` : `${countSkills(replacing.length)} replaced`,
+      body: ids.length ? `Not configured yet.${replaced}` : "Not configured yet.",
+      action: (() => { const c = configureMany([...ids, ...replacing.map((it) => it.replaces!)]); return { label: c.many ? "Configure them together" : c.label, href: c.href } })(),
     })
     return ids
-  }, [configureMany, keepAdded])
+  }, [configureMany, keepAdded, keepVocab])
 
   const edit = React.useCallback((id: string, d: SkillDraft) => {
     keepVocab([draftToSkill(d, id)])

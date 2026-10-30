@@ -6,6 +6,7 @@
  * and marks the cut, then the opened email as compact rows, one button per request (ledger D-L2). Question: can a preceptor tell
  * who and how many without opening it? Content only; nothing is sent (REQ section 14). Expiry is OD-18 (open), a sample date.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
@@ -14,7 +15,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
-import { buildInvitation, inboxPreview, EVALUATOR_ID, PREVIEW_CHARS, SEED_REQUEST_ID, type Invitation } from "@/lib/lab/evaluator"
+import { buildInvitation, inboxPreview, EVALUATOR_ID, SEED_REQUEST_ID, type Invitation } from "@/lib/lab/evaluator"
 import { EvLabControls } from "@/components/lab/evaluator/lab-controls"
 import { useLabParams } from "@/components/lab/evaluator/use-evaluator"
 import { skillsWord } from "@/components/lab/evaluator/fields"
@@ -60,14 +61,14 @@ export function EvaluatorInvitationEmailB() {
     <>
       <EvLabControls states={STATES} defaultState="all" showSample={false} options={[]} />
       <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 py-5 sm:px-6">
-        <PageHeader title="Invitation email" subtitle={`Before and after opening. First ${PREVIEW_CHARS} characters in ink.`} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
+        <PageHeader title="Invitation email" className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
         {!hydrated || !mail || !all || !one ? (
           <Skeleton className="h-96 w-full" />
         ) : (
           <>
             <Card size="sm" data-region="inbox">
               <CardHeader className="pb-0">
-                <CardTitle className="text-sm">Inbox preview</CardTitle>
+                <CardTitle className={TYPE.card}>Inbox preview</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="flex flex-col divide-y divide-border">
@@ -79,7 +80,7 @@ export function EvaluatorInvitationEmailB() {
             <Card size="sm" aria-label="Email preview, opened" data-region="opened" data-artifact-preview>
               <CardHeader className="gap-1 pb-0">
                 <Badge variant="secondary" className="w-fit">Email preview</Badge>
-                <CardTitle className="text-base">{mail.subject}</CardTitle>
+                <CardTitle className={TYPE.card}>{mail.subject}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-3 text-sm">
                 <p>{mail.greeting}</p>

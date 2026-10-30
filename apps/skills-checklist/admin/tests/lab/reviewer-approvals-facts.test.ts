@@ -44,7 +44,9 @@ describe("AR-01: every approvals row carries the seven facts", () => {
     const c = src("reviewer-approvals-c.tsx")
     expect(c).toMatch(/whereLine\(r\)/)
     expect(c).toMatch(/evaluatorLine\(r\)/)
-    expect(c).toMatch(/role=\{r\.evaluatorRole\}/)
+    // C says the evaluator once per card, name and role on one line (evaluatorLine), in every column: no second name badge.
+    expect(c.match(/data-row-evaluator/g)).toHaveLength(1)
+    expect(c).not.toMatch(/<EvaluatorName/)
     // Admin A is the reviewer list itself; Admin B lists each submission with the same triage columns.
     expect(src("admin-approvals-a.tsx")).toMatch(/<ReviewerApprovalsA \/>/)
     expect(src("admin-approvals-b.tsx")).toMatch(/triageColumns\(scope, ui\)/)

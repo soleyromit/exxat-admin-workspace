@@ -163,8 +163,8 @@ describe("FailedRuleExplainer (SH-03)", () => {
   it("explains the DEFECT-07 case (4 of 4 but not achieved) by the settings", () => {
     const r = S.failedRule(db, SCENARIO.olivia, "sk-wound")!
     render(<FailedRuleExplainer ctx={C.ruleContext(db, db.skills.find((s) => s.id === "sk-wound")!)} skillReasons={r.skillReasons} noun="demonstrations" />)
-    expect(screen.getByText("You need 1 in Inpatient and have 0.")).toBeInTheDocument()
-    expect(screen.getByText("You need 1 in Emergency and have 0.")).toBeInTheDocument()
+    expect(screen.getByText("You need 1 in inpatient and have 0.")).toBeInTheDocument()
+    expect(screen.getByText("You need 1 in emergency and have 0.")).toBeInTheDocument()
   })
 
   it("renders nothing when there is nothing to explain", () => {

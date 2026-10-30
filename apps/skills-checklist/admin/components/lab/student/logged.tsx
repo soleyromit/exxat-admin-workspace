@@ -184,6 +184,12 @@ function SendDraftsSheet({ open, onOpenChange, state, studentId, batchIds, onSen
                       <FieldError>{r.issues.find((i) => i.field === "date")!.message}</FieldError>
                     </Field>
                   ) : null}
+                  {r.issues.some((i) => i.field === "details") ? (
+                    <div className="flex flex-col gap-1" data-review-details>
+                      <FieldError>{r.issues.find((i) => i.field === "details")!.message}</FieldError>
+                      <Link href={student2Href("request-signoff", loggedHandoff(r.draft), studentId)} className="self-start text-sm font-medium underline underline-offset-2">Continue the draft</Link>
+                    </div>
+                  ) : null}
                   {r.issues.some((i) => i.field === "who") ? (
                     <Field data-invalid>
                       <FieldLabel htmlFor={`fix-who-${r.draft.batchId}`}>Who signs off</FieldLabel>

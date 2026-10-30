@@ -36,6 +36,13 @@ export default async function LabScreenPage({ params, searchParams }: { params: 
     if (moved) redirect(moved)
   }
   if (persona === "admin" && slug === "evaluator-directory") redirect(legacyDirectoryHref(new URLSearchParams(toQuery(sp))))
+  // Director Reports is one page with two tabs (D-L8c): the former report page is its Readiness tab. Every param is kept
+  // (variant, scope, view); `tab` is set last so it always wins.
+  if (persona === "director" && slug === "reports") {
+    const q = new URLSearchParams(toQuery(sp))
+    q.set("tab", "readiness")
+    redirect(`/lab/director/attainment?${q.toString()}`)
+  }
   if (!isPersonaId(persona)) notFound()
   const screen = findScreen(persona, slug)
   if (!screen) notFound()

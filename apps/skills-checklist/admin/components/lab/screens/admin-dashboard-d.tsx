@@ -8,6 +8,7 @@
  * sits alone in the right column; the students flagged are one click away through the hero action (strategy/07 B1).
  * Same scope bar, basis, as-of and drill rules as variant A.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -39,6 +40,10 @@ function Body({ data, model, scope, split, setSplit, skillsAll, setSkillsAll, de
     const gap = c.expected - c.pct
     if (!best || gap > best.expected - best.pct) best = { section: r.section, col: col.label.replace(/ \(\d+\)$/, ""), pct: c.pct, expected: c.expected, short: c.short, cohort: col.cohort, group: col.group }
   }
+  // Ties are stated in words (2026-10-30 review): the hero names how many sections share the largest gap.
+  const bestGap = best ? best.expected - best.pct : 0
+  const tied = best ? matrix.rows.flatMap((r) => r.cells.filter((c) => c.pct !== null && c.expected !== null && c.expected - c.pct === bestGap).map(() => r.section)) : []
+  const tiedSections = [...new Set(tied)]
   const shortCells = matrix.rows.reduce((n, r) => n + r.cells.filter((c) => c.short > 0).length, 0)
   const basisWord = model.basis === "expected" ? "expected now" : model.basis === "median" ? "for the scope" : "required"
   const heroScope: LabScope | null = best ? { ...scope, cat: best.section, ...(best.cohort ? { cohort: best.cohort, group: best.group ?? "" } : {}) } : null
@@ -54,9 +59,9 @@ function Body({ data, model, scope, split, setSplit, skillsAll, setSkillsAll, de
               {best ? (
                 <HeroMetric value={`${best.pct}%`} rest={`of ${best.section} counted${split === "none" ? "" : ` in ${best.col}`}, against ${best.expected}% ${basisWord}`} tip={model.basisCaption} />
               ) : (
-                <h2 className="text-base font-semibold text-foreground">No required sections in this scope</h2>
+                <h2 className={TYPE.card}>No required sections in this scope</h2>
               )}
-              <p className="text-sm text-foreground">{gap ? "The largest gap in this scope." : "No section is 8 or more points under the basis."}</p>
+              <p className="text-sm text-foreground">{gap ? (tied.length > 1 ? `${tied.length} ${split === "none" ? "sections" : "cells"} tie for the largest gap${split === "none" ? `: ${tiedSections.join(", ")}` : ""}.` : "The largest gap in this scope.") : "No section is 8 or more points under the basis."}</p>
               {heroScope ? (
                 <Button asChild variant="outline" size="sm" className="self-start">
                   <Link href={drillHref(heroScope, { list: "students", from: "hero" })}>View the students</Link>

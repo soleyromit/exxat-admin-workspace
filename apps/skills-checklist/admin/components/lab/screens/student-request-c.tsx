@@ -96,7 +96,8 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
     const c = courses.find((x) => x.id === id)
     if (!c) return
     // Entering a course starts from its mandatory skills not yet achieved and not already waiting [Thursday flow S2].
-    d.setSkills(courseLevels(m, c).mandatory.filter((r) => r.state !== "achieved" && !r.waiting).map((r) => r.id))
+    // Only skills a student may log: configured, in use and active (a deactivated skill mapped to the course is withdrawn, SL-11).
+    d.setSkills(courseLevels(m, c).mandatory.filter((r) => r.state !== "achieved" && !r.waiting && d.picks.some((p) => p.id === r.id)).map((r) => r.id))
     placeFor(id)
     // Choosing a course on the course page is an answer, not a move: Continue moves on (one job per page).
     ctx.setParams(stay ? { course: id, step: "course" } : { course: id })
@@ -163,7 +164,7 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
       onStepClick={(i) => go(order[i])}
       banner={banner}
       aside={<RequestSummary d={d} model={m} course={course} selfLine={selfLine} step={step} />}
-      footer={<StickyFooter back={back ? { onClick: back } : undefined} context={context} secondary={step !== "course" ? { label: "Save for later", onClick: () => { setIssues([]); d.saveForLater({ course: course?.id ?? null, step }) } } : undefined} primary={{ label: step === "send" ? (d.offline ? "Keep and send later" : "Send") : "Continue", onClick: next }} />}
+      footer={<StickyFooter back={back ? { onClick: back } : undefined} context={context} secondary={step !== "course" ? { label: "Save for later", onClick: () => { setIssues([]); d.saveForLater({ course: course?.id ?? null, step }) } } : undefined} primary={{ label: step === "send" ? (d.offline ? "Keep and send later" : "Send") : "Continue", onClick: next, ...(step === "send" && d.blocked ? { disabled: true, disabledReason: "Fix the fields above to send." } : {}) }} />}
     >
       <div data-student-lab="request-C" data-step={step}>
         <WizardPanel step={index}>
@@ -262,7 +263,10 @@ function CourseStep({ courses, value, onChange, model }: { courses: CourseExpect
 
 /** The course's skills, mandatory first and chosen by default; recommended and optional one click away [REQ ST-01, ST-02]. */
 function SkillsStep({ model, course, selected, onToggle, d }: { model: StudentModel; course: CourseExpectation; selected: string[]; onToggle: (id: string) => void; d: RequestDraft }) {
-  const lv = courseLevels(model, course)
+  // Selection lists only what Log and Send may offer (d.picks reads openToLog): a deactivated skill never appears here [REQ SL-11].
+  const offered = React.useMemo(() => new Set(d.picks.map((p) => p.id)), [d.picks])
+  const all = courseLevels(model, course)
+  const lv = { mandatory: all.mandatory.filter((r) => offered.has(r.id)), recommended: all.recommended.filter((r) => offered.has(r.id)), optional: all.optional.filter((r) => offered.has(r.id)) }
   const mandatory = lv.mandatory.map((r) => ({ level: "mandatory", r }))
   const others = [...lv.recommended.map((r) => ({ level: "recommended", r })), ...lv.optional.map((r) => ({ level: "optional", r }))]
   const [open, setOpen] = React.useState(mandatory.length === 0)

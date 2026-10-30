@@ -22,7 +22,7 @@ describe("coverageWarnings", () => {
     const s = createSeed()
     s.skills.find((k) => k.id === IDS.ivCath)!.config!.achievement.settingMinimums = [{ setting: "Emergency", min: 1 }]
     const w = coverageWarnings(s).find((x) => x.kind === "setting-missing")
-    expect(w?.message).toMatch(/Emergency placements/)
+    expect(w?.message).toMatch(/emergency placements/)
     expect(w?.message).toMatch(/No setting in this course can satisfy it/)
   })
 

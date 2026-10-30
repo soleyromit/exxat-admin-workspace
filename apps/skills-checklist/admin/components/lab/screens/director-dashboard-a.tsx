@@ -6,6 +6,7 @@
  * overlay, "ready to verify" as the fourth figure), the ready-to-verify worklist (top rows, "All n"), and the not-complete list.
  * Every figure links to Dashboard C filtered to the same rows with the scope in the URL. Demo states via ?state=.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import { skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
@@ -29,9 +30,9 @@ function ReadyCard({ m, scope }: { m: Readiness; scope: LabScope }) {
     <Card className="py-0 xl:col-span-8" data-region="ready">
       <CardContent className="flex flex-col gap-3 py-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold text-foreground">Ready to verify</h2>
+          <h2 className={TYPE.card}>Ready to verify</h2>
           <Button asChild variant="outline" size="sm">
-            <Link href={listHref(scope, { list: "ready" })}>{`All ${rows.length}`}</Link>
+            <Link href={listHref(scope, { list: "ready" })} aria-label={`All ${rows.length} ready to verify`}>View all</Link>
           </Button>
         </div>
         <WorklistTable rows={rows.slice(0, SHOWN)} scope={scope} compact empty="No record can be verified in this scope yet." />
@@ -46,7 +47,7 @@ function NotCompleteCard({ m, scope }: { m: Readiness; scope: LabScope }) {
     <Card className="self-start py-0 xl:col-span-4" data-region="not-complete">
       <CardContent className="flex flex-col gap-3 py-4">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold text-foreground">Not complete</h2>
+          <h2 className={TYPE.card}>Not complete</h2>
           <Button asChild variant="outline" size="sm">
             <Link href={listHref(scope, { list: "gaps" })}>{`All ${rows.length}`}</Link>
           </Button>
@@ -57,18 +58,25 @@ function NotCompleteCard({ m, scope }: { m: Readiness; scope: LabScope }) {
           <ul className="flex flex-col divide-y divide-border">
             {rows.slice(0, SHOWN + 1).map((r) => (
               <li key={r.id} className="flex items-center justify-between gap-3 py-2">
-                <span className="flex min-w-0 items-center gap-2">
-                  <DiamondGlyph />
-                  <Link className={`${LINK} truncate text-sm`} href={detailHref(scope, r.id)}>{r.name}</Link>
-                  {r.open.length ? (
-                    <span className="inline-flex items-center" title="Request open">
-                      <OpenSwatch />
-                      <span className="sr-only">, request open</span>
+                <span className="flex min-w-0 items-start gap-2">
+                  <span className="pt-1"><DiamondGlyph /></span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Link className={`${LINK} truncate text-sm`} href={detailHref(scope, r.id)}>{r.name}</Link>
+                      {r.open.length ? (
+                        <span className="inline-flex items-center" title="Request open">
+                          <OpenSwatch />
+                          <span className="sr-only">, request open</span>
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
+                    {/* The one missing skill on the row, under the name; the trailing value is always the gap count
+                        (design review 2026-10-30, others #7: it mixed counts and skill names). */}
+                    {r.gaps.length === 1 ? <span className={`${TYPE.meta} truncate`} title={r.gaps[0].name}>{`Missing ${r.gaps[0].name}`}</span> : null}
+                  </span>
                 </span>
-                <span className="shrink-0 text-xs">
-                  <span className="text-muted-foreground">{r.gaps.length === 1 ? r.gaps[0].name : `${r.gaps.length} gaps`}</span>
+                <span className="shrink-0 text-sm tabular-nums text-foreground" data-gap-count={r.gaps.length}>
+                  {r.gaps.length === 1 ? "1 gap" : `${r.gaps.length} gaps`}
                 </span>
               </li>
             ))}

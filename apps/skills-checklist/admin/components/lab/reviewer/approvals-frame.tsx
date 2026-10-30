@@ -13,7 +13,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ScopeAppliedLine, ScopeFiltersButton, type ScopeBarProps } from "@/components/lab/dashboard/scope-bar"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { LINK } from "@/components/lab/link-styles"
 import { SCOPE_LABEL, removeScope, type ScopeKey } from "@/lib/lab/scope"
@@ -39,6 +39,9 @@ export interface ApprovalsContext extends ReviewerContext {
 /** Set by the admin Approvals variants: the page shows the Evaluations and New evaluators tabs. The reviewer's page does not. */
 export const ApprovalsTabsContext = React.createContext(false)
 
+/** One extra header action a variant adds beside Filters (admin Approvals: "Approval rules", SC-15). */
+export const ApprovalsHeaderActionContext = React.createContext<React.ReactNode>(null)
+
 export function ApprovalsFrame({ variant, children }: { variant: string; children: (ctx: ApprovalsContext) => React.ReactNode }) {
   const ctx = useReviewer()
   const scopedRows = ctx.scoped?.rows
@@ -53,25 +56,22 @@ export function ApprovalsFrame({ variant, children }: { variant: string; childre
   const tab = tabbed && ctx.param("tab") === "new-evaluators" ? "new-evaluators" : "evaluations"
   const newRows = React.useMemo(() => (tabbed && ctx.state ? newEvaluatorRows(ctx.state) : []), [tabbed, ctx.state])
   const newCount = tabbed && ctx.state ? facts(ctx.state).unverifiedEvaluators : 0
+  const headerAction = React.useContext(ApprovalsHeaderActionContext)
+  // Page-wide Filters in the header beside the page's other actions, applied chips on one line under it only when something is
+  // applied (the dashboard treatment, Romit 2026-10-30; scope-bar.tsx ScopeFiltersButton / ScopeAppliedLine). The New evaluators
+  // tab is not scoped by term or course, so Filters shows on the Evaluations tab only.
+  const scopeProps: ScopeBarProps | null = ctx.options
+    ? { scope: ctx.scope, options: ctx.options, termName: ctx.termName, onChange: ctx.setScope, chipValue: ctx.chip, showBasis: false, moreKeys: [], stale: ctx.demo === "stale" }
+    : null
 
   const evaluationsBody = (
     <>
-      {ctx.options ? (
-        <ScopeBar
-          scope={ctx.scope}
-          options={ctx.options}
-          termName={ctx.termName}
-          onChange={ctx.setScope}
-          chipValue={ctx.chip}
-          showBasis={false}
-          moreKeys={[]}
-        />
-      ) : null}
       <p role="status" aria-live="polite" className="sr-only">
         {ctx.ready ? `${plural(rowsInScope.length, "submission waits", "submissions wait")} for approval` : "Loading approvals"}
       </p>
-      {/* The one line of explanation on Approvals (Romit 2026-10-27): what this list is for. */}
-      <p className={TYPE.helper} data-approvals-lead>These evaluations count only after you approve them.</p>
+      {scopeProps ? <ScopeAppliedLine {...scopeProps} /> : null}
+      {/* No lead line under the title (anatomy A1, 2026-10-30): that held evidence counts only once approved (REQ AR-06) is said
+          where the decision is made, the Approve hint "Counts toward progress now" (APPROVE_HINT) on every Approve. */}
       <DecisionBanner />
       {!ctx.ready ? (
         <QueueSkeleton />
@@ -117,7 +117,16 @@ export function ApprovalsFrame({ variant, children }: { variant: string; childre
   )
 
   return (
-    <PageFrame title="Approvals" subtitle={ctx.options ? <ScopeContext termName={ctx.termName} scope={ctx.scope} at={ctx.at} stale={ctx.demo === "stale"} /> : undefined} actions={<SampleDataBadge />}>
+    <PageFrame
+      title="Approvals"
+      actions={
+        <>
+          {scopeProps && tab === "evaluations" ? <ScopeFiltersButton {...scopeProps} /> : null}
+          {headerAction}
+          <SampleDataBadge />
+        </>
+      }
+    >
       <DecisionProvider state={ctx.state} rows={rowsInScope}>
         <div className={`flex flex-col gap-4 ${rail ? "lg:pe-[33rem]" : ""}`} data-page-type="list" data-reviewer-lab={`approvals-${variant}`}>
           {tabbed ? (

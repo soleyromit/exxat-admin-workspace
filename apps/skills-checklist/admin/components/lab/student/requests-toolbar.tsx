@@ -16,7 +16,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@exxatdesignux/ui/
 import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { shortDate } from "@/lib/lab/student"
-import { skillNoun } from "@/lib/lab/terms"
+import { capitalize, skillNoun } from "@/lib/lab/terms"
 import { FILTER_KEYS, filterCount, type RequestFilter } from "@/lib/lab/requests-filter"
 
 const ANY = "__any"
@@ -52,6 +52,7 @@ export function RequestsToolbar({ filter, options, onChange }: { filter: Request
   const [q, setQ] = React.useState(filter.q)
   React.useEffect(() => setQ(filter.q), [filter.q])
   const n = filterCount(filter)
+  const nPhone = n + (filter.q.trim() ? 1 : 0)
   const set = (k: keyof typeof FILTER_KEYS, v: string) => onChange({ [FILTER_KEYS[k]]: v || null })
   const label = (list: Array<{ value: string; label: string }>, v: string) => list.find((o) => o.value === v)?.label ?? v
   const chips = [
@@ -64,7 +65,8 @@ export function RequestsToolbar({ filter, options, onChange }: { filter: Request
   return (
     <div className="flex flex-col gap-2" data-requests-toolbar>
       <div className="flex items-center gap-2">
-        <InputGroup className="min-w-0 flex-1 sm:max-w-80">
+        {/* On a phone the search moves inside Filters (one control above the list, density budget 2026-10-30); nothing is dropped. */}
+        <InputGroup className="min-w-0 flex-1 max-sm:hidden sm:max-w-80">
           <InputGroupAddon align="inline-start">
             <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
           </InputGroupAddon>
@@ -82,9 +84,16 @@ export function RequestsToolbar({ filter, options, onChange }: { filter: Request
         </InputGroup>
         <Popover>
           <PopoverTrigger asChild>
-            <Button type="button" variant="outline" size="sm" className="shrink-0" data-requests-filters>{n ? `Filters (${n})` : "Filters"}</Button>
+            <Button type="button" variant="outline" size="sm" className="shrink-0" data-requests-filters>
+              <span className="sm:hidden">{nPhone ? `Filters (${nPhone})` : "Filters"}</span>
+              <span className="max-sm:hidden">{n ? `Filters (${n})` : "Filters"}</span>
+            </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-3">
+            <Field className="sm:hidden">
+              <FieldLabel htmlFor="rf-q">Search</FieldLabel>
+              <Input id="rf-q" type="search" value={q} onChange={(e) => { setQ(e.target.value); set("q", e.target.value) }} placeholder={`${capitalize(skillNoun())} or evaluator`} />
+            </Field>
             <Pick id="rf-course" label="Course" value={filter.course} options={options.courses} onChange={(v) => set("course", v)} />
             <Pick id="rf-who" label="Evaluator" value={filter.who} options={options.evaluators} onChange={(v) => set("who", v)} />
             <Pick id="rf-setting" label="Setting" value={filter.setting} options={SETTINGS} onChange={(v) => set("setting", v)} />

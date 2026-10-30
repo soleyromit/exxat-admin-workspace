@@ -75,7 +75,8 @@ describe("dashboard model at scale", () => {
     const d = buildDashboard(seed, { ...EMPTY_SCOPE, loc: "Simulation lab", setting: "clinical" })
     expect(d.kind).toBe("impossible")
     expect(d.explained!.remove.map((r) => r.key).sort()).toEqual(["loc", "setting"])
-    expect(d.recount).toMatch(/^Counting evidence from Simulation lab/)
+    // The banner explains; "Counting evidence from ..." beside it would contradict it (wave 2, RP-09).
+    expect(d.recount).toBeNull()
   })
 
   it("calls an empty scope empty, never zeros", () => {

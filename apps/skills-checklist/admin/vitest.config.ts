@@ -13,11 +13,13 @@ export default defineConfig({
     server: { deps: { inline: [/@exxatdesignux/] } },
   },
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./"),
+    alias: [
+      // Same DataTable wrapper as next.config.ts (one filter entry point per table, anatomy A9). Exact match only.
+      { find: /^@exxatdesignux\/ui\/components\/data-table$/, replacement: path.resolve(__dirname, "components/data-table/index.tsx") },
+      { find: "@", replacement: path.resolve(__dirname, "./") },
       // DS dist imports react-router(-dom); same shim as next.config.ts.
-      "react-router-dom": path.resolve(__dirname, "lib/react-router-compat.tsx"),
-      "react-router": path.resolve(__dirname, "lib/react-router-compat.tsx"),
-    },
+      { find: "react-router-dom", replacement: path.resolve(__dirname, "lib/react-router-compat.tsx") },
+      { find: "react-router", replacement: path.resolve(__dirname, "lib/react-router-compat.tsx") },
+    ],
   },
 })

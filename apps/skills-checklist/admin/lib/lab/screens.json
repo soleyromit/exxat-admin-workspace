@@ -92,7 +92,7 @@
       "variants": [
         {
           "id": "A",
-          "question": "Does every dashboard figure open a list of the same length, same scope, with its condition as a removable chip and a breadcrumb back?",
+          "question": "Does every dashboard figure open a list of the same length, same scope, with its condition as a removable chip and a back link to the dashboard?",
           "file": "components/lab/screens/admin-dashboard-drill.tsx",
           "pageType": "list"
         },
@@ -105,7 +105,6 @@
       ],
       "requiredDsComponents": [
         "PageHeader",
-        "Breadcrumb",
         "FilterBar",
         "DataTable",
         "PersonIdentityCell",
@@ -271,7 +270,7 @@
     {
       "persona": "admin",
       "slug": "import-ai-review",
-      "title": "Import and review",
+      "title": "Bulk upload",
       "tier": 2,
       "recommended": "A",
       "variants": [
@@ -599,8 +598,7 @@
         "PageHeader",
         "DataTable",
         "Select",
-        "Button",
-        "Badge"
+        "Button"
       ]
     },
     {
@@ -2074,49 +2072,6 @@
     },
     {
       "persona": "director",
-      "slug": "reports",
-      "title": "Export",
-      "tier": 2,
-      "recommended": "A",
-      "variants": [
-        {
-          "id": "A",
-          "question": "One table, three views: does switching by student, skill or section on the shared scope, then exporting what is on screen, answer the reporting job?",
-          "file": "components/lab/screens/director-reports-a.tsx",
-          "pageType": "list"
-        },
-        {
-          "id": "B",
-          "question": "Preview what leaves: does seeing the signed PDF and the evaluation-level CSV before export build trust in what is shared?",
-          "file": "components/lab/screens/director-reports-b.tsx",
-          "pageType": "list"
-        }
-      ],
-      "requiredDsComponents": [
-        "PageHeader",
-        "DataTable",
-        "ExportDrawer",
-        "ViewSegmentedControl"
-      ],
-      "scenarios": [
-        {
-          "group": "States",
-          "label": "Loading",
-          "params": {
-            "state": "loading"
-          }
-        },
-        {
-          "group": "States",
-          "label": "All clear",
-          "params": {
-            "state": "clear"
-          }
-        }
-      ]
-    },
-    {
-      "persona": "director",
       "slug": "attainment",
       "title": "Reports",
       "tier": 2,
@@ -2124,13 +2079,13 @@
       "variants": [
         {
           "id": "A",
-          "question": "Matrix under a readiness line: does the admin students by sections matrix, read-only with export, show where the graduating cohort is short at a glance?",
+          "question": "Matrix, then one table: on one shared scope, does the students by sections matrix (Attainment tab) plus one report table with four views and the Export menu (Readiness tab) answer the director's reporting job?",
           "file": "components/lab/screens/director-attainment-a.tsx",
           "pageType": "dashboard"
         },
         {
           "id": "B",
-          "question": "Skills ranked under a readiness line: does the admin skills table, most not achieved first, tell the director what to raise with faculty faster?",
+          "question": "Skills ranked, then preview what leaves: does ranking skills most not achieved first (Attainment tab) and seeing the signed PDF or CSV before export (Readiness tab) build more trust in what is shared?",
           "file": "components/lab/screens/director-attainment-b.tsx",
           "pageType": "dashboard"
         }
@@ -2139,7 +2094,14 @@
         "PageHeader",
         "Button",
         "Badge",
-        "FloatingSheetPanel"
+        "FloatingSheetPanel",
+        "Tabs",
+        "DataTable",
+        "ExportDrawer",
+        "ViewSegmentedControl"
+      ],
+      "labNotes": [
+        "D-L8c: Reports is one page with two tabs, Attainment (default) and Readiness; the former director reports URL redirects to the Readiness tab."
       ],
       "scenarios": [
         {

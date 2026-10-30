@@ -114,7 +114,7 @@ describe("S-14 scope and the shared record (SH-06, CM-07, AE-04)", () => {
     await screen.findByRole("heading", { level: 1 })
     expect(screen.getByText("Inpatient: 0 of 1")).toBeInTheDocument()
     expect(screen.getByText("Emergency: 0 of 1")).toBeInTheDocument()
-    expect(screen.getByText(/You need 1 in Emergency and have 0/)).toBeInTheDocument()
+    expect(screen.getByText(/You need 1 in emergency and have 0/)).toBeInTheDocument()
   })
 })
 

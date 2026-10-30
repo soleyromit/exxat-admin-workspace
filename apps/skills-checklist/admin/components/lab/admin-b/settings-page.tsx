@@ -291,10 +291,12 @@ function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDele
       <span className="flex min-w-0 items-center gap-2">
         <span className={r.active ? "truncate text-foreground" : "truncate text-muted-foreground"}>{r.name}</span>
         {r.isNew ? <Badge variant="outline">New</Badge> : null}
+        {/* Status only when it differs (2026-10-30 review: a Status column read "Active" on every row): an inactive entry carries
+            its badge beside the name; an active one carries nothing. */}
+        {r.active ? null : <StatusBadge label="Inactive" tone="neutral" icon="fa-circle-minus" size="sm" />}
       </span>
     ),
   }
-  const statusCol: ColumnDef<SettingsRow> = { key: "active", label: "Status", width: 130, cell: (r) => (r.active ? <span className="text-sm text-muted-foreground">Active</span> : <StatusBadge label="Inactive" tone="neutral" icon="fa-circle-minus" size="sm" />) }
   const actionsCol: ColumnDef<SettingsRow> = {
     key: "actions",
     label: "Actions",
@@ -341,7 +343,7 @@ function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDele
               { key: "email", label: "Email", width: 260, sortable: true },
               { key: "evaluations", label: "Evaluations signed", width: 160, sortable: true, cell: (r) => count(r, n(r, "evaluations"), plural(n(r, "evaluations"), "evaluation", "evaluations")) },
             ]
-  const columns = [nameCol, ...middle, statusCol, actionsCol]
+  const columns = [nameCol, ...middle, actionsCol]
   const empty = filtered ? (
     <EmptyBlock compact title={`No ${NOUNS[tab]} match this search`} action={{ label: "Clear search" }} onAction={onClear} />
   ) : (

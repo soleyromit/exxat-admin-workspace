@@ -6,6 +6,7 @@
  * record better than grouping by skill?
  * Regions (list budget 4): header (Share record) · figures that filter · filter row · ledger by month.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -17,9 +18,9 @@ import { LINK_IN_TABLE } from "@/components/lab/student/parts"
 import { useRecord } from "./student-record-a"
 import { shortDate } from "@/lib/lab/student"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
-import { groupByMonth, groupBySkill, recordAttemptLine, student2Href } from "@/lib/lab/student2"
+import { groupByMonth, groupBySkill, recordAttemptLine, student2Href, whyWithRule, type RecordRow } from "@/lib/lab/student2"
 import { EvaluatorWithTag } from "@/components/lab/student/checkoff"
-import { ViewEvaluationButton } from "@/components/lab/student/evaluation-sheet"
+import { EVALUATION_PARAM, ViewEvaluationButton, ViewEvaluationLink } from "@/components/lab/student/evaluation-sheet"
 
 const ROW_LIMIT = 40
 
@@ -60,6 +61,8 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
     }
     return new Set([...newest.values()].map((v) => v.id))
   }, [capped])
+  // The skill's failed rule rides on its newest did-not-count row only; older ones say their own reason (review 2026-10-30).
+  const whyOf = (x: RecordRow) => (x.result === "not-counted" && whyShown.has(x.id) ? whyWithRule(x) : x.why)
   const attemptText = (x: { id: string; skillId: string }) => (lineOn.has(x.id) ? attemptLines.get(x.skillId) ?? "" : "")
   return (
     <div className="flex flex-col gap-4" data-student-lab="record-B">
@@ -73,12 +76,14 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
             <EmptyBlock compact title="No evaluations match these filters" action={{ label: "Clear filters" }} onAction={r.clear} />
           ) : (
             <>
-            <div className="flex flex-col px-4 sm:hidden">
+            {/* The phone ledger is one list of months, each holding its evaluations, so the search and Filters row above is its
+                toolbar (anatomy A4). */}
+            <div className="flex flex-col px-4 sm:hidden" role="list" aria-label="Evaluations by month, newest first">
               {months.map((mo) => (
-                <section key={mo.key} aria-label={mo.label} className="flex flex-col">
-                  <h3 className="border-b border-border py-2 text-sm font-semibold text-foreground">{`${mo.label} · ${mo.rows.length}`}</h3>
+                <section key={mo.key} aria-label={mo.label} className="flex flex-col" role="listitem">
+                  <h3 className={`border-b border-border py-2 ${TYPE.group}`}>{`${mo.label} · ${mo.rows.length}`}</h3>
                   <ul className="flex flex-col divide-y divide-border">
-                    {mo.rows.map((x) => <RecordMobileRow key={x.id} date={shortDate(x.date)} title={<><Link href={student2Href("skill-detail", { skill: x.skillId }, ctx.studentId)} className={LINK_IN_TABLE}>{x.skillName}</Link>{attemptText(x) ? <span className="block text-xs tabular-nums text-muted-foreground" data-attempt-line>{attemptText(x)}</span> : null}</>} result={x.result} why={x.result === "not-counted" && !whyShown.has(x.id) ? "" : x.why} />)}
+                    {mo.rows.map((x) => <RecordMobileRow key={x.id} date={shortDate(x.date)} title={<><Link href={student2Href("skill-detail", { skill: x.skillId }, ctx.studentId)} className={LINK_IN_TABLE}>{x.skillName}</Link>{attemptText(x) ? <span className="block text-xs tabular-nums text-muted-foreground" data-attempt-line>{attemptText(x)}</span> : null}</>} result={x.result} why={whyOf(x)} action={x.evaluationId ? <ViewEvaluationLink href={student2Href("record", { [EVALUATION_PARAM]: x.evaluationId }, ctx.studentId)} name={`${x.skillName}, ${shortDate(x.date)}`} /> : undefined} />)}
                   </ul>
                 </section>
               ))}
@@ -106,11 +111,11 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
                         <TableCell className="min-w-40 whitespace-normal align-top">
                           <Link href={student2Href("skill-detail", { skill: x.skillId }, ctx.studentId)} className={LINK_IN_TABLE}>{x.skillName}</Link>
                           {attemptText(x) ? <span className="mt-0.5 block text-xs tabular-nums text-muted-foreground" data-attempt-line>{attemptText(x)}</span> : null}
-                          <span className="mt-0.5 block text-xs text-muted-foreground md:hidden">{x.why}</span>
+                          <span className="mt-0.5 block text-xs text-muted-foreground md:hidden">{whyOf(x)}</span>
                         </TableCell>
                         <TableCell className="align-top"><ResultLabel result={x.result} /></TableCell>
                         <TableCell className="hidden align-top lg:table-cell"><EvaluatorWithTag s={ctx.state} evaluationId={x.evaluationId} name={x.evaluatorName} /></TableCell>
-                        <TableCell className="hidden min-w-48 whitespace-normal align-top text-sm md:table-cell">{x.why}</TableCell>
+                        <TableCell className="hidden min-w-48 whitespace-normal align-top text-sm md:table-cell">{whyOf(x)}</TableCell>
                         <TableCell className="align-top text-end">{x.evaluationId ? <ViewEvaluationButton name={`${x.skillName}, ${shortDate(x.date)}`} onOpen={() => r.openEval(x.evaluationId!)} /> : null}</TableCell>
                       </TableRow>
                     ))}

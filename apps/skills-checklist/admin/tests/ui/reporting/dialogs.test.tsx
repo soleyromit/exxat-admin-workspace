@@ -74,7 +74,7 @@ describe("S-02 student drill-down dialog (RP-05, AE-03, AE-04, SC-10..12, SH-05,
   it("each skill row reads model · needs criteria, a progress bar, 'n / m demonstrations' and a status badge", async () => {
     renderOverview({ initial: { student: SCENARIO.olivia } })
     const row = within(rowFor("sk-iv"))
-    expect(row.getByText(/Demonstration-level outcome · needs 5 demonstrations, 1 at Observed, 1 at With assistance, 3 at Independent/)).toBeInTheDocument()
+    expect(row.getByText(/Demonstration-level outcome · needs 5 demonstrations, 1 at observed, 1 at with assistance, 3 at independent/)).toBeInTheDocument()
     expect(row.getByText("4 / 5 demonstrations")).toBeInTheDocument()
     expect(within(rowFor("sk-iv")).getAllByRole("progressbar", { hidden: true }).length).toBeGreaterThan(0)
   })
@@ -85,7 +85,7 @@ describe("S-02 student drill-down dialog (RP-05, AE-03, AE-04, SC-10..12, SH-05,
     const row = within(rowFor("sk-wound"))
     expect(row.getByText("In progress")).toBeInTheDocument()
     expect(row.getByText("4 / 4 demonstrations")).toBeInTheDocument()
-    expect(row.getByTestId("still-needed")).toHaveTextContent(/Still needed:.*1 in Inpatient.*1 in Emergency|Still needed:.*1 in Emergency.*1 in Inpatient/)
+    expect(row.getByTestId("still-needed")).toHaveTextContent(/Still needed:.*1 in inpatient.*1 in emergency|Still needed:.*1 in emergency.*1 in inpatient/)
     const lines = row.getByTestId("setting-progress")
     expect(lines).toHaveTextContent("Inpatient: 0 of 1")
     expect(lines).toHaveTextContent("Emergency: 0 of 1")
@@ -99,7 +99,7 @@ describe("S-02 student drill-down dialog (RP-05, AE-03, AE-04, SC-10..12, SH-05,
     const ledger = within(ledgerOf("sk-iv"))
     expect(ledger.getByText("Demonstration levels:")).toBeInTheDocument()
     for (const l of p.levels) expect(ledger.getByText(`${l.label}: ${l.have} / ${l.min}`)).toBeInTheDocument()
-    expect(within(rowFor("sk-iv")).getByTestId("still-needed")).toHaveTextContent("1 at Independent")
+    expect(within(rowFor("sk-iv")).getByTestId("still-needed")).toHaveTextContent("1 at independent")
   })
 
   it("SC-10: a student whose total is met but whose with-assistance minimum is not is In progress, not Achieved", async () => {
@@ -114,7 +114,7 @@ describe("S-02 student drill-down dialog (RP-05, AE-03, AE-04, SC-10..12, SH-05,
     await studentDialog()
     const row = within(rowFor("sk-iv"))
     expect(row.getByText("In progress")).toBeInTheDocument()
-    expect(row.getByTestId("still-needed")).toHaveTextContent(/at (Observed|With assistance|Independent)/)
+    expect(row.getByTestId("still-needed")).toHaveTextContent(/at (observed|with assistance|independent)/)
   })
 
   it("SC-12: lab or simulation evidence is reported separately and never counted toward a clinical setting", async () => {

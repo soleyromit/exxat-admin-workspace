@@ -32,7 +32,7 @@ import { aNoun, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { shortDate } from "@/lib/lab/student"
 import { activeV2Store, updateActiveV2Store } from "@/lib/v2/react"
 import { saveLogged } from "@/lib/lab/logged"
-import { detailErrors, locationError, locationFor, loggedHandoff, noteError, pickRows, selfEvalEnabled, student2Href, whereChoices, type DetailValues } from "@/lib/lab/student2"
+import { detailErrors, detailFieldsFor, extraDetails, locationError, locationFor, loggedHandoff, noteError, pickRows, selfEvalEnabled, student2Href, whereChoices, type DetailValues } from "@/lib/lab/student2"
 import { loggedSitting } from "@/lib/lab/logged"
 
 export function StudentLogA() {
@@ -57,6 +57,12 @@ export function FormSkeleton() {
       <Skeleton className="h-56 lg:col-span-4" />
     </div>
   )
+}
+
+/** "Bedside handoff report", "A and B", or "A and 2 more": the saved skills by name, short enough for a banner. */
+const savedNames = (s: Student2Ctx["state"], ids: string[]): string => {
+  const names = ids.map((id) => skillById(s, id)?.name ?? skillNoun())
+  return names.length <= 2 ? names.join(" and ") : `${names[0]} and ${names.length - 1} more`
 }
 
 const unitOf = (location: string | null) => (location && location.includes(",") ? location.split(",").slice(1).join(",").trim() : "")
@@ -85,7 +91,9 @@ function LogForm({ ctx }: { ctx: Student2Ctx }) {
     const w = where.find((x) => x.value === v)
     if (w?.location) setDetails((d) => ({ ...d, unit: unitOf(w.location) || d.unit }))
   }
-  const errors = detailErrors(details)
+  // What each chosen skill's configuration asks the student to supply, mandatory ones enforced [REQ SC-13, ST-10].
+  const fields = React.useMemo(() => detailFieldsFor(s, skills), [s, skills])
+  const errors = detailErrors(details, fields)
   const locError = locationError(chosen, location)
   const nError = noteError(note)
   const selfIds = skills.filter((id) => selfEvalEnabled(skillById(s, id)))
@@ -97,7 +105,7 @@ function LogForm({ ctx }: { ctx: Student2Ctx }) {
     // Kept in the shared store, so it is still there after a reload and has one home: My requests, "Not sent yet".
     let batchId: string | null = null
     updateActiveV2Store((st) => {
-      const r = saveLogged(st, { skillIds: skills, where: whereVal, setting: chosen.setting, clinicalSetting: chosen.clinicalSetting, location: locationFor(chosen, location), date: details.date, unit: details.unit, case: details.case, note, ratings: Object.fromEntries(selfIds.filter((id) => ratings[id]).map((id) => [id, ratings[id]])), answers: Object.fromEntries(selfIds.filter((id) => answers[id]?.length).map((id) => [id, answers[id]])) }, studentId)
+      const r = saveLogged(st, { skillIds: skills, where: whereVal, setting: chosen.setting, clinicalSetting: chosen.clinicalSetting, location: locationFor(chosen, location), date: details.date, unit: details.unit, case: details.case, note, extra: extraDetails(details), ratings: Object.fromEntries(selfIds.filter((id) => ratings[id]).map((id) => [id, ratings[id]])), answers: Object.fromEntries(selfIds.filter((id) => answers[id]?.length).map((id) => [id, answers[id]])) }, studentId)
       batchId = r.batchId
       return r.state
     })
@@ -135,7 +143,7 @@ function LogForm({ ctx }: { ctx: Student2Ctx }) {
         <Card className="gap-0 py-0" data-region="where">
           <CardContent className="flex flex-col gap-4 py-4">
             <WhereField choices={where} value={whereVal} onChange={onWhere} location={location} onLocation={setLocation} locationError={locError} showErrors={tried} />
-            <DetailsFields values={details} onChange={(id, v) => setDetails((d) => ({ ...d, [id]: v }))} errors={errors} showErrors={tried} />
+            <DetailsFields fields={fields} values={details} onChange={(id, v) => setDetails((d) => ({ ...d, [id]: v }))} errors={errors} showErrors={tried} />
             <NoteField value={note} onChange={setNote} error={tried ? nError : null} />
           </CardContent>
         </Card>
@@ -151,7 +159,6 @@ function LogForm({ ctx }: { ctx: Student2Ctx }) {
       <div className="lg:col-span-4">
         <Card className="gap-0 py-0 lg:sticky lg:top-4" data-region="save">
           <CardContent className="flex flex-col gap-3 py-4">
-            <SectionTitle>This entry</SectionTitle>
             <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
               <dt className="text-muted-foreground">{skills.length === 1 ? skillNoun().replace(/^./, (c) => c.toUpperCase()) : skillNounPlural().replace(/^./, (c) => c.toUpperCase())}</dt>
               <dd className="text-foreground">{skills.length ? countSkills(skills.length) : "None yet"}</dd>
@@ -169,6 +176,8 @@ function LogForm({ ctx }: { ctx: Student2Ctx }) {
             {saved ? (
               <div className="flex flex-col gap-3">
                 <LocalBanner variant="success" title="Saved for later">
+                  {/* What was saved, by name [REQ ST-13]: the full confirmation (to whom, role, setting, location) comes on Send. */}
+                  {`${savedNames(s, saved.ids)}. `}
                   {offline ? "Find it in My requests, Drafts. It syncs when you reconnect." : "Find it in My requests, Drafts. Nothing counts until you send it."}
                 </LocalBanner>
                 {sendHref ? (

@@ -56,18 +56,22 @@ export function CheckoffTag() {
   )
 }
 
-/** Glossary word for an evaluator name a student typed that the program has not adopted yet (strategy/02, student2.ts). */
-export const NOT_YET_RECORDED = "Not yet recorded"
+/**
+ * Staff word for an evaluator name a student typed that the program has not adopted yet: "Not verified", the same badge Settings,
+ * Evaluators shows (glossary, ledger D-L24). One phrase for the state on every staff screen (design review 2026-10-30, others #3);
+ * the student's own screens keep "Not yet recorded".
+ */
+export const NOT_YET_RECORDED = "Not verified"
 
 /**
  * The evaluator as a row shows it. For "Evaluator not assigned" the name is the one the student typed, so it carries a small
- * "Not yet recorded" badge: the name and the cause no longer read as a contradiction.
+ * "Not verified" badge: the name and the cause no longer read as a contradiction.
  */
 export function EvaluatorName({ name, role, unrecorded, compact = false }: { name: string; role?: string; unrecorded: boolean; compact?: boolean }) {
   return (
     <span className="flex min-w-0 flex-col items-start gap-0.5 py-0.5" data-evaluator-unrecorded={unrecorded || undefined}>
-      <span className={`max-w-full truncate ${compact ? "text-xs text-muted-foreground" : "text-sm"}`}>{name}</span>
-      {unrecorded ? <StatusBadge label={NOT_YET_RECORDED} tone="neutral" icon="fa-user-plus" size="sm" /> : role ? <span className="max-w-full truncate text-xs text-muted-foreground">{role}</span> : null}
+      <span className={`max-w-full whitespace-normal break-words ${compact ? "text-xs text-muted-foreground" : "text-sm"}`}>{name}</span>
+      {unrecorded ? <StatusBadge label={NOT_YET_RECORDED} tone="neutral" icon="fa-user-plus" size="sm" /> : role ? <span className="max-w-full whitespace-normal break-words text-xs text-muted-foreground">{role}</span> : null}
     </span>
   )
 }
@@ -78,13 +82,33 @@ export function AgeBadge({ days }: { days: number }) {
   return <span className="text-sm tabular-nums text-muted-foreground">{daysLabel(days)}</span>
 }
 
-/** Days waiting in a dense list: the number in ink, and from 8 days an amber clock glyph beside it (no filled chip, so a long
- * aging tail does not turn the table amber). The word "aging" is in the accessible name. */
+/**
+ * The waiting-age scale, the same four bands as the dashboard's aging stacks (0 to 3, 4 to 7, 8 to 14, 15+ days). The glyph
+ * steps up with the band so a column of ages reads as a scale, not as on or off (design review 2026-10-30, others #3).
+ */
+export const AGE_BANDS = [
+  { min: 15, word: "waiting 15+ days" },
+  { min: AGING_DAYS, word: `waiting ${AGING_DAYS} to 14 days` },
+  { min: 4, word: "waiting 4 to 7 days" },
+  { min: 0, word: "waiting 0 to 3 days" },
+] as const
+export const ageBand = (days: number) => AGE_BANDS.find((b) => days >= b.min)!
+
+/** The age glyph: none under 4 days, an outline clock from 4, a solid amber clock from 8 (from 15 the number is also set bold). */
+export function AgeGlyph({ days }: { days: number }) {
+  if (days < 4) return <span className="inline-block w-3" aria-hidden="true" />
+  if (days < AGING_DAYS) return <i className="fa-light fa-clock w-3 text-xs text-muted-foreground" aria-hidden="true" />
+  if (days < 15) return <i className="fa-solid fa-clock w-3 text-xs" style={{ color: "var(--lab-viz-behind-ink)" }} aria-hidden="true" />
+  return <i className="fa-solid fa-clock w-3 text-xs" style={{ color: "var(--lab-viz-behind-ink)" }} aria-hidden="true" />
+}
+
+/** Days waiting in a dense list: the stepped glyph, then the number; ink from 8 days, semibold from 15. No filled chip, so a long
+ * aging tail does not turn the table amber. The band is in the accessible name. */
 export function AgeText({ days }: { days: number }) {
-  const aging = days >= AGING_DAYS
+  const tone = days >= 15 ? "font-semibold text-foreground" : days >= AGING_DAYS ? "font-medium text-foreground" : "text-muted-foreground"
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm tabular-nums ${aging ? "font-medium text-foreground" : "text-muted-foreground"}`} aria-label={aging ? `${daysLabel(days)}, aging` : daysLabel(days)}>
-      {aging ? <i className="fa-solid fa-clock text-xs" style={{ color: "var(--lab-viz-behind-ink)" }} aria-hidden="true" /> : null}
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-sm tabular-nums ${tone}`} aria-label={`${daysLabel(days)}, ${ageBand(days).word}`} data-age-band={ageBand(days).min}>
+      <AgeGlyph days={days} />
       {daysLabel(days)}
     </span>
   )
@@ -127,34 +151,37 @@ export function AgreementMark({ agreement }: { agreement: "agreed" | "differed" 
   )
 }
 
-/** The thin dashboard header: waiting, oldest, median wait. Three figures, each a link to the queue sorted that way. */
+/**
+ * The queue's figures above the table: oldest, median wait, aging 8+ days. Three figures in the one KPI size (TYPE.figure), labels
+ * muted, no card or border, so the table under them stays the focal point (design review 2026-10-30, others #3). The queue count
+ * itself is said once, by the Approvals nav badge (or the tab count on admin Approvals), not again here.
+ */
 export function SummaryLine({ summary, oldestHref, agingHref }: { summary: QueueSummary; oldestHref?: string; agingHref?: string }) {
   return (
-    <p className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm text-muted-foreground" data-region="summary">
-      <span data-figure>
-        <span className="font-semibold tabular-nums text-foreground">{fmt(summary.submissions)}</span> {summary.submissions === 1 ? "submission waits" : "submissions wait"}
-      </span>
-      <span data-figure>
-        Oldest{" "}
-        {oldestHref ? (
-          <Link className={`${LINK} tabular-nums`} href={oldestHref}>{daysLabel(summary.oldestDays)}</Link>
-        ) : (
-          <span className="font-medium tabular-nums text-foreground">{daysLabel(summary.oldestDays)}</span>
-        )}
-      </span>
-      <span data-figure className="inline-flex items-baseline gap-1">
-        Median wait <span className="font-medium tabular-nums text-foreground">{daysLabel(summary.medianDays)}</span>
-        <Tip label="Median days the submissions in this scope have waited. No approvals are recorded yet, so turnaround is measured on what is waiting.">
-          <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
-        </Tip>
-      </span>
-      {summary.aging > 0 ? (
-        <span className="inline-flex items-center gap-1">
-          <i className="fa-solid fa-clock text-xs" style={{ color: "var(--lab-viz-behind-ink)" }} aria-hidden="true" />
-          {agingHref ? <Link className={LINK} href={agingHref}>{plural(summary.aging, "aging", "aging")} {AGING_DAYS}+ days</Link> : `${fmt(summary.aging)} aging ${AGING_DAYS}+ days`}
-        </span>
-      ) : null}
-    </p>
+    <dl className="flex flex-wrap items-end gap-x-10 gap-y-3" data-region="summary">
+      <div className="flex flex-col-reverse gap-1" data-figure>
+        <dt className={TYPE.meta}>Oldest waiting</dt>
+        <dd className={TYPE.figure}>
+          {oldestHref ? <Link className={`${LINK} font-semibold`} href={oldestHref}>{daysLabel(summary.oldestDays)}</Link> : daysLabel(summary.oldestDays)}
+        </dd>
+      </div>
+      <div className="flex flex-col-reverse gap-1" data-figure>
+        <dt className={`${TYPE.meta} inline-flex items-center gap-1`}>
+          Median wait
+          <Tip label="Median days the submissions in this scope have waited. No approvals are recorded yet, so turnaround is measured on what is waiting.">
+            <i className="fa-light fa-circle-info text-xs" aria-hidden="true" />
+          </Tip>
+        </dt>
+        <dd className={TYPE.figure}>{daysLabel(summary.medianDays)}</dd>
+      </div>
+      <div className="flex flex-col-reverse gap-1" data-figure>
+        <dt className={`${TYPE.meta} inline-flex items-center gap-1`}>
+          <AgeGlyph days={AGING_DAYS} />
+          {`Waiting ${AGING_DAYS}+ days`}
+        </dt>
+        <dd className={TYPE.figure}>{agingHref ? <Link className={`${LINK} font-semibold`} href={agingHref}>{fmt(summary.aging)}</Link> : fmt(summary.aging)}</dd>
+      </div>
+    </dl>
   )
 }
 

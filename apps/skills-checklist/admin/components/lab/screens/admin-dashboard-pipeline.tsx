@@ -9,6 +9,7 @@
  * A figure opens its records on the same URL (?list=records&cond=&q=), so the list keeps the scope and its length equals the figure.
  * Demo states: ?state=loading|empty|clear|error|partial|stale.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
@@ -16,7 +17,7 @@ import { DashboardPage, type DashboardContext } from "@/components/lab/dashboard
 import { NeedsYou, SetupHero, setupOnly } from "@/components/lab/dashboard/cards"
 import { SectionsCard, StageStrip } from "@/components/lab/dashboard/pipeline-sections"
 import { PipelineDrill } from "@/components/lab/dashboard/pipeline-drill"
-import { isRecordState, pipelineModel, type PipelineModel } from "@/lib/lab/dashboard"
+import { isRecordState, pipelineDrill, pipelineModel, type PipelineModel, type RecordState } from "@/lib/lab/dashboard"
 
 /** ?state=clear: the calm view, nothing flagged; ?state=partial: the basis cannot be shown, so the tick is hidden and said so. */
 function demoModel(m: PipelineModel, demo: DashboardContext["demo"]): PipelineModel {
@@ -34,7 +35,7 @@ function Body({ ctx }: { ctx: DashboardContext }) {
   const list = param("list")
   const cond = param("cond")
   if (list === "records") {
-    return <PipelineDrill model={model} scope={scope} state={isRecordState(cond) ? cond : null} section={param("q")} onChange={setParams} />
+    return <PipelineDrill model={model} scope={scope} state={isRecordState(cond) ? cond : null} section={param("q")} onChange={setParams} filters={ctx.filters} />
   }
   return (
     <div className="flex flex-col gap-6">
@@ -44,7 +45,7 @@ function Body({ ctx }: { ctx: DashboardContext }) {
       {demo === "error" ? (
         <Card className="py-0" data-region="card-error" role="group" aria-label="Sections by record state">
           <CardContent className="flex flex-col gap-3 py-4">
-            <h2 className="text-sm font-semibold text-foreground">Sections by record state</h2>
+            <h2 className={TYPE.card}>Sections by record state</h2>
             <LocalBanner variant="error" title="Section states could not be calculated" retry={{ label: "Try again", onClick: clearDemo }}>
               The four figures above are current.
             </LocalBanner>
@@ -59,7 +60,8 @@ function Body({ ctx }: { ctx: DashboardContext }) {
 
 export function AdminDashboardPipeline() {
   return (
-    <DashboardPage variant="C">
+    // The records drill puts Filters in its table toolbar (D-L8b, one filter entry per table); the dashboard keeps the frame row.
+    <DashboardPage variant="C" filtersInBody={(ctx) => ctx.demo !== "empty" && ctx.param("list") === "records"} drillTitle={(ctx) => (ctx.param("list") === "records" ? pipelineDrill(demoModel(pipelineModel(ctx.data, ctx.scope), ctx.demo), { state: isRecordState(ctx.param("cond")) ? (ctx.param("cond") as RecordState) : null, section: ctx.param("q") }).title : null)}>
       {(ctx) =>
         ctx.demo === "empty" ? (
           <div className="flex flex-col gap-4">

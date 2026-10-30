@@ -149,6 +149,14 @@ export interface ParsedRow {
   unreadable?: { reading: string }
   /** The section was lost at a repeated page header; this is the section before it. */
   sectionCarried?: string
+  /** A description written after the name ("Name – what it covers"), proposed for review [REQ IM-04]. */
+  description?: string
+  /** Evaluation questions or criteria written under the name ("Criteria: …", "Question: …"), proposed for review [REQ IM-04]. */
+  criteria?: string[]
+  /** Review edits [REQ IM-05]: an entry the program added (no line in the file), a part of a split line, a line merged into another. */
+  added?: true
+  splitFrom?: string
+  mergedInto?: { id: string; name: string }
 }
 
 export type FurnitureKind = "header" | "legend" | "signature" | "page"
@@ -171,6 +179,10 @@ export interface ReadResult {
 
 const PREFIX = /^(?:\d{1,3}[.)]|[••\-–])\s+/
 const UNREADABLE = /[▯�]/
+/** "Name – description" or "Name - description" (a dash with a space each side). */
+const DESCRIPTION_SPLIT = /^(.+?)\s+[-–—]\s+(.+)$/
+/** "Criteria: …", "Criterion: …", "Question: …", "Q: …" under a skill. */
+const CRITERION = /^(?:criteria|criterion|question|q)\s*[:.]\s*(.+)$/i
 
 function furnitureKind(t: string, isFirstBlock: boolean): FurnitureKind | null {
   if (/^page \d+( of \d+)?$/i.test(t)) return "page"
@@ -231,12 +243,14 @@ export function readChecklist(text: string): ReadResult {
       return
     }
     if (indent === 0 && !UNREADABLE.test(t)) {
-      section = t
+      // "A line ending in a colon starts a category": the colon is punctuation, not part of the category's name.
+      const heading = t.replace(/\s*:$/, "")
+      section = heading
       carried = null
       group = null
       sub = null
       seenSection = true
-      if (!sections.includes(t)) sections.push(t)
+      if (!sections.includes(heading)) sections.push(heading)
       return
     }
     if (group && indent <= group.indent) group = null
@@ -274,6 +288,12 @@ export function readChecklist(text: string): ReadResult {
 
     const childIndent = sub ? sub.indent + 2 : group ? group.indent + 2 : 2
     const prev = rows[rows.length - 1]
+    // A criterion or question written under a skill belongs to it, not a skill of its own [REQ IM-04].
+    const crit = body.match(CRITERION)
+    if (prev && !prev.unreadable && !prev.continuation && indent > childIndent && crit && crit[1].trim()) {
+      prev.criteria = [...(prev.criteria ?? []), crit[1].trim()]
+      return
+    }
     if (prev && !prev.unreadable && indent > childIndent && (/[/,-]$/.test(prev.sourceText) || /^[(a-z]/.test(body))) {
       rows.push({ ...base, name: body, mark: "none", continuation: { aboveId: prev.id, joinedName: prev.name.endsWith("/") ? `${prev.name}${body}` : `${prev.name} ${body}` } })
       return
@@ -281,7 +301,10 @@ export function readChecklist(text: string): ReadResult {
 
     const mark: Mark = pendingUnclear ? "unclear" : starred ? "mandatory" : group?.marked ? "heading" : "none"
     pendingUnclear = false
-    rows.push({ ...base, name: sub ? `${sub.name}: ${body}` : body, composed: !!sub, mark })
+    // "Name – what it covers": a spaced dash splits the name from a description [REQ IM-04]. No HGTC name contains one.
+    const desc = body.match(DESCRIPTION_SPLIT)
+    const own = desc ? desc[1].trim() : body
+    rows.push({ ...base, name: sub ? `${sub.name}: ${own}` : own, composed: !!sub, mark, ...(desc && desc[2].trim() ? { description: desc[2].trim() } : {}) })
   })
   return { rows, furniture, legend, sections, groups }
 }
@@ -437,6 +460,79 @@ export function buildReview(text: string, library: LibrarySkill[]): Review {
   return { rows: read.rows, furniture: read.furniture, legend: read.legend, sections: read.sections, library: d.library, file: d.file, exceptions }
 }
 
+/**
+ * The program's own edits to the proposed list, before anything is created [REQ IM-05]: split one line into several skills,
+ * merge a line into another, add an entry the file does not have. Kept apart from the reading so the file's lines stay as read
+ * [REQ IM-08] and a reread keeps the edits keyed by line.
+ */
+export interface ReviewEdits {
+  /** Row id to the names it becomes (two or more). */
+  splits: Record<string, string[]>
+  /** Row id to the row id it is merged into. */
+  merges: Record<string, string>
+  added: Array<{ id: string; name: string; section: string | null }>
+}
+
+export const NO_EDITS: ReviewEdits = { splits: {}, merges: {}, added: [] }
+
+/** Splits a name typed as one per line (or separated by ";"), dropping empties and bullets. */
+export function splitNames(text: string): string[] {
+  return text
+    .split(/\r?\n|;/)
+    .map((l) => l.replace(PREFIX, "").trim())
+    .filter(Boolean)
+}
+
+/**
+ * Applies the review edits to a reading. Split parts and added entries are checked against the library like any line, so a
+ * name already there still asks skip, replace or keep both [REQ IM-06]. A merged line stays listed as left out, "Merged into …".
+ */
+export function applyReviewEdits(review: Review, edits: ReviewEdits, library: LibrarySkill[]): Review {
+  if (!Object.keys(edits.splits).length && !Object.keys(edits.merges).length && !edits.added.length) return review
+  const rows: ParsedRow[] = []
+  const exceptions: Record<string, ExceptionKind[]> = { ...review.exceptions }
+  const fresh: ParsedRow[] = []
+  const nameOf = new Map(review.rows.map((r) => [r.id, r.name]))
+  for (const r of review.rows) {
+    const parts = edits.splits[r.id]
+    if (parts && parts.length >= 2) {
+      parts.forEach((name, k) => {
+        const { continuation: _c, unreadable: _u, sectionCarried: _s, ...rest } = r
+        const part: ParsedRow = { ...rest, id: `${r.id}-s${k + 1}`, name, composed: false, mark: r.mark === "unclear" ? "none" : r.mark, splitFrom: r.id }
+        rows.push(part)
+        fresh.push(part)
+      })
+      continue
+    }
+    const into = edits.merges[r.id]
+    if (into && into !== r.id && nameOf.has(into)) {
+      rows.push({ ...r, mergedInto: { id: into, name: nameOf.get(into)! } })
+      exceptions[r.id] = []
+      continue
+    }
+    rows.push(r)
+  }
+  for (const a of edits.added) {
+    const row: ParsedRow = { id: a.id, line: 0, sourceText: "", name: a.name, section: a.section, group: null, mark: "none", composed: false, added: true }
+    // After the last line of its category, or at the end.
+    let at = -1
+    rows.forEach((x, i) => { if (x.section === a.section) at = i })
+    rows.splice(at >= 0 ? at + 1 : rows.length, 0, row)
+    fresh.push(row)
+  }
+  const libraryHits = { ...review.library }
+  const d = findDuplicates(fresh, library)
+  for (const r of fresh) {
+    const list: ExceptionKind[] = []
+    if (d.library[r.id]) {
+      libraryHits[r.id] = d.library[r.id]
+      list.push("duplicate-library")
+    }
+    exceptions[r.id] = list
+  }
+  return { ...review, rows, library: libraryHits, exceptions }
+}
+
 export type Confidence = "clear" | "check" | "look"
 
 export const CONFIDENCE_WORD: Record<Confidence, string> = { clear: "Clear", check: "Check", look: "Needs a decision" }
@@ -578,7 +674,7 @@ export function resolve(review: Review, decisions: Decisions, names: Record<stri
       if (f.kind === "keep-both") name = names[r.id] ?? f.name
       if (f.kind === "replace") replaces = review.library[r.id]?.skillName
     }
-    const leaving = manualSkip ? "Left out" : fixes.some((f) => f.kind === "skip") ? (ex.includes("duplicate-library") ? "Skipped, already in the library" : "Left out") : fixes.some((f) => f.kind === "merge") ? `Merged into ${review.file[r.id]?.firstName}` : fixes.some((f) => f.kind === "join") ? "Joined to the line above" : null
+    const leaving = r.mergedInto ? `Merged into ${names[r.mergedInto.id] || r.mergedInto.name}` : manualSkip ? "Left out" : fixes.some((f) => f.kind === "skip") ? (ex.includes("duplicate-library") ? "Skipped, already in the library" : "Left out") : fixes.some((f) => f.kind === "merge") ? `Merged into ${review.file[r.id]?.firstName}` : fixes.some((f) => f.kind === "join") ? "Joined to the line above" : null
     if (leaving) {
       status = "left-out"
       outcome = leaving
@@ -787,7 +883,8 @@ export function categoriesOf(resolved: ResolvedRow[]): CategoryGroup[] {
   const rank = (r: ResolvedRow) => (r.status === "look" ? 0 : r.status === "ready" ? 1 : 2)
   return [...map.entries()].map(([name, rows]) => ({
     name,
-    rows: [...rows].sort((a, b) => rank(a) - rank(b) || a.row.line - b.row.line),
+    // Entries added in review (no line in the file) sort after the file's lines.
+    rows: [...rows].sort((a, b) => rank(a) - rank(b) || Number(!!a.row.added) - Number(!!b.row.added) || a.row.line - b.row.line),
     toDecide: rows.filter((r) => r.status === "look").length,
   }))
 }

@@ -5,7 +5,7 @@
  * everything else is compact. Selected state is the DS toggle's soft brand tint, never a saturated fill and never red.
  * The skill name is said once, by the caller (card title, step heading or table row); labels here are generic.
  */
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { ToggleGroup, ToggleGroupItem } from "@exxatdesignux/ui/components/ui/toggle-group"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
@@ -31,6 +31,13 @@ function FieldError({ id, issue }: { id: string; issue?: EvIssue }) {
   )
 }
 
+/**
+ * Unselected tiles take a neutral control border, not the DS outline toggle's brand-tinted one, so Met and Unmet read as equal
+ * choices until one is picked; only the picked tile takes the DS selected style (brand tint) (review 2026-10-30). Border colour
+ * only, from tokens; the DS shape, radius and selected state are untouched.
+ */
+const UNSELECTED_NEUTRAL = "data-[state=off]:border-[var(--border-control-35)] data-[state=off]:hover:border-[var(--foreground)]"
+
 /** One choice from a short list, as touch tiles. Deselecting is not possible: an answer is changed, not cleared. */
 export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, describedBy, cols = 2, compact = false }: { id: string; labelId: string; options: Array<{ value: string; label: string }>; value: string | null; onChange: (v: string) => void; invalid?: boolean; describedBy?: string; cols?: 2 | 3 | 5; compact?: boolean }) {
   return (
@@ -46,7 +53,7 @@ export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, de
       className={cn("grid w-full gap-2", cols === 2 ? "grid-cols-2" : cols === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-5")}
     >
       {options.map((o, i) => (
-        <ToggleGroupItem key={o.value} id={i === 0 ? id : undefined} value={o.value} aria-invalid={invalid || undefined} className={cn(compact ? "h-8 text-sm sm:h-8 max-sm:min-h-(--control-height-touch)" : TOUCH, "w-full justify-center px-3")}>
+        <ToggleGroupItem key={o.value} id={i === 0 ? id : undefined} value={o.value} aria-invalid={invalid || undefined} className={cn(compact ? "h-8 text-sm sm:h-8 max-sm:min-h-(--control-height-touch)" : TOUCH, "w-full justify-center px-3", UNSELECTED_NEUTRAL)}>
           {o.label}
         </ToggleGroupItem>
       ))}
@@ -69,8 +76,9 @@ export function SelfNote({ skill, student, requestNote = "" }: { skill: EvSkill;
     <div className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-2 text-sm" data-user-content>
       {rating ? (
         <p className="text-foreground">
+          {/* A program label mid-sentence is lowercase: "Maya rated with assistance" (Romit 2026-10-29). */}
           <span className="text-muted-foreground">{student} rated </span>
-          {rating}
+          {inSentence(rating)}
         </p>
       ) : null}
       {note ? <p className="whitespace-pre-line break-words text-muted-foreground" data-student-note>&ldquo;{note}&rdquo;</p> : null}
@@ -199,26 +207,26 @@ export function StateBanners({ m, req }: { m: EvaluatorModel; req: EvRequest }) 
 
 /** "NURS 350 · Harbor General, 4 West, Inpatient · Performed Oct 20": course, where and when, in one line of data (EV-04). */
 export function contextLine(req: EvRequest): string {
-  return [req.course.code, req.where ? `${req.where.location}${req.where.setting ? `, ${req.where.setting}` : ""}` : null, req.performed ? `Performed ${req.performed}` : null].filter(Boolean).join(" · ")
+  return [req.course.code, req.where ? [req.where.location, req.where.setting].filter(Boolean).join(", ") : null, req.performed ? `Performed ${req.performed}` : null].filter(Boolean).join(" · ")
 }
 
 export const skillsWord = (n: number) => `${n} ${n === 1 ? skillNoun() : skillNounPlural()}`
 
 /**
- * Who is asking and where, shown inside the light header (EvaluatorFrame `summary`): the student's name as the page title and
- * one line of request data (skills, course, place). The "Lab sample" badge marks lab data.
+ * Who is asking, and what the student supplied (EV-04): the student's name is the page title; course, place, date performed and
+ * the request note sit in one "From {first}" block of record data, never a header subtitle (Romit 2026-10-30, D-L8b).
+ * The "Lab sample" badge marks lab data.
  */
 export function RequestSummary({ req, line }: { req: EvRequest; line: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <PageHeader title={req.student.name} subtitle={<span data-viz-label>{line}</span>} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
-      {/* The student's note on the request, in full and once (EV-04): record content, quoted, so it is data, not prose. */}
-      {req.studentNote ? (
-        <figure className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-2 text-sm" data-user-content data-request-note>
-          <figcaption className="text-muted-foreground">{`Note from ${req.student.first}`}</figcaption>
-          <blockquote className="whitespace-pre-line break-words text-foreground">&ldquo;{req.studentNote}&rdquo;</blockquote>
-        </figure>
-      ) : null}
+    <div className="flex flex-col gap-2">
+      <PageHeader title={req.student.name} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
+      {/* The request details and the note, in full and once: record content, so it is data, not prose. */}
+      <figure className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-2 text-sm" data-user-content data-request-details data-request-note={req.studentNote ? "" : undefined}>
+        <figcaption className="text-muted-foreground">{`From ${req.student.first}`}</figcaption>
+        <p className="text-foreground" data-viz-label>{line}</p>
+        {req.studentNote ? <blockquote className="whitespace-pre-line break-words text-foreground">&ldquo;{req.studentNote}&rdquo;</blockquote> : null}
+      </figure>
       {req.sample ? <Badge variant="outline" className="w-fit">Lab sample</Badge> : null}
     </div>
   )

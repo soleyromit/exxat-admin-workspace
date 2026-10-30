@@ -1,5 +1,6 @@
 import type { V2State } from "@/lib/v2/types"
 import { getVocabulary } from "@/lib/v2/vocabulary"
+import { inSentence } from "./terms"
 
 /**
  * Program settings (REQ SL-03 to SL-08; AUDIT T1: no settings screen exists, `GET /v2/admin/settings` 404).
@@ -187,7 +188,7 @@ export interface UseLine {
 export type SettingUse = "sites" | "rules" | "courses"
 
 export function usesOf(s: V2State, tab: SettingsTab, name: string, id?: string, what: SettingUse = "sites"): UseLine[] {
-  if (tab === "settings" && what === "rules") return s.skills.filter((k) => k.config?.achievement.settingMinimums.some((m) => m.setting === name)).sort((a, b) => a.name.localeCompare(b.name)).map((k) => ({ key: k.id, primary: k.name, secondary: `At least ${k.config!.achievement.settingMinimums.find((m) => m.setting === name)!.min} in ${name}` }))
+  if (tab === "settings" && what === "rules") return s.skills.filter((k) => k.config?.achievement.settingMinimums.some((m) => m.setting === name)).sort((a, b) => a.name.localeCompare(b.name)).map((k) => ({ key: k.id, primary: k.name, secondary: `At least ${k.config!.achievement.settingMinimums.find((m) => m.setting === name)!.min} in ${inSentence(name)}` }))
   if (tab === "settings" && what === "courses") return (s.courses ?? [s.course, ...(s.otherCourses ?? [])]).filter((c) => c.clinicalSettings.includes(name)).map((c) => ({ key: c.id, primary: `${c.code} ${c.name}`, secondary: c.cohort }))
   if (tab === "categories") return s.skills.filter((k) => k.category === name).sort((a, b) => a.name.localeCompare(b.name)).map((k) => ({ key: k.id, primary: k.name, secondary: k.configured ? "Configured" : "Not configured" }))
   if (tab === "tags") return s.skills.filter((k) => (k.tags ?? []).includes(name)).sort((a, b) => a.name.localeCompare(b.name)).map((k) => ({ key: k.id, primary: k.name, secondary: k.category }))

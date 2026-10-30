@@ -1,3 +1,4 @@
+import { inSentence } from "@/lib/lab/terms"
 import type { Result } from "./admin-actions"
 import { needsLevels } from "./config"
 import { engineRuleOf, runRule, strengthHint } from "./rules"
@@ -82,8 +83,8 @@ export function skillProgress(s: V2State, studentId: string, skillId: string): S
   if (!achieved) {
     if (have < a.need) left.push(`${a.need - have} more successful ${plural(a.need - have, "evaluation", "evaluations")}`)
     if (have > 0 && distinctHave < a.distinctEvaluators) left.push(`Evaluations from ${a.distinctEvaluators - distinctHave} more different ${plural(a.distinctEvaluators - distinctHave, "evaluator", "evaluators")} (you have ${distinctHave})`)
-    for (const x of settings) if (x.have < x.min) left.push(`${x.min - x.have} more in ${x.setting} (you have ${x.have} of ${x.min})`)
-    for (const l of run.levels) if (l.have < l.min) left.push(`${l.min - l.have} more at ${l.level} or above (you have ${l.have} of ${l.min})`)
+    for (const x of settings) if (x.have < x.min) left.push(`${x.min - x.have} more in ${inSentence(x.setting)} (you have ${x.have} of ${x.min})`)
+    for (const l of run.levels) if (l.have < l.min) left.push(`${l.min - l.have} more at ${inSentence(l.level)} or above (you have ${l.have} of ${l.min})`)
   }
   if (settings.length > 0) notes.push("Lab and simulation do not count toward a clinical setting.")
   if (simLeftOut > 0) {
@@ -247,7 +248,8 @@ export function openRequestFor(s: V2State, studentId: string, skillId: string): 
  * note and time, so a real return (no reassignment) is never mistaken for one.
  */
 export function sentElsewhereTo(s: V2State, e: Evaluation): Person | null {
-  if (e.status !== "returned" || !e.submissionId || !e.review) return null
+  // "reassigned" since 2026-10-30 (D-X25); "returned" is the older stored shape, still read.
+  if ((e.status !== "reassigned" && e.status !== "returned") || !e.submissionId || !e.review) return null
   const review = e.review
   const sub = s.submissions.find((x) => x.id === e.submissionId)
   const hop = sub?.reassignments?.find((h) => h.reason === review.note && h.at === review.at)
@@ -784,7 +786,7 @@ export function studentHistory(s: V2State, studentId: string = STUDENT_ID): { sk
         summary.returned++
       } else if (e.outcome === "met") {
         const why = progress.leftOut[e.id]
-        attempts.push({ ...base, kind: "counted", outcome: "Counted", counted: why ?? (e.setting === "clinical" ? "Counts toward the rule" + (e.clinicalSetting ? ` and toward ${e.clinicalSetting}.` : ".") : `Counts toward the rule. ${e.setting === "lab" ? "Lab" : "Simulation"} evidence never counts toward a clinical setting.`) })
+        attempts.push({ ...base, kind: "counted", outcome: "Counted", counted: why ?? (e.setting === "clinical" ? "Counts toward the rule" + (e.clinicalSetting ? ` and toward ${inSentence(e.clinicalSetting)}.` : ".") : `Counts toward the rule. ${e.setting === "lab" ? "Lab" : "Simulation"} evidence never counts toward a clinical setting.`) })
         summary.counted++
       } else if (e.outcome === "not-yet") {
         attempts.push({ ...base, kind: "not-yet", outcome: "Not yet, feedback only", counted: "Feedback only. No pass or fail is recorded and it does not count toward the rule.", failedRule: `${ruleSentence(skill)} Read the feedback, then make a further attempt. The earlier one stays as it is.` })

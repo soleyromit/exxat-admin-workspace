@@ -6,6 +6,7 @@
  * names the student, the count and "no account needed" enough to start the form? Content only; delivery is out of scope (REQ
  * section 14), so this is a draft, not a channel decision.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
@@ -32,14 +33,14 @@ export function EvaluatorInvitationEmailC() {
     <>
       <EvLabControls states={STATES} defaultState="all" showSample={false} options={[]} />
       <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 py-5 sm:px-6">
-        <PageHeader title="Invitation email" subtitle="Text message per request, plain email as the fallback." className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
+        <PageHeader title="Invitation email" className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
         {!hydrated || !mail ? (
           <Skeleton className="h-96 w-full" />
         ) : (
           <>
             <Card size="sm" data-region="sms" aria-label="Text message preview">
               <CardHeader className="pb-0">
-                <CardTitle className="text-sm">{texts.length === 1 ? "Text message preview" : `Text message preview · ${texts.length} messages, one per request`}</CardTitle>
+                <CardTitle className={TYPE.card}>{texts.length === 1 ? "Text message preview" : `Text message preview · ${texts.length} messages, one per request`}</CardTitle>
               </CardHeader>
               <CardContent>
                 {/* The messages are the artifact being previewed: data, not interface prose (strategy/07 evaluator budget). */}
@@ -58,7 +59,7 @@ export function EvaluatorInvitationEmailC() {
             </Card>
             <Card size="sm" aria-label="Email preview, plain text" data-region="plain">
               <CardHeader className="pb-0">
-                <CardTitle className="text-sm">Email preview, plain text</CardTitle>
+                <CardTitle className={TYPE.card}>Email preview, plain text</CardTitle>
               </CardHeader>
               <CardContent data-artifact-preview>
                 <pre className="font-mono text-xs leading-5 whitespace-pre-wrap text-foreground">{`Subject: ${mail.subject}\n\n${mail.plainText}`}</pre>

@@ -1,10 +1,10 @@
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { OUTCOME_LABEL as SHARED_OUTCOME_LABEL, REVIEW_DECISION_LABEL, evaluationStatusLabel, outcomeWord } from "@/lib/v2/labels"
 import { SETTING_LABEL } from "@/lib/v2/reports"
-import { evalsOfSkill, evalsOfStudentSkill, skillById } from "@/lib/v2/evidence-index"
+import { evalsOfSkill, evalsOfStudent, evalsOfStudentSkill, skillById } from "@/lib/v2/evidence-index"
 import type { Evaluation, Outcome, V2State } from "@/lib/v2/types"
 import { pipelineRecords, populationRows, RECORD_STATES, RECORD_STATE_LABEL, recordStateOf, type PipelineRecord, type Population, type RecordState } from "./dashboard"
-import { graduationStageOf, openRequests, REQUIRED_SET_LABEL } from "@/lib/v2/population"
+import { graduationStageOf, isReportable, openRequests, REQUIRED_SET_LABEL } from "@/lib/v2/population"
 import { skillProgress } from "@/lib/v2/student"
 import { graduatingCohort, graduationSkillsIn } from "./director"
 import { scopeQuery, SCOPE_LABEL, type LabScope, type ScopeKey } from "./scope"
@@ -132,6 +132,8 @@ export interface AttainmentModel {
   totals: StateCounts
   total: number
   behind: number
+  /** The scope the model was built for: the export reads its category and tag filters (RP-10 "the full filtered scope"). */
+  scope?: LabScope
 }
 
 function tally(recs: PipelineRecord[]): StateCounts {
@@ -220,6 +222,7 @@ export function buildAttainment(state: V2State, scope: LabScope, today: string =
     totals: tally(records),
     total: records.length,
     behind: students.filter((r) => r.behind).length,
+    scope,
   }
 }
 
@@ -346,7 +349,7 @@ export interface ExportFormatDef {
 }
 
 /** The column list of the row-per-evaluation detail (CSV and Excel share it). */
-export const detailColumns = (): string[] => ["Student", "Cohort", "Group", capitalize(skillNoun()), "Section", "Date", "Evaluator", "Setting", "Location", "Outcome", "Status", "Feedback", "Self-rating", "Self-evaluation note", "Review decision", "Review note"]
+export const detailColumns = (): string[] => ["Student", "Cohort", "Group", capitalize(skillNoun()), "Section", "Date", "Evaluator", "Setting", "Location", "Outcome", "Status", "Feedback", "Self-rating", "Self-evaluation note", "Review decision", "Review note", "Required"]
 
 export function exportFormats(): ExportFormatDef[] {
   // REQ RP-10 names feedback, settings, locations, self-evaluations and review notes for the row-per-evaluation detail, so
@@ -381,12 +384,18 @@ export interface DetailRow {
   review: string
   /** The reviewer's note on the latest approve or return (RP-10 "review notes"). */
   reviewNote: string
+  /** "Yes" when the evaluation sits on a record in the required set the view reads, "No" for any other skill in scope. */
+  required: string
 }
 
-/** Every evaluation on a required record in scope (after the location and setting recount): the CSV and Excel rows. */
+/**
+ * Every evaluation in the filtered scope (REQ RP-10 "An export must cover the full filtered scope"): first the evaluations on
+ * required records, then those on any other reportable skill for the same students that the category and tag filters let in.
+ * All after the location and setting recount (RP-08), so the file matches the evidence the figures read. The "Required" column
+ * says which is which, so no reader mistakes an extra skill for one the figures count.
+ */
 export function detailRows(m: AttainmentModel, state: V2State): DetailRow[] {
   const names = new Map(state.people.map((p) => [p.id, p]))
-  const keys = new Set(m.records.map((r) => r.key))
   // Self-evaluation: stored on the evaluation when the request carried one; otherwise the log entry the request was sent from.
   const subs = new Map((state.submissions ?? []).map((x) => [x.id, x]))
   const entries = new Map((state.logEntries ?? []).map((x) => [x.id, x]))
@@ -397,32 +406,46 @@ export function detailRows(m: AttainmentModel, state: V2State): DetailRow[] {
     const entry = (sub?.entryIds ?? []).map((id) => entries.get(id)).find((x) => x && x.skillId === e.skillId)
     return entry ? { rating: outcomeWord(entry.rating), note: entry.note } : { rating: "", note: "" }
   }
+  const row = (e: Evaluation, who: { student: string; cohort: string; studentId: string }, skill: { name: string; section: string }, required: boolean): DetailRow => {
+    const latest = e.versions[e.versions.length - 1]
+    const self = selfOf(e)
+    return {
+      student: who.student,
+      cohort: who.cohort,
+      group: names.get(who.studentId)?.group ?? "",
+      skill: skill.name,
+      section: skill.section,
+      date: e.date.slice(0, 10),
+      evaluator: names.get(e.evaluatorId)?.name ?? "Unknown evaluator",
+      setting: settingOf(e),
+      location: e.location ?? "",
+      outcome: OUTCOME_LABEL[e.outcome],
+      // Held evidence sent to another evaluator is a handoff (decision D-X25), so it never exports as "Returned".
+      status: e.review?.decision === "reassigned" ? REVIEW_DECISION_LABEL.reassigned : evaluationStatusLabel(e.status),
+      feedback: latest?.detail?.feedback ?? "",
+      selfRating: self.rating,
+      selfNote: self.note,
+      review: e.review ? REVIEW_DECISION_LABEL[e.review.decision] : "",
+      reviewNote: e.review?.note ?? "",
+      required: required ? "Yes" : "No",
+    }
+  }
   const out: DetailRow[] = []
+  const onRecord = new Set<string>()
   for (const r of m.records) {
-    if (!keys.has(r.key)) continue
-    for (const e of evalsOfStudentSkill(m.pop.evidenceState, r.studentId, r.skillId)) {
-      const stu = names.get(r.studentId)
-      const latest = e.versions[e.versions.length - 1]
-      const self = selfOf(e)
-      out.push({
-        student: r.student,
-        cohort: r.cohort,
-        group: stu?.group ?? "",
-        skill: r.skill,
-        section: r.section,
-        date: e.date.slice(0, 10),
-        evaluator: names.get(e.evaluatorId)?.name ?? "Unknown evaluator",
-        setting: settingOf(e),
-        location: e.location ?? "",
-        outcome: OUTCOME_LABEL[e.outcome],
-        // Held evidence sent to another evaluator is a handoff (decision D-X25), so it never exports as "Returned".
-        status: e.review?.decision === "reassigned" ? REVIEW_DECISION_LABEL.reassigned : evaluationStatusLabel(e.status),
-        feedback: latest?.detail?.feedback ?? "",
-        selfRating: self.rating,
-        selfNote: self.note,
-        review: e.review ? REVIEW_DECISION_LABEL[e.review.decision] : "",
-        reviewNote: e.review?.note ?? "",
-      })
+    onRecord.add(`${r.studentId}|${r.skillId}`)
+    for (const e of evalsOfStudentSkill(m.pop.evidenceState, r.studentId, r.skillId)) out.push(row(e, { student: r.student, cohort: r.cohort, studentId: r.studentId }, { name: r.skill, section: r.section }, true))
+  }
+  const cat = m.scope?.cat
+  const tag = m.scope?.tag
+  for (const sr of m.pop.rows) {
+    for (const e of evalsOfStudent(m.pop.evidenceState, sr.id)) {
+      if (onRecord.has(`${sr.id}|${e.skillId}`)) continue
+      const k = skillById(state, e.skillId)
+      if (!k || !isReportable(k)) continue
+      if (cat && k.category !== cat) continue
+      if (tag && !(k.tags ?? []).includes(tag)) continue
+      out.push(row(e, { student: sr.name, cohort: sr.cohort, studentId: sr.id }, { name: k.name, section: k.category }, false))
     }
   }
   return out
@@ -446,7 +469,7 @@ export function toCsv(rows: DetailRow[], header: string[]): string {
   lines.push(csvCell(`Rows (one per evaluation): ${rows.length}`))
   lines.push("")
   lines.push(detailColumns().join(","))
-  for (const r of rows) lines.push([r.student, r.cohort, r.group, r.skill, r.section, r.date, r.evaluator, r.setting, r.location, r.outcome, r.status, r.feedback, r.selfRating, r.selfNote, r.review, r.reviewNote].map(csvCell).join(","))
+  for (const r of rows) lines.push([r.student, r.cohort, r.group, r.skill, r.section, r.date, r.evaluator, r.setting, r.location, r.outcome, r.status, r.feedback, r.selfRating, r.selfNote, r.review, r.reviewNote, r.required].map(csvCell).join(","))
   return lines.join("\n")
 }
 

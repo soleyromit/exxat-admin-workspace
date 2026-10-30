@@ -1,0 +1,28 @@
+<!doctype html>
+<!-- Fixture for scripts/lab-anatomy-check.mjs rule A10: a table cut at its scroll edge with NO edge fade (must be flagged).
+     Add ?fade to the URL to draw a visible right-edge fade over the cut column (must pass). -->
+<html lang="en"><head><meta charset="utf-8"><title>A10 fade</title>
+<style>
+  body { font: 14px system-ui; margin: 24px; }
+  .wrap { position: relative; width: 600px; }
+  .scroll { overflow-x: auto; width: 600px; }
+  table { border-collapse: collapse; width: 900px; }
+  th, td { border: 1px solid #ddd; padding: 8px; width: 104px; white-space: nowrap; text-align: left; }
+  th:last-child, td:last-child { width: 404px; }
+  [data-edge-fade] { position: absolute; top: 0; bottom: 0; right: 0; width: 64px; background: linear-gradient(to left, white, transparent); pointer-events: none; }
+</style></head>
+<body>
+  <main>
+    <div data-slot="page-header"><h1>Matrix</h1></div>
+    <div class="wrap">
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Student</th><th>Pace</th><th>Achieved</th><th>Medication</th><th>Waiting</th></tr></thead>
+          <tbody><tr><td>Noah Whitfield</td><td>Behind</td><td>2 of 5</td><td>1 of 1</td><td>With Nia Boateng, 35 days</td></tr></tbody>
+        </table>
+      </div>
+      <span id="fade" data-edge-fade role="presentation" hidden></span>
+    </div>
+  </main>
+  <script>if (location.search.includes("fade")) document.getElementById("fade").hidden = false</script>
+</body></html>

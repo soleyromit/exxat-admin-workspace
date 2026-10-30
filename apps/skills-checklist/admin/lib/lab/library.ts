@@ -90,6 +90,10 @@ export interface LibraryRow extends Record<string, unknown> {
   requiredToGraduate: boolean
   /** Added in this lab session. */
   isNew: boolean
+  /** The category shown on the row has been deactivated since it was assigned [REQ SL-06]: it stays, marked "Inactive". */
+  categoryInactive: boolean
+  /** Tags on the row that have been deactivated since they were assigned [REQ SL-06]: they stay, marked "Inactive". */
+  inactiveTags: string[]
 }
 
 interface HgtcRow {
@@ -161,7 +165,24 @@ function statusOf(k: Pick<Skill, "configured" | "published">, inactive: boolean)
   return isConfigured(k) ? "configured" : "not-configured"
 }
 
+/**
+ * Deactivated categories and tags, by lower-case name, from the ONE shared vocabulary (lib/v2/vocabulary.ts) [REQ SL-06: "One
+ * already assigned but since deactivated remains on the skill, identifiable as inactive"].
+ */
+export function inactiveVocab(state: V2State): { categories: Set<string>; tags: Set<string> } {
+  const v = getVocabulary(state)
+  return {
+    categories: new Set(v.categories.filter((e) => !e.active).map((e) => normName(e.name))),
+    tags: new Set(v.tags.filter((e) => !e.active).map((e) => normName(e.name))),
+  }
+}
+
 export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVERLAY): LibraryRow[] {
+  const off = inactiveVocab(state)
+  const vocabMarks = (r: Pick<LibraryRow, "section" | "category" | "tags">) => ({
+    categoryInactive: [r.section, r.category].some((c) => !!c && c !== NO_CATEGORY && off.categories.has(normName(c))),
+    inactiveTags: r.tags.filter((t) => off.tags.has(normName(t))),
+  })
   const inactive = new Set([...demoInactiveIds(state), ...overlay.inactive].filter((id) => !overlay.reactivated.includes(id)))
   const deleted = new Set(overlay.deleted)
   const courseCount = new Map<string, { all: Set<string>; mandatory: Set<string> }>()
@@ -186,11 +207,12 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
       const evidence = evalsOfSkill(state, k.id).length
       const courses = c?.all.size ?? 0
       const status = statusOf(k, inactive.has(k.id))
-      return {
+      const base = {
         id: k.id,
         name: e?.name ?? k.name,
         description: e?.description ?? k.description ?? "",
-        section: e?.section ?? sectionOf(k),
+        // An edit that cleared the category reads "No category" (an empty section rendered a blank Category fact).
+        section: e?.section !== undefined ? e.section || NO_CATEGORY : sectionOf(k),
         group: e?.group ?? groupOf(k),
         category: e?.category ?? (k.category && k.category !== "No category" ? k.category : ""),
         tags: e?.tags ?? k.tags ?? [],
@@ -208,6 +230,7 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
         requiredToGraduate: !!k.hgtc?.required || !!overlay.required?.includes(k.id),
         isNew: !!overlay.fresh?.includes(k.id),
       }
+      return { ...base, ...vocabMarks(base) }
     })
   const added: LibraryRow[] = overlay.added
     .filter((a) => !deleted.has(a.id))
@@ -216,7 +239,7 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
       const cm = copied(a.id)
       const model = cm !== undefined ? cm : a.model
       const status: LibraryStatus = inactive.has(a.id) ? "inactive" : "not-configured"
-      return {
+      const base = {
         id: a.id,
         name: a.name,
         description: a.description ?? "",
@@ -238,6 +261,7 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
         requiredToGraduate: !!a.requiredToGraduate,
         isNew: true,
       }
+      return { ...base, ...vocabMarks(base) }
     })
   return [...added, ...rows]
 }
@@ -493,6 +517,70 @@ export interface SeveralItem {
   description?: string
   category?: string
   tags?: string[]
+  /** The library skill this line replaces (its name, category, tags and description), kept with its id and evidence [REQ IM-06]. */
+  replaces?: string
+  /** The pasted name this item came from, when it differs or replaces (keep both, replace), so its line's description follows. */
+  source?: string
+}
+
+/** What to do with a pasted name already in the library [REQ IM-06]: the program decides; skip is the starting choice. */
+export type DuplicateChoice = "skip" | "keep-both" | "replace"
+
+/**
+ * The choices a library twin offers. Replace only while the library skill is not configured and holds no evidence, the same
+ * guard as import (a configured skill's rule and evidence are never overwritten by a pasted line).
+ */
+export function duplicateChoices(twin: { status: LibraryStatus; evidence: number } | undefined): DuplicateChoice[] {
+  return twin && twin.status === "not-configured" && twin.evidence === 0 ? ["skip", "keep-both", "replace"] : ["skip", "keep-both"]
+}
+
+/** "Keep both" needs two names: the pasted one gets the first free "(2)", "(3)" … suffix. */
+export function keepBothSeveralName(name: string, taken: readonly string[]): string {
+  const used = new Set(taken.map(normName))
+  for (let k = 2; k < 100; k++) {
+    const next = `${name} (${k})`
+    if (!used.has(normName(next))) return next
+  }
+  return `${name} (copy)`
+}
+
+/** Rewrites one pasted line's name (per-line edit, REQ IM-05); its other cells stay. `null` leaves the line out. */
+export function editPastedLine(text: string, line: number, name: string | null): string {
+  const lines = text.split(/\r?\n/)
+  const i = line - 1
+  if (i < 0 || i >= lines.length) return text
+  if (name === null) {
+    lines.splice(i, 1)
+    return lines.join("\n")
+  }
+  const cells = lines[i]!.split("\t")
+  cells[0] = name
+  lines[i] = cells.join("\t")
+  return lines.join("\n")
+}
+
+/**
+ * The items add several creates, with the program's choice for each library twin applied [REQ IM-06]: skipped lines add
+ * nothing, keep both adds the line under a "(2)" name, replace updates the library skill in place.
+ */
+export function severalItemsWithChoices(parsed: { lines: PastedLine[]; items: SeveralItem[] }, rows: readonly Pick<LibraryRow, "id" | "name" | "status" | "evidence">[], choices: Record<string, DuplicateChoice>): SeveralItem[] {
+  const byName = new Map(rows.map((r) => [normName(r.name), r]))
+  const taken = [...rows.map((r) => r.name), ...parsed.items.map((i) => i.name)]
+  const out: SeveralItem[] = [...parsed.items]
+  for (const l of parsed.lines) {
+    if (l.kind !== "in-library") continue
+    const twin = byName.get(normName(l.name))
+    const choice = choices[normName(l.name)] ?? "skip"
+    if (choice === "skip" || !duplicateChoices(twin).includes(choice)) continue
+    const base = { ...(l.category ? { category: l.category } : {}), ...(l.tags ? { tags: l.tags } : {}), ...(l.description ? { description: l.description } : {}) }
+    if (choice === "replace" && twin) out.push({ name: twin.name, ...base, replaces: twin.id, source: l.name })
+    else {
+      const name = keepBothSeveralName(l.name, taken)
+      taken.push(name)
+      out.push({ name, ...base, source: l.name })
+    }
+  }
+  return out
 }
 
 /** Strips bullets, numbering and tabs a spreadsheet or email adds ("1. ", "- ", "* ", "•"). */

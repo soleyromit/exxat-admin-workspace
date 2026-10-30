@@ -20,16 +20,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { FormPage, StickyFooter } from "@/components/lab/layout"
-import { CONFIGURE_STEPS, configureStepHead, outcomesLabel, saveLabRule, type ConfigureStepId, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
-import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
-import { useV2Store } from "@/lib/v2/react"
+import { CONFIGURE_STEPS, configureStepHead, outcomesLabel, type ConfigureStepId, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { SECTION_BODY, type SectionProps } from "@/components/lab/configure/fields"
 import { ConfigSection } from "@/components/lab/configure/section"
 import { RuleFooterSummary, RulePreviewAside } from "@/components/lab/configure/live-panel"
 import { EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
 import { ConfigureReceiptPage, DecisionPanel, PeopleSee, saveBlockedReason, SetupSummary, useMinWidth, WhoItAffects } from "@/components/lab/configure/check"
-import { BulkApplySheet, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
+import { BulkApplySheet, bulkAppliedNote, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
 import { ConfigureLoading, ConfigureNotFound, LeaveButton, SkillTitle } from "@/components/lab/configure/shell"
 import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
 
@@ -71,7 +69,6 @@ function SectionNav({ active, labels, counts }: { active: ConfigureStepId; label
 
 export function AdminConfigureSkillB() {
   const m = useConfigure()
-  const store = useV2Store()
   const params = useSearchParams()
   const askedSection = params?.get("section")
   const [showErrors, setShowErrors] = React.useState(false)
@@ -199,7 +196,7 @@ export function AdminConfigureSkillB() {
         banner={banner}
         // D-X29/D-X30: the live preview panel beside the page from 1280 px; Check uses it too (its own tabs are narrow only).
         // Layout "checklist" (redesign 2026-10-27): while Check is in view the side column becomes the sticky decision panel.
-        aside={onCheck && wide ? decisions : <RulePreviewAside skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")} />}
+        aside={onCheck && wide ? decisions : <RulePreviewAside skillName={skill.name} rule={m.rule} current={m.current} impact={impact} onSeeChange={() => scrollToSection("check")} />}
         footer={
           <StickyFooter
             summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")} asideWide />}
@@ -248,15 +245,7 @@ export function AdminConfigureSkillB() {
         skillId={m.skillId}
         rule={m.rule}
         blocked={m.issues.length > 0}
-        onApplied={(x) => {
-          // Saved to each skill picked, each with its own rule version (decision D-X31) [REQ IM-14].
-          const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
-          store.update((s) => x.ids.reduce((acc, id) => {
-            const r = saveLabRule(acc, id, m.rule, { at, byId: IDS.ross, mode: "reapply" })
-            return r.ok && r.written ? r.state : acc
-          }, s))
-          setNote(`Configuration saved to ${x.skills} ${x.skills === 1 ? skillNoun() : skillNounPlural()}. They are configured and can be mapped.${x.configured ? ` ${x.configured} were already configured; ${x.students} students changed status.` : ""}`)
-        }}
+        onApplied={(x) => setNote(bulkAppliedNote(x))}
       />
     </>
   )

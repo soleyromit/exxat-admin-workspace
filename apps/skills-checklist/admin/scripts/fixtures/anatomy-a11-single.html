@@ -1,0 +1,21 @@
+<!doctype html>
+<!-- Fixture for scripts/lab-anatomy-check.mjs rule A11: a page-header "More actions" menu holding ONE action (must be flagged).
+     No lab page has a single-action header menu today (2026-10-30), so detection is proven on this fixture. -->
+<html lang="en"><head><meta charset="utf-8"><title>A11 single</title></head>
+<body>
+  <main>
+    <div data-slot="page-header">
+      <div data-slot="page-header-title-row" style="display:flex;gap:8px;align-items:center">
+        <h1>Oral medication administration</h1>
+        <button type="button" aria-haspopup="menu" aria-label="More actions" id="t">…</button>
+      </div>
+    </div>
+    <div id="m" role="menu" hidden><div role="menuitem">Copy from another skill</div></div>
+    <table><thead><tr><th>Skill</th></tr></thead><tbody><tr><td>Row</td></tr></tbody></table>
+  </main>
+  <script>
+    const t = document.getElementById("t"), m = document.getElementById("m")
+    t.addEventListener("click", () => { m.hidden = !m.hidden })
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") m.hidden = true })
+  </script>
+</body></html>

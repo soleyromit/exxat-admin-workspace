@@ -1,4 +1,4 @@
-import { skillNoun } from "@/lib/lab/terms"
+import { inSentence, skillNoun } from "@/lib/lab/terms"
 /**
  * One wording, one icon and one tone per state (glossary.md; docs/knowledge/design/consistency-audit.md). Screens read these
  * maps; a wrapper badge may change the size, never the word, icon or tone. Amber ("warning") marks shortfall, never red.
@@ -27,8 +27,70 @@ export const STUDENT_STATE_LABEL: Record<RecordStateKey, string> = {
   none: RECORD_STATE_META.none.label,
 }
 
+/**
+ * Vocabulary policy (design review 2026-10-30 CP-2: "Did not count", "Unmet", "Not yet" and "Evidence does not qualify" were
+ * stacked in one student row). On a student surface one phrase leads: "Did not count". The engine word (the evaluator's answer
+ * or the engine state) is said only inside the explanation sentence, lowercase mid-sentence, never as a second label in the
+ * same row header.
+ */
+export const ENGINE_NOT_COUNTED_WORDS: readonly string[] = ["Unmet", "Not yet", "Evidence does not qualify", "Not met"]
+
+/**
+ * The labels a student row header may show, given everything a screen would put there: when "Did not count" is present, the
+ * engine words are dropped (they belong in the explanation); duplicates are dropped; order is kept.
+ */
+export function rowHeaderLabels(labels: ReadonlyArray<string | null | undefined>): string[] {
+  const list = labels.filter((l): l is string => !!l)
+  const lead = list.includes(STUDENT_NOT_COUNTED)
+  return [...new Set(list.filter((l) => !(lead && ENGINE_NOT_COUNTED_WORDS.includes(l))))]
+}
+
+/** The explanation sentence that carries the evaluator's answer: "The evaluator answered unmet." (label lowercase mid-sentence). */
+export function answeredSentence(answer: string): string {
+  return `The evaluator answered ${inSentence(answer)}.`
+}
+
 /** Evaluator answers on one evaluation: the program's binary labels default to Met / Unmet (REQ section 4.1). */
 export const OUTCOME_LABEL = { met: "Met", "not-met": "Unmet", "not-yet": "Not yet" } as const
+
+// ---------------------------------------------------------------------------------------------------------------------
+// One tone map for every persona (design review 2026-10-30 CP-1: Counted and Unmet, Ready and Changed since verified, looked the
+// same for staff while students saw amber). Amber ("warning") marks an answer or state that keeps evidence from counting, or a
+// record that needs attention; everything that counts or is ready stays neutral. Never red: red is kept for a hard block.
+
+export type LabelTone = "neutral" | "warning"
+
+/** Tone of one evaluator answer: Met neutral; Unmet and Not yet keep the evaluation from counting, so amber. */
+export const OUTCOME_TONE: Record<keyof typeof OUTCOME_LABEL, LabelTone> = { met: "neutral", "not-met": "warning", "not-yet": "warning" }
+
+/** Director verification status: Changed since verified needs the director again, so amber; the rest are neutral. */
+export const VERIFY_STATUS_TONE: Record<"ready" | "changed" | "blocked" | "verified" | "not-verified", LabelTone> = {
+  ready: "neutral",
+  verified: "neutral",
+  "not-verified": "neutral",
+  blocked: "neutral",
+  changed: "warning",
+}
+
+/** The words that take amber wherever they are shown as a status (pill, badge, cell). */
+const WARNING_WORDS = new Set<string>([
+  "Unmet",
+  "Not yet",
+  "Did not count",
+  "Evidence does not qualify",
+  "Changed since verified",
+  "Returned",
+  "Sent back to student",
+  "Unverified",
+])
+
+/**
+ * The tone for a status word, for screens that hold only the word (a row model's label). One source with the maps above: Counted,
+ * Achieved, Ready, Met and every overlay that is only waiting are neutral.
+ */
+export function statusTone(word: string | null | undefined): LabelTone {
+  return word && WARNING_WORDS.has(word) ? "warning" : "neutral"
+}
 
 /** Overlays on a record (never states). */
 export const OVERLAY_LABEL = {
@@ -43,9 +105,10 @@ export const EVALUATION_STATUS_LABEL = {
   "awaiting-approval": OVERLAY_LABEL.awaitingApproval,
   returned: OVERLAY_LABEL.returned,
   reopened: "Reopened",
+  reassigned: "Sent for a new evaluation",
 } as const
 export const evaluationStatusLabel = (status: string): string =>
-  status === "counted" ? EVALUATION_STATUS_LABEL.counted : status === "awaiting-approval" ? EVALUATION_STATUS_LABEL["awaiting-approval"] : status === "returned" ? EVALUATION_STATUS_LABEL.returned : EVALUATION_STATUS_LABEL.reopened
+  status === "counted" ? EVALUATION_STATUS_LABEL.counted : status === "awaiting-approval" ? EVALUATION_STATUS_LABEL["awaiting-approval"] : status === "returned" ? EVALUATION_STATUS_LABEL.returned : status === "reassigned" ? EVALUATION_STATUS_LABEL.reassigned : EVALUATION_STATUS_LABEL.reopened
 
 /** The reviewer's two decisions (REQ AR-05), plus the handoff "Assign to someone else" (decision D-X25: never read as a return). */
 export const REVIEW_DECISION_LABEL = { approved: "Approved", returned: "Sent back to student", reassigned: "Sent for a new evaluation" } as const

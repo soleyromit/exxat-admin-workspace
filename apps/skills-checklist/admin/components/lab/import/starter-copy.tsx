@@ -5,6 +5,7 @@
  * starting points the program owns, labelled). Shared by starter-library variants A and B: the preview body and the copy dialog.
  * The copy is owned by the program, shares no evidence or versions with the starting point, and arrives not configured.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
@@ -23,7 +24,7 @@ export function StartingPointPreview({ point }: { point: StartingPoint }) {
         const list = point.skills.filter((k) => k.section === s)
         return (
           <section key={s} aria-label={`${s}, ${countSkills(list.length)}`} className="flex flex-col gap-1">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">{s}<span className="text-xs font-normal tabular-nums text-muted-foreground">{list.length}</span></h3>
+            <h3 className={`flex items-center gap-2 ${TYPE.group}`}>{s}<span className="text-xs font-normal tabular-nums text-muted-foreground">{list.length}</span></h3>
             <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
               {list.map((k, i) => (
                 <li key={`${k.name}-${i}`} className="flex items-center gap-3 px-3 py-1.5 text-sm">

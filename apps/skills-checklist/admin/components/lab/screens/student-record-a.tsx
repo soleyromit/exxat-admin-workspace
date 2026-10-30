@@ -15,13 +15,13 @@ import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/student2/frame"
-import { RecordFigures, RecordFilters, ResultLabel } from "@/components/lab/student2/record-parts"
+import { RecordFigures, RecordFilters, ResultLabel, WhyText } from "@/components/lab/student2/record-parts"
 import { LINK_IN_TABLE, StateLabel } from "@/components/lab/student/parts"
-import { shortDate } from "@/lib/lab/student"
+import { shortDate, shortSettingLine } from "@/lib/lab/student"
 import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { EMPTY_RECORD_FILTER, filterRecord, groupBySkill, recordAttemptLine, recordCourses, recordFigures, recordRows, student2Href, type RecordFilter } from "@/lib/lab/student2"
+import { EMPTY_RECORD_FILTER, filterRecord, groupBySkill, recordAttemptLine, recordCourses, recordFigures, recordRows, student2Href, whyWithRule, type RecordFilter } from "@/lib/lab/student2"
 import { EvaluatorWithTag } from "@/components/lab/student/checkoff"
-import { EVALUATION_PARAM, StudentEvaluationSheet, ViewEvaluationButton } from "@/components/lab/student/evaluation-sheet"
+import { EVALUATION_PARAM, StudentEvaluationSheet, ViewEvaluationButton, ViewEvaluationLink } from "@/components/lab/student/evaluation-sheet"
 
 const GROUP_LIMIT = 12
 
@@ -55,7 +55,13 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
   const groups = React.useMemo(() => groupBySkill(r.shown), [r.shown])
   // "5 attempts, 3 count" per skill from the whole record, so a result filter never changes how attempts are counted.
   const attemptLines = React.useMemo(() => new Map(groupBySkill(r.rows).map((g) => [g.skillId, recordAttemptLine(ctx.state, ctx.studentId, g.skillId)])), [r.rows, ctx.state, ctx.studentId])
-  const countText = (g: { skillId: string; rows: unknown[] }) => attemptLines.get(g.skillId) || (g.rows.length === 1 ? "1 evaluation" : `${g.rows.length} evaluations`)
+  // A named setting still short reads beside the count, "Inpatient 1 of 2" [REQ SH-05]; met settings stay on the skill page.
+  const settingLines = React.useMemo(() => new Map(ctx.model.all.map((x) => [x.id, shortSettingLine(x)])), [ctx.model])
+  const countText = (g: { skillId: string; rows: unknown[] }) => {
+    const base = attemptLines.get(g.skillId) || (g.rows.length === 1 ? "1 evaluation" : `${g.rows.length} evaluations`)
+    const setting = settingLines.get(g.skillId)
+    return setting ? `${base} · ${setting}` : base
+  }
   const [open, setOpen] = React.useState<Record<string, boolean>>({})
   const [all, setAll] = React.useState(false)
   const isOpen = (id: string, notCounted: number) => open[id] ?? notCounted > 0
@@ -90,7 +96,9 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
                         <ResultLabel result={latest.result} className="text-xs" />
                       </div>
                     ) : null}
-                    {latest && (latest.result === "not-counted" || latest.result === "returned" || latest.result === "sent") ? <p className="text-xs text-muted-foreground">{latest.why}</p> : null}
+                    {latest && (latest.result === "not-counted" || latest.result === "returned" || latest.result === "sent") ? <p className="text-xs text-muted-foreground"><WhyText why={latest.result === "not-counted" ? whyWithRule({ why: latest.why, rule: g.rule ?? undefined }) : latest.why} /></p> : null}
+                    {/* One tap to the latest completed evaluation in full [REQ SH-07]; older ones are on the skill page. */}
+                    {latest?.evaluationId ? <ViewEvaluationLink href={student2Href("record", { [EVALUATION_PARAM]: latest.evaluationId }, ctx.studentId)} name={`${g.skillName}, ${shortDate(latest.date)}`} /> : null}
                   </li>
                 )
               })}
@@ -121,6 +129,8 @@ function BySkill({ ctx }: { ctx: Student2Ctx }) {
                             {g.state && g.label ? <StateLabel record={{ state: g.state, label: g.label }} className="text-xs" /> : null}
                             <span className="ms-auto text-xs tabular-nums text-muted-foreground" data-attempt-line>{countText(g)}</span>
                           </div>
+                          {/* The failed rule once per skill, not on every attempt (review 2026-10-30) [REQ SH-03]. */}
+                          {g.rule ? <p className="ps-10 text-sm text-foreground" data-skill-rule>{g.rule}</p> : null}
                         </TableCell>
                       </TableRow>
                       {expanded

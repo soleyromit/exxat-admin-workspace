@@ -23,7 +23,7 @@ import { QrSvg } from "@/components/lab/student2/qr"
 import { SectionTitle } from "@/components/lab/student/parts"
 import { ValidationSummary, type ValidationIssue } from "@/components/lab/layout/validation-summary"
 import type { Student2Ctx } from "@/components/lab/student2/frame"
-import type { Setting, SignoffMethod, Submission } from "@/lib/v2/types"
+import type { Setting, SignoffMethod, Submission, V2State } from "@/lib/v2/types"
 import { skillById } from "@/lib/v2/evidence-index"
 import { skillRecord } from "@/lib/lab/student"
 import { labNow, loggedSitting, markLoggedSent, saveLogged, sendNew, type LoggedInput } from "@/lib/lab/logged"
@@ -37,7 +37,9 @@ import {
   confirmationLines,
   countsWhen,
   detailErrors,
+  detailFieldsFor,
   evaluatorsFor,
+  extraDetails,
   locationError,
   locationFor,
   methodById,
@@ -54,6 +56,7 @@ import {
   type EvaluatorOption,
   type NewEvaluator,
   type PickRow,
+  withNamedEvaluator,
 } from "@/lib/lab/student2"
 
 export interface RequestResultInfo {
@@ -69,8 +72,8 @@ export interface RequestResultInfo {
   counts: Array<{ id: string; name: string; text: string }>
   /**
    * The request as it is stored [REQ ST-12]: one `studentNote` per submission, apart from the evaluator's comment (the evaluator
-   * reads it beside the request, EV-04; lib/lab/evaluation-view.ts reads `studentNote`). The lab keeps it local (the shared store
-   * stays read only).
+   * reads it beside the request, EV-04; lib/lab/evaluation-view.ts reads `studentNote`). Sending writes it to the shared store,
+   * and a name typed through "Someone not listed" is recorded as a Not verified evaluator (withNamedEvaluator, SL-09).
    */
   submission: Submission
 }
@@ -100,8 +103,11 @@ export function useRequestDraft(ctx: Student2Ctx) {
   const loc = locationFor(chosen, location)
   const setting: Setting = chosen?.setting ?? "clinical"
   const options = React.useMemo(() => evaluatorsFor(s, skills, loc, setting), [s, skills, loc, setting])
-  // Continuing a draft (?logged=): the evaluator, method and self-ratings come back as they were saved.
+  // Continuing a draft (?logged=): the evaluator, method, self-ratings and any configured details come back as they were saved.
   const draft = React.useMemo(() => loggedSitting(s, studentId, param("logged")), []) // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => {
+    if (draft?.extra) setDetails((d) => ({ ...draft.extra, ...d }))
+  }, [draft])
   const [draftId, setDraftId] = React.useState<string | null>(() => draft?.batchId ?? null)
   const [savedAt, setSavedAt] = React.useState<string | null>(null)
   const [who, setWho] = React.useState<WhoValue>(() => (draft?.who ? { kind: "person", id: draft.who } : null))
@@ -135,7 +141,9 @@ export function useRequestDraft(ctx: Student2Ctx) {
   }, [options, who])
 
   const freshErrors = who?.kind === "new" ? newEvaluatorErrors(fresh) : {}
-  const detailErrs = detailErrors(details)
+  // The details each chosen skill's configuration asks for, mandatory ones enforced before Send [REQ SC-13, ST-10].
+  const fields = React.useMemo(() => detailFieldsFor(s, skills), [s, skills])
+  const detailErrs = detailErrors(details, fields)
   const errors = {
     skills: skills.length === 0 ? `Pick at least one ${skillNoun()}.` : null,
     who: who === null ? (method === "photo" ? "Choose who signed the form." : "Choose who signs off.") : null,
@@ -156,6 +164,8 @@ export function useRequestDraft(ctx: Student2Ctx) {
     ...(errors.note ? [{ fieldId: "req-note", message: errors.note }] : []),
   ]
   const valid = issues.length === 0
+  // Send stays available until the first failed attempt; after it, Send waits until every listed field is fixed [strategy 07].
+  const blocked = tried && !valid
   const whoOption = who?.kind === "person" ? options.find((o) => o.id === who.id) : undefined
   const whoName = whoOption?.name ?? (who?.kind === "new" ? fresh.name.trim() || "your evaluator" : "your evaluator")
   const whoRole = whoOption?.role ?? (who?.kind === "new" ? (setting === "clinical" ? "Not yet recorded" : "Lab instructor, not yet recorded") : "")
@@ -164,6 +174,7 @@ export function useRequestDraft(ctx: Student2Ctx) {
     if (!chosen) return null
     return {
       skillIds: skills, where: whereVal, setting: chosen.setting, clinicalSetting: chosen.clinicalSetting, location: loc, date: details.date, unit: details.unit, case: details.case, note,
+      extra: extraDetails(details),
       ratings: Object.fromEntries(skills.filter((k) => ratings[k]).map((k) => [k, ratings[k]])),
       answers: Object.fromEntries(skills.filter((k) => answers[k]?.length).map((k) => [k, answers[k]])),
       course: extra.course ?? param("course"), step: extra.step ?? param("step"), who: who?.kind === "person" ? who.id : null, method, batchId: draftId,
@@ -199,7 +210,9 @@ export function useRequestDraft(ctx: Student2Ctx) {
     const base = confirmationLines({ skillNames: skills.map((k) => picks.find((p) => p.id === k)?.name ?? skillNoun()), who: whoName, role: whoRole, setting: settingWords(chosen), location: loc, date: details.date, note })
     // What the student rated themselves, per skill, said once in the confirmation [REQ ST-11, ST-13].
     const selfLine = selfIds.map((k) => `${skillById(s, k)?.name ?? skillNoun()}: ${selfSummary(s, k, ratings, answers)}`).join("; ")
-    const lines = selfLine ? [...base, { label: "You rated yourself", value: selfLine }] : base
+    // Every other configured detail the student supplied, by its own label [REQ SC-13, ST-13].
+    const more = fields.filter((f) => f.id !== "date" && (details[f.id] ?? "").trim()).map((f) => ({ label: f.label, value: details[f.id].trim() }))
+    const lines = [...base, ...more, ...(selfLine ? [{ label: "You rated yourself", value: selfLine }] : [])]
     const counts = skills.map((k) => {
       const r = m.all.find((x) => x.id === k) ?? skillRecord(s, studentId, k, "evidence", false)
       const name = r?.name ?? picks.find((p) => p.id === k)?.name ?? skillNoun()
@@ -209,13 +222,24 @@ export function useRequestDraft(ctx: Student2Ctx) {
     // Sent: the request is written to the shared store and waits in My requests. From a draft, the draft becomes that request and
     // leaves Drafts. Offline it is kept as a draft (My requests, Drafts) until it can go (LEDGER D-L10).
     const input = inputFor()
+    // "Someone not listed" [REQ SL-09, ST-09]: the typed name and email become a Not verified evaluator in the shared store (New
+    // evaluators, Settings > Evaluators), and this request is assigned to them. One person per email; offline it waits as a draft.
+    const named = (st: V2State, sub: Submission) =>
+      who?.kind === "new" && chosen ? withNamedEvaluator(st, { studentId, name: fresh.name, email: fresh.email, setting: chosen.setting, skillIds: skills, location: loc }, sub, labNow()) : { state: st, submission: sub }
     if (queued) {
       if (input) updateActiveV2Store((st) => saveLogged(st, input, studentId).state)
     } else if (draftId) {
       // Keep the draft's latest values first, then send it.
-      updateActiveV2Store((st) => (input ? markLoggedSent(saveLogged(st, input, studentId).state, studentId, draftId, { ...submission, createdAt: labNow() }) : st))
+      updateActiveV2Store((st) => {
+        if (!input) return st
+        const n = named(st, { ...submission, createdAt: labNow() })
+        return markLoggedSent(saveLogged(n.state, input, studentId).state, studentId, draftId, n.submission)
+      })
     } else if (input) {
-      updateActiveV2Store((st) => sendNew(st, input, studentId, submission))
+      updateActiveV2Store((st) => {
+        const n = named(st, submission)
+        return sendNew(n.state, input, studentId, n.submission)
+      })
     }
     setResult({ id, method, who: whoName, skillIds: skills, queued, lines, counts, submission, sentence: nextSentence({ method, who: whoName, approval: needsApproval(s, skills), offline, newName: who?.kind === "new" }) })
     return true
@@ -230,7 +254,7 @@ export function useRequestDraft(ctx: Student2Ctx) {
     setPhoto(null)
     setNote("")
   }
-  return { s, studentId, offline, picks, where, chosen, whereVal, setWhere, location, setLocation, details, setDetails, detailErrs, note, setNote, skills, setSkills, toggle, options, who, setWho, fresh, setFresh, freshErrors, method, setMethod, photo, setPhoto, tried, errors, issues, valid, send, result, reset, whoName, ratings, setRatings, answers, setAnswer, selfIds, selfIssues, saveForLater, saveError, savedAt, draftId }
+  return { s, studentId, offline, picks, where, chosen, whereVal, setWhere, location, setLocation, details, setDetails, detailErrs, fields, blocked, note, setNote, skills, setSkills, toggle, options, who, setWho, fresh, setFresh, freshErrors, method, setMethod, photo, setPhoto, tried, errors, issues, valid, send, result, reset, whoName, ratings, setRatings, answers, setAnswer, selfIds, selfIssues, saveForLater, saveError, savedAt, draftId }
 }
 
 export type RequestDraft = ReturnType<typeof useRequestDraft>
@@ -239,9 +263,11 @@ export type RequestDraft = ReturnType<typeof useRequestDraft>
  * What the evaluator sees, said once before Send [CALL 10-26]: only the chosen skills, and the student's self-rating where the
  * program asks for one (it sits beside the evaluator's answer). Preceptors and lab instructors open the same link, no account.
  */
-export function scopeSentence(d: Pick<RequestDraft, "picks" | "skills">): string {
-  const self = d.picks.some((p) => p.selfEval && d.skills.includes(p.id))
-  return self ? `They see only the ${skillNounPlural()} you chose, with your self-rating.` : `They see only the ${skillNounPlural()} you chose.`
+export function scopeSentence(d: Pick<RequestDraft, "picks" | "skills"> & Partial<Pick<RequestDraft, "ratings" | "answers">>): string {
+  // "with your self-rating" only once one is given [REQ ST-11]: a skill that asks for one, with a rating or any answer recorded.
+  const given = (id: string) => !!d.ratings?.[id] || (d.answers?.[id] ?? []).some((a) => a != null)
+  const self = d.picks.some((p) => p.selfEval && d.skills.includes(p.id) && given(p.id))
+  return self ?`They see only the ${skillNounPlural()} you chose, with your self-rating.` : `They see only the ${skillNounPlural()} you chose.`
 }
 
 /** Skills as chips with an "Add" search, so the request can carry several from one sitting [REQ ST-04, EV-05]. */
@@ -296,7 +322,7 @@ export function WherePick({ d }: { d: RequestDraft }) {
 export function DetailsAndNote({ d, columns = true }: { d: RequestDraft; columns?: boolean }) {
   return (
     <div className="flex flex-col gap-4" data-region-part="details">
-      <DetailsFields idPrefix="req-detail" values={d.details} onChange={(id, v) => d.setDetails((x) => ({ ...x, [id]: v }))} errors={d.detailErrs} showErrors={d.tried} columns={columns} />
+      <DetailsFields idPrefix="req-detail" fields={d.fields} values={d.details} onChange={(id, v) => d.setDetails((x) => ({ ...x, [id]: v }))} errors={d.detailErrs} showErrors={d.tried} columns={columns} />
       <NoteField id="req-note" value={d.note} onChange={d.setNote} error={d.tried ? d.errors.note : null} />
     </div>
   )
@@ -317,6 +343,12 @@ export function SavedForLater({ d }: { d: RequestDraft }) {
       </span>
     </LocalBanner>
   )
+}
+
+/** Beside a disabled Send, after a failed attempt: why it waits, tied to the button (aria-describedby "send-blocked"). */
+export function SendBlockedNote({ d }: { d: RequestDraft }) {
+  if (!d.blocked) return null
+  return <p id="send-blocked" className={TYPE.helper} data-send-blocked>Fix the fields marked above to send.</p>
 }
 
 /** After a failed Send: one summary, each entry focusing its field [REQ ST-10; rule L9]. */
@@ -362,7 +394,7 @@ export function RequestResult({ d, r, wide = false }: { d: RequestDraft; r: Requ
     <Card className="gap-0 py-0" data-region="result">
       <CardContent className={cn("grid gap-x-10 gap-y-4 py-5", wide ? "lg:grid-cols-2" : "")}>
         <div className="flex min-w-0 flex-col gap-4">
-        <h2 className={TYPE.section}>{title}</h2>
+        <h2 className={TYPE.card}>{title}</h2>
         {/* What was submitted, to whom, in what role, setting and location [REQ ST-13]. */}
         <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-sm" data-confirmation>
           {r.lines.map((l) => (

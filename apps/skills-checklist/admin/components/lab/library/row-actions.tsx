@@ -19,6 +19,7 @@ import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet
 import { configureHref, mappingHref, newListHref, type LibraryRow } from "@/lib/lab/library"
 import { countSkills, skillNoun } from "@/lib/lab/terms"
 import type { LibraryApi } from "./use-library"
+import { draftFromRow } from "./skill-sheet"
 import { plural } from "@/lib/v2/format"
 
 
@@ -33,6 +34,8 @@ export interface RowActionHandlers {
   onDeactivate: (rows: LibraryRow[]) => void
   onReactivate: (rows: LibraryRow[]) => void
   onDelete: (r: LibraryRow) => void
+  /** Save a new description from the skill panel [REQ SL-02]; the other details stay as they are. */
+  onSaveDescription?: (r: LibraryRow, description: string) => void
 }
 
 export function RowActions({ row, handlers, hideConfigure = false, hideMap = false }: { row: LibraryRow; handlers: RowActionHandlers; hideConfigure?: boolean; /** The detail panel's primary already maps a configured row. */ hideMap?: boolean }) {
@@ -181,6 +184,7 @@ export function useStableHandlers(api: LibraryApi, life: ReturnType<typeof useLi
     onDeactivate: (rows) => ref.current.life.deactivate(rows),
     onReactivate: (rows) => ref.current.api.reactivate(rows.map((r) => r.id)),
     onDelete: (r) => ref.current.life.del(r),
+    onSaveDescription: (r, description) => ref.current.api.edit(r.id, { ...draftFromRow(r), description }),
   }), [])
 }
 

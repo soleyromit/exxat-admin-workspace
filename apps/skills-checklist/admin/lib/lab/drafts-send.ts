@@ -10,13 +10,15 @@
 import type { Submission, V2State } from "@/lib/v2/types"
 import { personById } from "@/lib/v2/evidence-index"
 import { loggedNotSent, labNow, type LoggedSitting } from "./logged"
-import { evaluatorsFor, type EvaluatorOption } from "./student2"
+import { detailErrors, detailFieldsFor, evaluatorsFor, type EvaluatorOption } from "./student2"
+import { inSentence } from "./terms"
 
 /** What the student filled in the review, by draft id. */
 export type DraftFixes = Record<string, { date?: string; who?: string }>
 
 export interface DraftIssue {
-  field: "date" | "who"
+  /** "details": another mandatory field the skill's configuration asks for; it is filled by continuing the draft in Send. */
+  field: "date" | "who" | "details"
   message: string
 }
 
@@ -59,6 +61,10 @@ export function reviewDrafts(s: V2State, studentId: string, batchIds: string[], 
     const who = pick && pick.eligible ? pick.id : null
     const issues: DraftIssue[] = []
     if (!date) issues.push({ field: "date", message: "Enter the date performed." })
+    // Every other mandatory detail the skills' configuration asks for [REQ SC-13, ST-10]: never sent without it.
+    const fields = detailFieldsFor(s, d.skillIds).filter((f) => f.id !== "date")
+    const missing = Object.keys(detailErrors({ unit: d.unit, case: d.case, ...d.extra }, fields)).map((id) => inSentence(fields.find((f) => f.id === id)!.label))
+    if (missing.length) issues.push({ field: "details", message: `Add the ${missing.length > 1 ? `${missing.slice(0, -1).join(", ")} and ${missing[missing.length - 1]}` : missing[0]} in the draft first.` })
     if (!who) {
       issues.push({
         field: "who",

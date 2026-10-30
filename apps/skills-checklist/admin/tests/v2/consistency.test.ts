@@ -28,6 +28,26 @@ const SCOPES: Array<{ name: string; scope: LabScope }> = [
   { name: "explicit term slug fall-2026", scope: { ...DEFAULT_SCOPE, term: "fall-2026" } },
 ]
 
+/**
+ * Location and setting narrow open requests by the request's site (RP-08). The facts registry must narrow the same way the
+ * dashboards do, otherwise "Waiting" disagrees between the registry and every screen under a location filter.
+ */
+describe.each([
+  { name: "location Harbor General, 4 West", scope: { ...DEFAULT_SCOPE, loc: "Harbor General, 4 West" } as LabScope },
+  { name: "setting clinical", scope: { ...DEFAULT_SCOPE, setting: "clinical" } as LabScope },
+])("waiting requests under a location or setting, scope: $name", ({ scope }) => {
+  const f = facts(s, scope as PopulationScope)
+  const all = facts(s, { ...DEFAULT_SCOPE } as PopulationScope)
+
+  it("is narrowed, and agrees with dashboard A, the drill and operations", () => {
+    expect(f.waitingRequests).toBeLessThan(all.waitingRequests)
+    expect(f.waitingRequests).toBeGreaterThan(0)
+    expect(buildDashboard(s, scope).waitingCount).toBe(f.waitingRequests)
+    expect(buildDrill(s, scope, { list: "requests", cond: "waiting" }).count).toBe(f.waitingRequests)
+    expect(opsModel(s, scope).waiting).toBe(f.waitingRequests)
+  })
+})
+
 const pctText = (f: Facts) => `${f.achievedPct}%`
 
 describe.each(SCOPES)("one value per fact, scope: $name", ({ scope }) => {

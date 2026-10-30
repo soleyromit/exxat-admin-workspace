@@ -464,6 +464,12 @@ describe("determinism and the hand-written layer", () => {
 // SEED_VERSION 2026-10-27.9-self-evaluation: sterile dressing change asks for a self-evaluation (config.selfEvaluation true), so
 // the fulfillment walkthrough shows that step on a mandatory NURS 350 skill the demo student can still send. Nothing else changed:
 // the seed with that one flag removed hashes to the 2026-10-26.8 pair (test below), and the engine never reads the flag.
+// SEED_VERSION 2026-10-30.1-setting-minimum: urinary catheter insertion asks for 2 of its 3 evaluations in Inpatient (REQ SC-11),
+// so the demo student shows progress against a named setting (REQ SH-05). Maya's second urinary catheter evaluation moves to the
+// skills lab (counts toward evaluations, never toward Inpatient), hero urinary evaluations drawn for the outpatient preceptor go to
+// an inpatient one (no extra draw), and the generator now routes generated urinary evidence to inpatient sites. Facts: mandatory
+// achieved 760 to 757 (Ethan Cole and two generated students are short of Inpatient); every other fact is unchanged. Both pins
+// below re-pinned on purpose; the second still proves the self-evaluation flag is the only difference from the pair without it.
 // To re-pin after a pool or generator change: run this test, paste the new pair, bump SEED_VERSION.
-const PINNED: [number, number] = [4929079, 3721521206]
-const PINNED_BEFORE_SELF_EVALUATION: [number, number] = [4929057, 942666486]
+const PINNED: [number, number] = [4925861, 19096869]
+const PINNED_BEFORE_SELF_EVALUATION: [number, number] = [4925839, 2638021150]

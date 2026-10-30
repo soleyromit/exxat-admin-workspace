@@ -1,7 +1,7 @@
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { heldState } from "@/lib/v2/approvals"
 import { shortDate as formatShortDate } from "@/lib/v2/format"
-import { OUTCOME_LABEL, SENT_FOR_NEW_EVALUATION_WORD, STUDENT_NOT_COUNTED, sentForNewEvaluationLabel } from "@/lib/v2/labels"
+import { OUTCOME_LABEL, SENT_FOR_NEW_EVALUATION_WORD, STUDENT_NOT_COUNTED, answeredSentence, sentForNewEvaluationLabel } from "@/lib/v2/labels"
 import { PLACEMENT_ENDING_DAYS, daysLeftIn, placementStatus, placementsOf, type PlacementStatus } from "@/lib/v2/placements"
 import { SMALL_NUMBERS } from "@/lib/v2/reports"
 import { evalsOfStudent, evalsOfStudentSkill, personById, skillById, submissionsOfStudent } from "@/lib/v2/evidence-index"
@@ -9,7 +9,7 @@ import { ruleSentence, sentElsewhereTo, sentForNewEvaluationTo, skillProgress, t
 import type { Evaluation, Outcome, Person, Skill, Submission, V2State } from "@/lib/v2/types"
 import { populationRows, resolveTerm, type StudentRow, type TermInfo } from "./dashboard"
 import { EMPTY_SCOPE } from "./scope"
-import { aNoun, countSkills, skillNoun, skillNounPlural } from "./terms"
+import { aNoun, countSkills, inSentence, skillNoun, skillNounPlural } from "./terms"
 import { attemptLine, evaluateRule, fromV2, isInvalidResult, type LabRule } from "./configure"
 import { loggedNotSent } from "./logged"
 
@@ -128,6 +128,11 @@ export interface SkillRecord {
   progress: SkillProgress
   /** False once the program deactivated the skill [REQ SL-11]: its evidence stays visible, nothing new can be sent for it. */
   active: boolean
+  /**
+   * Set only when a named setting is still short and the rule already uses lab or simulation evidence: that evidence counts toward
+   * the evaluations, never toward the setting [REQ SH-05, SC-12]. Null otherwise, so the screen says it only when it matters.
+   */
+  settingNote: string | null
 }
 
 function stateOf(p: SkillProgress, evals: readonly Evaluation[]): SkillState {
@@ -144,12 +149,15 @@ export function partsOf(p: SkillProgress): Part[] {
   return out
 }
 
-/** The shortest unmet part as one sentence, for example "Needs 3 Met evaluations; you have 0." */
+/** "Met" dropped mid-sentence goes through inSentence (Romit 2026-10-29): "Needs 3 met evaluations". */
+const MET_IN_SENTENCE = inSentence(OUTCOME_LABEL.met)
+
+/** The shortest unmet part as one sentence, for example "Needs 3 met evaluations; you have 0." */
 export function shortfallSentence(p: SkillProgress): string {
   const parts = partsOf(p).filter((x) => !x.met)
   if (parts.length === 0) return "Every part of the rule is met."
   return parts
-    .map((x) => (x.label === "Evaluations" ? `Needs ${plural(x.need, "Met evaluation", "Met evaluations")}; you have ${fmt(x.have)}` : x.label === "Different evaluators" ? `Needs ${fmt(x.need)} different evaluators; you have ${fmt(x.have)}` : `Needs ${fmt(x.need)} in ${x.label}; you have ${fmt(x.have)}`))
+    .map((x) => (x.label === "Evaluations" ? `Needs ${plural(x.need, `${MET_IN_SENTENCE} evaluation`, `${MET_IN_SENTENCE} evaluations`)}; you have ${fmt(x.have)}` : x.label === "Different evaluators" ? `Needs ${fmt(x.need)} different evaluators; you have ${fmt(x.have)}` : `Needs ${fmt(x.need)} in ${inSentence(x.label)}; you have ${fmt(x.have)}`))
     .join(". ")
     .concat(".")
 }
@@ -190,7 +198,7 @@ function failedFor(s: V2State, skill: Skill, p: SkillProgress, evals: readonly E
   const leftOut = p.leftOut[latest.id]
   if (latest.outcome === "met" && !leftOut) return null
   const answer = OUTCOME_WORD[latest.outcome]
-  const why = leftOut ? leftOut.replace(/\.$/, "") : `The evaluator answered ${answer}`
+  const why = leftOut ? leftOut.replace(/\.$/, "") : answeredSentence(answer).replace(/\.$/, "")
   return {
     evaluationId: latest.id,
     date: latest.date,
@@ -226,7 +234,26 @@ export function skillRecord(input: V2State, studentId: string, skillId: string, 
     likely,
     progress: p,
     active: skill.active !== false,
+    settingNote: settingNoteOf(p, evals),
   }
+}
+
+/** "Inpatient 1 of 2" for each named setting still short, for a skill's row on the record [REQ SH-05]. Empty when none is short. */
+export function shortSettingLine(r: Pick<SkillRecord, "parts" | "progress">): string {
+  const names = new Set(r.progress.settings.map((x) => x.setting))
+  return r.parts.filter((x) => names.has(x.label) && !x.met).map((x) => `${x.label} ${fmt(x.have)} of ${fmt(x.need)}`).join(" · ")
+}
+
+/** "Lab evaluations do not count toward inpatient." when a short setting sits beside used non-clinical evidence. */
+export function settingNoteOf(p: SkillProgress, evals: readonly Evaluation[]): string | null {
+  const short = p.settings.filter((x) => x.have < x.min).map((x) => inSentence(x.setting))
+  if (short.length === 0) return null
+  const used = new Set(p.used)
+  const off = evals.filter((e) => used.has(e.id) && e.setting !== "clinical")
+  if (off.length === 0) return null
+  const kinds = [...new Set(off.map((e) => e.setting))].sort()
+  const where = kinds.length > 1 ? "lab and simulation" : kinds[0]
+  return `${where === "lab" ? "Lab" : where === "simulation" ? "Simulation" : "Lab and simulation"} evaluations do not count toward ${short.join(" or ")}.`
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -615,11 +642,11 @@ function nextActions(s: V2State, m: StudentModel, studentId: string): NextAction
     out.push({ id: "logged", kind: "logged", skillId: null, title: `${fmt(n)} ${n === 1 ? "draft" : "drafts"} not sent`, detail: "Nothing counts until you send it.", href: studentHref("my-requests", { show: "drafts" }, studentId), action: "Open drafts", amber: false })
   }
   for (const r of m.all.filter((y) => y.state === "dnq" && !y.waiting && !y.returned && (y.required || y.likely))) {
-    out.push({ id: `dnq-${r.id}`, kind: "dnq", skillId: r.id, title: `${r.name} did not count`, lead: r.failed ? `${r.failed.answer}, ${shortDate(r.failed.date)}. ` : undefined, detail: r.failed ? `${r.failed.answer}, ${shortDate(r.failed.date)}. ${shortfallSentence(r.progress)}` : shortfallSentence(r.progress), href: studentHref("fix-returned", { skill: r.id }, studentId), action: "Make a further attempt", amber: true })
+    out.push({ id: `dnq-${r.id}`, kind: "dnq", skillId: r.id, title: `${r.name} did not count`, lead: r.failed ? `${answeredSentence(r.failed.answer).replace(/\.$/, "")} on ${shortDate(r.failed.date)}. ` : undefined, detail: r.failed ? `${answeredSentence(r.failed.answer).replace(/\.$/, "")} on ${shortDate(r.failed.date)}. ${shortfallSentence(r.progress)}` : shortfallSentence(r.progress), href: studentHref("fix-returned", { skill: r.id }, studentId), action: "Make a further attempt", amber: true })
   }
   if (m.sync.conflict > 0) out.push({ id: "conflict", kind: "conflict", skillId: null, title: `${plural(m.sync.conflict, "entry has", "entries have")} two versions`, detail: "Pick one to send it.", href: studentHref("offline-sync", {}, studentId), action: "Choose", amber: true })
   for (const r of m.required.filter((y) => y.state === "progress" && y.need - y.counted === 1)) {
-    out.push({ id: `one-${r.id}`, kind: "one-away", skillId: r.id, title: `${r.name} is one away`, detail: r.waiting ? `${fmt(r.counted)} of ${fmt(r.need)}. Waiting ${ageLabel(r.waiting.days)} with ${r.waiting.evaluatorName}.` : `${fmt(r.counted)} of ${fmt(r.need)}. One more Met evaluation achieves it.`, href: r.waiting ? studentHref("my-requests", {}, studentId) : studentHref("request-signoff", { skill: r.id }, studentId), action: r.waiting ? "View request" : `Log ${aNoun()}`, amber: false })
+    out.push({ id: `one-${r.id}`, kind: "one-away", skillId: r.id, title: `${r.name} is one away`, detail: r.waiting ? `${fmt(r.counted)} of ${fmt(r.need)}. Waiting ${ageLabel(r.waiting.days)} with ${r.waiting.evaluatorName}.` : `${fmt(r.counted)} of ${fmt(r.need)}. One more met evaluation achieves it.`, href: r.waiting ? studentHref("my-requests", {}, studentId) : studentHref("request-signoff", { skill: r.id }, studentId), action: r.waiting ? "View request" : `Log ${aNoun()}`, amber: false })
   }
   for (const p of m.placements.filter((x) => x.soon)) {
     out.push({ id: `pl-${p.id}`, kind: "placement", skillId: p.notStartedIds[0] ?? null, title: `${p.location} ends in ${ageLabel(p.daysLeft)}`, detail: `${countSkills(p.notStartedIds.length)} likely here ${p.notStartedIds.length === 1 ? "is" : "are"} not started.`, href: studentHref("request-signoff", { skill: p.notStartedIds[0] }, studentId), action: `Log ${aNoun()}`, amber: false })
@@ -697,6 +724,9 @@ export interface AttemptRow {
   evaluationId: string | null
   /** Recorded in a group check-off on the course offering, not from a student submission [PROTO; CALL 2026-10-28]. */
   checkoff?: boolean
+  /** The course the attempt was made on, so a skill's record covers every course and narrows to one [REQ SH-06]. */
+  courseId: string
+  courseCode: string
 }
 
 /**
@@ -725,18 +755,27 @@ export function attempts(state: V2State, studentId: string, skillId: string, tod
   const used = new Set(p.used)
   const out: AttemptRow[] = []
   const evals = [...evalsOfStudentSkill(s, studentId, skillId)].sort((a, b) => (a.date < b.date ? -1 : 1))
+  const courses = courseList(s)
+  const course = (id: string | null | undefined) => {
+    const c = courses.find((x) => x.id === (id ?? s.course.id)) ?? s.course
+    return { courseId: c.id, courseCode: c.code }
+  }
   for (const e of evals) {
-    const base = { key: e.id, n: out.length + 1, date: e.date, answer: OUTCOME_WORD[e.outcome], evaluatorName: nameOf(s, e.evaluatorId), setting: settingText(e), revision: 0, evaluationId: e.id, checkoff: e.source === "checkoff" }
+    const base = { key: e.id, n: out.length + 1, date: e.date, answer: OUTCOME_WORD[e.outcome], evaluatorName: nameOf(s, e.evaluatorId), setting: settingText(e), revision: 0, evaluationId: e.id, checkoff: e.source === "checkoff", ...course(e.courseId) }
     const sentTo = sentElsewhereTo(s, e)
     if (e.status === "awaiting-approval") out.push({ ...base, kind: "waiting", why: `Completed and awaiting approval for ${ageLabel(daysBetween(e.date, today))}. It counts once approved.` })
     else if (sentTo) out.push({ ...base, kind: "sent", status: sentForNewEvaluationLabel(sentTo.name), why: `It counts after ${sentTo.name} answers Met.` })
     else if (e.status === "returned" || e.status === "reopened") out.push({ ...base, kind: "returned", why: e.review?.note ? `Returned: ${e.review.note}` : "Returned for correction. It does not count until corrected." })
-    else if (used.has(e.id)) out.push({ ...base, kind: "counted", why: e.setting === "clinical" && e.clinicalSetting && p.settings.some((x) => x.setting === e.clinicalSetting) ? `Counts toward the rule and toward ${e.clinicalSetting}.` : "Counts toward the rule." })
-    else out.push({ ...base, kind: "not-counted", why: p.leftOut[e.id] ?? "" })
+    // Progress against each named setting is said once, in the record summary (Parts), not repeated per attempt [REQ SH-05].
+    else if (used.has(e.id)) out.push({ ...base, kind: "counted", why: "Counts toward the rule." })
+    // "Did not count" leads the row; the evaluator's answer is said only here, in the explanation (review 2026-10-30 CP-2).
+    else out.push({ ...base, kind: "not-counted", why: p.leftOut[e.id] ?? answeredSentence(base.answer) })
   }  for (const x of submissionsOfStudent(s, studentId).filter((y) => y.skillIds.includes(skillId) && (OPEN.includes(y.status) || y.status === "returned"))) {
     const days = Math.max(x.daysWaiting, daysBetween(x.createdAt, today))
     const r = x.returns?.[x.returns.length - 1]
-    out.push({ key: x.id, n: out.length + 1, date: x.createdAt, kind: x.status === "returned" ? "returned" : "waiting", answer: x.status === "returned" ? "Returned" : "Not answered yet", evaluatorName: nameOf(s, x.assignedToId), setting: whereText(submissionWhere(s, x)), evaluationId: null, why: x.status === "returned" ? `Returned: ${r?.reason ?? "correction needed"}` : `Sent ${shortDate(x.createdAt)}, waiting ${ageLabel(days)}. It counts after the evaluator answers Met.`, revision: x.revisions ?? 0 })
+    // A request's course: the one its log entries were sent from, else the student's current course (seeded requests).
+    const entryCourse = (x.entryIds ?? []).map((id) => s.logEntries.find((y) => y.id === id)?.sitting?.course).find((c) => !!c)
+    out.push({ ...course(entryCourse), key: x.id, n: out.length + 1, date: x.createdAt, kind: x.status === "returned" ? "returned" : "waiting", answer: x.status === "returned" ? "Returned" : "Not answered yet", evaluatorName: nameOf(s, x.assignedToId), setting: whereText(submissionWhere(s, x)), evaluationId: null, why: x.status === "returned" ? `Returned: ${r?.reason ?? "correction needed"}` : `Sent ${shortDate(x.createdAt)}, waiting ${ageLabel(days)}.`, revision: x.revisions ?? 0 })
   }
   return out
 }
@@ -762,7 +801,7 @@ export function questionRuleLine(rule: LabRule): string {
  * rule "2 attempts, 1 not valid: 1 counts. At least 2 of 3 questions answered Yes counts as one." Only completed evaluations are
  * attempts; waiting and returned ones are not yet. Empty when there is no completed attempt or the skill has no valid rule.
  */
-export function attemptCountLine(state: V2State, studentId: string, skillId: string, opts: { compact?: boolean } = {}): string {
+export function attemptCountLine(state: V2State, studentId: string, skillId: string, opts: { compact?: boolean; /** Empty when every completed attempt counts (the state label already says it, 2026-10-30). */ onlyUnmet?: boolean } = {}): string {
   const s = heldState(state)
   const skill = skillById(s, skillId)
   if (!skill?.config || !skill.model) return ""
@@ -772,7 +811,8 @@ export function attemptCountLine(state: V2State, studentId: string, skillId: str
   // Compact (the phone ledger, density budget at 375): the same engine counts without the breakdown or the question sentence.
   if (opts.compact) {
     const a = r.attempts
-    return a.total === 0 ? "" : `${a.total} ${a.total === 1 ? "attempt" : "attempts"}, ${a.count} ${a.count === 1 ? "counts" : "count"}`
+    if (a.total === 0 || (opts.onlyUnmet && a.count === a.total)) return ""
+    return `${a.total} ${a.total === 1 ? "attempt" : "attempts"}, ${a.count} ${a.count === 1 ? "counts" : "count"}`
   }
   const line = attemptLine(rule, r.attempts)
   if (!line) return ""

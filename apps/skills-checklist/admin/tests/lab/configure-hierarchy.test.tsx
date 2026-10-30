@@ -71,7 +71,7 @@ describe("rule conditions: one list, one Remove per row, one Add a condition men
     // The carried limits are not a row here: Check and save lists them (Romit 2026-10-27).
     expect(rows).toHaveLength(2)
     for (const row of rows) expect(within(row).getAllByRole("button", { name: /^Remove condition: / })).toHaveLength(1)
-    expect(container.textContent?.match(/Lab and simulation evidence does not count toward Inpatient\./g)).toHaveLength(1)
+    expect(container.textContent?.match(/Lab and simulation evidence does not count toward inpatient\./g)).toHaveLength(1)
     expect(container.textContent).not.toContain("Only the last 5 evaluations are used.")
     expect(container.textContent).not.toMatch(/Proposed|Kept from the current rule|earlier rule/)
     // Body size only: no larger type inside the rule editor.

@@ -1,5 +1,6 @@
 import { qualifiedEvaluators } from "./rules"
 import type { Skill, V2State } from "./types"
+import { inSentence } from "@/lib/lab/terms"
 
 export interface CoverageWarning {
   id: string
@@ -49,7 +50,7 @@ export function coverageWarnings(s: V2State, courseId: string = s.course.id): Co
           id: `setting-${skill.id}-${m.setting}`,
           kind: "setting-missing",
           skillId: skill.id,
-          message: `${skill.name} is mandatory but requires ${m.min} ${m.min === 1 ? "evaluation" : "evaluations"} in ${m.setting}, and ${code} has no ${m.setting} placements. No setting in this course can satisfy it.`,
+          message: `${skill.name} is mandatory but requires ${m.min} ${m.min === 1 ? "evaluation" : "evaluations"} in ${inSentence(m.setting)}, and ${code} has no ${inSentence(m.setting)} placements. No setting in this course can satisfy it.`,
         })
       }
     }

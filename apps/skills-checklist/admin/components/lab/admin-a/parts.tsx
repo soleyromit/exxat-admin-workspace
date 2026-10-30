@@ -5,12 +5,14 @@
  * picker), the mapping level glyph and select, the amber note (the one saturated colour on these pages), and the demo states
  * (?state=loading | empty | error) that every variant renders the same way.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { FilterBar } from "@exxatdesignux/ui/components/ui/filter-bar"
+import { FilterBar, FilterBarClearButton } from "@exxatdesignux/ui/components/ui/filter-bar"
+import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@exxatdesignux/ui/components/ui/input-group"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
@@ -286,10 +288,77 @@ export function PaneHeading({ title, meta, end }: { title: React.ReactNode; meta
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        <h2 className={TYPE.section}>{title}</h2>
         {meta ? <p className="text-sm text-muted-foreground">{meta}</p> : null}
       </div>
       {end ? <div className="flex items-center gap-2">{end}</div> : null}
     </div>
+  )
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Filters (one idiom, 2026-10-30 review P2): the reporting pages' Filters button and chips, for lists whose filters are not the
+// dashboard scope (course mapping). Each field is a labelled select in the popover; a field away from its default is one
+// removable chip; Clear all returns every field to its default.
+
+export interface FilterField {
+  id: string
+  label: string
+  /** Current value ("" is the default unless `defaultValue` says otherwise). */
+  value: string
+  defaultValue?: string
+  /** The option shown for "" (for example "All cohorts"). */
+  allLabel?: string
+  options: Opt[]
+  onChange: (v: string) => void
+}
+
+const isApplied = (f: FilterField) => f.value !== (f.defaultValue ?? "")
+const valueLabel = (f: FilterField) => f.options.find((o) => o.value === f.value)?.label ?? (f.value || f.allLabel || "")
+
+export function FiltersControl({ fields, align = "start", courseKind }: { fields: FilterField[]; align?: "start" | "end"; /** Course kind in force ("clinical" by default), stated on the button as on the reporting Filters. */ courseKind?: "clinical" | "all" }) {
+  const count = fields.filter(isApplied).length
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" size="sm" aria-haspopup="dialog" data-filters-button data-course-kind={courseKind}>
+          Filters
+          {count ? (
+            <>
+              <span className="tabular-nums">{count}</span>
+              <span className="sr-only"> applied</span>
+            </>
+          ) : null}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align={align} className="w-[min(30rem,calc(100vw-2rem))] p-4" aria-label="Filters" data-filters-panel>
+        <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
+          {fields.map((f) => (
+            <div key={f.id} className="flex flex-col gap-1.5">
+              <Label htmlFor={`flt-${f.id}`}>{f.label}</Label>
+              <FilterSelect id={`flt-${f.id}`} value={f.value} onChange={f.onChange} label={f.label} allLabel={f.allLabel} options={f.options} className="w-full" />
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/** The applied filters, each removable on its own, plus Clear all (REQ RP-01 idiom). Null when nothing is applied. */
+export function AppliedFilterChips({ fields }: { fields: FilterField[] }) {
+  const applied = fields.filter(isApplied)
+  if (!applied.length) return null
+  return (
+    <FilterBar aria-label="Applied filters" className="max-w-full flex-none" data-applied-filters>
+      {applied.map((f) => (
+        <Button key={f.id} type="button" variant="secondary" size="sm" className="h-auto min-h-8 max-w-full whitespace-normal py-1 text-start" data-filter-chip={f.id} aria-label={`Remove ${f.label} ${valueLabel(f)}`} onClick={() => f.onChange(f.defaultValue ?? "")}>
+          <span className="shrink-0 text-muted-foreground">{f.label}:</span> <span className="min-w-0">{valueLabel(f)}</span>
+          <i className="fa-light fa-xmark" aria-hidden="true" />
+        </Button>
+      ))}
+      <FilterBarClearButton onClick={() => applied.forEach((f) => f.onChange(f.defaultValue ?? ""))}>Clear all</FilterBarClearButton>
+    </FilterBar>
   )
 }

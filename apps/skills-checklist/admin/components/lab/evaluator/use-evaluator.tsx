@@ -62,7 +62,9 @@ export function useEvaluator(defaultState: EvState = "default", receiptStates: E
   const rawLabels = get("labels")
   const labels = isLabelPreset(rawLabels) ? rawLabels : null
   const options: EvOptions = React.useMemo(() => ({ ruleHint: optKey[0] === "1", feedbackOnly: optKey[1] === "1", prefill: optKey[2] === "1", requireFeedback: optKey[3] === "1", holdForApproval: optKey[4] === "1", labels }), [optKey, labels])
-  const req = React.useMemo(() => buildRequest(s, sample, state, options), [s, sample, state, options])
+  // The link opens the request it names (?request=), as the student sent it [REQ EV-01, EV-04].
+  const requestId = get("request")
+  const req = React.useMemo(() => buildRequest(s, sample, state, options, requestId), [s, sample, state, options, requestId])
 
   const initial = React.useCallback((): Record<string, EvResponse> => {
     if (!req) return {}

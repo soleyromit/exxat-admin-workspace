@@ -4,7 +4,8 @@
  * Lists and cohort assignment A (recommended): one group of skills ("list" in code) at a time.
  *
  * Assign mode (set-up flow step, Guided set; Sankalp 2026-10-27 review and his Thursday flow A4/A5): ONE job, assigning skills to
- * student groups, in one of two ways chosen at the top:
+ * student groups. One question, "Which students use this group of skills?" (D-L6; 2026-10-30 review: the "group or individual"
+ * radio at the top was a second decision before the work). Individual skills stay one quiet link away (A5 is kept, not dropped):
  *  - "A group of skills": the group of skills is context (name, size, required to graduate, a quiet switch), the checklist of
  *    cohorts and groups is the work, and one panel says what it does now [CALL 10-26 "define the skills once, tag them to a
  *    cohort"; LEDGER D-X27].
@@ -21,7 +22,6 @@ import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
 import { FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { listById, listsHref, skillGroups, type SkillList } from "@/lib/lab/lists"
@@ -57,9 +57,11 @@ const selectedList = (c: ListsContext): SkillList | undefined => {
 function AssignColumns({ c, list }: { c: ListsContext; list: SkillList }) {
   const { model, actions } = c
   return (
-    <div className="grid min-w-0 gap-6 @min-[60rem]:grid-cols-[minmax(0,1fr)_minmax(20rem,38%)]">
+    // The panel sits right beside the rows it explains (2026-10-30 review: it floated a column away): the checklist keeps a
+    // readable width and the panel takes the rest of the row, so nothing is left empty at 1920 (D-X30).
+    <div className="grid min-w-0 gap-6 @min-[60rem]:grid-cols-[minmax(0,40rem)_minmax(20rem,1fr)]">
       <FieldSet className="min-w-0">
-        <FieldLegend className={TYPE.section}>Student groups</FieldLegend>
+        <FieldLegend className={TYPE.section}>{`Which students use this group of ${skillNounPlural()}?`}</FieldLegend>
         <AssignChecklist model={model} list={list} onToggle={(g, on) => actions.toggle(list.id, g, on)} onCreateGroup={actions.openGroup} idPrefix={`assign-${list.id}`} />
       </FieldSet>
       <div className="min-w-0 @min-[60rem]:pt-8">
@@ -75,21 +77,13 @@ function AssignOne({ c }: { c: ListsContext }) {
   const nounPl = skillNounPlural()
   return (
     <div className="flex flex-col gap-8" data-lists-assign data-assign-by={individual ? "skills" : "group"}>
-      <FieldSet className="min-w-0">
-        <FieldLegend className={TYPE.section}>What to assign</FieldLegend>
-        <RadioGroup value={individual ? "skills" : "group"} onValueChange={(v) => c.query.set({ by: v === "skills" ? "skills" : undefined })} className="grid gap-3 sm:grid-cols-2 lg:max-w-3xl">
-          <Label htmlFor="assign-by-group" className="flex items-start gap-3 rounded-[var(--radius)] border border-border p-3 font-normal">
-            <RadioGroupItem id="assign-by-group" value="group" className="mt-0.5" disabled={!list} />
-            <span className={TYPE.label}>{`A group of ${nounPl}`}</span>
-          </Label>
-          <Label htmlFor="assign-by-skills" className="flex items-start gap-3 rounded-[var(--radius)] border border-border p-3 font-normal">
-            <RadioGroupItem id="assign-by-skills" value="skills" className="mt-0.5" />
-            <span className={TYPE.label}>{`Individual ${nounPl}`}</span>
-          </Label>
-        </RadioGroup>
-      </FieldSet>
       {individual ? (
-        <IndividualAssign model={c.model} onCreateGroup={c.actions.openGroup} />
+        <>
+          {list ? (
+            <Button type="button" variant="link" size="sm" className="h-auto self-start p-0" onClick={() => c.query.set({ by: undefined })}>{`Assign a group of ${nounPl} instead`}</Button>
+          ) : null}
+          <IndividualAssign model={c.model} onCreateGroup={c.actions.openGroup} />
+        </>
       ) : list ? (
         <>
           <section aria-label={`Group of ${nounPl}`} className="flex flex-col gap-2">
@@ -107,6 +101,7 @@ function AssignOne({ c }: { c: ListsContext }) {
               </Select>
               <span className="text-sm text-muted-foreground tabular-nums" data-list-size>{listSize(list)}</span>
               {list.isDefault ? <Badge variant="secondary">Default</Badge> : null}
+              <Button type="button" variant="link" size="sm" className="ms-auto h-auto p-0" onClick={() => c.query.set({ by: "skills" })}>{`Assign individual ${nounPl} instead`}</Button>
             </div>
           </section>
           <AssignColumns c={c} list={list} />

@@ -262,7 +262,7 @@ function UseList({ title, lines }: { title: string; lines: Array<{ key: string; 
   const shown = all ? lines : lines.slice(0, FIRST)
   return (
     <section className="flex flex-col gap-1" data-uses-count={lines.length}>
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <h3 className={TYPE.group}>{title}</h3>
       <ul className="flex flex-col divide-y divide-border">
         {shown.map((l) => (
           <li key={l.key} className="flex items-center justify-between gap-3 py-1.5">
@@ -292,7 +292,7 @@ function Detail({ tab, row, partial, onToggle, onDelete, onRename }: { tab: Sett
     <Card size="sm" className="min-w-0" data-settings-detail={row.id} data-region="detail">
       <CardHeader className="flex flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className={TYPE.section}>{row.name}</CardTitle>
+          <CardTitle className={TYPE.card}>{row.name}</CardTitle>
           {row.active ? <span className="text-sm text-muted-foreground">Active</span> : <StatusBadge label="Inactive" tone="neutral" icon="fa-circle-minus" size="sm" />}
         </div>
         {tab === "instructors" ? <p className="text-sm text-muted-foreground">{(row as InstructorRow).email}</p> : null}

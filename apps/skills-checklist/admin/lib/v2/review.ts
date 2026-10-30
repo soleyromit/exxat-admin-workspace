@@ -1,3 +1,4 @@
+import { inSentence } from "@/lib/lab/terms"
 import { needsLevels, needsQuestions, MODEL_LABEL } from "./config"
 import { qualifiedEvaluators, simulationShare, strengthHint } from "./rules"
 import type { EvalModel, SkillConfig, V2State } from "./types"
@@ -16,7 +17,7 @@ const ROLE_NAME = { preceptor: "preceptors", faculty: "faculty", "lab-instructor
 export function evaluatorFormLine(model: EvalModel | null, c: SkillConfig): string {
   if (!model) return "No evaluation model chosen yet."
   const bits: string[] = []
-  if (model === "binary") bits.push(`one outcome, ${c.outcomeLabels[0] || "unnamed"} or ${c.outcomeLabels[1] || "unnamed"}`)
+  if (model === "binary") bits.push(`one outcome, ${inSentence(c.outcomeLabels[0] || "unnamed")} or ${inSentence(c.outcomeLabels[1] || "unnamed")}`)
   if (model === "question") bits.push(`Yes or No for each of ${c.questions.length} ${c.questions.length === 1 ? "question" : "questions"}`)
   if (model === "scored") bits.push(`a score for each of ${c.questions.length} ${c.questions.length === 1 ? "question" : "questions"}`)
   if (model === "demonstration") bits.push(`a supervision level: ${list(c.levels.filter((l) => l.trim()))}`)

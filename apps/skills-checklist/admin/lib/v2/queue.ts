@@ -478,14 +478,18 @@ export function compareEvaluation(s: V2State, e: Evaluation): Comparison {
   const rows: CompareRow[] = []
   const eq = (a: string | null | undefined, b: string | null | undefined): Agreement => (!a || !b ? "not-comparable" : a === b ? "agreed" : "differed")
   const none = "No self-rating"
+  // The self-evaluation lives on the log entry, or on the evaluation itself (generated history; check-offs have none): either one
+  // is the student's side of the comparison (AR-02), so a self-rating is never shown apart from the evaluator's answer.
+  const selfRating = entry?.rating ?? e.self?.rating ?? null
+  const hasSelf = !!entry || !!e.self?.rating
 
   if (skill && c && kind === "outcome") {
     const evaluatorLabel = e.outcome === "met" ? c.outcomeLabels[0] : e.outcome === "not-met" ? c.outcomeLabels[1] : "Not yet, feedback only"
-    rows.push({ label: "Overall", student: entry?.rating ?? none, evaluator: evaluatorLabel, agreement: e.outcome === "not-yet" ? "not-comparable" : eq(entry?.rating, evaluatorLabel) })
+    rows.push({ label: "Overall", student: selfRating ?? none, evaluator: evaluatorLabel, agreement: e.outcome === "not-yet" ? "not-comparable" : eq(selfRating, evaluatorLabel) })
   } else if (skill && c && kind === "levels") {
     const idx = d?.levelIndex ?? e.levelIndex ?? null
     const evaluatorLevel = idx !== null && idx !== undefined ? (c.levels[idx] ?? "Level removed from the skill") : "Level not recorded"
-    rows.push({ label: skill.model === "demonstration" ? "Level of supervision" : "Overall supervision rating", student: entry?.rating ?? none, evaluator: evaluatorLevel, agreement: idx === null || idx === undefined ? "not-comparable" : eq(entry?.rating, evaluatorLevel) })
+    rows.push({ label: skill.model === "demonstration" ? "Level of supervision" : "Overall supervision rating", student: selfRating ?? none, evaluator: evaluatorLevel, agreement: idx === null || idx === undefined ? "not-comparable" : eq(selfRating, evaluatorLevel) })
   }
   if (skill && c && skill.model === "question") {
     c.questions.forEach((q, i) => {
@@ -517,9 +521,9 @@ export function compareEvaluation(s: V2State, e: Evaluation): Comparison {
   return {
     evaluationId: e.id,
     skillName: skill?.name ?? "A skill",
-    selfRated: !!entry,
+    selfRated: hasSelf,
     selfAt: entry?.at ?? null,
-    selfNote: entry?.note ?? "",
+    selfNote: entry?.note || e.self?.note || "",
     rows,
     overall,
     outcomeWord: OUTCOME_WORD[e.outcome],

@@ -11,7 +11,9 @@
  * - What a tick records: the qualifying outcome; a nominated level (default the highest); every question Yes; a nominated score
  *   on every item.
  * - The skill's roles still apply [REQ SC-16, EV-02]; simulation must be allowed for a simulation session.
- * - Cells that already hold qualifying evidence, or wait on a request already sent, are flagged but stay tickable [PROTO].
+ * - A cell whose student already qualifies shows the status only, "Already qualifies", with no checkbox (Romit 2026-10-30,
+ *   "switch", D-L8d; reverses the prototype's "still tickable"). A cell waiting on an evaluation already sent stays tickable.
+ * - Skills that cannot be checked off in the chosen setting are not grid columns; the skills picker lists them with the reason.
  * - A skill that requires approval holds the check-off for administrator review [REQ SC-15, EV-07, AR-06].
  * - Lab and simulation evidence carries no clinical setting, so it never satisfies a setting minimum [REQ SC-12].
  */
@@ -127,7 +129,7 @@ export function recorders(s: V2State, role: RecorderRole): Person[] {
 // Cells
 
 export interface CellFlags {
-  /** The record is already achieved: a tick adds evidence anyway [PROTO "Already has qualifying evidence"]. */
+  /** The record is already achieved: the cell reads "Already qualifies" and cannot be ticked (D-L8d). */
   hasEvidence: boolean
   /** A request is already with an evaluator, or an evaluation is held [PROTO "Awaiting an evaluation already sent"]. */
   awaiting: boolean
@@ -142,8 +144,14 @@ export function cellFlags(s: V2State, studentId: string, skillId: string): CellF
   return { hasEvidence, awaiting: !hasEvidence && ((!!req && WAITING.has(req.status)) || held) }
 }
 
-export const FLAG_WORD = { hasEvidence: "Already has qualifying evidence", awaiting: "Awaiting an evaluation already sent" } as const
-export const FLAG_ICON = { hasEvidence: "fa-solid fa-badge-check", awaiting: "fa-light fa-hourglass-half" } as const
+export const FLAG_WORD = { hasEvidence: "Already qualifies", awaiting: "Evaluation already sent" } as const
+export const FLAG_ICON = { hasEvidence: "fa-solid fa-circle-check", awaiting: "fa-light fa-hourglass-half" } as const
+
+/** A cell can be ticked unless its student already qualifies for the skill (D-L8d). Waiting cells stay tickable. */
+export const isTickable = (f: CellFlags): boolean => !f.hasEvidence
+
+/** The quiet record-bar line while nothing is ticked, so faculty know where saving happens (D-L8d). */
+export const NOTHING_TICKED = "Tick students to record check-offs"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Record
@@ -191,7 +199,12 @@ export function recordCheckoffs(s: V2State, session: CheckoffSession, keys: read
   const o = (s.offerings ?? []).find((x) => x.id === session.offeringId)
   const cells: Record<string, "done" | "review"> = {}
   const added: Evaluation[] = []
-  keys.forEach((key, i) => {
+  // A student who already qualifies is never written again (D-L8d); the grid shows them no checkbox.
+  const live = keys.filter((key) => {
+    const [studentId, skillId] = key.split("|")
+    return isTickable(cellFlags(s, studentId, skillId))
+  })
+  live.forEach((key, i) => {
     const [studentId, skillId] = key.split("|")
     const k = s.skills.find((x) => x.id === skillId)
     if (!k || !o) return

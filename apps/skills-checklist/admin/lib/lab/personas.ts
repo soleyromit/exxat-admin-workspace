@@ -73,3 +73,41 @@ export const PERSONAS: PersonaDef[] = [
 
 export const PERSONA_BY_ID = Object.fromEntries(PERSONAS.map((p) => [p.id, p])) as Record<PersonaId, PersonaDef>
 export const isPersonaId = (x: string): x is PersonaId => x in PERSONA_BY_ID
+
+/**
+ * Shell breadcrumb parents (anatomy A3, 2026-10-30): pages below a nav row read "{row title} > {page}" in the utility bar, in
+ * normal and present mode, because the body no longer carries a breadcrumb. One place for every parent.
+ * - `parent` is the "persona/slug" of the nav row the page sits under; its label is that row's title, so the crumb and the
+ *   sidebar never disagree.
+ * - `when` (optional) names a URL param that must be present: the dashboard's in-page drill lists (?list=records|holders|holder)
+ *   sit on the dashboard URL itself.
+ * - `drop` lists the params the parent link removes (the drill's own), so it returns to the dashboard with the scope kept.
+ * - `leaf: "heading"` makes the last crumb the page's h1 (a drill is titled by what it lists, and that title is dynamic).
+ */
+export interface CrumbParent {
+  parent: string
+  when?: string
+  drop?: string[]
+  leaf?: "heading"
+}
+
+const DRILL_PARAMS = ["list", "cond", "q"]
+
+export const CRUMB_PARENTS: Record<string, CrumbParent> = {
+  "reviewer/review-item": { parent: "reviewer/approvals" },
+  "reviewer/student-record": { parent: "reviewer/students" },
+  "admin/dashboard-drill": { parent: "admin/dashboard", leaf: "heading" },
+  "admin/dashboard": { parent: "admin/dashboard", when: "list", drop: DRILL_PARAMS, leaf: "heading" },
+}
+
+/** The crumb parent for a page, with the parent row's title, or undefined when the page sits at the top of its row. */
+export function crumbParentFor(
+  screen: string | undefined,
+  params: { get(name: string): string | null } | null | undefined,
+): (CrumbParent & { label: string }) | undefined {
+  const rule = screen ? CRUMB_PARENTS[screen] : undefined
+  if (!rule || (rule.when && !params?.get(rule.when))) return undefined
+  const [persona, slug] = rule.parent.split("/")
+  const row = isPersonaId(persona ?? "") ? PERSONA_BY_ID[persona as PersonaId].nav?.().find((r) => r.slug === slug) : undefined
+  return row ? { ...rule, label: row.title } : undefined
+}

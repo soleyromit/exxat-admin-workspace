@@ -71,7 +71,7 @@ describe("Assign to someone else", () => {
     expect(new Set(req.skillIds)).toEqual(new Set(row.skillIds))
     for (const id of row.evaluationIds) {
       const e = next.evaluations.find((x) => x.id === id)!
-      expect(e.status).toBe("returned")
+      expect(e.status).toBe("reassigned")
       expect(e.submissionId).toBe(req.id)
       expect(e.review?.note).toBe(assignNote(to.name))
       expect(e.versions).toEqual(seed.evaluations.find((x) => x.id === id)!.versions)

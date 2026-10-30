@@ -11,6 +11,7 @@
  * "Unverified" as glyph + word, never colour alone. Site names, settings and day counts are data, marked data-viz-label so the
  * density audit (strategy/07 K4) does not count them as prose. Reminders are out of scope [REQ section 14], so rows only open records.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
@@ -20,7 +21,7 @@ import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { DataRowList } from "@exxatdesignux/ui/components/data-views/data-row-list"
 import { VIZ } from "@/components/lab/viz"
 import { LINK } from "@/components/lab/dashboard/cards"
-import { AGE_BUCKETS, ageSplit, drillHref, opsHref, plural, type OpsHolder, type OpsModel, type OpsSite } from "@/lib/lab/dashboard"
+import { AGE_BUCKETS, drillHref, opsHref, plural, type OpsHolder, type OpsModel, type OpsSite } from "@/lib/lab/dashboard"
 import type { LabScope } from "@/lib/lab/scope"
 import { LINK_IN_TABLE, NUM_LINK } from "@/components/lab/link-styles"
 import { EvaluatorNameBadge } from "@/components/lab/status-pill"
@@ -34,6 +35,8 @@ const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`
 export function OpsFigures({ model, scope }: { model: OpsModel; scope: LabScope }) {
   const oldest = model.sites[0]?.oldest ?? 0
   const metrics: MetricItem[] = [
+    // The focal point (2026-10-30 review): the requests that waited too long, first and as the DS hero cell.
+    { id: "old", label: "Waited 15 days or more", value: fmt(model.old), delta: "", trend: "neutral", trendPolarity: "lower_is_better", description: `At ${plural(model.oldSites, "site", "sites")}`, href: drillHref(scope, { list: "requests", cond: "old", from: "ops" }), metricVariant: "hero", ...(model.old > 0 ? { alert: "warning" as const } : {}) },
     {
       id: "waiting",
       label: "Waiting with evaluators",
@@ -43,11 +46,9 @@ export function OpsFigures({ model, scope }: { model: OpsModel; scope: LabScope 
       trendPolarity: "lower_is_better",
       description: `At ${plural(model.sites.length, "site", "sites")}, ${plural(model.holders.length, "evaluator", "evaluators")}`,
       href: drillHref(scope, { list: "requests", cond: "waiting", from: "ops" }),
-      // How the figure splits by age, youngest first (request history is not dated, so no line is drawn).
-      ...(model.waiting > 0 ? { chart: { kind: "bars" as const, series: ageSplit(model.open.map((x) => x.daysWaiting), AGE_BUCKETS.map((b) => ({ label: b.label, min: b.min, max: b.max }))), tone: "info" as const } } : {}),
+      // No mini chart (2026-10-30 review: unreadable at this size); the site table below draws the age split per site.
     },
     { id: "median", label: "Median wait", value: days(model.medianDays), delta: "", trend: "neutral", trendPolarity: "lower_is_better", description: `Oldest ${days(oldest)}`, href: drillHref(scope, { list: "requests", cond: "waiting", from: "ops" }) },
-    { id: "old", label: "Waited 15 days or more", value: fmt(model.old), delta: "", trend: "neutral", trendPolarity: "lower_is_better", description: `At ${plural(model.oldSites, "site", "sites")}`, href: drillHref(scope, { list: "requests", cond: "old", from: "ops" }) },
     { id: "unverified", label: "Unverified evaluators", value: fmt(model.unverified.length), delta: "", trend: "neutral", trendPolarity: "lower_is_better", description: model.unverified.length ? `${model.unverifiedOld} hold requests over 8 days` : "None hold requests", href: opsHref(scope, { list: "holders", cond: "unverified" }) },
   ]
   return (
@@ -87,10 +88,11 @@ export function SitesTableCard({ model, scope, className }: { model: OpsModel; s
     {
       key: "name",
       label: "Site",
-      width: 200,
+      // Site names wrap at spaces, never truncate (anatomy A12, 2026-10-30).
+      width: 210,
       cell: (r: SiteRow) => (
         <span className="flex min-w-0 flex-col">
-          {r.kind === "site" ? <Link className={`${LINK_IN_TABLE} truncate`} title={r.name} href={drillHref(scope, { list: "requests", cond: "waiting", siteId: r.siteId, from: "ops-sites" })}>{r.name}</Link> : <span className="truncate font-medium text-foreground">{r.name}</span>}
+          {r.kind === "site" ? <Link className={`${LINK_IN_TABLE} whitespace-normal`} href={drillHref(scope, { list: "requests", cond: "waiting", siteId: r.siteId, from: "ops-sites" })}>{r.name}</Link> : <span className="font-medium text-foreground">{r.name}</span>}
           <span className="truncate text-xs text-muted-foreground" data-viz-label>{r.setting}</span>
         </span>
       ),
@@ -115,7 +117,7 @@ export function SitesTableCard({ model, scope, className }: { model: OpsModel; s
     {
       key: "signed",
       label: "Signed, 8 weeks",
-      width: 104,
+      width: 114,
       cell: (r: SiteRow) =>
         r.kind === "site" ? (
           <span className="block w-20" role="img" aria-label={`${r.name}, evaluations signed per week, oldest first: ${r.signed.map((x) => x.value).join(", ")}`}>
@@ -129,11 +131,13 @@ export function SitesTableCard({ model, scope, className }: { model: OpsModel; s
   return (
     <Card className={`py-0 ${className ?? ""}`} data-region="sites" role="region" aria-label="Requests waiting, by site">
       <CardContent className="flex flex-col gap-3 py-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-foreground">
-            Requests waiting, by site <span className="font-normal text-muted-foreground">Sites, oldest request first</span>
-          </h2>
-          <Link className={`${LINK} text-sm`} href={drillHref(scope, { list: "sites", from: "ops-sites" })}>{`All ${model.sites.length} sites`}</Link>
+        {/* One header anatomy for the peer cards (2026-10-30 review): title, one meta line under it, the list link on the right. */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <h2 className={TYPE.card}>Requests waiting, by site</h2>
+            <p className={TYPE.helper}>Oldest request first</p>
+          </div>
+          <Link className={`${LINK} shrink-0 text-sm`} href={drillHref(scope, { list: "sites", from: "ops-sites" })}>{model.sites.length === 1 ? "Site list" : `All ${model.sites.length} sites`}</Link>
         </div>
         {first ? <p className="sr-only">{`${first.name} holds the oldest request, ${days(first.oldest)}, with ${first.open} open.`}</p> : null}
         <DataTable data={rows as never} columns={columns as never} getRowId={(r) => String((r as unknown as SiteRow).siteId)} selectable={false} searchable={false} showQueryControls={false} edgeInset={false} emptyState={<p className="p-4 text-sm text-muted-foreground">No requests are waiting with evaluators in this scope.</p>} />
@@ -162,11 +166,12 @@ export function HoldersCard({ model, scope, top = 6, className }: { model: OpsMo
   return (
     <Card className={`py-0 ${className ?? ""}`} data-region="holders" role="region" aria-label="Evaluators holding the oldest requests">
       <CardContent className="flex flex-col gap-3 py-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-sm font-semibold text-foreground">
-            Evaluators holding the oldest requests <span className="font-normal text-muted-foreground">Evaluators</span>
-          </h2>
-          <Link className={`${LINK} text-sm`} href={opsHref(scope, { list: "holders" })}>{`All ${model.holders.length}`}</Link>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <h2 className={TYPE.card}>Evaluators holding the oldest requests</h2>
+            <p className={TYPE.helper}>Oldest first</p>
+          </div>
+          <Link className={`${LINK} shrink-0 text-sm`} href={opsHref(scope, { list: "holders" })}>{`All ${model.holders.length}`}</Link>
         </div>
         <DataRowList
           rows={rows}
@@ -183,7 +188,7 @@ export function HoldersCard({ model, scope, top = 6, className }: { model: OpsMo
                   <Link className={`${LINK_IN_TABLE} text-sm`} href={opsHref(scope, { list: "holder", evaluator: h.id })} aria-label={`${h.name}${h.verified ? "" : ", unverified"}: ${h.open} open requests, oldest ${days(h.oldest)}. Open the list`}>{h.name}</Link>
                   {h.verified ? null : <UnverifiedBadge />}
                 </span>
-                <span className="truncate text-xs text-muted-foreground" title={h.site} data-viz-label>{h.site}</span>
+                <span className="text-xs text-muted-foreground" data-viz-label>{h.site}</span>
               </div>
               <span className="flex shrink-0 flex-col items-end gap-0.5" data-viz-label>
                 <span className={`text-sm tabular-nums ${h.oldest >= 30 ? "font-semibold" : ""} text-foreground`}>{days(h.oldest)}</span>

@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@exxa
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { cn } from "@exxatdesignux/ui/lib/utils"
+import { TYPE } from "@/components/lab/type-scale"
 
 export type ChartCardVariant = "normal" | "tabs" | "selector"
 
@@ -32,7 +33,7 @@ function ChartCardHeader({ title, description, headingLevel, filterOptions, filt
       <div className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           {/* Section title of the one lab type scale (components/lab/type-scale.ts, 2026-10-27): every card title is the same size. */}
-          <CardTitle asChild className="text-base font-semibold leading-tight">
+          <CardTitle asChild className={`leading-tight ${TYPE.card}`}>
             <Heading>{title}</Heading>
           </CardTitle>
           <CardDescription className="mt-0.5">{description}</CardDescription>

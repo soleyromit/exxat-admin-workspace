@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- Fixture for scripts/lab-anatomy-check.mjs: A10 outside tables and A12 truncated identifier in list/card rows (2026-10-30).
+     Must flag: (1) a "Where" tile row running past its card, (2) a clipped card whose content is wider than it,
+     (3) a ranked skill name truncated with an ellipsis (it has a title, still flagged).
+     Must pass: (4) a card whose wide content scrolls with a visible edge fade, (5) a ranked name that wraps. -->
+<html lang="en"><head><meta charset="utf-8"><title>A10 A12 cards</title>
+<style>
+  body { font: 14px system-ui; margin: 16px; }
+  [data-slot=card] { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 16px; width: 320px; }
+  .tiles { display: flex; gap: 8px; }
+  .tile { flex: 0 0 140px; border: 1px solid #ccc; padding: 8px; }
+  .clip { overflow: hidden; }
+  .wide { width: 520px; }
+  .scroller { overflow-x: auto; position: relative; }
+  .wrapper { position: relative; }
+  [data-edge-fade] { position: absolute; top: 0; bottom: 0; right: 0; width: 40px; background: linear-gradient(to left, white, transparent); }
+  .trunc { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 160px; }
+  ol { padding-left: 20px; }
+</style></head>
+<body>
+  <main>
+    <div data-slot="page-header"><h1>Cards</h1></div>
+    <div data-slot="card" id="where"><h2>Where</h2><div class="tiles"><div class="tile">Harbor General</div><div class="tile">Skills lab 2</div><div class="tile">Mercy West</div></div></div>
+    <div data-slot="card" class="clip" id="clipped"><div class="wide">Clinical, Inpatient, NURS 350, Harbor General, 4 West</div></div>
+    <div data-slot="card" id="ranked"><h2>Blocking skills</h2><ol>
+      <li><a href="#" class="trunc" title="Indwelling urinary catheter insertion">Indwelling urinary catheter insertion</a> 17 of 42</li>
+      <li><a href="#">Oral medication administration with a long wrapping name</a> 15 of 42</li>
+      <li><a href="#">Vital signs</a> 12 of 42</li>
+    </ol></div>
+    <div data-slot="card" id="fade"><div class="wrapper"><div class="scroller"><div class="wide">Wide content that scrolls on purpose under an edge fade</div></div><span data-edge-fade></span></div></div>
+  </main>
+</body></html>

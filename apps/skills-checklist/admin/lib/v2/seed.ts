@@ -22,7 +22,7 @@ import type {
 } from "./types"
 
 /** Bump when the generator changes on purpose: saved deltas made against another seed are then discarded. */
-export const SEED_VERSION = "2026-10-27.9-self-evaluation"
+export const SEED_VERSION = "2026-10-30.1-setting-minimum"
 
 export { DEMO_TODAY, IDS }
 
@@ -88,6 +88,16 @@ const IV_CONFIG: SkillConfig = {
   failure: { attemptLimit: 3, minDaysBetween: 7, retakeScoreCap: null },
   // Stage 3: the program made narrative feedback mandatory for this skill (SC-14), so the evaluator form shows the rule (EV-06).
   feedbackRequired: true,
+}
+
+/**
+ * Urinary catheter insertion asks for 2 of its 3 evaluations in Inpatient [REQ SC-11] (SEED_VERSION 2026-10-30.1-setting-minimum),
+ * so the demo student's record shows progress against a named setting [REQ SH-05]: one of her two counted evaluations is from the
+ * skills lab, which counts toward the evaluations but never toward Inpatient [REQ SC-12].
+ */
+const URINARY_CONFIG: SkillConfig = {
+  ...defaultConfig("demonstration"),
+  achievement: { ...defaultConfig("demonstration").achievement, settingMinimums: [{ setting: "Inpatient", min: 2 }] },
 }
 
 type SkillSeed = [id: string, name: string, category: string, model: Skill["model"], published: boolean, configured?: boolean]
@@ -186,7 +196,9 @@ function buildSkills(): Skill[] {
         config: isConfigured
           ? id === IDS.ivCath
             ? structuredClone(IV_CONFIG)
-            : SELF_EVALUATION.has(id)
+            : id === IDS.urinaryCath
+              ? structuredClone(URINARY_CONFIG)
+              : SELF_EVALUATION.has(id)
               ? { ...configFor(model), selfEvaluation: true }
               : configFor(model)
           : null,
@@ -267,7 +279,8 @@ function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
   // Maya: mostly met, one not-yet, IV catheter and central line still ahead.
   const maya: Hist[] = [
     [IDS.urinaryCath, "met", "clinical", 21, IDS.delgado],
-    [IDS.urinaryCath, "met", "clinical", 14, IDS.delgado],
+    // Skills lab, before her placement: it counts toward the 3 evaluations, never toward the 2 the rule asks for in Inpatient.
+    [IDS.urinaryCath, "met", "lab", 24, IDS.whitmore],
     ["sk-med-admin", "met", "clinical", 28, IDS.delgado],
     ["sk-vitals", "met", "lab", 40, IDS.whitmore],
     ["sk-vitals", "met", "clinical", 12, IDS.delgado],
@@ -322,7 +335,10 @@ function buildEvaluations(): { list: Evaluation[]; reopenedId: string } {
       // Nasogastric tube care rests on one evaluator (the outpatient preceptor), so the single-rater flag has something real to show.
       // Bedside handoff is part simulation. The core skills draw on several evaluators.
       const setting: Setting = it.skillId === "sk-handoff" ? (rand() < 0.4 ? "simulation" : "clinical") : rand() < 0.11 ? "lab" : "clinical"
-      const evaluatorId = it.skillId === "sk-ng-tube" ? "pre-castillo" : setting === "clinical" ? pickRater() : IDS.whitmore
+      const drawn = it.skillId === "sk-ng-tube" ? "pre-castillo" : setting === "clinical" ? pickRater() : IDS.whitmore
+      // Urinary catheter insertion asks for Inpatient evidence (URINARY_CONFIG), so its clinical evaluations come from an inpatient
+      // preceptor, never the outpatient one. No extra draw, so every later value in the stream is unchanged.
+      const evaluatorId = it.skillId === IDS.urinaryCath && drawn === "pre-castillo" ? "pre-aldridge" : drawn
       const e = mkEval(`ev-${si + 2}-${i + 1}`, s.id, [it.skillId, it.outcome, setting, daysAgo, evaluatorId])
       if (setting === "clinical" && evaluatorId === "pre-castillo") e.clinicalSetting = "Outpatient"
       out.push(e)

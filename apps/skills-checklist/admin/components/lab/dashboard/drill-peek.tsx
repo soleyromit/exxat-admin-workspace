@@ -5,6 +5,7 @@
  * selected row without leaving the page. Every fact is read from the dashboard's own selectors (populationRows,
  * pipelineRecords, buildDrill), so a peek never disagrees with the list, the dashboard or Attainment.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -45,7 +46,7 @@ function Lines({ recs, nameOf, moreHref }: { recs: PipelineRecord[]; nameOf: (r:
             <ul className="flex flex-col">
               {inState.map((r) => (
                 <li key={r.key} className="flex items-center justify-between gap-3 py-1">
-                  <span className="min-w-0 truncate text-sm text-foreground">{nameOf(r)}</span>
+                  <span className="min-w-0 text-sm text-foreground">{nameOf(r)}</span>
                   {st === "progress" ? <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{`${r.counted} of ${r.need}`}</span> : null}
                 </li>
               ))}
@@ -79,13 +80,13 @@ export function DrillPeek({ target, records, scope, onClose }: { target: PeekTar
       <Card size="sm" data-drill-peek="student" data-peek-count={left.length}>
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <CardTitle className="text-sm"><Link className={LINK} href={studentHref(scope, s.id)}>{s.name}</Link></CardTitle>
+            <CardTitle className={TYPE.card}><Link className={LINK} href={studentHref(scope, s.id)}>{s.name}</Link></CardTitle>
             <p className="text-xs text-muted-foreground">{`${s.group ? `${s.cohort}, ${s.group}` : s.cohort}. Required achieved ${s.achieved} of ${s.required}.`}</p>
           </div>
           {close}
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <h3 className="flex items-baseline gap-2 text-sm font-semibold text-foreground">{left.length ? <>Not achieved yet<Count n={left.length} /></> : `Every required ${skillNoun()} achieved`}</h3>
+          <h3 className={`flex items-baseline gap-2 ${TYPE.group}`}>{left.length ? <>Not achieved yet<Count n={left.length} /></> : `Every required ${skillNoun()} achieved`}</h3>
           {left.length ? <Lines recs={left} nameOf={(r) => r.skill} moreHref={attainmentHref(scope, { peek: peekParam({ kind: "student", id: s.id }) })} /> : null}
         </CardContent>
       </Card>
@@ -98,13 +99,13 @@ export function DrillPeek({ target, records, scope, onClose }: { target: PeekTar
       <Card size="sm" data-drill-peek="skill" data-peek-count={left.length}>
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <CardTitle className="text-sm">{k.name}</CardTitle>
+            <CardTitle className={TYPE.card}>{k.name}</CardTitle>
             <p className="text-xs text-muted-foreground">{`${k.category}. Achieved by ${k.achieved} of ${k.students}.`}</p>
           </div>
           {close}
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          <h3 className="flex items-baseline gap-2 text-sm font-semibold text-foreground">Students not there yet<Count n={left.length} /></h3>
+          <h3 className={`flex items-baseline gap-2 ${TYPE.group}`}>Students not there yet<Count n={left.length} /></h3>
           {left.length ? <Lines recs={left} nameOf={(r) => r.student} moreHref={attainmentHref(scope, { peek: peekParam({ kind: "skill", id: k.skillId }) })} /> : null}
         </CardContent>
       </Card>
@@ -116,13 +117,13 @@ export function DrillPeek({ target, records, scope, onClose }: { target: PeekTar
       <Card size="sm" data-drill-peek="site" data-peek-count={reqs.length}>
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div className="flex min-w-0 flex-col gap-0.5">
-            <CardTitle className="text-sm">{target.row.name}</CardTitle>
+            <CardTitle className={TYPE.card}>{target.row.name}</CardTitle>
             <p className="text-xs text-muted-foreground">{`Oldest waiting ${target.row.oldest} days.`}</p>
           </div>
           {close}
         </CardHeader>
         <CardContent>
-          <h3 className="mb-1 flex items-baseline gap-2 text-sm font-semibold text-foreground">Requests waiting<Count n={reqs.length} /></h3>
+          <h3 className={`mb-1 flex items-baseline gap-2 ${TYPE.group}`}>Requests waiting<Count n={reqs.length} /></h3>
           <ul className="flex flex-col divide-y divide-border">
             {reqs.slice(0, SHOW).map((r) => (
               <li key={r.id} className="flex flex-col py-1.5">
@@ -139,7 +140,7 @@ export function DrillPeek({ target, records, scope, onClose }: { target: PeekTar
   return (
     <Card size="sm" data-drill-peek="request">
       <CardHeader className="flex flex-row items-start justify-between gap-2">
-        <CardTitle className="text-sm"><Link className={LINK} href={studentHref(scope, r.studentId)}>{r.student}</Link></CardTitle>
+        <CardTitle className={TYPE.card}><Link className={LINK} href={studentHref(scope, r.studentId)}>{r.student}</Link></CardTitle>
         {close}
       </CardHeader>
       <CardContent>

@@ -1,4 +1,5 @@
 // Structured criteria to readable text (S-04 "Achievement criteria" column, S-09 lineage, S-12 progress).
+import { inSentence } from "@/lib/lab/terms"
 import type { CriteriaPart } from "@/lib/store/selectors/shared"
 
 export function criteriaSummary(parts: CriteriaPart[]): string {
@@ -9,9 +10,9 @@ export function criteriaSummary(parts: CriteriaPart[]): string {
         case "required":
           return `${p.n} ${p.noun === "demonstrations" ? (p.n === 1 ? "demonstration" : "demonstrations") : p.n === 1 ? "qualifying evaluation" : "qualifying evaluations"}`
         case "level":
-          return `${p.min} at ${p.label}`
+          return `${p.min} at ${inSentence(p.label)}`
         case "setting":
-          return `${p.min} in ${p.name}`
+          return `${p.min} in ${inSentence(p.name)}`
       }
     })
     .join(", ")

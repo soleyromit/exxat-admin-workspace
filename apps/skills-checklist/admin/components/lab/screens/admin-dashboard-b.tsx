@@ -40,6 +40,7 @@ function Inbox({ ctx }: { ctx: DashboardContext }) {
         onTab={(t) => setParams({ tab: t === "behind" ? null : t, peek: null })}
         peek={param("peek")}
         onPeek={(id) => setParams({ peek: id })}
+        filters={ctx.filters}
       />
     </div>
   )
@@ -47,7 +48,8 @@ function Inbox({ ctx }: { ctx: DashboardContext }) {
 
 export function AdminDashboardB() {
   return (
-    <DashboardPage variant="B">
+    // Filters scopes every exception list, so it shares the tab row (D-L8b); the empty demo has no tabs and keeps the frame row.
+    <DashboardPage variant="B" filtersInBody={(ctx) => ctx.demo !== "empty"}>
       {(ctx) =>
         ctx.demo === "empty" ? (
           <div className="flex flex-col gap-4">

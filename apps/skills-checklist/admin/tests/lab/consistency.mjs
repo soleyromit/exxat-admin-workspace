@@ -158,7 +158,10 @@ seen.director = { dirPop, in26 }
 async function bandsOn(path) {
   await open(path)
   return page.evaluate(() => {
-    const band = (k) => { const el = document.querySelector(`[data-band="${k}"][data-band-count]`); return el ? Number(el.getAttribute("data-band-count")) : null }
+    // An empty band is not printed on the readiness line (design review 2026-10-30: no "0 short" bucket), so a band missing
+    // beside printed ones reads 0; with no band printed at all the figure was not found (null).
+    const any = !!document.querySelector("[data-band][data-band-count]")
+    const band = (k) => { const el = document.querySelector(`[data-band="${k}"][data-band-count]`); return el ? Number(el.getAttribute("data-band-count")) : any ? 0 : null }
     const mx = document.querySelector("[data-matrix]")
     return {
       readiness: ["complete", "one-short", "short", "far"].map(band),
@@ -192,14 +195,16 @@ for (const [label, group] of [["Group A", "Group+A"], ["custom group Enrolled in
 }
 {
   const def = await open(`/lab/admin/dashboard?${TERM}&variant=A`)
-  const kind = await page.evaluate(() => document.querySelector("[data-scope-context] [data-course-kind]")?.getAttribute("data-course-kind") ?? null)
+  // The Filters button carries the course scope (2026-10-30): on dashboards it sits in the page header, and the scope row
+  // under it shows only when filters are applied.
+  const kind = await page.evaluate(() => document.querySelector("[data-filters-button][data-course-kind]")?.getAttribute("data-course-kind") ?? null)
   const defHero = grab(def.text, /(\d[\d,]*) of (\d[\d,]*) students? (?:is|are)? ?behind/)
   const defAch = grab(def.text, /Required skills achieved\s+(\d+)%\s+(\d[\d,]*) of (\d[\d,]*)/)
   const did = await open(`/lab/admin/dashboard?${TERM}&incl=didactic&variant=A`)
-  const didKind = await page.evaluate(() => document.querySelector("[data-scope-context] [data-course-kind]")?.getAttribute("data-course-kind") ?? null)
+  const didKind = await page.evaluate(() => document.querySelector("[data-filters-button][data-course-kind]")?.getAttribute("data-course-kind") ?? null)
   const didHero = grab(did.text, /(\d[\d,]*) of (\d[\d,]*) students? (?:is|are)? ?behind/)
   const didAch = grab(did.text, /Required skills achieved\s+(\d+)%\s+(\d[\d,]*) of (\d[\d,]*)/)
-  check("Clinical only: the header subtitle reads Clinical courses by default and switches when didactic is included", { clinicalDefault: kind === "clinical" ? 1 : 0, allWithDidactic: didKind === "all" ? 1 : 0, expected: 1 })
+  check("Clinical only: the Filters group reads Clinical courses by default and switches when didactic is included", { clinicalDefault: kind === "clinical" ? 1 : 0, allWithDidactic: didKind === "all" ? 1 : 0, expected: 1 })
   check("Clinical only: behind and students in scope are the same with didactic included", { behind: defHero?.[0], behindWithDidactic: didHero?.[0] })
   check("Clinical only: Required this term records are the same with didactic included", { records: defAch?.[2], recordsWithDidactic: didAch?.[2] })
   await open(`/lab/admin/course-mapping?${TERM}&variant=A`)
@@ -259,7 +264,9 @@ const asgQBefore = await open(`/lab/reviewer/approvals?${TERM}&variant=A`)
 const asgQueueBefore = grab(asgQBefore.text, /(\d[\d,]*) submissions? wait/)?.[0] ?? null
 const asgBadgeBefore = badgeOf(asgQBefore.nav)
 // Since the UX critique (2026-10-26) the not-recorded rows carry one "Adopt, merge or assign" menu instead of two buttons.
-const assignMenu = page.getByRole("button", { name: /^Adopt, merge or assign: / }).first()
+// Since the design review (2026-10-30) each row has Review plus one "More actions" overflow; on a typed-name row it holds Adopt or
+// merge and Assign to someone else. Pick the first row whose evaluator is Not verified.
+const assignMenu = page.getByRole("row").filter({ hasText: "Not verified" }).first().getByRole("button", { name: /^More actions: / })
 let assigned = false
 if ((await assignMenu.count()) > 0) {
   await assignMenu.click()

@@ -15,7 +15,7 @@ import { labSkills, labStudents } from "@/lib/v2/lab"
 import { binaryLabels, outcomeWord } from "@/lib/v2/labels"
 import type { EvalModel, Outcome, Person, Skill, Submission, V2State } from "@/lib/v2/types"
 import { LABEL_PRESETS, type LabelPresetId } from "./configure"
-import { aNoun, capitalize, skillNoun, skillNounPlural } from "./terms"
+import { aNoun, capitalize, inSentence, skillNoun, skillNounPlural } from "./terms"
 import { checkOffAllowedFor, checkOffOffReason } from "./checkoff-rules"
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -196,7 +196,7 @@ function ruleHintFor(skill: Skill, preset: LabelPresetId | null = null): string 
   if (!a || !skill.config) return ""
   const named = programLabels(skill, preset)
   const min = a.minLevelIndex
-  if (min !== null && needsLevels(skill.model, skill.config)) return `Counts at ${named.levels[min] ?? skill.config.levels[min]} or above.`
+  if (min !== null && needsLevels(skill.model, skill.config)) return `Counts at ${inSentence(named.levels[min] ?? skill.config.levels[min])} or above.`
   return `${named.outcomes[0]} counts toward the program's rule.`
 }
 
@@ -246,11 +246,17 @@ function toEvSkill(s: V2State, skill: Skill, x: Submission | null, studentId: st
   }
 }
 
-/** The request the evaluator link opens, for one lab state. Null only when the seed lacks the request. */
-export function buildRequest(s: V2State, sample: EvSample, state: EvState, o: EvOptions = DEFAULT_OPTIONS): EvRequest | null {
-  const x = s.submissions.find((r) => r.id === SEED_REQUEST_ID) ?? waitingFor(s, EVALUATOR_ID)[0] ?? null
+/**
+ * The request the evaluator link opens, for one lab state. `requestId` (the link's `?request=`) opens that request as the student
+ * sent it: its own evaluator, setting, date performed and note [REQ EV-01, EV-04, ST-12]. Without it, or for an id the store does
+ * not hold, the seeded request opens. Null only when the seed lacks the request.
+ */
+export function buildRequest(s: V2State, sample: EvSample, state: EvState, o: EvOptions = DEFAULT_OPTIONS, requestId: string | null = null): EvRequest | null {
+  const asked = requestId ? s.submissions.find((r) => r.id === requestId) ?? null : null
+  const x = asked ?? s.submissions.find((r) => r.id === SEED_REQUEST_ID) ?? waitingFor(s, EVALUATOR_ID)[0] ?? null
   if (!x) return null
-  const evaluator = s.people.find((p) => p.id === EVALUATOR_ID)
+  // A person the student named who is not on record yet has no row: the link still opens, greeting them as the evaluator.
+  const evaluator = s.people.find((p) => p.id === (asked ? asked.assignedToId : EVALUATOR_ID)) ?? (asked ? { name: "Evaluator", verified: false as const } : undefined)
   const student = s.people.find((p) => p.id === x.studentId)
   if (!evaluator || !student) return null
   const ids = sample === "long" ? LONG_SAMPLE : x.skillIds
@@ -260,9 +266,11 @@ export function buildRequest(s: V2State, sample: EvSample, state: EvState, o: Ev
     .map((k) => toEvSkill(s, k, x, student.id, state, o))
   const entry = s.logEntries.find((e) => (x.entryIds ?? []).includes(e.id))
   const placement = s.placements.find((p) => p.studentId === student.id && p.courseId === s.course.id)
-  const where = entry?.location ? { location: entry.location, setting: entry.clinicalSetting ?? placement?.setting ?? "" } : placement ? { location: placement.location, setting: placement.setting } : null
-  // EV-04: the date performed comes from the entries the request carries, never from when it was sent.
-  const performed = performedSpan(s.logEntries.filter((e) => (x.entryIds ?? []).includes(e.id)).map((e) => e.at))
+  // Lab and simulation evidence carries no clinical setting [REQ ST-05, SC-12]: it reads "Lab" or "Simulation", never the placement's.
+  const practice = entry && entry.setting !== "clinical" ? (entry.setting === "lab" ? "Lab" : "Simulation") : null
+  const where = practice ? { location: entry?.location ?? "", setting: practice } : entry?.location ? { location: entry.location, setting: entry.clinicalSetting ?? placement?.setting ?? "" } : placement ? { location: placement.location, setting: placement.setting } : null
+  // EV-04: the date performed is the one the student entered (the sitting), else when the entries were logged; never when it was sent.
+  const performed = performedSpan(s.logEntries.filter((e) => (x.entryIds ?? []).includes(e.id)).map((e) => (e.sitting?.date || e.at)))
   // An expired link was sent more than the 14-day lifetime ago, so its "Expired" date is before the demo day (not after it).
   const sentOn = state === "expired" ? addDays(DEMO_TODAY, -15) : x.createdAt
   return {
@@ -380,6 +388,8 @@ export interface Invitation {
   rows: InviteRow[]
   skillCount: number
   expiresOn: string
+  /** The body's first line, with the same counts as the subject: "2 requests for 3 skills are waiting for your sign-off." */
+  intro: string
   plainText: string
 }
 
@@ -410,12 +420,18 @@ export function buildInvitation(s: V2State, evaluatorId: string = EVALUATOR_ID, 
   const skillCount = rows.reduce((n, r) => n + r.skills.length, 0)
   const students = new Set(rows.map((r) => r.student))
   const names = [...students]
+  // Subject and body say the same two counts (review 2026-10-30: the subject said "3 skills", the body "2 requests").
+  const skillsN = plural(skillCount, skillNoun(), skillNounPlural())
+  const counts = rows.length > 1 ? `${plural(rows.length, "request", "requests")}, ${skillsN}` : skillsN
   const subject =
     names.length <= 1
-      ? `${names[0] ?? "A student"} asks you to sign off ${plural(skillCount, skillNoun(), skillNounPlural())}`
+      ? rows.length > 1
+        ? `${names[0] ?? "A student"}: ${counts} to sign off`
+        : `${names[0] ?? "A student"} asks you to sign off ${skillsN}`
       : names.length === 2
-        ? `${names[0]} and ${names[1]}: ${plural(skillCount, skillNoun(), skillNounPlural())} to sign off`
-        : `${names[0]} and ${plural(names.length - 1, "other", "others")}: ${plural(skillCount, skillNoun(), skillNounPlural())} to sign off`
+        ? `${names[0]} and ${names[1]}: ${counts} to sign off`
+        : `${names[0]} and ${plural(names.length - 1, "other", "others")}: ${counts} to sign off`
+  const intro = rows.length > 1 ? `${plural(rows.length, "request", "requests")} for ${skillsN} are waiting for your sign-off. Each link opens one request.` : `A request for ${skillsN} is waiting for your sign-off.`
   const oldest = open[0]?.createdAt ?? `${DEMO_TODAY}T09:00:00Z`
   const expiresOn = shortDate(addDays(open[open.length - 1]?.createdAt ?? oldest, 14))
   const from = `${s.program.school} ${s.program.name}`
@@ -423,7 +439,7 @@ export function buildInvitation(s: V2State, evaluatorId: string = EVALUATOR_ID, 
   const lines = [
     greeting,
     "",
-    `${plural(rows.length, "request is", "requests are")} waiting for your sign-off. Each link opens one request. No account is needed.`,
+    `${intro} No account is needed.`,
     "",
     ...rows.flatMap((r) => [`${r.student}, ${r.course}, ${r.where}`, ...r.skills.map((k) => `  - ${k}`), `  Open: ${r.link}`, ""]),
     `Links work until ${expiresOn}.`,
@@ -431,7 +447,7 @@ export function buildInvitation(s: V2State, evaluatorId: string = EVALUATOR_ID, 
     "",
     from,
   ]
-  return { to: evaluator.email, from, subject, greeting, rows, skillCount, expiresOn, plainText: lines.join("\n") }
+  return { to: evaluator.email, from, subject, greeting, rows, skillCount, expiresOn, intro, plainText: lines.join("\n") }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -475,6 +491,23 @@ export interface LabSkillRow {
   blocked: string | null
   /** The program made feedback mandatory for this skill (EV-06): a result cannot be saved without it. */
   feedbackRequired: boolean
+  /** The skill's own "Approval before it counts" setting: its results wait for program approval (EV-07). */
+  holds: boolean
+}
+
+/**
+ * What the instructor is told on saving [REQ EV-07]: whether the results count now or wait for program approval, from each
+ * skill's own configuration, in the words of the preceptor receipt ("Counts now", "Waits for program approval").
+ */
+export function labSavedLine(entries: LabSavedResult[], skills: LabSkillRow[]): string {
+  const held = new Set(skills.filter((k) => k.holds).map((k) => k.id))
+  const waits = entries.filter((e) => held.has(e.skillId))
+  const counts = entries.length - waits.length
+  const names = [...new Set(waits.map((e) => skills.find((k) => k.id === e.skillId)?.name ?? ""))].filter(Boolean)
+  const n = (x: number) => (x === 1 ? "1 result" : `${x} results`)
+  if (waits.length === 0) return `${counts === 1 ? "It counts" : "They count"} now.`
+  if (counts === 0) return `${waits.length === 1 ? "It waits" : "They wait"} for program approval.`
+  return `${n(counts)} ${counts === 1 ? "counts" : "count"} now; ${n(waits.length)} for ${names.join(" and ")} ${waits.length === 1 ? "waits" : "wait"} for program approval.`
 }
 
 /** Session skills. `requireFeedback` is the lab's "Program requires feedback" option (?fb=1), the same one the evaluator form reads. */
@@ -484,7 +517,7 @@ export function labSessionSkills(s: V2State, requireFeedback = false): LabSkillR
   // the course offering's Group check-off screen reads; then the instructor's qualification.
   return labSkills(s, "lab", inst).map((x) => {
     const off = checkOffOffReason(x.skill.model, checkOffAllowedFor(x.skill.model, x.skill.config?.checkOff?.enabled), !!x.skill.config && x.skill.configured !== false, x.skill.config?.questions.length ?? 0)
-    return { id: x.skill.id, name: x.skill.name, blocked: off ? off.split(/(?<=\.)\s/)[0] : x.blocked, feedbackRequired: requireFeedback || !!x.skill.config?.feedbackRequired }
+    return { id: x.skill.id, name: x.skill.name, blocked: off ? off.split(/(?<=\.)\s/)[0] : x.blocked, feedbackRequired: requireFeedback || !!x.skill.config?.feedbackRequired, holds: !!x.skill.config?.approvalRequired }
   })
 }
 

@@ -17,7 +17,14 @@ import { LINK } from "@/components/lab/director/parts"
 import { FAR_BEHIND_MISSING, GRADUATION_LIST, GRADUATION_STAGES, GRADUATION_STAGE_LABEL, listHref, plural, type GraduationStage, type Readiness } from "@/lib/lab/director"
 import { TYPE } from "@/components/lab/type-scale"
 
-export const FILL: Record<GraduationStage, string> = { complete: "var(--muted-foreground)", "one-short": VIZ.behind, short: VIZ.behind, far: VIZ.behind }
+/**
+ * One fill per band, so the strip encodes all four (design review 2026-10-30, others #7): Complete neutral ink; the three short
+ * bands an amber ramp, light to dark as the gap grows (one short: the amber wash with an amber edge; short: amber; far behind: the
+ * dark amber). Amber is the one accent and means "not complete"; the depth says how far.
+ */
+export const FILL: Record<GraduationStage, string> = { complete: "var(--muted-foreground)", "one-short": VIZ.behindWash, short: VIZ.behind, far: VIZ.behindEdge }
+const EDGE: Record<GraduationStage, string | undefined> = { complete: undefined, "one-short": VIZ.behindEdge, short: undefined, far: undefined }
+const swatchStyle = (st: GraduationStage): React.CSSProperties => ({ background: FILL[st], boxShadow: EDGE[st] ? `inset 0 0 0 1px ${EDGE[st]}` : undefined })
 /** Hatching on the overlay: background stripes across the fill (no color-mix). */
 const HATCH = "repeating-linear-gradient(135deg, var(--background) 0 1.5px, transparent 1.5px 4.5px)"
 // Getters, so each hint follows the program's noun when it changes (Settings > Naming).
@@ -32,7 +39,7 @@ export const shownBands = (m: Readiness): GraduationStage[] => GRADUATION_STAGES
 
 function Square({ stage, open, title }: { stage: GraduationStage; open: boolean; title: string }) {
   return (
-    <span className="relative inline-block size-5 shrink-0 overflow-hidden rounded-sm" style={{ background: FILL[stage] }} title={title} data-flagged={stage !== "complete" || undefined}>
+    <span className="relative inline-block size-5 shrink-0 overflow-hidden rounded-sm" style={swatchStyle(stage)} title={title} data-flagged={stage !== "complete" || undefined}>
       {open ? <span className="absolute inset-0" style={{ backgroundImage: HATCH }} aria-hidden="true" /> : null}
     </span>
   )
@@ -49,38 +56,48 @@ export function OpenSwatch() {
 export function ReadinessPipeline({ m, demoPartial = false }: { m: Readiness; demoPartial?: boolean }) {
   const cohort = m.scope.cohort || "All cohorts"
   const bands = shownBands(m)
-  const summary = `${cohort}: ${GRADUATION_STAGES.map((s) => `${m.graduation[s]} ${GRADUATION_STAGE_LABEL[s].toLowerCase()}`).join(", ")}. ${m.readyToVerify} ready to verify.`
+  const total = m.rows.length
+  const notNow = m.status.blocked + m.status.verified
+  const summary = `${cohort}: ${m.readyToVerify} of ${total} ready to verify. ${GRADUATION_STAGES.map((s) => `${m.graduation[s]} ${GRADUATION_STAGE_LABEL[s].toLowerCase()}`).join(", ")}.`
+  // Why the rest cannot be verified now, in the verification words (blocked = evidence still in flux, D-X3; verified = done).
+  const rest = [
+    m.status.blocked ? `${m.status.blocked} wait on evidence still in flux` : "",
+    m.status.verified ? `${m.status.verified} already verified` : "",
+  ].filter(Boolean)
   return (
     <Card className="py-0" data-region="pipeline">
       <CardContent className="flex flex-col gap-4 py-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <h2 className="text-base font-semibold text-foreground">{`Graduation readiness, ${cohort}`}</h2>
-          <Link href={listHref(m.scope, { list: "ready" })} className={`${LINK} flex items-baseline gap-2`} data-figure>
+        <h2 className={TYPE.card}>{`Graduation readiness, ${cohort}`}</h2>
+        {/* ONE hero (design review 2026-10-30, others #7): the director's act is to verify, so "ready to verify" leads, stated
+            against the cohort ("29 of 38"). Complete is a band of the chart under it, set smaller, not a second hero. */}
+        <div className="flex flex-col gap-1" data-hero>
+          <Link href={listHref(m.scope, { list: "ready" })} className={`${LINK} flex items-baseline gap-2 self-start`} data-figure aria-label={`${m.readyToVerify} of ${total} ready to verify. Open the list`}>
             <span className={TYPE.figure}>{m.readyToVerify}</span>
-            <span className="text-sm font-normal text-muted-foreground">ready to verify</span>
+            <span className="text-sm font-normal text-muted-foreground">{`of ${total} ready to verify`}</span>
           </Link>
+          {notNow ? <p className={TYPE.helper}>{rest.length === 1 ? `The other ${rest[0]}.` : `The other ${notNow}: ${rest.join(", ")}.`}</p> : null}
         </div>
         {/* The text summary of the chart; the grid holds the count links, so it is not one role=img (no nested interactive). */}
         <p className="sr-only">{summary}</p>
         <div
-          className="grid grid-cols-1 gap-x-8 gap-y-4 md:[grid-template-columns:var(--cols)]"
-          style={{ ["--cols" as string]: bands.map((st) => `minmax(11rem, ${Math.max(m.graduation[st], 5)}fr)`).join(" ") }}
+          className="grid grid-cols-1 gap-x-8 gap-y-4 border-t border-border pt-4 md:[grid-template-columns:var(--cols)]"
+          style={{ ["--cols" as string]: bands.map((st) => `minmax(10rem, ${Math.max(m.graduation[st], 5)}fr)`).join(" ") }}
           data-chart
         >
           {bands.map((st) => {
             const members = m.rows.filter((r) => r.graduationStage === st)
             return (
               <div key={st} data-band={st} className={`flex min-w-0 flex-col gap-2 ${st !== "complete" ? "md:border-s md:border-border md:ps-6" : ""}`}>
-                <div className="flex flex-col" data-figure>
+                <div className="flex flex-col" data-figure data-band-count={members.length}>
                   <span className="flex items-baseline gap-2">
-                    <Link href={listHref(m.scope, { list: GRADUATION_LIST[st] })} className={`${LINK} ${TYPE.figure}`} aria-label={`${members.length} ${GRADUATION_STAGE_LABEL[st].toLowerCase()}. Open the list`}>
+                    <Link href={listHref(m.scope, { list: GRADUATION_LIST[st] })} className={`${LINK} ${TYPE.group} tabular-nums`} aria-label={`${members.length} ${GRADUATION_STAGE_LABEL[st].toLowerCase()}. Open the list`}>
                       {members.length}
                     </Link>
                     <Tip label={STAGE_HINT[st]}>
                       <span className="truncate rounded-sm text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0}>{GRADUATION_STAGE_LABEL[st]}</span>
                     </Tip>
                   </span>
-                  <span className="text-xs text-muted-foreground">{demoPartial ? " " : m.graduationOpen[st] ? `${m.graduationOpen[st]} with a request open` : "No request open"}</span>
+                  <span className={TYPE.meta}>{demoPartial ? " " : m.graduationOpen[st] ? `${m.graduationOpen[st]} with a request open` : "No request open"}</span>
                 </div>
                 <div className="flex flex-wrap gap-1" aria-hidden="true">
                   {members.map((r) => (
@@ -91,11 +108,15 @@ export function ReadinessPipeline({ m, demoPartial = false }: { m: Readiness; de
             )
           })}
         </div>
-        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend" data-viz-label>
-          <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded-sm" style={{ background: FILL.complete }} />Complete</span>
-          {m.rows.length - m.graduation.complete > 0 ? <span className="inline-flex items-center gap-1.5"><span className="inline-block size-3 rounded-sm" style={{ background: VIZ.behind }} />Short</span> : null}
-          {demoPartial ? null : <span className="inline-flex items-center gap-1.5"><OpenSwatch />Request open</span>}
-        </p>
+        <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend" data-viz-label>
+          {bands.map((st) => (
+            <li key={st} className="inline-flex items-center gap-1.5">
+              <span className="inline-block size-3 rounded-sm" style={swatchStyle(st)} aria-hidden="true" />
+              {GRADUATION_STAGE_LABEL[st]}
+            </li>
+          ))}
+          {demoPartial ? null : <li className="inline-flex items-center gap-1.5"><OpenSwatch />Request open</li>}
+        </ul>
       </CardContent>
     </Card>
   )

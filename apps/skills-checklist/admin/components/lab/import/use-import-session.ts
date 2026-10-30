@@ -20,6 +20,9 @@ import {
   SAMPLE_FILE_NAME,
   TARGET_LABEL,
   applySuggestions,
+  applyReviewEdits,
+  NO_EDITS,
+  type ReviewEdits,
   buildReview,
   buildSampleText,
   clearDecisions,
@@ -85,7 +88,9 @@ export function useImportSession() {
   const targetLabel = isNewList ? newLibraryName.trim() || `a new group of ${skillNounPlural()}` : TARGET_LABEL[target] ?? ""
 
   const text = React.useMemo(() => (phase === "review" || phase === "done" ? sourceText ?? buildSampleText(scale) : ""), [phase, scale, sourceText])
-  const review = React.useMemo(() => (text ? buildReview(text, library) : null), [text, library])
+  /** Split, merge and added entries [REQ IM-05], applied over the reading so the file's own lines stay as read. */
+  const [edits, setEdits] = React.useState<ReviewEdits>(NO_EDITS)
+  const review = React.useMemo(() => (text ? applyReviewEdits(buildReview(text, library), edits, library) : null), [text, library, edits])
   const resolved = React.useMemo(
     () => (review ? resolve(review, decisions, names).map((r) => (rowCategories[r.row.id] !== undefined ? { ...r, section: rowCategories[r.row.id] || null } : r)) : []),
     [review, decisions, names, rowCategories],
@@ -107,6 +112,35 @@ export function useImportSession() {
     setRowCategories({})
     setRowTags({})
     setRowDescriptions({})
+    setEdits(NO_EDITS)
+  }, [])
+
+  const splitRow = React.useCallback((rowId: string, parts: string[]) => {
+    if (parts.length < 2) return
+    setEdits((e) => ({ ...e, splits: { ...e.splits, [rowId]: parts } }))
+  }, [])
+  const mergeRow = React.useCallback((rowId: string, intoId: string) => {
+    if (rowId === intoId) return
+    setEdits((e) => ({ ...e, merges: { ...e.merges, [rowId]: intoId } }))
+  }, [])
+  const unsplitRow = React.useCallback((rowId: string) => {
+    setEdits((e) => {
+      const splits = { ...e.splits }
+      delete splits[rowId]
+      return { ...e, splits }
+    })
+  }, [])
+  const unmergeRow = React.useCallback((rowId: string) => {
+    setEdits((e) => {
+      const merges = { ...e.merges }
+      delete merges[rowId]
+      return { ...e, merges }
+    })
+  }, [])
+  const addEntry = React.useCallback((name: string, section: string | null) => {
+    const clean = name.trim()
+    if (!clean) return
+    setEdits((e) => ({ ...e, added: [...e.added, { id: `n${e.added.length + 1}`, name: clean, section }] }))
   }, [])
 
   // Apply a demo state once, after the store has hydrated.
@@ -120,6 +154,7 @@ export function useImportSession() {
     setSourceText(null)
     setDecisions({})
     setNames({})
+    setEdits(NO_EDITS)
     setTarget(DEFAULT_LIST)
     const name = demo === "empty" ? null : SAMPLE_FILE_NAME[big ? "large" : "standard"]
     setFileName(name)
@@ -174,6 +209,7 @@ export function useImportSession() {
     setSourceText(null)
     setDecisions({})
     setNames({})
+    setEdits(NO_EDITS)
     setBatchName((b) => b || `${several ? "Several files" : stem(files[0].name)}, ${today()}`)
     setPhase("reading")
     timer.current = setTimeout(() => setPhase(fail ? "failed" : "review"), READ_MS)
@@ -205,7 +241,9 @@ export function useImportSession() {
   const rename = React.useCallback((rowId: string, name: string) => setNames((m) => ({ ...m, [rowId]: name })), [])
   const setRowCategory = React.useCallback((rowId: string, category: string) => setRowCategories((m) => ({ ...m, [rowId]: category })), [])
   const setTagsFor = React.useCallback((rowId: string, tags: string[]) => setRowTags((m) => ({ ...m, [rowId]: tags })), [])
-  const descriptionOf = React.useCallback((rowId: string): string => rowDescriptions[rowId] ?? "", [rowDescriptions])
+  // The file's own description is the proposal (REQ IM-04); an edit here wins, and an emptied one stays empty.
+  const fileDescriptions = React.useMemo(() => new Map((review?.rows ?? []).filter((r) => r.description).map((r) => [r.id, r.description!])), [review])
+  const descriptionOf = React.useCallback((rowId: string): string => rowDescriptions[rowId] ?? fileDescriptions.get(rowId) ?? "", [rowDescriptions, fileDescriptions])
   const setDescriptionFor = React.useCallback((rowId: string, d: string) => setRowDescriptions((m) => ({ ...m, [rowId]: d })), [])
 
   const bulkSuggest = React.useCallback(
@@ -223,6 +261,7 @@ export function useImportSession() {
     batchName, setBatchName, targets, library, targetLabel, review, resolved, summary, plan, groups, left, decisions, names,
     readFiles, readText, reset: clearAll, decide, rename, bulkSuggest, bulkLeaveOut, putBack, restoreDecisions, confirm,
     tagsOf, setRowCategory, setTagsFor, descriptionOf, setDescriptionFor,
+    edits, splitRow, mergeRow, unmergeRow, unsplitRow, addEntry,
   }
 }
 

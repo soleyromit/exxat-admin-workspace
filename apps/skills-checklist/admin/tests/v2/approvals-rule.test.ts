@@ -33,6 +33,11 @@ describe("rule holds and the approval setting agree", () => {
     const f = facts(s)
     expect([f.awaitingApproval, f.awaitingApprovalEvaluations, f.awaitingApprovalStatusRows, f.awaitingApprovalUnverifiedRows]).toEqual([35, 41, 20, 19])
     const t = approvalTotals(s, approvalsInScope(s).entries)
+    // 2026-10-30: compareEvaluation reads the self-evaluation stored on the evaluation when the submission has no log entry
+    // (REQ AR-02: compared side by side, "including whether they agreed"). sub-g-043 (ev-g-08343) has the student's
+    // own "Not met" against the evaluator's "Met", a real disagreement the queue used to miss, so its first cause moves from rule to disagree. Entry and evaluation totals above are unchanged.
+    // SEED_VERSION 2026-10-30.1-setting-minimum: generated urinary catheter evidence now goes to inpatient sites, which shifts the
+    // generator's draws; one held entry's first cause reads rule rather than disagree. Entry and evaluation totals are unchanged.
     expect(t.byCause).toEqual({ "new-evaluator": 19, rule: 12, disagree: 2, paper: 2 })
   })
 

@@ -12,13 +12,14 @@
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { DirectorPage } from "@/components/lab/director/frame"
 import type { DirectorContext } from "@/components/lab/director/use-director"
 import { LINK } from "@/components/lab/director/parts"
 import { useSnapshot } from "@/components/lab/dashboard/use-dashboard"
 import { useAttainmentUrl } from "@/components/lab/admin-b/use-att-url"
-import { MATRIX_BINS, StudentMatrix } from "@/components/lab/admin-b/student-matrix"
+import { MatrixLegend, StudentMatrix } from "@/components/lab/admin-b/student-matrix"
 import { SkillsTable } from "@/components/lab/admin-b/attainment-tables"
+import { Input } from "@exxatdesignux/ui/components/ui/input"
+import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { EvidencePeek } from "@/components/lab/admin-b/evidence-peek"
 import { ExportPanel } from "@/components/lab/admin-b/export-panel"
 import { StateLegend } from "@/components/lab/admin-b/state-viz"
@@ -26,7 +27,7 @@ import { RequiredSetControl, useRequiredSet } from "@/components/lab/admin-b/req
 import { TYPE } from "@/components/lab/type-scale"
 import { fmt } from "@/lib/v2/format"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { DiamondGlyph, VIZ } from "@/components/lab/viz"
+import { DiamondGlyph } from "@/components/lab/viz"
 import { BASIS_LABEL, conditionLabel } from "@/lib/lab/dashboard"
 import { buildAttainment, isSkillsScope, peekRecords, scopeLines, unrequiredSkills, type AttView } from "@/lib/lab/attainment"
 import { GRADUATION_LIST, GRADUATION_STAGES, GRADUATION_STAGE_LABEL, listHref, plural, type GraduationStage, type Readiness } from "@/lib/lab/director"
@@ -34,20 +35,19 @@ import { basisOf } from "@/lib/lab/scope"
 import { can } from "@/lib/lab/rbac"
 import type { V2State } from "@/lib/v2/types"
 
-type DirectorView = "matrix" | "skills"
+export type DirectorView = "matrix" | "skills"
 const ROLE = "director" as const
 
-export function DirectorAttainment({ variant, view }: { variant: string; view: DirectorView }) {
-  const [exportOpen, setExportOpen] = React.useState(false)
-  const actionItems = can(ROLE, "export") ? [{ id: "export", label: "Export", icon: "fa-arrow-down-to-line", variant: "outline" as const, onSelect: () => setExportOpen(true) }] : []
-  return (
-    <DirectorPage title="Reports" variant={`attainment-${variant}`} pageType="list" courseInFilters actionItems={actionItems} announce={(m) => `${plural(m.rows.length, "student", "students")} in scope`} toolbar={(ctx) => <SetControl ctx={ctx} view={view} />}>
-      {(ctx) => <Body ctx={ctx} view={view} exportOpen={exportOpen} setExportOpen={setExportOpen} />}
-    </DirectorPage>
-  )
+/** The Attainment tab's header action (director permission set: export yes). */
+export function attainmentExportItems(open: () => void) {
+  return can(ROLE, "export") ? [{ id: "export", label: "Export", icon: "fa-arrow-down-to-line", variant: "outline" as const, onSelect: open }] : []
 }
 
 /** The required-set control on the scope bar's row (D-X12): "All skills" (D-X16) on the skills view only. */
+export function AttainmentSetControl(props: { ctx: DirectorContext; view: DirectorView }) {
+  return <SetControl {...props} />
+}
+
 function SetControl({ ctx, view }: { ctx: DirectorContext; view: DirectorView }) {
   const url = useAttainmentUrl(view === "matrix" ? "students" : "skills")
   const reqSet = useRequiredSet(ctx.state, ctx.scope, url.param, url.hrefWith)
@@ -55,7 +55,7 @@ function SetControl({ ctx, view }: { ctx: DirectorContext; view: DirectorView })
   return <RequiredSetControl basis={reqSet.basis} allSkills={view === "skills" ? (isSkillsScope(raw) ? raw : "required") === "all" : undefined} paramsFor={reqSet.paramsFor} onChange={url.setParams} />
 }
 
-function Body({ ctx, view, exportOpen, setExportOpen }: { ctx: DirectorContext & { model: Readiness }; view: DirectorView; exportOpen: boolean; setExportOpen: (o: boolean) => void }) {
+export function AttainmentBody({ ctx, view, exportOpen, setExportOpen }: { ctx: DirectorContext & { model: Readiness }; view: DirectorView; exportOpen: boolean; setExportOpen: (o: boolean) => void }) {
   const attView: AttView = view === "matrix" ? "students" : "skills"
   const url = useAttainmentUrl(attView)
   const snap = useSnapshot()
@@ -66,6 +66,9 @@ function Body({ ctx, view, exportOpen, setExportOpen }: { ctx: DirectorContext &
   const skillsRaw = url.param("skills")
   const allSkills = view === "skills" && skillsRaw === "all"
   const extraSkills = React.useMemo(() => (model && state && allSkills ? unrequiredSkills(state, model) : []), [model, state, allSkills])
+  // One filter entry per table (D-L8b, anatomy A9): the scope Filters on the toolbar row is it, so the skills table's own query
+  // controls stay off and its search is this one page search beside the legend.
+  const [query, setQuery] = React.useState("")
   if (!model || !state) return null
   const term = ctx.model.population.term
   const lines = [...scopeLines(ctx.scope, term.name, BASIS_LABEL[basisOf(ctx.scope)], ctx.asOf, ctx.chip), `Required set: ${model.basisLabel}`]
@@ -82,21 +85,17 @@ function Body({ ctx, view, exportOpen, setExportOpen }: { ctx: DirectorContext &
           <span className={`${TYPE.meta} tabular-nums font-normal`} data-view-count>{fmt(view === "matrix" ? model.students.length : model.skills.length + extraSkills.length)}</span>
         </h2>
         {view === "matrix" ? (
-          <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
-            {MATRIX_BINS.map((b) => (
-              <li key={b.label} className="flex items-center gap-1.5">
-                <span className="inline-block size-3 rounded-sm" style={{ background: b.fill, boxShadow: `inset 0 0 0 1px ${VIZ.grid}` }} aria-hidden="true" />
-                {b.label}
-              </li>
-            ))}
-            <li className="flex items-center gap-1.5"><DiamondGlyph size={10} />{toGraduate ? behindLabel : conditionLabel(basisOf(ctx.scope))}</li>
-          </ul>
+          <MatrixLegend behindLabel={toGraduate ? behindLabel : conditionLabel(basisOf(ctx.scope))} />
         ) : (
-          <StateLegend />
+          <span className="flex flex-wrap items-center gap-3">
+            <StateLegend />
+            <Label htmlFor="director-skills-search" className="sr-only">{`Search ${skillNounPlural()}`}</Label>
+            <Input id="director-skills-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="h-8 w-56" />
+          </span>
         )}
       </div>
       <div data-region="view">
-        {view === "matrix" ? <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} /> : <SkillsTable rows={model.skills} peekHref={url.peekHref} extra={allSkills ? extraSkills : undefined} notRequiredLabel={toGraduate ? "Not required to graduate" : "Not required this term"} />}
+        {view === "matrix" ? <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} /> : <SkillsTable rows={model.skills} peekHref={url.peekHref} extra={allSkills ? extraSkills : undefined} notRequiredLabel={toGraduate ? "Not required to graduate" : "Not required this term"} search={query} />}
       </div>
       <EvidencePeek peek={peek} data={state} evidence={model.pop.evidenceState} scope={ctx.scope} onClose={url.closePeek} />
       {can(ROLE, "export") ? <ExportPanel open={exportOpen} onOpenChange={setExportOpen} model={model} data={state} view={attView} scopeLines={lines} fileStem={fileStem} /> : null}
@@ -121,7 +120,9 @@ export function ReadinessLine({ ctx }: { ctx: DirectorContext & { model: Readine
         <span className="font-semibold text-foreground">{who}</span>
         {` ready to graduate, every required ${skillNoun()} · ${plural(m.rows.length, "student", "students")}`}
       </p>
-      {GRADUATION_STAGES.map((st) => (
+      {/* Empty bands are not printed (design review 2026-10-30, others: "0 short" was a zero bucket); Complete always is, so
+          the line still names the cohort's verdict. The bands shown sum to the cohort. */}
+      {GRADUATION_STAGES.filter((st) => st === "complete" || m.graduation[st] > 0).map((st) => (
         <span key={st} className="inline-flex items-baseline gap-1.5 text-sm text-muted-foreground" data-figure data-band={st} data-band-count={m.graduation[st]}>
           <span className="self-center">{STAGE_ICON[st]}</span>
           {m.graduation[st] ? (

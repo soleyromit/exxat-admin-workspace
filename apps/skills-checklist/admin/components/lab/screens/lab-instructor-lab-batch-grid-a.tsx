@@ -8,7 +8,8 @@
  * Feedback (EV-06): once a cell has a result, a small comment button beside it opens that result's feedback; a skill that
  * requires feedback says so under its column name, and Save names any result still missing it.
  */
-import { skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -26,6 +27,12 @@ const nextMark = (m: LabMark): LabMark => CYCLE[(CYCLE.indexOf(m) + 1) % CYCLE.l
 
 export function LabInstructorLabBatchGridA() {
   const g = useLabGrid()
+  // Phone: one skill column at a time, picked in the grid's toolbar, so the grid fits 375 px with no cut column (anatomy A10,
+  // 2026-10-30). Every session skill stays one pick away; nothing is dropped.
+  const [phonePick, setPhonePick] = React.useState<string | null>(null)
+  const ids = g.hydrated ? g.chosenSkills.map((k) => k.id) : []
+  const phoneId = phonePick && ids.includes(phonePick) ? phonePick : ids[0]
+  const phoneOnly = (id: string) => (id !== phoneId ? "max-sm:hidden" : "")
   return (
     <EvaluatorFrame program={g.programName} width="wide" footer={g.hydrated ? <LabSaveBar g={g} /> : undefined}>
       {!g.hydrated ? (
@@ -37,15 +44,25 @@ export function LabInstructorLabBatchGridA() {
           {/* The toolbar filters this grid, so it sits in the grid's card (one region: the grid and its own search, group and
               skills), like a DataTable toolbar. */}
           <Card size="sm" className="gap-0 overflow-hidden py-0" data-region="grid">
-            <CardContent className="border-b border-border py-2">
+            <CardContent className="flex flex-col gap-2 border-b border-border py-2">
               <LabToolbar g={g} />
+              {g.chosenSkills.length > 1 ? (
+                <Select value={phoneId} onValueChange={setPhonePick}>
+                  <SelectTrigger size="sm" className="w-full sm:hidden" aria-label={`${capitalize(skillNoun())} to record`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {g.chosenSkills.map((k) => <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : null}
             </CardContent>
             <Table scrollLabel={`Students by ${skillNounPlural()}`} containerClassName="max-h-[min(62dvh,640px)] overflow-auto">
               <TableHeader className="sticky top-0 z-10 bg-card">
                 <TableRow>
-                  <TableHead scope="col" className="sticky left-0 z-10 min-w-44 bg-card ps-3">{`Student (${g.rows.length})`}</TableHead>
+                  <TableHead scope="col" className="sticky left-0 z-10 min-w-24 bg-card ps-3 sm:min-w-44">{`Student (${g.rows.length})`}</TableHead>
                   {g.chosenSkills.map((k) => (
-                    <TableHead key={k.id} scope="col" className="min-w-40 align-bottom whitespace-normal">
+                    <TableHead key={k.id} scope="col" className={cn("min-w-32 align-bottom whitespace-normal sm:min-w-40", phoneOnly(k.id))}>
                       <div className="flex items-end justify-between gap-2 py-1">
                         <span className="flex flex-col gap-0.5">
                           <span className="line-clamp-2 text-xs font-medium">{k.name}</span>
@@ -55,7 +72,7 @@ export function LabInstructorLabBatchGridA() {
                       </div>
                     </TableHead>
                   ))}
-                  <TableHead scope="col" className="w-20 pe-3 text-end">Absent</TableHead>
+                  <TableHead scope="col" className="w-14 pe-3 text-end sm:w-20">Absent</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -63,7 +80,7 @@ export function LabInstructorLabBatchGridA() {
                   const absent = g.isAbsent(r.id)
                   return (
                     <TableRow key={r.id} className={cn(absent && "text-muted-foreground")}>
-                      <TableCell className="sticky left-0 z-[1] bg-card ps-3 py-1.5">
+                      <TableCell className="sticky left-0 z-[1] whitespace-normal bg-card ps-3 py-1.5">
                         <p className="text-sm font-medium">{r.name}</p>
                         <p className="text-xs text-muted-foreground">{`${r.cohort}, ${r.group}`}</p>
                       </TableCell>
@@ -72,7 +89,7 @@ export function LabInstructorLabBatchGridA() {
                         const l = g.labels(k.id)
                         const word = m === "met" ? l.met : m === "not-met" ? l.notMet : "Not recorded"
                         return (
-                          <TableCell key={k.id} className="py-1.5">
+                          <TableCell key={k.id} className={cn("py-1.5", phoneOnly(k.id))}>
                             {absent ? (
                               <span className="text-xs">Absent</span>
                             ) : (

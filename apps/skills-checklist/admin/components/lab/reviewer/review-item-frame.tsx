@@ -1,13 +1,13 @@
 "use client"
 
 /**
- * Chrome shared by the Review item variants: breadcrumb Approvals > Submission (glossary), the page header named for the student,
+ * Chrome shared by the Review item variants: the page header named for the student (the shell breadcrumb names the page; no body
+ * breadcrumb, page anatomy A3, Romit 2026-10-30),
  * the decision banner, and the states: loading, no longer waiting (decided here or elsewhere), and the next submission link.
  * `?item=` names the submission (one link per request); without it the oldest submission in scope opens.
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { PageFrame } from "@/components/skills/page-header"
@@ -15,8 +15,8 @@ import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { approvalsHref, itemDetail, reviewItemHref, ruleCheck, type ItemDetail, type RuleCheck } from "@/lib/lab/reviewer"
 import { DecisionBanner, DecisionProvider } from "@/components/lab/reviewer/decisions"
 import { DecisionFooter, ReviewNoteProvider } from "@/components/lab/reviewer/review-parts"
-import { LINK } from "@/components/lab/link-styles"
 import { QueueSkeleton } from "@/components/lab/reviewer/parts"
+import { LINK } from "@/components/lab/link-styles"
 import { useReviewer, type ReviewerContext } from "@/components/lab/reviewer/use-reviewer"
 
 export interface ReviewItemContext extends ReviewerContext {
@@ -41,30 +41,15 @@ export function ReviewItemFrame({ variant, children }: { variant: string; childr
   const after = index >= 0 ? rows[index + 1] : rows.find((r) => r.key !== lastKey)
   const next = after ? { href: reviewItemHref(ctx.scope, after.key, variant), label: "Next submission" } : null
 
-  const crumbs = (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href={approvalsHref(ctx.scope)}>Approvals</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>Submission</BreadcrumbPage>
-        </BreadcrumbItem>
-      </BreadcrumbList>
-    </Breadcrumb>
-  )
 
   return (
     <DecisionProvider state={ctx.state} rows={rows}>
       {!ctx.ready ? (
-        <PageFrame title="Submission" lead={crumbs}>
+        <PageFrame title="Submission">
           <QueueSkeleton rows={4} />
         </PageFrame>
       ) : !detail ? (
-        <PageFrame title="Submission" lead={crumbs}>
+        <PageFrame title="Submission">
           <DecisionBanner />
           <Card size="sm" className="self-start">
             <CardContent className="flex flex-col items-start gap-2 py-1">
@@ -84,19 +69,19 @@ export function ReviewItemFrame({ variant, children }: { variant: string; childr
           </Card>
         </PageFrame>
       ) : (
-        <PageFrame title={detail.row.student} lead={crumbs} actions={<SampleDataBadge />}>
+        <PageFrame
+          title={detail.row.student}
+          // No line under the title (anatomy A1, Romit 2026-10-30): the skill is the first section's heading, and Next submission
+          // is the header's one action, beside the title.
+          actions={
+            <>
+              <SampleDataBadge />
+              {/* Navigation, so a link, not a button (density sweep), and it keeps C inside the detail control budget. */}
+              {next ? <Link className={`${LINK} text-sm`} href={next.href}>{next.label}</Link> : null}
+            </>
+          }
+        >
           <div className="flex flex-col gap-4" data-page-type="detail" data-reviewer-lab={`review-item-${variant}`}>
-            <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span>{detail.row.skills.join(", ")}</span>
-              <span aria-hidden="true">·</span>
-              <span>{index >= 0 ? `${index + 1} of ${rows.length} waiting` : "Outside this scope"}</span>
-              {next ? (
-                <>
-                  <span aria-hidden="true">·</span>
-                  <Link className={LINK} href={next.href}>{next.label}</Link>
-                </>
-              ) : null}
-            </p>
             <DecisionBanner />
             <ReviewNoteProvider resetKey={detail.row.key}>
               {children({ ...ctx, detail, checks, position: { index, total: rows.length }, next })}

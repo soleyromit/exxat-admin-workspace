@@ -122,7 +122,7 @@
         },
         {
           "id": "import",
-          "label": "Import",
+          "label": "Bulk upload",
           "screen": "admin/import-ai-review",
           "variants": {
             "1": "A",
@@ -554,22 +554,27 @@
         },
         {
           "id": "reports",
-          "label": "Export",
-          "screen": "director/reports",
-          "variants": {
-            "1": "A",
-            "2": "B",
-            "3": "B"
-          }
-        },
-        {
-          "id": "attainment",
-          "label": "Reports",
+          "label": "Readiness",
           "screen": "director/attainment",
           "variants": {
             "1": "A",
             "2": "B",
-            "3": "A"
+            "3": "B"
+          },
+          "params": {
+            "1": { "tab": "readiness" },
+            "2": { "tab": "readiness" },
+            "3": { "tab": "readiness" }
+          }
+        },
+        {
+          "id": "attainment",
+          "label": "Attainment",
+          "screen": "director/attainment",
+          "variants": {
+            "1": "A",
+            "2": "B",
+            "3": "B"
           },
           "side": true,
           "after": "dashboard"

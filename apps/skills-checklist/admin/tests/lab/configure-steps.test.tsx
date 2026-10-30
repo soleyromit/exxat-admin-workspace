@@ -107,8 +107,8 @@ describe("when it counts: compact rule sentences and a worked example that match
   })
 
   it("levels with a level minimum explain achievement, not a single evaluation", () => {
-    expect(ruleMeaning(RULES.demonstration).example).toBe("Example: 3 evaluations count but none is at Independent or above: not achieved yet.")
-    expect(ruleMeaning(RULES.demonstration).lines).toContain("It also needs at least 1 at Independent or above.")
+    expect(ruleMeaning(RULES.demonstration).example).toBe("Example: 3 evaluations count but none is at independent or above: not achieved yet.")
+    expect(ruleMeaning(RULES.demonstration).lines).toContain("It also needs at least 1 at independent or above.")
   })
 
   it("an unset count says nothing counts yet, with no example of counting", () => {
@@ -119,7 +119,7 @@ describe("when it counts: compact rule sentences and a worked example that match
   it("criteria meaning says the answer format in one sentence for every model", () => {
     expect(criteriaMeaning(RULES.scored).lines[0]).toBe("The evaluator scores each of 3 questions from 1 to 5.")
     expect(criteriaMeaning(RULES.question).lines[0]).toBe("The evaluator answers Yes or No to each of 3 questions.")
-    expect(criteriaMeaning(RULES.demonstration).lines[0]).toBe("The evaluator picks one of 3 levels, Observed lowest.")
-    expect(criteriaMeaning(RULES.binary).lines).toEqual(["The evaluator picks one outcome: Met or Not met.", "Only Met can count."])
+    expect(criteriaMeaning(RULES.demonstration).lines[0]).toBe("The evaluator picks one of 3 levels, observed lowest.")
+    expect(criteriaMeaning(RULES.binary).lines).toEqual(["The evaluator picks one outcome: met or not met.", "Only met can count."])
   })
 })

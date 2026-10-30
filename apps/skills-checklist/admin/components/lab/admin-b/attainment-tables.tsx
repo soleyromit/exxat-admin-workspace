@@ -43,13 +43,14 @@ function stateColumns<T extends { counts: StateCounts; total: number }>(kind: Pe
     {
       key: "distribution",
       label: "Distribution",
-      width: 130,
+      width: 110,
       cell: (r) => <StateStrip counts={r.counts} total={r.total} label={`${nameOf(r)}: ${RECORD_STATES.map((s) => `${r.counts[s]} ${RECORD_STATE_LABEL[s].toLowerCase()}`).join(", ")}`} />,
     },
     ...RECORD_STATES.map((s) => ({
       key: colKey(s),
       label: SHORT[s],
-      width: s === "unqualified" ? 184 : s === "none" ? 136 : 110,
+      // Fits the Skills tab inside the 1440 content width with no column cut at the edge (anatomy A10, 2026-10-30).
+      width: s === "unqualified" ? 170 : s === "none" ? 136 : 110,
       sortable: true,
       cell: (r: T) => <CountLink n={r.counts[s]} href={peekHref({ kind, id: idOf(r), state: s })} label={`${nameOf(r)}, ${RECORD_STATE_LABEL[s]}: ${fmt(r.counts[s])} ${unit}. Open the list`} />,
     })),
@@ -78,9 +79,10 @@ export function SkillsTable({ rows, peekHref, extra, search, notRequiredLabel = 
       : { ...c, cell: (r: SkillRow & Record<string, unknown>, ctx: Parameters<NonNullable<typeof c.cell>>[1]) => (r.required ? c.cell!(r, ctx) : <span className="sr-only">Not required</span>) },
   )
   const columns = ([
-    { key: "name", label: capitalize(skillNoun()), width: 240, sortable: true, cell: (r) => (r.required ? <Link href={peekHref({ kind: "skill", id: r.skillId })} scroll={false} className={`truncate ${LINK_IN_TABLE}`}>{r.name}</Link> : <span className="truncate text-muted-foreground">{r.name}</span>) },
-    { key: "section", label: "Section", width: 160, sortable: true },
-    { key: "total", label: "Required for", width: 110, sortable: true, cell: (r) => (r.required ? <CountLink n={r.total} href={peekHref({ kind: "skill", id: r.skillId })} label={`${r.name}: required for ${fmt(r.total)} students. Open the list`} /> : <span className="tabular-nums text-muted-foreground">0</span>) },
+    { key: "name", label: capitalize(skillNoun()), width: 212, sortable: true, cell: (r) => (r.required ? <Link href={peekHref({ kind: "skill", id: r.skillId })} scroll={false} className={`whitespace-normal ${LINK_IN_TABLE}`}>{r.name}</Link> : <span className="whitespace-normal text-muted-foreground">{r.name}</span>) },
+    // Names and sections wrap at spaces instead of cutting off (rework 2026-10-30).
+    { key: "section", label: "Section", width: 176, sortable: true, cell: (r) => <span className="whitespace-normal">{r.section}</span> },
+    { key: "total", label: "Required for", width: 100, sortable: true, cell: (r) => (r.required ? <CountLink n={r.total} href={peekHref({ kind: "skill", id: r.skillId })} label={`${r.name}: required for ${fmt(r.total)} students. Open the list`} /> : <span className="tabular-nums text-muted-foreground">0</span>) },
     ...states,
   ] as ColumnDef<SkillRow & Record<string, unknown>>[]).map(sorted)
   return <DataTable<SkillRow & Record<string, unknown>> data={withKeys(data) as never} columns={columns} defaultSort={DEFAULT_SORT} getRowId={(r) => String(r.skillId)} selectable={false} {...query(search)} edgeInset={false} lazyLoading={LAZY} emptyState={<EmptyBlock compact title={`No ${skillNounPlural()} match these filters`} />} />
@@ -90,7 +92,8 @@ export function GroupTable({ rows, kind, firstLabel, peekHref, unitWord, search 
   const columns = ([
     { key: "label", label: firstLabel, width: 220, sortable: true, cell: (r) => <Link href={peekHref({ kind, id: r.key })} scroll={false} className={LINK_IN_TABLE}>{r.label}</Link> },
     { key: "skills", label: `Required ${skillNounPlural()}`, width: 120, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.skills)}</span> },
-    { key: "total", label: "Records", width: 96, sortable: true, cell: (r) => <CountLink n={r.total} href={peekHref({ kind, id: r.key })} label={`${r.label}: ${fmt(r.total)} records. Open the list`} /> },
+    // Each required skill counted once per student who needs it; "records" is a banned word (glossary).
+    { key: "total", label: "Required in total", width: 140, sortable: true, cell: (r) => <CountLink n={r.total} href={peekHref({ kind, id: r.key })} label={`${r.label}: ${fmt(r.total)} required in total. Open the list`} /> },
     ...stateColumns<AttGroupRow>(kind, (r) => r.key, (r) => r.label, peekHref, unitWord),
   ] as ColumnDef<AttGroupRow & Record<string, unknown>>[]).map(sorted)
   return <DataTable<AttGroupRow & Record<string, unknown>> data={withKeys(bySearch(rows, search, (r) => r.label)) as never} columns={columns} defaultSort={DEFAULT_SORT} getRowId={(r) => String(r.key)} selectable={false} {...query(search)} edgeInset={false} emptyState={<EmptyBlock compact title={`No ${kind === "tag" ? "tags" : "sections"} match these filters`} />} />

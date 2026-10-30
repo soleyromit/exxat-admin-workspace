@@ -22,7 +22,7 @@ import type { LabScope } from "@/lib/lab/scope"
 import { LINK, LINK_U, StatusMark } from "@/components/lab/director/parts"
 import type { V2State } from "@/lib/v2/types"
 import { evaluationViewsFor } from "@/lib/lab/evaluation-view"
-import { EvaluationSheet } from "@/components/lab/reviewer/evaluation-sheet"
+import { EvaluationSheet } from "@/components/lab/evaluation/evaluation-view"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
 const NOTE_MAX = 1000
@@ -188,6 +188,7 @@ export function VerifyAction({ d, flow, scope, idPrefix, queue }: { d: DetailMod
   const why = r.flux.length ? "Verify opens when nothing is in flux." : flow.remaining ? `Acknowledge ${flow.remaining === 1 ? "the gap" : `${flow.remaining} gaps`} to verify.` : r.status === "verified" ? "Already verified. Nothing changed since." : ""
   const at = queue.indexOf(r.id)
   const next = at >= 0 && at < queue.length - 1 ? queue[at + 1] : null
+  const [tried, setTried] = React.useState(false)
   if (flow.done)
     return (
       <div className="flex flex-col gap-3">
@@ -201,20 +202,20 @@ export function VerifyAction({ d, flow, scope, idPrefix, queue }: { d: DetailMod
     )
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-muted-foreground">The verified record will state</span>
-        <p className="rounded-md bg-muted px-3 py-2 text-sm text-foreground" data-statement>{d.statement}</p>
-      </div>
+      {/* No "The verified record will state" preview: it repeated the record line's figure and the gap list above (anatomy A5,
+          Romit 2026-10-30). The statement is still written on verify (lib/lab/director.ts detailModel). */}
       <div className="flex flex-col gap-1">
         <Label htmlFor={`${idPrefix}-note`}>Note, optional</Label>
         <Textarea id={`${idPrefix}-note`} rows={2} value={flow.note} maxLength={NOTE_MAX} onChange={(e) => flow.setNote(e.target.value)} />
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" variant="default" size="sm" disabled={!flow.canVerify} onClick={flow.verify} aria-describedby={why ? `${idPrefix}-why` : undefined}>
+        {/* Enabled until the first failed attempt (strategy/07 interaction rule): a blocked click names what is left, it never
+            verifies (flow.verify checks canVerify). */}
+        <Button type="button" variant="default" size="sm" onClick={() => (flow.canVerify ? flow.verify() : setTried(true))} aria-describedby={why ? `${idPrefix}-why` : undefined}>
           Verify record
         </Button>
         {why ? (
-          <span id={`${idPrefix}-why`} className="text-xs text-muted-foreground">
+          <span id={`${idPrefix}-why`} role={tried ? "alert" : undefined} className={tried ? "text-xs font-medium text-foreground" : "text-xs text-muted-foreground"}>
             {why}
           </span>
         ) : null}

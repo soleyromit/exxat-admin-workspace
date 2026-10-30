@@ -140,7 +140,9 @@ describe("invitation email", () => {
   it("lists every open request with its own link and names students and count in the first 40 characters", () => {
     expect(mail.rows).toHaveLength(2)
     expect(new Set(mail.rows.map((r) => r.link)).size).toBe(2)
-    expect(mail.subject).toBe("Priya Raman and Maya Ferreira: 3 skills to sign off")
+    // Subject and body carry the same two counts (review 2026-10-30).
+    expect(mail.subject).toBe("Priya Raman and Maya Ferreira: 2 requests, 3 skills to sign off")
+    expect(mail.intro).toMatch(/^2 requests for 3 skills are waiting/)
     expect(mail.subject.slice(0, 40)).toContain("Maya Ferreira")
   })
 

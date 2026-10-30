@@ -6,6 +6,7 @@
  * On track students are one collapsed group at the end. Groups longer than 20 show 20 and "Show all n". Question: does reading
  * top to bottom, oldest work first, replace sorting and filtering for a reviewer?
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
@@ -62,7 +63,7 @@ function Group({ ctx, a, rows, showHeading = true }: { ctx: StudentsContext; a: 
   return (
     <section aria-labelledby={showHeading ? id : undefined} aria-label={showHeading ? undefined : GROUP[a]} className="flex flex-col gap-2">
       {showHeading ? (
-        <h2 id={id} className="flex items-center gap-2 text-sm font-semibold text-foreground">
+        <h2 id={id} className={`flex items-center gap-2 ${TYPE.section}`}>
           {ICON[a]}
           {GROUP[a]}
           <span className="font-normal tabular-nums text-muted-foreground">{rows.length}</span>

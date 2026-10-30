@@ -21,7 +21,8 @@ import type { LabGridModel } from "@/components/lab/evaluator/use-lab-grid"
 export function LabHeader({ g }: { g: LabGridModel }) {
   return (
     <div data-region="summary" className="flex flex-col gap-1.5">
-      <PageHeader title="Skills lab" subtitle={`${g.course} · ${g.date} · ${g.instructor}`} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
+      {/* The session is the title: course and date, no subtitle (Romit 2026-10-30, D-L8b). The instructor is the viewer. */}
+      <PageHeader title={`${g.course} lab, ${g.date}`} className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
       <p className="flex items-center gap-2 text-sm text-muted-foreground">
         <Badge variant="secondary">Lab evidence</Badge>
         Never counts toward a clinical setting.
@@ -34,7 +35,7 @@ export function LabHeader({ g }: { g: LabGridModel }) {
 export function LabToolbar({ g, showSkills = true }: { g: LabGridModel; showSkills?: boolean }) {
   return (
     <div data-region="toolbar" className="flex flex-wrap items-center gap-2">
-      <Input type="search" value={g.query} onChange={(e) => g.setQuery(e.target.value)} placeholder="Search students" aria-label="Search students" className="h-8 w-full sm:w-56" />
+      <Input type="search" value={g.query} onChange={(e) => g.setQuery(e.target.value)} placeholder="Search students" aria-label="Search students" className="h-8 min-w-0 flex-1 sm:w-56 sm:flex-none" />
       <Select value={g.group || "all"} onValueChange={(v) => g.setGroup(v === "all" ? "" : v)}>
         <SelectTrigger size="sm" className="w-[calc(50%-0.25rem)] sm:w-52" aria-label="Group">
           <SelectValue />
@@ -123,7 +124,7 @@ export function LabSaved({ g }: { g: LabGridModel }) {
   if (!g.saved) return null
   return (
     <LocalBanner variant="success" title="Session saved">
-      {`${g.saved.results} results recorded${g.saved.withFeedback ? `, ${g.saved.withFeedback} with feedback` : ""}. Saved sessions are not edited.`}
+      {`${g.saved.results} results recorded${g.saved.withFeedback ? `, ${g.saved.withFeedback} with feedback` : ""}. ${g.saved.counts} Saved sessions are not edited.`}
     </LocalBanner>
   )
 }

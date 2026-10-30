@@ -356,9 +356,9 @@ describe("presenter control", () => {
 })
 
 describe("no lab variant is deleted or hidden", () => {
-  it("still registers 39 screens and at least 94 variants (2026-10-27: Categories and tags A and B added, D-L21; the evaluator directory's A and B live on as Settings A and B, section Evaluators, D-L24; 2026-10-28: Group check-off A and B added)", () => {
-    expect(SCREENS.length).toBe(39)
-    expect(SCREENS.reduce((n, s) => n + s.variants.length, 0)).toBeGreaterThanOrEqual(94)
+  it("still registers 38 screens and at least 92 variants (2026-10-27: Categories and tags A and B added, D-L21; the evaluator directory's A and B live on as Settings A and B, section Evaluators, D-L24; 2026-10-28: Group check-off A and B added; 2026-10-30: director reports A and B live on as the Readiness tab of director Reports A and B, D-L8c)", () => {
+    expect(SCREENS.length).toBe(38)
+    expect(SCREENS.reduce((n, s) => n + s.variants.length, 0)).toBeGreaterThanOrEqual(92)
   })
 
   it("links every registered variant from the lab index (By persona), with both walkthrough entries", () => {

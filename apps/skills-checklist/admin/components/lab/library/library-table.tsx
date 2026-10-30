@@ -29,6 +29,7 @@ import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/t
 import { fmt, plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { LINK, LibraryStatusBadge } from "./library-chrome"
+import { CategoryName, TagBadges, tagLineText } from "./category-tag-pickers"
 import { RowActions, type RowActionHandlers } from "./row-actions"
 import { LibraryFilterMenu, useLibraryFilter } from "./library-filter"
 
@@ -70,7 +71,7 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
                 <span className="truncate">{[r.group, r.requiredToGraduate ? "Required to graduate" : ""].filter(Boolean).join(", ")}</span>
               ) : null}
               {r.tags.length ? (
-                <span className="flex min-w-0 items-center gap-1" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{r.tags.join(", ")}</span></span>
+                <span className="flex min-w-0 items-center gap-1" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{tagLineText(r.tags, r.inactiveTags)}</span></span>
               ) : null}
             </span>
           ) : null}
@@ -79,9 +80,9 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
     },
     // No column filter: the tabs filter by status, search finds a name and the one Filter control (category, tag; REQ SL-10)
     // sits on the tab row, so a DS filter bar would be another way to narrow the same list (list toolbar budget, rule L3).
-    { key: "section", label: "Category", width: 200, sortable: true },
+    { key: "section", label: "Category", width: 200, sortable: true, cell: (r) => <CategoryName name={r.section} inactive={r.categoryInactive} /> },
     { key: "status", label: "Status", width: 170, sortable: true, cell: (r) => <LibraryStatusBadge status={r.status} draft={r.draft} /> },
-    { key: "modelLabel", label: "How it's judged", width: 190, sortable: true, cell: (r) => (r.modelLabel ? <span className="block truncate" title={r.modelLabel}>{r.modelLabel}</span> : <span className="text-muted-foreground">Not chosen</span>) },
+    { key: "modelLabel", label: "How it's judged", width: 230, sortable: true, cell: (r) => (r.modelLabel ? <span className="block whitespace-normal" data-model-label>{r.modelLabel}</span> : <span className="text-muted-foreground">Not chosen</span>) },
     {
       key: "courses",
       label: "Courses",
@@ -97,7 +98,7 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
       key: "tags",
       label: "Tags",
       width: 200,
-      cell: (r) => (r.tags.length ? <span className="flex flex-wrap gap-1">{r.tags.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}</span> : <span className="text-muted-foreground">None</span>),
+      cell: (r) => (r.tags.length ? <TagBadges tags={r.tags} inactive={r.inactiveTags} /> : <span className="text-muted-foreground">None</span>),
     },
     { key: "source", label: "Came from", width: 160, sortable: true },
     { key: "actions", label: "Actions", width: 64, resizable: false, defaultPin: "right", lockPin: true, header: () => <span className="sr-only">Actions</span>, cell: (r) => <RowActions row={r} handlers={handlers} /> },

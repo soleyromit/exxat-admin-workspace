@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxat
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { approvalsHref, plural } from "@/lib/lab/reviewer"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { EvaluationsTable, RecordFrame, SkillsTable } from "@/components/lab/reviewer/record-frame"
+import { CohortFact, EvaluationsTable, RecordFrame, SkillsTable } from "@/components/lab/reviewer/record-frame"
 import { LINK as LINK_U } from "@/components/lab/link-styles"
 
 const TABS = ["evaluations", "skills", "verification"] as const
@@ -25,9 +25,12 @@ export function ReviewerStudentRecordA() {
         const tab = (TABS as readonly string[]).includes(raw ?? "") ? (raw as string) : "evaluations"
         return (
           <>
-            <p className="text-sm text-muted-foreground" data-region="summary">
-              {`${plural(r.counts.achieved, `${skillNoun()} achieved`, `${skillNounPlural()} achieved`)}, ${r.counts.inProgress} in progress. `}
-              {r.counts.awaiting ? <Link className={LINK_U} href={approvalsHref(ctx.scope)}>{`${r.counts.awaiting} awaiting approval`}</Link> : "Nothing awaiting approval."}
+            <p className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-sm text-muted-foreground" data-region="summary">
+              <CohortFact record={r} />
+              <span>
+                {`${plural(r.counts.achieved, `${skillNoun()} achieved`, `${skillNounPlural()} achieved`)}, ${r.counts.inProgress} in progress. `}
+                {r.counts.awaiting ? <Link className={LINK_U} href={approvalsHref(ctx.scope)}>{`${r.counts.awaiting} awaiting approval`}</Link> : "Nothing awaiting approval."}
+              </span>
             </p>
             <Tabs value={tab} onValueChange={(v) => ctx.setParams({ tab: v === "evaluations" ? null : v })} className="gap-3" data-region="tabs">
               <TabsList variant="line">

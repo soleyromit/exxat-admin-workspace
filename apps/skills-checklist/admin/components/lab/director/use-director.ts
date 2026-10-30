@@ -15,7 +15,8 @@ import type { LabScope, ScopeKey } from "@/lib/lab/scope"
 import type { V2State } from "@/lib/v2/types"
 
 /** Page params kept when the scope changes. */
-const PAGE_KEYS = ["variant", "state", "list", "skill", "status", "student", "view", "queue"]
+// `tab` keeps the Reports tab (D-L8c) when a filter changes, so chips carry across tabs; `required` and `skills` keep the set control.
+const PAGE_KEYS = ["variant", "state", "list", "skill", "status", "student", "view", "queue", "tab", "required", "skills"]
 
 export interface DirectorContext {
   ready: boolean

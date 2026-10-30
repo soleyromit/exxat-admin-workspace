@@ -9,6 +9,7 @@
  * - Below 1280 px it stays in the footer (02 section 4, J5): one line, and the previews open from a small popover.
  * Each fact shows in one place at a time (the footer copy is hidden exactly where the aside appears).
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
@@ -19,6 +20,7 @@ import { afterSubmitLine, carriedNotes, HOW_MANY_LABEL, ruleSentence, settingNot
 import { StateBadge as RecordStateBadge } from "@/components/lab/status-pill"
 import type { RecordStateKey } from "@/lib/v2/labels"
 import { fmt } from "@/lib/v2/format"
+import { skillNoun } from "@/lib/lab/terms"
 
 const STATE_KEY: Record<RecordState, RecordStateKey> = { achieved: "achieved", "in-progress": "progress", "not-qualifying": "unqualified", "no-evidence": "none" }
 
@@ -38,9 +40,9 @@ export function StudentPreview({ skillName, rule }: { skillName: string; rule: L
     <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="student" data-artifact-preview>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-foreground">{skillName}</p>
-        <StateBadge state="no-evidence" />
+        {rule.model ? <StateBadge state="no-evidence" /> : null}
       </div>
-      <p className="text-sm text-foreground">{rule.model ? ruleSentence(rule, "student") : "Not open yet."}</p>
+      <p className="text-sm text-foreground">{rule.model ? ruleSentence(rule, "student") : "Not open for sign-off yet. It opens once the program saves how it's judged."}</p>
       {settingNote(rule) ? <p className="text-sm text-muted-foreground">{settingNote(rule)}</p> : null}
       {fields.length || rule.selfEvaluation ? (
         <div className="flex flex-col gap-1">
@@ -174,10 +176,12 @@ export function RuleFooterSummary({ skillName, rule, impact, onSeeChange, showPr
  * today's count with the change jump, and what the student and evaluator will see, read only. Sticky, so it stays beside the
  * field being edited.
  */
-export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRule = true, showPreviews = true }: {
+export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRule = true, showPreviews = true, current }: {
   skillName: string
   rule: LabRule
   impact: Impact | null
+  /** The rule students see today (null: not configured). Shown as "Today" while the draft differs or nothing is chosen yet. */
+  current?: LabRule | null
   onSeeChange?: () => void
   /** False where the rule sentence is already the page (Configure C builds it inline). */
   showRule?: boolean
@@ -191,12 +195,12 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
   const id = React.useId()
   return (
     <aside aria-labelledby={`${id}-h`} className="flex flex-col gap-4" data-rule-preview>
-      <h2 id={`${id}-h`} className="text-sm font-semibold text-foreground">Preview</h2>
-      {(showRule && !(rule.model && showPreviews)) || changed > 0 ? (
+      <h2 id={`${id}-h`} className={TYPE.section}>Preview</h2>
+      {(showRule && !showPreviews) || changed > 0 ? (
       <div className="flex flex-col gap-1">
         {/* Say it once (Romit 2026-10-27, "too many text"): when the student card below shows the rule and the setting note,
             the panel does not repeat them above it; limits kept from the earlier rule are listed in Check and save. */}
-        {showRule && !(rule.model && showPreviews) ? (
+        {showRule && !showPreviews ? (
           <>
             <p className="text-sm text-foreground">
               {rule.model ? <span className="text-muted-foreground">{`${HOW_MANY_LABEL}: `}</span> : null}
@@ -221,15 +225,24 @@ export function RulePreviewAside({ skillName, rule, impact, onSeeChange, showRul
         </div>
       </div>
       ) : null}
-      {/* Both views at once (D-X30): the panel has the room, so no tabs to switch between. */}
-      {rule.model && showPreviews ? (
+      {/* Today's rule (2026-10-30 review: the column held one sentence on step 1). Shown before a choice is made, and while the
+          draft differs from what students see today, so the admin always reads the starting point beside the change. */}
+      {current !== undefined && (!rule.model || impact?.ruleChanged) ? (
+        <div className="flex flex-col gap-1" data-preview-today>
+          <h3 className={TYPE.label}>Today</h3>
+          <p className={TYPE.helper}>{current?.model ? fullRuleText(current) : `Not configured. Students cannot ask for sign-off on this ${skillNoun()} yet, and it cannot be mapped to a course.`}</p>
+        </div>
+      ) : null}
+      {/* Both views at once (D-X30): the panel has the room, so no tabs to switch between. Shown before a model is chosen too,
+          as the stub each person will see, so the column never sits empty. */}
+      {showPreviews ? (
         <div className="flex flex-col gap-3">
           <section aria-labelledby={`${id}-s`} className="flex flex-col gap-2">
-            <h3 id={`${id}-s`} className="text-sm font-medium text-foreground">Student sees</h3>
+            <h3 id={`${id}-s`} className={TYPE.label}>Student sees</h3>
             <StudentPreview skillName={skillName} rule={rule} />
           </section>
           <section aria-labelledby={`${id}-e`} className="flex flex-col gap-2">
-            <h3 id={`${id}-e`} className="text-sm font-medium text-foreground">Evaluator sees</h3>
+            <h3 id={`${id}-e`} className={TYPE.label}>Evaluator sees</h3>
             <EvaluatorPreview skillName={skillName} rule={rule} />
           </section>
         </div>

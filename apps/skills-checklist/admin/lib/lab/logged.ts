@@ -28,6 +28,8 @@ export interface LoggedInput {
   note: string
   /** Self-ratings by skill id, where the skill asks for one [REQ ST-11]. */
   ratings: Record<string, string>
+  /** Configured details beyond date, unit and case, by field id (lib/lab/student2.ts detailFieldsFor) [REQ SC-13, ST-10]. */
+  extra?: Record<string, string>
   /** Self-evaluation answers to the evaluator's own questions, by skill id [REQ ST-11: "against the same criteria"]. */
   answers?: Record<string, Array<"yes" | "no" | null>>
   /** Course the request was started from (Send C) and the step it was left on, so Continue reopens there. */
@@ -59,6 +61,7 @@ export interface LoggedSitting {
   note: string
   ratings: Record<string, string>
   answers: Record<string, Array<"yes" | "no" | null>>
+  extra: Record<string, string>
   course: string | null
   step: string | null
   who: string | null
@@ -96,7 +99,7 @@ export function saveLogged(s0: V2State, input: LoggedInput, studentId: string, a
     note: i === 0 ? note : "",
     at,
     requestId: null,
-    sitting: { where: input.where, date: input.date, unit: input.unit, case: input.case, ...(input.course ? { course: input.course } : {}), ...(input.step ? { step: input.step } : {}), ...(input.who ? { who: input.who } : {}), ...(input.method ? { method: input.method } : {}), ...(input.answers && Object.keys(input.answers).length ? { answers: input.answers } : {}) },
+    sitting: { where: input.where, date: input.date, unit: input.unit, case: input.case, ...(input.course ? { course: input.course } : {}), ...(input.step ? { step: input.step } : {}), ...(input.who ? { who: input.who } : {}), ...(input.method ? { method: input.method } : {}), ...(input.answers && Object.keys(input.answers).length ? { answers: input.answers } : {}), ...(input.extra && Object.keys(input.extra).length ? { extra: { ...input.extra } } : {}) },
   }))
   return { state: { ...s, logEntries: [...s.logEntries, ...rows] }, batchId }
 }
@@ -128,6 +131,7 @@ export function loggedNotSent(s: V2State, studentId: string): LoggedSitting[] {
         note: list.map((e) => e.note.trim()).find(Boolean) ?? "",
         ratings: Object.fromEntries(list.filter((e) => e.rating).map((e) => [e.skillId, e.rating as string])),
         answers: sit.answers ?? Object.fromEntries(list.filter((e) => e.answers).map((e) => [e.skillId, e.answers as Array<"yes" | "no" | null>])),
+        extra: sit.extra ?? {},
         course: sit.course ?? null,
         step: sit.step ?? null,
         who: sit.who ?? null,

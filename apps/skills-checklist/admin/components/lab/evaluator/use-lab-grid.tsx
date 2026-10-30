@@ -4,7 +4,7 @@ import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { isLabelPreset } from "@/lib/lab/configure"
-import { choicesFor, labCellKey, labFeedbackMessage, labFeedbackMissing, labSavedResults, labSessionSkills, labTally, roster, rosterGroups, shortDate, LAB_INSTRUCTOR_ID, type LabMark, type LabSavedResult, type LabSkillRow, type RosterRow } from "@/lib/lab/evaluator"
+import { choicesFor, labCellKey, labFeedbackMessage, labFeedbackMissing, labSavedLine, labSavedResults, labSessionSkills, labTally, roster, rosterGroups, shortDate, LAB_INSTRUCTOR_ID, type LabMark, type LabSavedResult, type LabSkillRow, type RosterRow } from "@/lib/lab/evaluator"
 import { DEMO_TODAY } from "@/lib/v2/seed"
 
 /**
@@ -26,7 +26,7 @@ export function useLabGrid() {
   const [chosen, setChosen] = React.useState<string[] | null>(null)
   const [cells, setCells] = React.useState<Record<string, LabMark>>({})
   const [feedback, setFeedbackMap] = React.useState<Record<string, string>>({})
-  const [saved, setSaved] = React.useState<{ results: number; students: number; withFeedback: number; entries: LabSavedResult[] } | null>(null)
+  const [saved, setSaved] = React.useState<{ results: number; students: number; withFeedback: number; entries: LabSavedResult[]; /** Counts now or waits for approval, per the skills' configuration [REQ EV-07]. */ counts: string } | null>(null)
   const [tried, setTried] = React.useState(false)
   const skillIds = chosen ?? skills.filter((k) => !k.blocked).slice(0, 3).map((k) => k.id)
   const chosenSkills = skillIds.map((id) => skills.find((k) => k.id === id)).filter((k): k is LabSkillRow => !!k)
@@ -67,7 +67,7 @@ export function useLabGrid() {
     setTried(true)
     if (tally.results === 0 || missing.length) return false
     const entries = labSavedResults(cohortRows, chosenSkills, cells, feedback)
-    setSaved({ results: tally.results, students: tally.done, withFeedback: entries.filter((e) => e.feedback).length, entries })
+    setSaved({ results: tally.results, students: tally.done, withFeedback: entries.filter((e) => e.feedback).length, entries, counts: labSavedLine(entries, chosenSkills) })
     setTried(false)
     return true
   }

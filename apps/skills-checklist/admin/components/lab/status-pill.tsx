@@ -2,12 +2,12 @@
 
 /**
  * The one status pill for lab screens (consistency audit item 1). Every pill is DS StatusBadge size="sm"; the word, icon and
- * tone come from lib/v2/labels.ts and nowhere else. Amber ("warning") only for shortfall (does not qualify, returned);
+ * tone come from lib/v2/labels.ts and nowhere else. Amber ("warning") only for what keeps evidence from counting or needs attention (lib/v2/labels.ts tone map, CP-1);
  * every other state is neutral, so a page keeps one state hue.
  */
 import * as React from "react"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
-import { EVALUATOR_NAME_LABEL, OUTCOME_LABEL, OVERLAY_LABEL, RECORD_STATE_META, type RecordStateKey } from "@/lib/v2/labels"
+import { EVALUATOR_NAME_LABEL, OUTCOME_LABEL, OUTCOME_TONE, OVERLAY_LABEL, RECORD_STATE_META, type RecordStateKey } from "@/lib/v2/labels"
 
 export function StateBadge({ state, detail }: { state: RecordStateKey; detail?: string }) {
   const m = RECORD_STATE_META[state]
@@ -28,7 +28,7 @@ export function OverlayBadge({ overlay, detail }: { overlay: keyof typeof OVERLA
 const OUTCOME_ICON: Record<keyof typeof OUTCOME_LABEL, string> = { met: "fa-circle-check", "not-met": "fa-circle-xmark", "not-yet": "fa-circle-half-stroke" }
 
 export function OutcomeBadge({ outcome }: { outcome: keyof typeof OUTCOME_LABEL }) {
-  return <StatusBadge label={OUTCOME_LABEL[outcome]} tone="neutral" icon={OUTCOME_ICON[outcome]} size="sm" />
+  return <StatusBadge label={OUTCOME_LABEL[outcome]} tone={OUTCOME_TONE[outcome]} icon={OUTCOME_ICON[outcome]} size="sm" />
 }
 
 export function EvaluatorNameBadge({ verified }: { verified: boolean }) {

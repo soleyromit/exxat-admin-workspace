@@ -5,7 +5,7 @@
 **Sources:** PROTO `~/Downloads/prism-skills-prototype_10282026.html` (Sankalp, 2026-10-28): `GS` (screen), `lt` (eligibility),
 `MS` (defaults), `md` (what a tick records), `dd` (why not), `qS` (response written), Configure "Group check-off", evaluation detail
 "Recorded by check-off". CALL Granola 655e2cbd-681d-4da7-8b9d-be80cc3a1e76 (Sankalp and Romit, 2026-10-28, Vishakha's use case).
-For the stakeholder call with Aarti on 2026-10-29.
+For the stakeholder call with Aarti on 2026-10-29. Updated 2026-10-30 for D-L8d (Romit: "switch").
 
 ```
 Surface:              Course offering, Skills section: Group check-off. Lab route /lab/course-faculty/offering-checkoff
@@ -47,17 +47,22 @@ Grid (A):             Title "{code} {name}, {term}", no subtitle. Date (DatePick
                       (Romit 2026-10-28, "why is this data here?"); Recorded by = the signed-in course faculty member, not
                       shown (on-behalf recording open for Aarti; the data model keeps role and recorder); the course is switched
                       from My courses. One short amber line only when a skill on screen skips the student's self-evaluation.
-                      Unavailable skills: "Not available" + ⓘ in the column, reason as secondary text in the picker (A) and in
-                      a "Not available (n)" group of the skill list (B). Rows: name, then "cohort · group". Search the roster;
+                      Unavailable skills (D-L8d, 2026-10-30): not grid columns; listed greyed and not selectable, with the
+                      reason, in a "Not available (n)" group of the picker (A) and of the skill list (B). Rows: name, then "cohort · group". Search the roster;
                       "Skills shown (6)" searchable picker (Popover + Command; default the first six, mandatory first); legend. Table:
-                      students down, chosen skills across; available column head = name, level, "Records X", "Needs approval",
-                      "Tick all"; unavailable column greyed "Not available", cells "-". Cell = one Checkbox, accessible name
-                      "Check off {skill} for {student}" plus the flag; flag icon "Already has qualifying evidence" or "Awaiting
-                      an evaluation already sent"; flagged cells stay tickable [PROTO]. 15 rows then "Show 25 more".
+                      students down, chosen available skills across; column head = name, level badge, "Check-offs go to review"
+                      in words when the skill needs approval (no clock glyph), and an ⓘ only when a tick records more than a
+                      plain Met, whose line names the subject ("A tick marks the student as independent."). Cell (D-L8d): a
+                      student who already qualifies shows the status only, glyph + "Already qualifies", no checkbox, and is
+                      never written; otherwise one Checkbox, accessible name "Check off {skill} for {student}" plus the flag;
+                      the hourglass flag "Evaluation already sent" stays tickable. Legend carries only that flag. 15 rows then
+                      "Show 25 more".
 One skill (B):        Same session, availability, cells and record bar. Left: searchable list of available skills with "n
-                      ticked". Right: the chosen skill's sign-off list, flag said in words per row, "Tick all n shown".
-Record:               Sticky bar when anything is ticked: "N check-offs ready to record", the skills that need approval, Clear,
-                      Record check-offs. Writes one Evaluation per tick (lib/lab/course-checkoff.ts recordCheckoffs): source
+                      ticked". Right: the chosen skill's sign-off list; "Already qualifies" in the Tick column in place of a
+                      checkbox, "Evaluation already sent" in words per row.
+Record:               Sticky bar always present while any skill is available (D-L8d): nothing ticked = quiet line "Tick students
+                      to record check-offs" on a disabled Record check-offs; ticked = "N check-offs ready to record" (qualifying
+                      cells excluded), the skills that need approval, Clear, Record check-offs. Writes one Evaluation per tick (lib/lab/course-checkoff.ts recordCheckoffs): source
                       "checkoff", sessionId, setting, no clinical setting, outcome met, detail per model (levelIndex, all Yes,
                       scores), status awaiting-approval when the skill requires approval else counted. Cells then read
                       "Recorded" or "In review". Banner "Recorded N check-offs for {name} on {date}. M went to administrator
@@ -77,9 +82,9 @@ A11y:                 Real table, row and column headers; checkbox names say stu
                       targets under 640 px; the grid scrolls in a labelled region; axe at 1440.
 Out of scope:         Editing a recorded check-off (immutable); Unmet ticks; per-skill questions; attendance.
 Acceptance:           Browser click-through: Configure C allows group check-off on a question skill -> its column becomes
-                      available on the grid -> tick 3+ cells incl. one already qualifying -> Record -> held one in Approvals,
+                      available on the grid -> a qualifying student reads "Already qualifies" with no checkbox -> tick 3+ cells -> Record -> held one in Approvals,
                       labelled -> student skill detail and record show the Check-off tag -> Send shows the done line.
                       Tests: tests/lab/checkoff-approvals.test.ts, tests/lab/checkoff-student.test.tsx, configure-save.
-Risks:                Flagged cells are tickable, so "already qualifying" students get extra evidence by design [PROTO]; a
+Risks:                D-L8d reverses the prototype's "still tickable": extra evidence for a student who already qualifies goes through Send; a
                       confirm dialog is not in the prototype; the default check-off for levels records the highest level.
 ```

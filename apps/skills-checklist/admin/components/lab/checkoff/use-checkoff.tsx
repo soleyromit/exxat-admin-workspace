@@ -14,6 +14,7 @@ import {
   cellFlags,
   cellKey,
   checkoffOfferings,
+  isTickable,
   notAvailableReason,
   offeringRoster,
   offeringSkills,
@@ -106,7 +107,7 @@ export function useCheckoff() {
   }
   const toggle = (studentId: string, skillId: string) => {
     const key = cellKey(studentId, skillId)
-    if (recorded[key]) return
+    if (recorded[key] || !isTickable(flags(studentId, skillId))) return
     setSaved(null)
     setTicked((p) => {
       const n = { ...p }
@@ -116,7 +117,11 @@ export function useCheckoff() {
     })
   }
   // Only ticks on skills this session can carry are recorded (a setting or recorder change can make a skill unavailable).
-  const liveKeys = Object.keys(ticked).filter((k) => eligible.some((x) => x.skill.id === k.split("|")[1]))
+  // A student who already qualifies is never counted (D-L8d).
+  const liveKeys = Object.keys(ticked).filter((k) => {
+    const [studentId, skillId] = k.split("|")
+    return eligible.some((x) => x.skill.id === skillId) && isTickable(flags(studentId, skillId))
+  })
   const reviewSkills = eligible.filter((k) => k.approval && liveKeys.some((x) => x.endsWith(`|${k.skill.id}`)))
 
   const record = () => {

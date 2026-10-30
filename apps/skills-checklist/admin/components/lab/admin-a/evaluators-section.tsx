@@ -93,7 +93,7 @@ function SiteFirst({ c }: { c: DirectoryContext }) {
         sortable: true,
         cell: (s) => (
           <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} truncate`} href={directoryLink({ site: s.id, q: q || undefined, filter: filter || undefined })} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={s.id === selected?.id ? "true" : undefined}>{s.facility}</Link>
+            <Link className={`${LINK} whitespace-normal`} href={directoryLink({ site: s.id, q: q || undefined, filter: filter || undefined })} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={s.id === selected?.id ? "true" : undefined}>{s.facility}</Link>
             <span className="truncate text-xs text-muted-foreground">{`${s.unit} · ${s.setting}`}</span>
           </span>
         ),

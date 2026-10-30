@@ -9,10 +9,11 @@ import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
-import { isCheckoff, story, type RuleCheck } from "@/lib/lab/reviewer"
+import { story, type RuleCheck } from "@/lib/lab/reviewer"
 import { ReviewItemFrame } from "@/components/lab/reviewer/review-item-frame"
 import { AgreementMark } from "@/components/lab/reviewer/parts"
-import { CompareTable, Facts, Feedback, ReviewNoteField, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { Facts, ReviewNoteField, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { ReviewResponses } from "@/components/lab/reviewer/review-responses"
 import { TYPE } from "@/components/lab/type-scale"
 
 export function ReviewerReviewItemC() {
@@ -37,10 +38,9 @@ export function ReviewerReviewItemC() {
                 <ReviewNoteField />
               </CardContent>
             </Card>
-            <Section title="Answers" defaultOpen={differ}>
+            <Section title="Answers" defaultOpen>
               <div className="flex flex-col gap-3">
-                {d.comparisons.length ? d.comparisons.map((c) => <CompareTable key={c.evaluationId} c={c} checkoff={isCheckoff(d.row)} />) : <p className="text-sm text-muted-foreground">The outcome is on the photo of the paper form and has not been entered.</p>}
-                <Feedback text={d.feedback} />
+                <ReviewResponses state={ctx.state} d={d} />
               </div>
             </Section>
             {/* One disclosure for the context (story, then course, setting and location): both answer "where did this come
@@ -49,7 +49,7 @@ export function ReviewerReviewItemC() {
               <div className="flex flex-col gap-4">
                 <Story steps={story(ctx.state!, d)} />
                 <div className="flex flex-col gap-2">
-                  <h3 className="text-sm font-semibold text-foreground">Course, setting and location</h3>
+                  <h3 className={TYPE.group}>Course, setting and location</h3>
                   <Facts d={d} scope={ctx.scope} />
                 </div>
               </div>

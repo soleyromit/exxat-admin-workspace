@@ -9,6 +9,7 @@
  * one primary, Create. Removed from the built B: the 4 KPI cards, the warning banner, the legend paragraph and the tabs.
  * Demo states as variant A (?state=...).
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -70,7 +71,7 @@ function SourcePane({ session, activeId }: { session: ImportSession; activeId: s
   return (
     <section aria-label="The file as written" className="flex h-full min-h-0 flex-col">
       <div className="flex min-h-11 items-center gap-2 border-b border-border px-3">
-        <h2 className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{session.fileName ?? "Pasted list"}</h2>
+        <h2 className={`min-w-0 flex-1 truncate ${TYPE.card}`}>{session.fileName ?? "Pasted list"}</h2>
         {session.fileName ? <Button type="button" variant="ghost" size="sm" onClick={session.reset}>Choose another file</Button> : null}
       </div>
       <div ref={viewport} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring" role="region" aria-label="Lines of the file" tabIndex={0}>
@@ -112,7 +113,7 @@ function DecisionPane({ session, activeId, onFocusRow, showAll, setShowAll }: { 
   return (
     <section aria-labelledby={`${switchId}-h`} className="flex h-full min-h-0 flex-col">
       <div className="flex min-h-11 items-center gap-3 border-b border-border px-4">
-        <h2 id={`${switchId}-h`} className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{showAll ? "Every line read" : "Lines that need a decision"}</h2>
+        <h2 id={`${switchId}-h`} className={`min-w-0 flex-1 truncate ${TYPE.card}`}>{showAll ? "Every line read" : "Lines that need a decision"}</h2>
         <Label htmlFor={switchId} className="text-sm font-normal text-muted-foreground">Show all lines</Label>
         <ToggleSwitch id={switchId} checked={showAll} onChange={setShowAll} />
       </div>

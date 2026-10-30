@@ -13,7 +13,7 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { StudentFrame } from "@/components/lab/student/frame"
-import { EvaluatorHeading, NoLoginNote, RowAction, SkillNames, StatusOf, linkLine } from "@/components/lab/student/requests"
+import { EvaluatorHeading, RowAction, SkillNames, StatusOf, linkLine } from "@/components/lab/student/requests"
 import { DraftList, useDrafts } from "@/components/lab/student/logged"
 import { NoMatch, RequestsToolbar, clearFilterParams, toolbarOptions } from "@/components/lab/student/requests-toolbar"
 import { anyFilter, filterDrafts, filterGroups, readFilter } from "@/lib/lab/requests-filter"
@@ -49,10 +49,10 @@ function Body({ state, allGroups, studentId, tab, onTab, param, setParams, cours
   const count = (k: RequestStatus) => groups.reduce((n, g) => n + g[k].length, 0)
   const valid = (t: string | null): t is Tab => !!t && (TABS.some((x) => x.id === t) || t === "drafts")
   const current: Tab = valid(tab) ? tab : count("returned") > 0 ? "returned" : drafts.length > 0 ? "drafts" : "waiting"
+  // Search and Filters sit in the toolbar of the list they act on, inside each tab (anatomy, 2026-10-30); state lives in the URL.
+  const toolbar = <RequestsToolbar filter={filter} options={options} onChange={setParams} />
   return (
     <div className="flex flex-col gap-4" data-student-lab="requests-B">
-      <NoLoginNote />
-      <RequestsToolbar filter={filter} options={options} onChange={setParams} />
       <Tabs value={current} onValueChange={(v) => onTab(v as Tab)} data-region="tabs">
         <TabsList ariaLabel="Requests by status">
           <TabsTrigger value="drafts">
@@ -66,7 +66,8 @@ function Body({ state, allGroups, studentId, tab, onTab, param, setParams, cours
             </TabsTrigger>
           ))}
         </TabsList>
-        <TabsContent value="drafts" className="pt-3" data-region="drafts">
+        <TabsContent value="drafts" className="flex flex-col gap-3 pt-3" data-region="drafts">
+          {toolbar}
           <Card className="gap-0 py-0">
             <CardContent className="py-1">
               <DraftList rows={drafts} studentId={studentId} state={state} empty={filtered ? <NoMatch onClear={clear} /> : <EmptyBlock compact title="No drafts" body={`Save for later in Log ${aNoun()} keeps it here until you send it.`} />} />
@@ -74,7 +75,8 @@ function Body({ state, allGroups, studentId, tab, onTab, param, setParams, cours
           </Card>
         </TabsContent>
         {TABS.map((t) => (
-          <TabsContent key={t.id} value={t.id} className="pt-3" data-region="table">
+          <TabsContent key={t.id} value={t.id} className="flex flex-col gap-3 pt-3" data-region="table">
+            {toolbar}
             <Card className="gap-0 overflow-hidden py-0">
               <CardContent className="p-0">
                 {filtered && groups.every((g) => g[t.id].length === 0) ? <NoMatch onClear={clear} /> : <StatusTable groups={groups.filter((g) => g[t.id].length > 0)} status={t.id} studentId={studentId} />}

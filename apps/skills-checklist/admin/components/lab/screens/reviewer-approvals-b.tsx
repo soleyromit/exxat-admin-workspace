@@ -20,7 +20,8 @@ import { skillNoun } from "@/lib/lab/terms"
 import { ApprovalsFrame, type ApprovalsContext } from "@/components/lab/reviewer/approvals-frame"
 import { AgeText, CheckoffTag, ReasonBadge, SummaryLine } from "@/components/lab/reviewer/parts"
 import { LINK as LINK_U } from "@/components/lab/link-styles"
-import { CompareTable, DecisionBar, Facts, Feedback, ReviewNoteField, ReviewNoteProvider, RuleCheckLine, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { ReviewResponses } from "@/components/lab/reviewer/review-responses"
+import { DecisionBar, Facts, ReviewNoteField, ReviewNoteProvider, RuleCheckLine, WhyHeld } from "@/components/lab/reviewer/review-parts"
 
 export function ReviewerApprovalsB() {
   return <ApprovalsFrame variant="B">{(ctx) => <Split ctx={ctx} />}</ApprovalsFrame>
@@ -54,10 +55,10 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
           initials={initialsOf(r.student)}
           renderName={(n) => (
             <span className="flex min-w-0 flex-col">
-              <span className="truncate">{n}</span>
-              <span className="truncate text-xs font-normal text-muted-foreground" title={r.skills.length > 1 ? skillsLine(r) : undefined}>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
+              <span className="whitespace-normal">{n}</span>
+              <span className="whitespace-normal text-xs font-normal text-muted-foreground" title={r.skills.length > 1 ? skillsLine(r) : undefined}>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
               {/* REQ AR-01: course, setting and location on the queue row itself, not only in the panel. */}
-              <span className="truncate text-xs font-normal text-muted-foreground" title={whereLine(r)} data-row-where>{whereLine(r)}</span>
+              <span className="whitespace-normal text-xs font-normal text-muted-foreground" title={whereLine(r)} data-row-where>{whereLine(r)}</span>
           {isCheckoff(r) ? <CheckoffTag /> : null}
             </span>
           )}
@@ -67,16 +68,16 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
     {
       key: "why",
       label: "Waiting because",
-      width: 212,
+      width: 204,
       // The evaluator and role sit under the cause (REQ AR-01): a compact facts line instead of another column in the narrow queue.
       cell: (r) => (
         <span className="flex min-w-0 flex-col items-start gap-1 py-0.5">
           <ReasonBadge row={r} wrap />
-          <span className="max-w-full truncate text-xs text-muted-foreground" title={evaluatorLine(r)} data-row-evaluator>{evaluatorLine(r)}</span>
+          <span className="whitespace-normal text-xs text-muted-foreground" title={evaluatorLine(r)} data-row-evaluator>{evaluatorLine(r)}</span>
         </span>
       ),
     },
-    { key: "days", label: "Waiting", width: 92, cell: (r) => <AgeText days={r.days} /> },
+    { key: "days", label: "Waiting", width: 100, cell: (r) => <AgeText days={r.days} /> },
   ]
 
   return (
@@ -103,16 +104,15 @@ function Split({ ctx }: { ctx: ApprovalsContext }) {
               {/* Split-view budget (strategy/07 section 3): the queue beside the panel is the navigator and a decision moves to the
                   next submission, so the panel keeps Close only (no size menu, no Previous/Next that repeat the visible list). */}
               <FloatingSheetPanelToolbar showSize={false} closeLabel="Close submission" />
-              <FloatingSheetPanelHeader title={detail.row.student} subtitle={`${index + 1} of ${rows.length} · ${detail.row.skills.join(", ")}`} />
+              <FloatingSheetPanelHeader title={detail.row.student} subtitle={detail.row.skills.join(", ")} />
               <FloatingSheetPanelBody className="flex flex-col gap-4 px-4 pt-1 pb-4">
-                <WhyHeld row={detail.row} />
+                <WhyHeld row={detail.row} showAge={false} />
                 <section aria-label="What approval does" className="flex flex-col gap-1.5">
                   {checks.map((c) => <RuleCheckLine key={c.skillId} check={c} />)}
                 </section>
                 <Separator />
                 <section aria-label="Self and evaluator answers" className="flex flex-col gap-4">
-                  {detail.comparisons.length ? detail.comparisons.map((c) => <CompareTable key={c.evaluationId} c={c} checkoff={isCheckoff(detail.row)} />) : <p className="text-sm text-muted-foreground">The outcome is on the photo of the paper form and has not been entered.</p>}
-                  <Feedback text={detail.feedback} />
+                  <ReviewResponses state={ctx.state} d={detail} />
                 </section>
                 <Separator />
                 <Facts d={detail} scope={ctx.scope} />

@@ -6,6 +6,7 @@
  * choice of how evidence already held is treated (PENDING-ROMIT AE-02 versus option B: nothing preselected, marked "Decision
  * pending"). Check itself and the receipt after "Save configuration" live in ./check.tsx (decisions D-X31, D-X32).
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -149,24 +150,25 @@ export function ImpactGroups({ impact, expanded = false }: { impact: Impact; exp
   return (
     <div className="flex flex-col gap-4" data-impact-groups>
       {groups.map((g) => (
-        <ImpactGroupBlock key={`${g.from}>${g.to}`} g={g} expanded={expanded} />
+        // One group: the headline already says how many move, so the group says it nowhere else (anatomy A5, say it once).
+        <ImpactGroupBlock key={`${g.from}>${g.to}`} g={g} expanded={expanded} counted={groups.length > 1} />
       ))}
     </div>
   )
 }
 
-function ImpactGroupBlock({ g, expanded }: { g: ImpactGroup; expanded: boolean }) {
+function ImpactGroupBlock({ g, expanded, counted }: { g: ImpactGroup; expanded: boolean; counted: boolean }) {
   const [open, setOpen] = React.useState(expanded)
   const id = `cfg-move-${g.from}-${g.to}`
   const n = g.rows.length
   return (
     <section aria-labelledby={id} className="flex flex-col gap-2" data-transition={`${g.from}>${g.to}`} data-transition-count={n}>
-      <h3 id={id} className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
+      <h3 id={id} className={`flex flex-wrap items-center gap-2 ${TYPE.label}`}>
         <StateBadge state={g.from} />
         <i className="fa-light fa-arrow-right text-xs text-muted-foreground" aria-hidden="true" />
         <span className="sr-only">to</span>
         <StateBadge state={g.to} />
-        <span className="tabular-nums text-muted-foreground">{`${n} ${n === 1 ? "student" : "students"}`}</span>
+        {counted ? <span className="tabular-nums text-muted-foreground">{`${n} ${n === 1 ? "student" : "students"}`}</span> : null}
       </h3>
       {/* Open and split, the header rows in the table carry each reason; the sentence would say them twice. */}
       {open && g.parts.length > 1 ? null : (
@@ -177,7 +179,7 @@ function ImpactGroupBlock({ g, expanded }: { g: ImpactGroup; expanded: boolean }
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger asChild>
           <Button type="button" variant="link" size="sm" className="h-auto p-0" aria-expanded={open}>
-            {open ? `Hide the ${n} ${n === 1 ? "student" : "students"}` : `Show the ${n} ${n === 1 ? "student" : "students"}`}
+            {open ? (n === 1 ? "Hide the student" : "Hide the students") : n === 1 ? "Show the student" : "Show the students"}
           </Button>
         </CollapsibleTrigger>
         <CollapsibleContent className="pt-2">
@@ -231,7 +233,7 @@ export const EVIDENCE_CHOICE_MISSING = "Choose how evidence already held is trea
  * Impact for one skill: headline, then counts or people first. `lead="counts"` opens on the before and after table with the
  * groups folded; `lead="people"` opens on the groups with their students listed and folds the table.
  */
-export function ImpactSummary({ current, impact, lead = "counts", expandPeople = true }: { current: LabRule | null; impact: Impact | null; lead?: "counts" | "people"; /** False keeps each group's students one click away (Check side column). */ expandPeople?: boolean }) {
+export function ImpactSummary({ current, impact, lead = "counts", expandPeople = true, namesOpen = false }: { current: LabRule | null; impact: Impact | null; lead?: "counts" | "people"; /** False keeps each group's students one click away (Check side column). */ expandPeople?: boolean; /** Counts first, with each group's named students already open (rule-change impact as the page's hero). */ namesOpen?: boolean }) {
   const show = !!current && !!impact && impact.ruleChanged && impact.withEvidence > 0
   const [tableOpen, setTableOpen] = React.useState(false)
   return (
@@ -243,7 +245,7 @@ export function ImpactSummary({ current, impact, lead = "counts", expandPeople =
         lead === "counts" ? (
           <>
             <ImpactTable impact={impact} />
-            <ImpactGroups impact={impact} />
+            <ImpactGroups impact={impact} expanded={namesOpen} />
           </>
         ) : (
           <>

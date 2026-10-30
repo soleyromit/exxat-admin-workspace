@@ -3,6 +3,7 @@
 // Never the word "failed", never red. At most three unmet criteria, most actionable first (the selector already limits).
 import type { Db, Skill } from "@/lib/domain/types"
 import type { Reason, UnmetCriterion } from "@/lib/engine"
+import { inSentence } from "@/lib/lab/terms"
 
 /** Re-exported so callers and tests can type an evaluation-level reason without importing the engine. */
 export type EvalReason = Reason
@@ -72,11 +73,11 @@ export function skillReasonText(u: UnmetCriterion, c: RuleContext, noun: "demons
       return noun === "demonstrations" ? `You have ${u.have} of ${u.needed} demonstrations.` : `You have ${u.have} of ${u.needed} qualifying evaluations. ${more} more needed.`
     }
     case "levelMinimum":
-      return `You need ${u.needed} at "${c.level(u.levelId)}" and have ${u.have}. ${u.needed - u.have} more needed.`
+      return `You need ${u.needed} at ${inSentence(c.level(u.levelId))} and have ${u.have}. ${u.needed - u.have} more needed.`
     case "settingMinimum": {
-      const base = `You need ${u.needed} in ${c.setting(u.settingId)} and have ${u.have}.`
+      const base = `You need ${u.needed} in ${inSentence(c.setting(u.settingId))} and have ${u.have}.`
       // SC-12: lab never satisfies a clinical setting. Say so when lab evidence exists.
-      return u.labEvidence > 0 ? `${base} Lab or simulation evidence does not count toward ${c.setting(u.settingId)}. You need clinical evidence there.` : base
+      return u.labEvidence > 0 ? `${base} Lab or simulation evidence does not count toward ${inSentence(c.setting(u.settingId))}. You need clinical evidence there.` : base
     }
   }
 }

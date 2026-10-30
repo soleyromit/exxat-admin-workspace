@@ -116,16 +116,16 @@ describe("failed-rule generator (SH-03, docs/ux/09 §7)", () => {
     const c = C.ruleContext(db, db.skills.find((s) => s.id === "sk-wound")!)
     expect(C.skillReasonText({ rule: "requiredCount", needed: 5, have: 3 }, c)).toBe("You have 3 of 5 qualifying evaluations. 2 more needed.")
     expect(C.skillReasonText({ rule: "requiredCount", needed: 4, have: 4 }, c, "demonstrations")).toBe("You have 4 of 4 demonstrations.")
-    expect(C.skillReasonText({ rule: "levelMinimum", levelId: "wound-l2", needed: 2, have: 1 }, c)).toBe('You need 2 at "Performed independently" and have 1. 1 more needed.')
-    expect(C.skillReasonText({ rule: "settingMinimum", settingId: "set-emergency", needed: 1, have: 0, labEvidence: 0 }, c)).toBe("You need 1 in Emergency and have 0.")
-    expect(C.skillReasonText({ rule: "settingMinimum", settingId: "set-emergency", needed: 1, have: 0, labEvidence: 2 }, c)).toContain("Lab or simulation evidence does not count toward Emergency. You need clinical evidence there.")
+    expect(C.skillReasonText({ rule: "levelMinimum", levelId: "wound-l2", needed: 2, have: 1 }, c)).toBe('You need 2 at performed independently and have 1. 1 more needed.')
+    expect(C.skillReasonText({ rule: "settingMinimum", settingId: "set-emergency", needed: 1, have: 0, labEvidence: 0 }, c)).toBe("You need 1 in emergency and have 0.")
+    expect(C.skillReasonText({ rule: "settingMinimum", settingId: "set-emergency", needed: 1, have: 0, labEvidence: 2 }, c)).toContain("Lab or simulation evidence does not count toward emergency. You need clinical evidence there.")
   })
 
   it("DEFECT-07 worked example: 4 of 4 demonstrations but not achieved, explained by the settings (resolved)", () => {
     const r = S.failedRule(db, SCENARIO.olivia, "sk-wound")!
     const c = C.ruleContext(db, db.skills.find((s) => s.id === "sk-wound")!)
     const text = r.skillReasons.map((u) => C.skillReasonText(u, c, "demonstrations"))
-    expect(text).toEqual(["You need 1 in Inpatient and have 0.", "You need 1 in Emergency and have 0."])
+    expect(text).toEqual(["You need 1 in inpatient and have 0.", "You need 1 in emergency and have 0."])
     expect(text.join(" ")).not.toMatch(/failed/i)
   })
 
@@ -151,7 +151,7 @@ describe("explanations and structured text", () => {
 
   it("criteria text is built from structure (S-04 column)", () => {
     const row = S.listSkills(db).find((r) => r.skill.id === "sk-wound")!
-    expect(C.criteriaSummary(row.criteria)).toBe("4 demonstrations, 1 at Performed with supervision, 2 at Performed independently, 1 in Inpatient, 1 in Emergency")
+    expect(C.criteriaSummary(row.criteria)).toBe("4 demonstrations, 1 at performed with supervision, 2 at performed independently, 1 in inpatient, 1 in emergency")
     expect(C.criteriaSummary([])).toBe("No criteria set")
   })
 

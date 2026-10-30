@@ -271,7 +271,11 @@ export interface MappingRow {
 
 export type Outcome = "met" | "not-met" | "not-yet"
 
-export type EvaluationStatus = "counted" | "awaiting-approval" | "returned" | "reopened"
+/**
+ * "reassigned": a reviewer's "Assign to someone else" handed the held evidence to another evaluator (decision D-X25: a handoff,
+ * not a return). Like returned it never counts; unlike returned it never asks the student to fix anything.
+ */
+export type EvaluationStatus = "counted" | "awaiting-approval" | "returned" | "reopened" | "reassigned"
 
 /** What the evaluator recorded in one version (Stage 3). Absent on the seeded history, which stores only the outcome. */
 export interface EvaluationDetail {
@@ -442,7 +446,7 @@ export interface LogEntry {
    * (the entry's `at` is when it was saved); `course` and `step` reopen Send at the step it was left; `who` and `method` keep the
    * evaluator choice. Present only on lab drafts. Not evidence until it is sent and an evaluator answers. [INFER]
    */
-  sitting?: { where: string; date: string; unit: string; case: string; course?: string; step?: string; who?: string; method?: string; answers?: Record<string, Array<"yes" | "no" | null>> }
+  sitting?: { where: string; date: string; unit: string; case: string; course?: string; step?: string; who?: string; method?: string; answers?: Record<string, Array<"yes" | "no" | null>>; /** Configured details beyond date, unit and case, by field id [REQ SC-13, ST-10]. */ extra?: Record<string, string> }
 }
 
 /** A lab check-off recorded by a lab instructor (a prerequisite, SC-15 family). */

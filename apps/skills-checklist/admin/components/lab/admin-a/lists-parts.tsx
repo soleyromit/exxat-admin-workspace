@@ -7,6 +7,7 @@
  * make default, start a new list). A new standard is a new list; standards themselves are managed in Program details, so a list
  * carries no standards field [CALL 10-26 B.12]. Nothing replaces a program's established list silently [CALL].
  */
+import { TYPE } from "@/components/lab/type-scale"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
@@ -435,7 +436,7 @@ export function ListsTable({ model, selectedId, hrefFor, onSelect }: { model: Li
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 items-center gap-2 py-0.5">
-            <Link className={`${LINK} truncate`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined}>{r.name}</Link>
+            <Link className={`${LINK} whitespace-normal`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined} title={r.name}>{r.name}</Link>
             {r.list.isDefault ? <Badge variant="secondary">Default</Badge> : null}
           </span>
         ),
@@ -446,7 +447,7 @@ export function ListsTable({ model, selectedId, hrefFor, onSelect }: { model: Li
         label: "Assigned to",
         width: 300,
         sortable: true,
-        cell: (r) => (r.groups === 0 ? <span className="text-muted-foreground">No group yet</span> : <span className="truncate">{r.list.groupIds.map((g) => groupLabel(model.groups, g)).join(", ")}</span>),
+        cell: (r) => (r.groups === 0 ? <span className="text-muted-foreground">No group yet</span> : <span className="whitespace-normal">{r.list.groupIds.map((g) => groupLabel(model.groups, g)).join(", ")}</span>),
       },
       { key: "status", label: "Status", width: 110, cell: (r) => <ListStatus list={r.list} /> },
     ],
@@ -565,7 +566,7 @@ export function AssignConsequence({ model, list }: { model: ListsModel; list: Sk
         : `Their students see these ${countNoun(list, list.skillIds.length)} on their progress page.`
   return (
     <section aria-labelledby="assign-consequence" className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4" data-assign-consequence>
-      <h2 id="assign-consequence" className="text-base font-semibold text-foreground">What this does</h2>
+      <h2 id="assign-consequence" className={TYPE.section}>What this does</h2>
       <p className="text-sm text-foreground">{lead}</p>
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
         {sum.cohorts > 0 ? (

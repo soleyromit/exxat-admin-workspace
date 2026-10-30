@@ -14,6 +14,8 @@ function chromium() {
 }
 const axeSource = readFileSync(require.resolve("axe-core/axe.min.js"), "utf8")
 const [w, ...paths] = process.argv.slice(2)
+// AXE_BEST=1 adds axe best-practice rules (heading-order, landmark-unique, scrollable-region names): moderate, listed not counted.
+const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", ...(process.env.AXE_BEST ? ["best-practice"] : [])]
 const base = process.env.BASE ?? "http://localhost:3017"
 const width = Number(w)
 const browser = await chromium().launch()
@@ -26,11 +28,11 @@ for (const p of paths) {
   await page.addStyleTag({ content: "*,*::before,*::after{transition:none!important;animation:none!important}" })
   await page.waitForTimeout(3500)
   await page.addScriptTag({ content: axeSource })
-  const res = await page.evaluate(async () => {
+  const res = await page.evaluate(async (tags) => {
     // eslint-disable-next-line no-undef
-    const r = await axe.run({ include: [["body"]], exclude: [["[data-lab-chrome]"]] }, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } })
+    const r = await axe.run({ include: [["body"]], exclude: [["[data-lab-chrome]"]] }, { runOnly: { type: "tag", values: tags } })
     return r.violations.map((v) => ({ id: v.id, impact: v.impact, experimental: v.tags.includes("experimental"), n: v.nodes.length, target: v.nodes.slice(0, 3).map((x) => x.target.join(" ")) }))
-  })
+  }, TAGS)
   // Experimental rules (axe excludes them by default; label-content-name-mismatch is one) are listed, not counted.
   const cs = res.filter((v) => !v.experimental && (v.impact === "critical" || v.impact === "serious"))
   const crit = cs.filter((v) => v.impact === "critical").reduce((t, v) => t + v.n, 0)

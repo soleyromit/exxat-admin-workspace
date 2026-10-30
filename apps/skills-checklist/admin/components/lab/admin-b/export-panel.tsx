@@ -17,16 +17,15 @@
  *   overruled). The signed PDF stays the aggregate summary. CSV versus Excel (OD-10) is flagged as a pending decision.
  * - The prototype writes a real CSV file; PDF and Excel confirm in place.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import { capitalize, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { SelectionTileGrid } from "@exxatdesignux/ui/components/ui/selection-tile-grid"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar, FloatingSheetPanelWorkflowFooter } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { detailRows, exportFormats, FORMAT_DECISION_PENDING, summaryRows, toCsv, type AttainmentModel, type AttView, type ExportFormat } from "@/lib/lab/attainment"
+import { detailRows, exportFormats, summaryRows, toCsv, type AttainmentModel, type AttView, type ExportFormat } from "@/lib/lab/attainment"
 import type { V2State } from "@/lib/v2/types"
 import { fmt } from "@/lib/v2/format"
 
@@ -72,23 +71,16 @@ export function ExportPanel({ open, onOpenChange, model, data, view, scopeLines,
         <FloatingSheetPanelBody className="flex flex-col gap-5 px-4 pb-4" data-export-format={format} data-export-rows={count}>
           {done ? <LocalBanner variant="success" title="Export ready">{done}</LocalBanner> : null}
           <section aria-labelledby="export-scope" className="flex flex-col gap-1.5">
-            <h3 id="export-scope" className="text-sm font-semibold text-foreground">What is on screen</h3>
+            <h3 id="export-scope" className={TYPE.group}>What is on screen</h3>
             {/* The applied filters, as the file records them: data, not prose. */}
             <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground" data-export-scope data-viz-label>
               {[`${VIEW_WORD[view]} view`, ...scopeLines].map((l) => <li key={l}>{l}</li>)}
             </ul>
           </section>
           <SelectionTileGrid sectionLabel="Format" options={formats.map((f) => ({ value: f.id, label: f.label, icon: f.icon }))} columns={3} value={format} onValueChange={setFormat} interaction="radio" idPrefix="att-export" itemVariant="outline" />
-          {format !== "pdf" ? (
-            <p className="-mt-3 flex items-center gap-2 text-xs text-muted-foreground" data-od10-seam>
-              <Tip label={FORMAT_DECISION_PENDING}>
-                <Badge variant="outline" tabIndex={0}>Decision pending</Badge>
-              </Tip>
-              CSV or Excel
-            </p>
-          ) : null}
+          {/* OD-10 (CSV or Excel) stays open: both tiles are offered; the open decision is a lab note, not page copy (anatomy A7). */}
           <section aria-labelledby="export-has" className="flex flex-col gap-2">
-            <h3 id="export-has" className="text-sm font-semibold text-foreground">Contains</h3>
+            <h3 id="export-has" className={TYPE.group}>Contains</h3>
             <ul className="flex flex-col gap-1.5 text-sm text-foreground">
               {def.contains.map((c) => (
                 <li key={c} className="flex items-start gap-2"><i className="fa-light fa-check mt-1 text-xs text-muted-foreground" aria-hidden="true" />{c}</li>

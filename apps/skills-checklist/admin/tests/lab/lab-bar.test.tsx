@@ -213,7 +213,7 @@ describe("LabBar", () => {
   it("shows the import as an optional side step tagged Later, outside the step count", () => {
     renderBar({ ...FLOW_PROPS, step: "import" })
     const journey = screen.getByRole("navigation", { name: "Journey" })
-    expect(journey.textContent).toContain("Import")
+    expect(journey.textContent).toContain("Bulk upload")
     expect(journey.textContent).toContain("Later")
     expect(journey.textContent).not.toMatch(/Step \d of/)
     expect(within(journey).getAllByRole("link", { name: "Previous step: Add a skill" }).length).toBeGreaterThan(0)

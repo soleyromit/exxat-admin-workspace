@@ -1668,12 +1668,12 @@
         "variants": [
           "C"
         ],
-        "status": "PARTIAL",
-        "evidence": "PublishDialog (impact.tsx:435-487): when the change affects evidence the dialog shows impact only; Student/Evaluator previews render only when there is no evidence choice (impact.tsx:462) and there is no 'What you changed' list. Many-skill dialog (admin-configure-skill-c.tsx:225-288) shows only a per-skill change table. Runtime ?change=sample&impact=open: dialog has no Student sees / Evaluator sees (shots/SC-19-configure-C-dialog.png); the page's preview panel sits behind the modal.",
-        "selectorHint": "getByRole('dialog',{name:/Publish/})",
-        "missing": "C's final review omits what the student and evaluator will be asked, and the change list, whenever existing evidence changes.",
-        "fix": "Always render ChangeList + PreviewTabs in the C publish dialog (and per skill in many mode).",
-        "priority": "P1",
+        "status": "MET",
+        "evidence": "2026-10-30 fix: C has no Publish dialog any more; Check is an inline state. Its Check state puts PeopleSee (Student sees + Evaluator sees, built from the draft rule) in the preview column beside the review ledger and Who it affects from 1280 px, inline below that (admin-configure-skill-c.tsx aside on checking; PeopleSee min-[1280px]:hidden inline). Every earlier step shows the same two views in RulePreviewAside, stubbed before a model is chosen. Runtime: ?variant=C&change=sample&impact=open at 1440 (docs/knowledge/design/review-shots/fix-admin).",
+        "selectorHint": "locator('[data-rule-preview] [data-preview=\"student\"]') ; locator('[data-rule-preview] [data-preview=\"evaluator\"]')",
+        "missing": "",
+        "fix": "",
+        "priority": "",
         "auditorPriority": "P1"
       },
       {

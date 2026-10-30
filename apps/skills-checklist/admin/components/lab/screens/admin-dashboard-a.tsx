@@ -2,14 +2,16 @@
 
 /**
  * Admin Dashboard, variant A: status board ("is anything off?"), concept A in docs/knowledge/design/dashboard-concepts.
- * Four figures with mini charts, then every view in three groups ordered by urgency (Romit 2026-10-27: no hidden views,
+ * Four figures with mini charts, then every view in four groups ordered by urgency (Romit 2026-10-27: no hidden views,
  * plain titles, cover what the dashboard should answer):
  *   1. Students at risk: behind by cohort (Compare with sits on this tile, the figure it changes), skills holding students
- *      back, sections furthest behind, placements ending soon, required this term and to graduate, evaluations per week.
+ *      back, sections furthest behind. The only charts in the first viewport (D-X21: 3; 2026-10-30).
+ *   1b. Progress this term: placements ending soon, required this term and to graduate, evaluations per week (moved out of
+ *      group 1 on 2026-10-30 to meet the 3-chart budget; nothing dropped).
  *   2. Work queues: oldest requests by site, days awaiting approval, returned and long-waiting requests, evaluators not yet
  *      verified.
  *   3. Set-up and coverage: skills set-up (REQ IM-10), counted evidence by setting (SC-12), attainment by tag (RP-04).
- * The first viewport (density budget) holds the figure strip and the first row of three tiles; everything else scrolls.
+ * The first viewport (density budget) holds the figure strip and the three risk tiles; everything else scrolls.
  * Every figure comes from the single sources (lib/lab/dashboard.ts, lib/v2/placements.ts, lib/v2/facts.ts,
  * lib/lab/attainment.ts). Demo states: ?state=loading|empty|clear|error|partial|stale.
  */
@@ -78,9 +80,13 @@ function Board({ ctx }: { ctx: DashboardContext }) {
     <div className="flex flex-col gap-8">
       <StatusFigures model={model} series={series} />
       <Group id="group-risk" title="Students at risk" region="tiles">
-        {demo === "error" ? <CardError title="Students behind, by cohort" onRetry={clearDemo} /> : <WhereBehindTile model={model} scope={scope} partial={demo === "partial"} selector={compare} />}
+        {demo === "error" ? <CardError title="Behind, by cohort" onRetry={clearDemo} /> : <WhereBehindTile model={model} scope={scope} partial={demo === "partial"} selector={compare} />}
         <BlockingTile model={model} scope={scope} />
         <SectionsTile model={model} scope={scope} gaps={gaps} />
+      </Group>
+      {/* Moved out of the first viewport (D-X21: 3 charts above the fold, 2026-10-30): the three tiles that read progress and
+          pace rather than who is at risk now. Nothing dropped; they open the same lists. */}
+      <Group id="group-progress" title="Progress this term">
         <PlacementsEndingTile rows={ending} days={PLACEMENT_ENDING_DAYS} scope={scope} studentHref={stud} />
         <RequiredSetsTile term={termSet} graduate={{ achieved: toGraduate.totals.achieved, total: toGraduate.total }} termHref={attainmentHref(scope, { required: "term" })} graduateHref={attainmentHref(scope, { required: "graduate" })} />
         <FlowTile scope={scope} weeks={weeks} />

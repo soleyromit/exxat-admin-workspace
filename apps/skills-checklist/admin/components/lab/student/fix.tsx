@@ -17,22 +17,22 @@
  * Sending is local to the lab (read-only data): the outcome sentence and what was sent are said once, in a LocalBanner, never a toast.
  */
 import * as React from "react"
-import { LabLink as Link, useLabRouter } from "@/components/lab/lab-bar/lab-link"
+import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { FormPage } from "@/components/lab/layout/form-page"
-import { NUM_LINK } from "@/components/lab/student/parts"
 import { useStudentPage } from "@/components/lab/student/use-student"
 import { FieldError } from "@exxatdesignux/ui/components/ui/field"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { TYPE } from "@/components/lab/type-scale"
 import { StickyFooter } from "@/components/lab/layout/sticky-footer"
 import { updateActiveV2Store } from "@/lib/v2/react"
-import { saveLogged } from "@/lib/lab/logged"
+import { labNow, saveLogged } from "@/lib/lab/logged"
+import { recordNamedEvaluator } from "@/lib/lab/new-evaluators"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { ValidationSummary, type ValidationIssue } from "@/components/lab/layout/validation-summary"
 import { DetailsFields, EvaluatorPicker, LocationField, NoteField, WhereSelect, type WhoValue } from "@/components/lab/student2/log-parts"
 import { fixModel, shortDate, studentHref, type FixModel } from "@/lib/lab/student"
-import { PRACTICE_LINE, confirmationLines, detailErrors, evaluatorsFor, locationError, locationFor, newEvaluatorErrors, noteError, settingWords, whereChoices, type DetailValues, type NewEvaluator, type WhereChoice } from "@/lib/lab/student2"
+import { PRACTICE_LINE, confirmationLines, detailErrors, detailFieldsFor, evaluatorsFor, locationError, locationFor, newEvaluatorErrors, noteError, settingWords, siteIdFor, whereChoices, type DetailValues, type NewEvaluator, type WhereChoice } from "@/lib/lab/student2"
 import type { V2State } from "@/lib/v2/types"
 import type { StudentFrameCtx } from "@/components/lab/student/frame"
 
@@ -42,7 +42,9 @@ export function useFix(ctx: StudentFrameCtx): FixModel | null {
   return React.useMemo(() => fixModel(ctx.state, ctx.studentId, { submissionId: sub, skillId: skill }), [ctx.state, ctx.studentId, sub, skill])
 }
 
-export const fixTitle = (f: FixModel | null) => (!f ? "Nothing to fix" : f.case === "attempt" ? "Make a further attempt" : f.origin === "waiting" ? "Correct and resend" : "Fix a returned submission")
+/** The skill is in the title, never a subtitle (Romit 2026-10-30, D-L8b): "Fix Bedside handoff report". */
+const fixSkills = (f: FixModel) => (f.skillNames.length > 1 ? `${f.skillNames[0]} and ${f.skillNames.length - 1} more` : f.skillNames[0] ?? "")
+export const fixTitle = (f: FixModel | null) => (!f ? "Nothing to fix" : `${f.case === "attempt" ? "Another attempt at" : f.origin === "waiting" ? "Correct" : "Fix"} ${fixSkills(f)}`.trim())
 
 /** The path, said once: what record this creates and what stays [REQ RV-01..RV-03]. */
 export function pathSentence(f: FixModel): string {
@@ -99,13 +101,19 @@ export function useFixDraft(f: FixModel | null, state: V2State, studentId: strin
   const chosen = choices.find((c) => c.value === draft.whereVal) ?? null
   const loc = locationFor(chosen, draft.location)
   const setting = chosen?.setting ?? "clinical"
-  const all = React.useMemo(() => (f ? evaluatorsFor(state, f.skillIds, loc, setting) : []), [f, state, loc, setting])
+  // Every evaluator on record for this place and setting [REQ RV-04, ST-08]: lab and simulation list the recorded lab instructors,
+  // clinical lists the site's preceptors; faculty who qualify in both. A further attempt goes to someone other than the evaluator
+  // whose answer did not count (review 2026-10-30), so they are left out; a correction can go back to the same person.
+  const attempt = f?.case === "attempt"
+  const all = React.useMemo(() => (f ? evaluatorsFor(state, f.skillIds, loc, setting).filter((o) => !(attempt && o.id === f.evaluatorId)) : []), [f, state, loc, setting, attempt])
   // The original evaluator can sign again only if the place still allows their role (a preceptor cannot sign lab evidence).
-  const sameOk = !!f && all.some((o) => o.id === f.evaluatorId && o.eligible)
+  const sameOk = !!f && !attempt && all.some((o) => o.id === f.evaluatorId && o.eligible)
   const others = all.filter((o) => o.id !== f?.evaluatorId)
   const who = sameOk ? draft.who : "other"
   const freshErrors = who === "other" && draft.other?.kind === "new" ? newEvaluatorErrors(draft.fresh) : {}
-  const detailErrs = detailErrors(draft.details)
+  // The details the skill's configuration asks for, as on Send [REQ SC-13, ST-10].
+  const fields = React.useMemo(() => (f ? detailFieldsFor(state, f.skillIds) : []), [f, state])
+  const detailErrs = detailErrors(draft.details, fields)
   const errors = {
     // A return needs the student to say what changed; a correction of a request nobody answered, or a further attempt, does not.
     note: f?.case === "correction" && f.origin === "returned" && draft.note.trim().length < 3 ? "Say what you changed, so the reviewer can check it." : noteError(draft.note),
@@ -141,14 +149,20 @@ export function useFixDraft(f: FixModel | null, state: V2State, studentId: strin
     const pick = who === "same" ? all.find((o) => o.id === f.evaluatorId) : draft.other?.kind === "person" ? others.find((o) => o.id === (draft.other as { id: string }).id) : undefined
     const to = who === "same" ? f.evaluatorName : pick?.name ?? (draft.fresh.name.trim() || "the evaluator")
     const role = pick?.role ?? (draft.other?.kind === "new" ? "Not yet recorded" : "")
+    // "Someone not listed" [REQ SL-09, RV-04]: the typed name reaches New evaluators and Settings > Evaluators as Not verified, with
+    // this request assigned to them (one person per email). Offline it waits on the device like the request.
+    if (!offline && who === "other" && draft.other?.kind === "new" && chosen) {
+      const named = { studentId, name: draft.fresh.name, email: draft.fresh.email, kind: chosen.setting === "clinical" ? ("preceptor" as const) : ("lab-instructor" as const), skillIds: f.skillIds, siteId: chosen.setting === "clinical" ? siteIdFor(state, loc) : undefined }
+      updateActiveV2Store((st) => recordNamedEvaluator(st, named, labNow()).state)
+    }
     const sentence = offline
       ? `Kept on this device. It goes to ${to} when you reconnect.`
       : f.case === "correction"
-        ? `Sent to ${to} as revision ${f.nextNumber}. Their email holds a new link for this request. It counts after they answer Met.`
-        : `Sent to ${to} as attempt ${f.nextNumber}. It counts after they answer Met.`
+        ? `Sent to ${to} as revision ${f.nextNumber}. Their email holds a new link for this request. It counts after they answer met.`
+        : `Sent to ${to} as attempt ${f.nextNumber}. It counts after they answer met.`
     setSent({ sentence, lines: confirmationLines({ skillNames: f.skillNames, who: to, role, setting: settingWords(chosen), location: loc, date: draft.details.date, note: draft.note }) })
   }
-  return { draft, setDraft, sent, tried, errors, issues, send, choices, chosen, sameOk, who, others, freshErrors, detailErrs, setting, loc, toName, saveForLater, savedId, all }
+  return { draft, setDraft, sent, tried, errors, issues, send, choices, chosen, sameOk, who, others, freshErrors, detailErrs, fields, setting, loc, toName, saveForLater, savedId, all }
 }
 
 export type FixApi = ReturnType<typeof useFixDraft>
@@ -177,7 +191,7 @@ export function FixSections({ f, api }: { f: FixModel; api: FixApi }) {
         <WhereSelect id="fix-where" choices={api.choices} value={draft.whereVal} onChange={(v) => setDraft((d) => ({ ...d, whereVal: v }))} />
         {api.chosen?.askLocation ? <LocationField id="fix-where-location" value={draft.location} onChange={(v) => setDraft((d) => ({ ...d, location: v }))} error={tried ? errors.location : null} /> : null}
         {api.setting !== "clinical" ? <p className={TYPE.helper}>{PRACTICE_LINE}</p> : null}
-        <DetailsFields idPrefix="fix-detail" values={draft.details} onChange={(id, v) => setDraft((d) => ({ ...d, details: { ...d.details, [id]: v } }))} errors={api.detailErrs} showErrors={tried} pairs />
+        <DetailsFields idPrefix="fix-detail" fields={api.fields} values={draft.details} onChange={(id, v) => setDraft((d) => ({ ...d, details: { ...d.details, [id]: v } }))} errors={api.detailErrs} showErrors={tried} pairs />
       </Numbered>
       <Numbered n={2} title="Who signs" id="fix-who-h">
         {/* One search-first picker (Romit 2026-10-27): the previous evaluator pinned first with "Signed before", disabled with the
@@ -186,7 +200,7 @@ export function FixSections({ f, api }: { f: FixModel; api: FixApi }) {
           legend="Who signs"
           legendHidden
           options={api.all}
-          pinnedId={f.evaluatorId}
+          pinnedId={f.case === "attempt" ? undefined : f.evaluatorId}
           value={api.who === "same" ? { kind: "person", id: f.evaluatorId } : draft.other}
           onChange={(v) => setDraft((d) => (v?.kind === "person" && v.id === f.evaluatorId ? { ...d, who: "same" } : { ...d, who: "other", other: v }))}
           fresh={draft.fresh}
@@ -253,7 +267,7 @@ export function FixSummary({ f, api }: { f: FixModel; api: FixApi }) {
         <dt className="text-muted-foreground">Who signs</dt>
         <dd className="min-w-0 text-foreground">{who || <span className="text-muted-foreground">Not chosen yet</span>}</dd>
         <dt className="text-muted-foreground">Counts</dt>
-        <dd className="text-foreground">When they answer Met</dd>
+        <dd className="text-foreground">When they answer met</dd>
       </dl>
     </section>
   )
@@ -294,18 +308,8 @@ function FixPageBody({ ctx, marker, aside, inline }: { ctx: StudentFrameCtx; mar
       </FormPage>
     )
   }
-  const subtitle = (
-    <span className="inline-flex flex-wrap gap-x-1">
-      {f.skillIds.map((id, i) => (
-        <React.Fragment key={id}>
-          <Link className={NUM_LINK} href={studentHref("skill-detail", { skill: id }, ctx.studentId)}>{f.skillNames[i]}</Link>
-          {i < f.skillIds.length - 1 ? ", " : ""}
-        </React.Fragment>
-      ))}
-    </span>
-  )
   return (
-    <FormPage title={fixTitle(f)} subtitle={subtitle} banner={api.sent ? null : <FixContext f={f} />} aside={aside(f, api, ctx)} footer={<FixFooter f={f} api={api} offline={offline} studentId={ctx.studentId} />}>
+    <FormPage title={fixTitle(f)} banner={api.sent ? null : <FixContext f={f} />} aside={aside(f, api, ctx)} footer={<FixFooter f={f} api={api} offline={offline} studentId={ctx.studentId} />}>
       <div className="flex flex-col gap-6" data-student-lab={marker}>
         {inline && !api.sent ? <div className="min-[1280px]:hidden">{inline(f, ctx)}</div> : null}
         {api.sent ? <FixSent f={f} api={api} /> : <FixSections f={f} api={api} />}

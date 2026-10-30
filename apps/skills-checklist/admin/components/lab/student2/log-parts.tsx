@@ -6,6 +6,7 @@
  * optional self-evaluation, who signs off (site evaluators or anyone by name and email) and the four ways to reach them.
  * Compact DS controls (32 px) on desktop; touch height below the sm breakpoint.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { AvatarInitials } from "@exxatdesignux/ui/components/ui/avatar"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
@@ -39,6 +40,7 @@ import {
   PROGRAM_DETAILS,
   STUDENT_NOTE_MAX,
   pickerGroups,
+  type DetailField,
   type DetailValues,
   type EvaluatorOption,
   type NewEvaluator,
@@ -58,11 +60,21 @@ export { TOUCH_ROW }
  */
 export function SkillPicker({ rows, selected, onToggle, listClassName, autoFocus = false, mode = "select" }: { rows: PickRow[]; selected: string[]; onToggle: (id: string) => void; listClassName?: string; autoFocus?: boolean; /** "add": each choice adds one entry (plus icon), "select": multi-select (checkbox). */ mode?: "select" | "add" }) {
   const [q, setQ] = React.useState("")
-  const groups = React.useMemo(() => pickerGroups(rows, q), [rows, q])
+  // Sent before [REQ ST-03]: one switch isolates the skills already submitted, so an earlier one is found in a library of 150+.
+  const [sentOnly, setSentOnly] = React.useState(false)
+  const sentCount = React.useMemo(() => rows.filter((r) => r.submitted).length, [rows])
+  const groups = React.useMemo(() => pickerGroups(rows, q, sentOnly), [rows, q, sentOnly])
   const shown = groups.reduce((n, g) => n + g.rows.length, 0)
   return (
+    <div className="flex flex-col gap-2">
+    {sentCount > 0 ? (
+      <ToggleGroup type="single" variant="outline" size="sm" value={sentOnly ? "sent" : "all"} onValueChange={(v) => { if (v) setSentOnly(v === "sent") }} aria-label={`Which ${skillNounPlural()} to list`} className="justify-start" data-picker-scope>
+        <ToggleGroupItem value="all" className={cn("px-2.5", TOUCH_ROW)}>{`All (${rows.length})`}</ToggleGroupItem>
+        <ToggleGroupItem value="sent" className={cn("px-2.5", TOUCH_ROW)}>{`Sent before (${sentCount})`}</ToggleGroupItem>
+      </ToggleGroup>
+    ) : null}
     <Command shouldFilter={false} className="rounded-lg border border-border" label={`Search ${skillNounPlural()}`}>
-      <CommandInput value={q} onValueChange={setQ} placeholder={`Search ${rows.length} ${skillNounPlural()} or a section`} autoFocus={autoFocus} />
+      <CommandInput value={q} onValueChange={setQ} placeholder={`Search ${sentOnly ? sentCount : rows.length} ${skillNounPlural()} or a section`} autoFocus={autoFocus} />
       <CommandList className={cn("max-h-60", listClassName)} aria-label={`${shown} ${skillNounPlural()}`}>
         <CommandEmpty>{`No ${skillNoun()} matches. Try a shorter word.`}</CommandEmpty>
         {groups.map((g) => (
@@ -72,7 +84,7 @@ export function SkillPicker({ rows, selected, onToggle, listClassName, autoFocus
               return (
                 <CommandItem key={`${g.key}-${r.id}`} value={`${g.key}-${r.id}`} onSelect={() => onToggle(r.id)} data-checked={mode === "select" ? on : undefined} className={cn("gap-2", TOUCH_ROW)}>
                   <i className={cn(mode === "add" ? "fa-light fa-plus" : on ? "fa-solid fa-square-check" : "fa-light fa-square", "text-sm")} style={{ color: on ? "var(--foreground)" : "var(--muted-foreground)" }} aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate">{r.name}</span>
+                  <span className="min-w-0 flex-1">{r.name}</span>
                   {r.likely && g.key !== "likely" ? <i className="fa-solid fa-star text-xs text-muted-foreground" role="img" aria-label="Likely here" /> : null}
                   {r.state ? (
                     <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:inline-flex">
@@ -88,6 +100,7 @@ export function SkillPicker({ rows, selected, onToggle, listClassName, autoFocus
         ))}
       </CommandList>
     </Command>
+    </div>
   )
 }
 
@@ -125,17 +138,19 @@ export function WhereField({ choices, value, onChange, id = "where", location = 
   const chosen = choices.find((c) => c.value === value)
   const practice = chosen?.setting !== "clinical" && !!value
   return (
-    <FieldSet>
+    // min-w-0 on the fieldset (its default min-inline-size is min-content) and minmax(0,1fr) columns keep the tiles inside the
+    // card at 375; site names wrap at spaces, never truncate (anatomy A12, 2026-10-30).
+    <FieldSet className="min-w-0">
       <FieldLegend variant="label">Where</FieldLegend>
-      <RadioGroup value={value} onValueChange={onChange} className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3" aria-label="Where you did it">
+      <RadioGroup value={value} onValueChange={onChange} className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-2 xl:grid-cols-3" aria-label="Where you did it">
         {choices.map((c) => {
           const itemId = `${id}-${c.value.replace(/[^a-z0-9]/gi, "-")}`
           return (
-            <Label key={c.value} htmlFor={itemId} className={cn("flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2 font-normal has-[[data-state=checked]]:border-foreground", TOUCH_ROW)}>
+            <Label key={c.value} htmlFor={itemId} className={cn("flex min-w-0 cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2 font-normal has-[[data-state=checked]]:border-foreground", TOUCH_ROW)}>
               <RadioGroupItem value={c.value} id={itemId} />
               <span className="flex min-w-0 flex-col">
-                <span className="truncate text-sm text-foreground">{c.label}</span>
-                <span className="truncate text-xs text-muted-foreground">{c.setting === "clinical" ? `${c.clinicalSetting}` : "Lab instructor or faculty"}</span>
+                <span className="text-sm text-foreground">{c.label}</span>
+                <span className="text-xs text-muted-foreground">{c.setting === "clinical" ? `${c.clinicalSetting}` : "Lab instructor or faculty"}</span>
               </span>
             </Label>
           )
@@ -192,20 +207,39 @@ export function NoteField({ id = "student-note", value, onChange, error, label =
 const toDate = (v: string) => (v ? new Date(`${v}T12:00:00`) : undefined)
 const fromDate = (d: Date | undefined) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : "")
 
-export function DetailsFields({ values, onChange, errors, showErrors, idPrefix = "detail", columns = true, pairs = false }: { values: DetailValues; onChange: (id: string, v: string) => void; errors: Record<string, string>; showErrors: boolean; idPrefix?: string; columns?: boolean; /** Required fields two to a row, each optional one on its own full row (Fix: Date and Unit, then Case reference). */ pairs?: boolean }) {
+/**
+ * The details the program asks for, as configured on the chosen skills (lib/lab/student2.ts detailFieldsFor) [REQ SC-13, ST-10]. A
+ * long text field and a choice list each take a full row; the error sits on the field.
+ */
+export function DetailsFields({ values, onChange, errors, showErrors, idPrefix = "detail", columns = true, pairs = false, fields = PROGRAM_DETAILS }: { values: DetailValues; onChange: (id: string, v: string) => void; errors: Record<string, string>; showErrors: boolean; idPrefix?: string; columns?: boolean; /** Required fields two to a row, each optional one on its own full row (Fix: Date and Unit, then Case reference). */ pairs?: boolean; /** The configured fields; pass detailFieldsFor(state, skillIds). */ fields?: DetailField[] }) {
+  if (fields.length === 0) return null
+  // A fixed grid, so one configured field (Date performed) keeps a field's width instead of stretching across the form.
+  const cols = pairs ? "sm:grid-cols-2" : columns ? "sm:grid-cols-3" : ""
   return (
-    <div className={cn("grid gap-3", pairs ? "sm:grid-cols-2" : columns ? "sm:grid-cols-3" : "")}>
-      {PROGRAM_DETAILS.map((f) => {
+    <div className={cn("grid gap-3", cols)} data-detail-fields={fields.map((f) => f.id).join(" ")}>
+      {fields.map((f) => {
         const id = `${idPrefix}-${f.id}`
         const err = showErrors ? errors[f.id] : undefined
+        const wide = f.type === "long" || (pairs && !f.required)
         return (
-          <Field key={f.id} data-invalid={!!err} className={pairs && !f.required ? "sm:col-span-2" : undefined}>
+          <Field key={f.id} data-invalid={!!err} className={wide ? (pairs ? "sm:col-span-2" : columns ? "sm:col-span-3" : undefined) : undefined}>
             <FieldLabel htmlFor={id}>
               {f.label}
               {f.required ? null : <span className="font-normal text-muted-foreground"> (optional)</span>}
             </FieldLabel>
             {f.type === "date" ? (
               <DatePickerField id={id} value={toDate(values[f.id] ?? "")} onChange={(d) => onChange(f.id, fromDate(d))} triggerClassName={cn("h-8 text-sm", TOUCH_ROW)} toYear={2026} />
+            ) : f.type === "long" ? (
+              <Textarea id={id} rows={2} value={values[f.id] ?? ""} onChange={(e) => onChange(f.id, e.target.value)} aria-invalid={!!err || undefined} aria-describedby={f.helper ? `${id}-help` : undefined} />
+            ) : f.type === "choice" ? (
+              <Select value={values[f.id] ?? ""} onValueChange={(v) => onChange(f.id, v)}>
+                <SelectTrigger id={id} aria-invalid={!!err || undefined} className={cn("w-full", TOUCH_ROW)}>
+                  <SelectValue placeholder="Choose one" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(f.options ?? []).map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+                </SelectContent>
+              </Select>
             ) : (
               <Input id={id} value={values[f.id] ?? ""} onChange={(e) => onChange(f.id, e.target.value)} aria-invalid={!!err || undefined} aria-describedby={f.helper ? `${id}-help` : undefined} className={TOUCH_ROW} inputMode={f.type === "number" ? "numeric" : undefined} />
             )}
@@ -328,7 +362,7 @@ export function EvaluatorPicker({ options, value, onChange, fresh, onFresh, erro
               <RadioGroupItem value={o.id} id={id} disabled={!o.eligible} aria-describedby={o.reason ? `${id}-why` : undefined} />
               <AvatarInitials initials={initialsOf(o.name)} size="sm" aria-hidden="true" />
               <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-                <span className={cn("truncate text-sm", o.eligible ? "text-foreground" : "text-muted-foreground")}>{o.name}</span>
+                <span className={cn("text-sm", o.eligible ? "text-foreground" : "text-muted-foreground")}>{o.name}</span>
                 <span id={o.reason ? `${id}-why` : undefined} className="truncate text-xs text-muted-foreground">{o.reason ?? o.role}</span>
               </span>
               {o.id === pinnedId ? <Badge variant="outline">Signed before</Badge> : null}
@@ -433,7 +467,7 @@ export function SelfEvalCards({ s, ids, ratings, answers, onRating, onAnswer, sh
         return (
           <section key={id} className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4" aria-labelledby={head} data-self-card={id}>
             <div className="flex flex-col gap-0.5">
-              <h2 id={head} className="text-base font-semibold text-foreground">{skill.name}</h2>
+              <h2 id={head} className={TYPE.section}>{skill.name}</h2>
               <p className="text-sm text-muted-foreground">What the evaluator checks; answer for yourself.</p>
             </div>
             {sh.questions.length ? (
@@ -482,9 +516,10 @@ export function EvaluatorChecks({ s, id }: { s: V2State; id: string }) {
   return (
     <Collapsible open={open} onOpenChange={setOpen} data-evaluator-checks={id}>
       <CollapsibleTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" className="-ms-2 h-7 text-muted-foreground" aria-expanded={open} aria-label={`What the evaluator checks for ${skill.name}`}>
+        {/* The disclosure names its skill, so two of them never read the same (review 2026-10-30 CP-5). */}
+        <Button type="button" variant="ghost" size="sm" className="-ms-2 h-auto min-h-7 max-w-full justify-start text-start whitespace-normal text-muted-foreground" aria-expanded={open}>
           <i className={cn("fa-light text-xs", open ? "fa-chevron-down" : "fa-chevron-right")} aria-hidden="true" />
-          What the evaluator checks
+          {`What the evaluator checks for ${skill.name}`}
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent className="flex flex-col gap-1.5 ps-5 pb-1">

@@ -1,3 +1,4 @@
+import { inSentence } from "@/lib/lab/terms"
 import { needsLevels, needsQuestions } from "./config"
 import type { EvalModel, Evaluation, EvaluatorRole, LevelMinimum, Person, QuestionRule, ScoredRule, Skill, SkillConfig, V2State } from "./types"
 
@@ -126,7 +127,7 @@ export function validateDraft(draft: { model: EvalModel | null; config: SkillCon
   a.settingMinimums.forEach((m, i) => {
     if (!m.setting.trim()) add(2, `wiz-setting-name-${i}`, "blank", `Choose a clinical setting for row ${i + 1}, or remove the row.`)
     else if (dupSet.has(i)) add(2, `wiz-setting-name-${i}`, "dup", `${m.setting} is listed twice. Combine the rows.`)
-    if (!isInt(m.min) || m.min < 1) add(2, `wiz-setting-min-${i}`, "min", `Enter a minimum of 1 or more for ${m.setting || `row ${i + 1}`}.`)
+    if (!isInt(m.min) || m.min < 1) add(2, `wiz-setting-min-${i}`, "min", `Enter a minimum of 1 or more for ${m.setting ? inSentence(m.setting) : `row ${i + 1}`}.`)
   })
   const settingsTotal = a.settingMinimums.reduce((n, m) => n + (isInt(m.min) ? m.min : 0), 0)
   if (isInt(a.need) && settingsTotal > a.need) add(2, "wiz-settings", "sum", `Setting minimums add up to ${settingsTotal} but only ${a.need} evaluations are needed. Lower a setting minimum or raise the evaluations.`)
@@ -205,11 +206,11 @@ export function strengthHint(model: EvalModel | null, c: SkillConfig): StrengthH
     const m = c.questions.length
     parts.push(qr.kind === "all" ? "each with every question answered Yes" : qr.kind === "atLeast" ? `each with at least ${qr.n} of ${m} questions answered Yes` : `each with ${plural(qr.indices.length, "question", "questions")} ${[...qr.indices].sort((x, y) => x - y).map((i) => i + 1).join(", ")} answered Yes`)
   }
-  for (const lm of c.levelMinimums ?? []) if (c.levels[lm.levelIndex]?.trim()) parts.push(`at least ${lm.min} at ${c.levels[lm.levelIndex]!.trim()} or above`)
+  for (const lm of c.levelMinimums ?? []) if (c.levels[lm.levelIndex]?.trim()) parts.push(`at least ${lm.min} at ${inSentence(c.levels[lm.levelIndex]!.trim())} or above`)
   parts.push(distinct >= 2 ? `from at least ${distinct} different evaluators` : "from any single evaluator")
-  if (lvl) parts.push(`at ${lvl} or above`)
+  if (lvl) parts.push(`at ${inSentence(lvl)} or above`)
   const named = a.settingMinimums.filter((m) => m.setting.trim() && isInt(m.min) && m.min > 0)
-  if (named.length) parts.push(`including ${named.map((m) => `${m.min} in ${m.setting}`).join(" and ")}`)
+  if (named.length) parts.push(`including ${named.map((m) => `${m.min} in ${inSentence(m.setting)}`).join(" and ")}`)
   const sentence = `A student needs ${parts.join(", ")}.`
 
   const note =

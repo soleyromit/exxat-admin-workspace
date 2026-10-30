@@ -335,7 +335,7 @@ Romit's rule: "I don't want any inconsistencies in data or visual." One fact has
 | Figure | Before | After | Why |
 |---|---|---|---|
 | Students behind (v2 reports, home, pace dots) | 12 (focus course NURS 350 only) | 28 of 123 | One method: each student against the mandatory skills of their own cohort's offerings in the term (the dashboard method) |
-| v2 "mandatory achieved" | 66% (NURS 350 grid) | 49% (760 of 1,547 required-this-term records) | Same population |
+| v2 "mandatory achieved" | 66% (NURS 350 grid) | 49% (757 of 1,547 required-this-term records; 760 before SEED_VERSION 2026-10-30.1, section 16) | Same population |
 | Maya on pace | 6 of 12 evaluations | 7 of 13 (5 mandatory skills this term) | Same population |
 | Approvals badge (lab sidebar, v2 nav) | 19 (raw status items, all terms) | 35 in Fall 2026 (61 in all terms, 26 earlier) | One queue: status rows plus evidence held for unadopted names, grouped per evaluator and student, scoped by term |
 | Dashboard "Awaiting approval" figure | 20 evaluations in 19 submissions, no term window | 35 submissions (41 evaluations) | Same queue and scope as the badge; the figure is submissions, the description evaluations |
@@ -366,7 +366,7 @@ Romit's rule: "I don't want any inconsistencies in data or visual." One fact has
 
 ## 12b. Round 2 (2026-10-26, later): writes through the shared store, approval rule, required-set basis
 
-`SEED_VERSION` is now `2026-10-26.4`; the pinned fingerprint is `[4430892, 2533529944]` (changed on purpose, 12.7). Every fact in `facts.ts` is unchanged by the seed change (verified: 123 students, 1,547 required records, 760 achieved, 49%, 28 behind, 251 waiting, 35 awaiting approval in 41 evaluations, 20 stored and 19 unadopted, 14 unverified evaluators, 178 skills, 162 configured, 2 inactive, 52 required to graduate, 44 placements ending).
+`SEED_VERSION` is now `2026-10-26.4`; the pinned fingerprint is `[4430892, 2533529944]` (changed on purpose, 12.7). Every fact in `facts.ts` is unchanged by the seed change (verified: 123 students, 1,547 required records, 760 achieved (757 from SEED_VERSION 2026-10-30.1, section 16), 49%, 28 behind, 251 waiting, 35 awaiting approval in 41 evaluations, 20 stored and 19 unadopted, 14 unverified evaluators, 178 skills, 162 configured, 2 inactive, 52 required to graduate, 44 placements ending).
 
 ### 12.7 Rule holds sit on skills that ask for approval (SC-15)
 
@@ -516,3 +516,26 @@ Attempt lines (`attemptCountLine` in `lib/lab/student.ts`, `recordAttemptLine` i
 
 The program's noun (`lib/lab/terms.ts`, key `lab:terms`) and custom student groups (`customGroupsStore`, key `lab.admin.groups.v1`) are kept in localStorage: they survive reloads and reach every tab through the storage event. Every read and write is guarded; blocked storage keeps the value in memory for the page. The server always renders the defaults and the stored value is read after hydration, so there is no mismatch (`tests/lab/persistence.test.ts`). Other lab overlays (mapping edits, list edits, added evaluators) stay in sessionStorage.
 
+## 16. Setting minimum on urinary catheter insertion (SEED_VERSION 2026-10-30.1-setting-minimum)
+
+Urinary catheter insertion asks for 2 of its 3 evaluations in Inpatient (REQ SC-11), so the demo student shows progress against a named setting (REQ SH-05). Maya's second urinary catheter evaluation moves to the skills lab (it counts toward evaluations, never toward Inpatient), hero urinary evaluations drawn for the outpatient preceptor go to an inpatient one (no extra draw), and the generator routes generated urinary evidence to inpatient sites.
+
+Pinned fingerprint `[4925861, 19096869]`; the pair without the self-evaluation flag is `[4925839, 2638021150]` (`tests/v2/dataset-invariants.test.ts`, both re-pinned on purpose).
+
+Facts in the default scope (`facts(createSeed())`, read 2026-10-30):
+
+| Fact | Value | Change |
+|---|---|---|
+| Students (total, in scope) | 123, 123 | none |
+| Required-this-term records | 1,547 | none |
+| Required achieved | 757 (49%) | was 760: Ethan Cole and two generated students are short of Inpatient |
+| Behind | 28 | none |
+| Waiting with evaluators | 251 | none |
+| Awaiting approval | 35 submissions, 41 evaluations (20 stored, 19 unadopted names) | none |
+| Unverified evaluators | 14 | none |
+| Skills, configured, not configured, inactive | 178, 147, 31, 2 | configured was 162 in section 12b; the drop predates this seed change and is not traced here |
+| Required to graduate | 52 | none |
+| Evaluators, sites | 174, 120 | none |
+| Placements ending within 21 days | 44 | none |
+
+Waiting with evaluators now narrows by location and setting in the facts registry too (`openRequestsIn` in `lib/v2/population.ts`, 2026-10-30), as it already did on every dashboard; `tests/v2/consistency.test.ts` checks a location and a setting scope.

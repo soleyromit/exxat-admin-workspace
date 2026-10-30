@@ -66,7 +66,7 @@ function OneAtATime({ ctx }: { ctx: Student2Ctx }) {
                 {c.field === "note" ? (
                   <Label htmlFor="v-both" className={cn("flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border px-3 py-2 font-normal has-[[data-state=checked]]:border-foreground sm:col-span-2", TOUCH_ROW)}>
                     <RadioGroupItem value="both" id="v-both" />
-                    <span className="text-sm text-foreground">Keep both, one after the other</span>
+                    <span className="text-sm text-foreground">Combine into one note</span>
                   </Label>
                 ) : null}
               </RadioGroup>

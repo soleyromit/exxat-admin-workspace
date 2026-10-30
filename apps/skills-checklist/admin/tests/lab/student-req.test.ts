@@ -137,14 +137,14 @@ describe("ST-10: required details are enforced before a submission is sent", () 
   })
   it("the Send and Fix forms enforce the details and show one summary on a failed send", () => {
     const req = src("components/lab/student2/request-parts.tsx")
-    expect(req).toMatch(/detailErrors\(details\)/)
+    expect(req).toMatch(/detailErrors\(details, fields\)/)
     expect(req).toMatch(/const valid = issues\.length === 0/)
     expect(req).toMatch(/ValidationSummary/)
     for (const f of ["components/lab/screens/student-request-a.tsx", "components/lab/screens/student-request-b.tsx"]) {
       expect(src(f)).toMatch(/<SendIssues d=\{d\} \/>/)
       expect(src(f)).toMatch(/<DetailsAndNote d=\{d\}/)
     }
-    expect(src("components/lab/student/fix.tsx")).toMatch(/detailErrors\(draft\.details\)/)
+    expect(src("components/lab/student/fix.tsx")).toMatch(/detailErrors\(draft\.details, fields\)/)
   })
 })
 

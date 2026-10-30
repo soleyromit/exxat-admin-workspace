@@ -17,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radi
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/student2/frame"
 import { EvaluatorPicker, MethodTiles, TOUCH_ROW } from "@/components/lab/student2/log-parts"
-import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart, SendIssues, SkillsField, WherePick, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
+import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart, SendBlockedNote, SendIssues, SkillsField, WherePick, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
 import { FormSkeleton } from "./student-log-a"
 import { aNoun, skillNounPlural } from "@/lib/lab/terms"
 import { METHODS, methodById, needsApproval, student2Href } from "@/lib/lab/student2"
@@ -53,7 +53,7 @@ function SituationFirst({ ctx }: { ctx: Student2Ctx }) {
     d.setMethod(v === "with-me" ? "qr" : v === "not-here" ? "link" : "photo")
   }
   const m = methodById(d.method)
-  const counts = d.method === "photo" ? "It counts after review." : needsApproval(d.s, d.skills) ? "It counts after approval." : "It counts when they answer Met."
+  const counts = d.method === "photo" ? "It counts after review." : needsApproval(d.s, d.skills) ? "It counts after approval." : "It counts when they answer met."
   return (
     <form className="flex flex-col gap-5" noValidate onSubmit={(e) => { e.preventDefault(); d.send() }} data-student-lab="request-B">
       <SendIssues d={d} />
@@ -101,10 +101,11 @@ function SituationFirst({ ctx }: { ctx: Student2Ctx }) {
               <p className="text-sm text-muted-foreground" data-scope-sentence>{`${scopeSentence(d)} ${counts}`}</p>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Button type="button" variant="outline" size="default" className="w-full sm:w-auto max-sm:h-11" onClick={() => d.saveForLater()}>Save for later</Button>
-                <Button type="submit" variant="default" size="default" className="w-full sm:w-auto max-sm:h-11">{d.offline && !m.offline ? "Keep and send later" : "Send"}</Button>
+                <Button type="submit" variant="default" size="default" className="w-full sm:w-auto max-sm:h-11" disabled={d.blocked} aria-describedby={d.blocked ? "send-blocked" : undefined}>{d.offline && !m.offline ? "Keep and send later" : "Send"}</Button>
               </div>
             </div>
             <SavedForLater d={d} />
+            <SendBlockedNote d={d} />
           </CardContent>
         </Card>
       ) : null}

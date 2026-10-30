@@ -7,6 +7,7 @@
  * one decision that fits it: Approve all like rows (rule), Adopt, merge or assign (evaluator not assigned; one menu for the oldest
  * card), Review one by one (disagree, aging).
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -16,7 +17,7 @@ import { isCheckoff, BOARD_COLUMNS, boardColumns, evaluatorLine, reviewItemHref,
 import type { LabScope } from "@/lib/lab/scope"
 import { ApprovalsFrame } from "@/components/lab/reviewer/approvals-frame"
 import { EvaluatorMenu, useDecisionUi } from "@/components/lab/reviewer/decisions"
-import { AgeText, CheckoffTag, EvaluatorName, ReasonChip } from "@/components/lab/reviewer/parts"
+import { AgeText, CheckoffTag, ReasonChip } from "@/components/lab/reviewer/parts"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 
 const SHOW = 5
@@ -51,7 +52,7 @@ function Column({ id, label, icon, rows, scope }: { id: BoardColumnId; label: st
       <CardHeader className="gap-1">
         {/* The column count is the section count (heading plus muted count, consistency audit item 2), like a tab count:
             not a headline figure. */}
-        <CardTitle id={`col-${id}`} className="flex items-center gap-2 text-sm font-semibold">
+        <CardTitle id={`col-${id}`} className={`flex items-center gap-2 ${TYPE.card}`}>
           <i className={`${aging ? "fa-solid" : "fa-light"} ${icon}`} style={aging && rows.length ? { color: "var(--lab-viz-behind-ink)" } : undefined} aria-hidden="true" />
           {label}
           <span className="font-normal tabular-nums text-muted-foreground">
@@ -68,18 +69,16 @@ function Column({ id, label, icon, rows, scope }: { id: BoardColumnId; label: st
           {rows.map((r) => (
             <li key={r.key} className="flex flex-col gap-1 py-2 first:pt-0">
               <span className="flex items-baseline justify-between gap-2">
-                <Link className={`${LINK} truncate text-sm`} href={reviewItemHref(scope, r.key)}>{r.student}</Link>
+                <Link className={`${LINK} min-w-0 text-sm`} href={reviewItemHref(scope, r.key)}>{r.student}</Link>
                 <AgeText days={r.days} />
               </span>
-              <span className="truncate text-xs text-muted-foreground" data-viz-label title={r.skills.length > 1 ? skillsLine(r) : undefined}>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
+              <span className="whitespace-normal text-xs text-muted-foreground" data-viz-label title={r.skills.length > 1 ? skillsLine(r) : undefined}>{r.skills.length > 1 ? `${r.skills[0]} and ${r.skills.length - 1} more` : r.skills[0]}</span>
               {/* REQ AR-01 on every card: course, setting and location, then the evaluator with their role. */}
-              <span className="truncate text-xs text-muted-foreground" data-viz-label data-row-where title={whereLine(r)}>{whereLine(r)}</span>
+              <span className="whitespace-normal text-xs text-muted-foreground" data-viz-label data-row-where title={whereLine(r)}>{whereLine(r)}</span>
               {isCheckoff(r) ? <CheckoffTag /> : null}
-              {id === "new-evaluator" ? (
-                <EvaluatorName name={r.evaluator} role={r.evaluatorRole} unrecorded={!!r.evaluatorUnverified} compact />
-              ) : (
-                <span className="truncate text-xs text-muted-foreground" data-viz-label data-row-evaluator title={evaluatorLine(r)}>{evaluatorLine(r)}</span>
-              )}
+              {/* The evaluator once, on one line, in every column. The "Evaluator not assigned" column header already says the
+                  name is not in the directory, so its cards carry no second badge restating it. */}
+              <span className="whitespace-normal text-xs text-muted-foreground" data-viz-label data-row-evaluator title={evaluatorLine(r)}>{evaluatorLine(r)}</span>
               {/* The column header is the reason for its cards (the skill line names what requires approval), so a card repeats
                   it only where the column mixes causes: Aging, and a paper form inside the approval column. */}
               {aging || r.reason === "paper" ? <span><ReasonChip reason={r.reason} /></span> : null}

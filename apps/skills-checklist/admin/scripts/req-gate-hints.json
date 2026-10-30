@@ -1,0 +1,419 @@
+{
+ "_doc": "Overrides for scripts/lab-req-gate.mjs; the audit JSON (docs/knowledge/req-coverage-lab.json) is never edited. Keys: '<reqId>|<screen>' (all variant groups of that audit row) or '<reqId>|<screen>|<variants joined>' (one group). Fields: manual (reason, skips automation); screen, variants (replace the audit's); params (URL query); setup (ordered steps: {click|hover|fill:[sel,text]|select:[sel,value]|press:key|goto:url, wait:ms}); expect (Playwright locator expressions, the page. prefix is optional, all must be visible); allowHidden; perVariant {V: {params, setup, expect, manual}}; checks [{screen, variants, params, setup, expect, perVariant}] for composite audit rows that name several screens. mustPass: row keys that must pass under --strict (add a key once its gap is fixed). Rows below the 2026-10-30 marker come from docs/knowledge/req-gate-triage-2026-10-30.md (STALE-CHECK, SETUP, MOVED, PROVISIONAL); prefer 3-part keys so a hint never leaks onto another audit row of the same screen.",
+ "mustPass": [],
+ "rows": {
+  "EV-01|evaluator/evaluation-form, submitted, expired, invitation-email; course-faculty/lab-batch-grid": {
+   "expect": ["getByText('No account needed')"],
+   "checks": [
+    { "screen": "evaluator/evaluation-form", "variants": ["A", "B", "C"] },
+    { "screen": "evaluator/submitted", "variants": ["A", "B", "C"] },
+    { "screen": "evaluator/expired", "variants": ["A", "B", "C"] },
+    { "screen": "evaluator/invitation-email", "variants": ["A", "B", "C"] },
+    { "screen": "course-faculty/lab-batch-grid", "variants": ["A", "B"] }
+   ]
+  },
+  "AR-01|reviewer/approvals + admin/approvals": {
+   "expect": ["getByRole('columnheader').first()"],
+   "checks": [{ "screen": "reviewer/approvals", "variants": ["A"] }, { "screen": "admin/approvals", "variants": ["A"] }]
+  },
+  "AR-03|reviewer/review-item (and approvals B panel)": { "screen": "reviewer/review-item", "variants": ["A", "B", "C"], "expect": ["locator('table').first()"] },
+  "AR-04|reviewer/review-item, reviewer/approvals, admin/approvals": {
+   "_why": "2026-10-30: on the approvals tables Approve moved into each row's 'More actions' menu (Review + menu). Only rows that can be decided without opening carry it (an 'Approval required' row), so the setup opens that row's menu.",
+   "expect": ["getByRole('button',{name:'Approve'})"],
+   "checks": [
+    { "screen": "reviewer/review-item", "variants": ["A", "B", "C"] },
+    { "screen": "reviewer/approvals", "variants": ["A", "B", "C"], "perVariant": { "A": { "setup": [{ "click": "getByRole('row').filter({hasText:'Approval required'}).first().getByRole('button',{name:/^More actions/})" }], "expect": ["getByRole('menuitem',{name:/^Approve/})"] } } },
+    { "screen": "admin/approvals", "variants": ["A", "B"], "setup": [{ "click": "getByRole('row').filter({hasText:'Approval required'}).first().getByRole('button',{name:/^More actions/})" }], "expect": ["getByRole('menuitem',{name:/^Approve/})"] }
+   ]
+  },
+  "RV-04|student/fix-returned|AB": {
+   "_why": "2026-10-30: 'Someone else you have worked with' is gone; the further-attempt evaluator picker ends with 'Someone not listed' (sk-sterile-dressing did not count, so the page offers a further attempt).",
+   "params": { "skill": "sk-sterile-dressing" },
+   "expect": ["getByText('Someone not listed')"]
+  },
+  "ST-11|student/request-signoff|AB": {
+   "_why": "2026-10-30: B shows the request form, and its [data-scope-sentence], only after a situation is picked.",
+   "expect": ["locator('[data-scope-sentence]')"],
+   "perVariant": { "B": { "setup": [{ "click": "locator('label[for^=sit-]').first()" }] } }
+  },
+  "SC-19|admin/configure-skill|C": {
+   "_why": "2026-10-30: the previews moved to the Check state; 'What people see' is [data-region=people-see].",
+   "params": { "change": "sample", "impact": "open" },
+   "expect": ["page.locator('[data-region=\"people-see\"]').filter({visible:true})"]
+  },
+  "RP-01|admin/dashboard, admin/dashboard-drill, admin/attainment, admin/export, director/dashboard, director/reports, director/attainment (+ reviewer/students)": {
+   "expect": ["getByRole('button',{name:/^Filters/})"],
+   "checks": [
+    { "screen": "admin/dashboard", "variants": ["A", "B", "C", "D", "E", "F"] },
+    { "screen": "admin/dashboard-drill", "variants": ["A", "B"] },
+    { "screen": "admin/attainment", "variants": ["A", "B"] },
+    { "screen": "admin/export", "variants": ["A", "B"] },
+    { "screen": "director/dashboard", "variants": ["A", "B", "C"] },
+    { "screen": "director/attainment", "variants": ["A", "B"], "params": { "tab": "readiness" } },
+    { "screen": "director/attainment", "variants": ["A", "B"] },
+    { "screen": "reviewer/students", "variants": ["A", "B", "C"] }
+   ]
+  },
+  "RP-07|reviewer/student-record (target of every report drill)": { "screen": "reviewer/student-record", "variants": ["A", "B"], "expect": ["getByRole('row').first()"] },
+  "RP-08|admin/dashboard A-F, admin/attainment A,B": {
+   "_why": "STALE-CHECK: the recount line shows only once a location or setting filter is applied (RP-08 is about that filter).",
+   "params": { "loc": "Harbor General, 4 West" },
+   "expect": ["locator('[data-recount]')", "getByText(/^Counting evidence from .+ only\\.$/)"],
+   "checks": [{ "screen": "admin/dashboard", "variants": ["A", "B", "C", "D", "E", "F"] }, { "screen": "admin/attainment", "variants": ["A", "B"] }]
+  },
+  "RP-09|admin/dashboard": {
+   "_why": "STALE-CHECK: the explanation shows only for an impossible combination: a lab location with the clinical setting.",
+   "variants": ["A", "B", "C", "D", "E", "F"],
+   "params": { "loc": "Skills lab 2", "setting": "clinical" },
+   "expect": ["getByText(/does not offer/)"]
+  },
+  "RP-10|admin/export, admin/attainment export panel, director/attainment export": {
+   "expect": ["getByText('One row per evaluation')"],
+   "checks": [{ "screen": "admin/export", "variants": ["A", "B"] }]
+  },
+  "AE-07|admin/configure-skill (rule editor) -> lib/v2 rule": { "screen": "admin/configure-skill", "variants": ["A", "C"], "expect": ["getByRole('button',{name:/Remove level/})"] },
+
+  "RP-04|admin/attainment|AB": {
+   "_why": "PROVISIONAL, re-checked 2026-10-30 after the attainment edits: the overlap note sits on the tag view (?tab=tags).",
+   "params": { "tab": "tags" },
+   "expect": ["locator('[data-tag-overlap]')", "getByText(/^Tags overlap: /)"]
+  },
+
+  "AR-02|reviewer/review-item|ABC": {
+   "_why": "STALE-CHECK: Differs shows only on an item whose self-evaluation and evaluator answer differ (sub-09).",
+   "params": { "item": "sub-09" }
+  },
+  "CM-05|student/log-skill|AB": {
+   "_why": "STALE-CHECK: the picker counts every active skill, mapped or not; the count moves with the library. B opens it from the #add-skill button (its accessible name is the field label, so match its text).",
+   "perVariant": {
+    "A": { "expect": ["getByPlaceholder(/^Search \\d+ /)"] },
+    "B": { "expect": ["locator('#add-skill',{hasText:/^Search \\d+ /})"] }
+   }
+  },
+  "ST-02|student/log-skill|AB": {
+   "_why": "STALE-CHECK: same picker as CM-05.",
+   "perVariant": {
+    "A": { "expect": ["getByPlaceholder(/^Search \\d+ /)"] },
+    "B": { "expect": ["locator('#add-skill',{hasText:/^Search \\d+ /})"] }
+   }
+  },
+  "CM-05|student/request-signoff|AB": {
+   "_why": "SETUP: B asks whether the evaluator is present first; the form with Add a skill follows.",
+   "perVariant": { "B": { "setup": [{ "click": "getByText('They are not here')" }] } }
+  },
+  "ST-04|student/request-signoff|AB": {
+   "_why": "STALE-CHECK: the sentence was removed; the Skills heading carries the count of skills in the one request (two or more).",
+   "expect": ["locator('[data-region=skills]')", "getByRole('heading',{name:/^Skills\\s*([2-9]|\\d{2,})$/})"],
+   "perVariant": { "B": { "setup": [{ "click": "getByText('They are not here')" }] } }
+  },
+  "ST-10|student/log-skill|A": {
+   "_why": "STALE-CHECK: 'Enter the unit.' was removed; no seeded skill asks for Unit now. The program-required field is the default mandatory Date performed (DEFAULT_STUDENT_FIELDS).",
+   "expect": ["getByText('Date performed',{exact:true})", "locator('#detail-date')"]
+  },
+  "ST-11|student/log-skill|AB": {
+   "_why": "STALE-CHECK: 'Rate yourself' was removed; the self-evaluation shows once a skill configured for it is chosen (sk-sterile-dressing).",
+   "perVariant": {
+    "A": { "params": { "skill": "sk-sterile-dressing" }, "expect": ["locator('[data-self-eval]')"] },
+    "B": {
+     "setup": [{ "click": "locator('#add-skill')" }, { "click": "getByRole('option',{name:/Sterile dressing change/})" }],
+     "expect": ["getByRole('group',{name:'Self-evaluation'})"]
+    }
+   }
+  },
+  "ST-12|student/fix-returned|AB": {
+   "_why": "STALE-CHECK: the 'Kept apart' description was removed; the one note field of the resend is #fix-note.",
+   "expect": ["locator('textarea#fix-note')"]
+  },
+  "CM-06|admin/course-mapping|AB": {
+   "_why": "STALE-CHECK: A maps per offering, so the level select sits in [data-region=offering]; B keeps [data-region=skill].",
+   "perVariant": { "A": { "expect": ["locator('[data-region=offering] [role=combobox]')"] } }
+  },
+  "EV-05|evaluator/evaluation-form|ABC": {
+   "_why": "SETUP: C keeps each skill's feedback in its Details and feedback panel.",
+   "perVariant": { "C": { "setup": [{ "click": "getByRole('button',{name:/^Details and feedback/})" }] } }
+  },
+  "EV-06|evaluator/evaluation-form|ABC": {
+   "_why": "SETUP: B is a stepper; Submit is on the Review step, reached by answering each skill.",
+   "perVariant": {
+    "B": {
+     "setup": [
+      { "click": "getByRole('radio',{name:'Met',exact:true}).filter({visible:true})" },
+      { "click": "getByRole('radio',{name:'Works alone'}).filter({visible:true})" },
+      { "click": "getByRole('button',{name:'Next',exact:true})" },
+      { "click": "getByRole('radio',{name:'Met',exact:true}).filter({visible:true})" },
+      { "click": "getByRole('button',{name:'Review',exact:true})" }
+     ]
+    }
+   }
+  },
+  "EV-07|evaluator/submitted|ABC": {
+   "_why": "STALE-CHECK: the held line is worded per variant (Waits for / Awaits / Awaiting).",
+   "expect": ["getByText(/(Waits for|Awaits|Awaiting) (program )?approval/)"]
+  },
+  "RV-02|student/fix-returned|AB": {
+   "_why": "STALE-CHECK: the revision count reads 'This is revision N of the same submission.'; the reason sits under 'Returned by <reviewer>, <date>'.",
+   "expect": ["getByText(/revision \\d+ of the same submission/)", "getByText(/^Returned by /)"]
+  },
+  "RV-03|student/fix-returned|AB": {
+   "_why": "STALE-CHECK: further attempt on a skill that did not count (sk-sterile-dressing); the earlier attempt stays.",
+   "params": { "skill": "sk-sterile-dressing" },
+   "expect": ["getByText(/attempt \\d+ stays in My evaluations/)"]
+  },
+  "RV-05|student/my-requests|AB": {
+   "_why": "STALE-CHECK: default tab is Returned; the held request is on Waiting. Days are a pattern, not a count.",
+   "params": { "show": "waiting" },
+   "expect": ["getByText(/Awaiting approval, \\d+ days?/).filter({visible:true})"]
+  },
+  "SH-01|student/skill-detail|AB": {
+   "_why": "STALE-CHECK: B's attempt ledger is a table numbered in a # column.",
+   "perVariant": { "B": { "expect": ["getByRole('columnheader',{name:'#'})", "getByRole('cell',{name:'Attempt 1',exact:true})"] } },
+   "_why2": "2026-10-30: the # cell now carries a visually hidden 'Attempt ' prefix for assistive tech, so its accessible name is 'Attempt 1'."
+  },
+  "SH-02|student/skill-detail|AB": {
+   "_why": "STALE-CHECK: B shows the outcome and the sent line in separate cells of the attempt row.",
+   "perVariant": { "B": { "expect": ["getByRole('row',{name:/Waiting/})", "getByText(/^Sent .+, waiting/)"] } }
+  },
+  "SH-06|student/skill-detail|AB": {
+   "_why": "Wave 3 (2026-10-30): attempts can be scoped by course; the course control is [data-attempt-course].",
+   "expect": ["locator('[data-attempt-course]')"]
+  },
+  "ST-03|student/log-skill|AB": {
+   "_why": "Wave 3 (2026-10-30): the picker's scope (All / Sent before) isolates skills already submitted. B opens the picker from #add-skill.",
+   "expect": ["locator('[data-picker-scope]')", "getByText(/Sent before/).filter({visible:true})"],
+   "perVariant": { "B": { "setup": [{ "click": "locator('#add-skill')" }] } }
+  },
+  "ST-03|student/request-signoff|AB": {
+   "_why": "Empty audit selectorHint (2026-10-30): the same skill picker as Log a skill opens from Add a skill (#req-skills-add); its scope (All / Sent before) is [data-picker-scope].",
+   "setup": [{ "click": "locator('#req-skills-add')" }],
+   "expect": ["locator('[data-picker-scope]')"],
+   "perVariant": { "B": { "setup": [{ "click": "locator('label[for^=sit-]').first()" }, { "click": "locator('#req-skills-add')" }] } }
+  },
+  "AE-04|director/reports|AB": {
+   "_why": "Director Reports merged into director/attainment (D-L8c, 2026-10-30); the readiness table is its tab=readiness. Same expectation as the audit selectorHint.",
+   "screen": "director/attainment",
+   "variants": ["A", "B"],
+   "params": { "tab": "readiness" },
+   "expect": ["getByRole('columnheader',{name:'Unmet'})"]
+  },
+  "SH-07|student/skill-detail|AB": {
+   "_why": "Retarget 2026-10-30: B shows attempts as table rows, so the audit's getByText('Attempt 1') does not match there; every attempt carries data-attempt=<n> in both layouts.",
+   "perVariant": { "B": { "expect": ["locator('[data-attempt=\"1\"]')"] } }
+  },
+  "SH-07|student/record|AB": {
+   "_why": "Empty audit selectorHint (2026-10-30): each record row opens its evaluation through [data-view-evaluation]; checked at 375, where the row layout differs.",
+   "viewport": { "width": 375, "height": 812 },
+   "expect": ["locator('[data-view-evaluation]')"]
+  },
+  "EV-07|lab-instructor/lab-batch-grid (+ flow record-lab-session/submitted)|AB": {
+   "_why": "Empty audit selectorHint (2026-10-30): the lab receipt shows only after a fill-then-save step. Mark one skill column, Save session, then the saved banner.",
+   "screen": "course-faculty/lab-batch-grid",
+   "variants": ["A", "B"],
+   "expect": ["getByText('Session saved')"],
+   "perVariant": {
+    "A": { "setup": [{ "click": "getByRole('button',{name:/^Mark every visible student/})" }, { "click": "getByRole('button',{name:'Save session'})", "wait": 1000 }] },
+    "B": { "setup": [{ "click": "getByRole('button',{name:/^Mark the rest/})" }, { "click": "getByRole('button',{name:'Save session'})", "wait": 1000 }] }
+   }
+  },
+  "ST-12|student/offline-sync|AB": {
+   "_why": "Wave 3 (2026-10-30): 'Keep both' is now 'Combine into one note' (one narrative note per submission).",
+   "expect": ["getByText('Combine into one note')"]
+  },
+  "SH-03|student/skill-detail|AB": {
+   "_why": "SETUP: the explanation needs a skill with a record that did not count (sk-sterile-dressing).",
+   "params": { "skill": "sk-sterile-dressing" }
+  },
+
+  "IM-01|admin/import-ai-review|ABC": {
+   "_why": "SETUP: Create sits on Confirm (A, all clear) or in the footer once a file is read (B, C).",
+   "perVariant": { "A": { "params": { "state": "clear" } }, "B": { "params": { "state": "review" } }, "C": { "params": { "state": "review" } } }
+  },
+  "IM-13|admin/import-ai-review|ABC": {
+   "_why": "SETUP: as IM-01; nothing is created before this explicit Create.",
+   "perVariant": { "A": { "params": { "state": "clear" } }, "B": { "params": { "state": "review" } }, "C": { "params": { "state": "review" } } }
+  },
+  "IM-02|admin/import-ai-review|ABC": {
+   "_why": "STALE-CHECK (C): C names no formats in copy; its file input accepts PDF, Word and Excel (accept attribute) behind the visible Choose files button.",
+   "perVariant": {
+    "C": {
+     "expect": ["locator(\"input[type=file][accept*='.pdf'][accept*='.docx'][accept*='.xlsx']\")", "getByRole('button',{name:'Choose files'})"],
+     "allowHidden": true
+    }
+   }
+  },
+  "IM-03|admin/import-ai-review|ABC": {
+   "_why": "STALE-CHECK: 'Any layout, no template' was removed. B still says 'any layout'; A and C prove the list was read as supplied (page titles, legend and page numbers set aside, not rejected).",
+   "perVariant": {
+    "A": { "params": { "state": "review" }, "expect": ["getByText(/^\\d+ skills read in \\d+ categories/)", "getByText(/Lines left out \\(page titles/)"] },
+    "B": { "expect": ["getByText(/any layout/)"] },
+    "C": { "params": { "state": "review" }, "expect": ["getByText(/^\\d+ skills read in \\d+ categories/)", "getByText(/Lines left out \\(page titles/)"] }
+   }
+  },
+  "IM-06|admin/import-ai-review|ABC": {
+   "_why": "SETUP: the duplicate decisions are on A's Fix step, beside the file in B, below the paste in C.",
+   "params": { "state": "review" },
+   "perVariant": { "A": { "setup": [{ "click": "getByRole('button',{name:/^Fix \\d+ lines?/})" }] } }
+  },
+  "IM-08|admin/import-ai-review|ABC": {
+   "_why": "SETUP: as IM-06.",
+   "params": { "state": "review" },
+   "perVariant": { "A": { "setup": [{ "click": "getByRole('button',{name:/^Fix \\d+ lines?/})" }] } }
+  },
+  "IM-07|admin/import-ai-review|ABC": {
+   "_why": "SETUP: the category list shows on Review (A), under Show all lines (B), below the paste (C).",
+   "params": { "state": "review" },
+   "perVariant": { "B": { "setup": [{ "click": "getByText('Show all lines',{exact:true})" }] } }
+  },
+  "SL-03|admin/import-ai-review|ABC": {
+   "_why": "SETUP: the per-line category picker is inside an expanded category of the review list.",
+   "params": { "state": "review" },
+   "setup": [{ "click": "locator('[data-category-list] button[aria-expanded]').first()" }],
+   "perVariant": { "B": { "setup": [{ "click": "getByText('Show all lines',{exact:true})" }, { "click": "locator('[data-category-list] button[aria-expanded]').first()" }] } }
+  },
+  "SL-04|admin/import-ai-review|ABC": {
+   "_why": "SETUP: as SL-03, the tags picker of one line.",
+   "params": { "state": "review" },
+   "setup": [{ "click": "locator('[data-category-list] button[aria-expanded]').first()" }],
+   "perVariant": { "B": { "setup": [{ "click": "getByText('Show all lines',{exact:true})" }, { "click": "locator('[data-category-list] button[aria-expanded]').first()" }] } }
+  },
+  "SL-05|admin/import-ai-review|ABC": {
+   "_why": "SETUP: a category is created where it is needed: type a new name in a line's category picker and Create appears.",
+   "params": { "state": "review" },
+   "setup": [
+    { "click": "locator('[data-category-list] button[aria-expanded]').first()" },
+    { "click": "locator('[data-category-list] [data-category-picker]').first()" },
+    { "fill": ["getByPlaceholder('Find or create a category')", "Gate new category"] }
+   ],
+   "expect": ["locator('[data-create-category]')"],
+   "perVariant": {
+    "B": {
+     "setup": [
+      { "click": "getByText('Show all lines',{exact:true})" },
+      { "click": "locator('[data-category-list] button[aria-expanded]').first()" },
+      { "click": "locator('[data-category-list] [data-category-picker]').first()" },
+      { "fill": ["getByPlaceholder('Find or create a category')", "Gate new category"] }
+     ]
+    }
+   }
+  },
+  "IM-09|admin/import-ai-review|ABC": {
+   "_why": "SETUP (A, Confirm says each starts not configured) / MOVED (B, C have no confirm panel: the done banner says the new skills are not configured yet).",
+   "perVariant": {
+    "A": { "params": { "state": "clear" } },
+    "B": { "params": { "state": "done" }, "expect": ["locator('[data-import-done]')", "getByText(/not configured yet/)"] },
+    "C": { "params": { "state": "done" }, "expect": ["locator('[data-import-done]')", "getByText(/not configured yet/)"] }
+   }
+  },
+  "IM-11|admin/import-ai-review|AB": {
+   "_why": "SETUP: Import name is on Confirm (A) or behind Name this import in the footer (B).",
+   "perVariant": {
+    "A": { "params": { "state": "clear" } },
+    "B": { "params": { "state": "review" }, "setup": [{ "click": "getByRole('button',{name:'Name this import'})" }] }
+   }
+  },
+
+  "IM-09|admin/skills-library|ABC": {
+   "_why": "MOVED (C): C opens on the board; the status tabs are on ?view=list.",
+   "perVariant": { "C": { "params": { "view": "list" } } }
+  },
+  "REQ 1.6|admin/skills-library|ABC": {
+   "_why": "MOVED (C): status tabs are on ?view=list.",
+   "perVariant": { "C": { "params": { "view": "list" } } }
+  },
+  "SL-11|admin/skills-library|ABC": {
+   "_why": "MOVED (C): status tabs are on ?view=list.",
+   "perVariant": { "C": { "params": { "view": "list" } } }
+  },
+  "SL-04|admin/skills-library|ABC": {
+   "_why": "MOVED (C): tag lines are on table rows, ?view=list.",
+   "perVariant": { "C": { "params": { "view": "list" } } }
+  },
+  "SL-10|admin/skills-library|ABC": {
+   "_why": "MOVED: A and B are table-only (no board); C's status tabs are on ?view=list. Name search, category/tag filter and status tabs still prove all four.",
+   "expect": ["getByRole('searchbox')", "locator('[data-library-filter]')", "getByRole('tab',{name:/Inactive/})"],
+   "perVariant": { "C": { "params": { "view": "list" } } }
+  },
+  "IM-10|admin/skills-library|ABC": {
+   "_why": "MOVED: the library banner was removed 2026-10-28. The count is the Not configured tab (C on ?view=list); working through them is the configure receipt: 'N left to configure' and Configure next.",
+   "checks": [
+    {
+     "screen": "admin/skills-library", "variants": ["A", "B", "C"],
+     "expect": ["getByRole('tab',{name:/^Not configured\\s*\\d+/})"],
+     "perVariant": { "C": { "params": { "view": "list" } } }
+    },
+    {
+     "screen": "admin/configure-skill", "variants": ["A", "B", "C"],
+     "params": { "step": "check", "section": "check" },
+     "setup": [{ "click": "getByRole('button',{name:'Save changes'})", "wait": 1200 }],
+     "expect": ["getByText(/\\d+ left to configure/)", "getByRole('link',{name:/^Configure next/})"],
+     "perVariant": { "C": { "setup": [{ "click": "getByRole('button',{name:'Check',exact:true})" }, { "click": "getByRole('button',{name:'Save changes'})", "wait": 1200 }] } }
+    }
+   ]
+  },
+  "IM-11|admin/skills-library|ABC": {
+   "_why": "SETUP: Came from is in the skill panel (and an optional table column); the panel opens from ?skill=.",
+   "params": { "skill": "sk-pm-airway" },
+   "expect": ["getByText('Came from',{exact:true})"]
+  },
+  "IM-12|admin/add-skill|ABC": {
+   "_why": "STALE-CHECK (A): A opens the add form as a dialog, so the page's Add a skill button is inert behind it; the hand-entry form itself is the evidence.",
+   "perVariant": { "A": { "expect": ["getByRole('dialog',{name:'Add a skill'})", "getByLabel('Name',{exact:true})"] } }
+  },
+  "IM-14|admin/configure-skill|ABC": {
+   "_why": "SETUP: Copy from another is a More actions menu item.",
+   "setup": [{ "click": "getByRole('button',{name:'More actions'})" }]
+  },
+  "IM-14|admin/skills-library|ABC": {
+   "_why": "SETUP (A, C list): Copy settings is in the selection bar once a row is selected. MOVED (B): B's library has no selection; copy and apply-to-several live in configure (More actions).",
+   "checks": [
+    {
+     "screen": "admin/skills-library", "variants": ["A", "C"],
+     "setup": [{ "click": "locator(\"main [role=checkbox][aria-label^='Select row']\").first()" }],
+     "expect": ["getByRole('button',{name:'Copy settings'})"],
+     "perVariant": { "C": { "params": { "view": "list" } } }
+    },
+    {
+     "screen": "admin/configure-skill", "variants": ["B"],
+     "setup": [{ "click": "getByRole('button',{name:'More actions'})" }],
+     "expect": ["getByRole('menuitem',{name:/^Copy from another/})", "getByRole('menuitem',{name:/^Apply to other/})"]
+    }
+   ]
+  },
+  "SL-05|admin/add-skill|ABC": {
+   "_why": "SETUP: Create appears once a new name is typed in the category picker and in the tags field (two checks, each shown alone).",
+   "checks": [
+    {
+     "setup": [{ "click": "locator('[data-category-picker]').first()" }, { "fill": ["getByPlaceholder('Find or create a category')", "Gate new category"] }],
+     "expect": ["locator('[data-create-category]')"]
+    },
+    {
+     "setup": [{ "fill": ["locator('[data-tags-picker] input')", "Gate new tag"] }],
+     "expect": ["locator('[data-create-tag]')"]
+    }
+   ]
+  },
+  "SL-05|admin/skills-library|ABC": {
+   "_why": "SETUP: a tag is created from the add form opened in the library.",
+   "setup": [{ "click": "getByRole('button',{name:'Add a skill',exact:true})" }, { "fill": ["locator('[data-tags-picker] input')", "Gate new tag"] }]
+  },
+  "SL-02|admin/retire-deactivate|AB": {
+   "_why": "SETUP (B): the question is in the panel a row's Deactivate or replace opens.",
+   "perVariant": { "B": { "setup": [{ "click": "getByRole('button',{name:/^Deactivate or replace /})" }] } }
+  },
+  "SL-11|admin/retire-deactivate|AB": {
+   "_why": "SETUP (B): as SL-02.",
+   "perVariant": { "B": { "setup": [{ "click": "getByRole('button',{name:/^Deactivate or replace /})" }] } }
+  },
+  "SL-07|admin/settings|AB": {
+   "_why": "MOVED (B): B is master-detail; Clinical settings is a list link, not a tab.",
+   "perVariant": { "B": { "expect": ["locator('[data-list=settings]')", "getByRole('link',{name:/^Clinical settings/})"] } }
+  },
+  "SL-04|admin/categories-tags|AB": {
+   "_why": "MOVED (B): B is master-detail; Tags is a list link, not a tab.",
+   "perVariant": { "B": { "expect": ["locator('[data-list=tags]')", "getByRole('link',{name:/^Tags/})"] } }
+  },
+  "SL-08|admin/settings|AB": {
+   "_why": "SETUP: Add an evaluator is in the Evaluators section (?tab=evaluators, read by both variants).",
+   "params": { "tab": "evaluators" }
+  }
+ }
+}

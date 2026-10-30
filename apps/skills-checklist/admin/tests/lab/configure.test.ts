@@ -100,10 +100,10 @@ describe("configure: validation blocks unsatisfiable rules", () => {
 describe("configure: rule sentence", () => {
   it("reads as one plain sentence for admins and students", () => {
     const r: LabRule = { ...withModel(emptyRule(), "demonstration"), levels: ["Observed", "Assisted", "Independent"], need: 3, levelMinimums: [{ levelIndex: 2, min: 2 }], distinctEvaluators: 2, settingMinimums: [{ setting: "Inpatient", min: 1 }], evaluatorRoles: ["preceptor"] }
-    expect(ruleSentence(r)).toBe("Get 3 evaluations, at least 2 at Independent or above, from 2 different evaluators, with 1 in Inpatient.")
-    expect(ruleSentence(r, "student")).toBe("You need 3 evaluations, at least 2 at Independent or above, from 2 different evaluators, with 1 in Inpatient.")
-    expect(settingNote(r)).toBe("Lab and simulation evidence does not count toward Inpatient.")
-    expect(ruleSentence(binary())).toBe("Get 3 evaluations rated Met.")
+    expect(ruleSentence(r)).toBe("Get 3 evaluations, at least 2 at independent or above, from 2 different evaluators, with 1 in inpatient.")
+    expect(ruleSentence(r, "student")).toBe("You need 3 evaluations, at least 2 at independent or above, from 2 different evaluators, with 1 in inpatient.")
+    expect(settingNote(r)).toBe("Lab and simulation evidence does not count toward inpatient.")
+    expect(ruleSentence(binary())).toBe("Get 3 evaluations rated met.")
   })
   it("never contains the banned generic noun or a long dash", () => {
     const text = ruleSentence(sampleChange(fromV2(skillById(s, MED)!), s.program.clinicalSettings), "student")
@@ -184,7 +184,7 @@ describe("configure: impact over the real dataset (123 students)", () => {
   it("the student line names the new rule and what is left", () => {
     const im = computeImpact(s, MED, before, after)
     const line = affectedStudentLine(k.name, after, im.changed[0], "Oct 26")
-    expect(line).toMatch(/^Rule changed Oct 26: Oral medication administration now needs 3 evaluations rated Met/)
+    expect(line).toMatch(/^Rule changed Oct 26: Oral medication administration now needs 3 evaluations rated met/)
     expect(line).toMatch(/Still needed:/)
   })
 })
@@ -227,24 +227,24 @@ describe("configure: ties are said once (J7)", () => {
     const keys = g.parts.map((p) => p.gaps.map((x) => x.key).join("|"))
     expect(new Set(keys).size).toBe(keys.length)
     // The sample change: most students need one more Inpatient evaluation; each combination is one sentence.
-    expect(reason).toMatch(/^\d+ need 1 more in Inpatient\./)
+    expect(reason).toMatch(/^\d+ need 1 more in inpatient\./)
     for (const p of g.parts.slice(0, 3)) expect(reason).toContain(partSentence(p))
     for (const r of g.rows) expect(extraGaps(r, g).some((x) => g.shared.some((sh) => sh.key === x.key))).toBe(false)
   })
   it("a tie across identical rows becomes one sentence", () => {
-    const row = (id: string) => ({ studentId: id, name: id, cohort: "", before: "achieved" as const, after: "in-progress" as const, left: [], gaps: [{ key: "setting:Inpatient:1", label: "1 more in Inpatient" }], verified: false })
+    const row = (id: string) => ({ studentId: id, name: id, cohort: "", before: "achieved" as const, after: "in-progress" as const, left: [], gaps: [{ key: "setting:Inpatient:1", label: "1 more in inpatient" }], verified: false })
     const [g] = groupImpact({ changed: [row("a"), row("b"), row("c")] })
-    expect(groupReason(g)).toBe("All 3 need 1 more in Inpatient.")
+    expect(groupReason(g)).toBe("All 3 need 1 more in inpatient.")
   })
   it("gaps never count lab toward a setting (SC-12)", () => {
     const r = evaluateRule(binary({ need: 1, settingMinimums: [{ setting: "Inpatient", min: 1 }] }), [ev({ setting: "lab", clinicalSetting: "Inpatient" })])
-    expect(gapsOf(r).map((g) => g.label)).toEqual(["1 more in Inpatient"])
+    expect(gapsOf(r).map((g) => g.label)).toEqual(["1 more in inpatient"])
   })
   it("configDiff lists only what changed, and the rule as what it adds (no repeated sentence)", () => {
     const d = configDiff(before, after)
     expect(d.map((x) => x.label)).toEqual(["How many times"])
-    expect(d[0].after).toBe("Adds from 2 different evaluators and 1 in Inpatient.")
-    expect(d[0].before).toBe("Get 3 evaluations rated Met.")
+    expect(d[0].after).toBe("Adds from 2 different evaluators and 1 in inpatient.")
+    expect(d[0].before).toBe("Get 3 evaluations rated met.")
     expect(configDiff(before, { ...before, outcomeLabels: ["Pass", "Fail"] }).map((x) => x.label)).toEqual(["Evaluation criteria"])
     expect(configDiff(null, after).some((x) => x.label === "How it's judged" && x.before === "Not set")).toBe(true)
   })
@@ -273,7 +273,7 @@ describe("configure: Oct 26 call updates", () => {
     expect(hasNeed(r)).toBe(false)
     expect(validateRule({ ...r, qualifyingLabel: 0, evaluatorRoles: ["preceptor"] }).map((i) => i.id)).toEqual(["cfg-need:need"])
     expect(ruleSentence({ ...r, qualifyingLabel: 0 })).toBe("Not set yet.")
-    expect(ruleSentence({ ...r, qualifyingLabel: 0, need: 3, levelMinimums: [] })).toBe("Get 3 evaluations rated Met.")
+    expect(ruleSentence({ ...r, qualifyingLabel: 0, need: 3, levelMinimums: [] })).toBe("Get 3 evaluations rated met.")
   })
   it("a valid attempt can need at least 2 of 3 questions answered Yes: validated, in the sentence and in the engine", () => {
     const q: LabRule = { ...withModel(emptyRule(), "question"), questions: ["Identifies patient", "Checks order", "Documents"], questionRule: { kind: "atLeast", n: 2 }, need: 3, evaluatorRoles: ["preceptor"] }

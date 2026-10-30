@@ -77,12 +77,8 @@ const LAB_ONLY = [/^lab-bar\//, /^lab-index\.tsx$/, /^variant-bar\.tsx$/, /^ds-u
 // the scale (section titles TYPE.section, the sentence and inputs at body size).
 const ALLOW_BIG: Record<string, string> = {}
 const ALLOW_SERIF: Record<string, string> = {}
-const ALLOW_LABEL: Record<string, string> = {
-  // TODO(Export, not in the walkthroughs): the OD-10 "Decision pending" badge on the CSV/Excel choice is a lab label in product UI.
-  "admin-b/export-panel.tsx": "Export",
-  // TODO(Export, not in the walkthroughs): same badge on Export B.
-  "screens/admin-export-b.tsx": "Export",
-}
+// Export entries removed 2026-10-30: the OD-10 "Decision pending" badge is gone from Export A (panel) and Export B (anatomy A7).
+const ALLOW_LABEL: Record<string, string> = {}
 
 describe("lab typography and lab labels", () => {
   it("negative controls: each scan flags what it bans and passes what it allows", () => {

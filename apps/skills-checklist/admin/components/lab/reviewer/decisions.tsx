@@ -62,6 +62,8 @@ export function DecisionProvider({ state, rows, onDecided, children }: { state: 
   const [assigning, setAssigning] = React.useState<ReviewRow | null>(null)
   const [correcting, setCorrecting] = React.useState<{ id: string; skill: string } | null>(null)
   const [bulk, setBulk] = React.useState<{ selected: ReadonlySet<string | number>; gone: ReadonlySet<string> } | null>(null)
+  // REQ AR-04 "A reviewer may record a note, which is retained with the evaluation": optional, kept with each evaluation approved together.
+  const [bulkNote, setBulkNote] = React.useState("")
 
   const approve = React.useCallback(
     (list: ReviewRow[], note?: string) => {
@@ -81,7 +83,10 @@ export function DecisionProvider({ state, rows, onDecided, children }: { state: 
     openAdopt: setAdopting,
     openAssign: setAssigning,
     openCorrection: setCorrecting,
-    openBulk: (selected, gone = new Set()) => setBulk({ selected, gone }),
+    openBulk: (selected, gone = new Set()) => {
+      setBulkNote("")
+      setBulk({ selected, gone })
+    },
     feedback,
     clearFeedback: () => setFeedback(null),
   }
@@ -145,6 +150,12 @@ export function DecisionProvider({ state, rows, onDecided, children }: { state: 
               </ul>
             </div>
           ) : null}
+          {check && check.approvable.length ? (
+            <div className="flex flex-col gap-1.5" data-review-note>
+              <Label htmlFor="bulk-review-note">Review note (optional), kept with each evaluation</Label>
+              <Textarea id="bulk-review-note" rows={2} value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
+            </div>
+          ) : null}
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={() => setBulk(null)}>Cancel</Button>
             {check && check.approvable.length ? (
@@ -153,7 +164,7 @@ export function DecisionProvider({ state, rows, onDecided, children }: { state: 
                 variant="default"
                 size="sm"
                 onClick={() => {
-                  approve(check.approvable)
+                  approve(check.approvable, bulkNote)
                   if (check.blocked.length) setFeedback({ title: `Approved ${check.approvable.length} of ${check.approvable.length + check.blocked.length}`, body: check.blocked.map((b) => `${subject(b.row)}: ${b.reason}`).join(" "), tone: "warning" })
                   setBulk(null)
                 }}
@@ -424,6 +435,39 @@ export function EvaluatorMenu({ row, adoptLabel = "Adopt or merge evaluator" }: 
       <DropdownMenuContent align="start" className={ABOVE_PANEL_MENU}>
         <DropdownMenuItem onSelect={() => ui.openAdopt(row)}>{adoptLabel}</DropdownMenuItem>
         <DropdownMenuItem onSelect={() => ui.openAssign(row)}>Assign to someone else</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+/**
+ * The one overflow beside every queue row's Review (design review 2026-10-30, others #3: one predictable action per row). It holds
+ * the quick decisions that row allows: Approve and Send back on rows that can be decided without opening them, Adopt or merge and
+ * Assign on a typed evaluator name. Rows with nothing quick to do get no menu, and Review still opens the full decision.
+ */
+export function RowActionsMenu({ row, approveHint }: { row: ReviewRow; /** What Approve does, under the item (AR-05, AR-06). */ approveHint?: string }) {
+  const ui = useDecisionUi()
+  const what = `${row.student}, ${row.skills.length > 1 ? `${row.skills.length} ${skillNounPlural()}` : row.skills[0]}`
+  const quick = !!row.likeKey
+  const evaluator = row.reason === "new-evaluator"
+  if (!quick && !evaluator) return <span className="inline-block size-8" aria-hidden="true" />
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={`More actions: ${what}`}>
+          <i className="fa-light fa-ellipsis" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className={ABOVE_PANEL_MENU}>
+        {quick ? (
+          <DropdownMenuItem className="flex-col items-start gap-0.5" onSelect={() => ui.approve([row])}>
+            <span>Approve</span>
+            {approveHint ? <span className="text-xs text-muted-foreground">{approveHint}</span> : null}
+          </DropdownMenuItem>
+        ) : null}
+        {quick ? <DropdownMenuItem onSelect={() => ui.openReturn(row)}>{SEND_BACK_LABEL}</DropdownMenuItem> : null}
+        {evaluator ? <DropdownMenuItem onSelect={() => ui.openAdopt(row)}>{`Adopt or merge ${row.evaluator}`}</DropdownMenuItem> : null}
+        {evaluator ? <DropdownMenuItem onSelect={() => ui.openAssign(row)}>Assign to someone else</DropdownMenuItem> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )

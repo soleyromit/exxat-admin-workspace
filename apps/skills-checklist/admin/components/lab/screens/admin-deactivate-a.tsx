@@ -7,8 +7,6 @@
  * Demo states: ?state=loading, error, partial (impact still calculating), empty (no skill chosen).
  */
 import * as React from "react"
-import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
@@ -43,21 +41,9 @@ export function AdminDeactivateA() {
     <PageFrame title={`Deactivate or replace ${aNoun()}`} actions={<SampleDataBadge />}>
       <div className="flex flex-col gap-5" data-retire-lab="A" data-page-type="form">
         <div className="flex flex-wrap items-center gap-3">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink asChild>
-                  <Link href="/lab/admin/skills-library">{capitalize(skillNounPlural())}</Link>
-                </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{impact?.name ?? `Choose ${aNoun()}`}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
+          {/* The shell breadcrumb carries the path; a body breadcrumb said it twice (anatomy A3). */}
           <Select value={skillId ?? undefined} onValueChange={(v) => r.setSkill(v)}>
-            <SelectTrigger size="sm" className="ms-auto h-8 w-80 gap-1.5 text-sm" aria-label={capitalize(skillNoun())}>
+            <SelectTrigger size="sm" className="h-8 w-80 gap-1.5 text-sm" aria-label={capitalize(skillNoun())}>
               <span className="text-muted-foreground" aria-hidden="true">{capitalize(skillNoun())}</span>
               <SelectValue placeholder={`Choose ${aNoun()}`} />
             </SelectTrigger>

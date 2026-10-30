@@ -13,6 +13,7 @@ import { DiamondGlyph } from "@/components/lab/viz"
 import { STATUS_LABEL, type VerifyStatus } from "@/lib/lab/director"
 import { LINK as LINK_STANDALONE, LINK_IN_TABLE } from "@/components/lab/link-styles"
 import { fmt } from "@/lib/v2/format"
+import { VERIFY_STATUS_TONE } from "@/lib/v2/labels"
 
 /** One link treatment for the lab (components/lab/link-styles.ts); the old names stay so importers keep working. */
 export const LINK = LINK_IN_TABLE
@@ -22,7 +23,7 @@ export const LINK_U = LINK_STANDALONE
 const STATUS_ICON: Record<VerifyStatus, string> = { ready: "fa-circle-check", changed: "fa-arrows-rotate", blocked: "fa-lock", verified: "fa-badge-check" }
 
 export function StatusMark({ status }: { status: VerifyStatus }) {
-  return <StatusBadge label={STATUS_LABEL[status]} tone="neutral" icon={STATUS_ICON[status]} size="sm" />
+  return <StatusBadge label={STATUS_LABEL[status]} tone={VERIFY_STATUS_TONE[status]} icon={STATUS_ICON[status]} size="sm" />
 }
 
 /** Required skills not achieved: amber diamond plus the words. Zero reads as plain text. */

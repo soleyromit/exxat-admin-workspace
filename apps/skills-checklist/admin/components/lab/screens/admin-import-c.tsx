@@ -27,6 +27,7 @@ import {
   FileStatus,
   CategoryList,
   FixList,
+  ImportNameField,
   LIBRARY_HREF,
   NotCreatedList,
   ReadingState,
@@ -173,6 +174,8 @@ export function AdminImportC() {
                 {session.groups.length ? <FixList session={session} /> : null}
                 {/* Every skill read, by category, with its own Category and Tags (REQ SL-03, SL-04; decision D-X28). */}
                 <CategoryList session={session} />
+                {/* Named like A and B, so the library can tell which skills came from this paste [REQ IM-11]. */}
+                <ImportNameField session={session} />
               </>
             ) : null}
           </div>

@@ -63,7 +63,7 @@ export function NewEvaluatorsPanel({ state, rows, scope }: { state: V2State; row
         width: 280,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
-            {r.addedById ? <Link className={`${LINK} truncate`} href={recordHref(scope, r.addedById)}>{r.addedBy}</Link> : <span className="truncate">{r.addedBy}</span>}
+            {r.addedById ? <Link className={`${LINK} whitespace-normal`} href={recordHref(scope, r.addedById)}>{r.addedBy}</Link> : <span className="truncate">{r.addedBy}</span>}
             <span className={`truncate ${TYPE.meta}`} title={r.request}>{r.request ? `For ${r.request}` : "No request on record"}</span>
           </span>
         ),

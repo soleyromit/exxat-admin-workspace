@@ -7,7 +7,6 @@
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
@@ -39,7 +38,8 @@ import { listsForCohort, listsHref, type SkillList } from "@/lib/lab/lists"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { V2State } from "@/lib/v2/types"
 import { EmptyBlock } from "@/components/lab/empty-block"
-import { AmberMark, FilterSelect, LINK, LevelGlyph, LevelLegend, LevelSelect, LiveNote, PaneHeading, SearchField, fmt, plural } from "./parts"
+import { ScrollLabel } from "@/components/lab/layout/scroll-label"
+import { AmberMark, FilterSelect, LINK, LevelGlyph, LevelLegend, LevelSelect, LiveNote, PaneHeading, SearchField, fmt, plural, type FilterField } from "./parts"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Offerings list (left pane of variant A)
@@ -58,9 +58,9 @@ export function OfferingsTable({ rows, selectedId, hrefFor, onSelect, note }: { 
               <Link className={`${LINK} shrink-0`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined}>
                 {r.code}
               </Link>
-              <span className="truncate text-xs text-muted-foreground">{`${r.cohort} · Year ${r.professionalYear}`}</span>
+              <span className="truncate text-xs text-muted-foreground" title={`${r.cohort} · Year ${r.professionalYear}`}>{`${r.cohort} · Year ${r.professionalYear}`}</span>
             </span>
-            <span className="truncate text-xs text-muted-foreground">{r.name}</span>
+            <span className="truncate text-xs text-muted-foreground" title={r.name}>{r.name}</span>
           </span>
         ),
       },
@@ -72,6 +72,7 @@ export function OfferingsTable({ rows, selectedId, hrefFor, onSelect, note }: { 
   return (
     <div data-region="offerings" className="flex min-w-0 flex-col gap-2">
       {note}
+      <ScrollLabel label="Offerings">
       <DataTable<OfferingRow>
         data={rows}
         columns={columns}
@@ -83,6 +84,7 @@ export function OfferingsTable({ rows, selectedId, hrefFor, onSelect, note }: { 
         edgeInset={false}
         emptyState={<EmptyBlock compact title="No offerings match these filters" body="Clear a filter to see more." />}
       />
+      </ScrollLabel>
     </div>
   )
 }
@@ -153,6 +155,11 @@ export function CohortAppliesLine({ lists, cohort }: { lists: SkillList[]; cohor
  * Clinical, or clinical and didactic, as one filter in the toolbar (Romit 2026-10-28: "too many text"): the course-kind open
  * decision stays a control, not a sentence. The table's own count says how many offerings show.
  */
+/** Course kind as a Filters field: clinical courses by default (CALL 10-26), didactic one choice away. */
+export function courseKindField(didactic: boolean, onChange: (on: boolean) => void): FilterField {
+  return { id: "courses", label: "Courses", value: didactic ? "didactic" : "", allLabel: "Clinical", options: [{ value: "didactic", label: "Clinical and didactic" }], onChange: (v) => onChange(v === "didactic") }
+}
+
 export function CourseKindSelect({ didactic, onChange }: { didactic: boolean; onChange: (on: boolean) => void }) {
   return (
     <span data-course-kind={didactic ? "all" : "clinical"}>
@@ -195,15 +202,29 @@ export function OfferingPanel({ state, overlay, setOverlay, offering, lists, foc
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} truncate`} href={mappingLink({ term: offering.termId, skill: r.id })}>{r.name}</Link>
-            <span className="truncate text-xs text-muted-foreground">{r.section}</span>
+            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ term: offering.termId, skill: r.id })} title={r.name}>{r.name}</Link>
+            <span className="truncate text-xs text-muted-foreground" title={r.section}>{r.section}</span>
           </span>
         ),
       },
-      { key: "required", label: "Required", width: 104, cell: (r) => (r.required ? <Badge variant="outline">Required</Badge> : null) },
+      // Two meanings of "required", named apart (D-X12; 2026-10-30 review): the program's "Required to graduate" is a quiet,
+      // read-only fact with a cap glyph under its own header; the course's level (Mandatory, Recommended, Optional) is the
+      // control in the next column, headed with the course code. No pill, so it never reads as a second level.
+      {
+        key: "required",
+        label: "To graduate",
+        width: 128,
+        cell: (r) =>
+          r.required ? (
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground" title="Required to graduate">
+              <i className="fa-light fa-graduation-cap" aria-hidden="true" />
+              Required
+            </span>
+          ) : null,
+      },
       {
         key: "level",
-        label: `In ${offering.code}`,
+        label: `Level in ${offering.code}`,
         width: 200,
         cell: (r) =>
           r.configured ? (
@@ -256,6 +277,7 @@ export function OfferingPanel({ state, overlay, setOverlay, offering, lists, foc
         </LocalBanner>
       ) : null}
       <LiveNote text={note} />
+      <ScrollLabel label={capitalize(skillNounPlural())}>
       <DataTable<SkillMapRow>
         key={offering.id}
         data={visible}
@@ -270,6 +292,7 @@ export function OfferingPanel({ state, overlay, setOverlay, offering, lists, foc
         lazyLoading={{ enabled: visible.length > 60, threshold: 60, chunkSize: 40, loadingLabel: "Loading more" }}
         emptyState={<EmptyBlock compact title={`No ${skillNounPlural()} match these filters`} body="Clear the search or the filter." />}
       />
+      </ScrollLabel>
     </section>
   )
 }
@@ -289,8 +312,8 @@ export function CoverageMatrix({ coverage, termName, termId }: { coverage: Cover
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} truncate`} href={mappingLink({ term: termId, skill: r.id })}>{r.name}</Link>
-            <span className="truncate text-xs text-muted-foreground">{r.section}</span>
+            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ term: termId, skill: r.id })} title={r.name}>{r.name}</Link>
+            <span className="truncate text-xs text-muted-foreground" title={r.section}>{r.section}</span>
           </span>
         ),
       },
@@ -339,6 +362,7 @@ export function CoverageMatrix({ coverage, termName, termId }: { coverage: Cover
         meta={`${fmt(coverage.required)} required to graduate · ${fmt(covered)} in at least one course`}
         end={<LevelLegend />}
       />
+      <ScrollLabel label="Coverage">
       <DataTable<CoverageRow>
         data={coverage.rows}
         columns={columns}
@@ -348,6 +372,7 @@ export function CoverageMatrix({ coverage, termName, termId }: { coverage: Cover
         edgeInset={false}
         emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} to graduate yet`} />}
       />
+      </ScrollLabel>
     </section>
   )
 }
@@ -365,8 +390,8 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} truncate`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined}>{r.name}</Link>
-            <span className="truncate text-xs text-muted-foreground">{r.required ? `${r.section} · Required` : r.section}</span>
+            <Link className={`${LINK} whitespace-normal`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined}>{r.name}</Link>
+            <span className="truncate text-xs text-muted-foreground" title={r.required ? `${r.section} · Required` : r.section}>{r.required ? `${r.section} · Required` : r.section}</span>
           </span>
         ),
       },
@@ -390,6 +415,7 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
   return (
     <div data-region="skills" className="flex min-w-0 flex-col gap-2">
       {note}
+      <ScrollLabel label={capitalize(skillNounPlural())}>
       <DataTable<SkillReachRow>
         data={rows}
         columns={columns}
@@ -402,6 +428,7 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
         lazyLoading={{ enabled: rows.length > 60, threshold: 60, chunkSize: 40, loadingLabel: "Loading more" }}
         emptyState={<EmptyBlock compact title={`No ${skillNounPlural()} match these filters`} body="Clear a filter to see more." />}
       />
+      </ScrollLabel>
     </div>
   )
 }
@@ -414,6 +441,11 @@ export interface OfferingFilterProps {
   yearOpts: { value: string; label: string }[]
 }
 
+/** The offering's identity line in B's pane: academic year, cohort, professional year (term is the toolbar's) [REQ CM-01]. */
+function offeringMeta(r: SkillOfferingRow): string {
+  return `${r.academicYear} · ${r.cohort} · Year ${r.professionalYear}${r.kind === "didactic" ? " · Didactic" : ""}`
+}
+
 export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName, lists = [], didactic = false, filter }: { state: V2State; overlay: MappingOverlay; setOverlay: (o: MappingOverlay) => void; skill: SkillReachRow; termId: string; termName: string; lists?: SkillList[]; didactic?: boolean; filter?: OfferingFilterProps }) {
   const all = React.useMemo(() => offeringsForSkill(state, overlay, skill.id, termId, didactic, lists.length ? lists : undefined), [state, overlay, skill.id, termId, didactic, lists])
   const f = filter?.value
@@ -423,25 +455,30 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
   // The heading counts stay on the term's offerings (the skill's reach); the filters only narrow the table below.
   const carriers = all.filter((r) => r.level !== "none")
   const mandatory = all.filter((r) => r.level === "mandatory").length
+  // When every shown offering takes its level from a list, "Set by list" is said once in the column header, not on each row
+  // (anatomy A12, 2026-10-30: nine rows each read "Set by list").
+  const allFromList = rows.length > 1 && rows.every((r) => r.source === "list")
 
   const columns = React.useMemo<ColumnDef<SkillOfferingRow>[]>(
     () => [
       {
         key: "code",
         label: "Offering",
-        width: 260,
+        width: 230,
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} truncate`} href={mappingLink({ term: termId, offering: r.id, q: skill.name })}>{`${r.code} ${r.name}`}</Link>
-            <span className="truncate text-xs text-muted-foreground">{`${r.cohort} · Year ${r.professionalYear}${r.kind === "didactic" ? " · Didactic" : ""}`}</span>
+            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ term: termId, offering: r.id, q: skill.name })} title={`${r.code} ${r.name}`}>{`${r.code} ${r.name}`}</Link>
+            <span className="truncate text-xs text-muted-foreground" title={offeringMeta(r)}>{offeringMeta(r)}</span>
           </span>
         ),
       },
       {
         key: "level",
         label: "Level",
-        width: 200,
+        ...(allFromList ? { header: () => <span className="inline-flex items-center gap-2">Level <FromListTag source="list" /></span> } : {}),
+        // Wide enough for the select and "Set by list" beside it (anatomy A10, 2026-10-30).
+        width: 230,
         cell: (r) => (
           <span className="flex items-center gap-2">
             <LevelSelect
@@ -454,7 +491,7 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
                 setNote(`${skill.name}: ${LEVEL_LABEL[l].toLowerCase()} in ${r.code}.`)
               }}
             />
-            <FromListTag source={r.source} />
+            {allFromList ? null : <FromListTag source={r.source} />}
           </span>
         ),
       },
@@ -462,7 +499,7 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
       { key: "mapped", label: "Mapped", width: 84, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.mapped)}</span> },
       { key: "mandatory", label: "Mandatory", width: 100, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.mandatory)}</span> },
     ],
-    [state, overlay, setOverlay, skill, termId],
+    [state, overlay, setOverlay, skill, termId, allFromList],
   )
 
   return (
@@ -471,8 +508,8 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
         title={<span id="skill-heading">{skill.name}</span>}
         end={
           skill.configured ? (
-            <span className="text-sm" aria-label={`${carriers.length} of ${rows.length} ${termName} courses, ${mandatory} mandatory`}>
-              <span className="font-semibold tabular-nums">{fmt(carriers.length)}</span> <span className="text-muted-foreground">{`of ${fmt(rows.length)} courses`}</span>
+            <span className="text-sm" aria-label={`${carriers.length} of ${all.length} ${termName} courses, ${mandatory} mandatory`}>
+              <span className="font-semibold tabular-nums">{fmt(carriers.length)}</span> <span className="text-muted-foreground">{`of ${fmt(all.length)} courses`}</span>
               <span className="ms-4 font-semibold tabular-nums">{fmt(mandatory)}</span> <span className="text-muted-foreground">mandatory</span>
             </span>
           ) : null
@@ -497,6 +534,7 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
             </div>
           ) : null}
           <LiveNote text={note} />
+          <ScrollLabel label="Offerings">
           <DataTable<SkillOfferingRow>
             key={skill.id}
             data={rows}
@@ -507,6 +545,7 @@ export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName
             edgeInset={false}
             emptyState={narrowed ? <EmptyBlock compact title="No offerings match these filters" body="Clear a filter to see more." /> : <EmptyBlock compact title={`No courses in ${termName} yet`} />}
           />
+          </ScrollLabel>
         </>
       )}
     </section>

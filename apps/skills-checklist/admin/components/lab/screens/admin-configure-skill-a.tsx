@@ -29,10 +29,7 @@ import { SECTION_BODY, type SectionProps } from "@/components/lab/configure/fiel
 import { RuleFooterSummary, RulePreviewAside } from "@/components/lab/configure/live-panel"
 import { EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
 import { CheckCard, CheckSection, ConfigureReceiptPage, EvidenceDecision, FixList, openDecisions, PreviewCard, Readiness, saveBlockedReason, SetupSummary, WhoItAffects } from "@/components/lab/configure/check"
-import { BulkApplySheet, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
-import { saveLabRule } from "@/lib/lab/configure"
-import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
-import { useV2Store } from "@/lib/v2/react"
+import { BulkApplySheet, bulkAppliedNote, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
 import { skillNounPlural } from "@/lib/lab/terms"
 import { ConfigureLoading, ConfigureNotFound, LeaveButton, SkillTitle } from "@/components/lab/configure/shell"
 import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
@@ -59,7 +56,6 @@ export function AdminConfigureSkillA() {
   const [modeTried, setModeTried] = React.useState(false)
   const [copyOpen, setCopyOpen] = React.useState(false)
   const [bulkOpen, setBulkOpen] = React.useState(false)
-  const store = useV2Store()
   const [note, setNote] = React.useState<string | null>(null)
   const [pendingFocus, setPendingFocus] = React.useState<string | null>(null)
   // Set by an Edit link on Check: the step's primary then reads "Back to Check" (no Back x4).
@@ -215,7 +211,7 @@ export function AdminConfigureSkillA() {
         stepTitle={head.title}
         stepLead={head.lead}
         // D-X30: the live preview beside every step from 1280 px; Check shows the views itself, so it takes the full width.
-        aside={onCheck ? null : <RulePreviewAside skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={hasModel ? () => goTo(CHECK) : undefined} />}
+        aside={onCheck ? null : <RulePreviewAside skillName={skill.name} rule={m.rule} current={m.current} impact={impact} onSeeChange={hasModel ? () => goTo(CHECK) : undefined} />}
         steps={steps}
         current={step}
         linear={!hasModel}
@@ -281,15 +277,7 @@ export function AdminConfigureSkillA() {
         skillId={m.skillId}
         rule={m.rule}
         blocked={m.issues.length > 0}
-        onApplied={(x) => {
-          // Saved to each skill picked, each with its own rule version (decision D-X31) [REQ IM-14].
-          const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
-          store.update((s) => x.ids.reduce((acc, id) => {
-            const r = saveLabRule(acc, id, m.rule, { at, byId: IDS.ross, mode: "reapply" })
-            return r.ok && r.written ? r.state : acc
-          }, s))
-          setNote(`Configuration saved to ${x.skills} ${x.skills === 1 ? skillNoun() : skillNounPlural()}. They are configured and can be mapped.${x.configured ? ` ${x.configured} were already configured; ${x.students} students changed status.` : ""}`)
-        }}
+        onApplied={(x) => setNote(bulkAppliedNote(x))}
       />
     </>
   )

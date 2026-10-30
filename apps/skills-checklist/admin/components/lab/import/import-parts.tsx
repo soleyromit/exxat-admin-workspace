@@ -6,8 +6,8 @@
  * Copy: sentence case, verb plus object, one helper line per region, no "items", figures come from the engine.
  */
 import * as React from "react"
-import { CategoryPicker, TagsPicker } from "@/components/lab/library/category-tag-pickers"
-import { mergeTags } from "@/lib/lab/library"
+import { CategoryPicker, TagsPicker, useVocabOptions } from "@/components/lab/library/category-tag-pickers"
+import { mergeTags, normName } from "@/lib/lab/library"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@exxatdesignux/ui/components/ui/accordion"
 import {
   AlertDialog,
@@ -23,7 +23,10 @@ import { Attachment, AttachmentAction, AttachmentActions, AttachmentContent, Att
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
-import { Field, FieldDescription, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
+import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { InlineInputEdit } from "@exxatdesignux/ui/components/ui/inline-edit"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
@@ -50,13 +53,15 @@ import {
   openLines,
   notCreated,
   readableText,
+  splitNames,
+  type ResolvedRow,
   toFix,
   type Decisions,
   type ExceptionKind,
   type FixGroup,
   type ParsedRow,
 } from "@/lib/lab/import"
-import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { FROM_PARAM, returnHref } from "@/lib/lab/return-to"
 import { useSearchParams } from "next/navigation"
 import type { ImportSession } from "./use-import-session"
@@ -122,7 +127,7 @@ export function Dropzone({ onFiles, multiple = false, title, hint, compact = fal
         </div>
       ) : (
         <>
-          <p id={`${id}-title`} className={TYPE.section}>{title ?? `Drop your ${skillNounPlural()} list here`}</p>
+          <p id={`${id}-title`} className={TYPE.card}>{title ?? `Drop your ${skillNounPlural()} list here`}</p>
           <p id={`${id}-hint`} className={TYPE.helper}>{hint ?? "PDF, Word or Excel, any layout."}</p>
         </>
       )}
@@ -147,12 +152,12 @@ export function Dropzone({ onFiles, multiple = false, title, hint, compact = fal
 
 /**
  * A numbered section inside a step, in the configure section style (components/lab/configure/section.tsx): muted number, the
- * section title in TYPE.section, the content indented under the title. An h3, since the step heading above it is the h2.
+ * section title in TYPE.card, the content indented under the title. An h3, since the step heading above it is the h2.
  */
 export function ImportSection({ n, title, id, first = false, className, children }: { n: number; title: string; id: string; first?: boolean; className?: string; children: React.ReactNode }) {
   return (
     <section aria-labelledby={id} className={cn("flex flex-col gap-3", !first && "border-t border-border pt-6", className)} data-import-section>
-      <h3 id={id} className={cn("flex items-baseline gap-2 leading-5", TYPE.section)}>
+      <h3 id={id} className={cn("flex items-baseline gap-2 leading-5", TYPE.card)}>
         <span className="tabular-nums text-muted-foreground" aria-hidden="true">{n}</span>
         <span>{title}</span>
       </h3>
@@ -297,10 +302,25 @@ function DecisionBadge() {
 export function CategoryList({ session }: { session: ImportSession }) {
   const cats = React.useMemo(() => categoriesOf(session.resolved), [session.resolved])
   // The program's own vocabulary as read so far: the file's headings as categories, group headings and tags set here as tags.
-  const catOptions = React.useMemo(() => cats.map((c) => c.name).filter((n) => n !== NO_CATEGORY), [cats])
-  const tagOptions = React.useMemo(() => mergeTags([], session.resolved.flatMap((r) => session.tagsOf(r.row))).sort((a, b) => a.localeCompare(b)), [session])
+  // Plus the program's shared list (lib/v2/vocabulary.ts): its active entries are offered, its deactivated ones never are, and
+  // a file heading that matches a deactivated entry stays on the line marked "Inactive" (REQ SL-06).
+  const vocab = useVocabOptions()
+  const catOptions = React.useMemo(() => {
+    const off = new Set(vocab.inactiveCategories.map(normName))
+    const seen = new Set<string>()
+    return [...cats.map((c) => c.name).filter((n) => n !== NO_CATEGORY), ...vocab.categories]
+      .filter((n) => !off.has(normName(n)) && !seen.has(normName(n)) && !!seen.add(normName(n)))
+      .sort((a, b) => a.localeCompare(b))
+  }, [cats, vocab])
+  const tagOptions = React.useMemo(() => {
+    const off = new Set(vocab.inactiveTags.map(normName))
+    return mergeTags([], [...session.resolved.flatMap((r) => session.tagsOf(r.row)), ...vocab.tags]).filter((t) => !off.has(normName(t))).sort((a, b) => a.localeCompare(b))
+  }, [session, vocab])
   const furniture = session.review?.furniture ?? []
+  const [editing, setEditing] = React.useState<RowEdit | null>(null)
   return (
+    <>
+    <RowEditDialog session={session} edit={editing} onClose={() => setEditing(null)} />
     <Accordion type="multiple" className="rounded-[var(--radius)] border border-border" data-category-list>
       {cats.map((c) => (
         <AccordionItem key={c.name} value={c.name} className="px-4">
@@ -315,7 +335,7 @@ export function CategoryList({ session }: { session: ImportSession }) {
             <ul className="flex flex-col divide-y divide-border" aria-label={`${c.name}, ${countSkills(c.rows.length)}`}>
               {c.rows.map((r) => (
                 <li key={r.row.id} className="grid min-h-11 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 py-1.5">
-                  <span className="font-mono text-xs tabular-nums text-muted-foreground">{r.row.line}</span>
+                  <span className="font-mono text-xs tabular-nums text-muted-foreground">{r.row.added ? "New" : r.row.line}</span>
                   {r.status === "left-out" ? (
                     <span className="flex min-w-0 flex-col">
                       <LineText row={r.row} className="text-muted-foreground line-through" />
@@ -328,24 +348,39 @@ export function CategoryList({ session }: { session: ImportSession }) {
                       <InlineInputEdit label={`Name for line ${r.row.line}`} value={r.name} onCommit={(v) => session.rename(r.row.id, v.trim())} emptyLabel="Add a name" />
                       {/* Description (optional, REQ SL-02): same quiet inline edit as the name, so the row stays one line until used. */}
                       <InlineInputEdit label={`Description for line ${r.row.line}`} value={session.descriptionOf(r.row.id)} onCommit={(v) => session.setDescriptionFor(r.row.id, v.trim())} emptyLabel="Add a description" />
+                      {/* Questions or criteria the file wrote under this skill (REQ IM-04): shown for review, set up later in Configure. */}
+                      {r.row.criteria?.length ? (
+                        <span className="flex flex-col gap-0.5" data-file-criteria>
+                          <span className="text-xs text-muted-foreground">{`${r.row.criteria.length} ${r.row.criteria.length === 1 ? "question" : "questions"} from the file`}</span>
+                          <ol className="list-decimal ps-5 text-sm text-foreground">
+                            {r.row.criteria.map((q, k) => <li key={k}>{q}</li>)}
+                          </ol>
+                        </span>
+                      ) : null}
                       {/* Category (one) and tags (any number) per skill, two different controls (REQ SL-03, SL-04; D-X28). The file's
                           heading is the proposed category and its group heading the proposed tag; both can be changed here. */}
                       <span className="grid grid-cols-1 items-start gap-2 sm:grid-cols-[12rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,32rem)]">
                         <span className="flex flex-col gap-0.5">
                           <span id={`cat-${r.row.id}-label`} className="text-xs text-muted-foreground">Category</span>
-                          <CategoryPicker id={`cat-${r.row.id}`} labelId={`cat-${r.row.id}-label`} value={r.section ?? ""} options={catOptions} onChange={(v) => session.setRowCategory(r.row.id, v)} size="sm" className="w-full" />
+                          <CategoryPicker id={`cat-${r.row.id}`} labelId={`cat-${r.row.id}-label`} value={r.section ?? ""} options={catOptions} inactive={vocab.inactiveCategories} onChange={(v) => session.setRowCategory(r.row.id, v)} size="sm" className="w-full" />
                         </span>
                         <span className="flex flex-col gap-0.5">
                           <span id={`tags-${r.row.id}-label`} className="text-xs text-muted-foreground">Tags</span>
-                          <TagsPicker id={`tags-${r.row.id}`} labelId={`tags-${r.row.id}-label`} value={session.tagsOf(r.row)} options={tagOptions} onChange={(t) => session.setTagsFor(r.row.id, t)} size="sm" />
+                          <TagsPicker id={`tags-${r.row.id}`} labelId={`tags-${r.row.id}-label`} value={session.tagsOf(r.row)} options={tagOptions} inactive={vocab.inactiveTags} onChange={(t) => session.setTagsFor(r.row.id, t)} size="sm" />
                         </span>
                       </span>
                     </span>
                   )}
-                  {r.status === "look" ? <DecisionBadge /> : <span />}
+                  <span className="flex items-center gap-1">
+                    {r.status === "look" ? <DecisionBadge /> : null}
+                    <RowEditMenu row={r} onEdit={(mode) => setEditing({ mode, rowId: r.row.id, section: r.section })} onUnmerge={() => session.unmergeRow(r.row.id)} onUnsplit={() => { if (r.row.splitFrom) session.unsplitRow(r.row.splitFrom) }} />
+                  </span>
                 </li>
               ))}
             </ul>
+            <Button type="button" variant="ghost" size="sm" className="mt-1 w-fit" onClick={() => setEditing({ mode: "add", rowId: null, section: c.name === NO_CATEGORY ? null : c.name })}>
+              {`Add ${aNoun()} here`}
+            </Button>
           </AccordionContent>
         </AccordionItem>
       ))}
@@ -370,6 +405,119 @@ export function CategoryList({ session }: { session: ImportSession }) {
         </AccordionItem>
       ) : null}
     </Accordion>
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Review edits [REQ IM-05]: split, merge, add an entry. Rename, category, tags, description and leave out sit on the row.
+
+type RowEdit = { mode: "split" | "merge" | "add"; rowId: string | null; section: string | null }
+
+/** One small menu per line: split it into several, or merge it into another line. A merged line offers Undo merge instead. */
+function RowEditMenu({ row, onEdit, onUnmerge, onUnsplit }: { row: ResolvedRow; onEdit: (mode: "split" | "merge") => void; onUnmerge: () => void; onUnsplit: () => void }) {
+  if (row.row.mergedInto) {
+    return (
+      <Button type="button" variant="ghost" size="sm" onClick={onUnmerge}>
+        Undo merge
+      </Button>
+    )
+  }
+  if (row.status === "left-out" || (row.row.unreadable && !readableText(row.row))) return null
+  const where = row.row.added ? row.name : `line ${row.row.line}`
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={`More for ${where}`}>
+          <i className="fa-light fa-ellipsis" aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onEdit("split")}>Split into several</DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onEdit("merge")}>Merge into another</DropdownMenuItem>
+        {row.row.splitFrom ? <DropdownMenuItem onSelect={onUnsplit}>Undo split</DropdownMenuItem> : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+const EDIT_TITLE: Record<RowEdit["mode"], string> = { split: "Split into several", merge: "Merge into another", add: "" }
+
+/** The dialog behind each review edit. Nothing is created until the import is confirmed; every edit can be undone here. */
+function RowEditDialog({ session, edit, onClose }: { session: ImportSession; edit: RowEdit | null; onClose: () => void }) {
+  const row = edit?.rowId ? session.resolved.find((r) => r.row.id === edit.rowId) ?? null : null
+  const [text, setText] = React.useState("")
+  const [into, setInto] = React.useState("")
+  const [tried, setTried] = React.useState(false)
+  React.useEffect(() => {
+    setText(edit?.mode === "split" && row ? row.name : "")
+    setInto("")
+    setTried(false)
+  }, [edit]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!edit) return null
+  // Merge targets: the other lines that will be created, in the same category first.
+  const targets = session.resolved
+    .filter((r) => r.status !== "left-out" && r.row.id !== edit.rowId)
+    .sort((a, b) => Number(b.section === edit.section) - Number(a.section === edit.section) || a.name.localeCompare(b.name))
+  const parts = splitNames(text)
+  const error =
+    edit.mode === "split" ? (parts.length < 2 ? "Write at least two names, one per line." : undefined)
+    : edit.mode === "merge" ? (!into ? `Choose the ${skillNoun()} to merge into.` : undefined)
+    : !text.trim() ? `Write a name for the new ${skillNoun()}.` : undefined
+  const save = () => {
+    if (error) return setTried(true)
+    if (edit.mode === "split" && edit.rowId) session.splitRow(edit.rowId, parts)
+    else if (edit.mode === "merge" && edit.rowId) session.mergeRow(edit.rowId, into)
+    else session.addEntry(text, edit.section)
+    onClose()
+  }
+  const title = edit.mode === "add" ? `Add ${aNoun()}${edit.section ? ` to ${edit.section}` : ""}` : EDIT_TITLE[edit.mode]
+  const primary = edit.mode === "split" ? (parts.length >= 2 ? `Split into ${parts.length}` : "Split") : edit.mode === "merge" ? "Merge" : `Add ${skillNoun()}`
+  const fieldId = `import-edit-${edit.mode}`
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {row ? <DialogDescription>{row.row.sourceText ? `Line ${row.row.line}: ${row.row.sourceText}` : row.name}</DialogDescription> : <DialogDescription>{`Added to this import only. Nothing is created until you confirm.`}</DialogDescription>}
+        </DialogHeader>
+        <Field>
+          {edit.mode === "merge" ? (
+            <>
+              <FieldLabel htmlFor={fieldId}>{`Merge into`}</FieldLabel>
+              <Select value={into} onValueChange={(v) => { setInto(v); setTried(false) }}>
+                <SelectTrigger id={fieldId} className="w-full" aria-invalid={tried && !!error ? true : undefined}>
+                  <SelectValue placeholder={`Choose ${aNoun()}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {targets.map((t) => (
+                    <SelectItem key={t.row.id} value={t.row.id}>{t.section && t.section !== edit.section ? `${t.name} (${t.section})` : t.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          ) : (
+            <>
+              <FieldLabel htmlFor={fieldId}>{edit.mode === "split" ? "Names, one per line" : "Name"}</FieldLabel>
+              {edit.mode === "split" ? (
+                <Textarea id={fieldId} rows={5} value={text} onChange={(e) => { setText(e.target.value); setTried(false) }} aria-invalid={tried && !!error ? true : undefined} />
+              ) : (
+                <Input id={fieldId} value={text} onChange={(e) => { setText(e.target.value); setTried(false) }} aria-invalid={tried && !!error ? true : undefined} />
+              )}
+            </>
+          )}
+          {tried && error ? <FieldError>{error}</FieldError> : edit.mode === "split" && parts.length >= 2 ? <FieldDescription aria-live="polite">{`${parts.length} ${skillNounPlural()} replace this line.`}</FieldDescription> : null}
+        </Field>
+        <DialogFooter>
+          <Button type="button" variant="outline" size="default" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="button" variant="default" size="default" onClick={save}>
+            {primary}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

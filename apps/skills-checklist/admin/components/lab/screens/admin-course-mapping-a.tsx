@@ -12,8 +12,8 @@ import * as React from "react"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { coverage, filterOfferings, mappingLink } from "@/lib/lab/mapping"
 import { MappingFrame, type MappingModel } from "@/components/lab/admin-a/mapping-frame"
-import { CourseKindSelect, CoverageMatrix, OfferingPanel, OfferingsTable } from "@/components/lab/admin-a/mapping-parts"
-import { FilterSelect, SearchField, Toolbar } from "@/components/lab/admin-a/parts"
+import { CoverageMatrix, OfferingPanel, OfferingsTable, courseKindField } from "@/components/lab/admin-a/mapping-parts"
+import { AppliedFilterChips, FiltersControl, SearchField, Toolbar, type FilterField } from "@/components/lab/admin-a/parts"
 
 type View = "offerings" | "coverage"
 
@@ -38,6 +38,15 @@ function OfferingFirst({ m }: { m: MappingModel }) {
   const skillParam = query.get("skill")
   const skillName = skillParam ? m.state.skills.find((s) => s.id === skillParam)?.name ?? null : null
 
+  // One filter idiom (2026-10-30 review P2, D-L8b): the four selects that sat bare in a row are one Filters control in the
+  // list's toolbar, with removable chips under it, the same as the dashboard and Reports. Nothing dropped: term, cohort,
+  // professional year and course kind are all in the popover.
+  const fields: FilterField[] = [
+    { id: "term", label: "Term", value: m.termId, defaultValue: m.currentTermId, options: m.termOpts, onChange: (v) => query.set({ term: v && v !== m.currentTermId ? v : null, offering: null }) },
+    { id: "cohort", label: "Cohort", value: cohort ?? "", allLabel: "All cohorts", options: m.cohortOpts, onChange: (v) => query.set({ cohort: v || null, offering: null }) },
+    { id: "year", label: "Professional year", value: year ?? "", allLabel: "All years", options: m.yearOpts, onChange: (v) => query.set({ year: v || null, offering: null }) },
+    courseKindField(m.didactic, m.setDidactic),
+  ]
   return (
     <>
       <Toolbar
@@ -56,11 +65,9 @@ function OfferingFirst({ m }: { m: MappingModel }) {
         }
       >
         <SearchField value={offQ} onChange={(v) => query.set({ oq: v || null })} label="Search offerings by course, term, cohort or year" placeholder="Search offerings" />
-        <FilterSelect value={m.termId} onChange={(v) => query.set({ term: v || null, offering: null })} label="Term" options={m.termOpts} className="w-36" />
-        <FilterSelect value={cohort} onChange={(v) => query.set({ cohort: v || null, offering: null })} label="Cohort" allLabel="All cohorts" options={m.cohortOpts} className="w-36" />
-        <FilterSelect value={year} onChange={(v) => query.set({ year: v || null, offering: null })} label="Professional year" allLabel="All years" options={m.yearOpts} className="w-32" />
-        <CourseKindSelect didactic={m.didactic} onChange={m.setDidactic} />
+        <FiltersControl fields={fields} courseKind={m.didactic ? "all" : "clinical"} />
       </Toolbar>
+      <AppliedFilterChips fields={fields} />
       {view === "coverage" ? (
         <CoverageMatrix coverage={narrowed ? coverage(m.state, m.overlay, m.termId, m.lists, new Set(rows.map((r) => r.id)), m.didactic) : m.cover} termName={m.termName} termId={m.termId} />
       ) : (

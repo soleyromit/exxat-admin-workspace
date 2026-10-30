@@ -27,17 +27,24 @@ import { PaceChart } from "@/components/lab/student/progress"
 const THIS_TERM = REQUIRED_SET_LABEL.thisTerm
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Unit squares: one per skill, state by fill + glyph, waiting or returned by a dashed outline (an overlay, never a state)
+// Unit squares: one per skill, three looks only (review 2026-10-30: a five-state glyph legend on small squares did not read).
+// Achieved: filled with a check. Did not count: amber with a warning glyph. Still to do: an outline, shaded from the bottom by
+// how far it is. In progress versus no evidence, waiting and returned are in the tooltip, the course view, Waiting on others
+// and Do this next, not on the square.
+
+type UnitLook = "achieved" | "dnq" | "todo"
+const unitLook = (r: SkillRecord): UnitLook => (r.state === "achieved" ? "achieved" : r.state === "dnq" ? "dnq" : "todo")
 
 function unitStyle(r: SkillRecord): React.CSSProperties {
-  const overlay: React.CSSProperties = r.returned ? { outline: `2px dashed ${VIZ.behindEdge}`, outlineOffset: 2 } : r.waiting ? { outline: "2px dashed var(--muted-foreground)", outlineOffset: 2 } : {}
-  if (r.state === "achieved") return { ...overlay, background: "var(--foreground)", borderColor: "var(--foreground)" }
-  if (r.state === "progress") return { ...overlay, background: `linear-gradient(to top, var(--border-control-3) ${Math.round((r.counted / Math.max(1, r.need)) * 100)}%, var(--background) 0)`, borderColor: "var(--border-control-3)" }
-  if (r.state === "dnq") return { ...overlay, background: VIZ.behindWash, borderColor: VIZ.behindEdge }
-  return { ...overlay, background: "var(--background)", borderColor: "var(--border-control)", borderStyle: "dashed" }
+  const look = unitLook(r)
+  if (look === "achieved") return { background: "var(--foreground)", borderColor: "var(--foreground)" }
+  if (look === "dnq") return { background: VIZ.behindWash, borderColor: VIZ.behindEdge }
+  const share = r.state === "progress" ? Math.round((r.counted / Math.max(1, r.need)) * 100) : 0
+  return { background: share ? `linear-gradient(to top, var(--muted) ${share}%, var(--background) 0)` : "var(--background)", borderColor: "var(--border-control-3)" }
 }
 
-const glyphColor = (r: SkillRecord) => (r.state === "achieved" ? "var(--background)" : r.state === "dnq" ? VIZ.behindInk : "var(--foreground)")
+const UNIT_GLYPH: Record<UnitLook, string | null> = { achieved: RECORD_STATE_META.achieved.icon, dnq: RECORD_STATE_META.unqualified.icon, todo: null }
+const glyphColor = (r: SkillRecord) => (r.state === "achieved" ? "var(--background)" : VIZ.behindInk)
 
 export function unitLabel(r: SkillRecord): string {
   const overlay = r.returned ? ", returned" : r.waiting ? (r.waiting.kind === "approval" ? ", awaiting approval" : `, waiting for ${r.waiting.evaluatorName}`) : ""
@@ -49,7 +56,7 @@ export function Unit({ r, studentId, size = 28, decorative = false }: { r: Skill
   if (decorative) {
     return (
       <span aria-hidden="true" className="relative grid shrink-0 place-items-center rounded-sm border" style={{ width: size, height: size, ...unitStyle(r) }} data-unit={r.state}>
-        {r.state === "none" || size < 20 ? null : <i className={cn("fa-solid text-xs", RECORD_STATE_META[stateKey(r.state)].icon)} style={{ color: glyphColor(r) }} aria-hidden="true" />}
+        {!UNIT_GLYPH[unitLook(r)] || size < 20 ? null : <i className={cn("fa-solid text-xs", UNIT_GLYPH[unitLook(r)])} style={{ color: glyphColor(r) }} aria-hidden="true" />}
       </span>
     )
   }
@@ -62,7 +69,7 @@ export function Unit({ r, studentId, size = 28, decorative = false }: { r: Skill
         style={{ width: size, height: size, ...unitStyle(r) }}
         data-unit={r.state}
       >
-        {r.state === "none" ? null : <i className={cn("fa-solid text-xs", RECORD_STATE_META[stateKey(r.state)].icon)} style={{ color: glyphColor(r) }} aria-hidden="true" />}
+        {UNIT_GLYPH[unitLook(r)] ? <i className={cn("fa-solid text-xs", UNIT_GLYPH[unitLook(r)])} style={{ color: glyphColor(r) }} aria-hidden="true" /> : null}
       </Link>
     </Tip>
   )
@@ -71,12 +78,11 @@ export function Unit({ r, studentId, size = 28, decorative = false }: { r: Skill
 export function UnitLegend({ className }: { className?: string }) {
   return (
     <ul className={cn("flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground", className)} aria-label="Legend">
-      {(["achieved", "progress", "dnq", "none"] as const).map((k) => (
-        <li key={k} className="inline-flex items-center gap-1.5"><StateGlyph state={k} className="text-xs" />{stateWord(k)}</li>
-      ))}
+      <li className="inline-flex items-center gap-1.5"><StateGlyph state="achieved" className="text-xs" />{stateWord("achieved")}</li>
+      <li className="inline-flex items-center gap-1.5"><StateGlyph state="dnq" className="text-xs" />{stateWord("dnq")}</li>
       <li className="inline-flex items-center gap-1.5">
-        <span className="block size-3 rounded-sm" style={{ outline: "2px dashed var(--muted-foreground)", outlineOffset: 1 }} aria-hidden="true" />
-        Waiting
+        <span className="block size-3 rounded-sm border" style={{ borderColor: "var(--border-control-3)" }} aria-hidden="true" />
+        Still to do
       </li>
     </ul>
   )
@@ -120,9 +126,13 @@ export function CourseStrips({ model, studentId }: { model: StudentModel; studen
           </ul>
           <UnitLegend />
           {others.length ? (
-            <nav aria-label={`Courses with no mandatory ${skillNounPlural()}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-border pt-3 text-sm" data-course-links>
-              <span className="text-muted-foreground">{`No mandatory ${skillNounPlural()}:`}</span>
-              {others.map((c) => <Link key={c.id} className={NUM_LINK} href={courseHref(c.id, studentId)}>{c.code}</Link>)}
+            // A term and its values (review 2026-10-30: "No mandatory skills:" read as ambiguous): the label names what the
+            // links are, and the course codes are the data.
+            <nav aria-label={`Courses with no mandatory ${skillNounPlural()} this term`} className="border-t border-border pt-3 text-sm" data-course-links>
+              <dl className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <dt className="text-muted-foreground">{`Courses with no mandatory ${skillNounPlural()} this term:`}</dt>
+                {others.map((c) => <dd key={c.id}><Link className={NUM_LINK} href={courseHref(c.id, studentId)}>{c.code}</Link></dd>)}
+              </dl>
             </nav>
           ) : null}
           <ShowAsTable label={`Mandatory ${skillNounPlural()} by course, as a table`}>
@@ -168,7 +178,11 @@ export function PaceCard({ model, height = 200, className }: { model: StudentMod
 // ---------------------------------------------------------------------------------------------------------------------
 // What is waiting on someone else: figures plus the open requests, each with who holds it and for how long [REQ SH-02, SH-04]
 
-export function WaitingCard({ model, rows, studentId, limit = 3 }: { model: StudentModel; rows: WaitingRow[]; studentId: string; limit?: number }) {
+/**
+ * What is waiting on someone else. A returned request is waiting on the student, not on others, so it is not counted here when
+ * the page's Do this next already lists it with its reason (review 2026-10-30: "the returned item appears twice").
+ */
+export function WaitingCard({ model, rows, studentId, limit = 3, showReturned = true }: { model: StudentModel; rows: WaitingRow[]; studentId: string; limit?: number; showReturned?: boolean }) {
   const list = model.counts.waiting === 0 ? [] : rows
   return (
     <Card data-region="waiting" className="h-full gap-0 py-0">
@@ -176,7 +190,7 @@ export function WaitingCard({ model, rows, studentId, limit = 3 }: { model: Stud
         <SectionTitle>Waiting on others</SectionTitle>
         <div className="flex gap-8">
           <FigureLink href={studentHref("my-requests", {}, studentId)} value={model.counts.waiting} label="Waiting" />
-          <FigureLink href={studentHref("my-requests", { show: "returned" }, studentId)} value={model.counts.returned} label="Returned to you" amber />
+          {showReturned ? <FigureLink href={studentHref("my-requests", { show: "returned" }, studentId)} value={model.counts.returned} label="Returned to you" amber /> : null}
         </div>
         {list.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nothing is waiting on anyone.</p>

@@ -6,6 +6,7 @@
  * skills and their evidence links), verify.
  * Same rules and the same single primary action as A; the difference is the mental model (steps to tick, not a record to read).
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -28,7 +29,7 @@ function Step({ n, title, count, done, children, region }: { n: number; title: s
           {done ? <i className="fa-solid fa-check" /> : n}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-3">
-          <h2 className="text-base font-semibold text-foreground">
+          <h2 className={TYPE.card}>
             {title}
             {count ? <span className="font-normal tabular-nums text-muted-foreground">{` ${fmt(count)}`}</span> : null}
             {done ? <span className="sr-only">, done</span> : null}
@@ -46,7 +47,7 @@ function SectionLines({ s, d, scope, state }: { s: DetailSection; d: DetailModel
   const short = s.achieved < s.lines.length
   return (
     <li className="flex flex-col gap-1 py-2">
-      <h3 className="flex items-center justify-between gap-2 text-sm font-semibold text-foreground">
+      <h3 className={`flex items-center justify-between gap-2 ${TYPE.group}`}>
         <span className="flex items-center gap-2">
           {short ? <DiamondGlyph /> : <span className="inline-block w-2.5" aria-hidden="true" />}
           {s.section}

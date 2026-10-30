@@ -6,7 +6,7 @@ import { defaultConfig } from "@/lib/v2/config"
 import { isConfigured } from "@/lib/v2/population"
 import { ratingKind, ratingOptions } from "@/lib/v2/student"
 import type { EvalModel, Evaluation, EvaluatorRole, LevelMinimum, Person, PublishedRuleSnapshot, QuestionRule, RuleChangeRecord, ScoredRule, Skill, SkillConfig, V2State } from "@/lib/v2/types"
-import { skillNoun } from "./terms"
+import { inSentence, skillNoun } from "./terms"
 import { checkOffAllowedFor, checkOffOffReason, checkOffScore, tickRecordsLine } from "./checkoff-rules"
 
 /** The Configure setting's name, in "Who signs", Check and save, and "What you changed". */
@@ -91,7 +91,7 @@ export const ROLES: EvaluatorRole[] = ["preceptor", "faculty", "lab-instructor"]
 export const FIELD_TYPE_LABEL: Record<FieldType, string> = { date: "Date", short: "Short text", long: "Long text", number: "Number", choice: "Choice list" }
 /**
  * Model names in the client's own words [CALL 10-26 A.2]: approved or not approved, questions with a final result, independence
- * level. Scored stays fourth and is marked Proposed (it is REQ SC-07 but was not part of the call). The engine ids are unchanged.
+ * level. Scored stays fourth; REQ 4.1 and SC-07 require it, so it carries no Proposed marker. The engine ids are unchanged.
  * The v2 labels (lib/v2/config.ts) are not edited here; the library column still reads them.
  */
 export const LAB_MODEL_LABEL: Record<EvalModel, string> = {
@@ -104,16 +104,16 @@ export { LAB_MODEL_LABEL as MODEL_LABEL }
 
 /** The order the Model step offers them. Nothing is preselected [REQ SC-02]. */
 export const LAB_MODELS: EvalModel[] = ["binary", "question", "demonstration", "scored"]
-/** Shown with a Proposed marker: not part of the Oct 26 call. */
+/** Models shown with a Proposed marker in the lab (none today). */
 // Empty: REQ 4.1 and SC-07 require the scored model, so it is not a proposal (comprehension audit 2026-10-27).
 export const PROPOSED_MODELS: ReadonlySet<EvalModel> = new Set<EvalModel>()
 
 /** One line per model with an example in the client's words. */
 export const MODEL_HELP: Record<EvalModel, string> = {
-  binary: "One result, such as Approved or Not approved.",
-  question: "Yes or No per question, then one result.",
-  demonstration: "Such as Independent, With assistance or Observed.",
-  scored: "A score per question, such as 1 to 5.",
+  binary: "The evaluator gives one result per evaluation.",
+  question: "The evaluator answers each question, then gives one result.",
+  demonstration: "The evaluator picks the level the student worked at.",
+  scored: "The evaluator scores each question on a scale.",
 }
 
 /**
@@ -133,7 +133,9 @@ export function applyPreset(rule: LabRule, id: LabelPresetId): LabRule {
   if (p.outcomes && rule.model === "binary") return { ...rule, outcomeLabels: [...p.outcomes] as [string, string] }
   if (p.levels && rule.model === "demonstration") {
     const levels = [...p.levels]
-    return { ...rule, levels, levelMinimums: rule.levelMinimums.filter((m) => m.levelIndex < levels.length) }
+    const co = rule.checkOff
+    const checkOff = co && co.levelIndex !== null && co.levelIndex >= levels.length ? { ...co, levelIndex: null } : co
+    return { ...rule, levels, levelMinimums: rule.levelMinimums.filter((m) => m.levelIndex < levels.length), checkOff }
   }
   return rule
 }
@@ -223,15 +225,72 @@ export function removeQuestion(rule: LabRule, index: number): LabRule {
 }
 
 /**
+ * Named question numbers for a sentence, with runs of three or more as a range, so a 60 question subset reads
+ * "1 to 60" rather than sixty numbers [REQ SC-06]: [0,1,2,4,6,7,8] gives ["1 to 3", "5", "7 to 9"].
+ */
+export function questionNumbers(indices: readonly number[]): string[] {
+  const sorted = [...new Set(indices)].sort((a, b) => a - b)
+  const out: string[] = []
+  for (let i = 0; i < sorted.length; ) {
+    let j = i
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j++
+    if (j - i >= 2) out.push(`${sorted[i] + 1} to ${sorted[j] + 1}`)
+    else for (let k = i; k <= j; k++) out.push(String(sorted[k] + 1))
+    i = j + 1
+  }
+  return out
+}
+
+/**
+ * A pasted list of questions, one per line, for a large question set [REQ SC-04, SC-06]. Leading numbering and bullets
+ * ("1.", "2)", "-", "•", "a.") are dropped, blank lines are skipped, and surrounding spaces are trimmed.
+ */
+export function parseQuestionLines(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:[-*•●]|\(?\d{1,3}[.)]|\(?[a-zA-Z][.)])\s+/, "").trim())
+    .filter(Boolean)
+}
+
+/**
+ * Pasted questions go after the ones already written; empty rows are filled first. Existing questions keep their positions, so
+ * nothing in a rule that names them moves [REQ AE-07].
+ */
+export function appendQuestions(rule: LabRule, lines: readonly string[]): LabRule {
+  const kept = [...rule.questions]
+  // Trailing empty rows are replaced by pasted lines; an empty row in the middle keeps its place.
+  while (kept.length && !kept[kept.length - 1].trim()) kept.pop()
+  return { ...rule, questions: [...kept, ...lines] }
+}
+
+/**
+ * Ticks (or clears) questions from..to (1-based, inclusive) in a "named questions" rule, for a 50 to 100 question set
+ * [REQ SC-05, SC-06]. Out-of-range ends are clamped; an empty or reversed range changes nothing.
+ */
+export function setSubsetRange(rule: LabRule, from: number, to: number, on: boolean): LabRule {
+  const r = rule.questionRule
+  if (r?.kind !== "subset") return rule
+  const m = rule.questions.length
+  const a = Math.max(1, Math.floor(from))
+  const b = Math.min(m, Math.floor(to))
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a > b) return rule
+  const set = new Set(r.indices)
+  for (let i = a - 1; i <= b - 1; i++) (on ? set.add(i) : set.delete(i))
+  return { ...rule, questionRule: { kind: "subset", indices: [...set].sort((x, y) => x - y) } }
+}
+
+/**
  * Removing a level drops the minimums that pointed at it and moves later ones down one, so "at least 2 at Independent" never
  * becomes "at least 2 at" whatever level slid into its place [REQ AE-07]. The carried minimum level follows the same way.
  */
 export function removeLevel(rule: LabRule, index: number): LabRule {
   const levels = rule.levels.filter((_, i) => i !== index)
   const levelMinimums = rule.levelMinimums.filter((m) => m.levelIndex !== index).map((m) => (m.levelIndex > index ? { ...m, levelIndex: m.levelIndex - 1 } : m))
-  const mi = rule.carried.minLevelIndex
-  const minLevelIndex = mi === null || mi === index ? null : mi > index ? mi - 1 : mi
-  return { ...rule, levels, levelMinimums, carried: { ...rule.carried, minLevelIndex } }
+  const shift = (x: number | null | undefined): number | null => (x === null || x === undefined || x === index ? null : x > index ? x - 1 : x)
+  const minLevelIndex = shift(rule.carried.minLevelIndex)
+  // What one tick records names a level too: it follows its level, or falls back to the default (highest) when that level goes.
+  const checkOff = rule.checkOff ? { ...rule.checkOff, levelIndex: shift(rule.checkOff.levelIndex) } : rule.checkOff
+  return { ...rule, levels, levelMinimums, carried: { ...rule.carried, minLevelIndex }, checkOff }
 }
 
 /** Swapping two levels or two questions carries every rule reference with the item it names [REQ AE-07]. */
@@ -245,7 +304,9 @@ export function swapItems(rule: LabRule, kind: "levels" | "questions", i: number
     return { ...rule, questions: list, questionRule: qr?.kind === "subset" ? { kind: "subset", indices: qr.indices.map(map) } : qr }
   }
   const mi = rule.carried.minLevelIndex
-  return { ...rule, levels: list, levelMinimums: rule.levelMinimums.map((m) => ({ ...m, levelIndex: map(m.levelIndex) })), carried: { ...rule.carried, minLevelIndex: mi === null ? null : map(mi) } }
+  const co = rule.checkOff
+  const checkOff = co ? { ...co, levelIndex: co.levelIndex === null || co.levelIndex === undefined ? null : map(co.levelIndex) } : co
+  return { ...rule, levels: list, levelMinimums: rule.levelMinimums.map((m) => ({ ...m, levelIndex: map(m.levelIndex) })), carried: { ...rule.carried, minLevelIndex: mi === null ? null : map(mi) }, checkOff }
 }
 
 /** Choosing or changing the model rebuilds what depends on it and keeps the rest [REQ SC-09, AE-07]. */
@@ -290,7 +351,7 @@ function qualifierOf(rule: LabRule): string {
   switch (rule.model) {
     case "binary": {
       const l = rule.qualifyingLabel === null ? "" : rule.outcomeLabels[rule.qualifyingLabel]?.trim()
-      return l ? `rated ${l}` : ""
+      return l ? `rated ${inSentence(l)}` : ""
     }
     case "question": {
       const r = rule.questionRule
@@ -298,8 +359,8 @@ function qualifierOf(rule: LabRule): string {
       if (!r) return ""
       if (r.kind === "all") return "with every question answered Yes"
       if (r.kind === "atLeast") return `with at least ${r.n} of ${m} questions answered Yes`
-      const picked = [...r.indices].sort((a, b) => a - b).map((i) => `${i + 1}`)
-      return picked.length ? `with ${plural(picked.length, "question", "questions")} ${joinAnd(picked)} answered Yes` : ""
+      const picked = questionNumbers(r.indices)
+      return picked.length ? `with ${plural(r.indices.length, "question", "questions")} ${joinAnd(picked)} answered Yes` : ""
     }
     case "scored": {
       const r = rule.scoredRule
@@ -321,9 +382,9 @@ export function ruleClauses(rule: LabRule): RuleClauses {
   return {
     total: `${need} ${plural(need, "evaluation", "evaluations")}`,
     qualifier: qualifierOf(rule),
-    levels: rule.levelMinimums.filter((m) => rule.levels[m.levelIndex]?.trim()).map((m) => `at least ${m.min} at ${rule.levels[m.levelIndex].trim()} or above`),
+    levels: rule.levelMinimums.filter((m) => rule.levels[m.levelIndex]?.trim()).map((m) => `at least ${m.min} at ${inSentence(rule.levels[m.levelIndex].trim())} or above`),
     distinct: rule.distinctEvaluators >= 2 ? `from ${rule.distinctEvaluators} different evaluators` : "",
-    settings: rule.settingMinimums.filter((m) => m.setting.trim() && isInt(m.min) && m.min > 0).map((m) => `${m.min} in ${m.setting}`),
+    settings: rule.settingMinimums.filter((m) => m.setting.trim() && isInt(m.min) && m.min > 0).map((m) => `${m.min} in ${inSentence(m.setting)}`),
   }
 }
 
@@ -346,7 +407,7 @@ export function ruleSentence(rule: LabRule, audience: Audience = "admin"): strin
 
 /** The one fact students must not have to guess [REQ SC-12]. Empty when no setting minimum exists. */
 export function settingNote(rule: LabRule): string {
-  const names = rule.settingMinimums.map((m) => m.setting).filter((s) => s.trim())
+  const names = rule.settingMinimums.map((m) => m.setting).filter((s) => s.trim()).map(inSentence)
   return names.length ? `Lab and simulation evidence does not count toward ${joinAnd(names)}.` : ""
 }
 
@@ -394,12 +455,12 @@ export function criteriaMeaning(rule: LabRule): Meaning {
   if (m === "binary") {
     const [a, b] = rule.outcomeLabels.map((l) => l.trim())
     const q = rule.qualifyingLabel === null ? "" : rule.outcomeLabels[rule.qualifyingLabel].trim()
-    return { lines: [`The evaluator picks one outcome: ${a || "first"} or ${b || "second"}.`, ...(q ? [`Only ${q} can count.`] : [])] }
+    return { lines: [`The evaluator picks one outcome: ${a ? inSentence(a) : "first"} or ${b ? inSentence(b) : "second"}.`, ...(q ? [`Only ${inSentence(q)} can count.`] : [])] }
   }
   if (m === "demonstration") {
     const named = rule.levels.map((l) => l.trim()).filter(Boolean)
     if (named.length === 0) return { lines: ["The evaluator picks one level per evaluation."] }
-    return { lines: [`The evaluator picks one of ${named.length} ${plural(named.length, "level", "levels")}, ${named[0]} lowest.`], example: `Example: the evaluator records ${named[Math.min(1, named.length - 1)]}.` }
+    return { lines: [`The evaluator picks one of ${named.length} ${plural(named.length, "level", "levels")}, ${inSentence(named[0]!)} lowest.`], example: `Example: the evaluator records ${inSentence(named[Math.min(1, named.length - 1)]!)}.` }
   }
   const n = rule.questions.length
   if (m === "question") {
@@ -431,10 +492,10 @@ export function ruleMeaning(rule: LabRule): Meaning {
     const q = rule.qualifyingLabel === null ? "" : rule.outcomeLabels[rule.qualifyingLabel].trim()
     const other = rule.qualifyingLabel === null ? "" : rule.outcomeLabels[rule.qualifyingLabel === 0 ? 1 : 0].trim()
     if (q) {
-      when = `One counts when it is rated ${q}.`
+      when = `One counts when it is rated ${inSentence(q)}.`
       if (other) {
         counts = verdict(fakeEvaluation({ outcome: "unmet" }))
-        example = `Example: rated ${other}: ${word(counts)}.`
+        example = `Example: rated ${inSentence(other)}: ${word(counts)}.`
       }
     }
   } else if (m === "question") {
@@ -455,7 +516,7 @@ export function ruleMeaning(rule: LabRule): Meaning {
         example = `Example: ${yes} of ${n} answered Yes: ${word(counts)}, ${r.n} needed.`
       } else if (r.kind === "subset" && r.indices.length > 0) {
         const named = [...r.indices].filter((i) => i < n).sort((a, b) => a - b)
-        when = `One counts when ${plural(named.length, "question", "questions")} ${joinAnd(named.map((i) => String(i + 1)))} ${named.length === 1 ? "is" : "are"} answered Yes.`
+        when = `One counts when ${plural(named.length, "question", "questions")} ${joinAnd(questionNumbers(named))} ${named.length === 1 ? "is" : "are"} answered Yes.`
         const answers = Array.from({ length: n }, (_, i): "yes" | "no" => (named.includes(i) ? "yes" : "no"))
         counts = verdict(fakeEvaluation({ answers }))
         example = named.length < n ? `Example: only the named ${plural(named.length, "question", "questions")} answered Yes: ${word(counts)}.` : `Example: every question answered Yes: ${word(counts)}.`
@@ -497,7 +558,7 @@ export function ruleMeaning(rule: LabRule): Meaning {
     const lm = rule.levelMinimums.find((x) => rule.levels[x.levelIndex]?.trim() && isInt(x.min) && x.min >= 1)
     if (lm && hasNeed(rule)) {
       const level = rule.levels[lm.levelIndex].trim()
-      example = `Example: ${rule.need} ${plural(rule.need, "evaluation counts", "evaluations count")} but ${lm.min === 1 ? "none is" : `only ${lm.min - 1} ${lm.min - 1 === 1 ? "is" : "are"}`} at ${level} or above: not achieved yet.`
+      example = `Example: ${rule.need} ${plural(rule.need, "evaluation counts", "evaluations count")} but ${lm.min === 1 ? "none is" : `only ${lm.min - 1} ${lm.min - 1 === 1 ? "is" : "are"}`} at ${inSentence(level)} or above: not achieved yet.`
     }
   }
   if (when) lines.push(when)
@@ -676,7 +737,7 @@ export function validateRule(rule: LabRule): RuleIssue[] {
   rule.settingMinimums.forEach((s, i) => {
     if (!s.setting.trim()) add("rule", `cfg-setting-${i}`, "blank", `Choose a clinical setting for row ${i + 1}.`)
     else if (dupSet.has(i)) add("rule", `cfg-setting-${i}`, "dup", `${s.setting} is listed twice.`)
-    if (!isInt(s.min) || s.min < 1) add("rule", `cfg-setting-min-${i}`, "min", `Enter a minimum of 1 or more for ${s.setting || `row ${i + 1}`}.`)
+    if (!isInt(s.min) || s.min < 1) add("rule", `cfg-setting-min-${i}`, "min", `Enter a minimum of 1 or more for ${s.setting ? inSentence(s.setting) : `row ${i + 1}`}.`)
   })
   const settingsTotal = rule.settingMinimums.reduce((n, s) => n + (isInt(s.min) ? s.min : 0), 0)
   if (isInt(rule.need) && settingsTotal > rule.need) add("rule", "cfg-setting-min-0", "sum", `Setting minimums add up to ${settingsTotal}, more than the ${rule.need} needed.`)
@@ -803,8 +864,8 @@ export function attemptLine(rule: LabRule, a: AttemptCount): string {
 export function shortfall(r: RuleResult): string[] {
   if (r.state === "achieved") return []
   const out: string[] = []
-  for (const s of r.settings) if (s.have < s.min) out.push(`${s.min - s.have} more in ${s.setting} (you have ${s.have} of ${s.min})`)
-  for (const l of r.levels) if (l.have < l.min) out.push(`${l.min - l.have} more at ${l.level} or above`)
+  for (const s of r.settings) if (s.have < s.min) out.push(`${s.min - s.have} more in ${inSentence(s.setting)} (you have ${s.have} of ${s.min})`)
+  for (const l of r.levels) if (l.have < l.min) out.push(`${l.min - l.have} more at ${inSentence(l.level)} or above`)
   if (r.distinct.have < r.distinct.need) out.push(`${r.distinct.need - r.distinct.have} more different ${plural(r.distinct.need - r.distinct.have, "evaluator", "evaluators")} (you have ${r.distinct.have})`)
   if (r.have < r.need) out.push(`${r.need - r.have} more qualifying ${plural(r.need - r.have, "evaluation", "evaluations")}`)
   return out.slice(0, 3)
@@ -821,8 +882,8 @@ export interface Gap {
 export function gapsOf(r: RuleResult): Gap[] {
   if (r.state === "achieved") return []
   const out: Gap[] = []
-  for (const s of r.settings) if (s.have < s.min) out.push({ key: `setting:${s.setting}:${s.min - s.have}`, label: `${s.min - s.have} more in ${s.setting}` })
-  for (const l of r.levels) if (l.have < l.min) out.push({ key: `level:${l.level}:${l.min - l.have}`, label: `${l.min - l.have} more at ${l.level} or above` })
+  for (const s of r.settings) if (s.have < s.min) out.push({ key: `setting:${s.setting}:${s.min - s.have}`, label: `${s.min - s.have} more in ${inSentence(s.setting)}` })
+  for (const l of r.levels) if (l.have < l.min) out.push({ key: `level:${l.level}:${l.min - l.have}`, label: `${l.min - l.have} more at ${inSentence(l.level)} or above` })
   if (r.distinct.have < r.distinct.need) {
     const n = r.distinct.need - r.distinct.have
     out.push({ key: `distinct:${n}`, label: `${n} more different ${plural(n, "evaluator", "evaluators")}` })
@@ -1196,6 +1257,32 @@ export function saveLabRule(s: V2State, skillId: string, rule: LabRule, opts: { 
   const next = appendAudit({ ...s, skills, configDrafts, ruleChanges: [...(s.ruleChanges ?? []), record] }, opts.byId, `Saved configuration, rule version ${version}`, skill.name, opts.at)
   return { ok: true, state: next, written: true, version }
 }
+
+/**
+ * One configuration saved to several skills [REQ IM-14]: "Apply to other skills" and "Configure together". The rule is validated
+ * once (an invalid rule writes nothing anywhere), then each target goes through saveLabRule, the same path as saving one skill, so
+ * each gets its own rule version and audit line. `written` lists the skills that were saved; `skipped` names any that were not and why.
+ */
+export function saveLabRuleToMany(s: V2State, skillIds: string[], rule: LabRule, opts: { at: string; byId: string; mode: PublishMode | null }): { state: V2State; written: string[]; skipped: Array<{ skillId: string; reason: string }>; issues: RuleIssue[] } {
+  const issues = validateRule(rule)
+  if (issues.length) return { state: s, written: [], skipped: skillIds.map((skillId) => ({ skillId, reason: issues[0]!.message })), issues }
+  const written: string[] = []
+  const skipped: Array<{ skillId: string; reason: string }> = []
+  let state = s
+  for (const id of Array.from(new Set(skillIds))) {
+    const r = saveLabRule(state, id, rule, opts)
+    if (!r.ok) skipped.push({ skillId: id, reason: r.error })
+    else if (!r.written) skipped.push({ skillId: id, reason: r.reason })
+    else {
+      state = r.state
+      written.push(id)
+    }
+  }
+  return { state, written, skipped, issues: [] }
+}
+
+/** Active skills that are still Not configured: the same count as the library's Not configured tab [REQ IM-10]. */
+export const leftToConfigure = (s: V2State): number => s.skills.filter((k) => k.active !== false && !isConfigured(k)).length
 
 /** Old name, kept for callers and tests written before decision D-X31. */
 export const publishLabRule = saveLabRule

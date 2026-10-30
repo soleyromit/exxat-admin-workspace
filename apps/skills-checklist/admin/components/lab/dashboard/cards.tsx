@@ -108,7 +108,7 @@ export function Hero({ model, actionLabel, href, figures = true }: { model: Dash
               <HeroMetric value={fmt(model.heroValue)} rest={`of ${fmt(model.inScope)} students ${model.heroValue === 1 ? "is" : "are"} ${basisPhrase(model.basis)}`} tip={model.basisCaption} />
             ) : (
               <Tip label={model.basisCaption}>
-                <h2 tabIndex={0} className="text-base font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring">{model.heroSentence}</h2>
+                <h2 tabIndex={0} className={`outline-none focus-visible:ring-2 focus-visible:ring-ring ${TYPE.section}`}>{model.heroSentence}</h2>
               </Tip>
             )}
             <p className="text-sm text-foreground">{model.heroDetail}</p>
@@ -143,8 +143,8 @@ export function Kpis({ model }: { model: DashboardModel }) {
     description: k.description,
     href: k.href,
     trendPolarity: k.polarity,
-    // Neutral ink for every mini chart ("info" maps to --primary): the amber accent stays reserved for behind.
-    ...(k.chart ? { chart: { kind: k.chart.kind, series: k.chart.series, tone: "info" as const } } : {}),
+    // No mini charts (2026-10-30 review: the sm sparklines and bars were unreadable). The tiles below draw the same series
+    // at a size that can be read; the figure keeps its number and caption.
   }))
   return (
     <section aria-label="Key figures" id="kpis" data-figure="kpis">
@@ -263,12 +263,13 @@ export function BlockerCard({ model, scope, top = 5, className }: { model: Dashb
   const scaleMax = Math.max(1, flagged, ...shown.map((b) => b.students))
   const best = shown[0]?.students ?? 0
   const tied = list.filter((b) => b.students === best).length
+  // The verdict above already says how many are flagged; the card does not say it again (anatomy A5).
   const summary =
     list.length === 0
       ? `No required ${skillNoun()} is holding anyone back in this scope.`
       : tied > 1
-        ? `${tied} ${skillNounPlural()} tie at ${best} of the ${flagged} students flagged.`
-        : `${shown[0].name} is short for ${best} of the ${flagged} students flagged.`
+        ? `${tied} ${skillNounPlural()} tie at ${best} students short.`
+        : `${shown[0].name} is short for ${best} students.`
   const ticks = niceTicks(scaleMax)
   // Ties are stated, not ranked (strategy/07 A9, Von Restorff): one row per distinct value, the top value alone highlighted.
   const groups: Array<{ value: number; rows: BlockerRow[] }> = []
@@ -293,14 +294,14 @@ export function BlockerCard({ model, scope, top = 5, className }: { model: Dashb
                     <div className="min-w-0">
                       {one ? (
                         <>
-                          <Link className={`${LINK_IN_TABLE} block truncate text-sm`} title={`${one.name}, ${one.category}`} href={drillHref(scope, { list: "students", cond: "behind", skill: one.skillId, from: "blockers" })} aria-label={`${one.name}, ${one.category}: short for ${one.students} of the ${flagged} students flagged. Open the list`}>
+                          <Link className={`${LINK_IN_TABLE} block whitespace-normal text-sm leading-snug`} href={drillHref(scope, { list: "students", cond: "behind", skill: one.skillId, from: "blockers" })} aria-label={`${one.name}, ${one.category}: short for ${one.students} of the ${flagged} students flagged. Open the list`}>
                             {one.name}
                           </Link>
                         </>
                       ) : (
                         <>
                           <span className="block text-sm font-medium text-foreground">{`${g.rows.length} ${skillNounPlural()} tie`}</span>
-                          <span className="block truncate text-xs text-muted-foreground" title={g.rows.map((r) => r.name).join(", ")} data-viz-label>{`${g.rows.slice(0, 2).map((r) => r.name).join(", ")}, +${g.rows.length - 2}`}</span>
+                          <span className="block text-xs text-muted-foreground" title={g.rows.map((r) => r.name).join(", ")} data-viz-label>{`${g.rows.slice(0, 2).map((r) => r.name).join(", ")}${g.rows.length > 2 ? `, +${g.rows.length - 2}` : ""}`}</span>
                         </>
                       )}
                     </div>
@@ -398,7 +399,7 @@ export function SitesCard({ model, scope, className }: { model: DashboardModel; 
           {s.top.map((row) => (
             <li key={row.siteId} className="grid grid-cols-[minmax(0,14rem)_minmax(0,1fr)] items-center gap-4">
               <div className="min-w-0">
-                <Link className={`${LINK_IN_TABLE} block truncate text-sm`} href={drillHref(scope, { list: "requests", cond: "waiting", siteId: row.siteId, from: "sites" })}>{row.name}</Link>
+                <Link className={`${LINK_IN_TABLE} block whitespace-normal text-sm leading-snug`} href={drillHref(scope, { list: "requests", cond: "waiting", siteId: row.siteId, from: "sites" })}>{row.name}</Link>
                 <span className="block text-xs tabular-nums text-muted-foreground">{`${row.total} waiting, oldest ${row.oldest} days`}</span>
               </div>
               <AgeBar buckets={row.buckets} total={row.total} max={maxTotal} label={`${row.name}, requests by age`} />
@@ -407,7 +408,7 @@ export function SitesCard({ model, scope, className }: { model: DashboardModel; 
         </ul>
         {s.other.sites > 0 ? (
           <p className="text-sm text-foreground">
-            <Link className={LINK} href={drillHref(scope, { list: "sites", from: "sites" })}>{`All ${s.sites} sites`}</Link>
+            <Link className={LINK} href={drillHref(scope, { list: "sites", from: "sites" })}>{s.sites === 1 ? "Site list" : `All ${s.sites} sites`}</Link>
             {`: the other ${s.other.sites} hold ${s.other.requests} requests, ${s.other.old} at 15 days or more.`}
           </p>
         ) : null}
@@ -448,7 +449,7 @@ export function NeedsYou({ model, className }: { model: DashboardModel; classNam
   return (
     <Card className={className} id="needs-you" data-region="needs-you">
       <CardContent className="flex flex-col gap-3">
-        <h2 className="flex items-baseline gap-2 text-base font-semibold text-foreground">Needs you<span className="text-sm font-normal tabular-nums text-muted-foreground">{fmt(model.needsYou.length)}</span></h2>
+        <h2 className={`flex items-baseline gap-2 ${TYPE.card}`}>Needs you<span className="text-sm font-normal tabular-nums text-muted-foreground">{fmt(model.needsYou.length)}</span></h2>
         <DataRowList
           rows={model.needsYou}
           getRowId={(r) => r.key}
@@ -499,7 +500,7 @@ export function CardError({ title, onRetry, className }: { title: string; onRetr
   return (
     <Card className={className} role="group" aria-label={title} data-region="card-error">
       <CardContent className="flex flex-col gap-3">
-        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        <h2 className={TYPE.card}>{title}</h2>
         <LocalBanner variant="error" title="Pace could not be calculated" retry={{ label: "Try again", onClick: onRetry }}>
           The other figures are current.
         </LocalBanner>
@@ -517,7 +518,7 @@ export function SetupHero({ termName }: { termName: string }) {
           <i className="fa-light fa-user-plus text-xl" />
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h2 className="text-base font-semibold text-foreground">{`No students in ${termName} yet`}</h2>
+          <h2 className={TYPE.card}>{`No students in ${termName} yet`}</h2>
           <p className="text-sm text-foreground">Import your cohort to see who is behind.</p>
         </div>
         <Button asChild variant="outline" size="sm">

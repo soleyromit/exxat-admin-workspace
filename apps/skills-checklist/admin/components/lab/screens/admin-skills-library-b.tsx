@@ -26,6 +26,7 @@ import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/li
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { LINK, LibraryFrame, LibraryStatusBadge, LibraryTabs, useOpenSkill, useStatusTab } from "@/components/lab/library/library-chrome"
+import { tagLineText } from "@/components/lab/library/category-tag-pickers"
 import { InlineAddRow, InlineAddTrigger } from "@/components/lab/library/inline-add-row"
 import { RowActions, useLifecycle, useStableHandlers, type RowActionHandlers } from "@/components/lab/library/row-actions"
 import { SkillPanel } from "@/components/lab/library/skill-panel"
@@ -65,7 +66,7 @@ function SkillRow({ r, handlers, indent, onOpen, selected }: { r: LibraryRow; ha
           </Link>
           {r.isNew ? <Badge variant="outline">New</Badge> : null}
         </span>
-        {r.tags.length ? <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{r.tags.join(", ")}</span></span> : null}
+        {r.tags.length ? <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{tagLineText(r.tags, r.inactiveTags)}</span></span> : null}
       </TableCell>
       <TableCell><LibraryStatusBadge status={r.status} draft={r.draft} /></TableCell>
       <TableCell className="hidden xl:table-cell">{r.modelLabel || <span className="text-muted-foreground">Not chosen</span>}</TableCell>

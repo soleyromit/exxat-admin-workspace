@@ -1,13 +1,14 @@
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
-import { EVALUATION_STATUS_LABEL, OVERLAY_LABEL, SENT_FOR_NEW_EVALUATION_WORD, STUDENT_NOT_COUNTED, sentForNewEvaluationLabel } from "@/lib/v2/labels"
+import { EVALUATION_STATUS_LABEL, OVERLAY_LABEL, SENT_FOR_NEW_EVALUATION_WORD, STUDENT_NOT_COUNTED, answeredSentence, sentForNewEvaluationLabel } from "@/lib/v2/labels"
 import { evalsOfStudent, personById, skillById, submissionsOfStudent } from "@/lib/v2/evidence-index"
 import { evaluatorChoices, openToLog, ratingKind, ratingOptions, ruleSentence as ruleSentenceOf, sentElsewhereTo, skillProgress, whereOptions, type WhereOption } from "@/lib/v2/student"
 import { verificationStatus } from "@/lib/v2/verification"
 import { heldState } from "@/lib/v2/approvals"
 import type { Evaluation, Person, Setting, SignoffMethod, Skill, Submission, SyncConflict, SyncState, V2State } from "@/lib/v2/types"
 import { DEFAULT_STUDENT, OUTCOME_WORD, STUDENT_BASE, attemptCountLine, shortDate, shortfallSentence, submissionWhere, type SkillState, type StudentModel } from "./student"
-import { capitalize, countSkills, skillNoun, skillNounPlural } from "./terms"
+import { capitalize, countSkills, inSentence, skillNoun, skillNounPlural } from "./terms"
 import type { LoggedSitting } from "./logged"
+import { recordNamedEvaluator } from "./new-evaluators"
 
 /**
  * Student lab model for Log a skill, Send for evaluation, Record, Share record, and Offline and sync. A pure function of the v2
@@ -61,12 +62,61 @@ export const PROGRAM_DETAILS: DetailField[] = [
 
 export type DetailValues = Record<string, string>
 
+/**
+ * What a skill asks for when its configuration names no fields: one mandatory "Date performed", the same default the admin's
+ * Configure screen reads back (lib/lab/configure.ts fromV2), so the student is asked exactly what the admin sees [REQ SC-13].
+ */
+export const DEFAULT_STUDENT_FIELDS: NonNullable<NonNullable<Skill["config"]>["studentFields"]> = [{ label: "Date performed", type: "date", mandatory: true }]
+
+/** Helpers for the fields the lab already knows, said once (12 words). */
+const KNOWN_HELPER: Record<string, string> = { case: "No patient names." }
+
+/**
+ * A stable id for a configured field label. The three fields the lab already carries keep their short ids ("date", "unit", "case"),
+ * so drafts, the Log to Send handoff and the evaluator view read them as before; any other label gets "f-<slug>".
+ */
+export function detailFieldId(label: string): string {
+  const l = label.trim().toLowerCase()
+  if (l === "date performed" || l === "date") return "date"
+  if (l === "unit") return "unit"
+  if (l === "case reference") return "case"
+  return `f-${l.replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "field"}`
+}
+
+/**
+ * The details a submission must carry, from the program's configuration of each chosen skill [REQ SC-13, ST-10]: the union of every
+ * skill's `config.studentFields` (a skill with none asks for Date performed, DEFAULT_STUDENT_FIELDS). One field per label, mandatory
+ * when any chosen skill makes it mandatory, choice lists merged in order. With no skill chosen yet, the default is shown so the
+ * section keeps its shape; Send is blocked on the skill anyway.
+ */
+export function detailFieldsFor(s: V2State, skillIds: string[]): DetailField[] {
+  const by = new Map<string, DetailField>()
+  const skills = skillIds.map((id) => skillById(s, id)).filter((k): k is Skill => !!k)
+  const lists = skills.length ? skills.map((k) => k.config?.studentFields ?? DEFAULT_STUDENT_FIELDS) : [DEFAULT_STUDENT_FIELDS]
+  for (const list of lists) {
+    for (const f of list) {
+      const label = f.label.trim()
+      if (!label) continue
+      const id = detailFieldId(label)
+      const prev = by.get(id)
+      const options = f.type === "choice" ? [...new Set([...(prev?.options ?? []), ...(f.choices ?? []).map((c) => c.trim()).filter(Boolean)])] : prev?.options
+      by.set(id, { id, label: prev?.label ?? label, type: prev?.type ?? f.type, required: f.mandatory || !!prev?.required, ...(KNOWN_HELPER[id] ? { helper: KNOWN_HELPER[id] } : {}), ...(options ? { options } : {}) })
+    }
+  }
+  return [...by.values()]
+}
+
+/** Values for fields other than date, unit and case, kept with a draft so Continue brings them back [REQ ST-10]. */
+export function extraDetails(values: DetailValues): Record<string, string> {
+  return Object.fromEntries(Object.entries(values).filter(([k, v]) => k.startsWith("f-") && v.trim()))
+}
+
 /** Mandatory details that are empty, by field id, with the message the field shows [REQ ST-10]. */
 export function detailErrors(values: DetailValues, fields: DetailField[] = PROGRAM_DETAILS): Record<string, string> {
   const out: Record<string, string> = {}
   for (const f of fields) {
     const v = (values[f.id] ?? "").trim()
-    if (f.required && !v) out[f.id] = `Enter the ${f.label.toLowerCase()}.`
+    if (f.required && !v) out[f.id] = f.type === "choice" ? `Choose the ${f.label.toLowerCase()}.` : `Enter the ${f.label.toLowerCase()}.`
     else if (f.type === "date" && v && v > DEMO_TODAY) out[f.id] = "The date cannot be in the future."
     else if (f.type === "number" && v && Number.isNaN(Number(v))) out[f.id] = "Enter a number."
   }
@@ -74,9 +124,10 @@ export function detailErrors(values: DetailValues, fields: DetailField[] = PROGR
 }
 
 /**
- * Self-evaluation is asked only where the program switched it on for the skill [REQ SC-15, ST-11]. A configuration saved from the
- * lab carries the flag (SkillConfig.selfEvaluation) and it wins. The seed has no flag, so a seeded skill with program-named levels
- * still reads as switched on [INFER stand-in kept so seeded figures do not move].
+ * Self-evaluation is asked only where the program switched it on for the skill [REQ SC-15, ST-11]. The stored flag
+ * (SkillConfig.selfEvaluation) always wins, so a switch saved in Configure drives this screen. Only a seeded skill with no flag at all
+ * falls back to "has program-named levels": the exact read-back Configure shows for the same skill (lib/lab/configure.ts fromV2), so
+ * the admin and the student never disagree. Drop both fallbacks together once the seed carries the flag on every skill.
  */
 export function selfEvalEnabled(skill: Skill | undefined): boolean {
   if (!skill) return false
@@ -133,6 +184,8 @@ export interface PickRow {
   /** Waiting with an evaluator or awaiting approval: it can still be logged again, as a further entry. */
   waiting: boolean
   selfEval: boolean
+  /** The student has sent it before (any request or evaluation, whatever the outcome), so it can be isolated [REQ ST-03]. */
+  submitted: boolean
 }
 
 export interface PickGroup {
@@ -143,19 +196,28 @@ export interface PickGroup {
 
 export function pickRows(s: V2State, m: StudentModel): PickRow[] {
   const rec = new Map(m.all.map((r) => [r.id, r]))
+  const studentId = m.student.id
+  // Sent before: any request (drafts excluded: a draft is not a submission) or any evaluation on the student's record [REQ ST-03].
+  const sent = new Set<string>([
+    ...s.evaluations.filter((e) => e.studentId === studentId).map((e) => e.skillId),
+    ...s.submissions.filter((x) => x.studentId === studentId).flatMap((x) => x.skillIds),
+  ])
   const out: PickRow[] = []
   for (const k of s.skills) {
     if (!openToLog(k)) continue
     const r = rec.get(k.id)
-    out.push({ id: k.id, name: k.name, section: k.category, likely: !!r?.likely && r.state !== "achieved", onCourse: !!r && r.level !== "evidence", required: !!r?.required, state: r?.state ?? null, stateLabel: r?.label ?? null, waiting: !!r?.waiting, selfEval: selfEvalEnabled(k) })
+    out.push({ id: k.id, name: k.name, section: k.category, likely: !!r?.likely && r.state !== "achieved", onCourse: !!r && r.level !== "evidence", required: !!r?.required, state: r?.state ?? null, stateLabel: r?.label ?? null, waiting: !!r?.waiting, selfEval: selfEvalEnabled(k), submitted: sent.has(k.id) })
   }
   return out.sort((a, b) => a.section.localeCompare(b.section) || a.name.localeCompare(b.name))
 }
 
-/** Likely here, then every section alphabetically. A query matches the skill or its section, case-insensitive. */
-export function pickerGroups(rows: PickRow[], query = ""): PickGroup[] {
+/**
+ * Likely here, then every section alphabetically. A query matches the skill or its section, case-insensitive. `submittedOnly`
+ * isolates the skills the student has sent before, in the same sections, so an earlier submission stays findable [REQ ST-03].
+ */
+export function pickerGroups(rows: PickRow[], query = "", submittedOnly = false): PickGroup[] {
   const q = query.trim().toLowerCase()
-  const hit = (r: PickRow) => !q || r.name.toLowerCase().includes(q) || r.section.toLowerCase().includes(q)
+  const hit = (r: PickRow) => (!submittedOnly || r.submitted) && (!q || r.name.toLowerCase().includes(q) || r.section.toLowerCase().includes(q))
   const likely = rows.filter((r) => r.likely && hit(r))
   const groups: PickGroup[] = likely.length ? [{ key: "likely", title: "Likely here", rows: likely }] : []
   const bySection = new Map<string, PickRow[]>()
@@ -371,7 +433,7 @@ export const NO_ACCOUNT_LINE = "Evaluators sign through a link, no account neede
 /**
  * The single "what happens next" sentence after Send [REQ ST-13, EV-07]. Said once, on the result. When it counts is not here: each
  * skill's own rule says it beside the skill (countsWhen), so a skill that needs 3 Met evaluations is never told "it counts when
- * they answer Met".
+ * they answer met".
  */
 export function nextSentence(opts: { method: SignoffMethod; who: string; approval: boolean; offline: boolean; newName: boolean }): string {
   if (opts.method === "photo") return `The photo goes to your program for review. ${opts.offline ? "It uploads when you reconnect. " : ""}It counts once a reviewer enters the outcome.`
@@ -388,8 +450,8 @@ export function nextSentence(opts: { method: SignoffMethod; who: string; approva
 export function countsWhen(r: { counted: number; need: number; achieved: boolean; parts: Array<{ label: string; have: number; need: number; met: boolean }> }, approval: boolean): string {
   const after = approval ? ", after a reviewer approves it" : ""
   if (r.achieved) return `Already achieved. A Met answer is added to My evaluations${after}.`
-  const extra = r.parts.filter((p) => !p.met && p.label !== "Evaluations").map((p) => (p.label === "Different evaluators" ? `from ${p.need} different evaluators` : `${p.need} in ${p.label}`))
-  const base = r.need <= 1 ? "Met achieves it" : `Met adds 1 of the ${r.need} Met evaluations needed (${Math.min(r.counted, r.need)} so far)`
+  const extra = r.parts.filter((p) => !p.met && p.label !== "Evaluations").map((p) => (p.label === "Different evaluators" ? `from ${p.need} different evaluators` : `${p.need} in ${inSentence(p.label)}`))
+  const base = r.need <= 1 ? "Met achieves it" : `Met adds 1 of the ${r.need} met evaluations needed (${Math.min(r.counted, r.need)} so far)`
   return `${base}${extra.length ? `; also needs ${extra.join(" and ")}` : ""}${after}.`
 }
 
@@ -446,11 +508,19 @@ export interface RecordRow {
   courseCode: string
   result: RecordResult
   answer: string
-  /** Why it counted or did not, in numbers where it did not [REQ SH-03]. */
+  /** Why this attempt counted or did not: its own reason only ("The evaluator answered unmet.") [REQ SH-03]. */
   why: string
+  /**
+   * The skill's failed rule in numbers ("Needs 3 met evaluations; you have 0."), on a did-not-count row of a skill not yet
+   * achieved. Screens say it once per skill, not on every attempt (review 2026-10-30), so it is kept apart from `why`.
+   */
+  rule?: string
   skillState: SkillState | null
   skillLabel: string | null
 }
+
+/** The reason with the skill's rule, for the one row per skill that carries it. */
+export const whyWithRule = (x: Pick<RecordRow, "why" | "rule">): string => (x.rule ? `${x.why.replace(/\.?$/, ".")} ${x.rule}` : x.why)
 
 const settingText = (e: Evaluation) => (e.setting === "clinical" ? `Clinical, ${e.clinicalSetting ?? "setting not recorded"}` : e.setting === "lab" ? "Lab" : "Simulation")
 
@@ -475,6 +545,7 @@ export function recordRows(input: V2State, m: StudentModel): RecordRow[] {
       const courseId = e.courseId ?? s.course.id
       let result: RecordResult
       let why: string
+      let rule: string | undefined
       const sentTo = sentElsewhereTo(s, e)
       if (e.status === "awaiting-approval") {
         result = "waiting"
@@ -482,17 +553,18 @@ export function recordRows(input: V2State, m: StudentModel): RecordRow[] {
       } else if (sentTo) {
         // Assigned to another evaluator by a reviewer: a handoff, not a return (lib/v2/labels.ts).
         result = "sent"
-        why = `${sentForNewEvaluationLabel(sentTo.name)}. It counts after they answer Met.`
+        why = `${sentForNewEvaluationLabel(sentTo.name)}. It counts after they answer met.`
       } else if (e.status === "returned" || e.status === "reopened") {
         result = "returned"
         why = e.review?.note ? `Returned: ${e.review.note}` : "Returned for correction. It does not count until corrected."
       } else if (used.has(e.id)) {
         result = "counted"
-        why = e.setting === "clinical" && e.clinicalSetting && p.settings.some((x) => x.setting === e.clinicalSetting) ? `Counts toward the rule and toward ${e.clinicalSetting}.` : "Counts toward the rule."
+        why = e.setting === "clinical" && e.clinicalSetting && p.settings.some((x) => x.setting === e.clinicalSetting) ? `Counts toward the rule and toward ${inSentence(e.clinicalSetting)}.` : "Counts toward the rule."
       } else {
         result = "not-counted"
-        const base = p.leftOut[e.id] ?? (e.outcome === "met" ? "Outside the rule's window of recent evaluations." : `The evaluator answered ${OUTCOME_WORD[e.outcome]}.`)
-        why = p.achieved ? base : `${base.replace(/\.?$/, ".")} ${shortfallSentence(p)}`
+        const base = p.leftOut[e.id] ?? (e.outcome === "met" ? "Outside the rule's window of recent evaluations." : answeredSentence(OUTCOME_WORD[e.outcome]))
+        why = base
+        rule = p.achieved ? undefined : shortfallSentence(p)
       }
       // One unit per submission [REQ SH-04]: an outstanding evaluation belongs to its open request, a returned one to its returned
       // request; anything else (an older return on a request sent again, evidence with no request) is its own unit.
@@ -515,6 +587,7 @@ export function recordRows(input: V2State, m: StudentModel): RecordRow[] {
         result,
         answer: OUTCOME_WORD[e.outcome],
         why,
+        rule,
         skillState: rec.get(skillId)?.state ?? null,
         skillLabel: rec.get(skillId)?.label ?? null,
       })
@@ -553,7 +626,7 @@ export function recordRows(input: V2State, m: StudentModel): RecordRow[] {
       why: open
         ? x.status === "on-device"
           ? "Saved on this device, not sent yet. It counts after the evaluator answers Met."
-          : `Waiting for ${person?.name ?? "the evaluator"}, ${days === 1 ? "1 day" : `${days} days`}. It counts after they answer Met.`
+          : `Waiting for ${person?.name ?? "the evaluator"}, ${days === 1 ? "1 day" : `${days} days`}. It counts after they answer met.`
         : `Returned: ${r?.reason ?? "correction needed"}`,
       skillState: rec.get(skillId)?.state ?? null,
       skillLabel: rec.get(skillId)?.label ?? null,
@@ -616,13 +689,16 @@ export interface SkillGroupRow {
   counted: number
   notCounted: number
   latest: string
+  /** The skill's failed rule in numbers, said once for the group (from its did-not-count rows), or null. */
+  rule: string | null
 }
 
 export function groupBySkill(rows: RecordRow[]): SkillGroupRow[] {
   const m = new Map<string, SkillGroupRow>()
   for (const r of rows) {
-    const g = m.get(r.skillId) ?? { skillId: r.skillId, skillName: r.skillName, section: r.section, state: r.skillState, label: r.skillLabel, rows: [], counted: 0, notCounted: 0, latest: r.date }
+    const g = m.get(r.skillId) ?? { skillId: r.skillId, skillName: r.skillName, section: r.section, state: r.skillState, label: r.skillLabel, rows: [], counted: 0, notCounted: 0, latest: r.date, rule: null }
     g.rows.push(r)
+    if (r.rule && !g.rule) g.rule = r.rule
     if (r.result === "counted") g.counted++
     if (r.result === "not-counted") g.notCounted++
     if (r.date > g.latest) g.latest = r.date
@@ -637,7 +713,9 @@ export function groupBySkill(rows: RecordRow[]): SkillGroupRow[] {
  * question sentence live on the skill page (density budget at 375). Waiting and returned evaluations are not attempts yet.
  */
 export function recordAttemptLine(state: V2State, studentId: string, skillId: string): string {
-  return attemptCountLine(state, studentId, skillId, { compact: true })
+  // Only when some completed attempt did not count (2026-10-30): "2 attempts, 2 count" beside "In progress (2 of 3)" and a waiting
+  // row restated the state and read as a contradiction; "2 attempts, 0 count" adds a fact the state does not.
+  return attemptCountLine(state, studentId, skillId, { compact: true, onlyUnmet: true })
 }
 
 /** Month buckets for the chronological view: "October 2026". */
@@ -809,12 +887,39 @@ export function syncCounts(rows: SyncRow[]): Record<SyncState, number> {
   return out
 }
 
-/** Choices for a conflict. A rating keeps one value, so "Keep both" only exists for a note. */
+// ---------------------------------------------------------------------------------------------------------------------
+// A name typed through "Someone not listed" reaches the directory [REQ SL-09, ST-09]
+
+/** The site a typed or placement location belongs to, so the named evaluator lands under it in Settings, Evaluators. */
+export function siteIdFor(s: V2State, location: string | null): string | undefined {
+  if (!location) return undefined
+  const sites = s.sites ?? []
+  return (sites.find((x) => x.location === location) ?? sites.find((x) => x.facility === facilityOf(location)))?.id
+}
+
+/**
+ * Records the evaluator a student named on Send or Fix (lib/lab/new-evaluators.ts recordNamedEvaluator: one person per email,
+ * Not verified, shown in Approvals, New evaluators and Settings, Evaluators), and points the student's own request at them.
+ * One send is one request: the request recordNamedEvaluator writes is dropped here, because the caller stores the student's
+ * request (with its log entries and note) assigned to the same person. Pure.
+ */
+export function withNamedEvaluator(s: V2State, named: { studentId: string; name: string; email: string; setting: Setting; skillIds: string[]; location: string | null }, submission: Submission, at: string): { state: V2State; submission: Submission; personId: string; reused: boolean } {
+  const siteId = named.setting === "clinical" ? siteIdFor(s, named.location) : undefined
+  const r = recordNamedEvaluator(s, { studentId: named.studentId, name: named.name, email: named.email, kind: named.setting === "clinical" ? "preceptor" : "lab-instructor", skillIds: named.skillIds, siteId }, at)
+  const state = { ...r.state, submissions: r.state.submissions.filter((x) => x.id !== r.requestId) }
+  return { state, submission: { ...submission, assignedToId: r.personId, candidateIds: [r.personId], ...(siteId ? { siteId } : {}) }, personId: r.personId, reused: r.reused }
+}
+
+/**
+ * Choices for a conflict. A rating keeps one value, so combining only exists for a note, and it combines both texts into the
+ * submission's one note (lib/v2/sync.ts resolveConflict), never two notes [REQ ST-12]. The label says so.
+ */
+export const COMBINE_NOTES_LABEL = "Combine into one note"
 export function conflictChoices(c: SyncConflict): Array<{ id: "mine" | "theirs" | "both"; label: string }> {
   const out: Array<{ id: "mine" | "theirs" | "both"; label: string }> = [
     { id: "mine", label: "Keep this device" },
     { id: "theirs", label: `Keep ${c.theirsBy.replace(/^Your /, "your ")}` },
   ]
-  if (c.field === "note") out.push({ id: "both", label: "Keep both" })
+  if (c.field === "note") out.push({ id: "both", label: COMBINE_NOTES_LABEL })
   return out
 }

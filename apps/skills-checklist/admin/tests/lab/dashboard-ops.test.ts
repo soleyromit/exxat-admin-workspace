@@ -62,4 +62,18 @@ describe("concept E, sites and evaluators operations", () => {
     expect(c.waiting).toBeLessThan(m.waiting)
     expect(c.waiting).toBe(buildDashboard(seed, setScope(EMPTY_SCOPE, "cohort", cohort)).waitingCount)
   })
+
+  it("RP-08: a location filter recounts E to requests at sites there, and every dashboard figure agrees", () => {
+    const loc = "Harbor General, 4 West"
+    const scope = setScope(EMPTY_SCOPE, "loc", loc)
+    const l = opsModel(seed, scope)
+    expect(l.waiting).toBeLessThan(m.waiting)
+    expect(l.sites.length).toBeLessThan(m.sites.length)
+    for (const x of l.open) expect(seed.sites?.find((s) => s.id === x.siteId)?.location).toBe(loc)
+    expect(l.noSite).toBe(0)
+    const d = buildDashboard(seed, scope)
+    expect(l.waiting).toBe(d.waitingCount)
+    expect(d.recount).toBe(`Counting evidence from ${loc} only.`)
+    expect(buildDrill(seed, scope, { list: "requests", cond: "waiting" }).count).toBe(l.waiting)
+  })
 })

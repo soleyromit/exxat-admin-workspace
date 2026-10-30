@@ -15,7 +15,7 @@ import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { FieldError } from "@exxatdesignux/ui/components/ui/field"
 import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/student2/frame"
 import { EvaluatorPicker, MethodTiles } from "@/components/lab/student2/log-parts"
-import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart, SendIssues, SkillsField, WherePick, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
+import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart, SendBlockedNote, SendIssues, SkillsField, WherePick, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
 import { SectionTitle } from "@/components/lab/student/parts"
 import { FormSkeleton } from "./student-log-a"
 import { aNoun, countSkills, skillNounPlural } from "@/lib/lab/terms"
@@ -79,15 +79,16 @@ function RequestForm({ ctx }: { ctx: Student2Ctx }) {
               <dt className="text-muted-foreground">How</dt>
               <dd className="text-foreground">{m.label}</dd>
               <dt className="text-muted-foreground">Counts</dt>
-              <dd className="text-foreground">{d.method === "photo" ? "After review" : approval ? "After approval" : "When they answer Met"}</dd>
+              <dd className="text-foreground">{d.method === "photo" ? "After review" : approval ? "After approval" : "When they answer met"}</dd>
             </dl>
             {/* One paragraph: how the evaluator signs (no account, REQ EV-01), then what they see. Variant B says "no account
                 needed" on its "They are not here" choice, so it does not repeat it here. */}
             <p className="text-sm text-muted-foreground" data-scope-sentence>{d.method === "photo" ? scopeSentence(d) : `${NO_ACCOUNT_LINE} ${scopeSentence(d)}`}</p>
             <SavedForLater d={d} />
+            <SendBlockedNote d={d} />
             {/* Save for later keeps it in My requests, Drafts; nothing counts until it is sent (LEDGER D-L10). */}
             <div className="flex flex-col gap-2 sm:flex-row-reverse">
-              <Button type="submit" variant="default" size="default" className="w-full sm:flex-1 max-sm:h-11">{d.offline && !m.offline ? "Keep and send later" : "Send"}</Button>
+              <Button type="submit" variant="default" size="default" className="w-full sm:flex-1 max-sm:h-11" disabled={d.blocked} aria-describedby={d.blocked ? "send-blocked" : undefined}>{d.offline && !m.offline ? "Keep and send later" : "Send"}</Button>
               <Button type="button" variant="outline" size="default" className="w-full sm:flex-1 max-sm:h-11" onClick={() => d.saveForLater()}>Save for later</Button>
             </div>
           </CardContent>

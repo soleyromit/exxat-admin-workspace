@@ -70,7 +70,8 @@ export function StudentProgressA() {
             <div className="lg:col-span-5"><PaceCard model={model} height={250} /></div>
             <div className="lg:col-span-7"><CourseStrips model={model} studentId={studentId} /></div>
             <div className="lg:col-span-7"><NextActions model={model} limit={3} exclude={["waiting"]} className="h-full" /></div>
-            <div className="lg:col-span-5"><WaitingCard model={model} rows={rows} studentId={studentId} /></div>
+            {/* Returned lives once, in Do this next with its reason; the Waiting card counts only what waits on others. */}
+            <div className="lg:col-span-5"><WaitingCard model={model} rows={rows} studentId={studentId} showReturned={false} /></div>
           </div>
         )
       }}

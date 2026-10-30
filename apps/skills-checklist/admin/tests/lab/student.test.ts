@@ -37,7 +37,7 @@ describe("student model at scale (123 students, Maya Ferreira hero path)", () =>
       expect(r.failed?.rule).toMatch(/\d/)
       expect(r.failed?.next).toMatch(/further attempt/)
     }
-    expect(shortfallSentence(dnq[0].progress)).toMatch(/^Needs \d+ Met evaluations?; you have \d+\./)
+    expect(shortfallSentence(dnq[0].progress)).toMatch(/^Needs \d+ met evaluations?; you have \d+\./)
   })
 
   it("ranks next actions returned, did not count, then one away, with numbers and a link", () => {
@@ -88,7 +88,7 @@ describe("student model at scale (123 students, Maya Ferreira hero path)", () =>
     const attempt = fixModel(seed, DEFAULT_STUDENT, { skillId: "sk-sterile-dressing" })!
     expect(attempt.case).toBe("attempt")
     expect(attempt.submissionId).toBeNull()
-    expect(attempt.reason).toMatch(/Unmet/)
+    expect(attempt.reason).toMatch(/answered unmet/) // label lowercase mid-sentence (labels.ts answeredSentence, CP-2)
     expect(studentWithReturned(seed)).toBeTruthy()
     const correction = fixModel(seed, DEFAULT_STUDENT, {})!
     expect(correction.case).toBe("correction")

@@ -5,6 +5,7 @@
  * what stays private), the status, the link with an expiry, and the two exports (PDF, CLR 2.0). Verification is a v2 proposal,
  * not REQ [glossary]; the lab keeps it because sharing depends on it.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Field, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
@@ -36,12 +37,12 @@ export function SharePreview({ student, share, school }: { student: Person; shar
   return (
     <article className="flex flex-col gap-5" aria-label="What the reader sees" data-region="preview">
       <header className="flex flex-col gap-0.5 border-b border-border pb-4">
-        <h2 className="text-base font-semibold text-foreground">{student.name}</h2>
+        <h2 className={TYPE.section}>{student.name}</h2>
         <p className="text-sm text-muted-foreground" data-viz-label>{`${student.cohort ?? student.title} · ${school}`}</p>
         <p className="text-sm text-muted-foreground">{`${share.skills.length} ${skillNounPlural()} achieved · ${share.evidence} sign-offs from ${share.evaluators} evaluators`}</p>
       </header>
       <section className="flex flex-col gap-2" aria-labelledby="pv-achieved">
-        <h3 id="pv-achieved" className="text-sm font-semibold text-foreground">{`Achieved (${share.skills.length})`}</h3>
+        <h3 id="pv-achieved" className={TYPE.group}>{`Achieved (${share.skills.length})`}</h3>
         <ul className="flex flex-col divide-y divide-border">
           {list.map((k) => (
             <li key={k.id} className="flex flex-col gap-0.5 py-2 sm:flex-row sm:items-baseline sm:gap-4">
@@ -61,7 +62,7 @@ export function SharePreview({ student, share, school }: { student: Person; shar
         ) : null}
       </section>
       <section className="flex flex-col gap-2" aria-labelledby="pv-gaps">
-        <h3 id="pv-gaps" className="text-sm font-semibold text-foreground">{`Required, not achieved yet (${share.gaps.length})`}</h3>
+        <h3 id="pv-gaps" className={TYPE.group}>{`Required, not achieved yet (${share.gaps.length})`}</h3>
         {share.gaps.length === 0 ? (
           <p className="text-sm text-muted-foreground">{`Every required ${skillNoun()} is achieved.`}</p>
         ) : (
@@ -76,7 +77,7 @@ export function SharePreview({ student, share, school }: { student: Person; shar
         )}
       </section>
       <section className="flex flex-col gap-1" aria-labelledby="pv-private">
-        <h3 id="pv-private" className="text-sm font-semibold text-foreground">Not shared</h3>
+        <h3 id="pv-private" className={TYPE.group}>Not shared</h3>
         <p className="text-sm text-muted-foreground">{share.withheld.map((w) => w.label).join(" · ")}</p>
       </section>
     </article>

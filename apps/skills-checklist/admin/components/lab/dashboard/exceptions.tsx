@@ -6,6 +6,7 @@
  * count equals the rows by construction), each row with the cause in numbers; a row click opens a non-modal side peek
  * (FloatingSheetPanel). Bulk selection only where rows are alike (awaiting approval). No hero, no charts of the population.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -91,12 +92,12 @@ function studentColumns(scope: LabScope, model: DashboardModel, rows: ExceptionS
       : { key: "gap", label: basis === "expected" ? "Points from expected" : "Points from median", width: 190, cell: (r) => <GapCell gap={r.row.gap} min={min} /> },
     { key: "required", label: `Required ${skillNounPlural()}`, width: 140, cell: (r) => <span className="text-sm tabular-nums">{`${r.row.achieved} of ${r.row.required}`}</span> },
     { key: "short", label: "Most short in", width: 220, cell: (r) => (r.shortIn ? <span className="text-sm">{`${r.shortIn.section}, ${r.shortIn.achieved} of ${r.shortIn.total}`}</span> : <span className="text-sm text-muted-foreground">Nothing short</span>) },
-    { key: "request", label: "Open request", width: 260, cell: (r) => (r.request ? <span className="flex items-center gap-2 text-sm"><span className="truncate">{r.request.evaluator}</span><DaysBadge days={r.request.days} /></span> : <span className="text-sm text-muted-foreground">None sent</span>) },
+    { key: "request", label: "Open request", width: 260, cell: (r) => (r.request ? <span className="flex items-center gap-2 text-sm"><span className="min-w-0 whitespace-normal">{r.request.evaluator}</span><DaysBadge days={r.request.days} /></span> : <span className="text-sm text-muted-foreground">None sent</span>) },
   ]
 }
 
 function requestColumns(scope: LabScope, kind: "old" | "approval" | "returned"): ColumnDef<ExceptionRequest>[] {
-  const evaluator: ColumnDef<ExceptionRequest> = { key: "evaluator", label: "Evaluator", width: 200, cell: (r) => <span className="flex items-center gap-2 text-sm"><span className="truncate">{r.evaluator}</span>{r.evaluatorUnverified ? <EvaluatorNameBadge verified={false} /> : null}</span> }
+  const evaluator: ColumnDef<ExceptionRequest> = { key: "evaluator", label: "Evaluator", width: 200, cell: (r) => <span className="flex items-center gap-2 text-sm"><span className="min-w-0 whitespace-normal">{r.evaluator}</span>{r.evaluatorUnverified ? <EvaluatorNameBadge verified={false} /> : null}</span> }
   return [
     { key: "student", label: "Student", width: 200, cell: (r) => <PersonIdentityCell name={r.student} initials={initialsOf(r.student)} renderName={() => <StudentLink scope={scope} id={r.studentId} name={r.student} />} /> },
     { key: "skills", label: capitalize(skillNounPlural()), width: 240, cell: (r) => <span className="block truncate text-sm" title={r.skills}>{r.skills}</span> },
@@ -154,7 +155,7 @@ function StudentPeek({ data, scope, model, r }: { data: V2State; scope: LabScope
       </div>
       <p className="text-sm text-foreground">{`${row.achieved} of ${row.required} required ${skillNounPlural()} achieved. ${row.collected} of ${row.needed} evaluations counted, ${row.expected} expected now.`}</p>
       <section className="flex flex-col gap-2" aria-label="Required achieved by section">
-        <h3 className="text-sm font-semibold text-foreground">Required achieved by section</h3>
+        <h3 className={TYPE.group}>Required achieved by section</h3>
         <ul className="flex flex-col gap-1.5">
           {sections.slice(0, 6).map(([sec, t], i) => (
             <li key={sec} className="grid grid-cols-[minmax(0,1fr)_auto_3.5rem] items-center gap-3 text-sm">
@@ -167,7 +168,7 @@ function StudentPeek({ data, scope, model, r }: { data: V2State; scope: LabScope
         {sections.length > 6 ? <p className="text-xs text-muted-foreground">{`${plural(sections.length - 6, "other section", "other sections")} on the student record.`}</p> : null}
       </section>
       <section className="flex flex-col gap-2" aria-label="Waiting and returned">
-        <h3 className="flex items-baseline gap-2 text-sm font-semibold text-foreground">Waiting and returned<span className="text-sm font-normal tabular-nums text-muted-foreground">{fmt(subs.length)}</span></h3>
+        <h3 className={`flex items-baseline gap-2 ${TYPE.group}`}>Waiting and returned<span className="text-sm font-normal tabular-nums text-muted-foreground">{fmt(subs.length)}</span></h3>
         {subs.length === 0 ? (
           <p className="text-sm text-muted-foreground">No request sent for these yet.</p>
         ) : (
@@ -207,7 +208,7 @@ function RequestPeek({ data, scope, kind, r }: { data: V2State; scope: LabScope;
       </dl>
       {history.length > 0 ? (
         <section className="flex flex-col gap-2" aria-label="History">
-          <h3 className="text-sm font-semibold text-foreground">History</h3>
+          <h3 className={TYPE.group}>History</h3>
           <ul className="flex flex-col gap-1.5 text-sm">
             {history.slice(0, 4).map((h, i) => <li key={i}>{`${shortDate(h.at)}: ${h.text}`}</li>)}
           </ul>
@@ -228,7 +229,7 @@ function EvaluatorPeek({ data, scope, model, r }: { data: V2State; scope: LabSco
     <div className="flex flex-col gap-4">
       <p className="text-sm text-foreground">{`A student gave this name and the program has not adopted it yet, so evidence signed under it waits for a reviewer.`}</p>
       <section className="flex flex-col gap-2" aria-label="Requests held">
-        <h3 className="flex items-baseline gap-2 text-sm font-semibold text-foreground">Requests held<span className="text-sm font-normal tabular-nums text-muted-foreground">{fmt(held.length)}</span></h3>
+        <h3 className={`flex items-baseline gap-2 ${TYPE.group}`}>Requests held<span className="text-sm font-normal tabular-nums text-muted-foreground">{fmt(held.length)}</span></h3>
         <ul className="flex flex-col gap-1.5">
           {held.map((x) => (
             <li key={x.id} className="flex items-start justify-between gap-3 text-sm">
@@ -257,9 +258,11 @@ export interface ExceptionsViewProps {
   onTab: (t: ExceptionKind) => void
   peek: string | null
   onPeek: (id: string | null) => void
+  /** The page's Filters group: it scopes every list, so it shares the tab row (D-L8b), not a row of its own. */
+  filters?: React.ReactNode
 }
 
-export function ExceptionsView({ data, model, scope, lists, tab, onTab, peek, onPeek }: ExceptionsViewProps) {
+export function ExceptionsView({ data, model, scope, lists, tab, onTab, peek, onPeek, filters }: ExceptionsViewProps) {
   const counts: Record<ExceptionKind, number> = { behind: lists.behind.length, old: lists.old.length, approval: lists.approval.length, returned: lists.returned.length, unverified: lists.unverified.length }
   const drill: Partial<Record<ExceptionKind, string>> = {
     behind: model.heroHref,
@@ -275,7 +278,7 @@ export function ExceptionsView({ data, model, scope, lists, tab, onTab, peek, on
 
   return (
     <Tabs value={tab} onValueChange={(v) => onTab(v as ExceptionKind)} className="flex w-full flex-col gap-4">
-      <div data-region="exception-tabs">
+      <div data-region="exception-tabs" className="flex flex-col-reverse gap-2 lg:flex-row lg:items-center lg:justify-between">
         <TabsList variant="line" ariaLabel="Exceptions">
           {(Object.keys(EXCEPTION_LABEL) as ExceptionKind[]).map((k) => (
             <TabsTrigger key={k} value={k} data-exception={k}>
@@ -284,6 +287,7 @@ export function ExceptionsView({ data, model, scope, lists, tab, onTab, peek, on
             </TabsTrigger>
           ))}
         </TabsList>
+        {filters ? <div className="flex shrink-0 lg:justify-end">{filters}</div> : null}
       </div>
       {(Object.keys(EXCEPTION_LABEL) as ExceptionKind[]).map((k) => (
         <TabsContent key={k} value={k} className="m-0 flex flex-col gap-3" data-region="exception-list">

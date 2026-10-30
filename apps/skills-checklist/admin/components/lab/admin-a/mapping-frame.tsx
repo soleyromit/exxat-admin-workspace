@@ -24,6 +24,8 @@ export interface MappingModel extends AdminData {
   termId: string
   termName: string
   termOpts: Opt[]
+  /** The program's current term: the Term filter's default (no chip while it is chosen). */
+  currentTermId: string
   cohortOpts: Opt[]
   yearOpts: Opt[]
   cover: Coverage
@@ -42,13 +44,15 @@ export function MappingFrame({ variant, children }: { variant: string; children:
   const model = React.useMemo(() => {
     if (!state) return null
     const terms = termOptions(state)
-    const termId = terms.some((t) => t.id === termParam) ? termParam : currentTermId(state)
+    const current = currentTermId(state)
+    const termId = terms.some((t) => t.id === termParam) ? termParam : current
     const offerings = offeringRows(state, overlay, lists)
     return {
       offerings,
       termId,
       termName: terms.find((t) => t.id === termId)?.name ?? "",
       termOpts: terms.map((t) => ({ value: t.id, label: t.name, group: t.academicYear })),
+      currentTermId: current,
       cohortOpts: (state.cohorts ?? []).map((c) => ({ value: c.id, label: c.name })),
       yearOpts: [1, 2, 3, 4].map((y) => ({ value: String(y), label: `Year ${y}` })),
       cover: coverage(state, overlay, termId, lists, undefined, didactic),

@@ -7,6 +7,7 @@
  * Regions (list budget 4): header · counts and Send now · conflicts (versions side by side, one tap) · queued and synced.
  * [COMP rec 9: device first, queued/synced/conflict visible; complaint digest: lost entries are the loudest complaint]
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
@@ -58,16 +59,20 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
       {q.last ? <LocalBanner variant={ctx.offline ? "info" : "success"}>{q.last}</LocalBanner> : null}
       {q.sent && !ctx.offline ? <LocalBanner variant="success">Every queued change reached your program.</LocalBanner> : null}
 
+      {/* Two columns at 1440 when there is a conflict (review 2026-10-30 CP-4, no dead canvas): the choice on the left, what is
+          on this device on the right. Phones stack them, conflict first. */}
+      <div className={cn("grid grid-cols-1 items-start gap-5", conflicts.length ? "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : "")}>
       {conflicts.length ? (
-        <section className="flex flex-col gap-3" aria-labelledby="conf-h" data-region="conflicts">
-          <SectionTitle id="conf-h" count={conflicts.length}>Choose a version</SectionTitle>
+        <section className="flex min-w-0 flex-col gap-3" aria-labelledby="conf-h" data-region="conflicts">
+          {/* A count of 1 says nothing the one row below does not (anatomy A5, 2026-10-30): counts from 2. */}
+          <SectionTitle page id="conf-h" count={conflicts.length > 1 ? conflicts.length : undefined}>Choose a version</SectionTitle>
           {conflicts.map((r) => <ConflictCard key={r.id} r={r} onChoose={(c) => q.resolve(r.id, c)} choices={r.conflict ? q.choices(r.conflict) : []} />)}
         </section>
       ) : null}
 
-      <Card className="gap-0 py-0" data-region="queue">
+      <Card className={"min-w-0 gap-0 py-0"} data-region="queue">
         <CardContent className="flex flex-col gap-1 py-4">
-          <SectionTitle count={waiting.length}>On this device</SectionTitle>
+          <SectionTitle page count={waiting.length > 1 ? waiting.length : undefined}>On this device</SectionTitle>
           {waiting.length === 0 ? <p className="py-1 text-sm text-muted-foreground">Nothing is waiting to send.</p> : <Rows rows={waiting} />}
           {synced.length ? (
             <Collapsible open={showSynced} onOpenChange={setShowSynced} className="mt-2 border-t border-border pt-2">
@@ -84,6 +89,7 @@ function Ledger({ ctx }: { ctx: Student2Ctx }) {
           ) : null}
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }
@@ -94,7 +100,7 @@ function Rows({ rows }: { rows: SyncRow[] }) {
       {rows.map((r) => (
         <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2.5">
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm text-foreground" data-viz-label>{r.label}</span>
+            <span className="text-sm break-words text-foreground" data-viz-label>{r.label}</span>
             <span className="text-xs text-muted-foreground">{`${r.detail} ${when(r.at)}.`}</span>
           </div>
           <SyncBadge state={r.state} />
@@ -107,19 +113,22 @@ function Rows({ rows }: { rows: SyncRow[] }) {
 function ConflictCard({ r, onChoose, choices }: { r: SyncRow; onChoose: (c: "mine" | "theirs" | "both") => void; choices: Array<{ id: "mine" | "theirs" | "both"; label: string }> }) {
   const c = r.conflict
   if (!c) return null
+  const choice = (id: "mine" | "theirs" | "both") => choices.find((x) => x.id === id)
+  // No version is pre-picked (review 2026-10-30: "Keep this device" as the filled primary nudged a risky choice): all three are
+  // equal outline buttons until the student picks one. Each "keep" sits under the version it keeps; no box inside the card.
+  const Pick = ({ id }: { id: "mine" | "theirs" | "both" }) => {
+    const x = choice(id)
+    return x ? <Button type="button" variant="outline" size="sm" className="self-start max-sm:h-11 max-sm:w-full" onClick={() => onChoose(x.id)}>{x.label}</Button> : null
+  }
   return (
-    <Card className="gap-0 py-0" style={{ borderColor: VIZ.behindEdge }}>
-      <CardContent className="flex flex-col gap-3 py-4">
-        <h3 className="text-sm font-semibold text-foreground">{r.label}</h3>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-md border border-border p-3"><VersionText who="This device" at={r.at} text={c.mine} /></div>
-          <div className="rounded-md border border-border p-3"><VersionText who={c.theirsBy} at={c.theirsAt} text={c.theirs} /></div>
+    <Card className="gap-0 py-0" style={{ borderColor: VIZ.behindEdge }} data-conflict={r.id}>
+      <CardContent className="flex flex-col gap-4 py-4">
+        <h3 className={TYPE.group}>{r.label}</h3>
+        <div className="grid gap-4 sm:grid-cols-2 sm:divide-x sm:divide-border">
+          <div className="flex flex-col gap-3 sm:pe-4"><VersionText who="This device" at={r.at} text={c.mine} /><Pick id="mine" /></div>
+          <div className="flex flex-col gap-3 max-sm:border-t max-sm:border-border max-sm:pt-4 sm:ps-4"><VersionText who={c.theirsBy} at={c.theirsAt} text={c.theirs} /><Pick id="theirs" /></div>
         </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          {choices.map((x, i) => (
-            <Button key={x.id} type="button" variant={i === 0 ? "default" : "outline"} size="sm" className="max-sm:h-11" onClick={() => onChoose(x.id)}>{x.label}</Button>
-          ))}
-        </div>
+        <div className="border-t border-border pt-3"><Pick id="both" /></div>
       </CardContent>
     </Card>
   )

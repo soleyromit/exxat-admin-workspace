@@ -5,12 +5,14 @@ import { skillById } from "@/lib/v2/evidence-index"
 import { skillProgress } from "@/lib/v2/student"
 import type { Setting, Submission, V2State } from "@/lib/v2/types"
 import { APPROVAL_OLD_DAYS, approvalTotals, approvalsInScope, CAUSE_LABEL, type ApprovalEntry } from "@/lib/v2/approvals"
-import { CELL_MARGIN, MEDIAN_MARGIN, isConfigured, median, openRequests, populationRows, resolveTerm, type Population, type StudentRow, type TermInfo } from "@/lib/v2/population"
+import { CELL_MARGIN, MEDIAN_MARGIN, isConfigured, median, openRequests, openRequestsIn, populationRows, siteInScope, resolveTerm, type Population, type StudentRow, type TermInfo } from "@/lib/v2/population"
 import { EVALUATOR_KINDS } from "@/lib/v2/facts"
 import { RECORD_STATE_META } from "@/lib/v2/labels"
-import { countSkills, skillNoun, skillNounPlural } from "./terms"
+import { countSkills, inSentence, skillNoun, skillNounPlural } from "./terms"
 import { removeScope, toReportFilters, withScope, type Basis, type LabScope, type ScopeKey } from "./scope"
 import { NEW_EVALUATORS_HREF } from "./admin-ia"
+
+export { openRequestsIn, siteInScope }
 
 // The population calculation lives in lib/v2/population.ts (single source). Re-exported so existing imports keep working.
 export { CELL_MARGIN, MEDIAN_MARGIN, PACE_MARGIN, median, offeringsByCohort, openRequests, populationRows, populationTotals, requiredSets, requiredSkillsFor, resolveTerm, studentRow } from "@/lib/v2/population"
@@ -69,6 +71,8 @@ export interface Option {
 
 export interface ScopeOptions {
   terms: Option[]
+  /** The current term's name: a chosen term equal to it is the default, not an applied filter (scope bar, D-L8b). */
+  currentTerm?: string
   /** Cohort names (value and label are the same). */
   cohorts: string[]
   groups: Option[]
@@ -88,6 +92,7 @@ export function scopeOptions(s: V2State, scope: LabScope, today: string = DEMO_T
   const skills = s.skills.filter((k) => k.configured && k.published)
   return {
     terms: (s.terms ?? []).map((t) => ({ value: t.name, label: t.name })),
+    currentTerm: (s.terms ?? []).find((t) => t.current)?.name,
     cohorts: cohortsOf(s),
     // Group is its own filter (REQ line 303, CALL 10-26): program groups of every cohort, tracks and custom groups, no cohort needed.
     groups: groupOptions(s).map((g) => ({ value: g.value, label: g.label })),
@@ -181,6 +186,12 @@ export const siteName = (s: V2State, siteId: string): string => {
   return site ? `${site.facility}, ${site.unit}` : "Unknown site"
 }
 
+/**
+ * RP-08 "Filtering by location or setting must count only the evidence gathered there and recalculate progress accordingly."
+ * Under a location or setting filter, a request waiting with an evaluator counts only when its site is at that location and in
+ * that setting (the program location's setting). A request with no site recorded cannot be placed, so it drops out. Every
+ * dashboard figure, drill and the operations view read requests through this one function, so they agree under any scope.
+ */
 export interface SiteAging {
   top: SiteRow[]
   other: { sites: number; requests: number; old: number }
@@ -453,7 +464,7 @@ export function buildExceptions(state: V2State, model: DashboardModel, today: st
   const unverified = (id: string | null | undefined) => person(id)?.verified === false
   const skills = (ids: string[]) => ids.map((id) => skillById(state, id)?.name ?? id).join(", ")
   const site = (id?: string) => (id ? siteName(state, id) : "No site recorded")
-  const open = openRequests(state, pop.ids)
+  const open = openRequestsIn(state, pop.ids, model.scope)
   const oldestOpen = new Map<string, Submission>()
   for (const x of open) if (!oldestOpen.has(x.studentId)) oldestOpen.set(x.studentId, x)
 
@@ -592,13 +603,21 @@ export function explainScope(s: V2State, scope: LabScope): Explained | null {
   return { text, remove: offending.map((k) => ({ key: k, label: `Remove ${k === "loc" ? "location" : k}` })) }
 }
 
+/**
+ * RP-08: the one sentence that tells the reader the figures count only evidence from the chosen location or setting. Null when
+ * neither is applied. Every reporting screen (dashboards, drills, Reports, Export) prints this same line; a caller hides it when
+ * the scope is impossible (RP-09), since the banner says so instead.
+ */
+export const recountText = (scope: Pick<LabScope, "loc" | "setting">): string | null =>
+  scope.loc || scope.setting ? `Counting evidence from ${[scope.loc, scope.setting ? `${inSentence(SETTING_LABEL[scope.setting as Setting] ?? scope.setting)} settings` : ""].filter(Boolean).join(", ")} only.` : null
+
 export function buildDashboard(state: V2State, scope: LabScope, today: string = DEMO_TODAY): DashboardModel {
   const pop = populationRows(state, scope, today)
   const { rows, term, basis } = pop
   const total = state.people.filter((p) => p.kind === "student").length
   const behind = rows.filter((r) => r.behind)
   const blockers = blockingSkills(pop)
-  const open = openRequests(state, pop.ids)
+  const open = openRequestsIn(state, pop.ids, scope)
   const sites = siteAging(state, open)
   const queue = approvalsIn(state, scope, today)
   const queueTotals = approvalTotals(state, queue)
@@ -644,7 +663,7 @@ export function buildDashboard(state: V2State, scope: LabScope, today: string = 
   const kpis: DashboardKpi[] = [
     { id: "achieved", label: `Required ${skillNounPlural()} achieved`, value: `${pctOf(achievedRecords, records)}%`, description: `${fmt(achievedRecords)} of ${fmt(records)}`, href: drillHref(scope, { list: "skills", from: "kpis" }), polarity: "higher_is_better", ...(achievedHistory ? { chart: { kind: "sparkline" as const, series: achievedHistory } } : {}) },
     { id: "waiting", label: "Waiting with evaluators", value: open.length, description: `${fmt(sites.old)} over 14 days`, href: drillHref(scope, { list: "requests", cond: "waiting", from: "kpis" }), polarity: "lower_is_better", ...(open.length > 0 ? { chart: { kind: "bars" as const, series: ageSplit(open.map((x) => x.daysWaiting), AGE_BUCKETS.map((b) => ({ label: `${b.label}`, min: b.min, max: b.max }))) } } : {}) },
-    { id: "approval", label: "Awaiting approval", value: queue.length, description: plural(evaluations, "evaluation", "evaluations"), href: drillHref(scope, { list: "requests", cond: "approval", from: "kpis" }), polarity: "lower_is_better", ...(queue.length > 0 ? { chart: { kind: "bars" as const, series: ageSplit(queue.map((q) => q.days), APPROVAL_BANDS) } } : {}) },
+    { id: "approval", label: "Awaiting approval", value: queue.length, description: `${queue.length === 1 ? "submission" : "submissions"}, ${plural(evaluations, "evaluation", "evaluations")} in all`, href: drillHref(scope, { list: "requests", cond: "approval", from: "kpis" }), polarity: "lower_is_better", ...(queue.length > 0 ? { chart: { kind: "bars" as const, series: ageSplit(queue.map((q) => q.days), APPROVAL_BANDS) } } : {}) },
     { id: "setup", label: `${skillNounPlural().replace(/^./, (c) => c.toUpperCase())} configured`, value: configured, description: `of ${fmt(state.skills.length)} in the library`, href: `${LAB_BASE}/skills-library?filter=needs-configuration`, polarity: "higher_is_better" },
   ]
 
@@ -656,7 +675,8 @@ export function buildDashboard(state: V2State, scope: LabScope, today: string = 
   if (unconfigured > 0) needsYou.push({ key: "unconfigured", text: `${countSkills(unconfigured)} need configuring before students can use them`, href: `${LAB_BASE}/skills-library?filter=needs-configuration`, tone: "neutral", age: 0 })
   needsYou.sort((a, b) => b.age - a.age)
 
-  const recount = scope.loc || scope.setting ? `Counting evidence from ${[scope.loc, scope.setting ? `${SETTING_LABEL[scope.setting as Setting] ?? scope.setting} settings` : ""].filter(Boolean).join(", ")} only.` : null
+  // An impossible scope says so in the banner; "Counting evidence from ..." beside it would contradict it (RP-09).
+  const recount = explained ? null : recountText(scope)
   const announce = kind === "behind" ? `${fmt(behind.length)} of ${fmt(n)} students ${phrase}` : heroSentence
 
   return {
@@ -799,7 +819,7 @@ export function buildDrill(state: V2State, scope: LabScope, p: DrillParams, toda
     return { ...base, title: `Required ${skillNounPlural()} in scope: ${fmt(achieved)} of ${fmt(records)} achieved`, crumb: `Required ${skillNounPlural()} (${fmt(list.length)})`, count: list.length, condition: null, skills: list }
   }
 
-  const open = openRequests(state, pop.ids)
+  const open = openRequestsIn(state, pop.ids, scope)
   if (p.list === "sites") {
     const all = siteAging(state, open, Number.MAX_SAFE_INTEGER)
     return { ...base, title: `${plural(all.sites, "site", "sites")} with requests waiting`, crumb: `Sites (${fmt(all.sites)})`, count: all.sites, condition: { label: "Requests waiting", remove: { list: "students", cond: undefined } }, sites: all.top }
@@ -975,10 +995,11 @@ export interface PipelineDrillParams {
 }
 
 /** The records behind a stage or segment: same scope, so the length equals the figure that links here. */
-export function pipelineDrill(m: PipelineModel, p: PipelineDrillParams): { title: string; crumb: string; rows: PipelineRecord[] } {
+export function pipelineDrill(m: PipelineModel, p: PipelineDrillParams): { title: string; rows: PipelineRecord[] } {
   const rows = m.records.filter((x) => (!p.state || x.state === p.state) && (!p.section || x.section === p.section)).sort((a, b) => (b.waitingDays ?? -1) - (a.waitingDays ?? -1) || a.student.localeCompare(b.student) || a.skill.localeCompare(b.skill))
   const what = p.state ? RECORD_STATE_LABEL[p.state] : `Required ${skillNounPlural()}`
-  return { title: `${plural(rows.length, "record", "records")}: ${what.toLowerCase()}${p.section ? `, ${p.section}` : ""}`, crumb: `${what}${p.section ? `, ${p.section}` : ""} (${fmt(rows.length)})`, rows }
+  // Titled by what it lists, the count said once in the title (anatomy A2, A5, A7; Romit 2026-10-30 on this drill).
+  return { title: `${what}${p.section ? `, ${p.section}` : ""} (${fmt(rows.length)})`, rows }
 }
 
 /** Link to the in-page records list of variant C, carrying the scope. Uses page params the dashboard URL keeps (list, cond, q). */
@@ -987,7 +1008,7 @@ export const pipelineHref = (scope: LabScope, p: PipelineDrillParams = {}): stri
 // =====================================================================================================================
 // Concept E, sites and evaluators operations (dashboard-concepts README section 4 E). Appended, read-only.
 //
-// Open requests are `openRequests(state, pop.ids)`, the same rows the existing drill list reads, so a site's Open count
+// Open requests are `openRequestsIn(state, pop.ids, scope)` (location and setting recount, RP-08), the same rows the existing drill list reads, so a site's Open count
 // equals `buildDrill(... list "requests", cond "waiting", siteId)`. The 8-week trend per site counts evaluations signed at
 // that site per week for students in scope, from evaluation dates (every evaluation carries a date; past requests do not,
 // so no request history is drawn).
@@ -1044,13 +1065,13 @@ export interface OpsModel {
 
 export function opsModel(state: V2State, scope: LabScope, today: string = DEMO_TODAY, topN = 8): OpsModel {
   const pop = populationRows(state, scope, today)
-  const open = openRequests(state, pop.ids)
+  const open = openRequestsIn(state, pop.ids, scope)
   const people = new Map(state.people.map((p) => [p.id, p]))
   const cuts = weekCutoffs(today)
   const starts = cuts.map((c) => new Date(Date.parse(`${c}T00:00:00Z`) - 7 * DAY).toISOString().slice(0, 10))
   const signedBy = new Map<string, number[]>()
   for (const e of state.evaluations) {
-    if (!e.siteId || !pop.ids.has(e.studentId)) continue
+    if (!e.siteId || !pop.ids.has(e.studentId) || !siteInScope(state, e.siteId, scope)) continue
     const d = e.date.slice(0, 10)
     const w = cuts.findIndex((c, i) => d > starts[i] && d <= c)
     if (w < 0) continue

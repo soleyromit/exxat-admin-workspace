@@ -59,10 +59,12 @@ export function Overlay({ record }: { record: Pick<SkillRecord, "waiting" | "ret
 }
 
 /** Rule parts as fractions, for example "Evaluations 2 of 3 · Inpatient 0 of 1". Met parts read quiet, unmet parts bold. */
-export function Parts({ parts, className }: { parts: Part[]; className?: string }) {
+export function Parts({ parts, className, stateLabel }: { parts: Part[]; className?: string; /** The record's state label: a part whose fraction it already states is left out (say it once, 2026-10-30). */ stateLabel?: string }) {
+  const shown = stateLabel ? parts.filter((p) => !stateLabel.includes(`(${p.have} of ${p.need})`)) : parts
+  if (shown.length === 0) return null
   return (
     <ul className={cn("flex flex-wrap gap-x-4 gap-y-1 text-sm", className)} aria-label="Parts of the rule">
-      {parts.map((p) => (
+      {shown.map((p) => (
         <li key={p.label} className="inline-flex items-baseline gap-1.5">
           <span className="text-muted-foreground">{p.label}</span>
           <span className={cn("tabular-nums", p.met ? "text-muted-foreground" : "font-semibold text-foreground")}>
@@ -130,7 +132,7 @@ export function RingLegend() {
 
 /**
  * SVG text scales with its viewBox, so at 375 a 12 px label drew at 8 px. This returns the font size, in viewBox units, that
- * renders at `px` CSS pixels for the element's real width (never below the 12 px floor).
+ * renders at exactly `px` CSS pixels (12, the meta step) for the element's real width, narrow or wide.
  */
 export function useSvgFont(viewBoxWidth: number, px = 12): [React.RefObject<SVGSVGElement | null>, number] {
   const ref = React.useRef<SVGSVGElement | null>(null)
@@ -140,7 +142,9 @@ export function useSvgFont(viewBoxWidth: number, px = 12): [React.RefObject<SVGS
     if (!el || typeof ResizeObserver === "undefined") return
     const update = () => {
       const w = el.getBoundingClientRect().width
-      if (w > 0) setSize(Math.max(px, (px * viewBoxWidth) / w))
+      // Rendered size is locked to px (12, the meta step) at every width: the user-unit size scales inversely with the drawn
+      // width, so a wide chart does not blow its labels up past the scale (DS review 2026-10-30 S10).
+      if (w > 0) setSize((px * viewBoxWidth) / w)
     }
     update()
     const ro = new ResizeObserver(update)
@@ -181,9 +185,13 @@ export function FigureLink({ href, value, label, amber = false }: { href: string
   )
 }
 
-export function SectionTitle({ children, count, id }: { children: React.ReactNode; count?: number; id?: string }) {
+/**
+ * A student card or region title. Most sit at the top of a card beside ChartCards, so they read as the card step (16); `page`
+ * marks one that opens a page region outside any card (18, TYPE.section). Type scale rubric 2026-10-30.
+ */
+export function SectionTitle({ children, count, id, page = false }: { children: React.ReactNode; count?: number; id?: string; page?: boolean }) {
   return (
-    <h2 id={id} className={cn("flex items-baseline gap-2", TYPE.section)}>
+    <h2 id={id} className={cn("flex items-baseline gap-2", page ? TYPE.section : TYPE.card)}>
       {children}
       {count !== undefined ? <span className="text-xs font-normal tabular-nums text-muted-foreground">{count}</span> : null}
     </h2>

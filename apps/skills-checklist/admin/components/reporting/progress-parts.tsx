@@ -3,6 +3,7 @@ import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import type { SkillProgress } from "@/lib/store"
 import { surface } from "@/lib/copy"
 import { reportingCopy as rc } from "@/lib/copy"
+import { inSentence } from "@/lib/lab/terms"
 
 /**
  * C-13 per-level strip (SC-10) and C-12 progress by setting (SH-05, SC-11, SC-12): HAND-ROLL on text rows and Badge
@@ -39,8 +40,8 @@ export function stillNeededParts(progress: SkillProgress): string[] {
   const order = { settingMinimum: 0, levelMinimum: 1, requiredCount: 2 } as const
   const unmet = [...progress.evaluation.unmet].sort((a, b) => order[a.rule] - order[b.rule]).slice(0, 3)
   for (const u of unmet) {
-    if (u.rule === "settingMinimum") out.push(`${u.needed - u.have} in ${progress.settings.find((s) => s.settingId === u.settingId)?.name ?? u.settingId}`)
-    else if (u.rule === "levelMinimum") out.push(`${u.needed - u.have} at ${progress.levels.find((l) => l.levelId === u.levelId)?.label ?? u.levelId}`)
+    if (u.rule === "settingMinimum") out.push(`${u.needed - u.have} in ${inSentence(progress.settings.find((s) => s.settingId === u.settingId)?.name ?? u.settingId)}`)
+    else if (u.rule === "levelMinimum") out.push(`${u.needed - u.have} at ${inSentence(progress.levels.find((l) => l.levelId === u.levelId)?.label ?? u.levelId)}`)
     else {
       const n = u.needed - u.have
       const unit = progress.total.noun === "demonstrations" ? (n === 1 ? "demonstration" : "demonstrations") : n === 1 ? "qualifying evaluation" : "qualifying evaluations"

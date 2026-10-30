@@ -1,18 +1,18 @@
 "use client"
 
 /**
- * Reviewer Students B, by cohort. One DS Card per cohort (the cohort is the unit a reviewer is often assigned to): the cohort's
- * student count, how many wait for the reviewer and how many are behind (each a link to the table filtered to that cohort), then
- * the top five students who need attention with their one action, and "All n" to the full cohort list. Question: does grouping
+ * Reviewer Students B, by cohort. One DS Card per cohort (the cohort is the unit a reviewer is often assigned to): how many wait for the reviewer and how many are behind (each a link to the table filtered to that cohort), then
+ * the top five students who need attention with their one action, and "All n" to the full cohort list (the only place the cohort's size shows, anatomy A5). Question: does grouping
  * by cohort make the work feel smaller and show which cohort is slipping?
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { PersonIdentityCell } from "@exxatdesignux/ui/components/data-views/person-identity-cell"
 import { initialsOf, LINK } from "@/components/lab/reviewer/parts"
 import { StatusCell, RowAction, StudentLink, StudentsFrame, needsYou, type StudentsContext } from "@/components/lab/rbac/students-frame"
-import { plural, reviewerStudentsHref } from "@/lib/lab/reviewer"
+import { reviewerStudentsHref } from "@/lib/lab/reviewer"
 
 const TOP = 5
 
@@ -32,9 +32,8 @@ function CohortCards({ ctx }: { ctx: StudentsContext }) {
         const href = (show?: string) => reviewerStudentsHref({ ...ctx.scope, cohort: g.cohort }, { show })
         return (
           <Card key={g.cohort} size="sm" className="self-start" data-cohort={g.cohort}>
-            <CardHeader className="flex flex-row items-baseline justify-between gap-3 pb-0">
-              <CardTitle className="text-base">{g.cohort}</CardTitle>
-              <span className="text-sm tabular-nums text-muted-foreground">{plural(g.rows.length, "student", "students")}</span>
+            <CardHeader className="pb-0">
+              <CardTitle className={TYPE.card}>{g.cohort}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
@@ -44,9 +43,8 @@ function CohortCards({ ctx }: { ctx: StudentsContext }) {
                 <span>
                   {g.behind ? <Link className={`${LINK} tabular-nums`} href={href("behind")}>{g.behind}</Link> : <span className="tabular-nums">0</span>} behind
                 </span>
-                <span>
-                  <span className="tabular-nums">{g.onTrack}</span> on track
-                </span>
+                {/* No "on track" count: it is the cohort size ("All n" below) minus behind, so it restated two figures already
+                    on the card (anatomy A5, 2026-10-30). */}
               </p>
               {attention.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nothing in this cohort needs you.</p>

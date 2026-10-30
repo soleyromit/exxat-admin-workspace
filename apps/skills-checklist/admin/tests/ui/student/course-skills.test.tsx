@@ -124,7 +124,7 @@ describe("S-12 status and progress (SH-02, SH-05, SC-12, AE-04, OD-03 seam)", ()
     expect(within(wound).getByText("Inpatient: 0 of 1")).toBeInTheDocument()
     expect(within(wound).getByText("Emergency: 0 of 1")).toBeInTheDocument()
     expect(within(wound).getByText("Still needed")).toBeInTheDocument()
-    expect(within(wound).getByText(/You need 1 in Emergency and have 0/)).toBeInTheDocument()
+    expect(within(wound).getByText(/You need 1 in emergency and have 0/)).toBeInTheDocument()
     expect(within(wound).queryByText("Achieved")).toBeNull()
   })
 

@@ -95,7 +95,7 @@ export function RetireFlow({ impact, cohorts, existingLists, layout, partial, in
 
   const impactBlock = (
     <section aria-labelledby={`impact-${layout}`} className="flex flex-col gap-3" data-impact>
-      <h2 id={`impact-${layout}`} className="text-base font-semibold text-foreground">Impact</h2>
+      <h2 id={`impact-${layout}`} className={TYPE.section}>Impact</h2>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
         {figures.map((f) => (
           <div key={f.label} className="flex flex-col gap-0.5" data-impact-figure={f.label}>
@@ -121,7 +121,7 @@ export function RetireFlow({ impact, cohorts, existingLists, layout, partial, in
   const deleteBlock = (
     <section aria-labelledby={`delete-${layout}`} className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4" data-delete={impact.canDelete ? "allowed" : "blocked"}>
       <div className="flex min-w-0 flex-col">
-        <h2 id={`delete-${layout}`} className="text-base font-semibold text-foreground">{`Delete the ${noun}`}</h2>
+        <h2 id={`delete-${layout}`} className={TYPE.section}>{`Delete the ${noun}`}</h2>
         <p className="text-sm text-muted-foreground">{impact.canDelete ? "Nothing is recorded against it yet, so it can be removed for good." : `${impact.deleteBlocked}, so it cannot be deleted.`}</p>
       </div>
       {/* Shown only when deleting is possible; otherwise the line above says why (no disabled controls, strategy/07 trap). */}

@@ -7,6 +7,7 @@
  * [REQ AE-02, SC-19]. Same data as A: computeImpact over the real evidence index.
  * URL: ?skill= · ?change=none shows no edit · ?state=loading.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
@@ -16,7 +17,7 @@ import { skillNoun } from "@/lib/lab/terms"
 import { shortDate } from "@/lib/v2/format"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { AttemptExample, EVIDENCE_CHOICE_MISSING, EvidenceChoice, ImpactSummary, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
-import { ConfigureLoading, ConfigureNotFound, SkillSubtitle } from "@/components/lab/configure/shell"
+import { ConfigureLoading, ConfigureNotFound } from "@/components/lab/configure/shell"
 import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
 import { ConfigureReceiptPage } from "@/components/lab/configure/check"
 import { RuleDiff } from "./admin-rule-impact-a"
@@ -81,7 +82,6 @@ export function AdminRuleImpactB() {
   return (
     <FormPage
       title={skill.name}
-      subtitle={<SkillSubtitle state={m.state} skill={skill} />}
       footer={
         <StickyFooter
           secondary={{ label: "Edit how many times", href: editHref }}
@@ -99,7 +99,7 @@ export function AdminRuleImpactB() {
           </div>
           <div className="flex min-w-0 flex-col gap-8">
           <section aria-labelledby="ri-b-rule" className="flex flex-col gap-3 border-t border-border pt-6 @min-[64rem]:border-t-0 @min-[64rem]:pt-0">
-            <h2 id="ri-b-rule" className="text-base font-semibold text-foreground">
+            <h2 id="ri-b-rule" className={TYPE.section}>
               {`${HOW_MANY_LABEL} on this ${skillNoun()}`}
             </h2>
             <RuleDiff current={m.current ? ruleSentence(m.current) : null} after={ruleSentence(m.rule)} />

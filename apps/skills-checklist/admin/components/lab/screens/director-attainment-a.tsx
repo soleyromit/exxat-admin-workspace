@@ -1,13 +1,13 @@
 "use client"
 
 /**
- * Director Attainment A, matrix. The admin students x sections heat matrix, read-only, under a readiness line for the graduating
- * cohort (preselected, still a filter). Export allowed, no configure links (director permission set, lib/lab/rbac.ts). A cell opens
- * the evidence beside the matrix. Question: does the matrix show the director where the graduating cohort is short at a glance?
+ * Director Reports A (D-L8c): one page, two tabs. Attainment (default) is the students by sections matrix, read-only with export,
+ * under a readiness line; Readiness is one table with four views (by student, skill, section, tag) and the Export menu (signed PDF,
+ * CSV). Question: does a matrix plus one report table, on one shared scope, answer the director's reporting job?
  */
 import * as React from "react"
-import { DirectorAttainment } from "@/components/lab/rbac/director-attainment"
+import { DirectorReportsPage } from "@/components/lab/director/reports-page"
 
 export function DirectorAttainmentA() {
-  return <DirectorAttainment variant="A" view="matrix" />
+  return <DirectorReportsPage variant="A" />
 }

@@ -34,7 +34,7 @@ import { withNoun } from "@/lib/lab/terms"
 import { V2StoreProvider, useV2State } from "@/lib/v2/react"
 import { approvalsBadgeCount } from "@/lib/v2/approvals"
 import { parseScope } from "@/lib/lab/scope"
-import { PERSONAS, PERSONA_BY_ID, isPersonaId, type PersonaDef } from "@/lib/lab/personas"
+import { PERSONAS, PERSONA_BY_ID, crumbParentFor, isPersonaId, type PersonaDef } from "@/lib/lab/personas"
 import { findScreen, type PersonaId } from "@/lib/lab/screens"
 import { LightFrame } from "@/components/lab/light-frame"
 
@@ -104,6 +104,29 @@ const ON = {}
 /** What the frame knows about the page, for the breadcrumb (the flow route has no persona or screen segment). */
 const FrameContext = React.createContext<{ persona?: PersonaId; title?: string }>({})
 
+/**
+ * The page's own h1, kept in step with the page (a drill list is titled by what it lists, and that title follows the URL), so the
+ * crumb leaf and the h1 always agree. Reads the single scrollport only; null until the page has rendered its heading.
+ */
+function usePageHeading(on: boolean): string | undefined {
+  const [text, setText] = React.useState<string | undefined>(undefined)
+  React.useEffect(() => {
+    if (!on) { setText(undefined); return }
+    const root = document.querySelector("[data-page-scroll]") ?? document.querySelector("main")
+    if (!root) return
+    const read = () => {
+      const h1 = root.querySelector("h1")
+      const next = h1?.textContent?.replace(/\s+/g, " ").trim() || undefined
+      setText((prev) => (prev === next ? prev : next))
+    }
+    read()
+    const mo = new MutationObserver(read)
+    mo.observe(root, { subtree: true, childList: true, characterData: true })
+    return () => mo.disconnect()
+  }, [on])
+  return on ? text : undefined
+}
+
 function Crumbs() {
   const pathname = usePathname() ?? ""
   const ctx = React.useContext(FrameContext)
@@ -146,7 +169,19 @@ function Crumbs() {
     crumbs.push({ label: "Settings", href: settingsHref(link) })
     groupLeaf = settingsLeafLabel
   }
-  const leafLabel = course ? course.code : groupLeaf ?? leaf ?? (title ? withNoun(title) : undefined)
+  // A page below a nav row reads "{row} > {page}" (lib/lab/personas.ts CRUMB_PARENTS): Approvals > Submission, Students >
+  // Student record, Dashboard > {drill title}. The parent links back with the scope; a drill on the dashboard URL drops only its
+  // own params. Product words, so it shows in present mode too (anatomy A3, 2026-10-30).
+  const parent = !back && !panelItem && !settingsLeafLabel ? crumbParentFor(link.screen, params) : undefined
+  const heading = usePageHeading(parent?.leaf === "heading")
+  if (parent) {
+    const href = parent.drop && parent.parent === link.screen
+      ? labHref(parent.parent, Object.fromEntries(parent.drop.map((k) => [k, null])), link)
+      : navHref(parent.parent, link)
+    crumbs.push({ label: parent.label, href })
+  }
+  const parentLeaf = parent?.leaf === "heading" ? heading : undefined
+  const leafLabel = course ? course.code : parentLeaf ?? groupLeaf ?? leaf ?? (title ? withNoun(title) : undefined)
   if (leafLabel) crumbs.push({ label: leafLabel })
   return (
     <BreadcrumbList className="flex-nowrap">

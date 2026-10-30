@@ -52,7 +52,7 @@ function SkillCard({ r, onOpen, selected }: { r: LibraryRow; onOpen: (id: string
         {r.isNew ? <Badge variant="outline">New</Badge> : null}
       </span>
       <span className="truncate text-xs text-muted-foreground">
-        {[r.section, r.draft ? "Draft saved" : "", r.status === "configured" && r.courses ? plural(r.courses, "course", "courses") : "", r.evidence ? plural(r.evidence, "evaluation", "evaluations") : ""].filter(Boolean).join(", ")}
+        {[r.categoryInactive ? `${r.section} (inactive)` : r.section, r.draft ? "Draft saved" : "", r.status === "configured" && r.courses ? plural(r.courses, "course", "courses") : "", r.evidence ? plural(r.evidence, "evaluation", "evaluations") : ""].filter(Boolean).join(", ")}
       </span>
     </li>
   )

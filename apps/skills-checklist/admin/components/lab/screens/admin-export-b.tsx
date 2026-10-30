@@ -12,26 +12,25 @@
  *
  * Regions (list budget 4): header · scope bar · export card with file preview · exports this session.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { SelectionTileGrid } from "@exxatdesignux/ui/components/ui/selection-tile-grid"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
-import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { fmt } from "@/lib/v2/format"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
 import { ImpossibleScopeBanner } from "@/components/lab/dashboard/impossible-scope"
 import { asOfLabel, useDashboardUrl, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
-import { BASIS_LABEL, chipValue, explainScope, parseDemoState, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
-import { buildAttainment, detailColumns, detailRows, exportFormats, FORMAT_DECISION_PENDING, isAttView, scopeLines, summaryRows, toCsv, type AttView, type DetailRow, type ExportFormat } from "@/lib/lab/attainment"
+import { BASIS_LABEL, chipValue, explainScope, parseDemoState, recountText, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
+import { buildAttainment, detailColumns, detailRows, exportFormats, isAttView, scopeLines, summaryRows, toCsv, type AttView, type DetailRow, type ExportFormat } from "@/lib/lab/attainment"
 import { basisOf, type ScopeKey } from "@/lib/lab/scope"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
@@ -41,7 +40,7 @@ const VIEW_WORD: Record<AttView, string> = { students: "Students", get skills() 
 
 interface Made { id: number; file: string; format: string; rows: number; lines: string[]; at: string }
 
-const cellsOf = (r: DetailRow): string[] => [r.student, r.cohort, r.group, r.skill, r.section, r.date, r.evaluator, r.setting, r.location, r.outcome, r.status, r.feedback, r.selfRating, r.selfNote, r.review, r.reviewNote]
+const cellsOf = (r: DetailRow): string[] => [r.student, r.cohort, r.group, r.skill, r.section, r.date, r.evaluator, r.setting, r.location, r.outcome, r.status, r.feedback, r.selfRating, r.selfNote, r.review, r.reviewNote, r.required]
 
 export function AdminExportB() {
   const url = useDashboardUrl()
@@ -100,9 +99,11 @@ export function AdminExportB() {
   const repeat = (x: Made) => setMade((m) => [{ ...x, id: Date.now(), at: asOfLabel(new Date()) }, ...m])
 
   return (
-    <PageFrame title="Export" subtitle={<ScopeContext termName={term.name} scope={url.scope} at={snap.at} />} actions={<SampleDataBadge />}>
+    <PageFrame title="Export" actions={<SampleDataBadge />}>
       <div className="flex flex-col gap-4" data-export-lab="B" data-page-type="list" data-export-format={format} data-export-rows={count}>
         <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={label} />
+        {/* RP-08: the file counts only evidence from the chosen location or setting; said once, as on Reports. */}
+        {!impossible && recountText(url.scope) ? <p className="text-sm text-muted-foreground" data-recount>{recountText(url.scope)}</p> : null}
         {demo === "error" ? (
           <LocalBanner variant="error" title="The export could not be prepared" retry={{ label: "Try again", onClick: () => url.setParams({ state: null }) }}>The scope is kept. Nothing was exported.</LocalBanner>
         ) : impossible ? (
@@ -110,23 +111,19 @@ export function AdminExportB() {
         ) : (
           <div className="grid items-start gap-4 xl:grid-cols-[26rem_minmax(0,1fr)]" data-region="export">
             <Card size="sm">
-              <CardHeader><CardTitle className="text-base">What to export</CardTitle></CardHeader>
+              <CardHeader><CardTitle className={TYPE.card}>What to export</CardTitle></CardHeader>
               <CardContent className="flex flex-col gap-5">
                 <SelectionTileGrid sectionLabel="Format" options={formats.map((f) => ({ value: f.id, label: f.label, icon: f.icon }))} columns={3} value={format} onValueChange={setFormat} interaction="radio" idPrefix="export-b" itemVariant="outline" />
-                {!isPdf ? (
-                  <p className="-mt-3 flex items-center gap-2 text-xs text-muted-foreground" data-od10-seam>
-                    <Tip label={FORMAT_DECISION_PENDING}><Badge variant="outline" tabIndex={0}>Decision pending</Badge></Tip>
-                    CSV or Excel
-                  </p>
-                ) : (
+                {/* OD-10 (CSV or Excel) stays open: both tiles are offered; the open decision is a lab note, not page copy (anatomy A7). */}
+                {isPdf ? (
                   <div className="flex flex-col gap-1.5">
                     <span className="text-sm font-medium text-foreground">Summary of</span>
                     <ViewSegmentedControl<AttView> aria-label="Summary view" value={view} onValueChange={(v) => url.setParams({ tab: v === "students" ? null : v })} options={(["students", "skills", "sections", "tags"] as AttView[]).map((v) => ({ value: v, label: v === "skills" ? capitalize(skillNounPlural()) : VIEW_WORD[v] }))} />
                   </div>
-                )}
+                ) : null}
                 {/* What the file contains is on the surface; what it leaves out is one click away (strategy/07 K5, prose budget). */}
                 <section aria-labelledby="exp-b-has" className="flex flex-col gap-2">
-                  <h3 id="exp-b-has" className="text-sm font-semibold text-foreground">Contains</h3>
+                  <h3 id="exp-b-has" className={TYPE.group}>Contains</h3>
                   <ul className="flex flex-col gap-1.5 text-sm text-foreground">{def.contains.map((c) => <li key={c} className="flex items-start gap-2"><i className="fa-light fa-check mt-1 text-xs text-muted-foreground" aria-hidden="true" />{c}</li>)}</ul>
                 </section>
                 {def.excludes.length > 0 ? (
@@ -149,7 +146,7 @@ export function AdminExportB() {
               </CardContent>
             </Card>
             <Card size="sm" className="min-w-0">
-              <CardHeader><CardTitle className="text-base">{`Preview of ${file}`}</CardTitle></CardHeader>
+              <CardHeader><CardTitle className={TYPE.card}>{`Preview of ${file}`}</CardTitle></CardHeader>
               <CardContent className="flex min-w-0 flex-col gap-3">
                 {/* The literal first lines of the file (data, like the preview rows below), so they are data labels, not page prose. */}
                 <ul className="flex flex-col gap-0.5 rounded-md bg-muted/50 px-3 py-2 font-mono text-xs text-foreground" aria-label="File header: the filters that produced it" data-export-header data-viz-label>
@@ -160,15 +157,20 @@ export function AdminExportB() {
                 ) : isPdf ? (
                   <SummaryPreview model={model} view={view} />
                 ) : (
+                  // The file has more columns than the card is wide: the preview scrolls sideways, and a fade on the right edge
+                  // says so (anatomy A10, 2026-10-30). Every column stays in the file; none is dropped from the preview.
+                  <div className="relative">
                   <Table containerClassName="rounded-md border border-border" scrollLabel="First rows of the file">
                     <TableCaption className="sr-only">{`First ${PREVIEW_ROWS} of ${fmt(rows.length)} rows`}</TableCaption>
                     <TableHeader><TableRow>{detailColumns().map((c) => <TableHead key={c} scope="col" className="whitespace-nowrap">{c}</TableHead>)}</TableRow></TableHeader>
                     <TableBody>
                       {rows.slice(0, PREVIEW_ROWS).map((r, i) => (
-                        <TableRow key={`${r.student}-${r.skill}-${r.date}-${i}`}>{cellsOf(r).map((c, j) => <TableCell key={j} className="max-w-56 truncate whitespace-nowrap text-sm" title={c}>{c || <span className="text-muted-foreground">Blank</span>}</TableCell>)}</TableRow>
+                        <TableRow key={`${r.student}-${r.skill}-${r.date}-${i}`}>{cellsOf(r).map((c, j) => <TableCell key={j} className="whitespace-nowrap text-sm">{c || <span className="text-muted-foreground">Blank</span>}</TableCell>)}</TableRow>
                       ))}
                     </TableBody>
                   </Table>
+                  <span role="presentation" data-edge-fade className="pointer-events-none absolute inset-y-px right-px w-12 rounded-r-md bg-gradient-to-l from-[var(--background)] to-transparent" />
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -176,10 +178,8 @@ export function AdminExportB() {
         )}
         <section aria-labelledby="exp-b-made" className="flex flex-col gap-2" data-region="history">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 id="exp-b-made" className="text-base font-semibold text-foreground">Exports this session</h2>
-            <Tip label="A repeating export (for example every Monday) is a proposal, not built. Each export here can be made again with the same filters.">
-              <Badge variant="outline" tabIndex={0}>Repeating exports: proposed</Badge>
-            </Tip>
+            <h2 id="exp-b-made" className={TYPE.section}>Exports this session</h2>
+            {/* Repeating exports are a proposal, not built: a lab note (screens.json), never a badge in product UI. */}
           </div>
           {made.length === 0 ? (
             <p className="text-sm text-muted-foreground">No exports yet.</p>

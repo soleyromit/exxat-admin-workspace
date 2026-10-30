@@ -1,20 +1,20 @@
 "use client"
 
 /**
- * Chrome for the reviewer's Student record: breadcrumb Students > Student record, the student's name and cohort, the shared scope
+ * Chrome for the reviewer's Student record (the shell breadcrumb names the page; no body breadcrumb, anatomy A3): the student's name and cohort, the shared scope
  * carried in every link (the record is the whole student, so the scope only travels on), and the shared tables. `?student=` names
  * the student; without it the student of the oldest waiting submission opens. Counted evaluations offer "Request a correction",
  * never an edit [REQ RV-03, RV-05; strategy/03 D1]. Every evaluation opens in full, read only [REQ RP-07]: `?evaluation=` names
  * one (so the attainment peek and a pasted link land on it); `?skill=` without a skill panel opens every evaluation of that skill
- * (the director's Evidence count). The sheet is components/lab/reviewer/evaluation-sheet.tsx.
+ * (the director's Evidence count). The sheet is components/lab/evaluation/evaluation-view.tsx.
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
+import { ABOVE_PANEL_MENU } from "@/components/lab/overlay-layer"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { PageFrame } from "@/components/skills/page-header"
 import { reviewItemHref, studentRecord, type RecordEvaluation, type RecordSkill, type StudentRecordModel } from "@/lib/lab/reviewer"
@@ -28,7 +28,7 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { LINK as LINK_U } from "@/components/lab/link-styles"
 import { longDate } from "@/lib/v2/format"
 import { evaluationView, evaluationViewsFor, type EvaluationView } from "@/lib/lab/evaluation-view"
-import { EvaluationSheet } from "@/components/lab/reviewer/evaluation-sheet"
+import { EvaluationSheet } from "@/components/lab/evaluation/evaluation-view"
 
 export interface RecordContext extends ReviewerContext {
   record: StudentRecordModel
@@ -60,40 +60,24 @@ export function RecordFrame({ variant, children, evaluationInPanel }: { variant:
   const corrections = React.useMemo(() => new Set(ctx.decisions.flatMap((d) => (d.kind === "correction" ? [d.evaluationId] : []))), [ctx.decisions])
   const studentId = ctx.param("student") ?? ctx.scoped?.rows[0]?.studentId ?? null
   const record = React.useMemo(() => (ctx.state && studentId ? studentRecord(ctx.state, ctx.rows, studentId, corrections) : null), [ctx.state, ctx.rows, studentId, corrections])
-  const crumbs = (
-    <Breadcrumb>
-      <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link href={withScope("/lab/reviewer/students", ctx.scope)}>Students</Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>Student record</BreadcrumbPage>
-        </BreadcrumbItem>
-      </BreadcrumbList>
-    </Breadcrumb>
-  )
   if (!ctx.ready) {
     return (
-      <PageFrame title="Student record" lead={crumbs}>
+      <PageFrame title="Student record">
         <QueueSkeleton rows={6} />
       </PageFrame>
     )
   }
   if (!record) {
     return (
-      <PageFrame title="Student record" lead={crumbs}>
+      <PageFrame title="Student record">
         <p className="text-sm text-muted-foreground">No student with this link. Open a student from Students or Approvals.</p>
       </PageFrame>
     )
   }
   return (
     <DecisionProvider state={ctx.state} rows={ctx.rows}>
-      <PageFrame title={record.name} lead={crumbs} actions={<SampleDataBadge />}>
+      <PageFrame title={record.name} actions={<SampleDataBadge />}>
         <div className="flex flex-col gap-4" data-page-type="detail" data-reviewer-lab={`student-record-${variant}`}>
-          <p className="text-sm text-muted-foreground">{record.group ? `${record.cohort}, ${record.group}` : record.cohort}</p>
           <DecisionBanner />
           <EvaluationOpenContext.Provider value={openEvaluation}>{children({ ...ctx, record })}</EvaluationOpenContext.Provider>
         </div>
@@ -103,43 +87,58 @@ export function RecordFrame({ variant, children, evaluationInPanel }: { variant:
   )
 }
 
+/** The student's cohort and group as a labelled fact in the body, never a line under the name (D-L8b, Romit 2026-10-30): two
+ * students can share a name, so the record says which one. Read from the record, so it follows whichever student opens. */
+export function CohortFact({ record }: { record: StudentRecordModel }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5" data-fact="cohort">
+      <span className="text-muted-foreground">Cohort</span>
+      <span className="text-foreground">{record.group ? `${record.cohort}, ${record.group}` : record.cohort}</span>
+    </span>
+  )
+}
+
 export function EvaluationsTable({ rows, scope, compact = false }: { rows: RecordEvaluation[]; scope: LabScope; compact?: boolean }) {
   const ui = useDecisionUi()
   const openEvaluation = useOpenEvaluation()
   const columns: ColumnDef<RecordEvaluation>[] = [
-    ...(compact ? [] : ([{ key: "skill", label: capitalize(skillNoun()), width: 260, sortable: true, cell: (r) => <span className="truncate text-sm font-medium">{r.skill}</span> }] as ColumnDef<RecordEvaluation>[])),
+    ...(compact ? [] : ([{ key: "skill", label: capitalize(skillNoun()), width: 260, sortable: true, cell: (r) => <span className="block truncate text-sm font-medium" title={r.skill}>{r.skill}</span> }] as ColumnDef<RecordEvaluation>[])),
     { key: "date", label: "Date", width: compact ? 110 : 120, sortable: true, cell: (r) => <span className="text-sm tabular-nums">{dateLabel(r.date)}</span> },
     { key: "status", label: "Status", width: compact ? 170 : 190, sortable: true, cell: (r) => <RecordStatusBadge status={r.status} /> },
-    { key: "evaluator", label: "Evaluator", width: compact ? 130 : 180, cell: (r) => <span className="truncate text-sm">{r.evaluator}{r.evaluatorUnverified ? <span className="text-muted-foreground"> (new name)</span> : null}</span> },
-    ...(compact ? [] : ([{ key: "setting", label: "Setting", width: 150, cell: (r) => <span className="truncate text-sm text-muted-foreground">{r.setting}</span> }] as ColumnDef<RecordEvaluation>[])),
+    { key: "evaluator", label: "Evaluator", width: compact ? 130 : 180, cell: (r) => <span className="block whitespace-normal break-words py-1 text-sm">{r.evaluator}{r.evaluatorUnverified ? <span className="text-muted-foreground"> (not verified)</span> : null}</span> },
+    ...(compact ? [] : ([{ key: "setting", label: "Setting", width: 150, cell: (r) => <span className="block truncate text-sm text-muted-foreground" title={r.setting}>{r.setting}</span> }] as ColumnDef<RecordEvaluation>[])),
     {
       key: "act",
       label: "Action",
-      width: 132,
+      // View, plus an overflow for Request a correction on counted and unmet evaluations.
+      width: compact ? 104 : 112,
       resizable: false,
       header: () => <span className="sr-only">Action</span>,
       cell: (r) =>
         r.queueKey ? (
           <Link className={`${LINK_U} text-sm`} href={reviewItemHref(scope, r.queueKey)}>Review</Link>
         ) : (
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-2">
             {/* RP-07: every recorded evaluation opens in full, read only. */}
             {openEvaluation ? (
               <Button type="button" variant="link" size="sm" className="h-auto p-0" aria-label={`View ${r.skill}, ${dateLabel(r.date)}`} onClick={() => openEvaluation(r.id)} {...railTriggerProps()}>
                 View
               </Button>
             ) : null}
+            {/* Request a correction stays one click away in a per-row overflow (design review 2026-10-30, others: it repeated on
+                every row). It never edits the evaluation: the evaluator gets a new link and a correction is a new version [REQ
+                RV-03, RV-05]. */}
             {r.status === "Counted" || r.status === "Unmet" ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="icon-sm" aria-label={`More for ${r.skill}, ${dateLabel(r.date)}`}>
-                <i className="fa-light fa-ellipsis" aria-hidden="true" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => ui.openCorrection({ id: r.id, skill: r.skill })}>Request a correction</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="ghost" size="icon-sm" aria-label={`More actions: ${r.skill}, ${dateLabel(r.date)}`}>
+                    <i className="fa-light fa-ellipsis" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className={ABOVE_PANEL_MENU}>
+                  <DropdownMenuItem onSelect={() => ui.openCorrection({ id: r.id, skill: r.skill })}>Request a correction</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : null}
           </span>
         ),
@@ -174,7 +173,7 @@ export function SkillsTable({ rows, onOpen }: { rows: RecordSkill[]; onOpen?: (s
           <span className="text-sm font-medium">{r.skill}</span>
         ),
     },
-    { key: "category", label: "Section", width: 200, sortable: true, cell: (r) => <span className="truncate text-sm text-muted-foreground">{r.category}</span> },
+    { key: "category", label: "Section", width: 200, sortable: true, cell: (r) => <span className="block truncate text-sm text-muted-foreground" title={r.category}>{r.category}</span> },
     { key: "state", label: "State", width: 210, sortable: true, cell: (r) => <SkillStateBadge state={r.state} /> },
     { key: "numbers", label: "Counted", width: 110, cell: (r) => <span className="text-sm tabular-nums">{r.numbers}</span> },
     { key: "awaiting", label: "Awaiting approval", width: 150, cell: (r) => (r.awaiting ? <span className="text-sm tabular-nums">{r.awaiting}</span> : <span className="sr-only">None</span>) },

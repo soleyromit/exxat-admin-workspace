@@ -6,6 +6,7 @@
  * at most 3 regions (light header, outcome, one supporting card) and about 15 words of prose above the fold.
  * Copy rules: one link per request (ledger D-L2), so no "next request" button; link lifetime is OD-18 (open), dates are samples.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import { skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
@@ -69,17 +70,17 @@ export function NextSteps({ req, lines, offline }: { req: EvRequest; lines: Rece
         { key: "student", done: false, title: `Then ${req.student.first} sees it` },
       ]
     : [
-        { key: "sent", done: true, title: `Signed off: ${skillsWord(lines.length)}`, detail: req.onRecord ? undefined : "The program may confirm your details." },
         ...(s.counts + s.feedback > 0 ? [{ key: "counts", done: true, title: s.counts ? `Counted now: ${skillsWord(s.counts)}` : "Feedback recorded", lines: [...byStatus("counts"), ...byStatus("feedback")] }] : []),
         ...(s.waits > 0 ? [{ key: "waits", done: false, title: "Awaits program approval", lines: byStatus("waits") }] : []),
         { key: "student", done: s.waits === 0, title: s.waits === 0 ? `${req.student.first} sees it` : `Then ${req.student.first} sees it` },
       ]
   return (
     <div className="flex flex-col gap-4" data-ev-receipt="steps">
-      <PageHeader title={outcomeTitle(lines, offline)} subtitle={<span data-viz-label>{`${req.student.name} · ${req.course.code}`}</span>} className={HEADER} />
+      {/* No subtitle and no "Signed off" step: the title says it, the steps name the student (anatomy, 2026-10-30). */}
+      <PageHeader title={outcomeTitle(lines, offline)} className={HEADER} />
       <Card size="sm" data-region="next-steps">
         <CardHeader className="pb-0">
-          <CardTitle className="text-sm">What happens next</CardTitle>
+          <CardTitle className={TYPE.card}>What happens next</CardTitle>
         </CardHeader>
         <CardContent>
           <ol className="flex flex-col">
@@ -87,7 +88,7 @@ export function NextSteps({ req, lines, offline }: { req: EvRequest; lines: Rece
               <li key={st.key} className="relative flex gap-3 pb-4 last:pb-0">
                 {i < steps.length - 1 ? <span className="absolute top-6 bottom-0 left-[11px] w-px bg-border" aria-hidden="true" /> : null}
                 <span className={`relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full border ${st.done ? "border-foreground bg-foreground text-background" : "border-border bg-background text-muted-foreground"}`} aria-hidden="true">
-                  <i className={`fa-solid ${st.done ? "fa-check" : "fa-circle"} text-[10px]`} />
+                  <i className={`fa-solid ${st.done ? "fa-check" : "fa-circle"} text-xs`} aria-hidden="true" />
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
                   <p className="text-sm font-medium text-foreground">
@@ -111,7 +112,7 @@ export function NextSteps({ req, lines, offline }: { req: EvRequest; lines: Rece
           </ol>
         </CardContent>
       </Card>
-      <p className="text-sm text-muted-foreground">It cannot be changed from here.</p>
+      <p className="text-sm text-muted-foreground">{offline || req.onRecord ? "It cannot be changed from here." : "The program may confirm your details. It cannot be changed from here."}</p>
     </div>
   )
 }
@@ -126,11 +127,11 @@ export function StudentSees({ req, lines, offline }: { req: EvRequest; lines: Re
         <span className="flex size-10 items-center justify-center rounded-full bg-muted text-foreground" aria-hidden="true">
           <i className={`fa-light ${offline ? "fa-cloud-arrow-up" : "fa-circle-check"} text-lg`} />
         </span>
-        <PageHeader title={offline ? "Saved on this phone" : `Thank you, ${req.evaluator.name.split(",")[0]}`} subtitle={offline ? "It sends when you reconnect." : `${skillsWord(lines.length)} signed off for ${req.student.first}.`} className={HEADER} />
+        <PageHeader title={offline ? "Saved on this phone" : `Thank you, ${req.evaluator.name.split(",")[0]}`} subtitle={offline ? "It sends when you reconnect." : undefined} className={HEADER} />
       </div>
       <Card size="sm" data-region="student-view" aria-label={`What ${req.student.first} sees`}>
         <CardHeader className="pb-0">
-          <CardTitle className="text-sm">{`What ${req.student.first} sees`}</CardTitle>
+          <CardTitle className={TYPE.card}>{`What ${req.student.first} sees`}</CardTitle>
         </CardHeader>
         <CardContent>
           <ul className="flex flex-col divide-y divide-border" data-viz-label>
@@ -168,7 +169,7 @@ export function ResendPreview({ req }: { req: EvRequest }) {
   ]
   return (
     <div className="flex flex-col gap-4 pt-2" data-ev-expired="resend">
-      <PageHeader title={`Ask ${req.student.first} to resend`} subtitle="This link no longer works." className={HEADER} />
+      <PageHeader title={`Ask ${req.student.first} to resend`} className={HEADER} />
       <Card size="sm" data-region="request-preview">
         <CardContent className="flex flex-col gap-3">
           <StatusBadge label="Link expired" tone="neutral" icon="fa-link-slash" size="md" />
@@ -213,7 +214,7 @@ export function IdentifySeam({ req }: { req: EvRequest }) {
         <Badge variant="outline">Open decision</Badge>
         How a new link is issued is not decided. Shape only.
       </p>
-      <PageHeader title="This link has expired" subtitle="Enter the address it was sent to." className={HEADER} />
+      <PageHeader title="This link has expired" className={HEADER} />
       <Card size="sm" data-region="identify">
         <CardContent>
           {sent ? (
@@ -224,7 +225,7 @@ export function IdentifySeam({ req }: { req: EvRequest }) {
           ) : (
             <form className="flex flex-col gap-3" onSubmit={submit} noValidate>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor={id}>Your email</Label>
+                <Label htmlFor={id}>Email this link was sent to</Label>
                 <Input id={id} type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} className="min-h-(--control-height-touch)" />
                 {error ? <p id={`${id}-error`} className="text-sm text-destructive">{error}</p> : null}
               </div>

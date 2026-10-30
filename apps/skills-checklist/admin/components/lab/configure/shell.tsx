@@ -62,34 +62,6 @@ export function useHref() {
 export const studentsWithEvidence = (state: V2State, skillId: string) => new Set(evalsOfSkill(state, skillId).map((e) => e.studentId)).size
 
 /**
- * Facts only (layout rule L1): the library status (the requirement's words: Not configured or Configured, decision D-X31), when a
- * draft is saved the day it was saved, the category and, once configured, how many students have evidence.
- */
-export function SkillSubtitle({ state, skill }: { state: V2State; skill: Skill }) {
-  const configured = isConfigured(skill)
-  const spec = STATUS_META[configured ? "configured" : "not-configured"]
-  const n = studentsWithEvidence(state, skill.id)
-  const draft = state.configDrafts?.[skill.id]
-  return (
-    <span className="inline-flex flex-wrap items-center gap-2" data-skill-facts>
-      {/* One state hue per page: Configured is neutral; amber stays for what needs action. */}
-      {configured ? (
-        <StatusBadge label={spec.label} tone="neutral" icon={spec.icon} size="sm" />
-      ) : (
-        // The consequence lives on the chip, not in a banner that repeats it [REQ IM-09].
-        <Tip label={notConfiguredBlock(true)}>
-          <span tabIndex={0} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]" aria-label={`${spec.label}. ${notConfiguredBlock(true)}`}>
-            <StatusBadge label={spec.label} tone="warning" icon={spec.icon} size="sm" />
-          </span>
-        </Tip>
-      )}
-      {draft ? <span data-draft-note>{`Draft saved ${shortDate(draft.at.slice(0, 10))}.`}</span> : null}
-      <span>{configured && n > 0 ? `${skill.category}. ${n} students have evidence.` : skill.category}</span>
-    </span>
-  )
-}
-
-/**
  * The Configure page title (Romit 2026-10-27, "needs to be in one line, can we represent Airway better, needs to give a better
  * hierarchy and context"; then "Needs to be in one line"): the h1, the status chip, then the category as a quiet outline badge
  * with a folder glyph that links to the library filtered by it (where this skill lives), all on one line, wrapping only when

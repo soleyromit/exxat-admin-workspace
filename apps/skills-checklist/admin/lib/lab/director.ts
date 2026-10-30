@@ -19,7 +19,7 @@ import type { Skill, Submission, V2State, Verification } from "@/lib/v2/types"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { STORY } from "@/lib/v2/generate"
 import { FAR_BEHIND_MISSING, graduationStageOf, requiredToComplete, type GraduationStage } from "@/lib/v2/population"
-import { GRADUATION_STAGE_LABEL, RECORD_STATE_META, UNMET_LABEL } from "@/lib/v2/labels"
+import { GRADUATION_STAGE_LABEL, OUTCOME_LABEL, RECORD_STATE_META, UNMET_LABEL } from "@/lib/v2/labels"
 import { fmt, plural as fmtPlural, shortDate as fmtShortDate } from "@/lib/v2/format"
 import { evalsOfStudent, evaluationById, personById, submissionsOfStudent } from "@/lib/v2/evidence-index"
 import { skillProgress } from "@/lib/v2/student"
@@ -68,8 +68,19 @@ export function directorQuery(scope: LabScope, extra: Record<string, string | un
   return q.toString()
 }
 
-export type DirectorSlug = "dashboard" | "verification-detail" | "reports"
+export type DirectorSlug = "dashboard" | "verification-detail" | "attainment"
 export const directorHref = (slug: DirectorSlug, scope: LabScope, extra: Record<string, string | undefined> = {}): string => `${LAB_DIRECTOR}/${slug}?${directorQuery(scope, extra)}`
+
+/**
+ * Director Reports is one page with two tabs (D-L8c): Attainment (default, no `tab` param) and Readiness (`tab=readiness`). The
+ * page lives on the nav row's slug, `attainment`; the former `reports` URL redirects to the Readiness tab with its params kept.
+ */
+export type ReportsTab = "attainment" | "readiness"
+export const REPORTS_TABS: ReportsTab[] = ["attainment", "readiness"]
+export const REPORTS_TAB_LABEL: Record<ReportsTab, string> = { attainment: "Attainment", readiness: "Readiness" }
+export const isReportsTab = (v: string | null | undefined): v is ReportsTab => REPORTS_TABS.includes(v as ReportsTab)
+export const reportsHref = (scope: LabScope, tab: ReportsTab, extra: Record<string, string | undefined> = {}): string =>
+  directorHref("attainment", scope, { ...extra, tab: tab === "attainment" ? undefined : tab })
 
 /** Lists behind the figures (Dashboard C reads them, so the list length equals the figure). */
 export type ListKey = "complete" | "short" | "several" | "far" | "open" | "ready" | "gaps" | "waiting" | "only" | "has" | "progress" | "notmet" | "unqualified" | "noevidence"
@@ -499,8 +510,8 @@ export function detailModel(store: V2State, m: Readiness, studentId: string | nu
 // ---------------------------------------------------------------------------------------------------------------------
 // Reports (RP-01..RP-10)
 
-export type ReportView = "student" | "skill" | "section"
-export const REPORT_VIEWS: ReportView[] = ["student", "skill", "section"]
+export type ReportView = "student" | "skill" | "section" | "tag"
+export const REPORT_VIEWS: ReportView[] = ["student", "skill", "section", "tag"]
 export const isReportView = (v: string | null | undefined): v is ReportView => REPORT_VIEWS.includes(v as ReportView)
 
 export interface StudentReportRow extends Record<string, unknown> {
@@ -526,6 +537,22 @@ export interface SkillReportRow extends Record<string, unknown> {
   noEvidence: number
   unqualified: number
   students: number
+  /** The skill's level in the scope's course [REQ RP-03, CM-03], strongest mapping first; absent when no course is chosen. */
+  level?: CourseLevel
+}
+export type CourseLevel = "mandatory" | "recommended" | "optional"
+/** One row per tag over the required skills [REQ RP-04]. A skill with several tags counts under each, so rows overlap. */
+export interface TagReportRow extends Record<string, unknown> {
+  id: string
+  tag: string
+  skills: number
+  achieved: number
+  progress: number
+  notMet: number
+  noEvidence: number
+  unqualified: number
+  records: number
+  pct: number
 }
 export interface SectionReportRow extends Record<string, unknown> {
   id: string
@@ -555,13 +582,19 @@ export interface ReportModel {
   students: StudentReportRow[]
   skills: SkillReportRow[]
   sections: SectionReportRow[]
+  tags: TagReportRow[]
+  /** Required skills that carry more than one tag (they count under each), and those with none [REQ RP-04]. */
+  multiTagged: number
+  untagged: number
+  /** The course the skill levels were read for (scope.course), or "" when none is chosen. */
+  course: string
   /** Evaluation-level rows the CSV carries for this scope. */
   csvRows: number
   csvSample: CsvRow[]
 }
 
 const pct = (a: number, b: number) => (b === 0 ? 0 : Math.round((a / b) * 100))
-const OUTCOME_WORD: Record<string, string> = { met: "Met", "not-met": "Unmet", "not-yet": "Not yet" }
+const OUTCOME_WORD: Record<string, string> = OUTCOME_LABEL
 
 export function reportModel(m: Readiness): ReportModel {
   const ev = m.population.evidenceState
@@ -575,6 +608,17 @@ export function reportModel(m: Readiness): ReportModel {
     const noEvidence = ls.length - achieved - progress - unqualified
     return { id: r.id, name: r.name, achieved, progress, notMet: noEvidence + unqualified, noEvidence, unqualified, required: ls.length, pct: pct(achieved, ls.length) }
   })
+  // RP-03: under a course scope each skill names its level in that course, from the same mapping rows graduationSkillsIn reads.
+  const course = m.scope.course
+  const RANK: Record<CourseLevel, number> = { mandatory: 0, recommended: 1, optional: 2 }
+  const levelBy = new Map<string, CourseLevel>()
+  if (course) {
+    for (const x of ev.mappings ?? []) {
+      if (x.courseId !== course || x.level === "not-expected") continue
+      const prev = levelBy.get(x.skillId)
+      if (!prev || RANK[x.level] < RANK[prev]) levelBy.set(x.skillId, x.level)
+    }
+  }
   const skills: SkillReportRow[] = m.required.map((k) => {
     let achieved = 0
     let progress = 0
@@ -586,7 +630,8 @@ export function reportModel(m: Readiness): ReportModel {
       else if (st === "unqualified") unqualified += 1
     }
     const noEvidence = m.rows.length - achieved - progress - unqualified
-    return { id: k.id, name: k.name, section: k.category, achieved, progress, notMet: noEvidence + unqualified, noEvidence, unqualified, students: m.rows.length }
+    const level = course ? levelBy.get(k.id) : undefined
+    return { id: k.id, name: k.name, section: k.category, achieved, progress, notMet: noEvidence + unqualified, noEvidence, unqualified, students: m.rows.length, ...(level ? { level } : {}) }
   })
   const secMap = new Map<string, SectionReportRow>()
   for (const k of skills) {
@@ -601,7 +646,25 @@ export function reportModel(m: Readiness): ReportModel {
     secMap.set(k.section, r)
   }
   const sections = [...secMap.values()].map((r) => ({ ...r, pct: pct(r.achieved, r.records) })).sort((a, b) => a.pct - b.pct || a.section.localeCompare(b.section))
-  const ids = new Set(m.rows.map((r) => r.id))
+  const tagsOf = new Map(m.required.map((k) => [k.id, k.tags ?? []]))
+  const tagMap = new Map<string, TagReportRow>()
+  for (const k of skills) {
+    for (const t of tagsOf.get(k.id) ?? []) {
+      const r = tagMap.get(t) ?? { id: t, tag: t, skills: 0, achieved: 0, progress: 0, notMet: 0, noEvidence: 0, unqualified: 0, records: 0, pct: 0 }
+      r.skills += 1
+      r.achieved += k.achieved
+      r.progress += k.progress
+      r.notMet += k.notMet
+      r.noEvidence += k.noEvidence
+      r.unqualified += k.unqualified
+      r.records += k.students
+      tagMap.set(t, r)
+    }
+  }
+  const tags = [...tagMap.values()].map((r) => ({ ...r, pct: pct(r.achieved, r.records) })).sort((a, b) => a.pct - b.pct || a.tag.localeCompare(b.tag))
+  const multiTagged = m.required.filter((k) => (k.tags ?? []).length > 1).length
+  const untagged = m.required.filter((k) => (k.tags ?? []).length === 0).length
+  const ids =new Set(m.rows.map((r) => r.id))
   const reqIds = new Set(m.required.map((k) => k.id))
   const evs = ev.evaluations.filter((e) => ids.has(e.studentId) && reqIds.has(e.skillId))
   const nameOf = new Map(m.rows.map((r) => [r.id, r.name]))
@@ -619,7 +682,7 @@ export function reportModel(m: Readiness): ReportModel {
       location: e.location ?? "",
       feedback: e.versions.at(-1)?.detail?.feedback ?? "",
     }))
-  return { students, skills, sections, csvRows: evs.length, csvSample }
+  return { students, skills, sections, tags, multiTagged, untagged, course, csvRows: evs.length, csvSample }
 }
 
 /** Columns the CSV carries, one row per evaluation [REQ RP-10]. Self-ratings and private notes stay out (v2 D36). */

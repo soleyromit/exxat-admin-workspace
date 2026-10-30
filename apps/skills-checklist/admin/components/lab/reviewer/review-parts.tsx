@@ -33,12 +33,13 @@ const dateLabel = (iso: string | null) => (iso ? shortDate(iso) : "Not recorded"
  * required", the skill's setting, REQ SC-15) and the wait. Where the evaluator is not on the program's list, the one decision that
  * fits sits beside the words (Adopt, merge or assign).
  */
-export function WhyHeld({ row }: { row: ReviewRow }) {
+/** `showAge` false where the wait already shows beside the open row (Approvals B's queue), so the number is said once. */
+export function WhyHeld({ row, showAge = true }: { row: ReviewRow; showAge?: boolean }) {
   return (
     <section className="flex flex-col gap-2" aria-labelledby={`why-${row.key}`} data-why-held>
       <div className="flex flex-wrap items-center gap-2">
         <h2 id={`why-${row.key}`} className={TYPE.section}>Why it is here</h2>
-        <AgeBadge days={row.days} />
+        {showAge ? <AgeBadge days={row.days} /> : null}
         {isCheckoff(row) ? <CheckoffTag /> : null}
       </div>
       <ul className="flex flex-col gap-1.5">
@@ -94,7 +95,7 @@ export function CompareTable({ c, compact = false, showNote = true, checkoff = f
     <div className="flex flex-col gap-1.5">
       {compact ? null : (
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold">{c.skillName}</h3>
+          <h3 className={TYPE.group}>{c.skillName}</h3>
           {self && c.rows.length > 1 ? <AgreementMark agreement={c.overall} /> : null}
         </div>
       )}
@@ -102,16 +103,17 @@ export function CompareTable({ c, compact = false, showNote = true, checkoff = f
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Asked</TableHead>
-              {self ? <TableHead>Student</TableHead> : null}
-              <TableHead>Evaluator</TableHead>
+              <TableHead>Question</TableHead>
+              {self ? <TableHead>Student answer</TableHead> : null}
+              <TableHead>Evaluator answer</TableHead>
               {self ? <TableHead className="w-28"><span className="sr-only">Agreement</span></TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>
             {c.rows.map((r) => (
               <TableRow key={r.label} data-differs={r.agreement === "differed" || undefined}>
-                <TableCell>{r.label}</TableCell>
+                {/* Questions wrap, so the answer columns stay in view in a 375 px sheet. */}
+                <TableCell className="whitespace-normal">{r.label}</TableCell>
                 {self ? <TableCell className={r.agreement === "differed" ? "font-semibold" : undefined}>{r.student}</TableCell> : null}
                 <TableCell className={r.agreement === "differed" ? "font-semibold" : undefined}>{r.evaluator}</TableCell>
                 {self ? <TableCell><AgreementMark agreement={r.agreement} /></TableCell> : null}
@@ -189,7 +191,7 @@ export function DecisionBar({ row, className = "" }: { row: ReviewRow; className
 
 /**
  * The review page's decision, on the shared sticky footer: what Approve does, Send back to student, Approve. No Back button: the
- * breadcrumb already goes to Approvals (say it once), and the footer keeps Back's slot empty so nothing shifts.
+ * Approvals row in the sidebar is the way back (say it once), and the footer keeps Back's slot empty so nothing shifts.
  */
 export function DecisionFooter({ row }: { row: ReviewRow }) {
   const ui = useDecisionUi()

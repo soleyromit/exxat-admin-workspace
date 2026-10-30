@@ -29,18 +29,15 @@ import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { fmt } from "@/lib/v2/format"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ScopeAppliedLine, ScopeFiltersButton, type ScopeBarProps } from "@/components/lab/dashboard/scope-bar"
 import { ImpossibleScopeBanner, useImpossibleScope } from "@/components/lab/dashboard/impossible-scope"
 import { asOfLabel, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
-import { BASIS_LABEL, chipValue, conditionLabel, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
+import { BASIS_LABEL, chipValue, conditionLabel, recountText, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
 import { buildAttainment, isSkillsScope, peekRecords, scopeLines, unrequiredSkills, type AttView, type SkillsScope } from "@/lib/lab/attainment"
-import { SETTING_LABEL } from "@/lib/v2/reports"
-import type { Setting } from "@/lib/v2/types"
 import { SCOPE_LABEL, basisOf, clearFilters, removeScope, scopeIsEmpty, type ScopeKey } from "@/lib/lab/scope"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { DiamondGlyph, VIZ } from "@/components/lab/viz"
 import { useAttainmentUrl } from "@/components/lab/admin-b/use-att-url"
-import { MATRIX_BINS, StudentMatrix } from "@/components/lab/admin-b/student-matrix"
+import { StudentMatrix } from "@/components/lab/admin-b/student-matrix"
 import { GroupTable, SkillsTable, StudentsTable } from "@/components/lab/admin-b/attainment-tables"
 import { EvidencePeek } from "@/components/lab/admin-b/evidence-peek"
 import { ExportPanel } from "@/components/lab/admin-b/export-panel"
@@ -89,7 +86,7 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
   const notRequiredLabel = toGraduate ? "Not required to graduate" : "Not required this term"
   const empty = demo === "empty" || model.students.length === 0
   const applied = (["cohort", "group", "course", "cat", "tag", "loc", "setting"] as ScopeKey[]).filter((k) => !!url.scope[k])
-  const recount = url.scope.loc || url.scope.setting ? `Counting evidence from ${[url.scope.loc, url.scope.setting ? `${SETTING_LABEL[url.scope.setting as Setting] ?? url.scope.setting} settings` : ""].filter(Boolean).join(", ")} only.` : null
+  const recount = recountText(url.scope)
   const tabs: Array<{ id: "students" | "skills" | "groups"; label: string; n: number }> = [
     { id: "students", label: "Students", n: model.students.length },
     { id: "skills", label: capitalize(skillNounPlural()), n: model.skills.length + extraSkills.length },
@@ -103,14 +100,31 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
   const search = tableView ? (showSearch ? query : "") : undefined
   const fileStem = `attainment-${term.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${url.view}`
 
+  const scopeProps: ScopeBarProps = { scope: url.scope, options: scopeOptions(state, url.scope), termName: term.name, onChange: url.setScope, chipValue: label, showBasis: false, stale: demo === "stale" }
+
   return (
-    <PageFrame title="Reports" subtitle={<ScopeContext termName={term.name} scope={url.scope} at={snap.at} stale={demo === "stale"} />} actionItems={actionItems} actions={sample}>
+    // The dashboard treatment (Romit 2026-10-30): the page-wide Filters sits in the header beside Export, with no scope summary
+    // row. The required-set control is a view switch, so it leads the body's one toolbar row, and the applied chips follow it on
+    // the same row only when something is applied (RP-01). It wraps at 375 instead of crowding the header.
+    <PageFrame
+      title="Reports"
+      actionItems={actionItems}
+      actions={
+        <>
+          <ScopeFiltersButton {...scopeProps} />
+          {sample}
+        </>
+      }
+    >
       <div className="flex flex-col gap-4" data-attainment-lab={`admin-${variant}`} data-page-type="list" data-view={url.view}>
+        {/* One toolbar row above the data (2026-10-30 review: three control rows sat before the matrix). Filters stays in the
+            header (Romit 2026-10-30, the dashboard treatment); the required set leads this one row, applied chips beside it
+            only when something is applied (RP-01). The matrix legend moved under the table, so the tabs follow directly. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-region="toolbar">
           <RequiredSetControl basis={model.basis} allSkills={url.view === "skills" ? skillsScope === "all" : undefined} paramsFor={reqSet.paramsFor} onChange={url.setParams} />
-          <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={label} showBasis={false} />
+          <ScopeAppliedLine {...scopeProps} />
         </div>
-        {recount ? <p className={TYPE.helper} data-recount>{recount}</p> : null}
+        {recount && !impossible ? <p className={TYPE.helper} data-recount>{recount}</p> : null}
         {demo === "partial" ? (
           <LocalBanner variant="info" title="Recalculating after a rule change">Some figures may move. They update when it finishes.</LocalBanner>
         ) : null}
@@ -145,17 +159,7 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
                   </TabsTrigger>
                 ))}
               </TabsList>
-              {url.view === "students" && studentsAs === "matrix" ? (
-                <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
-                  {MATRIX_BINS.map((b) => (
-                    <li key={b.label} className="flex items-center gap-1.5">
-                      <span className="inline-block size-3 rounded-sm" style={{ background: b.fill, boxShadow: `inset 0 0 0 1px ${VIZ.grid}` }} aria-hidden="true" />
-                      {b.label}
-                    </li>
-                  ))}
-                  <li className="flex items-center gap-1.5"><DiamondGlyph size={10} />{toGraduate ? behindLabel : conditionLabel(basis)}</li>
-                </ul>
-              ) : (
+              {url.view === "students" && studentsAs === "matrix" ? null : (
                 <div className="flex flex-wrap items-center gap-4">
                   {url.view === "sections" || url.view === "tags" ? (
                     <ViewSegmentedControl<"sections" | "tags">
@@ -180,7 +184,7 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
             <TabsContent value={tabValue} className="mt-0">
             {url.view === "students" ? (
               studentsAs === "matrix" ? (
-                <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} />
+                <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} legend={toGraduate ? behindLabel : conditionLabel(basis)} />
               ) : (
                 <StudentsTable rows={model.students} peekHref={url.peekHref} behindLabel={behindLabel} search={search} />
               )

@@ -46,8 +46,6 @@ import { StudentFixB } from "./student-fix-b"
 import { DirectorDashboardC } from "./director-dashboard-c"
 import { DirectorVerificationDetailA } from "./director-verification-detail-a"
 import { DirectorVerificationDetailB } from "./director-verification-detail-b"
-import { DirectorReportsA } from "./director-reports-a"
-import { DirectorReportsB } from "./director-reports-b"
 import { StudentLogA } from "./student-log-a"
 import { StudentLogB } from "./student-log-b"
 import { StudentRequestA } from "./student-request-a"
@@ -164,8 +162,6 @@ export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
   "director/dashboard/C": DirectorDashboardC,
   "director/verification-detail/A": DirectorVerificationDetailA,
   "director/verification-detail/B": DirectorVerificationDetailB,
-  "director/reports/A": DirectorReportsA,
-  "director/reports/B": DirectorReportsB,
   "student/log-skill/A": StudentLogA,
   "student/log-skill/B": StudentLogB,
   "student/request-signoff/A": StudentRequestA,

@@ -61,7 +61,6 @@ export function AdminStarterLibraryA() {
   return (
     <PageFrame
       title={<LaterTitle>Starting points</LaterTitle>}
-      subtitle="Example lists to copy and edit. Your program owns the copy."
       actions={<Button asChild variant="outline" size="sm"><Link href="/lab/admin/import-ai-review">{`Import ${skillNounPlural()}`}</Link></Button>}
     >
       <div className="flex flex-col gap-4" data-starter-lab="A" data-page-type="list">

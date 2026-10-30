@@ -172,6 +172,35 @@ A program defines the skills it expects (it names them: skill, competency, EPA),
 ### 3.3 Content
 - Voice: professional, plain, calm, specific; sentence case; no exclamation marks, colloquialisms, emoji or em dashes.
 - Evaluator copy is the shortest.
+- **Typography and hierarchy (Romit 2026-10-30: "still typography, hierarchy, ux issues"; rubric from `docs/knowledge/design-review-2026-10-30-ds.md`):**
+  - Roles, all via `TYPE` in `components/lab/type-scale.ts`, never hand-set:
+    - page title: DS PageHeader h1 (serif)
+    - section: 18 semibold
+    - card/pane title: 16 semibold
+    - group/field label: 14 semibold
+    - body: 14
+    - helper: 14 muted, one line only
+    - meta: 12 muted
+    - KPI figure: 24 semibold, tabular
+  - Section headings and card titles differ by a size step. Nothing under 12 px. No arbitrary `text-[Npx]`.
+  - Each screen has ONE focal point (the thing this role acts on), and it is the most visually prominent element.
+  - Numbers that are the verdict are emphasised and right-aligned; labels never outweigh values.
+  - Attention states (did not count, unmet, changed, short) are amber with glyph and word, for every persona. Neutral is for done. One phrase per state: "Did not count" leads; the engine word appears only in the explanation.
+  - No column whose value is the same on every row, or all zero. Make it a filter or group, or drop it.
+  - No dead canvas on wizard/detail pages: the preview or summary column carries real content.
+  - Peer cards share one header anatomy.
+  - Ranked charts: one highlight, ties stated in words.
+  - Data colour is never the brand hue. Use neutral or non-brand sequential tiers.
+  - Before claiming done, take 1440 screenshots (and 375 for student and evaluator) and judge them against this list by eye. The anatomy and density scripts don't check it.
+- **Page anatomy (Romit 2026-10-30, recurring):**
+  - One title naming this page (a drill is titled by what it lists).
+  - No subtitle unless it carries a fact found nowhere else on screen.
+  - Breadcrumb above the title in the shell slot, never in the body.
+  - Filters, search and view controls in the toolbar of the table or chart they act on, never alone on a row.
+  - Each number once per viewport.
+  - No line that restates the title or breadcrumb; no "records".
+  - Delete any line whose removal loses no actionable fact.
+  - `node scripts/lab-anatomy-check.mjs` must report zero violations for every touched screen before you claim done.
 - **Labels inside sentences are lowercase.** A program label (level, outcome, setting, role, status) keeps its Title case only where it stands alone: pill, badge, cell, option, heading, sentence start. Dropped mid-sentence it goes through `inSentence()` in `lib/lab/terms.ts`: "A tick records the level works alone", never "the level Works alone". Acronyms and names keep their case (IV, BSN, RN, NURS 350, Esteban Villarreal). Every template literal that interpolates a label is checked for this before done (Romit 2026-10-29).
 - **Every tooltip, ⓘ and helper names its subject.** Read it cold, as if you can't see where it's anchored: if the line could describe a student, an evaluator or the skill, name the subject ("A tick records…", "Check-offs for this skill go to admin review"). Don't use bare prototype shorthand like "Records Works alone", which reads as a note about a student (Sankalp 2026-10-29). Show an ⓘ only when it adds something the column or row doesn't already say.
 - Glossary is the only vocabulary; the program's noun is `{itemNoun}`.

@@ -16,9 +16,9 @@ import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { PersonIdentityCell } from "@exxatdesignux/ui/components/data-views/person-identity-cell"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
-import { initialsOf } from "@/components/lab/reviewer/parts"
+import { AgeText, initialsOf } from "@/components/lab/reviewer/parts"
 import { EmptyBlock } from "@/components/lab/empty-block"
-import { RowAction, StatusCell, StudentLink, StudentsFrame, needsYou, type StudentsContext } from "@/components/lab/rbac/students-frame"
+import { AttentionMark, RowAction, StudentLink, StudentsFrame, needsYou, type StudentsContext } from "@/components/lab/rbac/students-frame"
 import type { ReviewerStudentRow } from "@/lib/lab/reviewer"
 
 type Filter = "all" | "you" | "behind" | "none"
@@ -51,9 +51,40 @@ function StudentsTable({ ctx }: { ctx: StudentsContext }) {
     () => [
       { key: "name", label: "Student", width: 200, sortable: true, cell: (r) => <PersonIdentityCell name={r.name} initials={initialsOf(r.name)} renderName={() => <StudentLink ctx={ctx} row={r} />} /> },
       { key: "cohort", label: "Cohort", width: 110, sortable: true, cell: (r) => <span className="text-sm">{r.cohort}</span> },
-      { key: "achieved", label: "Required achieved", width: 140, sortable: true, cell: (r) => <span className="text-sm tabular-nums">{`${r.achieved} of ${r.required}`}</span> },
-      { key: "attention", label: "Status", width: 230, cell: (r) => <StatusCell row={r} /> },
-      { key: "next", label: "Detail", width: 250, cell: (r) => <span className="truncate text-sm text-muted-foreground">{r.next}</span> },
+      // The verdict number of the row, right-aligned and emphasised: achieved in ink, "of N" muted, so rows with different
+      // required counts still compare at a glance (design review 2026-10-30, CP-6).
+      {
+        key: "achieved",
+        label: "Required achieved",
+        width: 150,
+        sortable: true,
+        header: () => <span className="ms-auto block w-full text-end">Required achieved</span>,
+        cell: (r) => (
+          <span className="block w-full text-end text-sm tabular-nums" aria-label={`${r.achieved} of ${r.required} required achieved`}>
+            <span className="font-semibold text-foreground">{r.achieved}</span>
+            <span className="text-muted-foreground">{` of ${r.required}`}</span>
+          </span>
+        ),
+      },
+      // Pace only where it says something: the amber diamond and "Behind", or nothing (on track is the default and needs no word).
+      { key: "behind", label: "Pace", width: 110, sortable: true, cell: (r) => (r.behind ? <AttentionMark a="behind" /> : <span className="sr-only">On track</span>) },
+      // One waiting-age column (design review 2026-10-30, CP-3): the oldest wait on the stepped age scale, and how many wait. The
+      // old Status column read "Waiting 8+ days" on every row of the default sort, so it is gone; the filter above still finds them.
+      {
+        key: "oldestDays",
+        label: "Waiting for you",
+        width: 200,
+        sortable: true,
+        cell: (r) =>
+          r.waiting > 0 ? (
+            <span className="inline-flex items-center gap-2">
+              <AgeText days={r.oldestDays} />
+              {r.waiting > 1 ? <span className="text-xs text-muted-foreground">{`${r.waiting} submissions`}</span> : null}
+            </span>
+          ) : (
+            <span className="text-sm text-muted-foreground">None</span>
+          ),
+      },
       { key: "actions", label: "Action", width: 132, resizable: false, defaultPin: "right", lockPin: true, header: () => <span className="sr-only">Action</span>, cell: (r) => <RowAction ctx={ctx} row={r} /> },
     ],
     [ctx],

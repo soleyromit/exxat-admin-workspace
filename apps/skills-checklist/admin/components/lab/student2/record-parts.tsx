@@ -8,11 +8,13 @@ import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { VIZ } from "@/components/lab/viz"
 import { fmt } from "@/lib/v2/format"
 import { skillNounPlural } from "@/lib/lab/terms"
 import { RESULT_WORD, type RecordFilter, type RecordResult } from "@/lib/lab/student2"
+import { statusTone } from "@/lib/v2/labels"
 import { TYPE } from "@/components/lab/type-scale"
 
 const GLYPH: Record<RecordResult, { icon: string; color: string }> = {
@@ -26,7 +28,7 @@ const GLYPH: Record<RecordResult, { icon: string; color: string }> = {
 
 export function ResultLabel({ result, className }: { result: RecordResult; className?: string }) {
   const g = GLYPH[result]
-  const amber = result === "not-counted" || result === "returned"
+  const amber = statusTone(RESULT_WORD[result]) === "warning"
   return (
     <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap text-sm", amber ? "font-medium" : "", className)} style={amber ? { color: VIZ.behindInk } : undefined}>
       <i className={cn(g.icon, "text-xs")} style={{ color: g.color }} aria-hidden="true" />
@@ -75,11 +77,34 @@ export function RecordFigures({ counts, value, onChange }: { counts: { counted: 
   )
 }
 
+/**
+ * Search plus the three filters. From 640 px the Result, Setting and Course selects sit in the row; on a phone they move into one
+ * "Filters" popover beside the search, so no select is cut at 375 (review 2026-10-30). Nothing is dropped: every filter is one
+ * tap away, and the button counts the ones applied.
+ */
 export function RecordFilters({ f, onChange, courses }: { f: RecordFilter; onChange: (p: Partial<RecordFilter>) => void; courses: Array<{ id: string; code: string; n: number }> }) {
+  const applied = [f.result !== "all", f.setting !== "all", f.course !== "all"].filter(Boolean).length
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center" data-region="filters">
-      <Input type="search" value={f.q} onChange={(e) => onChange({ q: e.target.value })} placeholder={`Search ${skillNounPlural()} or evaluators`} aria-label={`Search ${skillNounPlural()} or evaluators`} className="h-8 w-full sm:w-64" />
-      <div className="grid grid-cols-3 gap-2 sm:flex">
+    <div className="flex flex-row flex-wrap items-center gap-2" data-region="filters">
+      <Input type="search" value={f.q} onChange={(e) => onChange({ q: e.target.value })} placeholder={`Search ${skillNounPlural()} or evaluators`} aria-label={`Search ${skillNounPlural()} or evaluators`} className="h-8 min-w-0 flex-1 sm:w-64 sm:flex-none" />
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" size="sm" className="sm:hidden" data-record-filters-phone>{applied ? `Filters (${applied})` : "Filters"}</Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-64">
+          <FilterSelects f={f} onChange={onChange} courses={courses} stacked />
+        </PopoverContent>
+      </Popover>
+      <div className="max-sm:hidden">
+        <FilterSelects f={f} onChange={onChange} courses={courses} />
+      </div>
+    </div>
+  )
+}
+
+function FilterSelects({ f, onChange, courses, stacked = false }: { f: RecordFilter; onChange: (p: Partial<RecordFilter>) => void; courses: Array<{ id: string; code: string; n: number }>; stacked?: boolean }) {
+  return (
+      <div className={stacked ? "flex flex-col gap-2" : "flex gap-2"}>
         <Select value={f.result} onValueChange={(v) => onChange({ result: v as RecordFilter["result"] })}>
           <SelectTrigger size="sm" className="w-full sm:w-40" aria-label="Result">
             <SelectValue />
@@ -111,7 +136,6 @@ export function RecordFilters({ f, onChange, courses }: { f: RecordFilter; onCha
           </SelectContent>
         </Select>
       </div>
-    </div>
   )
 }
 
@@ -119,6 +143,12 @@ export function RecordFilters({ f, onChange, courses }: { f: RecordFilter; onCha
  * Phone layout for one evaluation: no table, two lines (strategy: rows become 2-line cards at 375). The reason line shows only
  * when it explains something the result word does not (did not count, returned); "Counted" and "Awaiting approval" say it.
  */
+/** A row's reason: a reviewer's return note is their words, so it is quoted as record content (as on the fix page), not page prose. */
+export function WhyText({ why }: { why: string }) {
+  const m = /^Returned: ([\s\S]+)$/.exec(why)
+  return m ? <>Returned: <q data-user-content>{m[1]}</q></> : <>{why}</>
+}
+
 export function RecordMobileRow({ date, title, result, why, action }: { date: string; title?: React.ReactNode; result: RecordResult; why: string; /** Opens the completed evaluation [REQ SH-07]. */ action?: React.ReactNode }) {
   return (
     <li className="flex flex-col gap-1 py-2.5">
@@ -127,7 +157,7 @@ export function RecordMobileRow({ date, title, result, why, action }: { date: st
         {title ? <span className="min-w-0 flex-1 text-sm text-foreground">{title}</span> : null}
         <ResultLabel result={result} className={title ? "" : "ms-auto"} />
       </div>
-      {why && (result === "not-counted" || result === "returned" || result === "sent") ? <p className="text-xs text-muted-foreground">{why}</p> : null}
+      {why && (result === "not-counted" || result === "returned" || result === "sent") ? <p className="text-xs text-muted-foreground"><WhyText why={why} /></p> : null}
       {action ?? null}
     </li>
   )

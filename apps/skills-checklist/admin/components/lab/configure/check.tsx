@@ -14,6 +14,7 @@
  * aside), `checklist` (set 2, One page: a review table with a sticky decision panel) and `ledger` (set 3, Many at once: review
  * cards with the problem inside its card, problem cards first).
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
@@ -23,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { FormPage, StickyFooter } from "@/components/lab/layout"
-import { affectedStudentLine, bulkImpact, checkGroups, openDecisions, saveBlockedReason, SECTIONS, type CheckGroup, type CheckRow, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { affectedStudentLine, bulkImpact, checkGroups, leftToConfigure, openDecisions, saveBlockedReason, SECTIONS, type CheckGroup, type CheckRow, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
 import { listsCarrying } from "@/lib/lab/lists"
 import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -31,7 +32,6 @@ import { shortDate } from "@/lib/v2/format"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import type { LibraryRow } from "@/lib/lab/library"
 import type { Skill, V2State } from "@/lib/v2/types"
-import { isConfigured } from "@/lib/v2/population"
 import { AttemptExample, EvidenceChoice, ImpactSummary, WhoSees } from "./impact"
 import { EvaluatorPreview, StudentPreview } from "./live-panel"
 import { configureSkillHref, LIBRARY_HREF, libraryReturnHref, mappingHref, SkillTitle } from "./shell"
@@ -182,7 +182,7 @@ export function SetupSummary({ rule, current = null, issues = [], onEdit, onFix,
         return (
           <Card key={g.step} size="sm" role="listitem" data-group={g.step} className={g.step === "signoff" && layout === "sheet" ? "@min-[44rem]:row-span-2" : undefined}>
             <CardHeader>
-              <CardTitle className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+              <CardTitle className={`flex flex-wrap items-center gap-2 ${TYPE.card}`}>
                 {g.label}
                 {toFix(g)}
               </CardTitle>
@@ -259,7 +259,7 @@ export function EvidenceDecision({ mode, onMode, error, className }: { mode: Pub
   return (
     <Card size="sm" className={className} data-decision="evidence">
       <CardHeader>
-        <CardTitle className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+        <CardTitle className={`flex flex-wrap items-center gap-2 ${TYPE.card}`}>
           Decide before saving
           {mode ? null : <StatusBadge label="To fix" tone="warning" icon="fa-triangle-exclamation" size="sm" />}
         </CardTitle>
@@ -276,7 +276,7 @@ export function CheckCard({ title, children, className, action }: { title: strin
   return (
     <Card size="sm" className={className}>
       <CardHeader>
-        <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+        <CardTitle className={TYPE.card}>{title}</CardTitle>
         {action ? <CardAction>{action}</CardAction> : null}
       </CardHeader>
       <CardContent>{children}</CardContent>
@@ -290,11 +290,11 @@ export function PreviewCard({ skillName, rule }: { skillName: string; rule: LabR
     <CheckCard title="Preview">
       <div className="flex flex-col gap-4">
         <section className="flex flex-col gap-2" aria-label="Student sees">
-          <h4 className="text-sm font-medium text-foreground">Student sees</h4>
+          <h4 className={TYPE.label}>Student sees</h4>
           <StudentPreview skillName={skillName} rule={rule} />
         </section>
         <section className="flex flex-col gap-2" aria-label="Evaluator sees">
-          <h4 className="text-sm font-medium text-foreground">Evaluator sees</h4>
+          <h4 className={TYPE.label}>Evaluator sees</h4>
           <EvaluatorPreview skillName={skillName} rule={rule} />
         </section>
       </div>
@@ -307,16 +307,16 @@ export function PeopleSee({ skillName, rule, className }: { skillName: string; r
   const id = React.useId()
   return (
     <section aria-labelledby={`${id}-h`} className={cn("@container flex flex-col gap-3", className)} data-region="people-see">
-      <h3 id={`${id}-h`} className="text-sm font-semibold text-foreground">
+      <h3 id={`${id}-h`} className={TYPE.group}>
         Preview
       </h3>
       <div className="grid grid-cols-1 gap-4 @min-[40rem]:grid-cols-2">
         <div className="flex flex-col gap-2">
-          <h4 className="text-sm font-medium text-foreground">Student sees</h4>
+          <h4 className={TYPE.label}>Student sees</h4>
           <StudentPreview skillName={skillName} rule={rule} />
         </div>
         <div className="flex flex-col gap-2">
-          <h4 className="text-sm font-medium text-foreground">Evaluator sees</h4>
+          <h4 className={TYPE.label}>Evaluator sees</h4>
           <EvaluatorPreview skillName={skillName} rule={rule} />
         </div>
       </div>
@@ -330,7 +330,7 @@ export function CheckSection({ title, children, className, badge }: { title: str
   return (
     <section aria-labelledby={hid} className={cn("flex min-w-0 flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center gap-2">
-        <h3 id={hid} className="text-sm font-semibold text-foreground">
+        <h3 id={hid} className={TYPE.group}>
           {title}
         </h3>
         {badge}
@@ -371,7 +371,7 @@ export function DecisionPanel({ issues, onFix, choiceAsked, mode, onMode, modeEr
   return (
     <section aria-labelledby={`${id}-h`} className="flex flex-col gap-4" data-decision-panel>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 id={`${id}-h`} className="text-sm font-semibold text-foreground">
+        <h3 id={`${id}-h`} className={TYPE.group}>
           Before you save
         </h3>
         <Readiness open={open} />
@@ -391,7 +391,7 @@ export function DecisionPanel({ issues, onFix, choiceAsked, mode, onMode, modeEr
       ) : null}
       {choiceAsked ? <EvidenceChoice value={mode} onChange={onMode} error={modeError} /> : null}
       <div className="flex flex-col gap-2 border-t border-border pt-4">
-        <h4 className="text-sm font-semibold text-foreground">Who it affects</h4>
+        <h4 className={TYPE.group}>Who it affects</h4>
         {affects}
       </div>
     </section>
@@ -485,9 +485,9 @@ export function ConfigureReceipt({ state, skill, result, layout }: { state: V2St
 export function ConfigureReceiptPage({ state, skill, result, layout, nextSkill }: { state: V2State; skill: Skill; result: SavedResult; layout: SummaryLayout; nextSkill: LibraryRow | null }) {
   const copy = savedCopy(skill, result)
   // The same count as the library's Not configured tab (one definition, lib/v2/population.ts isConfigured), active skills only.
-  const leftToConfigure = state.skills.filter((k) => k.active !== false && !isConfigured(k)).length
+  const left = leftToConfigure(state)
   return (
-    <FormPage title={<SkillTitle state={state} skill={skill} />} banner={<SavedBanner title={copy.title} body={copy.body} />} footer={<ReceiptFooter skillIds={[skill.id]} nextSkill={nextSkill} left={leftToConfigure} />}>
+    <FormPage title={<SkillTitle state={state} skill={skill} />} banner={<SavedBanner title={copy.title} body={copy.body} />} footer={<ReceiptFooter skillIds={[skill.id]} nextSkill={nextSkill} left={left} />}>
       <ConfigureReceipt state={state} skill={skill} result={result} layout={layout} />
     </FormPage>
   )

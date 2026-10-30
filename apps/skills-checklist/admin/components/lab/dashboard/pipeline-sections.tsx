@@ -12,6 +12,7 @@
  * Encoding: graded neutrals by state (achieved darkest), waiting as a hatched overlay inside the segment (never a state),
  * the basis as a 2 px tick, amber only on a section 8 or more points under the tick (diamond + word in the label).
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -130,9 +131,9 @@ function SectionRow({ row, scope, tick, all, flagged }: { row: PipelineSection; 
         <span className="flex min-w-0 items-center gap-2">
           {short ? <DiamondGlyph /> : <span className="inline-block w-2.5" aria-hidden="true" />}
           {all ? (
-            <span className="truncate font-semibold text-foreground">{row.section}</span>
+            <span className="font-semibold text-foreground">{row.section}</span>
           ) : (
-            <Link className={`${LINK_IN_TABLE} truncate`} href={pipelineHref(scope, { section })} title={row.section}>
+            <Link className={`${LINK_IN_TABLE} whitespace-normal`} href={pipelineHref(scope, { section })}>
               {row.section}
             </Link>
           )}
@@ -166,7 +167,7 @@ export function SectionsCard({ model, scope }: { model: PipelineModel; scope: La
     <Card className="py-0" data-region="sections" data-chart aria-label="Sections by record state" role="region">
       <CardContent className="flex flex-col gap-3 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Sections by record state</h2>
+          <h2 className={TYPE.card}>Sections by record state</h2>
           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
             {RECORD_STATES.map((st) => (
               <li key={st} className="flex items-center gap-1.5"><StateSwatch state={st} />{RECORD_STATE_LABEL[st]}</li>

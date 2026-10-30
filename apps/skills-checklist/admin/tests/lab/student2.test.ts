@@ -101,7 +101,7 @@ describe("Send for evaluation", () => {
 
   it("states the skill's real rule: 3 Met evaluations needed is never 'it counts when they answer Met' [REQ AE-02, SH-03]", () => {
     const parts = (have: number, need: number) => [{ label: "Evaluations", have, need, met: have >= need }]
-    expect(countsWhen({ counted: 1, need: 3, achieved: false, parts: parts(1, 3) }, false)).toBe("Met adds 1 of the 3 Met evaluations needed (1 so far).")
+    expect(countsWhen({ counted: 1, need: 3, achieved: false, parts: parts(1, 3) }, false)).toBe("Met adds 1 of the 3 met evaluations needed (1 so far).")
     expect(countsWhen({ counted: 0, need: 1, achieved: false, parts: parts(0, 1) }, true)).toBe("Met achieves it, after a reviewer approves it.")
     const distinct = [...parts(1, 2), { label: "Different evaluators", have: 1, need: 2, met: false }]
     expect(countsWhen({ counted: 1, need: 2, achieved: false, parts: distinct }, false)).toMatch(/also needs from 2 different evaluators/)
@@ -109,7 +109,7 @@ describe("Send for evaluation", () => {
     // Maya's Sterile dressing change needs 3 Met evaluations: the confirmation says so from her own record.
     const r = maya.all.find((x) => x.id === "sk-sterile-dressing")!
     expect(r.need).toBe(3)
-    expect(countsWhen({ counted: r.counted, need: r.need, achieved: r.state === "achieved", parts: r.parts }, false)).toMatch(/of the 3 Met evaluations needed/)
+    expect(countsWhen({ counted: r.counted, need: r.need, achieved: r.state === "achieved", parts: r.parts }, false)).toMatch(/of the 3 met evaluations needed/)
   })
 
   it("starts on Email a link, one link per request [LEDGER D-L2]; QR, hand over and photo stay choices [D-X5]", () => {
@@ -127,7 +127,7 @@ describe("Record", () => {
     for (const r of rows) expect(r.why.length).toBeGreaterThan(5)
     const notCounted = rows.filter((r) => r.result === "not-counted")
     expect(notCounted.length).toBeGreaterThan(0)
-    for (const r of notCounted.filter((x) => x.skillState !== "achieved")) expect(r.why).toMatch(/Needs \d+/)
+    for (const r of notCounted.filter((x) => x.skillState !== "achieved")) expect(r.rule).toMatch(/Needs \d+/)
   })
 
   it("counts and filters consistently, did-not-count groups first [REQ SH-04, SH-06]", () => {
@@ -138,11 +138,12 @@ describe("Record", () => {
     expect(groups[0].notCounted).toBeGreaterThan(0)
   })
 
-  it("each skill reads 'n attempts, m count' over its whole record, from the engine, agreeing with the rows (Oct 26 call)", () => {
+  // 2026-10-30: the line shows only when some completed attempt did not count; when all count, the state label already says it.
+  it("each skill reads 'n attempts, m count' over its whole record when an attempt did not count, from the engine, agreeing with the rows (Oct 26 call)", () => {
     for (const g of groupBySkill(rows)) {
       const line = recordAttemptLine(seed, maya.student.id, g.skillId)
       const total = g.counted + g.notCounted
-      if (total === 0) expect(line).toBe("")
+      if (total === 0 || g.notCounted === 0) expect(line).toBe("")
       else expect(line).toMatch(new RegExp(`^${total} attempts?, .*${g.counted} counts?$`))
     }
   })

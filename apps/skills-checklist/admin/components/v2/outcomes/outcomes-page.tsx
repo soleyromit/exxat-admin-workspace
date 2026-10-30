@@ -27,7 +27,7 @@ const FILTERS: Array<{ id: OutcomeFilter; label: string }> = [
   { id: "not-yet", label: "Not yet" },
   { id: "reopened", label: "Reopened" },
 ]
-const STATUS_WORD: Record<Evaluation["status"], string> = { counted: "Counts", "awaiting-approval": "Awaiting approval", returned: "Returned", reopened: "Reopened" }
+const STATUS_WORD: Record<Evaluation["status"], string> = { counted: "Counts", "awaiting-approval": "Awaiting approval", returned: "Returned", reopened: "Reopened", reassigned: "Sent for a new evaluation" }
 
 /** Walkthrough step 9 for staff: what each outcome did, the remediation plans, the confidential concerns, and the way into version history. */
 export function OutcomesPage({ role }: { role: RoleId }) {

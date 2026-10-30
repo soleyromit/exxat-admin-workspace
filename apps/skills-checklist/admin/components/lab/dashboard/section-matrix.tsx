@@ -18,18 +18,19 @@ import type { Basis, LabScope } from "@/lib/lab/scope"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { SEQ_BINS, VIZ, seqIndex } from "@/components/lab/viz"
 
-const OUTLINED = 3
+/**
+ * Share-counted fills, lowest bin first (2026-10-30 review: data colour is never the brand hue). Neutral DS tokens that darken as
+ * the share falls, so the gaps carry the weight; the amber triangle and outline stay the only accent.
+ */
+const FILL = ["var(--border-control)", "var(--border)", "var(--status-badge-neutral-fill)", "var(--background)"]
 
 export function SectionMatrixTable({ matrix, scope, basis }: { matrix: SectionMatrix; scope: LabScope; basis: Basis }) {
   const basisWord = basis === "expected" ? "expected now" : basis === "median" ? "scope median" : "all required"
-  // The 3 largest gaps on the page get the outline; every short cell keeps its triangle.
-  const worst = new Set(
-    matrix.rows
-      .flatMap((r) => r.cells.filter((c) => c.short > 0).map((c) => ({ key: `${r.section}|${c.colId}`, short: c.short })))
-      .sort((a, b) => b.short - a.short)
-      .slice(0, OUTLINED)
-      .map((x) => x.key),
-  )
+  // One highlight (strategy/07 Von Restorff, 2026-10-30 review): only the largest gap gets the outline, and cells tied at it
+  // share it, with the tie stated in the legend. Every short cell keeps its triangle.
+  const shortCells = matrix.rows.flatMap((r) => r.cells.filter((c) => c.short > 0).map((c) => ({ key: `${r.section}|${c.colId}`, short: c.short })))
+  const top = shortCells.reduce((m, x) => Math.max(m, x.short), 0)
+  const worst = new Set(top > 0 ? shortCells.filter((x) => x.short === top).map((x) => x.key) : [])
   return (
     <div className="flex flex-col gap-3">
       <Table scrollLabel="Sections by scope">
@@ -69,7 +70,7 @@ export function SectionMatrixTable({ matrix, scope, basis }: { matrix: SectionMa
                       data-cell-short={short ? "1" : undefined}
                       data-cell-outlined={outlined ? "1" : undefined}
                       className="flex min-w-[7rem] items-center justify-between gap-2 rounded-md px-3 py-2 outline-none transition-[filter] hover:brightness-95 focus-visible:ring-2 focus-visible:ring-ring"
-                      style={{ background: VIZ.seq[seqIndex(cell.pct)], boxShadow: outlined ? `inset 0 0 0 2px ${VIZ.behind}` : `inset 0 0 0 1px ${VIZ.grid}` }}
+                      style={{ background: FILL[seqIndex(cell.pct)], boxShadow: outlined ? `inset 0 0 0 2px ${VIZ.behind}` : `inset 0 0 0 1px ${VIZ.grid}` }}
                     >
                       <span className="flex items-center gap-1 text-sm font-semibold tabular-nums text-foreground">
                         {short ? <i className="fa-solid fa-triangle-exclamation text-xs" style={{ color: VIZ.behindInk }} aria-hidden="true" /> : null}
@@ -88,7 +89,7 @@ export function SectionMatrixTable({ matrix, scope, basis }: { matrix: SectionMa
         <li>Share counted</li>
         {SEQ_BINS.map((b, i) => (
           <li key={b.min} className="flex items-center gap-1.5">
-            <span className="inline-block size-3 rounded-sm" style={{ background: VIZ.seq[i], boxShadow: `inset 0 0 0 1px ${VIZ.grid}` }} aria-hidden="true" />
+            <span className="inline-block size-3 rounded-sm" style={{ background: FILL[i], boxShadow: `inset 0 0 0 1px ${VIZ.grid}` }} aria-hidden="true" />
             {b.label}
           </li>
         ))}
@@ -98,7 +99,7 @@ export function SectionMatrixTable({ matrix, scope, basis }: { matrix: SectionMa
         </li>
         <li className="flex items-center gap-1.5">
           <span className="inline-block size-3 rounded-sm" style={{ boxShadow: `inset 0 0 0 2px ${VIZ.behind}` }} aria-hidden="true" />
-          {`The ${OUTLINED} largest gaps`}
+          {worst.size > 1 ? `${worst.size} cells tie for the largest gap` : "The largest gap"}
         </li>
       </ul>
       {matrix.hidden.length > 0 ? <p className="text-xs text-muted-foreground" data-hidden-subgroups>{`${plural(matrix.hidden.length, "group", "groups")} under 5 students hidden: ${matrix.hidden.map((h) => `${h.label} (${h.n})`).join(", ")}.`}</p> : null}

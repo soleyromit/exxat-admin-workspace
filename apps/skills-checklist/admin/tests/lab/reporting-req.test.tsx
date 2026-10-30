@@ -56,7 +56,7 @@ describe("RP-01: what is applied is evident, each filter removable on its own", 
     expect(screen.queryByLabelText("Applied filters")).toBeNull()
   })
   it("every reporting screen uses the shared scope bar (19 variants)", () => {
-    for (const f of ["components/lab/dashboard/frame.tsx", "components/lab/dashboard/ops-frame.tsx", "components/lab/admin-b/attainment-page.tsx", "components/lab/director/frame.tsx", "components/lab/screens/admin-dashboard-drill.tsx", "components/lab/screens/admin-dashboard-drill-b.tsx", "components/lab/screens/admin-export-b.tsx"]) expect(src(f)).toMatch(/<ScopeBar/)
+    for (const f of ["components/lab/dashboard/frame.tsx", "components/lab/dashboard/ops-frame.tsx", "components/lab/admin-b/attainment-page.tsx", "components/lab/director/frame.tsx", "components/lab/screens/admin-dashboard-drill.tsx", "components/lab/screens/admin-dashboard-drill-b.tsx", "components/lab/screens/admin-export-b.tsx"]) expect(src(f)).toMatch(/<ScopeBar|<ScopeFiltersButton/)
   })
 })
 
@@ -139,11 +139,15 @@ describe("Reports toolbar: one set control beside Filters, order shown by the ta
     expect(two).toHaveLength(2)
     expect(two[1].getAttribute("aria-checked")).toBe("true")
   })
-  it("admin and director Reports put the set control and the scope bar on one toolbar row, with no order sentence or Show links", () => {
+  it("admin and director Reports put the set control beside Filters, with no order sentence or Show links", () => {
     const page = src("components/lab/admin-b/attainment-page.tsx")
-    expect(page).toMatch(/data-region="toolbar"[\s\S]{0,200}<RequiredSetControl[\s\S]{0,400}<ScopeBar/)
-    const director = src("components/lab/rbac/director-attainment.tsx")
-    expect(director).toMatch(/toolbar=\{\(ctx\) => <SetControl/)
+    // Admin Reports (Romit 2026-10-30, the dashboard treatment): Filters in the header actions; the set control leads the body
+    // toolbar with the applied chips beside it only when something is applied.
+    expect(page).toMatch(/actions=\{[\s\S]{0,40}<ScopeFiltersButton/)
+    expect(page).toMatch(/data-region="toolbar"[\s\S]{0,200}<RequiredSetControl[\s\S]{0,300}<ScopeAppliedLine/)
+    // D-L8c: the director's Attainment is a tab of the merged Reports page; the set control rides the toolbar on that tab only.
+    const director = src("components/lab/director/reports-page.tsx")
+    expect(director).toMatch(/toolbar=\{attainment \? \(ctx\) => <AttainmentSetControl/)
     expect(src("components/lab/director/frame.tsx")).toMatch(/data-region="toolbar"[\s\S]{0,120}toolbar\(ctx\)[\s\S]{0,120}<ScopeBar/)
     for (const t of [page, director]) {
       expect(t).not.toMatch(/most not (yet )?achieved first/)

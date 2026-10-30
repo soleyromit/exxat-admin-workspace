@@ -156,8 +156,8 @@ export const assignNote = sentForNewEvaluationLabel
  * - A row with a request (a submission, or a photo with no outcome yet): the same request goes back out to the new evaluator
  *   (status with-evaluator, the reassignment recorded, its completion cleared).
  * - Evidence from an unadopted name with no request: a new link request carries the same skills to the new evaluator.
- * The held evaluations stay on the record, never edited (RV-03), held out of counting (status "returned", the not-counting overlay
- * every count already honours) with the review decision stored as "reassigned" (decision D-X25: a handoff, not a return), so
+ * The held evaluations stay on the record, never edited (RV-03), held out of counting with status "reassigned" (only "counted"
+ * counts) and the review decision "reassigned" (decision D-X25: a handoff, never stored as "returned"), so
  * exports and reports read "Sent for a new evaluation", never "Returned"; they do not show as a separate return to the student,
  * and the request is the one open thing. Nothing happens when the row
  * is gone or the person is not an adopted evaluator other than the current one.
@@ -205,7 +205,7 @@ export function assignEntry(s: V2State, rowKey: string, toId: string): V2State {
     submissions = [...s.submissions, request]
   }
   const ids = new Set(items.flatMap((i) => i.evaluations.map((e) => e.id)))
-  const evaluations = ids.size === 0 ? s.evaluations : s.evaluations.map((e) => (ids.has(e.id) ? { ...e, status: "returned" as const, submissionId: requestId, review: { decision: "reassigned" as const, byId: REVIEWER_ID, at: DECIDED_AT, note } } : e))
+  const evaluations = ids.size === 0 ? s.evaluations : s.evaluations.map((e) => (ids.has(e.id) ? { ...e, status: "reassigned" as const, submissionId: requestId, review: { decision: "reassigned" as const, byId: REVIEWER_ID, at: DECIDED_AT, note } } : e))
   const student = s.people.find((p) => p.id === first.studentId)?.name ?? "A student"
   return appendAudit({ ...s, submissions, evaluations }, REVIEWER_ID, "Assigned to someone else", `${student}: ${note}`, DECIDED_AT)
 }
@@ -330,7 +330,7 @@ function baseRow(s: V2State, item: QueueItem, evaluations: Evaluation[], days: n
     skillIds: item.skillIds,
     skills: item.skillIds.map((id) => skillById(s, id)?.name ?? capitalize(aNoun())),
     evaluatorId: item.evaluatorId,
-    evaluator: evaluator?.name ?? (item.source === "paper-form" ? "Not named yet" : "An evaluator"),
+    evaluator: evaluator?.name ?? (item.source === "paper-form" ? "On the paper form" : "An evaluator"),
     evaluatorRole: evaluator ? ROLE_LABEL[evaluator.kind] : "",
     evaluatorUnverified: evaluator?.verified === false,
     ...(() => {

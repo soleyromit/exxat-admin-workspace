@@ -48,7 +48,10 @@ export function StatusFigures({ model, series }: { model: DashboardModel; series
       description: `of ${plural(model.inScope, "student", "students")}${since}`,
       href: model.heroHref,
       trendPolarity: "lower_is_better",
-      ...(series && series.behind.length > 1 ? { chart: { kind: "sparkline" as const, series: series.behind, tone: "info" as const } } : {}),
+      // The one focal point of the board (2026-10-30 review): the DS hero cell, with the attention tone when anyone is behind.
+      // The mini charts are dropped: at this size they could not be read, and the tiles below carry the same series.
+      metricVariant: "hero",
+      ...(model.heroValue > 0 ? { alert: "warning" as const } : {}),
     },
     ...[achieved, waiting, approval].filter((k): k is NonNullable<typeof k> => !!k).map((k) => ({
       id: k.id,
@@ -59,8 +62,6 @@ export function StatusFigures({ model, series }: { model: DashboardModel; series
       description: k.id === "achieved" ? `${k.description}${expectedNow}` : k.id === "waiting" ? `${k.description}` : k.description,
       href: k.href,
       trendPolarity: k.polarity,
-      // Neutral ink ("info") for every mini chart: amber stays reserved for the shortfall marks in the tiles.
-      ...(k.chart ? { chart: { kind: k.chart.kind, series: k.chart.series, tone: "info" as const } } : {}),
     })),
   ]
   return (
@@ -81,10 +82,10 @@ export interface TileSelector {
   onChange: (v: string) => void
 }
 
-export function Tile({ id, title, meta, link, summary, children, table, selector }: { id: string; title: string; meta: string; link?: { href: string; label: string; aria?: string }; summary: string; children: React.ReactNode; table: React.ReactNode; selector?: TileSelector }) {
+export function Tile({ id, title, meta, link, summary, children, table, selector }: { id: string; title: string; meta?: string; link?: { href: string; label: string; aria?: string }; summary: string; children: React.ReactNode; table: React.ReactNode; selector?: TileSelector }) {
   return (
     <div id={id} data-chart data-tile={id} className="min-w-0">
-      <ChartCard title={title} description={meta} className="h-full" headingLevel="h3" {...(selector ? { variant: "selector" as const, filterOptions: selector.options, defaultFilter: selector.value, onFilterChange: selector.onChange, filterLabel: selector.label } : {})}>
+      <ChartCard title={title} description={meta ?? ""} className="h-full" headingLevel="h3" {...(selector ? { variant: "selector" as const, filterOptions: selector.options, defaultFilter: selector.value, onFilterChange: selector.onChange, filterLabel: selector.label } : {})}>
         <div className="flex h-full flex-col gap-2">
           <p className="sr-only">{summary}</p>
           <div className="min-h-0 flex-1">{children}</div>
@@ -141,8 +142,9 @@ export function WhereBehindTile({ model, scope, partial, selector }: { model: Da
   return (
     <Tile
       id="tile-behind"
-      title="Students behind, by cohort"
-      meta={`${n} of ${plural(model.inScope, "student", "students")}`}
+      title="Behind, by cohort"
+      // Same header anatomy as its peers (2026-10-30 review): title, one meta line, and Compare with as the one control.
+      meta="Students, of each cohort"
       selector={selector}
       summary={summary}
       link={n > 0 ? { href: model.heroHref, label: `View the ${n}`, aria: `View the ${n} students ${word}` } : undefined}
@@ -176,10 +178,11 @@ export function WhereBehindTile({ model, scope, partial, selector }: { model: Da
 // ---------------------------------------------------------------------------------------------------------------------
 // Ranked dot rows (blocking skill, sections)
 
-const RANK = "grid grid-cols-[minmax(0,9.5rem)_minmax(0,1fr)_2rem] items-center gap-2"
+const RANK = "grid grid-cols-[minmax(0,11rem)_minmax(0,1fr)_2rem] items-center gap-2"
 
-/** Quiet record link: the name reads as a label, underlines on hover, keeps the focus ring. */
-const NAME_LINK = `truncate text-sm ${LINK_IN_TABLE}`
+/** Quiet record link: the name reads as a label, underlines on hover, keeps the focus ring. Names wrap at spaces, never
+ * truncate (anatomy A12, Romit 2026-10-30: "Sterile dressing cha…" read as a broken name). */
+const NAME_LINK = `whitespace-normal text-sm leading-snug ${LINK_IN_TABLE}`
 
 interface RankRow { key: string; name: string; sub?: string; value: number; href: string; aria: string; title?: string }
 
@@ -192,7 +195,7 @@ function RankRows({ rows, max, label }: { rows: RankRow[]; max: number; label: s
           <li key={r.key} className={RANK}>
             <span className="flex min-w-0 flex-col">
               <Link className={NAME_LINK} href={r.href} title={r.title ?? r.name} aria-label={r.aria}>{r.name}</Link>
-              {r.sub ? <span className="truncate text-xs text-muted-foreground" title={r.title}>{r.sub}</span> : null}
+              {r.sub ? <span className="text-xs text-muted-foreground" title={r.title}>{r.sub}</span> : null}
             </span>
             <svg className="h-3.5 w-full overflow-visible" aria-hidden="true">
               <line x1="0" x2="100%" y1="7" y2="7" stroke={VIZ.track} strokeWidth="1" />
@@ -207,32 +210,46 @@ function RankRows({ rows, max, label }: { rows: RankRow[]; max: number; label: s
   )
 }
 
+/**
+ * Ties are stated, not ranked (strategy/07 A9, Von Restorff; 2026-10-30 review: three sections at 58 showed one highlight and no
+ * tie): one row per distinct value, in the order given, at most `limit` rows. A tied row reads "{n} {noun} tie" with the first
+ * names under it, so the highlight on the first row covers every record at the top value.
+ */
+export function tieGroups<T>(list: T[], valueOf: (x: T) => number, limit = 8): Array<{ value: number; rows: T[] }> {
+  const groups: Array<{ value: number; rows: T[] }> = []
+  for (const x of list) {
+    const v = valueOf(x)
+    const last = groups[groups.length - 1]
+    if (last && last.value === v) last.rows.push(x)
+    else if (groups.length < limit) groups.push({ value: v, rows: [x] })
+    else break
+  }
+  return groups
+}
+
+/** "Adult, Ambulating, +15": the first names of a tie, for the row's second line. */
+export const tieNames = (names: string[], shown = 2): string => `${names.slice(0, shown).join(", ")}${names.length > shown ? `, +${names.length - shown}` : ""}`
+
 // ---------------------------------------------------------------------------------------------------------------------
 // 2. Skills holding students back
 
 export function BlockingTile({ model, scope }: { model: DashboardModel; scope: LabScope }) {
   const list = model.blockers
   const flagged = model.behind.length
-  // Ties are stated, not ranked (strategy/07 A9, Von Restorff): one row per distinct value, the top value alone highlighted.
-  const groups: Array<{ value: number; rows: typeof list }> = []
-  for (const b of list) {
-    const last = groups[groups.length - 1]
-    if (last && last.value === b.students) last.rows.push(b)
-    else if (groups.length < 6) groups.push({ value: b.students, rows: [b] })
-    else break
-  }
+  // Ties are stated, not ranked: one row per distinct value (up to 8, strategy/07 Miller), the top value alone highlighted.
+  const groups = tieGroups(list, (b) => b.students)
   const rows: RankRow[] = groups.map((g) => {
     const one = g.rows.length === 1 ? g.rows[0] : null
     return one
       ? { key: one.skillId, name: one.name, value: g.value, title: `${one.name}, ${one.category}`, href: drillHref(scope, { list: "students", cond: "behind", skill: one.skillId, from: "tile-blocking" }), aria: `${one.name}: short for ${g.value} of the ${flagged} students behind. Open the list` }
-      : { key: `tie-${g.value}`, name: `${g.rows.length} ${skillNounPlural()} tie`, sub: `${g.rows.slice(0, 2).map((r) => r.name).join(", ")}, +${g.rows.length - 2}`, title: g.rows.map((r) => r.name).join(", "), value: g.value, href: drillHref(scope, { list: "skills", from: "tile-blocking" }), aria: `${g.rows.length} ${skillNounPlural()} tie, each short for ${g.value} of the ${flagged} students behind. Open the ${skillNounPlural()} list` }
+      : { key: `tie-${g.value}`, name: `${g.rows.length} ${skillNounPlural()} tie`, sub: tieNames(g.rows.map((r) => r.name)), title: g.rows.map((r) => r.name).join(", "), value: g.value, href: drillHref(scope, { list: "skills", from: "tile-blocking" }), aria: `${g.rows.length} ${skillNounPlural()} tie, each short for ${g.value} of the ${flagged} students behind. Open the ${skillNounPlural()} list` }
   })
   const summary = list.length === 0 ? `No required ${skillNoun()} holds anyone back in this scope.` : groups.map((g) => `${g.rows.length === 1 ? g.rows[0].name : `${g.rows.length} ${skillNounPlural()} tie`}: ${g.value} of ${flagged}`).join(", ")
   return (
     <Tile
       id="tile-blocking"
       title={`${capitalize(skillNounPlural())} holding students back`}
-      meta={`Students short, of ${flagged} behind`}
+      meta="Students short"
       summary={summary}
       link={list.length > 0 ? { href: drillHref(scope, { list: "skills", from: "tile-blocking" }), label: `All ${list.length}`, aria: `All ${list.length} ${skillNounPlural()} short for students behind` } : undefined}
       table={<SrTable caption={`Blocking ${skillNounPlural()}`} head={[skillNoun(), "Students short"]} rows={list.slice(0, 12).map((b) => [b.name, b.students])} />}
@@ -250,12 +267,15 @@ export function SectionsTile({ model, scope, gaps }: { model: DashboardModel; sc
   // Under the peer median basis the scope is its own median, so sections are ranked by share counted instead.
   const ranked = median ? [...gaps].sort((a, b) => a.pct - b.pct || a.section.localeCompare(b.section)).map((g) => ({ ...g, gap: 100 - g.pct })) : gaps
   const lagging = median ? ranked : ranked.filter((g) => g.gap > 0)
-  const top = lagging.slice(0, 7)
+  const value = (g: (typeof ranked)[number]) => (median ? g.pct : g.gap)
+  const groups = tieGroups(lagging, value, 6)
+  const top = groups.flatMap((g) => g.rows)
   const rest = ranked.length - top.length
   const restMax = ranked.slice(top.length).reduce((m, g) => Math.max(m, g.gap), 0)
   const max = Math.max(1, ...top.map((g) => g.gap))
   const meta = model.basis === "expected" ? "Points under expected now" : model.basis === "all" ? "Points short of all required" : "Lowest share counted"
-  const summary = top.length === 0 ? "No section is under the basis." : top.map((g) => `${g.section}: ${median ? `${g.pct}% counted` : `${g.gap} points under`}`).join(", ")
+  const unit = (v: number) => (median ? `${v}% counted` : `${v} points under`)
+  const summary = top.length === 0 ? "No section is under the basis." : groups.map((g) => (g.rows.length === 1 ? `${g.rows[0].section}: ${unit(g.value)}` : `${g.rows.length} sections tie at ${unit(g.value)}: ${g.rows.map((r) => r.section).join(", ")}`)).join(". ")
   return (
     <Tile
       id="tile-sections"
@@ -272,9 +292,14 @@ export function SectionsTile({ model, scope, gaps }: { model: DashboardModel; sc
           <RankRows
             label="Sections furthest under the basis"
             max={max}
-            rows={top.map((g) => ({ key: g.section, name: g.section, value: median ? g.pct : g.gap, href: drillHref({ ...scope, cat: g.section }, { list: "skills", from: "tile-sections" }), aria: `${g.section}: ${g.pct}% counted, ${g.expected}% expected. Open its ${skillNounPlural()}` }))}
+            rows={groups.map((grp) => {
+              const one = grp.rows.length === 1 ? grp.rows[0] : null
+              return one
+                ? { key: one.section, name: one.section, value: grp.value, href: drillHref({ ...scope, cat: one.section }, { list: "skills", from: "tile-sections" }), aria: `${one.section}: ${one.pct}% counted, ${one.expected}% expected. Open its ${skillNounPlural()}` }
+                : { key: `tie-${grp.value}`, name: `${grp.rows.length} sections tie`, sub: tieNames(grp.rows.map((r) => r.section), 3), title: grp.rows.map((r) => r.section).join(", "), value: grp.value, href: drillHref(scope, { list: "skills", from: "tile-sections" }), aria: `${grp.rows.length} sections tie at ${unit(grp.value)}: ${grp.rows.map((r) => r.section).join(", ")}. Open the required ${skillNounPlural()}` }
+            })}
           />
-          {rest > 0 && !median ? <p className="text-xs text-muted-foreground">{restMax > 0 ? `${plural(rest, "other section is", "other sections are")} ${restMax} points or less under, or ahead.` : `${plural(rest, "other section is", "other sections are")} at or ahead of the basis.`}</p> : null}
+          {rest > 0 && !median ? <p className="text-xs text-muted-foreground">{restMax > 0 ? `${rest === 1 ? "The other section is" : "Other sections are"} ${restMax} points or less under, or ahead.` : `${rest === 1 ? "The other section is" : "Other sections are"} at or ahead of the basis.`}</p> : null}
         </div>
       )}
     </Tile>
@@ -534,8 +559,8 @@ export function RequiredSetsTile({ term, graduate, termHref, graduateHref }: { t
     <Tile
       id="tile-required"
       title="Required this term and to graduate"
-      meta="Student records achieved, two separate sets"
-      summary={rows.map((r) => `${r.name}: ${fmt(r.a)} of ${fmt(r.t)} records achieved, ${pct(r.a, r.t)}%`).join(". ")}
+      meta={`Required ${skillNounPlural()} achieved, two separate sets`}
+      summary={rows.map((r) => `${r.name}: ${fmt(r.a)} of ${fmt(r.t)} achieved, ${pct(r.a, r.t)}%`).join(". ")}
       table={<SrTable caption="Required sets" head={["Set", "Achieved", "Records", "Share"]} rows={rows.map((r) => [r.name, r.a, r.t, `${pct(r.a, r.t)}%`])} />}
     >
       <dl className="grid grid-cols-2 gap-4">
@@ -544,7 +569,7 @@ export function RequiredSetsTile({ term, graduate, termHref, graduateHref }: { t
             <dt className="text-sm text-muted-foreground">{r.name}</dt>
             <dd className="flex flex-col gap-1">
               <span className={TYPE.figure}>{`${pct(r.a, r.t)}%`}</span>
-              <Link className={`${LINK} text-sm`} href={r.href} aria-label={`${r.name}: ${fmt(r.a)} of ${fmt(r.t)} records achieved. Open in Reports`}>{`${fmt(r.a)} of ${fmt(r.t)}`}</Link>
+              <Link className={`${LINK} text-sm`} href={r.href} aria-label={`${r.name}: ${fmt(r.a)} of ${fmt(r.t)} achieved. Open in Reports`}>{`${fmt(r.a)} of ${fmt(r.t)}`}</Link>
             </dd>
           </div>
         ))}
@@ -586,7 +611,7 @@ export function TagsTile({ rows, multiTagged, href }: { rows: Array<{ key: strin
       table={<SrTable caption="Attainment by tag" head={["Tag", "Achieved", "Records"]} rows={rows.map((r) => [r.label, `${r.achievedPct}%`, r.total])} />}
     >
       <div className="flex flex-col gap-2">
-        <RankRows label="Tags, lowest share achieved first" max={100} rows={low.map((r) => ({ key: r.key, name: r.label, value: r.achievedPct, href, aria: `${r.label}: ${r.achievedPct}% of ${r.total} records achieved. Open in Reports` }))} />
+        <RankRows label="Tags, lowest share achieved first" max={100} rows={low.map((r) => ({ key: r.key, name: r.label, value: r.achievedPct, href, aria: `${r.label}: ${r.achievedPct}% of ${r.total} achieved. Open in Reports` }))} />
         <p className="text-xs text-muted-foreground">{`Tags overlap: ${fmt(multiTagged)} records count under more than one tag.`}</p>
       </div>
     </Tile>

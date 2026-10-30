@@ -19,6 +19,7 @@ import {
 } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
+import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
@@ -32,7 +33,7 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@exxatdesignux/ui/components/ui/input-group"
 import { TYPE } from "@/components/lab/type-scale"
 import { ConfigSubsection } from "./section"
-import { criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, applyPreset, FIELD_TYPE_LABEL, hasNeed, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
+import { criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, appendQuestions, parseQuestionLines, setSubsetRange, applyPreset, FIELD_TYPE_LABEL, hasNeed, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import type { EvalModel } from "@/lib/v2/types"
 import { COURSE_FACULTY, aNoun, skillNoun } from "@/lib/lab/terms"
 import { RuleConditions, RuleNumber } from "./rule-conditions"
@@ -117,6 +118,14 @@ export function WithMeaning({ meaning, className, children, ...rest }: { meaning
 // ---------------------------------------------------------------------------------------------------------------------
 // Model [REQ SC-01, SC-02, SC-09]: nothing preselected; each option says its consequence in one line.
 
+/** What the evaluator picks from under each model: a picture of the form, not a control (decorative, aria-hidden). */
+const MODEL_SAMPLE: Record<EvalModel, string[]> = {
+  binary: ["Approved", "Not approved"],
+  question: ["Yes or No each", "One result"],
+  demonstration: ["Independent", "With assistance", "Observed"],
+  scored: ["1", "2", "3", "4", "5"],
+}
+
 export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, legend, legendHidden, onChosen }: SectionProps & { columns?: 1 | 2 | 4; legend?: string; onChosen?: (m: EvalModel) => void }) {
   const err = useErr(issues, showErrors)("cfg-model")
   const [pending, setPending] = React.useState<EvalModel | null>(null)
@@ -151,7 +160,7 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
         value={rule.model ?? ""}
         onValueChange={onValue}
         aria-label="Evaluation model"
-        className={cn(columns === 4 ? "flex flex-wrap gap-x-6 gap-y-3 outline-none" : "grid gap-3 outline-none", columns === 2 && "max-w-4xl sm:grid-cols-2")}
+        className={cn(columns === 4 ? "flex flex-wrap gap-x-6 gap-y-3 outline-none" : "grid gap-3 outline-none", columns === 2 && "@min-[64rem]:grid-cols-2")}
         {...errProps("cfg-model", err)}
       >
         {MODELS.map((m) => {
@@ -177,12 +186,21 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
               )}
             >
               <RadioGroupItem id={id} value={m} className="mt-0.5" />
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
-                  <i className={`fa-light ${MODEL_ICON[m]} text-muted-foreground`} aria-hidden="true" />
-                  {MODEL_LABEL[m]}
+              {/* Each choice shows what the evaluator will pick from (2026-10-30 review: step 1 was 65% empty), so the
+                  options read across the width and the admin compares them by the form they produce. */}
+              <span className="flex min-w-0 flex-1 flex-col gap-2 @min-[30rem]:flex-row @min-[30rem]:items-start @min-[30rem]:justify-between @min-[30rem]:gap-4">
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <i className={`fa-light ${MODEL_ICON[m]} text-muted-foreground`} aria-hidden="true" />
+                    {MODEL_LABEL[m]}
                   </span>
-                <span className="text-sm text-muted-foreground">{MODEL_HELP[m]}</span>
+                  <span className="text-sm text-muted-foreground">{MODEL_HELP[m]}</span>
+                </span>
+                <span className="flex shrink-0 flex-wrap gap-1 @min-[30rem]:max-w-[20rem] @min-[30rem]:justify-end" aria-hidden="true" data-model-sample>
+                  {MODEL_SAMPLE[m].map((s) => (
+                    <span key={s} className="rounded-[var(--radius)] border border-border bg-background px-1.5 py-0.5 text-xs text-muted-foreground">{s}</span>
+                  ))}
+                </span>
               </span>
             </Label>
           )
@@ -225,7 +243,7 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
  */
 const PLACEHOLDER: Record<string, string> = { Question: "For example, maintains aseptic technique", Level: "For example, Independent" }
 
-function ListEditor({ idBase, noun, values, onChange, onRemove, onMove, addId, ordered, err }: { idBase: string; noun: string; values: string[]; onChange: (v: string[]) => void; onRemove?: (i: number) => void; onMove?: (i: number, j: number) => void; addId: string; ordered?: boolean; err: (f: string) => string | undefined }) {
+function ListEditor({ idBase, noun, values, onChange, onRemove, onMove, addId, ordered, err, extra }: { idBase: string; noun: string; values: string[]; onChange: (v: string[]) => void; onRemove?: (i: number) => void; onMove?: (i: number, j: number) => void; addId: string; ordered?: boolean; err: (f: string) => string | undefined; /** A second add action beside "Add a …" (Paste a list, for questions). */ extra?: React.ReactNode }) {
   const move = (i: number, d: -1 | 1) => {
     const j = i + d
     if (j < 0 || j >= values.length) return
@@ -273,9 +291,12 @@ function ListEditor({ idBase, noun, values, onChange, onRemove, onMove, addId, o
         })}
       </ol>
       <div className="flex flex-col gap-1">
-        <Button id={addId} type="button" variant="ghost" size="sm" className="w-fit" onClick={() => onChange([...values, ""])}>
-          {`Add ${aNoun(noun.toLowerCase())}`}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button id={addId} type="button" variant="ghost" size="sm" className="w-fit" onClick={() => onChange([...values, ""])}>
+            {`Add ${aNoun(noun.toLowerCase())}`}
+          </Button>
+          {extra}
+        </div>
         <Err id={addId} message={err(addId)} />
       </div>
     </div>
@@ -416,6 +437,7 @@ export function OutcomesSection({ rule, setRule, issues, showErrors, qualifyingI
           err={err}
           onChange={(questions) => setRule((r) => ({ ...r, questions }))}
           onRemove={(i) => setRule((r) => removeQuestion(r, i))}
+          extra={<PasteQuestions onAdd={(lines) => setRule((r) => appendQuestions(r, lines))} />}
         />
       </FieldSet>
     </WithMeaning>
@@ -491,22 +513,99 @@ function QuestionRuleField({ rule, setRule, err }: { rule: LabRule; setRule: Sec
 
 /**
  * The questions that must be answered Yes for a "named questions" rule [REQ SC-05, SC-06]: one checkbox per question, scrolling
- * inside its box for a long question set. Shared by set 1 and 2 (rule step) and set 3 (under the sentence).
+ * inside its box for a long question set. Select all and Clear for any set; from more than 10 questions, a numbered range
+ * ("Questions 12 to 40") ticks many at once, so a 50 to 100 question set stays usable [REQ SC-06]. Shared by set 1 and 2 (rule
+ * step) and set 3 (under the sentence).
  */
 export function QuestionSubsetPicker({ rule, setRule, error, className }: { rule: LabRule; setRule: SectionProps["setRule"]; error?: string; className?: string }) {
   const r = rule.questionRule
+  const m = rule.questions.length
+  const [from, setFrom] = React.useState("")
+  const [to, setTo] = React.useState("")
   if (r?.kind !== "subset") return null
+  const ticked = r.indices.length
+  const range = (on: boolean) => setRule((x) => setSubsetRange(x, Number(from), Number(to), on))
+  const rangeOk = Number(from) >= 1 && Number(to) >= Number(from) && Number(from) <= m
   return (
-    <div id="cfg-qrule-subset" tabIndex={-1} className={cn("flex max-h-56 flex-col gap-2 overflow-y-auto rounded-md border border-border p-3", className)} role="group" aria-label="Questions that must be Yes">
-      {rule.questions.length === 0 ? <p className="text-sm text-muted-foreground">Write the questions first, then tick the ones that must be Yes.</p> : null}
-      {rule.questions.map((q, i) => (
-        <div key={i} className="flex items-center gap-2">
-          <Checkbox id={`cfg-qsub-${i}`} checked={r.indices.includes(i)} onCheckedChange={(c) => setRule((x) => ({ ...x, questionRule: { kind: "subset", indices: c ? [...r.indices, i] : r.indices.filter((k) => k !== i) } }))} />
-          <Label htmlFor={`cfg-qsub-${i}`}>{q.trim() || `Question ${i + 1}`}</Label>
+    <div id="cfg-qrule-subset" tabIndex={-1} className={cn("flex flex-col gap-2", className)} role="group" aria-label="Questions that must be Yes">
+      {m > 0 ? (
+        <div className="flex flex-wrap items-center gap-2" data-subset-tools>
+          <span className="text-sm text-muted-foreground tabular-nums" aria-live="polite">{`${ticked} of ${m} ticked`}</span>
+          <Button type="button" variant="ghost" size="sm" disabled={ticked === m} onClick={() => setRule((x) => setSubsetRange(x, 1, m, true))}>
+            Select all
+          </Button>
+          <Button type="button" variant="ghost" size="sm" disabled={ticked === 0} onClick={() => setRule((x) => setSubsetRange(x, 1, m, false))}>
+            Clear
+          </Button>
+          {m > 10 ? (
+            <span className="flex flex-wrap items-center gap-2" role="group" aria-label="Tick a range of questions">
+              <Label htmlFor="cfg-qsub-from" className="text-sm font-normal">Questions</Label>
+              <Input id="cfg-qsub-from" inputMode="numeric" className="w-16" value={from} onChange={(e) => setFrom(e.target.value.replace(/\D/g, ""))} aria-label="First question in the range" />
+              <Label htmlFor="cfg-qsub-to" className="text-sm font-normal">to</Label>
+              <Input id="cfg-qsub-to" inputMode="numeric" className="w-16" value={to} onChange={(e) => setTo(e.target.value.replace(/\D/g, ""))} aria-label="Last question in the range" />
+              <Button type="button" variant="outline" size="sm" disabled={!rangeOk} onClick={() => range(true)}>
+                Tick range
+              </Button>
+            </span>
+          ) : null}
         </div>
-      ))}
+      ) : null}
+      <Card size="sm" className="py-0">
+      <CardContent className="flex max-h-56 flex-col gap-2 overflow-y-auto py-3">
+        {m === 0 ? <p className="text-sm text-muted-foreground">Write the questions first, then tick the ones that must be Yes.</p> : null}
+        {rule.questions.map((q, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Checkbox id={`cfg-qsub-${i}`} checked={r.indices.includes(i)} onCheckedChange={(c) => setRule((x) => ({ ...x, questionRule: { kind: "subset", indices: c ? [...r.indices, i] : r.indices.filter((k) => k !== i) } }))} />
+            <Label htmlFor={`cfg-qsub-${i}`}>
+              <span className="tabular-nums text-muted-foreground">{`${i + 1}.`}</span> {q.trim() || `Question ${i + 1}`}
+            </Label>
+          </div>
+        ))}
+      </CardContent>
+      </Card>
       <Err id="cfg-qrule-subset" message={error} />
     </div>
+  )
+}
+
+/**
+ * Paste a list of questions, one per line, beside "Add a question": for a 50 to 100 question set the program writes elsewhere
+ * [REQ SC-04, SC-06]. Numbering and bullets are dropped; the dialog says how many it will add before anything changes.
+ */
+const PASTE_EMPTY = "No questions found. Paste one question per line."
+
+function PasteQuestions({ onAdd }: { onAdd: (lines: string[]) => void }) {
+  const [open, setOpen] = React.useState(false)
+  const [text, setText] = React.useState("")
+  const [tried, setTried] = React.useState(false)
+  const lines = parseQuestionLines(text)
+  return (
+    <>
+      <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={() => setOpen(true)}>
+        Paste a list
+      </Button>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setText("") }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Paste questions</DialogTitle>
+            <DialogDescription>One question per line. Numbering and bullets are removed.</DialogDescription>
+          </DialogHeader>
+          <Field>
+            <FieldLabel htmlFor="cfg-paste-questions">Questions</FieldLabel>
+            <Textarea id="cfg-paste-questions" rows={10} value={text} onChange={(e) => { setText(e.target.value); setTried(false) }} {...errProps("cfg-paste-questions", tried && !lines.length ? PASTE_EMPTY : undefined)} />
+            {tried && !lines.length ? <Err id="cfg-paste-questions" message={PASTE_EMPTY} /> : <FieldDescription aria-live="polite">{lines.length ? `${lines.length} ${lines.length === 1 ? "question" : "questions"} will be added after the ones already written.` : "Paste from a document or a spreadsheet column."}</FieldDescription>}
+          </Field>
+          <DialogFooter>
+            <Button type="button" variant="outline" size="default" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" variant="default" size="default" onClick={() => { if (!lines.length) return setTried(true); onAdd(lines); setOpen(false); setText("") }}>
+              {lines.length ? `Add ${lines.length} ${lines.length === 1 ? "question" : "questions"}` : "Add questions"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

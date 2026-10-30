@@ -6,6 +6,7 @@
  * exact students they block, so a tie reads as one line, strategy/07 Von Restorff), and the requests already waiting on a
  * blocking skill. The ranking is a dot plot on a 0 to cohort-size track, never a progress bar; every count links to its list.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
@@ -58,7 +59,7 @@ function Blockers({ m, scope }: { m: Readiness; scope: LabScope }) {
   return (
     <Card className="self-start py-0 xl:col-span-7" data-region="blockers">
       <CardContent className="flex flex-col gap-3 py-4">
-        <h2 className="text-base font-semibold text-foreground">What blocks graduation</h2>
+        <h2 className={TYPE.card}>What blocks graduation</h2>
         {shown.length === 0 ? (
           <p className="text-sm text-muted-foreground">{`No required ${skillNoun()} blocks anyone in this scope.`}</p>
         ) : (
@@ -85,7 +86,7 @@ function Blockers({ m, scope }: { m: Readiness; scope: LabScope }) {
                       <TableCell>
                         <span className="flex min-w-0 items-center gap-2">
                           {i === 0 ? <DiamondGlyph /> : <span className="inline-block w-2.5" aria-hidden="true" />}
-                          <span className="truncate text-sm text-foreground">{groupLabel(g)}</span>
+                          <span className="break-words text-sm text-foreground">{groupLabel(g)}</span>
                         </span>
                       </TableCell>
                       <TableCell>
@@ -120,7 +121,7 @@ function Waiting({ m, scope, failed }: { m: Readiness; scope: LabScope; failed: 
   return (
     <Card className="self-start py-0 xl:col-span-5" data-region="waiting">
       <CardContent className="flex flex-col gap-3 py-4">
-        <h2 className="text-base font-semibold text-foreground">{`Requests waiting on a blocking ${skillNoun()}`}</h2>
+        <h2 className={TYPE.card}>{`Requests waiting on a blocking ${skillNoun()}`}</h2>
         {failed ? (
           <p className="text-sm text-muted-foreground">Open requests could not load. The ranking is current.</p>
         ) : rows.length === 0 ? (
@@ -128,10 +129,11 @@ function Waiting({ m, scope, failed }: { m: Readiness; scope: LabScope; failed: 
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {rows.slice(0, SHOWN).map(({ r, o }) => (
-              <li key={o.submissionId} className="flex items-center justify-between gap-3 py-2 text-sm">
+              <li key={o.submissionId} className="flex items-start justify-between gap-3 py-2 text-sm">
+                {/* Skill and person names wrap, never cut (anatomy A12): the request line may run to two lines. */}
                 <span className="flex min-w-0 flex-col">
-                  <Link className={`${LINK} truncate`} href={detailHref(scope, r.id)}>{r.name}</Link>
-                  <Link className="truncate text-xs text-muted-foreground underline-offset-2 hover:underline" href={evidenceHref(scope, r.id, o.skillIds[0])}>{`${o.skillNames.join(", ")} with ${o.evaluator}`}</Link>
+                  <Link className={`${LINK} break-words`} href={detailHref(scope, r.id)}>{r.name}</Link>
+                  <Link className="break-words text-xs text-muted-foreground underline-offset-2 hover:underline" href={evidenceHref(scope, r.id, o.skillIds[0])}>{`${o.skillNames.join(", ")} with ${o.evaluator}`}</Link>
                 </span>
                 <span className={`inline-flex shrink-0 items-center gap-1.5 tabular-nums ${o.days >= AGING ? "font-medium text-foreground" : "text-muted-foreground"}`} aria-label={`${plural(o.days, "day", "days")}${o.days >= AGING ? ", aging" : ""}`}>
                   {o.days >= AGING ? <i className="fa-solid fa-clock text-xs" style={{ color: "var(--lab-viz-behind-ink)" }} aria-hidden="true" /> : null}

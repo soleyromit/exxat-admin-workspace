@@ -16,7 +16,7 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@exxatdesignux/ui/components/ui/input-group"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
 import { DiamondGlyph } from "@/components/lab/viz"
 import { useReviewer, type ReviewerContext } from "@/components/lab/reviewer/use-reviewer"
 import { LINK } from "@/components/lab/reviewer/parts"
@@ -40,12 +40,29 @@ export function StudentsFrame({ variant, children, toolbar }: { variant: string;
   const q = query.trim().toLowerCase()
   const rows = React.useMemo(() => (model ? model.rows.filter((r) => !q || r.name.toLowerCase().includes(q)) : []), [model, q])
   const applied = (["cohort", "group", "course", "cat", "tag", "loc", "setting"] as ScopeKey[]).filter((k) => !!ctx.scope[k])
+  const content = !!(ctx.ready && model && !failed && model.rows.length > 0)
 
   return (
-    <PageFrame title="Students" subtitle={ctx.options ? <ScopeContext termName={ctx.termName} scope={ctx.scope} at={ctx.at} stale={ctx.demo === "stale"} /> : undefined} actions={<SampleDataBadge />}>
+    <PageFrame title="Students" actions={<SampleDataBadge />}>
       <div className="flex flex-col gap-4" data-page-type="list" data-reviewer-students={variant}>
-        {ctx.options ? (
-          <ScopeBar scope={ctx.scope} options={ctx.options} termName={ctx.termName} onChange={ctx.setScope} chipValue={ctx.chip} showBasis={false} />
+        {/* One toolbar on the list (D-L8b): search, the variant's view control, then the scope Filters with its chips. In the
+            loading, error and empty states the Filters group stays, so the applied scope is still evident (RP-01). */}
+        {ctx.options || content ? (
+          <div className="flex flex-wrap items-center gap-3" data-region="toolbar">
+            {content && model ? (
+              <>
+                <InputGroup className="w-full sm:w-72">
+                  <InputGroupAddon>
+                    <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
+                  </InputGroupAddon>
+                  <InputGroupInput type="search" aria-label="Search students by name" placeholder="Search students" value={query} onChange={(e) => setQuery(e.target.value)} />
+                </InputGroup>
+                {toolbar ? toolbar({ ...ctx, model, students: rows, query: q }) : null}
+              </>
+            ) : null}
+            {ctx.options ? <ScopeBar scope={ctx.scope} options={ctx.options} termName={ctx.termName} onChange={ctx.setScope} chipValue={ctx.chip} showBasis={false} stale={ctx.demo === "stale"} /> : null}
+            {content && q && model ? <span className="text-sm text-muted-foreground">{`${plural(rows.length, "match", "matches")} of ${model.rows.length}`}</span> : null}
+          </div>
         ) : null}
         <p role="status" aria-live="polite" className="sr-only">
           {model && ctx.ready ? `${plural(rows.length, "student", "students")} shown` : "Loading students"}
@@ -72,16 +89,6 @@ export function StudentsFrame({ variant, children, toolbar }: { variant: string;
           </LocalBanner>
         ) : (
           <>
-            <div className="flex flex-wrap items-center gap-3" data-region="toolbar">
-              <InputGroup className="w-full sm:w-72">
-                <InputGroupAddon>
-                  <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
-                </InputGroupAddon>
-                <InputGroupInput type="search" aria-label="Search students by name" placeholder="Search students" value={query} onChange={(e) => setQuery(e.target.value)} />
-              </InputGroup>
-              {toolbar ? toolbar({ ...ctx, model, students: rows, query: q }) : null}
-              {q ? <span className="text-sm text-muted-foreground">{`${plural(rows.length, "match", "matches")} of ${model.rows.length}`}</span> : null}
-            </div>
             {q && rows.length === 0 ? (
               <LocalBanner variant="info" title={`No student matches "${query.trim()}"`}>
                 <Button type="button" variant="outline" size="sm" onClick={() => setQuery("")}>Clear search</Button>

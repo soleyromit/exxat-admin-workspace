@@ -13,6 +13,7 @@
  * is still open: the legend states only what happens today (no course picks a non-cohort group's list up by itself).
  * Regions: header, toolbar, grid, one-line legend. Demo states: ?state=loading | empty | error.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
@@ -95,7 +96,7 @@ function GroupFirst({ c }: { c: ListsContext }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2" data-region="toolbar">
-        <h2 className="text-base font-semibold text-foreground">Student groups</h2>
+        <h2 className={TYPE.section}>Student groups</h2>
         <span className="ms-auto flex items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={c.actions.openGroup}>Create a group</Button>
         </span>

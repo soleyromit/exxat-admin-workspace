@@ -394,6 +394,25 @@ export function openRequests(s: V2State, ids: Set<string>): Submission[] {
   return s.submissions.filter((x) => (x.status === "with-evaluator" || x.status === "stalled") && ids.has(x.studentId)).sort((a, b) => b.daysWaiting - a.daysWaiting || a.id.localeCompare(b.id))
 }
 
+/** True when a site sits in the scope's location and setting (no location or setting chosen: always true). */
+export function siteInScope(s: V2State, siteId: string | undefined, scope: Pick<PopulationScope, "loc" | "setting">): boolean {
+  if (!scope.loc && !scope.setting) return true
+  const site = siteId ? s.sites?.find((x) => x.id === siteId) : undefined
+  if (!site) return false
+  if (scope.loc && site.location !== scope.loc) return false
+  if (scope.setting) {
+    const setting = s.program.locations?.find((l) => l.name === site.location)?.setting
+    if (setting !== scope.setting) return false
+  }
+  return true
+}
+
+/** Open requests of a population, narrowed to the scope's location and setting by the request's site. */
+export const openRequestsIn = (s: V2State, ids: Set<string>, scope: Pick<PopulationScope, "loc" | "setting">): Submission[] => {
+  const open = openRequests(s, ids)
+  return scope.loc || scope.setting ? open.filter((x) => siteInScope(s, x.siteId, scope)) : open
+}
+
 /** Totals of a population: required student-skill records, achieved, the share, and students behind. */
 export function populationTotals(pop: Population): { students: number; records: number; achieved: number; achievedPct: number; behind: number } {
   const records = pop.rows.reduce((t, r) => t + r.required, 0)

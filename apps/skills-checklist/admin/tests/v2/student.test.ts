@@ -94,7 +94,7 @@ describe("skillProgress (remaining-work calc)", () => {
     expect(p.counted).toBe(4)
     expect(p.settings).toEqual([{ setting: "Inpatient", have: 0, min: 2 }])
     expect(p.achieved).toBe(false)
-    expect(p.left.join(" ")).toContain("2 more in Inpatient (you have 0 of 2)")
+    expect(p.left.join(" ")).toContain("2 more in inpatient (you have 0 of 2)")
     expect(p.notes.join(" ")).toContain("Lab and simulation do not count toward a clinical setting")
   })
 

@@ -5,14 +5,15 @@
  * submission), then the student's skills; a skill opens its evaluation history in a DS FloatingSheetPanel beside the list, so the
  * reviewer keeps their place; View on any evaluation shows it in full in the same panel, with Back to the history [REQ RP-07]. Tests whether "held first, skills second, history on demand" beats three tabs.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { evaluationView } from "@/lib/lab/evaluation-view"
-import { EvaluationBody } from "@/components/lab/reviewer/evaluation-sheet"
+import { EvaluationBody } from "@/components/lab/evaluation/evaluation-view"
 import { reviewItemHref } from "@/lib/lab/reviewer"
 import { capitalize, skillNounPlural } from "@/lib/lab/terms"
-import { EvaluationsTable, RecordFrame, SkillsTable } from "@/components/lab/reviewer/record-frame"
+import { CohortFact, EvaluationsTable, RecordFrame, SkillsTable } from "@/components/lab/reviewer/record-frame"
 import { RecordStatusBadge } from "@/components/lab/reviewer/parts"
 import { LINK as LINK_U } from "@/components/lab/link-styles"
 import { OVERLAY_LABEL } from "@/lib/v2/labels"
@@ -30,8 +31,11 @@ export function ReviewerStudentRecordB() {
         const view = skill && evalId && ctx.state ? evaluationView(ctx.state, evalId) : null
         return (
           <>
+            <p className="text-sm" data-region="facts">
+              <CohortFact record={r} />
+            </p>
             <section aria-labelledby="held-h" className="flex flex-col gap-2" data-region="held">
-              <h2 id="held-h" className="text-base font-semibold text-foreground">
+              <h2 id="held-h" className={TYPE.section}>
                 {held.length ? (
                   <>
                     {OVERLAY_LABEL.awaitingApproval} <span className="font-normal tabular-nums text-muted-foreground">{fmt(held.length)}</span>
@@ -55,7 +59,7 @@ export function ReviewerStudentRecordB() {
               ) : null}
             </section>
             <section aria-labelledby="skills-h" className="flex flex-col gap-2" data-region="skills">
-              <h2 id="skills-h" className="text-base font-semibold text-foreground">
+              <h2 id="skills-h" className={TYPE.section}>
                 {`${capitalize(skillNounPlural())} with evidence`} <span className="font-normal tabular-nums text-muted-foreground">{fmt(r.skills.length)}</span>
               </h2>
               <SkillsTable rows={r.skills} onOpen={(id) => ctx.setParams({ skill: id })} />

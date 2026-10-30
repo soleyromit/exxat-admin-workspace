@@ -102,7 +102,11 @@ describe("Approve counts (AR-05, AR-06), one definition everywhere", () => {
 })
 
 describe("The Approvals page says why it exists once", () => {
-  it("one muted line at the top", () => {
-    expect(lab("reviewer/approvals-frame.tsx")).toMatch(/These evaluations count only after you approve them\./)
+  // Anatomy A1 (2026-10-30): no lead line under the title. That held evidence counts only once approved (REQ AR-06) is said where
+  // the decision is made: the Approve hint on every Approve.
+  it("no lead line under the title; the Approve hint carries the fact", () => {
+    expect(lab("reviewer/approvals-frame.tsx")).not.toMatch(/These evaluations count only after you approve them\./)
+    expect(lab("screens/reviewer-approvals-a.tsx")).toMatch(/APPROVE_HINT/)
+    expect(lab("reviewer/review-parts.tsx")).toMatch(/APPROVE_HINT/)
   })
 })

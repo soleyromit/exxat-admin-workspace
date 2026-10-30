@@ -147,7 +147,7 @@ describe("strengthHint", () => {
   it("describes 4 of the last 5 in plain words and rates it", () => {
     const s = seed()
     const h = strengthHint("demonstration", iv(s).config!)
-    expect(h.sentence).toBe("A student needs 4 successful evaluations out of their last 5, from at least 2 different evaluators, at Works alone or above, including 2 in Inpatient.")
+    expect(h.sentence).toBe("A student needs 4 successful evaluations out of their last 5, from at least 2 different evaluators, at works alone or above, including 2 in inpatient.")
     expect(h.strength).toBe("strong")
   })
 

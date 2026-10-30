@@ -16,7 +16,7 @@ import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { StudentFrame } from "@/components/lab/student/frame"
-import { EvaluatorHeading, NoLoginNote, RequestLine } from "@/components/lab/student/requests"
+import { EvaluatorHeading, RequestLine } from "@/components/lab/student/requests"
 import { DraftList, useDrafts } from "@/components/lab/student/logged"
 import { NoMatch, RequestsToolbar, clearFilterParams, toolbarOptions } from "@/components/lab/student/requests-toolbar"
 import { anyFilter, filterDrafts, filterGroups, readFilter } from "@/lib/lab/requests-filter"
@@ -56,10 +56,10 @@ function Body({ state, allGroups, studentId, tab, onTab, param, setParams, cours
     const list = groups.filter((g) => g[k].length > 0)
     return k === "done" ? [...list].sort((a, b) => b.done[0].date.localeCompare(a.done[0].date)) : list
   }
+  // Search and Filters sit in the toolbar of the list they act on, inside each tab (anatomy, 2026-10-30); state lives in the URL.
+  const toolbar = <RequestsToolbar filter={filter} options={options} onChange={setParams} />
   return (
     <div className="flex flex-col gap-4" data-student-lab="requests-A">
-      <NoLoginNote />
-      <RequestsToolbar filter={filter} options={options} onChange={setParams} />
       <Tabs value={current} onValueChange={(v) => onTab(v as Tab)} data-region="tabs">
         <TabsList ariaLabel="Requests by status">
           <TabsTrigger value="drafts">
@@ -73,7 +73,8 @@ function Body({ state, allGroups, studentId, tab, onTab, param, setParams, cours
             </TabsTrigger>
           ))}
         </TabsList>
-        <TabsContent value="drafts" className="pt-3" data-region="drafts">
+        <TabsContent value="drafts" className="flex flex-col gap-3 pt-3" data-region="drafts">
+          {toolbar}
           <Card className="gap-0 py-0">
             <CardContent className="py-1">
               <DraftList rows={drafts} studentId={studentId} state={state} empty={filtered ? <NoMatch onClear={clear} /> : <EmptyBlock compact title="No drafts" body={`Save for later in Log ${aNoun()} keeps it here until you send it.`} />} />
@@ -84,21 +85,26 @@ function Body({ state, allGroups, studentId, tab, onTab, param, setParams, cours
           const list = byStatus(t.id)
           const shown = t.id === "done" && !allDone ? list.slice(0, DONE_LIMIT) : list
           return (
-            <TabsContent key={t.id} value={t.id} className="pt-3" data-region="open">
+            <TabsContent key={t.id} value={t.id} className="flex flex-col gap-3 pt-3" data-region="open">
+              {toolbar}
               {list.length === 0 ? (
                 filtered ? <NoMatch onClear={clear} /> : <p className="text-sm text-muted-foreground">{t.empty}</p>
               ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {shown.map((g) => (
-                    <Card key={g.id} className="gap-0 py-0">
-                      <CardContent className="flex flex-col gap-2 py-4">
-                        <EvaluatorHeading g={g} />
-                        <ul className="flex flex-col divide-y divide-border">
-                          {g[t.id].map((r) => <RequestLine key={r.id} row={r} studentId={studentId} />)}
-                        </ul>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="flex flex-col gap-4">
+                  {/* Two evaluator cards per row from 1280 px when there are several (review 2026-10-30 CP-4), so a long list
+                      fills the width instead of a column of stretched rows; a single card keeps the full row, where its line fits. */}
+                  <div className={`grid grid-cols-1 items-start gap-4 ${shown.length > 1 ? "xl:grid-cols-2" : ""}`} role="list" aria-label="Requests by evaluator">
+                    {shown.map((g) => (
+                      <Card key={g.id} className="gap-0 py-0" role="listitem">
+                        <CardContent className="flex flex-col gap-2 py-4">
+                          <EvaluatorHeading g={g} />
+                          <ul className="flex flex-col divide-y divide-border">
+                            {g[t.id].map((r) => <RequestLine key={r.id} row={r} studentId={studentId} />)}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                   {t.id === "done" && list.length > DONE_LIMIT ? (
                     <Button type="button" variant="outline" size="sm" className="self-start" onClick={() => setAllDone((v) => !v)}>
                       {allDone ? "Show fewer" : `Show all ${list.length} evaluators`}

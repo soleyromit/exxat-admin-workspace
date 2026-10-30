@@ -73,7 +73,8 @@ export function EvaluatorFormB() {
           <Wizard steps={steps} current={step} orientation="horizontal" variant="compact" onStepClick={(i) => go(i)}>
             <WizardNav className="hidden md:flex" />
             <WizardContent className="flex flex-col gap-3">
-              <WizardProgress formatLabel={(c, t) => (c === t ? "Review" : `${capitalize(skillNoun())} ${c} of ${t - 1}`)} />
+              {/* Phone only: the stepper above says the same from md up (anatomy, 2026-10-30). */}
+              <WizardProgress className="md:hidden" formatLabel={(c, t) => (c === t ? "Review" : `${capitalize(skillNoun())} ${c} of ${t - 1}`)} />
               <div
                 data-region="skill"
                 onTouchStart={(e) => { touch.current = e.touches[0]?.clientX ?? null }}

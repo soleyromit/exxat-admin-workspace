@@ -8,6 +8,7 @@
  * starts below the fold at any height, and a "Next" link under the card says what follows. The submit bar stays in view.
  * Design notes: docs/knowledge/design/evaluator-and-lab.md.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
@@ -27,7 +28,7 @@ export function EvaluatorFormA() {
   return (
     <EvaluatorGate
       m={m}
-      summary={req ? <RequestSummary req={req} line={`${skillsWord(n)} · ${contextLine(req)}`} /> : null}
+      summary={req ? <RequestSummary req={req} line={contextLine(req)} /> : null}
       footer={
         <StickyBar>
           <p className="sr-only" aria-live="polite">{`${m.done} of ${n} done`}</p>
@@ -41,13 +42,15 @@ export function EvaluatorFormA() {
         <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); m.submit() }} noValidate aria-label={`Evaluation for ${req.student.name}`}>
           <StateBanners m={m} req={req} />
           <ErrorSummary m={m} />
+          {/* The level between the page h1 and each card's h3 (DS review 2026-10-30 S9); the cards say it visually. */}
+          <h2 className="sr-only">{`${skillsWord(n)} to evaluate`}</h2>
           {req.skills.map((k, i) => {
             const next = req.skills[i + 1]
             return (
             <div key={k.id} className={next ? "flex min-h-[calc(100dvh-10rem)] flex-col items-start gap-2" : "flex flex-col"}>
             <Card id={`ev-a-skill-${k.id}`} size="sm" data-region="skill" className="w-full scroll-mt-4">
               <CardHeader>
-                <CardTitle className="text-base">{k.name}</CardTitle>
+                <CardTitle className={TYPE.card}>{k.name}</CardTitle>
                 {k.attempt ? <CardAction><Badge variant="secondary">{k.attempt.limit ? `Attempt ${k.attempt.n} of ${k.attempt.limit}` : `Attempt ${k.attempt.n}`}</Badge></CardAction> : null}
               </CardHeader>
               <CardContent className="flex flex-col gap-4">

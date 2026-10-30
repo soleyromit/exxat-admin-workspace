@@ -42,13 +42,15 @@ export interface EvaluationView {
   /** What the student supplied with the request (setting, location, self-rating, any program fields). */
   supplied: EvaluationFact[]
   studentNote: string
+  /** The self-evaluation note, when it differs from `studentNote` (a request note and a self-evaluation note can both exist). */
+  selfNote: string
   /** The reviewer's decision note, when one was written (AR-04). */
   reviewNote: string
   /** Group check-off (PROTO 2026-10-28): the note that explains there is no student submission, or null for any other source. */
   checkoffNote: string | null
 }
 
-const STATUS_WORD: Record<Evaluation["status"], string> = { counted: "Counted", "awaiting-approval": "Awaiting approval", returned: "Returned", reopened: "Returned" }
+const STATUS_WORD: Record<Evaluation["status"], string> = { counted: "Counted", "awaiting-approval": "Awaiting approval", returned: "Returned", reopened: "Returned", reassigned: "Sent for a new evaluation" }
 
 const settingText = (e: Evaluation): string => (e.setting === "clinical" ? (e.clinicalSetting ? `Clinical, ${e.clinicalSetting}` : "Clinical") : e.setting === "lab" ? "Lab" : "Simulation")
 
@@ -92,16 +94,16 @@ export function evaluationView(s: V2State, evaluationId: string): EvaluationView
     ...(e.currentVersion > 1 ? [{ label: "Version", value: String(e.currentVersion) }] : []),
   ]
 
+  // The self-rating is the Student column of the responses (compareEvaluation reads the log entry, then the evaluation's own
+  // self-evaluation), so it is not listed again here (say it once).
   const supplied: EvaluationFact[] = []
-  if (entry) {
-    supplied.push({ label: "Logged", value: longDate(entry.at) })
-    if (entry.rating) supplied.push({ label: "Self-rating", value: outcomeWord(entry.rating) })
-  } else if (e.self?.rating) {
-    supplied.push({ label: "Self-rating", value: outcomeWord(e.self.rating) })
-  }
+  if (entry) supplied.push({ label: "Logged", value: longDate(entry.at) })
   supplied.push(...readValues(entry), ...readValues(sub))
 
-  const studentNote = readString(e, "studentNote") || readString(sub, "studentNote") || (entry?.note ?? "").trim() || (e.self?.note ?? "").trim()
+  const requestNote = readString(e, "studentNote") || readString(sub, "studentNote")
+  const selfNoteRaw = (entry?.note ?? "").trim() || (e.self?.note ?? "").trim()
+  const studentNote = requestNote || selfNoteRaw
+  const selfNote = requestNote && selfNoteRaw && selfNoteRaw !== requestNote ? selfNoteRaw : ""
 
   return {
     id: e.id,
@@ -117,6 +119,7 @@ export function evaluationView(s: V2State, evaluationId: string): EvaluationView
     feedback: c.feedback,
     supplied,
     studentNote,
+    selfNote,
     reviewNote: (e.review?.note ?? "").trim(),
     checkoffNote: e.source === "checkoff" ? checkoffNote(skill ?? undefined) : null,
   }

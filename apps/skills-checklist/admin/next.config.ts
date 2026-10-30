@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
     resolveAlias: {
       'react-router-dom': './lib/react-router-compat.tsx',
       'react-router': './lib/react-router-compat.tsx',
+      '@exxatdesignux/ui/components/data-table': './components/data-table/index.tsx',
     },
   },
   webpack(config) {
@@ -31,6 +32,9 @@ const nextConfig: NextConfig = {
       ...config.resolve.alias,
       'react-router-dom': path.resolve(__dirname, 'lib/react-router-compat.tsx'),
       'react-router': path.resolve(__dirname, 'lib/react-router-compat.tsx'),
+      // One filter entry point per table (anatomy A9): the exact DataTable subpath resolves to the lab wrapper,
+      // which imports the real module through '/index'. See components/data-table/index.tsx.
+      '@exxatdesignux/ui/components/data-table$': path.resolve(__dirname, 'components/data-table/index.tsx'),
     }
     return config
   },

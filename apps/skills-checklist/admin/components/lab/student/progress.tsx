@@ -4,6 +4,7 @@
  * Regions of the My progress variants. Every number is a link to where it is acted on; every chart has a text summary (its
  * accessible name) and a "Show as table" fallback; every "did not count" names the failed rule in numbers and the next step.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
@@ -40,7 +41,7 @@ export function ProgressHero({ model, studentId, compact = false }: { model: Stu
         </Link>
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-base font-semibold text-foreground">{`${REQUIRED_THIS_TERM}, achieved`}</h2>
+            <h2 className={TYPE.card}>{`${REQUIRED_THIS_TERM}, achieved`}</h2>
             <p className={cn("inline-flex items-center gap-1.5 text-sm", model.behind ? "font-medium" : "text-muted-foreground")} style={model.behind ? { color: VIZ.behindInk } : undefined}>
               {model.behind ? <i className="fa-solid fa-diamond text-xs" aria-hidden="true" /> : null}
               {model.verdict}
@@ -107,7 +108,9 @@ export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next",
   const list = more ? all : all.slice(0, limit)
   const hidden = all.length - limit
   return (
-    <Card data-region="next" className={cn("gap-0 py-0", className)}>
+    // Where returned requests are listed, this region holds the returned count (the same model number My requests shows), so the
+    // consistency check reads it here once the Waiting card stops repeating it (review 2026-10-30).
+    <Card data-region="next" className={cn("gap-0 py-0", className)} {...(exclude.includes("returned") ? {} : { "data-figure-label": "Returned to you", "data-figure-value": model.counts.returned })}>
       <CardContent className="flex flex-col gap-1 py-4">
         <SectionTitle count={all.length}>{title}</SectionTitle>
         {list.length === 0 ? (
@@ -119,7 +122,7 @@ export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next",
                 <i className={`fa-light ${NEXT_ICON[a.kind]} mt-0.5 w-4 shrink-0 text-center text-sm`} style={{ color: a.amber ? VIZ.behindInk : "var(--muted-foreground)" }} aria-hidden="true" />
                 <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <h3 className="text-sm font-medium text-foreground">{a.title}</h3>
+                    <h3 className={TYPE.label}>{a.title}</h3>
                     {/* The detail names who and why (returned), the failed rule (did not count) or the numbers; a conflict's title says it all. */}
                     <p className={cn("text-sm text-muted-foreground", a.kind === "conflict" ? "hidden" : a.kind === "dnq" ? "" : a.kind === "returned" ? "max-sm:line-clamp-2" : "max-sm:hidden")} data-next-detail={a.kind}>
                       {a.kind === "returned" && a.who && a.detail.startsWith(`${a.who}: `) ? (
@@ -281,7 +284,7 @@ export function CourseSkillList({ model, course, studentId }: { model: StudentMo
         const all = open[g.level] || g.records.length <= 8
         return (
           <section key={g.level} className="flex flex-col" aria-label={`${MAPPING_LEVEL_LABEL[g.level]} on ${course.code}`}>
-            <h3 className="flex items-baseline gap-2 border-b border-border pb-1.5 pt-2 text-sm font-semibold text-foreground">
+            <h3 className={`flex items-baseline gap-2 border-b border-border pb-1.5 pt-2 ${TYPE.group}`}>
               {MAPPING_LEVEL_LABEL[g.level]}
               <span className="text-xs font-normal tabular-nums text-muted-foreground" data-viz-label>{`${achieved} of ${g.records.length} achieved`}</span>
             </h3>
@@ -548,8 +551,8 @@ export function CourseTable({ model, studentId, mandatoryCell, placement = false
       <TableHeader>
         <TableRow>
           <TableHead>Course</TableHead>
-          <TableHead className={mandatoryCell ? "" : "text-end"}>Mandatory achieved</TableHead>
-          <TableHead className="text-end">Evaluations now</TableHead>
+          <TableHead className={cn("whitespace-normal", !mandatoryCell && "text-end")}>Mandatory achieved</TableHead>
+          <TableHead className="whitespace-normal text-end">Evaluations now</TableHead>
           {compact ? null : <TableHead className="hidden text-end md:table-cell">Recommended or optional achieved</TableHead>}
           {placement ? <TableHead className="hidden lg:table-cell">Placement ends</TableHead> : null}
         </TableRow>
@@ -558,7 +561,9 @@ export function CourseTable({ model, studentId, mandatoryCell, placement = false
         {model.courses.map((c) => (
           <React.Fragment key={c.id}>
           <TableRow>
-            <TableCell>
+            {/* whitespace-normal: at 375 the course code may wrap at its space rather than push the last column past the table
+                edge (anatomy A10, 2026-10-30). */}
+            <TableCell className="whitespace-normal">
               <span className="inline-flex items-center gap-1">
                 {c.skills.length ? (
                   <Button type="button" variant="ghost" size="icon-sm" aria-expanded={open === c.id} aria-controls={`course-skills-${c.id}`} aria-label={`${open === c.id ? "Hide" : "Show"} the ${countSkills(c.skills.length)} ${c.code} expects`} onClick={() => setOpen((o) => (o === c.id ? null : c.id))}>
@@ -569,10 +574,10 @@ export function CourseTable({ model, studentId, mandatoryCell, placement = false
               </span>
               {compact ? null : <span className="ms-2 hidden text-muted-foreground lg:inline">{c.name}</span>}
             </TableCell>
-            <TableCell className={mandatoryCell ? "" : "text-end tabular-nums"}>{c.mandatory ? (mandatoryCell ? mandatoryCell(c) : <Link className={NUM_LINK} href={studentHref("record", {}, studentId)}>{`${c.mandatoryAchieved} of ${c.mandatory}`}</Link>) : <span className="text-muted-foreground">None</span>}</TableCell>
-            <TableCell className="text-end tabular-nums">
+            <TableCell className={mandatoryCell ? "whitespace-normal" : "text-end tabular-nums"}>{c.mandatory ? (mandatoryCell ? mandatoryCell(c) : <Link className={NUM_LINK} href={studentHref("record", {}, studentId)}>{`${c.mandatoryAchieved} of ${c.mandatory}`}</Link>) : <span className="text-muted-foreground">None</span>}</TableCell>
+            <TableCell className="whitespace-normal text-end tabular-nums">
               {c.needed ? (
-                <span className="inline-flex items-center justify-end gap-1.5" style={c.behind ? { color: VIZ.behindInk } : undefined}>
+                <span className="inline-flex flex-wrap items-center justify-end gap-x-1.5" style={c.behind ? { color: VIZ.behindInk } : undefined}>
                   {c.behind ? <i className="fa-solid fa-diamond text-xs" aria-hidden="true" /> : null}
                   {`${c.collected} of ${c.needed}, ${c.expected} expected`}
                   <span className="sr-only">{c.behind ? ", behind" : ", on pace"}</span>

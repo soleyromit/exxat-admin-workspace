@@ -9,6 +9,7 @@
  * skill, course, setting, location, evaluator and role (REQ AR-01), the same triage columns as Approvals A. Question: does seeing
  * the rule behind the queue help an admin decide whether to change the rule rather than clear the backlog?
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
@@ -40,7 +41,7 @@ function RulesAndQueue({ ctx }: { ctx: ApprovalsContext }) {
     <div className="flex flex-col gap-4" data-admin-approvals="B">
       {ctx.tabbed ? null : <SummaryLine summary={ctx.summary} oldestHref={ctx.rowsInScope[0] ? reviewItemHref(ctx.scope, ctx.rowsInScope[0].key) : undefined} />}
       <section aria-labelledby="rules-heading" className="flex flex-col gap-2">
-        <h2 id="rules-heading" className="text-sm font-semibold text-foreground">
+        <h2 id="rules-heading" className={TYPE.section}>
           {`Held by a rule · ${plural(model.ruleHeld, "submission", "submissions")}`}
         </h2>
         <RulesTable rows={model.rules} scope={ctx.scope} role="admin" />
@@ -78,8 +79,8 @@ function EachSubmission({ rows, scope }: { rows: ReviewRow[]; scope: ApprovalsCo
   const router = useLabRouter()
   return (
     <section aria-labelledby="each-heading" className="flex flex-col gap-2" data-region="table">
-      <h2 id="each-heading" className="text-sm font-semibold text-foreground">
-        {`Each waiting submission · ${rows.length}`}
+      <h2 id="each-heading" className={TYPE.section}>
+        Each waiting submission
       </h2>
       <DataTable<ReviewRow>
         data={rows}

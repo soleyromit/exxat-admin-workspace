@@ -13,8 +13,8 @@ import * as React from "react"
 import { mappingLink, skillReach } from "@/lib/lab/mapping"
 import { aNoun, skillNounPlural } from "@/lib/lab/terms"
 import { MappingFrame, type MappingModel } from "@/components/lab/admin-a/mapping-frame"
-import { CourseKindSelect, SkillPanel, SkillReachTable } from "@/components/lab/admin-a/mapping-parts"
-import { FilterSelect, SearchField, Toolbar } from "@/components/lab/admin-a/parts"
+import { SkillPanel, SkillReachTable, courseKindField } from "@/components/lab/admin-a/mapping-parts"
+import { AppliedFilterChips, FiltersControl, SearchField, Toolbar, type FilterField } from "@/components/lab/admin-a/parts"
 
 type Show = "" | "required" | "gaps" | "unconfigured"
 
@@ -40,26 +40,31 @@ function SkillFirst({ m }: { m: MappingModel }) {
   const selected = all.find((r) => r.id === requested) ?? rows[0]
   const hrefFor = React.useCallback((id: string) => mappingLink({ term: m.termId, q: q || undefined, show: show || undefined, incl: m.didactic ? "didactic" : undefined, oq: oq || undefined, cohort: cohort || undefined, year: year || undefined, skill: id }), [m.termId, q, show, m.didactic, oq, cohort, year])
 
+  // One filter idiom (2026-10-30 review P2, D-L8b): term, show and course kind are one Filters control with removable chips.
+  const fields: FilterField[] = [
+    { id: "term", label: "Term", value: m.termId, defaultValue: m.currentTermId, options: m.termOpts, onChange: (v) => query.set({ term: v && v !== m.currentTermId ? v : null }) },
+    {
+      id: "show",
+      label: "Show",
+      value: show,
+      allLabel: `All ${skillNounPlural()}`,
+      options: [
+        { value: "required", label: "Required to graduate" },
+        // N-13 as a count on its own filter, not a sentence above the list (Romit 2026-10-28: "too many text").
+        { value: "gaps", label: m.cover.gaps.length ? `Required, in no course (${m.cover.gaps.length})` : "Required, in no course" },
+        { value: "unconfigured", label: "Not configured" },
+      ],
+      onChange: (v) => query.set({ show: v || null, skill: null }),
+    },
+    courseKindField(m.didactic, m.setDidactic),
+  ]
   return (
     <>
       <Toolbar label={`Find ${aNoun()}`}>
         <SearchField value={q} onChange={(v) => query.set({ q: v || null })} label={`Search ${skillNounPlural()} by name or section`} placeholder={`Search ${skillNounPlural()}`} />
-        <FilterSelect value={m.termId} onChange={(v) => query.set({ term: v || null })} label="Term" options={m.termOpts} className="w-36" />
-        <FilterSelect
-          value={show}
-          onChange={(v) => query.set({ show: v || null, skill: null })}
-          label="Show"
-          allLabel={`All ${skillNounPlural()}`}
-          options={[
-            { value: "required", label: "Required to graduate" },
-            // N-13 as a count on its own filter, not a sentence above the list (Romit 2026-10-28: "too many text").
-            { value: "gaps", label: m.cover.gaps.length ? `Required, in no course (${m.cover.gaps.length})` : "Required, in no course" },
-            { value: "unconfigured", label: "Not configured" },
-          ]}
-          className="w-56"
-        />
-        <CourseKindSelect didactic={m.didactic} onChange={m.setDidactic} />
+        <FiltersControl fields={fields} courseKind={m.didactic ? "all" : "clinical"} />
       </Toolbar>
+      <AppliedFilterChips fields={fields} />
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
         <SkillReachTable
           rows={rows}

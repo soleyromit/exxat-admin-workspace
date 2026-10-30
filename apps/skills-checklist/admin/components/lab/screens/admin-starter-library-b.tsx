@@ -13,6 +13,7 @@
  * button on the page; the preview panel's "Use as a starting point" is the one primary when it is open. The open decision
  * is a lab note (screens.json labNotes), not page content.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
@@ -57,7 +58,6 @@ export function AdminStarterLibraryB() {
   return (
     <PageFrame
       title={<LaterTitle>Starting points</LaterTitle>}
-      subtitle="Example lists to copy and edit. Your program owns the copy."
       actions={<Button asChild variant="outline" size="sm"><Link href="/lab/admin/import-ai-review">{`Import ${skillNounPlural()}`}</Link></Button>}
     >
       <div className="flex flex-col gap-4" data-starter-lab="B" data-page-type="list">
@@ -109,7 +109,7 @@ function PointCard({ point, href }: { point: StartingPoint; href: string }) {
       <Card className="flex w-full flex-col" data-starting-point={point.id}>
         <CardHeader className="flex flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">{point.discipline}</span>
-          <CardTitle className="text-base"><Link href={href} scroll={false} className={LINK_IN_TABLE}>{point.label}</Link></CardTitle>
+          <CardTitle className={TYPE.card}><Link href={href} scroll={false} className={LINK_IN_TABLE}>{point.label}</Link></CardTitle>
           <p className="text-sm tabular-nums text-muted-foreground">{`${countSkills(point.skills.length)} in ${sections.length} ${sections.length === 1 ? IMPORT_GROUPING.category.toLowerCase() : IMPORT_GROUPING.categories}`}</p>
         </CardHeader>
         <CardContent className="flex flex-1 flex-col gap-2">

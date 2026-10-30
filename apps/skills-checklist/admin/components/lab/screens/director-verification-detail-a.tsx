@@ -6,6 +6,7 @@
  * acknowledgement, what the verified record will state, and one primary action, Verify record, disabled until each gap is
  * acknowledged. ?student= picks the record (default: one with a gap that can be verified); ?queue= walks a bulk selection.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
@@ -46,9 +47,9 @@ function RecordTable({ d, scope, state }: { d: DetailModel; scope: Readiness["sc
             </TableRow>
             {[...s.lines].sort((a, b) => Number(a.state === "achieved") - Number(b.state === "achieved") || a.name.localeCompare(b.name)).map((l) => (
               <TableRow key={l.skillId}>
-                <TableCell className="text-foreground">{l.name}</TableCell>
+                <TableCell className="whitespace-normal text-foreground">{l.name}</TableCell>
                 <TableCell><SkillState l={l} /></TableCell>
-                <TableCell><EvidenceLink l={l} scope={scope} studentId={d.row.id} state={state} /></TableCell>
+                <TableCell className="whitespace-normal"><EvidenceLink l={l} scope={scope} studentId={d.row.id} state={state} /></TableCell>
                 <TableCell className="text-end tabular-nums text-muted-foreground">{l.lastDate ? shortDate(l.lastDate) : ""}</TableCell>
               </TableRow>
             ))}
@@ -80,7 +81,7 @@ function Detail({ d, m, ctx }: { d: DetailModel; m: Readiness; ctx: DirectorCont
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
         <Card className="py-0 xl:col-span-8" data-region="record">
           <CardContent className="flex flex-col gap-3 py-4">
-            <h2 className="text-base font-semibold text-foreground">{`Required ${skillNounPlural()}`}</h2>
+            <h2 className={TYPE.card}>{`Required ${skillNounPlural()}`}</h2>
             {ctx.demo === "error" ? (
               <LocalBanner variant="warning" title="The record could not load" retry={{ label: "Try again", onClick: () => ctx.setParams({ state: null }) }}>
                 The decision panel is current.
@@ -92,7 +93,7 @@ function Detail({ d, m, ctx }: { d: DetailModel; m: Readiness; ctx: DirectorCont
         </Card>
         <Card className="py-0 xl:sticky xl:top-4 xl:col-span-4" data-region="decision">
           <CardContent className="flex flex-col gap-4 py-4">
-            <h2 className="text-base font-semibold text-foreground">Verify this record</h2>
+            <h2 className={TYPE.card}>Verify this record</h2>
             <FluxList d={d} scope={m.scope} />
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium text-foreground">{d.row.gaps.length ? `Gaps (${d.row.gaps.length})` : "Gaps"}</span>

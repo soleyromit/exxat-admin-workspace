@@ -5,7 +5,10 @@
  * scope, the export controls (DS ExportDrawer, plus a popover that says what each file holds), and the line that says what is
  * excluded. Every count links to the rows behind it with the same scope [REQ RP-05, RP-06].
  */
-import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { TYPE } from "@/components/lab/type-scale"
+import type { PeekRef } from "@/lib/lab/attainment"
+import type { RecordState } from "@/lib/lab/dashboard"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -19,15 +22,17 @@ import { CountLink } from "@/components/lab/director/parts"
 import { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { fmt, initialsOf } from "@/lib/v2/format"
-import { csvColumns, DIRECTOR_NAME, detailHref, directorHref, listHref, plural, type ReportModel, type ReportView, type SectionReportRow, type SkillReportRow, type StudentReportRow } from "@/lib/lab/director"
+import { csvColumns, DIRECTOR_NAME, detailHref, plural, reportsHref, type ReportModel, type ReportView, type SectionReportRow, type SkillReportRow, type StudentReportRow, type TagReportRow } from "@/lib/lab/director"
 import type { LabScope } from "@/lib/lab/scope"
-import { RECORD_STATE_META } from "@/lib/v2/labels"
+import { MAPPING_LEVEL_LABEL, RECORD_STATE_META } from "@/lib/v2/labels"
 
 export const VIEW_OPTIONS = [
   { value: "student" as const, label: "By student" },
   // A getter, so the label follows the program's noun when it changes (Settings > Naming).
   { value: "skill" as const, get label() { return `By ${skillNoun()}` } },
   { value: "section" as const, label: "By section" },
+  // RP-04: tags cut across sections; the view says the rows overlap.
+  { value: "tag" as const, label: "By tag" },
 ]
 
 export function ViewSwitch({ view, onChange }: { view: ReportView; onChange: (v: ReportView) => void }) {
@@ -38,55 +43,144 @@ const num = "text-sm tabular-nums"
 // Engine state words from the one label map (lib/v2/labels.ts): "Evidence does not qualify", "No evidence yet".
 const UNQ = RECORD_STATE_META.unqualified.label
 const NONE = RECORD_STATE_META.none.label
+const PROG = RECORD_STATE_META.progress.label
 
-function studentCols(scope: LabScope): ColumnDef<StudentReportRow>[] {
+/** A count opens the evidence behind it in place (RP-06: the peek, never a new page). */
+export type PeekHrefFn = (ref: PeekRef) => string
+
+/** Numbers right-aligned (design review 2026-10-30, CP-6): the header and the cell share one edge. */
+const endHeader = (label: string) => () => <span className="block w-full text-end">{label}</span>
+const end = (node: React.ReactNode) => <span className="block w-full text-end">{node}</span>
+
+/**
+ * The verdict number of a row: Attainment, right after the name, emphasised (semibold ink), right-aligned. The four engine-state
+ * counts follow it, quieter (design review 2026-10-30, others #4).
+ */
+const pctCol = <T extends { pct: number }>(): ColumnDef<T> => ({
+  key: "pct",
+  label: "Attainment",
+  width: 112,
+  sortable: true,
+  header: endHeader("Attainment"),
+  cell: (r) => end(<span className={`${num} font-semibold text-foreground`}>{`${r.pct}%`}</span>),
+})
+
+type StateKey = "achieved" | "progress" | "unqualified" | "noEvidence"
+const PEEK_STATE: Record<StateKey, RecordState> = { achieved: "achieved", progress: "progress", unqualified: "unqualified", noEvidence: "none" }
+const STATE_WORD: Record<StateKey, string> = { achieved: "Achieved", progress: PROG, unqualified: UNQ, noEvidence: NONE }
+const STATE_WIDTH: Record<StateKey, number> = { achieved: 100, progress: 110, unqualified: 200, noEvidence: 140 }
+
+/**
+ * The engine-state columns [REQ RP-02, AE-04], with a column dropped when it is zero on every row in scope (design review
+ * 2026-10-30, CP-3: In progress and Does not qualify were zero for everyone). The dropped states stay reachable: the line above the
+ * table names them with their zero (ZeroStatesLine), and they come back as soon as one row is non-zero. The two "not achieved"
+ * states never merge into one column (that merge is OD-03, open).
+ */
+function stateCols<T extends Record<StateKey, number>>(rows: T[], ref: (r: T, k: StateKey) => PeekRef, labelOf: (r: T, k: StateKey) => string, peek: PeekHrefFn): ColumnDef<T>[] {
+  return (Object.keys(PEEK_STATE) as StateKey[])
+    .filter((k) => k === "achieved" || rows.some((r) => r[k] > 0))
+    .map((k) => ({
+      key: k,
+      label: STATE_WORD[k],
+      width: STATE_WIDTH[k],
+      sortable: true,
+      header: endHeader(STATE_WORD[k]),
+      cell: (r: T) => end(<CountLink n={r[k]} href={peek(ref(r, k))} label={labelOf(r, k)} className={`${num} text-muted-foreground`} />),
+    }))
+}
+
+/** The states hidden because they are zero on every row, said once so the four states stay readable (RP-02). */
+export function ZeroStatesLine({ rows }: { rows: Array<Record<StateKey, number>> }) {
+  const zero = (["progress", "unqualified", "noEvidence"] as StateKey[]).filter((k) => !rows.some((r) => r[k] > 0))
+  if (!rows.length || !zero.length) return null
+  return (
+    <p className={TYPE.meta} data-zero-states>
+      {`${zero.map((k, i) => (i ? inSentence(STATE_WORD[k]) : STATE_WORD[k])).join(" and ")} ${zero.length === 1 ? "is" : "are"} 0 on every row in this scope, so ${zero.length === 1 ? "its column is" : "their columns are"} hidden.`}
+    </p>
+  )
+}
+
+function studentCols(rows: StudentReportRow[], scope: LabScope, peek: PeekHrefFn): ColumnDef<StudentReportRow>[] {
   return [
     { key: "name", label: "Student", width: 220, sortable: true, cell: (r) => <PersonIdentityCell name={r.name} initials={initialsOf(r.name)} renderName={(n) => <Link className={LINK} href={detailHref(scope, r.id)}>{n}</Link>} /> },
-    { key: "achieved", label: "Achieved", width: 120, sortable: true, cell: (r) => <CountLink n={r.achieved} href={detailHref(scope, r.id)} label={`${r.name}: ${r.achieved} achieved. Open the record`} className={num} /> },
-    { key: "progress", label: "In progress", width: 120, sortable: true, cell: (r) => <CountLink n={r.progress} href={detailHref(scope, r.id)} label={`${r.name}: ${r.progress} in progress. Open the record`} className={num} /> },
-    // The two engine states stay apart [REQ AE-04]: never one "Unmet" column (that merge is OD-03, open).
-    { key: "unqualified", label: UNQ, width: 200, sortable: true, cell: (r) => <CountLink n={r.unqualified} href={detailHref(scope, r.id)} label={`${r.name}: ${r.unqualified} ${UNQ.toLowerCase()}. Open the record`} className={num} /> },
-    { key: "noEvidence", label: NONE, width: 130, sortable: true, cell: (r) => <CountLink n={r.noEvidence} href={detailHref(scope, r.id)} label={`${r.name}: ${r.noEvidence} ${NONE.toLowerCase()}. Open the record`} className={num} /> },
-    { key: "pct", label: "Attainment", width: 120, sortable: true, cell: (r) => <span className={`${num} text-muted-foreground`}>{`${r.pct}%`}</span> },
+    pctCol<StudentReportRow>(),
+    ...stateCols(rows, (r, k) => ({ kind: "student", id: r.id, state: PEEK_STATE[k] }), (r, k) => `${r.name}: ${r[k]} ${inSentence(STATE_WORD[k])}. Show the evidence`, peek),
   ]
 }
 
-function skillCols(scope: LabScope): ColumnDef<SkillReportRow>[] {
+function skillCols(rows: SkillReportRow[], course: string, peek: PeekHrefFn): ColumnDef<SkillReportRow>[] {
+  // RP-03: scoped to a course, each skill names its level there (Mandatory, Recommended, Optional), from the mapping.
+  const level: ColumnDef<SkillReportRow>[] = course
+    ? [{ key: "level", label: "In this course", width: 140, sortable: true, cell: (r) => <span className={`text-sm ${r.level === "mandatory" ? "font-medium text-foreground" : "text-muted-foreground"}`} data-course-level={r.level ?? "none"}>{r.level ? MAPPING_LEVEL_LABEL[r.level] : MAPPING_LEVEL_LABEL["not-expected"]}</span> }]
+    : []
   return [
-    { key: "name", label: capitalize(skillNoun()), width: 240, sortable: true, cell: (r) => <span className="truncate text-sm text-foreground" title={r.name}>{r.name}</span> },
-    { key: "section", label: "Section", width: 180, sortable: true, cell: (r) => <span className="truncate text-sm text-muted-foreground">{r.section}</span> },
-    { key: "achieved", label: "Achieved", width: 110, sortable: true, cell: (r) => <CountLink n={r.achieved} href={listHref(scope, { list: "has", skill: r.id })} label={`${r.achieved} students achieved ${r.name}. Open the list`} className={num} /> },
-    { key: "progress", label: "In progress", width: 110, sortable: true, cell: (r) => <CountLink n={r.progress} href={listHref(scope, { list: "progress", skill: r.id })} label={`${r.progress} in progress on ${r.name}. Open the list`} className={num} /> },
-    { key: "unqualified", label: UNQ, width: 200, sortable: true, cell: (r) => <CountLink n={r.unqualified} href={listHref(scope, { list: "unqualified", skill: r.id })} label={`${r.unqualified} with ${UNQ.toLowerCase()} on ${r.name}. Open the list`} className={num} /> },
-    { key: "noEvidence", label: NONE, width: 130, sortable: true, cell: (r) => <CountLink n={r.noEvidence} href={listHref(scope, { list: "noevidence", skill: r.id })} label={`${r.noEvidence} with ${NONE.toLowerCase()} on ${r.name}. Open the list`} className={num} /> },
+    { key: "name", label: capitalize(skillNoun()), width: 240, sortable: true, cell: (r) => <span className="text-sm text-foreground">{r.name}</span> },
+    ...level,
+    { key: "section", label: "Section", width: 180, sortable: true, cell: (r) => <span className="text-sm text-muted-foreground">{r.section}</span> },
+    ...stateCols(rows, (r, k) => ({ kind: "skill", id: r.id, state: PEEK_STATE[k] }), (r, k) => `${r[k]} ${inSentence(STATE_WORD[k])} on ${r.name}. Show the evidence`, peek),
   ]
 }
 
-function sectionCols(scope: LabScope, variant: string): ColumnDef<SectionReportRow>[] {
-  const bySkill = (section: string) => directorHref("reports", { ...scope, cat: section }, { variant, view: "skill" })
+function sectionCols(rows: SectionReportRow[], scope: LabScope, variant: string, peek: PeekHrefFn): ColumnDef<SectionReportRow>[] {
+  const bySkill = (section: string) => reportsHref({ ...scope, cat: section }, "readiness", { variant, view: "skill" })
   return [
     { key: "section", label: "Section", width: 220, sortable: true, cell: (r) => <Link className={`${LINK} text-sm`} href={bySkill(r.section)}>{r.section}</Link> },
-    { key: "skills", label: capitalize(skillNounPlural()), width: 90, sortable: true, cell: (r) => <Link className={`${LINK} ${num}`} href={bySkill(r.section)} aria-label={`${r.skills} ${skillNounPlural()} in ${r.section}. Open them`}>{fmt(r.skills)}</Link> },
-    { key: "achieved", label: "Achieved", width: 110, sortable: true, cell: (r) => <span className={num}>{fmt(r.achieved)}</span> },
-    { key: "progress", label: "In progress", width: 110, sortable: true, cell: (r) => <span className={num}>{fmt(r.progress)}</span> },
-    { key: "unqualified", label: UNQ, width: 200, sortable: true, cell: (r) => <span className={num}>{fmt(r.unqualified)}</span> },
-    { key: "noEvidence", label: NONE, width: 130, sortable: true, cell: (r) => <span className={num}>{fmt(r.noEvidence)}</span> },
-    { key: "pct", label: "Attainment", width: 110, sortable: true, cell: (r) => <span className={`${num} text-muted-foreground`}>{`${r.pct}%`}</span> },
+    pctCol<SectionReportRow>(),
+    { key: "skills", label: capitalize(skillNounPlural()), width: 90, sortable: true, header: endHeader(capitalize(skillNounPlural())), cell: (r) => end(<Link className={`${LINK} ${num}`} href={bySkill(r.section)} aria-label={`${r.skills} ${skillNounPlural()} in ${r.section}. Open them`}>{fmt(r.skills)}</Link>) },
+    ...stateCols(rows, (r, k) => ({ kind: "section", id: r.section, state: PEEK_STATE[k] }), (r, k) => `${r[k]} ${inSentence(STATE_WORD[k])} in ${r.section}. Show the evidence`, peek),
   ]
 }
 
-export function ReportTable({ view, r, scope, variant }: { view: ReportView; r: ReportModel; scope: LabScope; variant: string }) {
-  const s = React.useMemo(() => studentCols(scope), [scope])
-  const k = React.useMemo(() => skillCols(scope), [scope])
-  const c = React.useMemo(() => sectionCols(scope, variant), [scope, variant])
-  const common = { searchable: false, showQueryControls: false, edgeInset: false } as const
-  if (view === "student") return <DataTable<StudentReportRow> key="student" data={r.students} columns={s} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No students match these filters" />} />
-  if (view === "skill") return <DataTable<SkillReportRow> key="skill" data={r.skills} columns={k} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} match these filters`} />} />
-  return <DataTable<SectionReportRow> key="section" data={r.sections} columns={c} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No sections match these filters" />} />
+function tagCols(rows: TagReportRow[], scope: LabScope, variant: string, peek: PeekHrefFn): ColumnDef<TagReportRow>[] {
+  const bySkill = (tag: string) => reportsHref({ ...scope, tag }, "readiness", { variant, view: "skill" })
+  return [
+    { key: "tag", label: "Tag", width: 220, sortable: true, cell: (r) => <Link className={`${LINK} text-sm`} href={bySkill(r.tag)}>{r.tag}</Link> },
+    pctCol<TagReportRow>(),
+    { key: "skills", label: capitalize(skillNounPlural()), width: 90, sortable: true, header: endHeader(capitalize(skillNounPlural())), cell: (r) => end(<Link className={`${LINK} ${num}`} href={bySkill(r.tag)} aria-label={`${r.skills} ${skillNounPlural()} tagged ${r.tag}. Open them`}>{fmt(r.skills)}</Link>) },
+    ...stateCols(rows, (r, k) => ({ kind: "tag", id: r.tag, state: PEEK_STATE[k] }), (r, k) => `${r[k]} ${inSentence(STATE_WORD[k])} under ${r.tag}. Show the evidence`, peek),
+  ]
 }
 
-export const viewRows = (view: ReportView, r: ReportModel) => (view === "student" ? r.students.length : view === "skill" ? r.skills.length : r.sections.length)
-const viewNoun = (view: ReportView, n: number) => (view === "student" ? plural(n, "student", "students") : view === "skill" ? plural(n, skillNoun(), skillNounPlural()) : plural(n, "section", "sections"))
+/** RP-04: a skill may carry several tags, so the tag rows overlap; say so, never imply a partition. */
+export function TagOverlapLine({ r }: { r: ReportModel }) {
+  const untagged = r.untagged ? ` ${plural(r.untagged, `${skillNoun()} has`, `${skillNounPlural()} have`)} no tag.` : ""
+  const overlap = r.multiTagged
+    ? `Tags overlap: ${plural(r.multiTagged, `${skillNoun()} counts`, `${skillNounPlural()} count`)} under more than one tag, so rows do not add up.`
+    : `Tags can overlap, so rows need not add up. Here no ${skillNoun()} carries more than one tag.`
+  return (
+    <p className="text-xs text-muted-foreground" data-tag-overlap>
+      {`${overlap}${untagged}`}
+    </p>
+  )
+}
+
+export function ReportTable({ view, r, scope, variant, peek }: { view: ReportView; r: ReportModel; scope: LabScope; variant: string; peek: PeekHrefFn }) {
+  const s = React.useMemo(() => studentCols(r.students, scope, peek), [r.students, scope, peek])
+  // The course is named once, on its chip; the column says "In this course" so no long course name is cut in the header.
+  const k = React.useMemo(() => skillCols(r.skills, r.course, peek), [r.skills, r.course, peek])
+  const c = React.useMemo(() => sectionCols(r.sections, scope, variant, peek), [r.sections, scope, variant, peek])
+  const t = React.useMemo(() => tagCols(r.tags, scope, variant, peek), [r.tags, scope, variant, peek])
+  const common = { searchable: false, showQueryControls: false, edgeInset: false } as const
+  const rows = view === "student" ? r.students : view === "skill" ? r.skills : view === "tag" ? r.tags : r.sections
+  return (
+    <div className="flex flex-col gap-2">
+      {view === "tag" ? <TagOverlapLine r={r} /> : null}
+      <ZeroStatesLine rows={rows} />
+      {view === "tag" ? (
+        <DataTable<TagReportRow> key="tag" data={r.tags} columns={t} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} carry a tag`} />} />
+      ) : view === "student" ? (
+        <DataTable<StudentReportRow> key="student" data={r.students} columns={s} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No students match these filters" />} />
+      ) : view === "skill" ? (
+        <DataTable<SkillReportRow> key="skill" data={r.skills} columns={k} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} match these filters`} />} />
+      ) : (
+        <DataTable<SectionReportRow> key="section" data={r.sections} columns={c} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No sections match these filters" />} />
+      )}
+    </div>
+  )
+}
+
+export const viewRows = (view: ReportView, r: ReportModel) => (view === "student" ? r.students.length : view === "skill" ? r.skills.length : view === "tag" ? r.tags.length : r.sections.length)
+const viewNoun = (view: ReportView, n: number) => (view === "student" ? plural(n, "student", "students") : view === "skill" ? plural(n, skillNoun(), skillNounPlural()) : view === "tag" ? plural(n, "tag", "tags") : plural(n, "section", "sections"))
 
 const EXCLUDED = "Not in either file: self-ratings and private notes."
 

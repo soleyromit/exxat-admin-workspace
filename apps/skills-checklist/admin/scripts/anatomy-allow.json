@@ -1,0 +1,4 @@
+{
+  "_doc": "Allow-list for scripts/lab-anatomy-check.mjs. Each entry: { rule: 'A1'..'A8', screen: 'persona/slug', variant?: 'A' | '*', match?: 'substring of the reported text', reason: 'Romit-approved reason with date' }. An entry without a reason is ignored.",
+  "allow": []
+}

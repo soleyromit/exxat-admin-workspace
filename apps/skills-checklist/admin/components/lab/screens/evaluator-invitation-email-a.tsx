@@ -5,6 +5,7 @@
  * evaluator lists every open request, each with its own link (ledger D-L2); the subject names the student(s) and the count in
  * the first 40 characters; expiry is stated once (OD-18 open, sample date); a plain text version is a first-class fallback.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
@@ -33,7 +34,7 @@ export function EvaluatorInvitationEmailA() {
     <>
       <EvLabControls states={STATES} defaultState="all" showSample={false} options={[]} />
       <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4 py-5 sm:px-6">
-        <PageHeader title="Invitation email" subtitle="What the evaluator receives. Nothing is sent." className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
+        <PageHeader title="Invitation email" className="px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0" />
         {!hydrated || !mail ? (
           <Skeleton className="h-96 w-full" />
         ) : (
@@ -47,12 +48,12 @@ export function EvaluatorInvitationEmailA() {
               <Card size="sm" aria-label="Email preview" className="gap-0 py-0" data-artifact-preview>
                 <CardHeader className="gap-1 border-b border-border py-3">
                   <Badge variant="secondary" className="w-fit">Email preview</Badge>
-                  <CardTitle className="text-base">{mail.subject}</CardTitle>
+                  <CardTitle className={TYPE.card}>{mail.subject}</CardTitle>
                   <p className="text-xs break-all text-muted-foreground">{`From ${mail.from} · To ${mail.to}`}</p>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4 py-4 text-sm text-foreground">
                   <p>{mail.greeting}</p>
-                  <p>{mail.rows.length === 1 ? "A request is waiting for your sign-off." : `${mail.rows.length} requests are waiting for your sign-off. Each link opens one request.`}</p>
+                  <p>{mail.intro}</p>
                   <ul className="flex flex-col divide-y divide-border rounded-md border border-border">
                     {mail.rows.map((r) => (
                       <li key={r.requestId} className="flex flex-col gap-2 p-3">

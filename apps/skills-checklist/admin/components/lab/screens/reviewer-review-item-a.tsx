@@ -5,12 +5,14 @@
  * marked Agrees or Differs in words [REQ AR-02, AR-03, EV-04]; why held and the one decision bar sit above it; the rule check and the
  * AR-01 facts sit in a narrow column beside it. The pull-request analogy: the claim next to the observation.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Separator } from "@exxatdesignux/ui/components/ui/separator"
 import { ReviewItemFrame } from "@/components/lab/reviewer/review-item-frame"
-import { isCheckoff } from "@/lib/lab/reviewer"
-import { CompareTable, Facts, Feedback, ReviewNoteField, RuleCheckLine, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { Facts, ReviewNoteField, RuleCheckLine, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { story } from "@/lib/lab/reviewer"
+import { ReviewResponses } from "@/components/lab/reviewer/review-responses"
 
 export function ReviewerReviewItemA() {
   return (
@@ -25,25 +27,27 @@ export function ReviewerReviewItemA() {
               </CardContent>
             </Card>
             <div className="grid gap-4 lg:grid-cols-12">
-              <section aria-label="Self and evaluator answers" className="flex flex-col gap-4 lg:col-span-8" data-region="compare">
-                {d.comparisons.length ? d.comparisons.map((c) => <CompareTable key={c.evaluationId} c={c} checkoff={isCheckoff(d.row)} />) : <p className="text-sm text-muted-foreground">The outcome is on the photo of the paper form and has not been entered.</p>}
-                {d.feedback ? (
-                  <div className="flex flex-col gap-1">
-                    <h3 className="text-sm font-semibold">Evaluator feedback</h3>
-                    <Feedback text={d.feedback} />
-                  </div>
-                ) : null}
-              </section>
+              {/* The left column carries the read-then-decide order: answers, how the submission got here, then the note that goes
+                  with the decision. It used to stop after the answers and leave half the 1440 canvas empty beside a tall facts card
+                  (design review 2026-10-30, CP-4). */}
+              <div className="flex flex-col gap-6 lg:col-span-8" data-region="compare">
+                <div role="group" aria-label="Self and evaluator answers" className="flex flex-col gap-4">
+                  <ReviewResponses state={ctx.state} d={d} />
+                </div>
+                <div role="group" aria-labelledby="story-heading" className="flex flex-col gap-2">
+                  <h3 id="story-heading" className={TYPE.group}>How it got here</h3>
+                  <Story steps={story(ctx.state!, d)} />
+                </div>
+                <ReviewNoteField />
+              </div>
               <Card size="sm" className="self-start lg:col-span-4" data-region="facts">
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">If you approve</CardTitle>
+                  <CardTitle className={TYPE.card}>If you approve</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   {ctx.checks.map((c) => <RuleCheckLine key={c.skillId} check={c} />)}
                   <Separator />
                   <Facts d={d} scope={ctx.scope} />
-                  <Separator />
-                  <ReviewNoteField />
                 </CardContent>
               </Card>
             </div>

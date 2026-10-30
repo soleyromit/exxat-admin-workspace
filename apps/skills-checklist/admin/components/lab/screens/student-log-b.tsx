@@ -30,8 +30,8 @@ import { shortDate } from "@/lib/v2/format"
 import { personById, skillById, submissionsOfStudent } from "@/lib/v2/evidence-index"
 import { syncStateOf } from "@/lib/v2/sync"
 import type { SyncState } from "@/lib/v2/types"
-import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { PRACTICE_LINE, detailErrors, locationError, locationFor, noteError, pickRows, selfEvalEnabled, sendHandoff, student2Href, whereChoices, type DetailValues } from "@/lib/lab/student2"
+import { aNoun, capitalize, countSkills, inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { PRACTICE_LINE, detailErrors, detailFieldsFor, locationError, locationFor, noteError, pickRows, selfEvalEnabled, sendHandoff, student2Href, whereChoices, type DetailValues } from "@/lib/lab/student2"
 
 export function StudentLogB() {
   return (
@@ -111,7 +111,8 @@ function ShiftLog({ ctx }: { ctx: Student2Ctx }) {
   const patch = (key: string, p: Partial<ShiftRow>) => setAdded((a) => a.map((r) => (r.key === key ? { ...r, ...p } : r)))
 
   const missing = (r: ShiftRow): string[] => {
-    const out = Object.keys(detailErrors(r.details)).map((k) => (k === "date" ? "date" : k === "unit" ? "unit" : k))
+    const fields = detailFieldsFor(s, [r.skillId])
+    const out = Object.keys(detailErrors(r.details, fields)).map((k) => inSentence(fields.find((f) => f.id === k)?.label ?? k))
     if (r.fresh && selfEvalEnabled(skillById(s, r.skillId)) && !r.rating) out.push("self-rating")
     return out
   }
@@ -191,7 +192,7 @@ function ShiftLog({ ctx }: { ctx: Student2Ctx }) {
                       </div>
                       <CollapsibleContent>
                         <div className="mt-3 flex flex-col gap-4 rounded-md bg-muted/40 p-3">
-                          <DetailsFields idPrefix={r.key} values={r.details} onChange={(id, v) => patch(r.key, { details: { ...r.details, [id]: v } })} errors={detailErrors(r.details)} showErrors />
+                          <DetailsFields idPrefix={r.key} fields={detailFieldsFor(s, [r.skillId])} values={r.details} onChange={(id, v) => patch(r.key, { details: { ...r.details, [id]: v } })} errors={detailErrors(r.details, detailFieldsFor(s, [r.skillId]))} showErrors />
                           {selfEvalEnabled(skillById(s, r.skillId)) ? <SelfEvalFields s={s} ids={[r.skillId]} values={{ [r.skillId]: r.rating }} onChange={(_, v) => patch(r.key, { rating: v })} /> : null}
                         </div>
                       </CollapsibleContent>

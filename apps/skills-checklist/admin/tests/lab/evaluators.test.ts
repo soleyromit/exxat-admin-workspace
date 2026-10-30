@@ -75,8 +75,8 @@ describe("assign to someone else does not feed the outlier rate", () => {
     const row = scopeRows(s, reviewRows(s), EMPTY_SCOPE).rows.find((r) => r.kind === "unverified")!
     const to = itemDetail(s, reviewRows(s), row.key)!.assignTo[0]
     const next = applyDecisions(seed, [{ kind: "assign", key: row.key, toId: to.id }])
-    // The held evidence is now marked returned, linked to the new request...
-    for (const id of row.evaluationIds) expect(next.evaluations.find((e) => e.id === id)!.status).toBe("returned")
+    // The held evidence is now marked reassigned (D-X25: a handoff, never "returned"), linked to the new request...
+    for (const id of row.evaluationIds) expect(next.evaluations.find((e) => e.id === id)!.status).toBe("reassigned")
     const before = rows.find((r) => r.id === row.evaluatorId)!
     const d = directory(next)
     const after = d.rows.find((r) => r.id === row.evaluatorId)!

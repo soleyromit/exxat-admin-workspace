@@ -18,12 +18,15 @@ import {
   FloatingSheetPanelToolbar,
   FloatingSheetPanelWorkflowFooter,
 } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
+import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
+import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { NUM_LINK } from "@/components/lab/link-styles"
 import { configureHref, evidenceHref, mappingHref, NO_CATEGORY, type LibraryRow } from "@/lib/lab/library"
 import { plural } from "@/lib/v2/format"
 import { LibraryStatusBadge } from "./library-chrome"
 import { RowActions, type RowActionHandlers } from "./row-actions"
+import { CategoryName, TagBadges } from "./category-tag-pickers"
 
 /** The next step for the row (decision D-X31): configure it (or finish the saved draft), then map it. */
 function primaryFor(r: LibraryRow): { label: string; href?: string } {
@@ -38,6 +41,44 @@ function Fact({ term, children }: { term: string; children: React.ReactNode }) {
       <dt className="text-sm text-muted-foreground">{term}</dt>
       <dd className="min-w-0 text-sm text-foreground">{children}</dd>
     </div>
+  )
+}
+
+/**
+ * The description, editable where it is read [REQ SL-02 "A skill has a name, a description and an active/inactive status"]:
+ * "Edit" (or "Add a description") turns the text into a field with Save and Cancel; the other details stay in Edit details.
+ */
+function DescriptionFact({ row, onSave }: { row: LibraryRow; onSave?: (r: LibraryRow, description: string) => void }) {
+  const [editing, setEditing] = React.useState(false)
+  const [text, setText] = React.useState(row.description)
+  const fieldId = `skill-panel-description-${row.id}`
+  const triggerRef = React.useRef<HTMLButtonElement>(null)
+  const close = () => { setEditing(false); requestAnimationFrame(() => triggerRef.current?.focus()) }
+  if (editing && onSave) {
+    return (
+      <form
+        className="flex flex-col gap-2"
+        onSubmit={(e) => { e.preventDefault(); onSave(row, text.trim()); close() }}
+        onKeyDown={(e) => { if (e.key === "Escape") { e.stopPropagation(); setText(row.description); close() } }}
+      >
+        <Label htmlFor={fieldId} className="sr-only">{`Description of ${row.name}`}</Label>
+        <Textarea id={fieldId} autoFocus rows={3} maxLength={600} value={text} onChange={(e) => setText(e.target.value)} />
+        <span className="flex gap-2">
+          <Button type="submit" variant="default" size="sm">Save</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => { setText(row.description); close() }}>Cancel</Button>
+        </span>
+      </form>
+    )
+  }
+  return (
+    <span className="flex flex-col items-start gap-1">
+      {row.description ? <span className="whitespace-pre-line">{row.description}</span> : <span className="text-muted-foreground">None</span>}
+      {onSave ? (
+        <Button ref={triggerRef} type="button" variant="link" size="sm" className="h-auto px-0" aria-label={row.description ? `Edit the description of ${row.name}` : `Add a description to ${row.name}`} onClick={() => { setText(row.description); setEditing(true) }}>
+          {row.description ? "Edit" : "Add a description"}
+        </Button>
+      ) : null}
+    </span>
   )
 }
 
@@ -73,11 +114,11 @@ export function SkillPanel({ row, rows, handlers, onOpen, onClose }: {
             <FloatingSheetPanelBody className="px-4 pb-4">
               <dl className="flex flex-col divide-y divide-border">
                 <Fact term="Status"><LibraryStatusBadge status={row.status} draft={row.draft} /></Fact>
-                <Fact term="Description">{row.description ? <span className="whitespace-pre-line">{row.description}</span> : <span className="text-muted-foreground">None</span>}</Fact>
+                <Fact term="Description"><DescriptionFact key={row.id} row={row} onSave={handlers.onSaveDescription} /></Fact>
                 {/* Category and tags together, so what the program grouped it under reads in one place (REQ SL-03, SL-04). */}
-                <Fact term="Category">{row.section === NO_CATEGORY ? <span className="text-muted-foreground">None</span> : row.section}</Fact>
+                <Fact term="Category">{row.section === NO_CATEGORY ? <span className="text-muted-foreground">None</span> : <CategoryName name={row.section} inactive={row.categoryInactive} />}</Fact>
                 <Fact term="Tags">
-                  {row.tags.length ? <span className="flex flex-wrap gap-1">{row.tags.map((t) => <Badge key={t} variant="secondary">{t}</Badge>)}</span> : <span className="text-muted-foreground">None</span>}
+                  {row.tags.length ? <TagBadges tags={row.tags} inactive={row.inactiveTags} /> : <span className="text-muted-foreground">None</span>}
                 </Fact>
                 <Fact term="Required to graduate">{row.requiredToGraduate ? "Yes" : "No"}</Fact>
                 <Fact term="How it's judged">{row.modelLabel || <span className="text-muted-foreground">Chosen when you configure it</span>}</Fact>

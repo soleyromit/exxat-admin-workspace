@@ -4,7 +4,7 @@
  * Course offering, Skills: group check-off, variant B (one skill at a time). Same session, availability rules, cells, record bar
  * and confirmation as A (components/lab/checkoff/*); the mental model is the paper sign-off sheet: pick one skill from the
  * offering's available skills (searchable, with how many are ticked), then tick the students who showed it, with the flag said in
- * words on each row. Ticks on several skills are kept and recorded together. Unavailable skills are listed behind the same
+ * words on each row; a student who already qualifies shows that status in place of a checkbox (D-L8d). Ticks on several skills are kept and recorded together. Unavailable skills are listed behind the same
  * "Why N cannot" disclosure. Contract: docs/build/contracts/V2-05d-course-checkoff.md. URL: ?offering=.
  */
 import * as React from "react"
@@ -101,30 +101,29 @@ function Sheet({ m }: { m: CheckoffModel }) {
               <Table scrollLabel={`Students for ${active.skill.name}`} containerClassName="max-h-[min(56dvh,560px)] overflow-auto">
                 <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
-                    <TableHead scope="col" className="w-16 ps-3">Tick</TableHead>
+                    <TableHead scope="col" className="w-40 ps-3">Check-off</TableHead>
                     <TableHead scope="col">{`Student (${m.rows.length})`}</TableHead>
-                    <TableHead scope="col" className="hidden md:table-cell">Already on the record</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {page.map((p) => {
                     const f = m.flags(p.id, active.skill.id)
-                    const word = m.recorded[cellKey(p.id, active.skill.id)] ? "" : f.hasEvidence ? FLAG_WORD.hasEvidence : f.awaiting ? FLAG_WORD.awaiting : ""
+                    // "Already qualifies" is the cell itself (no checkbox, D-L8d). The waiting flag, in words, joins the row's own
+                    // line, so there is no mostly-empty column (review 2026-10-30 CP-3).
+                    const word = m.recorded[cellKey(p.id, active.skill.id)] || f.hasEvidence ? "" : f.awaiting ? FLAG_WORD.awaiting : ""
                     return (
                       <TableRow key={p.id}>
                         <TableCell className="ps-3 py-1.5"><CheckCell m={m} studentId={p.id} studentName={p.name} k={active} /></TableCell>
                         <TableCell className="py-1.5">
                           <p className="text-sm font-medium text-foreground">{p.name}</p>
-                          <p className="text-xs text-muted-foreground md:hidden">{word || [p.cohort, p.group].filter(Boolean).join(" · ")}</p>
-                          <p className="hidden text-xs text-muted-foreground md:block">{[p.cohort, p.group].filter(Boolean).join(" · ")}</p>
+                          <p className="text-xs text-muted-foreground">{[p.cohort, p.group, word].filter(Boolean).join(" · ")}</p>
                         </TableCell>
-                        <TableCell className="hidden py-1.5 text-sm text-muted-foreground md:table-cell">{word}</TableCell>
                       </TableRow>
                     )
                   })}
                   {m.rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-foreground">No student matches that search. Clear it to see the whole roster.</TableCell>
+                      <TableCell colSpan={2} className="py-8 text-center text-sm text-muted-foreground">No student matches that search. Clear it to see the whole roster.</TableCell>
                     </TableRow>
                   ) : null}
                 </TableBody>

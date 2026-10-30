@@ -8,11 +8,10 @@
  * oldest request is, requests by site), each group collapsible with its count, and choosing a row opens a peek beside the list
  * that answers "what is left, and why" without leaving the page. URL: the dashboard scope plus list, cond, skill, siteId, row.
  *
- * Regions (list budget 4): header with breadcrumb · scope bar · condition chip and search on one row · groups and peek.
+ * Regions (list budget 4): header with a back link · scope bar · condition chip and search on one row · groups and peek.
  */
 import * as React from "react"
-import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
+import { DrillBack } from "@/components/lab/dashboard/drill-back"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { FilterBar } from "@exxatdesignux/ui/components/ui/filter-bar"
@@ -25,12 +24,12 @@ import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { PersonIdentityCell } from "@exxatdesignux/ui/components/data-views/person-identity-cell"
 import { PageFrame } from "@/components/skills/page-header"
-import { ScopeBar, ScopeContext } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar } from "@/components/lab/dashboard/scope-bar"
 import { ImpossibleScopeBanner } from "@/components/lab/dashboard/impossible-scope"
 import { BehindBadge, ListLoadError, LoadingShape } from "@/components/lab/dashboard/cards"
 import { DrillPeek, type PeekTarget } from "@/components/lab/dashboard/drill-peek"
 import { useDashboardUrl, useLoadTimeout, useSnapshot } from "@/components/lab/dashboard/use-dashboard"
-import { buildDrill, chipValue, conditionLabel, dashboardHref, explainScope, parseDemoState, pipelineRecords, populationRows, resolveTerm, scopeOptions, type DrillParams, type DrillRequest, type DrillSkill, type DrillStudent, type SiteRow } from "@/lib/lab/dashboard"
+import { buildDrill, chipValue, conditionLabel, dashboardHref, explainScope, recountText, parseDemoState, pipelineRecords, populationRows, resolveTerm, scopeOptions, type DrillParams, type DrillRequest, type DrillSkill, type DrillStudent, type SiteRow } from "@/lib/lab/dashboard"
 import { basisOf } from "@/lib/lab/scope"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
@@ -54,7 +53,10 @@ export function AdminDashboardDrillB() {
   const condRaw = url.param("cond")
   const params: DrillParams = {
     list: (LISTS as readonly string[]).includes(listRaw ?? "") ? (listRaw as DrillParams["list"]) : "students",
-    cond: (CONDS as readonly string[]).includes(condRaw ?? "") ? (condRaw as DrillParams["cond"]) : undefined,
+    // Opened bare (the walkthrough's "Drill list" step, no list or condition), the drill is the dashboard's headline figure:
+    // students behind. Its title and length then equal that figure (2026-10-30 review: "123 students in scope" came from
+    // "28 behind"). Removing the condition writes list=students, so the list widens to the scope instead of snapping back.
+    cond: (CONDS as readonly string[]).includes(condRaw ?? "") ? (condRaw as DrillParams["cond"]) : listRaw === null && condRaw === null ? "behind" : undefined,
     skill: url.param("skill") ?? undefined,
     siteId: url.param("siteId") ?? undefined,
   }
@@ -148,29 +150,29 @@ export function AdminDashboardDrillB() {
     return null
   })()
 
+  // Say the count once (anatomy A5): when the title already carries it, the toolbar names only the groups.
+  const countInTitle = model.title.includes(fmt(model.count))
   return (
-    <PageFrame title={model.title} subtitle={<ScopeContext termName={term.name} scope={url.scope} at={snap.at} />} actions={<SampleDataBadge />}>
+    <PageFrame title={model.title} actions={<SampleDataBadge />} lead={<DrillBack href={back} />}>
       <div className="flex flex-col gap-4" data-drill={params.list} data-drill-count={model.count} data-drill-variant="B" data-page-type="list">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem><BreadcrumbLink asChild><Link href={back}>Dashboard</Link></BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbPage>{model.crumb}</BreadcrumbPage></BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-        {/* List budget (strategy/07): Course sits in Filters and the comparison is the dashboard's, as on variant A. */}
-        <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={(k, v) => chipValue(state, k, v)} showBasis={false} />
-        <ImpossibleScopeBanner state={state} scope={url.scope} onChange={url.setScope} />
-        {impossible ? null : (
-        <>
-        <FilterBar aria-label="Condition and search" data-region="toolbar">
-          {model.condition ? <ConditionLine label={model.condition.label} removeHref={url.hrefWith({ ...Object.fromEntries(Object.entries(model.condition.remove).map(([k, v]) => [k, v ?? null])), row: null })} /> : null}
-          <span className="text-sm tabular-nums text-muted-foreground" aria-live="polite">{q ? `${fmt(shownCount)} of ${fmt(model.count)} ${unit}` : `${fmt(model.count)} ${unit} in ${fmt(groups.length)} ${groups.length === 1 ? "group" : "groups"}`}</span>
+        {/* One toolbar on the list (D-L8b): scope Filters with its chips (Course inside; the comparison is the dashboard's, as on
+            variant A), the condition, the count, then search. */}
+        <FilterBar aria-label="Filters, condition and search" data-region="toolbar">
+          <ScopeBar scope={url.scope} options={scopeOptions(state, url.scope)} termName={term.name} onChange={url.setScope} chipValue={(k, v) => chipValue(state, k, v)} showBasis={false} />
+          {impossible ? null : <>
+          {model.condition ? <ConditionLine label={model.condition.label} removeHref={url.hrefWith({ ...Object.fromEntries(Object.entries({ ...model.condition.remove, list: params.list }).map(([k, v]) => [k, v ?? null])), row: null })} /> : null}
+          <span className="text-sm tabular-nums text-muted-foreground" aria-live="polite">{q ? `${fmt(shownCount)} of ${fmt(model.count)} ${unit}` : `${countInTitle ? "" : `${fmt(model.count)} ${unit} in `}${fmt(groups.length)} ${groups.length === 1 ? "group" : "groups"}`}</span>
           <span className="ms-auto flex items-center gap-2">
             <Label htmlFor="drill-b-search" className="sr-only">Search the list</Label>
             <Input id="drill-b-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" className="h-8 w-56" />
           </span>
+          </>}
         </FilterBar>
+        {/* RP-08: under a location or setting filter the list counts only evidence from there; said once, as on the dashboard. */}
+        {!impossible && recountText(url.scope) ? <p className="text-sm text-muted-foreground" data-recount>{recountText(url.scope)}</p> : null}
+        <ImpossibleScopeBanner state={state} scope={url.scope} onChange={url.setScope} />
+        {impossible ? null : (
+        <>
         {demo === "error" ? (
           <ListLoadError onRetry={() => url.setParams({ state: null })} />
         ) : model.count === 0 || demo === "empty" ? (

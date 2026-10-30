@@ -1,3 +1,4 @@
+import { inSentence } from "@/lib/lab/terms"
 import { evalsOfStudentSkill } from "./evidence-index"
 import { ALL, NO_FILTERS, SETTING_LABEL, TERM, cohortOf, groupOf, matchesEvidence, scoped, students, studentsIn, type ReportFilters } from "./filters"
 import { DEFAULT_SCOPE, populationRows, populationTotals, type PopulationScope, type StudentRow } from "./population"
@@ -81,17 +82,17 @@ export const tagsOf = (s: V2State): string[] => [...new Set(reportSkills(s, NO_F
 /** RP-09: a combination that cannot produce evidence is explained. Null when the combination can. */
 export function explainFilters(f: ReportFilters, s?: V2State): string | null {
   if (f.clinicalSetting !== ALL && (f.setting === "lab" || f.setting === "simulation")) {
-    return `${SETTING_LABEL[f.setting]} evidence never carries a named clinical setting, so no ${f.setting} evidence can match "${f.clinicalSetting}". Clear one of the two filters.`
+    return `${SETTING_LABEL[f.setting]} evidence never carries a named clinical setting, so no ${f.setting} evidence can match ${inSentence(f.clinicalSetting)}. Clear one of the two filters.`
   }
   if (!s) return null
   const loc = f.location === ALL ? undefined : s.program.locations?.find((l) => l.name === f.location)
   if (loc) {
     if (f.setting !== ALL && loc.setting !== f.setting) return `${loc.name} does not offer ${SETTING_LABEL[f.setting].toLowerCase()} evidence, so none could have been gathered there in that setting. Clear one of the two filters.`
-    if (f.clinicalSetting !== ALL && loc.clinicalSetting !== f.clinicalSetting) return `${loc.name} does not offer the ${f.clinicalSetting} clinical setting, so no evidence could have been gathered there in it. Clear one of the two filters.`
+    if (f.clinicalSetting !== ALL && loc.clinicalSetting !== f.clinicalSetting) return `${loc.name} does not offer the ${inSentence(f.clinicalSetting)} clinical setting, so no evidence could have been gathered there in it. Clear one of the two filters.`
   }
   if (f.course !== ALL) {
     const c = [s.course, ...(s.otherCourses ?? [])].find((x) => x.id === f.course)
-    if (c && f.clinicalSetting !== ALL && !c.clinicalSettings.includes(f.clinicalSetting)) return `${courseLabel(s, c.id)} does not place students in the ${f.clinicalSetting} clinical setting, so it holds no evidence from there. Clear one of the two filters.`
+    if (c && f.clinicalSetting !== ALL && !c.clinicalSettings.includes(f.clinicalSetting)) return `${courseLabel(s, c.id)} does not place students in the ${inSentence(f.clinicalSetting)} clinical setting, so it holds no evidence from there. Clear one of the two filters.`
     if (c && c.clinicalSettings.length === 0 && f.setting === "clinical") return `${courseLabel(s, c.id)} does not place students in clinical settings, so it holds no clinical evidence. Clear one of the two filters.`
   }
   return null

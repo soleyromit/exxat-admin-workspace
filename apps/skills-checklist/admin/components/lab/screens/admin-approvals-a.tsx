@@ -9,16 +9,17 @@
  */
 import * as React from "react"
 import { ReviewerApprovalsA } from "@/components/lab/screens/reviewer-approvals-a"
-import { HeaderActionSlot, RulesSheetTrigger } from "@/components/lab/rbac/approval-rules"
-import { ApprovalsTabsContext } from "@/components/lab/reviewer/approvals-frame"
+import { RulesSheetTrigger } from "@/components/lab/rbac/approval-rules"
+import { ApprovalsHeaderActionContext, ApprovalsTabsContext } from "@/components/lab/reviewer/approvals-frame"
 
 export function AdminApprovalsA() {
   return (
     // Admin Approvals adds the New evaluators tab (Romit 2026-10-27); the reviewer's own page has the Evaluations list only.
     <ApprovalsTabsContext.Provider value>
-      <HeaderActionSlot action={<RulesSheetTrigger role="admin" />}>
+      {/* Approval rules sits in the header beside Filters (one row of header actions, not an overlay on the title row). */}
+      <ApprovalsHeaderActionContext.Provider value={<RulesSheetTrigger role="admin" />}>
         <ReviewerApprovalsA />
-      </HeaderActionSlot>
+      </ApprovalsHeaderActionContext.Provider>
     </ApprovalsTabsContext.Provider>
   )
 }

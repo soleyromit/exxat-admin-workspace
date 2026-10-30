@@ -13,7 +13,6 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import type { EvRequest, ReceiptLine } from "@/lib/lab/evaluator"
-import { skillsWord } from "@/components/lab/evaluator/fields"
 
 const HEADER = "px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0"
 const TONE: Record<ReceiptLine["status"], "neutral" | "warning"> = { counts: "neutral", waits: "warning", queued: "neutral", feedback: "neutral" }
@@ -22,7 +21,8 @@ export function Receipt({ req, lines, offline }: { req: EvRequest; lines: Receip
   const waits = lines.filter((l) => l.status === "waits").length
   return (
     <div className="flex flex-col gap-4" data-ev-receipt>
-      <PageHeader title={offline ? "Saved on this phone" : "Submitted"} subtitle={<span data-viz-label>{`${req.student.name} · ${skillsWord(lines.length)}`}</span>} className={HEADER} />
+      {/* The student's name is the one fact the receipt needs above the list; the list carries the skills (anatomy, 2026-10-30). */}
+      <PageHeader title={offline ? "Saved on this phone" : `Submitted for ${req.student.name}`} subtitle={offline ? req.student.name : undefined} className={HEADER} />
       <Card size="sm" data-region="receipt">
         <CardContent>
           {/* The signed skills and answers: the record, as data. */}

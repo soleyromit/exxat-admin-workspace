@@ -5,17 +5,19 @@ import { describe, expect, it, vi } from "vitest"
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { TooltipProvider } from "@exxatdesignux/ui/components/ui/tooltip"
 import { EMPTY_SCOPE, clearFilters, removeScope, withBasis, withDidactic, type LabScope } from "@/lib/lab/scope"
-import { ScopeBar, ScopeContext, appliedChips } from "@/components/lab/dashboard/scope-bar"
+import { ScopeBar, appliedChips } from "@/components/lab/dashboard/scope-bar"
 
 /**
  * Romit 2026-10-27: "looks clunky with so many dropdowns and asking user to refresh for the latest data". One Filters button,
- * applied values as removable chips (REQ RP-01), Clear all, the term and course scope in the header subtitle, no Refresh.
+ * applied values as removable chips (REQ RP-01), Clear all, no Refresh. D-L8b (2026-10-30): no header subtitle and no "Updated"
+ * time; the term and course scope are said beside Filters, in the toolbar of the table or chart it filters.
  */
 const root = join(__dirname, "..", "..")
 const src = (p: string) => readFileSync(join(root, p), "utf8")
 
 const options = {
-  terms: [{ value: "Spring 2026", label: "Spring 2026" }],
+  terms: [{ value: "Fall 2026", label: "Fall 2026" }, { value: "Spring 2026", label: "Spring 2026" }],
+  currentTerm: "Fall 2026",
   cohorts: ["BSN 2028"],
   groups: [{ value: "Group A", label: "Group A" }],
   courses: [
@@ -90,10 +92,42 @@ describe("scope bar: one Filters button, removable chips, no refresh", () => {
     expect(container.textContent).not.toMatch(/As of|Refresh/)
   })
 
-  it("the header subtitle names the term, the course scope and when the figures were read", () => {
-    render(<ScopeContext termName="Fall 2026" scope={EMPTY_SCOPE} at={new Date()} />)
+  it("says the default term and course scope beside Filters, with no Updated time (D-L8b, RP-01)", () => {
+    const { container } = bar(EMPTY_SCOPE)
     expect(screen.getByText("Fall 2026 · Clinical courses")).toBeTruthy()
-    expect(screen.getByText(/Updated just now/)).toBeTruthy()
+    expect(container.textContent).not.toMatch(/Updated/)
+  })
+
+  it("the current term named in the URL is the default: no chip, no count", () => {
+    bar({ ...EMPTY_SCOPE, term: "Fall 2026" })
+    expect(screen.getByRole("button", { name: "Filters" })).toBeTruthy()
+    expect(screen.queryByLabelText("Applied filters")).toBeNull()
+    expect(screen.getByText("Fall 2026 · Clinical courses")).toBeTruthy()
+  })
+
+  it("another term is an applied chip, counted and removable on its own; the summary keeps the course scope", () => {
+    const scope: LabScope = { ...EMPTY_SCOPE, term: "Spring 2026", cohort: "BSN 2028" }
+    const { onChange } = bar(scope)
+    expect(screen.getByRole("button", { name: /Filters\s*2 applied/ })).toBeTruthy()
+    expect(screen.getByText("Clinical courses")).toBeTruthy()
+    fireEvent.click(within(screen.getByLabelText("Applied filters")).getByRole("button", { name: /Remove Term Spring 2026/ }))
+    expect(onChange).toHaveBeenLastCalledWith(removeScope(scope, "term"))
+  })
+
+  it("the stale demo shows its one warning beside the chips", () => {
+    render(
+      <TooltipProvider>
+        <ScopeBar scope={EMPTY_SCOPE} options={options as never} termName="Fall 2026" onChange={vi.fn()} chipValue={(_k, v) => v} stale />
+      </TooltipProvider>,
+    )
+    expect(screen.getByText("Figures from yesterday, 18:00")).toBeTruthy()
+  })
+
+  it("no reporting page renders a header subtitle or an Updated time (D-L8b)", () => {
+    for (const f of ["components/lab/dashboard/frame.tsx", "components/lab/dashboard/ops-frame.tsx", "components/lab/admin-b/attainment-page.tsx", "components/lab/director/frame.tsx", "components/lab/reviewer/approvals-frame.tsx", "components/lab/rbac/students-frame.tsx", "components/lab/screens/admin-dashboard-drill.tsx", "components/lab/screens/admin-dashboard-drill-b.tsx", "components/lab/screens/admin-export-b.tsx"]) {
+      expect(src(f), f).not.toMatch(/ScopeContext|subtitle=\{/)
+    }
+    expect(src("components/lab/dashboard/scope-bar.tsx")).not.toMatch(/Updated \$\{|useRelativeTime/)
   })
 
   it("no reporting page renders a Refresh figures button or the Refresh to update line", () => {

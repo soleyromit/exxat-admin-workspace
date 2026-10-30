@@ -29,6 +29,7 @@ const STATUS_TEXT: Record<Evaluation["status"], string> = {
   "awaiting-approval": "Waiting for approval, not counted yet",
   returned: "Returned for correction, not counted",
   reopened: "Reopened, not counted until the newest version is confirmed",
+  reassigned: "Sent for a new evaluation, not counted",
 }
 
 const OUT_OPTIONS: Array<{ value: Outcome; label: string }> = [

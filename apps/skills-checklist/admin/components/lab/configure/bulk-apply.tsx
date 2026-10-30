@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@exxatdesignux/ui/components/ui/sheet"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
-import { bulkImpact, copySources, fromV2, ruleSentence, type LabRule } from "@/lib/lab/configure"
+import { bulkImpact, copySources, fromV2, leftToConfigure, ruleSentence, saveLabRuleToMany, type LabRule } from "@/lib/lab/configure"
+import { useV2Store } from "@/lib/v2/react"
+import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import { isConfigured } from "@/lib/v2/population"
 import { STATUS_META } from "@/lib/lab/library"
 import type { V2State } from "@/lib/v2/types"
@@ -53,11 +55,26 @@ export function CopyFromDialog({ open, onOpenChange, state, skillId, onCopy }: {
   )
 }
 
+/** What "Apply to other skills" wrote, for the page's banner. */
+export interface BulkApplied { written: string[]; skipped: number; configured: number; students: number; left: number }
+
+/** The banner line after applying to several: what was saved, who changed, and how many are still to configure [REQ IM-10, IM-14]. */
+export function bulkAppliedNote(x: BulkApplied): string {
+  const n = x.written.length
+  const saved = n ? `Configuration saved to ${countSkills(n)}. ${n === 1 ? "It is" : "They are"} configured and can be mapped.` : "Nothing was saved."
+  const changed = x.configured ? ` ${x.configured} ${x.configured === 1 ? "was" : "were"} already configured; ${x.students} students changed status.` : ""
+  const skipped = x.skipped ? ` ${countSkills(x.skipped)} could not be saved.` : ""
+  const left = x.left ? ` ${x.left} left to configure.` : ""
+  return `${saved}${changed}${skipped}${left}`
+}
+
 /**
  * "Apply to other skills": the rule is saved to each skill picked (decision D-X31: each becomes Configured, with its own rule
- * version). `onApplied` receives the ids so the caller writes them; Apply is disabled while the rule has problems.
+ * version) through saveLabRuleToMany, the same save path as one skill. Apply is disabled while the rule has problems, and the
+ * shared save validates again, so an invalid rule never writes. `onApplied` gets what was actually written.
  */
-export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, blocked = false, onApplied }: { open: boolean; onOpenChange: (o: boolean) => void; state: V2State; skillId: string; rule: LabRule; /** The rule still has problems, so it cannot be saved anywhere. */ blocked?: boolean; onApplied: (summary: { ids: string[]; skills: number; configured: number; students: number }) => void }) {
+export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, blocked = false, onApplied }: { open: boolean; onOpenChange: (o: boolean) => void; state: V2State; skillId: string; rule: LabRule; /** The rule still has problems, so it cannot be saved anywhere. */ blocked?: boolean; onApplied: (summary: BulkApplied) => void }) {
+  const store = useV2Store()
   const [q, setQ] = React.useState("")
   const [picked, setPicked] = React.useState<string[]>([])
   React.useEffect(() => { if (open) { setQ(""); setPicked([]) } }, [open])
@@ -125,7 +142,15 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, block
             size="default"
             disabled={picked.length === 0 || blocked}
             onClick={() => {
-              onApplied({ ids: picked, skills: picked.length, configured: inUse.length, students })
+              const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
+              let result: BulkApplied = { written: [], skipped: picked.length, configured: 0, students: 0, left: leftToConfigure(state) }
+              store.update((s) => {
+                const r = saveLabRuleToMany(s, picked, rule, { at, byId: IDS.ross, mode: "reapply" })
+                const wroteConfigured = inUse.filter((x) => r.written.includes(x.skillId))
+                result = { written: r.written, skipped: r.skipped.length, configured: wroteConfigured.length, students: wroteConfigured.reduce((n, x) => n + x.changed, 0), left: leftToConfigure(r.state) }
+                return r.written.length ? r.state : s
+              })
+              onApplied(result)
               onOpenChange(false)
             }}
           >

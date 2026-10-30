@@ -5,13 +5,15 @@
  * signature and every version, then "Waiting for you" with the cause. The answers and the decision come at the end of the story, as
  * the last step. Tests whether context in time order makes the decision safer than a compare table.
  */
+import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { isCheckoff, story } from "@/lib/lab/reviewer"
+import { story } from "@/lib/lab/reviewer"
 import { ReviewItemFrame } from "@/components/lab/reviewer/review-item-frame"
-import { CompareTable, Facts, Feedback, ReviewNoteField, RuleCheckLine, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { Facts, ReviewNoteField, RuleCheckLine, Story, WhyHeld } from "@/components/lab/reviewer/review-parts"
+import { ReviewResponses } from "@/components/lab/reviewer/review-responses"
 
 export function ReviewerReviewItemB() {
   return (
@@ -27,7 +29,7 @@ export function ReviewerReviewItemB() {
               </section>
               <Card size="sm" data-region="decision">
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">Your decision</CardTitle>
+                  <CardTitle className={TYPE.card}>Your decision</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-3">
                   <WhyHeld row={d.row} />
@@ -38,8 +40,7 @@ export function ReviewerReviewItemB() {
             </div>
             <div className="flex flex-col gap-4 lg:col-span-5">
               <section aria-label="Answers" className="flex flex-col gap-3" data-region="answers">
-                {d.comparisons.length ? d.comparisons.map((c) => <CompareTable key={c.evaluationId} c={c} checkoff={isCheckoff(d.row)} />) : <p className="text-sm text-muted-foreground">The outcome is on the photo of the paper form and has not been entered.</p>}
-                <Feedback text={d.feedback} />
+                <ReviewResponses state={ctx.state} d={d} />
               </section>
               <Details>
                 <Facts d={d} scope={ctx.scope} />
