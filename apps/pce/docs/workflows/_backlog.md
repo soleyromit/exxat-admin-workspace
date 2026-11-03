@@ -963,6 +963,22 @@ Source: `docs/research/meetings/2026-09-17-course-content-faculty-evaluation-ui-
 
 ---
 
+## Research insights — 2026-11-02 pharmacy student interview
+
+Source: `docs/research/meetings/2026-11-02-pharmacy-student-research-melissa-stocker.md`  
+Participant: Melissa Stocker — P4 pharmacy student, Drake University (Granola `cca82a3f`)
+
+> Discovery research interview. No direct design directives — all items below are flagged implications from user insight, not Aarti/Vishaka/Sankalp decisions. Do NOT apply to screen files until stakeholder review.
+
+| # | Task | Persona | Surface | Priority | Notes |
+|---|---|---|---|---|---|
+| T_PCE_R01 | **RESEARCH FLAG: Case log template should adapt by rotation type/setting.** Student currently gets the same form for outpatient substance use and acute care inpatient. Rotation-aware case log templates (different fields by setting) would be a clear UX improvement and competitive differentiator vs. CoreLM. | Student | Case log | P1 — DESIGN-REVIEW | Melissa: "It looks the exact same… they're not tailored to a certain type of rotation… It could definitely be a little cleaner in terms of if you're inpatient, what kind of meds are involved more commonly versus if you're outpatient." Needs product alignment before spec. |
+| T_PCE_R02 | **RESEARCH FLAG: File upload confirmation UX — explicit upload state feedback.** Student cannot tell whether a document was successfully uploaded in CORE. Upload UX needs clear status (uploading / uploaded / verified by preceptor) at each stage. | Student | Compliance / document upload | P1 | Melissa: "It's hard to figure out if it was uploaded or not. You can't really tell how many times you've submitted it." Maps to general upload component pattern. |
+| T_PCE_R03 | **RESEARCH FLAG: Consider exportable student portfolio / record portability post-graduation.** Students lose CORE access shortly after graduation, losing their case log history. An exportable record (PDF or data export) of case logs, evaluations, and skills completed would address this gap and be a competitive advantage. | Student | Profile / export | P2 | Melissa: "I kind of want to make sure that I have those records [after graduation]." She maintains her own spreadsheet as backup. |
+| T_PCE_R04 | **RESEARCH FLAG: Rotation preference submission should be digital with match visibility.** At Drake, preference submission is paper-based; CORE only shows available sites as a flat list. Replacing paper with digital preference ranking, plus showing match likelihood or alternatives, is a clear product gap to fill. | Student | Rotation scheduling | P1 — DESIGN-REVIEW | Melissa: "We submitted that on paper… our preferences weren't on CORE." Needs scope alignment — is rotation scheduling in PCE product scope? |
+
+---
+
 ## Open product questions
 
 - F2 (adjunct faculty) — email-only or rolls into faculty view? Reconfirm with Aarti.
