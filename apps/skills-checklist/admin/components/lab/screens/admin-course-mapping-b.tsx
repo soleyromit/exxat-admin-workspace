@@ -69,9 +69,9 @@ function SkillFirst({ m }: { m: MappingModel }) {
         <FiltersControl fields={fields} courseKind={m.didactic ? "all" : "clinical"} />
       </Toolbar>
       <AppliedFilterChips fields={fields} />
-      {/* Side by side from 1280 px, the list narrow so the terms table stays wide enough (768 px) for its pinned course column;
-          below 1280 the skill list is a short scroll box above the terms. */}
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,17.5rem)_minmax(0,1fr)]">
+      {/* Side by side from 1280 px, the list narrow (15rem) so at 1440 the pinned course column and three terms fit without
+          scrolling, "Recommended" whole in each select; later terms scroll. Below 1280 the skill list is a short scroll box above. */}
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] xl:gap-4">
         <div className="max-h-80 min-w-0 overflow-y-auto xl:max-h-none xl:overflow-visible" data-skill-list>
         <SkillReachTable
           rows={rows}

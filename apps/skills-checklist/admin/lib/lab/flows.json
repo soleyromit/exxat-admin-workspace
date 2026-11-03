@@ -804,6 +804,11 @@
           "screen": "admin/course-mapping",
           "variants": {
             "1": "A"
+          },
+          "params": {
+            "1": {
+              "by": "course"
+            }
           }
         },
         {

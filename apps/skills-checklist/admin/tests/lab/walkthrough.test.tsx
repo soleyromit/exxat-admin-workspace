@@ -21,6 +21,7 @@ import { LabIndex } from "@/components/lab/lab-index"
 import { FLOWS, findFlow, flowsForPersona, flowsForScreen, mainSteps, resolveStep, splitScreen } from "@/lib/lab/flows"
 import { labHref, rewriteLabUrl, type LinkContext } from "@/lib/lab/links"
 import { configureHref, mappingHref } from "@/lib/lab/library"
+import { mappingLink } from "@/lib/lab/mapping"
 import { LEAF_TITLE, returnHref, withFrom } from "@/lib/lab/return-to"
 import { PRESENT_WALKTHROUGHS } from "@/lib/lab/present"
 import { SCREENS, findScreen, screenKey } from "@/lib/lab/screens"
@@ -115,6 +116,7 @@ describe("walkthrough definition", () => {
     expect(resolveStep(WALKTHROUGH_ID, "configure", "1")!.params).toEqual({ skill: "sk-pressure-injury" })
     expect(flow().steps.filter((s) => s.side).map((s) => [s.id, s.label, s.tag])).toEqual([["configure", "Change one skill", "Optional"]])
     expect(resolveStep(WALKTHROUGH_ID, "map-skill", "1")!.params).toEqual({ by: "skill" })
+    expect(resolveStep(WALKTHROUGH_ID, "map", "1")!.params).toEqual({ by: "course" })
   })
 
   it("has one entry URL each that lands on the first step in present mode, both listed on the present index", () => {
@@ -183,16 +185,19 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
     expect([l.flowId, l.stepId, l.q.get("skill"), l.q.get("present"), l.q.get("set")]).toEqual([WALKTHROUGH_ID, "configure", "sk-new-1", "1", "1"])
   })
 
-  it("Map to courses (assign footer) opens the next step, mapping by skill; a plain link still opens the map step", () => {
+  it("Map to courses (assign footer) opens the next step, mapping by skill; a plain link opens skill first too, by=course or an offering opens the map step", () => {
     const l = landing(labHref("admin/course-mapping", { by: "skill" }, ctxFor("assign", "set=1&present=1&skill=sk-pressure-injury&view=assign")))
     expect([l.flowId, l.stepId, l.q.get("present")]).toEqual([WALKTHROUGH_ID, "map-skill", "1"])
-    expect(landing(labHref("admin/course-mapping", {}, ctxFor("assign", "set=1&present=1&view=assign"))).stepId).toBe("map")
+    const ctx = ctxFor("assign", "set=1&present=1&view=assign")
+    expect(landing(labHref("admin/course-mapping", {}, ctx)).stepId).toBe("map-skill")
+    expect(landing(labHref("admin/course-mapping", { by: "course" }, ctx)).stepId).toBe("map")
+    expect(landing(rewriteLabUrl(mappingLink({ offering: "off-x" }), ctx)).stepId).toBe("map")
     expect(l.q.get("view")).toBeNull()
   })
 
-  it("the receipt's links stay inside the walkthrough (Done returns to Skills, Map to courses to the map step)", () => {
+  it("the receipt's links stay inside the walkthrough (Done returns to Skills, Map to courses to mapping by skill)", () => {
     const ctx = ctxFor("configure", "set=1&present=1&skill=sk-pressure-injury")
-    expect(landing(rewriteLabUrl(mappingHref("sk-pressure-injury"), ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "map" })
+    expect(landing(rewriteLabUrl(mappingHref("sk-pressure-injury"), ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "map-skill" })
     expect(landing(labHref("admin/skills-library", { skill: "sk-pressure-injury" }, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "library" })
     // A plain link to the lists screen lands on Groups of skills; one with view=assign on the assign step.
     expect(landing(labHref("admin/lists-cohorts", {}, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "lists" })

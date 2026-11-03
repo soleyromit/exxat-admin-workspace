@@ -128,7 +128,7 @@ export function SkillAcrossPanel({
       {
         key: "code",
         label: "Course",
-        width: 220,
+        width: 168,
         defaultPin: "left",
         lockPin: true,
         sortable: true,
@@ -158,7 +158,7 @@ export function SkillAcrossPanel({
       base.push({
         key: `t:${t.id}`,
         label: t.name,
-        width: 200,
+        width: 216,
         resizable: false,
         header: () => (
           <span className="flex items-center gap-2 whitespace-nowrap">
@@ -174,11 +174,11 @@ export function SkillAcrossPanel({
           if (!c) return <span className="text-sm text-muted-foreground" aria-label={`${r.code} has no offering in ${t.name}`}>None</span>
           return (
             <span className="flex flex-col gap-0.5 py-1" title={offeringTitle(c)} data-offering-cell={c.id}>
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
                 <Checkbox size="sm" checked={picked.has(c.id)} onCheckedChange={(v) => toggle([c.id], v === true)} aria-label={`Select ${c.code}, ${t.name}`} />
                 <LevelSelect
                   value={c.level}
-                  className="w-36"
+                  className="w-[10.625rem]"
                   label={`${skill.name} in ${offeringTitle(c)}`}
                   onChange={(l) => {
                     const res = setLevel(state, overlay, c.id, skill.id, l)
@@ -189,9 +189,9 @@ export function SkillAcrossPanel({
                 />
               </span>
               {c.level === "none" || !c.source ? null : mostFromList ? (
-                c.source === "list" ? null : <span className="ps-6 text-xs text-muted-foreground" data-level-source={c.source}>{LEVEL_SOURCE_LABEL[c.source]}</span>
+                c.source === "list" ? null : <span className="ps-5.5 text-xs text-muted-foreground" data-level-source={c.source}>{LEVEL_SOURCE_LABEL[c.source]}</span>
               ) : c.source === "list" ? (
-                <span className="ps-6"><FromListTag source="list" /></span>
+                <span className="ps-5.5"><FromListTag source="list" /></span>
               ) : null}
             </span>
           )
@@ -237,7 +237,7 @@ export function SkillAcrossPanel({
           {shownPicked.length ? (
             <div role="group" aria-label="Set a level for the selected offerings" className="flex flex-wrap items-center gap-2" data-bulk-bar>
               <span className="text-sm font-medium tabular-nums">{`${plural(shownPicked.length, "offering", "offerings")} selected`}</span>
-              <LevelSelect value={bulkLevel} onChange={setBulkLevel} label="Level for the selected offerings" className="w-40" />
+              <LevelSelect value={bulkLevel} onChange={setBulkLevel} label="Level for the selected offerings" className="w-42" />
               <Button variant="default" size="sm" onClick={applyBulk}>Set level</Button>
               <Button variant="ghost" size="sm" onClick={() => setPicked(new Set())}>Clear selection</Button>
             </div>
@@ -257,7 +257,7 @@ export function SkillAcrossPanel({
               emptyState={narrowed ? <EmptyBlock compact title="No offerings match these filters" body="Clear a filter to see more." /> : <EmptyBlock compact title="No course offerings yet" />}
             />
           </ScrollLabel>
-          {moreRight && fadeHost ? createPortal(<span role="presentation" data-edge-fade className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[var(--background)] to-transparent" />, fadeHost) : null}
+          {moreRight && fadeHost ? createPortal(<span role="presentation" data-edge-fade className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-[var(--background)] to-transparent" />, fadeHost) : null}
           </div>
         </>
       )}

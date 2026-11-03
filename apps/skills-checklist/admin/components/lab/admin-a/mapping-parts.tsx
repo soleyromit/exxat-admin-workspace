@@ -202,7 +202,7 @@ export function OfferingPanel({ state, overlay, setOverlay, offering, lists, foc
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ term: offering.termId, skill: r.id })} title={r.name}>{r.name}</Link>
+            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ by: "course", term: offering.termId, skill: r.id })} title={r.name}>{r.name}</Link>
             <span className="truncate text-xs text-muted-foreground" title={r.section}>{r.section}</span>
           </span>
         ),
@@ -312,7 +312,7 @@ export function CoverageMatrix({ coverage, termName, termId }: { coverage: Cover
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ term: termId, skill: r.id })} title={r.name}>{r.name}</Link>
+            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ by: "course", term: termId, skill: r.id })} title={r.name}>{r.name}</Link>
             <span className="truncate text-xs text-muted-foreground" title={r.section}>{r.section}</span>
           </span>
         ),
@@ -386,7 +386,7 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
       {
         key: "name",
         label: capitalize(skillNoun()),
-        width: termName ? 250 : 150,
+        width: termName ? 250 : 120,
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
@@ -399,7 +399,7 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
         key: "carriers",
         // No term: the count is across every term's offerings (variant B, CALL 11-02).
         label: termName ? `${termName} courses` : "Offerings",
-        width: termName ? 168 : 130,
+        width: termName ? 168 : 118,
         sortable: true,
         cell: (r) =>
           !r.configured ? (

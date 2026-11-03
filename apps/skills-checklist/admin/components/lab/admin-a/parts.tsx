@@ -178,7 +178,7 @@ export function LevelSelect({ value, onChange, label, size = "sm", className = "
       <SelectContent>
         {LEVELS.map((l) => (
           <SelectItem key={l} value={l}>
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-1.5">
               <LevelGlyph level={l} />
               {LEVEL_LABEL[l]}
             </span>

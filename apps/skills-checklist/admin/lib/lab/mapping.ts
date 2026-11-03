@@ -646,11 +646,17 @@ export function setLevelAcross(s: V2State, o: MappingOverlay, offeringIds: reado
 
 export const MAPPING_PATH = `${LAB_ADMIN}/course-mapping`
 
-export type MappingParam = "variant" | "term" | "offering" | "skill" | "view" | "cohort" | "year" | "q" | "oq" | "show" | "incl"
+export type MappingParam = "variant" | "by" | "term" | "offering" | "skill" | "view" | "cohort" | "year" | "q" | "oq" | "show" | "incl"
 
+/**
+ * Course mapping opens skill first (`by=skill`, the default with no `by`); `by=course` opens it course first. A link that names an
+ * offering is about that course, so it says `by=course` on its own; a caller can still pass `by` explicitly.
+ */
 export function mappingLink(p: Partial<Record<MappingParam, string | undefined>>): string {
   const q = new URLSearchParams()
-  for (const [k, v] of Object.entries(p)) if (v) q.set(k, v)
+  const by = p.by ?? (p.offering ? "course" : undefined)
+  if (by) q.set("by", by)
+  for (const [k, v] of Object.entries(p)) if (v && k !== "by") q.set(k, v)
   const s = q.toString()
   return s ? `${MAPPING_PATH}?${s}` : MAPPING_PATH
 }
