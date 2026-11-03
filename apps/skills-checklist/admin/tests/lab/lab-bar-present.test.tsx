@@ -52,7 +52,8 @@ describe("present mode", () => {
   })
 
   it("links every marquee screen to a built step in its flow's recommended set, in present mode", () => {
-    expect(MARQUEE.map((m) => m.label)).toEqual(["Skills library", "Add a skill", "Configure a skill", "Assign to a cohort or group", "Course mapping", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"])
+    // Setup in Sankalp's order (Proposed 2026-11-02): program evaluation settings and the setup summary replace "Configure a skill".
+    expect(MARQUEE.map((m) => m.label)).toEqual(["Skills library", "Add a skill", "Evaluation settings", "Assign to a cohort or group", "Course mapping", "Setup summary", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"])
     for (const m of MARQUEE) {
       const href = marqueeHref(m)
       const u = new URL(href, "http://lab.test")

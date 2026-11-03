@@ -36,7 +36,7 @@ import {
   type LibraryStatus,
   type LibraryTab,
 } from "@/lib/lab/library"
-import { aNoun, capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, capitalize, skillNounPlural } from "@/lib/lab/terms"
 import type { LibraryApi } from "./use-library"
 import { useTerms } from "./use-terms"
 
@@ -62,8 +62,8 @@ export function LibraryStatusBadge({ status, draft = false }: { status: LibraryS
   )
 }
 
-/** One way to add skills, as a menu row: a leading icon, the label, and one muted line that says what it takes. */
-function AddWayRow({ icon, label, description, later = false }: { icon: string; label: string; description: string; later?: boolean }) {
+/** One way to add skills, as a menu row: a leading icon and the label (no description line, Romit 2026-11-02: no subtext). */
+function AddWayRow({ icon, label, later = false }: { icon: string; label: string; description?: string; later?: boolean }) {
   return (
     <>
       <i className={`fa-light ${icon} mt-0.5 w-4 text-center text-muted-foreground`} aria-hidden="true" />
@@ -72,7 +72,6 @@ function AddWayRow({ icon, label, description, later = false }: { icon: string; 
           <span className={TYPE.label}>{label}</span>
           {later ? <LaterBadge /> : null}
         </span>
-        <span className={TYPE.meta}>{description}</span>
       </span>
     </>
   )
@@ -248,7 +247,6 @@ export function LibraryEmpty({ onAdd, onAddSeveral }: { onAdd?: () => void; onAd
   return (
     <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-border p-6" data-region="empty">
       <h2 className={TYPE.section}>{`Your ${skillNounPlural()} library is empty`}</h2>
-      <p className={`max-w-prose ${TYPE.helper}`}>{`Add one ${skillNoun()} with details, paste a list of names, or upload a PDF, Word or Excel file.`}</p>
       <div className="mt-1 flex flex-wrap items-center gap-2">
         {onAdd ? <Button type="button" variant="outline" size="sm" onClick={onAdd}>{`Add ${aNoun()}`}</Button> : null}
         {onAddSeveral ? (

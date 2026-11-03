@@ -40,7 +40,7 @@ function Body({ ctx }: { ctx: DashboardContext }) {
   return (
     <div className="flex flex-col gap-6">
       <StageStrip model={model} scope={scope} />
-      {demo === "partial" ? <LocalBanner variant="info">{`Too few students in this scope to compare (4). The ${scope.basis === "median" ? "section median" : "expected now"} tick is hidden; the counts are current.`}</LocalBanner> : null}
+      {demo === "partial" ? <LocalBanner variant="info">{`Too few students in this scope to compare (4). The ${scope.basis === "median" ? "section median" : "expected now"} marker is hidden; the counts are current.`}</LocalBanner> : null}
       {demo === "clear" ? <p className="text-sm text-foreground" data-clear>{`No section sits 8 or more points under ${built.tick?.label.toLowerCase() ?? "the basis"}.`}</p> : null}
       {demo === "error" ? (
         <Card className="py-0" data-region="card-error" role="group" aria-label="Sections by record state">

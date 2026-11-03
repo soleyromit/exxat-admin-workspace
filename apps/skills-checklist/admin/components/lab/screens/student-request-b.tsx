@@ -26,7 +26,7 @@ type Situation = "with-me" | "not-here" | "paper"
 
 const SITUATIONS: Array<{ id: Situation; title: string; sub: string; icon: string }> = [
   { id: "with-me", title: "They are with me", sub: "Scan a code or sign on this device", icon: "fa-user-group" },
-  { id: "not-here", title: "They are not here", sub: "Email a link, no account needed", icon: "fa-envelope" },
+  { id: "not-here", title: "They are not here", sub: "Email them a link", icon: "fa-envelope" },
   { id: "paper", title: "I have a signed paper form", sub: "Upload a photo for review", icon: "fa-file-signature" },
 ]
 

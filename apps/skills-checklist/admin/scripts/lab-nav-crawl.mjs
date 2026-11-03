@@ -60,9 +60,12 @@ function judge(link, page) {
   if (link.error) return link.error
   const inPageFlow = pf.steps.filter((s) => s.screen === link.screen)
   if (inPageFlow.length) {
-    const want = inPageFlow[0].variants[page.set]
+    // A flow may show one screen in two ways on purpose (the admin walkthrough's Paste several is Add a skill C, Course mapping by
+    // skill is mapping B; Proposed 2026-11-02): a link is right when it lands on a variant one of that screen's steps maps the set to.
+    const wants = [...new Set(inPageFlow.map((s) => s.variants[page.set]).filter(Boolean))]
+    const want = wants[0]
     // A self link on the same screen keeps the page's own variant (which is the set's, on a flow page).
-    if (link.variant !== want) return `${link.screen} lands on ${link.variant}, set ${page.set} maps it to ${want}`
+    if (!wants.includes(link.variant)) return `${link.screen} lands on ${link.variant}, set ${page.set} maps it to ${want}`
     if (link.flow && link.flow !== page.flow && !flowById(link.flow).sets.some((x) => x.id === page.set)) return null
     if (link.flow && link.set !== page.set && flowById(link.flow).sets.some((x) => x.id === page.set)) return `${link.screen} drops the set (${link.set ?? "none"} instead of ${page.set})`
     return null

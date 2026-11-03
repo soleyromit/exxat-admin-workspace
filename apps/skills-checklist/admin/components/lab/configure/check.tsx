@@ -304,23 +304,17 @@ export function PreviewCard({ skillName, rule }: { skillName: string; rule: LabR
 
 /** Question 4: both views at once, side by side, built from the same rule (receipt, and Check on sets 2 and 3). */
 export function PeopleSee({ skillName, rule, className }: { skillName: string; rule: LabRule; className?: string }) {
-  const id = React.useId()
   return (
-    <section aria-labelledby={`${id}-h`} className={cn("@container flex flex-col gap-3", className)} data-region="people-see">
-      <h3 id={`${id}-h`} className={TYPE.group}>
-        Preview
-      </h3>
-      <div className="grid grid-cols-1 gap-4 @min-[40rem]:grid-cols-2">
-        <div className="flex flex-col gap-2">
-          <h4 className={TYPE.label}>Student sees</h4>
-          <StudentPreview skillName={skillName} rule={rule} />
-        </div>
-        <div className="flex flex-col gap-2">
-          <h4 className={TYPE.label}>Evaluator sees</h4>
-          <EvaluatorPreview skillName={skillName} rule={rule} />
-        </div>
-      </div>
-    </section>
+    <div className={cn("@container grid grid-cols-1 gap-4 @min-[40rem]:grid-cols-2", className)} data-region="people-see">
+      <section aria-label="What the student sees" className="flex flex-col gap-2">
+        <h3 className={TYPE.group}>What the student sees</h3>
+        <StudentPreview skillName={skillName} rule={rule} />
+      </section>
+      <section aria-label="What the evaluator sees" className="flex flex-col gap-2">
+        <h3 className={TYPE.group}>What the evaluator sees</h3>
+        <EvaluatorPreview skillName={skillName} rule={rule} />
+      </section>
+    </div>
   )
 }
 

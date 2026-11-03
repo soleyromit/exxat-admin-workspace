@@ -270,7 +270,7 @@ function EvaluatorSelect({ options, value, onChange, label, invalid = false }: {
 
 /**
  * Assign to someone else: the evidence leaves Approvals and goes to another evaluator as a new request link (lab state, written to
- * the shared store like every reviewer decision). Evaluators open the link from an email and sign without an account.
+ * the shared store like every reviewer decision). A preceptor opens the link from an email and signs without an account; faculty and lab instructors sign in to Prism.
  */
 function AssignDialog({ row, state, rows, onClose, onDone }: { row: ReviewRow | null; state: V2State | null; rows: ReviewRow[]; onClose: () => void; onDone: (row: ReviewRow, name: string) => void }) {
   const [toId, setToId] = React.useState("")
@@ -288,7 +288,8 @@ function AssignDialog({ row, state, rows, onClose, onDone }: { row: ReviewRow | 
       <DialogContent className={`sm:max-w-lg ${ABOVE_PANEL}`} overlayClassName={ABOVE_PANEL}>
         <DialogHeader>
           <DialogTitle>Assign to someone else</DialogTitle>
-          <DialogDescription>{`${row ? subject(row) : ""} goes to them as a new request. They open an email link and sign without an account.`}</DialogDescription>
+          {/* The no-account sentence only for a preceptor (Romit 2026-11-02): faculty and lab instructors sign in to Prism. */}
+          <DialogDescription>{`${row ? subject(row) : ""} goes to them as a new request.${options.find((o) => o.id === toId)?.signsByLink ? " They open an email link and sign without an account." : ""}`}</DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-3"

@@ -100,7 +100,7 @@ const PAGE_TYPE = {
   "admin/dashboard": "dashboard", "admin/dashboard-drill": "list", "admin/skills-library": "list", "admin/add-skill": "form",
   "admin/import-ai-review": "wizard", "admin/starter-library": "list", "admin/configure-skill": "form", "admin/rule-change-impact": "detail",
   "admin/retire-deactivate": "form", "admin/course-mapping": "list", "course-faculty/offering-checkoff": "list", "admin/lists-cohorts": "list",
-  "admin/settings": "list", "admin/categories-tags": "list", "admin/attainment": "dashboard", "admin/export": "form", "admin/approvals": "list",
+  "admin/settings": "list", "admin/categories-tags": "list", "admin/evaluation-settings": "form", "admin/setup-result": "list", "admin/attainment": "dashboard", "admin/export": "form", "admin/approvals": "list",
   "student/home": "student", "student/log-skill": "form", "student/request-signoff": "form", "student/my-requests": "list",
   "student/fix-returned": "form", "student/skill-detail": "detail", "student/record": "list", "student/share-record": "detail",
   "student/offline-sync": "list",

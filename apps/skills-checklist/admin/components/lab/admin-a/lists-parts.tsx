@@ -116,12 +116,9 @@ export function useListActions(model: ListsModel) {
       const list = listById(lists, listId)
       if (check.sameNoun.length || list?.status === "draft") return setAttach({ listId, groupId })
       setLists(assign(lists, listId, groupId, "add"))
-      const g = groups.find((x) => x.id === groupId)
-      const courses = g ? clinicalOfferingsFor(model.state, g) : null
-      const reach = courses === null ? `Its students see these ${skillNounPlural()} on their progress page.` : `Its ${plural(courses, "clinical course", "clinical courses")} now offer these ${list?.nounPlural ?? skillNounPlural()}.`
-      setFeedback({ title: `${groupLabel(groups, groupId)} now uses ${list?.name ?? `this ${G()}`}`, body: check.existing.length ? `${reach} It keeps ${check.existing.map((l) => l.name).join(" and ")}.` : reach })
+      setFeedback({ title: `${groupLabel(groups, groupId)} now uses ${list?.name ?? `this ${G()}`}`, body: check.existing.length ? `It keeps ${check.existing.map((l) => l.name).join(" and ")}.` : "" })
     },
-    [lists, setLists, groups, model.state],
+    [lists, setLists, groups],
   )
 
   const dialogs = (
@@ -134,7 +131,7 @@ export function useListActions(model: ListsModel) {
         onClose={() => setDefaulting(null)}
         onConfirm={(id) => {
           setLists(makeDefault(lists, id))
-          setFeedback({ title: `${listById(lists, id)?.name} is the default`, body: "New cohorts get it automatically. Existing student groups keep what they use." })
+          setFeedback({ title: `${listById(lists, id)?.name} is the default`, body: "" })
           setDefaulting(null)
         }}
       />
@@ -146,7 +143,7 @@ export function useListActions(model: ListsModel) {
   const banner = feedback ? (
     <div role="status" aria-live="polite">
       <LocalBanner variant="promo" title={feedback.title} dismissible onDismiss={() => setFeedback(null)}>
-        {feedback.body}
+        {feedback.body || null}
       </LocalBanner>
     </div>
   ) : null
@@ -189,10 +186,9 @@ function CreateGroupDialog({ model, open, onClose, onDone }: { model: ListsModel
   )
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Create a group</DialogTitle>
-          <DialogDescription>Pick students by rules. The group updates as students change.</DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-4"
@@ -202,7 +198,7 @@ function CreateGroupDialog({ model, open, onClose, onDone }: { model: ListsModel
             if (err) return setError(err)
             const g = customGroup(name.trim(), rule)
             model.addGroup(g)
-            onDone({ title: `${g.name} created`, body: `${plural(count ?? 0, "student", "students")}. It is now in the Group filter and in the student groups below.` })
+            onDone({ title: `${g.name} created`, body: `${plural(count ?? 0, "student", "students")}.` })
             onClose()
           }}
         >
@@ -216,10 +212,10 @@ function CreateGroupDialog({ model, open, onClose, onDone }: { model: ListsModel
             {field("group-grad", "Graduates in", grad, setGrad, opts.graduationYears)}
           </div>
           <p className="text-sm" role="status" aria-live="polite" data-group-count={count ?? ""}>
-            {count === null ? <span className="text-muted-foreground">Choose at least one rule to see who it picks.</span> : (
+            {count === null ? null : (
               <>
                 <span className="font-semibold tabular-nums">{plural(count, "student", "students")}</span>
-                <span className="text-muted-foreground">{count ? ` match, across ${plural(cohortsSpanned, "cohort", "cohorts")}.` : " match. Loosen a rule."}</span>
+                <span className="text-muted-foreground">{count ? ` match, across ${plural(cohortsSpanned, "cohort", "cohorts")}.` : " match."}</span>
               </>
             )}
           </p>
@@ -246,7 +242,7 @@ function AttachDialog({ model, target, onClose, onDone }: { model: ListsModel; t
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{`Assign ${list?.name ?? `this ${G()}`} to ${group}`}</DialogTitle>
-          <DialogDescription>{old ? `${group} already uses ${old.name}.` : list?.status === "draft" ? `This ${G()} is a draft. Assigning it makes it live for this group.` : ""}</DialogDescription>
+          <DialogDescription>{old ? `${group} already uses ${old.name}.` : list?.status === "draft" ? "Assigning makes it live." : ""}</DialogDescription>
         </DialogHeader>
         {old ? (
           <RadioGroup value={mode} onValueChange={(v) => setMode(v as AssignMode)} className="gap-3">
@@ -254,14 +250,12 @@ function AttachDialog({ model, target, onClose, onDone }: { model: ListsModel; t
               <RadioGroupItem id="attach-add" value="add" className="mt-0.5" />
               <Label htmlFor="attach-add" className="flex flex-col items-start gap-0.5 font-normal">
                 <span className="font-medium">{`Add as a second ${G()}`}</span>
-                <span className="text-xs text-muted-foreground">{`Students see both. Each one is its own report.`}</span>
               </Label>
             </div>
             <div className="flex items-start gap-2">
               <RadioGroupItem id="attach-move" value="move" className="mt-0.5" />
               <Label htmlFor="attach-move" className="flex flex-col items-start gap-0.5 font-normal">
                 <span className="font-medium">{`Move ${group} to this ${G()}`}</span>
-                <span className="text-xs text-muted-foreground">{`${old.name} stops showing for ${group}. Evidence stays on each student's record.`}</span>
               </Label>
             </div>
           </RadioGroup>
@@ -275,7 +269,7 @@ function AttachDialog({ model, target, onClose, onDone }: { model: ListsModel; t
             onClick={() => {
               if (!target || !list) return
               model.setLists(assign(model.lists, target.listId, target.groupId, old ? mode : "add"))
-              onDone({ title: `${group} now uses ${list.name}`, body: old && mode === "move" ? `${old.name} no longer shows for ${group}. Evidence is kept.` : old ? `It keeps ${old.name}. Each one is its own report.` : `The ${G()} is live for this group.` })
+              onDone({ title: `${group} now uses ${list.name}`, body: old && mode === "move" ? `${old.name} no longer shows for ${group}.` : old ? `It keeps ${old.name}.` : "" })
               onClose()
             }}
           >
@@ -295,7 +289,7 @@ function DetachDialog({ model, target, onClose, onDone }: { model: ListsModel; t
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{`Stop using ${list?.name ?? `this ${G()}`} for ${group}?`}</DialogTitle>
-          <DialogDescription>{`${group} students stop seeing this ${G()}. Evidence stays on each record and counts again if you assign it later.`}</DialogDescription>
+          <DialogDescription>Evidence is kept.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" size="sm" onClick={onClose}>Keep it</Button>
@@ -306,7 +300,7 @@ function DetachDialog({ model, target, onClose, onDone }: { model: ListsModel; t
             onClick={() => {
               if (!target || !list) return
               model.setLists(unassign(model.lists, target.listId, target.groupId))
-              onDone({ title: `${group} no longer uses ${list.name}`, body: "Evidence is kept." })
+              onDone({ title: `${group} no longer uses ${list.name}`, body: "" })
               onClose()
             }}
           >
@@ -320,13 +314,12 @@ function DetachDialog({ model, target, onClose, onDone }: { model: ListsModel; t
 
 function DefaultDialog({ model, listId, onClose, onConfirm }: { model: ListsModel; listId: string | null; onClose: () => void; onConfirm: (id: string) => void }) {
   const list = listId ? listById(model.lists, listId) : undefined
-  const current = model.lists.find((l) => l.isDefault)
   return (
     <Dialog open={!!list} onOpenChange={(o) => (o ? null : onClose())}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{`Make ${list?.name ?? `this ${G()}`} the default?`}</DialogTitle>
-          <DialogDescription>{`New cohorts get it automatically${current ? ` instead of ${current.name}` : ""}. Existing student groups keep what they use.`}</DialogDescription>
+          <DialogDescription>New cohorts get it automatically.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
@@ -355,10 +348,9 @@ function NewListDialog({ model, target, onClose, onDone }: { model: ListsModel; 
   const live = model.lists.filter((l) => l.status === "live")
   return (
     <Dialog open={!!target} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{`New group of ${skillNounPlural()}`}</DialogTitle>
-          <DialogDescription>{`It starts as a draft. Live groups of ${skillNounPlural()} and their evidence stay as they are.`}</DialogDescription>
         </DialogHeader>
         <form
           className="flex flex-col gap-4"
@@ -370,7 +362,7 @@ function NewListDialog({ model, target, onClose, onDone }: { model: ListsModel; 
             if (err) return setError(err)
             const created = createList(model.lists, input, `list-${Date.now().toString(36)}`)
             model.setLists([...model.lists, created])
-            onDone({ title: `${created.name} created as a draft`, body: "No student sees it until you assign it to a group." })
+            onDone({ title: `${created.name} created as a draft`, body: "" })
             onClose()
           }}
         >
@@ -557,17 +549,9 @@ export function AssignChecklist({ model, list, onToggle, onCreateGroup, idPrefix
  */
 export function AssignConsequence({ model, list }: { model: ListsModel; list: SkillList }) {
   const sum = assignmentSummary(model.state, list, model.groups)
-  const noun = list.nounPlural
-  const lead =
-    sum.groups === 0
-      ? `No students use this group of ${skillNounPlural()} yet. Check a cohort and its clinical courses offer these ${noun}.`
-      : sum.cohorts > 0
-        ? `Their clinical courses offer these ${countNoun(list, sum.offered)}.`
-        : `Their students see these ${countNoun(list, list.skillIds.length)} on their progress page.`
   return (
     <section aria-labelledby="assign-consequence" className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4" data-assign-consequence>
       <h2 id="assign-consequence" className={TYPE.section}>What this does</h2>
-      <p className="text-sm text-foreground">{lead}</p>
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
         {sum.cohorts > 0 ? (
           <>
@@ -627,10 +611,9 @@ export function RuleDialog({ model, list, open, onClose, onSaved }: { model: Lis
   const changed = !error && n !== list.minTotal
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-lg" data-region="rule">
+      <DialogContent className="sm:max-w-lg" data-region="rule" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{`Completion rule for ${list.name}`}</DialogTitle>
-          <DialogDescription>{`When a student counts as done with this ${G()}. Each ${list.noun} keeps its own criteria.`}</DialogDescription>
         </DialogHeader>
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -639,9 +622,7 @@ export function RuleDialog({ model, list, open, onClose, onSaved }: { model: Lis
           <span>{`of ${fmt(list.skillIds.length)} in total`}</span>
         </div>
         {error ? <p id={`min-err-${list.id}`} className="text-sm text-destructive">{error}</p> : null}
-        {!standings.length ? (
-          <p className="text-sm text-muted-foreground">Assign a group to see who meets it.</p>
-        ) : changed ? (
+        {standings.length && changed ? (
           <div className="flex flex-col gap-2" aria-live="polite">
             <p className="text-xs font-medium text-muted-foreground">What would change</p>
             <ul className="flex flex-col gap-1.5 text-sm">
@@ -657,9 +638,7 @@ export function RuleDialog({ model, list, open, onClose, onSaved }: { model: Lis
               ))}
             </ul>
           </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">Change the minimum to see who would meet it before you save.</p>
-        )}
+        ) : null}
       </div>
         <DialogFooter>
           <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>

@@ -47,7 +47,7 @@ function clash(s: V2State, name: string, exceptId?: string): boolean {
 export function copyStarterSkills(s: V2State, specialty: Specialty, indexes: number[], actorId: string, at: string): Result<{ created: number; batchId: string }> {
   const lib = STARTER_BY_SPECIALTY[specialty]
   const rows = [...new Set(indexes)].filter((i) => lib.skills[i]).map((i) => lib.skills[i])
-  if (rows.length === 0) return { ok: false, error: "Tick at least one skill to copy." }
+  if (rows.length === 0) return { ok: false, error: "Select at least one skill to copy." }
   const { state, batch } = addBatch(s, "starter-library", `${lib.label} starter library`, specialty, rows, actorId, at)
   return { ok: true, state: appendAudit(state, actorId, `Copied ${rows.length} ${rows.length === 1 ? "skill" : "skills"} from the starter library`, lib.label, at), created: rows.length, batchId: batch.id }
 }

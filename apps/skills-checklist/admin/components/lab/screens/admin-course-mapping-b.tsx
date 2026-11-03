@@ -1,19 +1,21 @@
 "use client"
 
 /**
- * Course mapping B (alternative): skill first. Pick one of the active skills, see which of the term's offerings carry it and at what level,
- * and change the level per offering (levels may differ between offerings, REQ CM-06): mandatory, recommended, optional or not mapped,
- * each an override of the lists assigned to the offering's cohort (one line in the pane). Clinical courses only by default [CALL 10-26]. Required skills in no course sort first and are
- * the "Required in no course" filter (N-13). The library's "Not mapped" link lands here with ?skill=.
- * The pane's offerings are searchable and filter by cohort and professional year, with each offering's mapped and mandatory counts
- * (REQ CM-02, CM-04, same as A). Deactivated skills are not listed (REQ SL-11).
- * Regions: header, toolbar, N-13 line, skill list and skill panes. URL: ?term= &skill= &q= &show= &oq= &cohort= &year=. Demo states: ?state=loading | empty | error.
+ * Course mapping B: skill first, across the program (CALL 11-02, Sarah: one skill across every term is the useful view).
+ * Pick one of the active skills, see its level in every course offering of every term (courses as rows, terms as columns, one
+ * level per offering, REQ CM-03, CM-06), and set one level in several offerings at once. A level is set per offering only;
+ * nothing carries a level into another term (OD-01 open, REQ CM-08). Clinical courses only by default [CALL 10-26].
+ * Required skills in no offering are the "Required, in no course" filter (N-13). The library's "Not mapped" link lands here
+ * with ?skill=. Offerings are searchable and filter by cohort and professional year, each cell with its offering's mapped and
+ * mandatory counts (REQ CM-02, CM-04). Deactivated skills are not listed (REQ SL-11).
+ * URL: ?skill= &q= &show= &oq= &cohort= &year= &incl=. Demo states: ?state=loading | empty | error.
  */
 import * as React from "react"
 import { mappingLink, skillReach } from "@/lib/lab/mapping"
 import { aNoun, skillNounPlural } from "@/lib/lab/terms"
 import { MappingFrame, type MappingModel } from "@/components/lab/admin-a/mapping-frame"
-import { SkillPanel, SkillReachTable, courseKindField } from "@/components/lab/admin-a/mapping-parts"
+import { SkillReachTable, courseKindField } from "@/components/lab/admin-a/mapping-parts"
+import { SkillAcrossPanel } from "@/components/lab/admin-a/skill-across"
 import { AppliedFilterChips, FiltersControl, SearchField, Toolbar, type FilterField } from "@/components/lab/admin-a/parts"
 
 type Show = "" | "required" | "gaps" | "unconfigured"
@@ -26,23 +28,25 @@ function SkillFirst({ m }: { m: MappingModel }) {
   const { query } = m
   const q = query.get("q")
   const show = (query.get("show") || "") as Show
-  const all = React.useMemo(() => skillReach(m.state, m.overlay, m.termId, m.lists, m.didactic), [m.state, m.overlay, m.termId, m.lists, m.didactic])
+  // Every term's offerings: the skill's reach across the program, not one term [CALL 11-02].
+  const all = React.useMemo(() => skillReach(m.state, m.overlay, "", m.lists, m.didactic), [m.state, m.overlay, m.lists, m.didactic])
+  const gaps = React.useMemo(() => all.filter((r) => r.required && r.carriers === 0).length, [all])
   const rows = React.useMemo(() => {
     const t = q.trim().toLowerCase()
     return all.filter((r) => (!t || r.haystack.includes(t)) && (show === "" || (show === "required" ? r.required : show === "gaps" ? r.required && r.carriers === 0 : !r.configured)))
   }, [all, q, show])
-  // The skill's offerings are found by search, cohort and professional year in its pane, the term above (grouped by academic year) [REQ CM-02].
+  // The skill's offerings are found by search (course, term, academic year, cohort), cohort and professional year in its pane [REQ CM-02].
   const oq = query.get("oq")
   const cohort = query.get("cohort")
   const year = query.get("year")
   const offFilter = React.useMemo(() => ({ q: oq, cohort, year }), [oq, cohort, year])
   const requested = query.get("skill")
   const selected = all.find((r) => r.id === requested) ?? rows[0]
-  const hrefFor = React.useCallback((id: string) => mappingLink({ term: m.termId, q: q || undefined, show: show || undefined, incl: m.didactic ? "didactic" : undefined, oq: oq || undefined, cohort: cohort || undefined, year: year || undefined, skill: id }), [m.termId, q, show, m.didactic, oq, cohort, year])
+  const hrefFor = React.useCallback((id: string) => mappingLink({ q: q || undefined, show: show || undefined, incl: m.didactic ? "didactic" : undefined, oq: oq || undefined, cohort: cohort || undefined, year: year || undefined, skill: id }), [q, show, m.didactic, oq, cohort, year])
 
-  // One filter idiom (2026-10-30 review P2, D-L8b): term, show and course kind are one Filters control with removable chips.
+  // One filter idiom (2026-10-30 review P2, D-L8b): show and course kind are one Filters control with removable chips. Terms are
+  // the pane's columns, so there is no term filter here.
   const fields: FilterField[] = [
-    { id: "term", label: "Term", value: m.termId, defaultValue: m.currentTermId, options: m.termOpts, onChange: (v) => query.set({ term: v && v !== m.currentTermId ? v : null }) },
     {
       id: "show",
       label: "Show",
@@ -51,7 +55,7 @@ function SkillFirst({ m }: { m: MappingModel }) {
       options: [
         { value: "required", label: "Required to graduate" },
         // N-13 as a count on its own filter, not a sentence above the list (Romit 2026-10-28: "too many text").
-        { value: "gaps", label: m.cover.gaps.length ? `Required, in no course (${m.cover.gaps.length})` : "Required, in no course" },
+        { value: "gaps", label: gaps ? `Required, in no course (${gaps})` : "Required, in no course" },
         { value: "unconfigured", label: "Not configured" },
       ],
       onChange: (v) => query.set({ show: v || null, skill: null }),
@@ -65,22 +69,24 @@ function SkillFirst({ m }: { m: MappingModel }) {
         <FiltersControl fields={fields} courseKind={m.didactic ? "all" : "clinical"} />
       </Toolbar>
       <AppliedFilterChips fields={fields} />
-      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+      {/* Side by side from 1280 px, the list narrow so the terms table stays wide enough (768 px) for its pinned course column;
+          below 1280 the skill list is a short scroll box above the terms. */}
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,17.5rem)_minmax(0,1fr)]">
+        <div className="max-h-80 min-w-0 overflow-y-auto xl:max-h-none xl:overflow-visible" data-skill-list>
         <SkillReachTable
           rows={rows}
           selectedId={selected?.id ?? ""}
-          termName={m.termName}
+          termName=""
           hrefFor={hrefFor}
           onSelect={(id) => query.set({ skill: id })}
         />
+        </div>
         {selected ? (
-          <SkillPanel
+          <SkillAcrossPanel
             state={m.state}
             overlay={m.overlay}
             setOverlay={m.setOverlay}
             skill={selected}
-            termId={m.termId}
-            termName={m.termName}
             lists={m.lists}
             didactic={m.didactic}
             filter={{ value: offFilter, onChange: (n) => query.set({ ...(n.q !== undefined ? { oq: n.q || null } : {}), ...(n.cohort !== undefined ? { cohort: n.cohort || null } : {}), ...(n.year !== undefined ? { year: n.year || null } : {}) }), cohortOpts: m.cohortOpts, yearOpts: m.yearOpts }}

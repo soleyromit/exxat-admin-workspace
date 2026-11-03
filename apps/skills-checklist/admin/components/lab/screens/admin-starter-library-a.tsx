@@ -40,12 +40,7 @@ export function AdminStarterLibraryA() {
   const columns = [
     {
       key: "label", label: "Starting point", width: 340, sortable: true,
-      cell: (d: Row) => (
-        <span className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-foreground">{d.label}</span>
-          <span className="text-xs text-muted-foreground">{d.summary}</span>
-        </span>
-      ),
+      cell: (d: Row) => <span className="text-sm font-medium text-foreground">{d.label}</span>,
     },
     { key: "discipline", label: "Discipline", width: 160, sortable: true, filter: { type: "select" as const, options: [...new Set(data.map((d) => d.discipline))].map((x) => ({ value: x, label: x })) } },
     { key: "count", label: capitalize(skillNounPlural()), width: 110, sortable: true, cell: (d: Row) => <span className="tabular-nums">{d.count}</span> },
@@ -66,7 +61,7 @@ export function AdminStarterLibraryA() {
       <div className="flex flex-col gap-4" data-starter-lab="A" data-page-type="list">
         {done ? (
           <LocalBanner variant="success" title={`${countSkills(done.copied)} copied to ${done.target}`} dismissible onDismiss={() => setDone(null)} action={{ label: "Open the library", href: "/lab/admin/skills-library" }}>
-            Each is not configured yet.
+            Not configured yet.
           </LocalBanner>
         ) : null}
         <div role="region" aria-label="Starting points">
@@ -80,7 +75,7 @@ export function AdminStarterLibraryA() {
             edgeInset={false}
             onRowClick={(r) => setOpenId(r.id)}
             openRowId={openId}
-            emptyState={<EmptyBlock compact title="No starting points are offered" body="Bring in the list you already have instead." action={{ label: `Import ${skillNounPlural()}`, href: "/lab/admin/import-ai-review" }} />}
+            emptyState={<EmptyBlock compact title="No starting points are offered" action={{ label: `Import ${skillNounPlural()}`, href: "/lab/admin/import-ai-review" }} />}
           />
         </div>
       </div>

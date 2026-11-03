@@ -69,7 +69,7 @@ function Sheet({ m }: { m: CheckoffModel }) {
                             <span className="truncate">{k.skill.name}</span>
                             <span className="text-xs text-muted-foreground">{k.levelLabel}</span>
                           </span>
-                          {c ? <span className="text-xs tabular-nums text-muted-foreground">{`${c} ticked`}</span> : null}
+                          {c ? <span className="text-xs tabular-nums text-muted-foreground">{`${c} checked off`}</span> : null}
                         </CommandItem>
                       )
                     })}

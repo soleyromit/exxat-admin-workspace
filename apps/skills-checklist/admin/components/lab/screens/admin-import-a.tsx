@@ -190,7 +190,7 @@ export function AdminImportA() {
                       <p className={TYPE.label} data-plan-sentence>
                         {confirmSentence(session.plan, session.targetLabel, { one: skillNoun(), many: skillNounPlural() })}
                       </p>
-                      <p className={TYPE.helper}>Each starts not configured, so students cannot send it until you configure it.</p>
+                      <p className={TYPE.helper}>Each starts not configured.</p>
                     </div>
                     <NotCreatedList session={session} />
                   </div>

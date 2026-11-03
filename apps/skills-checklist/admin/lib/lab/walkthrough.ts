@@ -33,7 +33,7 @@ export function walkthroughFlow(id: string = WALKTHROUGH_ID): FlowDef | undefine
 type ParamSource = { get(name: string): string | null } | null | undefined
 
 /** Params a walkthrough hop carries: the journey keys plus the skills chosen on the send steps (Send C reads `?skills=`). */
-export const WALKTHROUGH_CARRY = [...CARRY_KEYS, "skills"] as const
+export const WALKTHROUGH_CARRY = [...CARRY_KEYS, "skills", "sg"] as const
 
 const paramCount = (step: FlowStep, set: string) => Object.keys(step.params?.[set] ?? {}).length
 

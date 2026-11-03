@@ -272,7 +272,6 @@ export function ReviewSummary({ session }: { session: ImportSession }) {
   const s = session.summary
   if (!s || !session.review) return null
   const cats = categoriesOf(session.resolved).filter((c) => c.name !== NO_CATEGORY).length
-  const legend = session.review.legend
   const where = cats > 0 ? ` in ${plural(cats, IMPORT_GROUPING.category.toLowerCase(), IMPORT_GROUPING.categories)}` : ""
   return (
     <div className="flex flex-col gap-1" data-review-summary>
@@ -280,7 +279,6 @@ export function ReviewSummary({ session }: { session: ImportSession }) {
         {`${plural(s.read, skillNoun(), skillNounPlural())} read${where}. `}
         {session.left > 0 ? `${plural(session.left, "needs", "need")} a decision.` : "Nothing needs a decision."}
       </p>
-      {legend ? <p className="text-sm text-muted-foreground">{`The file's mark means "${legend}". It is kept as a note for course mapping.`}</p> : null}
     </div>
   )
 }
@@ -476,10 +474,10 @@ function RowEditDialog({ session, edit, onClose }: { session: ImportSession; edi
   const fieldId = `import-edit-${edit.mode}`
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" {...(row ? {} : { "aria-describedby": undefined })}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          {row ? <DialogDescription>{row.row.sourceText ? `Line ${row.row.line}: ${row.row.sourceText}` : row.name}</DialogDescription> : <DialogDescription>{`Added to this import only. Nothing is created until you confirm.`}</DialogDescription>}
+          {row ? <DialogDescription>{row.row.sourceText ? `Line ${row.row.line}: ${row.row.sourceText}` : row.name}</DialogDescription> : null}
         </DialogHeader>
         <Field>
           {edit.mode === "merge" ? (
@@ -673,8 +671,9 @@ export function fixCountsLine(session: ImportSession): string {
   const review = session.review
   if (!review) return ""
   const total = session.groups.reduce((t, g) => t + g.rows.length, 0)
+  // The open count is said once, beside the disabled Next (Romit 2026-11-02); only the all-decided line shows here.
   if (session.left === 0) return `${plural(total, "line", "lines")}, every one decided.`
-  return `${plural(session.left, "line needs", "lines need")} a decision. Each has a suggestion.`
+  return ""
 }
 
 /**
@@ -695,7 +694,7 @@ export function FixIntro({ session }: { session: ImportSession }) {
   return (
     <div className="flex flex-col gap-4" data-fix-intro>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className={TYPE.body} data-fix-counts>{fixCountsLine(session)}</p>
+        {fixCountsLine(session) ? <p className={TYPE.body} data-fix-counts>{fixCountsLine(session)}</p> : <span />}
         {session.left > 0 ? (
           <Button type="button" variant="outline" size="sm" onClick={acceptAll} data-accept-all>Accept all suggestions</Button>
         ) : null}
@@ -757,8 +756,7 @@ export function ImportNameField({ session }: { session: ImportSession }) {
   return (
     <Field className="max-w-md">
       <FieldLabel htmlFor="import-batch">Import name</FieldLabel>
-      <Input id="import-batch" value={session.batchName} onChange={(e) => session.setBatchName(e.target.value)} aria-describedby="import-batch-help" />
-      <FieldDescription id="import-batch-help">{`Shown in the library so you can tell which ${skillNounPlural()} came from this file.`}</FieldDescription>
+      <Input id="import-batch" value={session.batchName} onChange={(e) => session.setBatchName(e.target.value)} />
     </Field>
   )
 }
@@ -814,7 +812,7 @@ export function ConfirmPanel({ session }: { session: ImportSession }) {
         <p className="text-sm font-medium text-foreground" data-plan-sentence>
           {confirmSentence(session.plan, session.targetLabel, { one: skillNoun(), many: skillNounPlural() })}
         </p>
-        <p className="text-sm text-muted-foreground">Each starts not configured, so students cannot send it until you configure it.</p>
+        <p className="text-sm text-muted-foreground">Each starts not configured.</p>
       </div>
       <NewListField session={session} />
       <ImportNameField session={session} />
@@ -834,7 +832,7 @@ export function DoneBanner({ session }: { session: ImportSession }) {
   return (
     <div ref={ref} tabIndex={-1} role="status" className="outline-none" data-import-done>
       <LocalBanner variant="success" title={`${countSkills(total)} added to ${session.targetLabel}`} action={{ label: "Configure them", href: NOT_CONFIGURED_HREF }}>
-        They are not configured yet. Students cannot send them until they are.
+        Not configured yet.
       </LocalBanner>
     </div>
   )
@@ -847,7 +845,7 @@ export function DiscardDialog({ open, onOpenChange, onDiscard }: { open: boolean
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Discard this import?</AlertDialogTitle>
-          <AlertDialogDescription>Nothing has been created. The file and your decisions will be lost.</AlertDialogDescription>
+          <AlertDialogDescription>The file and your decisions will be lost.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel variant="outline" autoFocus>Keep working</AlertDialogCancel>

@@ -23,7 +23,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
-import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { Field, FieldContent, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { EMPTY_DRAFT, NO_CATEGORY, findDuplicate, validateDraft, type DraftErrors, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
@@ -130,8 +130,7 @@ export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, de
               </Field>
               <Field>
                 <FieldLabel id="skill-tags-label" htmlFor="skill-tags">Tags (optional)</FieldLabel>
-                <TagsPicker id="skill-tags" labelId="skill-tags-label" value={d.tags} options={opts.tags} inactive={opts.inactiveTags} onChange={(t) => set("tags", t)} describedBy="skill-tags-help" />
-                <FieldDescription id="skill-tags-help">Type to find or create one.</FieldDescription>
+                <TagsPicker id="skill-tags" labelId="skill-tags-label" value={d.tags} options={opts.tags} inactive={opts.inactiveTags} onChange={(t) => set("tags", t)} />
               </Field>
               <Field orientation="horizontal" className="items-start justify-between gap-4">
                 <FieldContent>

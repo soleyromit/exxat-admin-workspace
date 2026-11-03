@@ -1,6 +1,6 @@
 import * as React from "react"
 import { describe, expect, it, vi } from "vitest"
-import { act, render, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, waitFor } from "@testing-library/react"
 
 const nav = vi.hoisted(() => ({ search: "variant=A&skill=sk-med-admin&step=model" }))
 vi.mock("next/navigation", () => ({
@@ -68,28 +68,29 @@ describe("StickyFooter contract", () => {
   })
 })
 
-describe("Configure A: the same footer on every step", () => {
-  for (const step of ["model", "outcomes", "rule", "signoff", "check"] as const) {
-    it(`step ${step}: Back slot first, Save draft then the primary last`, async () => {
-      nav.search = `variant=A&skill=sk-med-admin&step=${step}`
-      let view: ReturnType<typeof render> | null = null
-      await act(async () => {
-        view = render(
-          <V2StoreProvider store={createV2Store({ storage: null })}>
-            <TooltipProvider>
-              <AdminConfigureSkillA />
-            </TooltipProvider>
-          </V2StoreProvider>,
-        )
-      })
-      const root = view!.container
-      await waitFor(() => expect(root.querySelector('[data-region="footer"]')).not.toBeNull())
-      await waitFor(() => expect(root.querySelector('nav[aria-label^="Wizard steps"] li[aria-current="step"]')?.textContent ?? "").not.toBe(""))
-      const footer = footerOf(root)
-      assertContract(footer, step !== "model")
-      const labels = buttonsIn(footer.querySelector("[data-footer-actions]")!).map((b) => b.textContent)
-      expect(labels[0]).toBe("Save draft")
-      view!.unmount()
+describe("Change one skill (Configure A, 2026-11-02): one page, one Save", () => {
+  it("shows the four sections and a footer with Save as its only action", async () => {
+    nav.search = "variant=A&skill=sk-med-admin"
+    let view: ReturnType<typeof render> | null = null
+    await act(async () => {
+      view = render(
+        <V2StoreProvider store={createV2Store({ storage: null })}>
+          <TooltipProvider>
+            <AdminConfigureSkillA />
+          </TooltipProvider>
+        </V2StoreProvider>,
+      )
     })
-  }
+    const root = view!.container
+    await waitFor(() => expect(root.querySelector("[data-one-skill]")).not.toBeNull())
+    const titles = [...root.querySelectorAll("[data-one-skill] h2")].map((h) => h.textContent?.replace(/^\d+/, ""))
+    expect(titles).toEqual(["How skills are judged", "What counts as achieved", "How many evaluations", "Who signs"])
+    // Nothing to save on arrival, so no footer; a change brings the one Save.
+    expect(root.querySelector('[data-region="footer"]')).toBeNull()
+    await act(async () => { fireEvent.change(document.getElementById("cfg-need")!, { target: { value: "5" } }) })
+    await waitFor(() => expect(root.querySelector('[data-region="footer"]')).not.toBeNull())
+    const footer = root.querySelector('[data-region="footer"]')!
+    expect(buttonsIn(footer as HTMLElement).map((b) => b.textContent)).toEqual(["Save"])
+    view!.unmount()
+  })
 })

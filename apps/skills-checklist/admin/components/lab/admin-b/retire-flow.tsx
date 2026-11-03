@@ -193,7 +193,7 @@ export function RetireFlow({ impact, cohorts, existingLists, layout, partial, in
         <AlertDialogContent className="z-[90]" overlayClassName="z-[90]">
           <AlertDialogHeader>
             <AlertDialogTitle>{`Delete ${impact.name}?`}</AlertDialogTitle>
-            <AlertDialogDescription>Nothing is recorded against it. This cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel variant="outline" size="sm">Keep it</AlertDialogCancel>

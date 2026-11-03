@@ -300,7 +300,7 @@ export function filterOfferings(rows: readonly OfferingRow[], f: OfferingFilter)
 /** Offerings of a term, clinical only unless didactic is included: the set every course picker on the mapping screens starts from. */
 function termOfferings(s: V2State, termId: string, didactic: boolean): CourseOffering[] {
   const skip = didactic ? null : new Set((s.courses ?? []).filter((c) => c.kind === "didactic").map((c) => c.id))
-  return (s.offerings ?? []).filter((x) => x.termId === termId && !skip?.has(x.courseId))
+  return (s.offerings ?? []).filter((x) => (!termId || x.termId === termId) && !skip?.has(x.courseId))
 }
 
 /** The current term, else the latest. */
@@ -486,7 +486,10 @@ export interface SkillReachRow extends Record<string, unknown> {
   haystack: string
 }
 
-/** Every skill with how many of the term's offerings carry it, by name. Clinical offerings only unless `didactic`. */
+/**
+ * Every skill with how many of the term's offerings carry it, by name. Clinical offerings only unless `didactic`.
+ * `termId` "" counts every term's offerings: the skill-first view reads one skill across the program [CALL 11-02].
+ */
 export function skillReach(s: V2State, o: MappingOverlay, termId: string, lists: readonly SkillList[] = listsOf(s), didactic = false): SkillReachRow[] {
   const offs = termOfferings(s, termId, didactic)
   const req = cohortRequiredIds(s, lists, offs)
@@ -520,6 +523,8 @@ export interface SkillOfferingRow extends Record<string, unknown> {
   academicYear: string
   professionalYear: number
   kind: "clinical" | "didactic"
+  termId: string
+  term: string
   level: MapLevel
   source: LevelSource | null
   /** The offering's own totals, all skills, so the skill-first view also shows mapped and mandatory per offering [REQ CM-04]. */
@@ -529,15 +534,18 @@ export interface SkillOfferingRow extends Record<string, unknown> {
   haystack: string
 }
 
-/** The term's offerings with this skill's level in each (edit per offering; levels may differ, CM-06). Clinical only unless `didactic`. */
+/**
+ * The term's offerings with this skill's level in each (edit per offering; levels may differ, CM-06). Clinical only unless `didactic`.
+ * `termId` "" returns the offerings of every term.
+ */
 export function offeringsForSkill(s: V2State, o: MappingOverlay, skillId: string, termId: string, didactic = false, lists: readonly SkillList[] = listsOf(s)): SkillOfferingRow[] {
   return offeringRows(s, o, lists)
-    .filter((r) => r.termId === termId && (didactic || r.kind === "clinical"))
+    .filter((r) => (!termId || r.termId === termId) && (didactic || r.kind === "clinical"))
     .map((r) => {
       const off = offeringById(s, r.id)!
       const res = resolvedLevels(s, o, off, lists).get(skillId)
       const level = res?.level ?? "none"
-      return { id: r.id, code: r.code, name: r.name, cohortId: r.cohortId, cohort: r.cohort, academicYear: r.academicYear, professionalYear: r.professionalYear, kind: r.kind, level, source: level === "none" ? null : (res?.source ?? null), mapped: r.mapped, mandatory: r.mandatory, haystack: r.haystack }
+      return { id: r.id, code: r.code, name: r.name, cohortId: r.cohortId, cohort: r.cohort, academicYear: r.academicYear, professionalYear: r.professionalYear, kind: r.kind, termId: r.termId, term: r.term, level, source: level === "none" ? null : (res?.source ?? null), mapped: r.mapped, mandatory: r.mandatory, haystack: r.haystack }
     })
     .sort((a, b) => LEVELS.indexOf(a.level) - LEVELS.indexOf(b.level) || a.code.localeCompare(b.code))
 }
@@ -546,6 +554,91 @@ export function offeringsForSkill(s: V2State, o: MappingOverlay, skillId: string
 export function filterSkillOfferings(rows: readonly SkillOfferingRow[], f: { q: string; cohort: string; year: string }): SkillOfferingRow[] {
   const q = f.q.trim().toLowerCase()
   return rows.filter((r) => (!f.cohort || r.cohortId === f.cohort) && (!f.year || String(r.professionalYear) === f.year) && (!q || r.haystack.includes(q)))
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// One skill across the program (variant B, CALL 11-02: skill first, longitudinal)
+
+export interface TermColumn {
+  id: string
+  name: string
+  academicYear: string
+  current: boolean
+}
+
+export interface CourseAcrossRow extends Record<string, unknown> {
+  /** Course id. */
+  id: string
+  code: string
+  name: string
+  kind: "clinical" | "didactic"
+  /** Term id -> this skill's level in the course's offering that term. A term with no offering of the course has no entry. */
+  cells: Record<string, SkillOfferingRow>
+}
+
+export interface SkillAcross {
+  terms: TermColumn[]
+  rows: CourseAcrossRow[]
+  /** Offerings shown (all terms), and how many carry the skill at any level and as mandatory. */
+  offerings: number
+  carriers: number
+  mandatory: number
+}
+
+/**
+ * One skill against every offering of every term: courses as rows, terms as columns in date order, each cell one offering with its
+ * own level [REQ CM-03, CM-06, CM-08]. Each cell is read and set on its own offering; nothing copies a level into another term
+ * (carry forward is OD-01, open). The filter narrows offerings (search, cohort, professional year) the same way as
+ * filterSkillOfferings [REQ CM-02]; a course stays as a row while any of its offerings matches.
+ */
+export function skillAcrossTerms(
+  s: V2State,
+  o: MappingOverlay,
+  skillId: string,
+  didactic = false,
+  lists: readonly SkillList[] = listsOf(s),
+  f: { q: string; cohort: string; year: string } = { q: "", cohort: "", year: "" },
+): SkillAcross {
+  const all = offeringsForSkill(s, o, skillId, "", didactic, lists)
+  const shown = filterSkillOfferings(all, f)
+  const terms: TermColumn[] = [...(s.terms ?? [])]
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .map((t) => ({ id: t.id, name: t.name, academicYear: academicYear(t.start), current: !!t.current }))
+  const byCourse = new Map<string, CourseAcrossRow>()
+  for (const r of shown) {
+    const off = offeringById(s, r.id)
+    if (!off) continue
+    const row = byCourse.get(off.courseId) ?? { id: off.courseId, code: r.code, name: r.name, kind: r.kind, cells: {} }
+    row.cells[r.termId] = r
+    byCourse.set(off.courseId, row)
+  }
+  const used = new Set(shown.map((r) => r.termId))
+  return {
+    terms: terms.filter((t) => used.has(t.id)),
+    rows: [...byCourse.values()].sort((a, b) => a.code.localeCompare(b.code)),
+    offerings: shown.length,
+    carriers: shown.filter((r) => r.level !== "none").length,
+    mandatory: shown.filter((r) => r.level === "mandatory").length,
+  }
+}
+
+/** One skill set to one level in several offerings at once; each offering gets its own entry, nothing else changes [CM-06, CM-08]. */
+export function setLevelAcross(s: V2State, o: MappingOverlay, offeringIds: readonly string[], skillId: string, level: MapLevel): { overlay: MappingOverlay; changed: number; skipped: number; reason?: string } {
+  let overlay = o
+  let changed = 0
+  let skipped = 0
+  let reason: string | undefined
+  for (const id of offeringIds) {
+    const r = setLevel(s, overlay, id, skillId, level)
+    if (r.ok) {
+      overlay = r.overlay
+      changed++
+    } else {
+      skipped++
+      reason ??= r.reason
+    }
+  }
+  return { overlay, changed, skipped, reason }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -36,7 +36,8 @@ const BANNED = [
 ]
 const CHROME = "[data-lab-bar], [data-ds-used-panel], [data-lab-question], [data-variant-bar]"
 // The marquee, in order (lib/lab/present.ts MARQUEE; UX critique 2026-10-26).
-const MARQUEE_LABELS = ["Skills library", "Add a skill", "Configure a skill", "Assign to a cohort or group", "Course mapping", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"]
+// Proposed 2026-11-02 (ledger D-X45): program evaluation settings and the setup summary.
+const MARQUEE_LABELS = ["Skills library", "Add a skill", "Evaluation settings", "Assign to a cohort or group", "Course mapping", "Setup summary", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"]
 const MARQUEE_COUNT = MARQUEE_LABELS.length
 const STUDENT = new Set(["My progress", "Log a skill", "My requests"])
 // Romit 2026-10-27 (LEDGER D-L11): "remove sample data tags from everywhere". No marquee screen carries a Sample data chip.
@@ -143,15 +144,18 @@ const WALKS = [
     entry: "/lab/walkthrough/admin",
     flow: "setup-walkthrough",
     steps: [
+      // Proposed 2026-11-02 (ledger D-X45): Sankalp's six steps, setup summary last.
       ["library", "Skills"],
       ["add", "Add a skill"],
+      ["paste", "Paste several"],
       ["bulk", "Bulk upload"],
       ["categories", "Categories and tags"],
-      ["configure", "Configure the skill"],
-      ["publish", "Check and save"],
+      ["settings", "Evaluation settings"],
       ["lists", "Groups of skills"],
       ["assign", "Assign skills to student groups"],
       ["map", "Course mapping"],
+      ["map-skill", "Course mapping by skill"],
+      ["result", "Setup summary"],
     ],
   },
   {
@@ -170,11 +174,13 @@ const WALKS = [
 // opens on the wizard's first section (its heading is that section's name), so it is not judged; Check and save is judged on the
 // wizard's current step: since 2026-10-27 (Romit, "content hierarchy so the steps are cleaner") the step name lives in the DS rail
 // (its aria-current step label) and the visible h2 is the question the admin answers ("Ready to save?").
-const HEADING_EXEMPT = new Set(["setup-walkthrough/configure"])
+// Paste several and Course mapping by skill are a second way into a page whose H1 is the page (Skills, Evaluation
+// settings, Course mapping); the step name is the tab or the way in, so they are not judged on the H1 either.
+const HEADING_EXEMPT = new Set(["setup-walkthrough/configure", "setup-walkthrough/paste", "setup-walkthrough/map-skill"])
 // Log a skill keeps one page title across its steps (Romit 2026-10-27); the Self-evaluation step is judged on the stepper.
 const WIZARD_HEADING = { "setup-walkthrough/publish": 'nav[aria-label^="Wizard steps"] li[aria-current="step"] p', "fulfillment-walkthrough/self": 'nav[aria-label^="Wizard steps"] li[aria-current="step"] p' }
 const OPTIONAL = new Set(["setup-walkthrough/lists"])
-const SKILLS_PANEL_STEPS = new Set(["setup-walkthrough/categories", "setup-walkthrough/lists", "setup-walkthrough/assign", "setup-walkthrough/map"])
+const SKILLS_PANEL_STEPS = new Set(["setup-walkthrough/categories", "setup-walkthrough/settings", "setup-walkthrough/lists", "setup-walkthrough/assign", "setup-walkthrough/map", "setup-walkthrough/map-skill", "setup-walkthrough/result"])
 if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
   for (const walk of WALKS) {
     await page.evaluate(() => { try { sessionStorage.clear() } catch { /* */ } }).catch(() => {})
@@ -205,7 +211,7 @@ if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
         check(name, "Course select lists courses only, no My progress option", (await page.locator("#course-a-select").count()) === 1, "")
       } else if (SKILLS_PANEL_STEPS.has(key)) {
         // D-L20: a page in the Skills panel reads "Skills > {step}" (the library itself reads "Skills").
-        check(name, `breadcrumb is "Skills > ${label}"`, crumbs.length === 2 && crumbs[0] === "Skills" && crumbs[1] === label, crumbs)
+        check(name, `breadcrumb is "Skills > ${label}"`, crumbs.length === 2 && crumbs[0] === "Skills" && (crumbs[1] === label || HEADING_EXEMPT.has(key)), crumbs)
       } else check(name, `breadcrumb is "${label}"`, crumbs.length === 1 && crumbs[0] === label, crumbs)
       await shot(`${walk.flow === "setup-walkthrough" ? "config" : "fulfil"}-${String(i + 1).padStart(2, "0")}-${id}`)
       if (WIZARD_HEADING[key]) {

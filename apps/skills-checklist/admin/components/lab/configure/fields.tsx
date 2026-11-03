@@ -21,7 +21,8 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
-import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
+import { Field, FieldError, FieldLabel, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
@@ -33,12 +34,12 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@exxatdesignux/ui/components/ui/input-group"
 import { TYPE } from "@/components/lab/type-scale"
 import { ConfigSubsection } from "./section"
-import { criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, appendQuestions, parseQuestionLines, setSubsetRange, applyPreset, FIELD_TYPE_LABEL, hasNeed, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
+import { countsFromIndex, countsFromOption, countingLevelsPhrase, withCountsFrom } from "@/lib/lab/configure"
+import { criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, appendQuestions, parseQuestionLines, setSubsetRange, applyPreset, FIELD_TYPE_LABEL, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import type { EvalModel } from "@/lib/v2/types"
-import { COURSE_FACULTY, aNoun, skillNoun } from "@/lib/lab/terms"
+import { aNoun, skillNoun } from "@/lib/lab/terms"
 import { RuleConditions, RuleNumber } from "./rule-conditions"
-import { CHECKOFF_LABEL, ruleAllowsCheckOff, ruleCheckOffOff, ruleCheckOffScore, ruleTickRecords } from "@/lib/lab/configure"
-import { AmberNote } from "@/components/lab/admin-a/parts"
+import { CHECKOFF_LABEL, ruleAllowsCheckOff, ruleCheckOffScore } from "@/lib/lab/configure"
 
 export interface SectionProps {
   rule: LabRule
@@ -90,29 +91,16 @@ export function RemoveButton({ id, label, onClick }: { id?: string; label: strin
  * example, beside the fields once the step is wider than 48rem, under them below that. It fills the width with something the admin
  * reads, not with stretched fields. The sentences are data about the rule (an artifact preview), not instructions.
  */
-export function MeaningPanel({ meaning }: { meaning: Meaning }) {
-  // Named as a preview of the rule (its sentences are data, not instructions), nested inside the step's region so it adds none.
-  return (
-    <div role="group" aria-label="What this means: a preview of the rule" className="flex flex-col gap-2 rounded-[var(--radius)] border border-border p-4" data-region="meaning-preview" data-meaning-panel>
-      <h3 className={TYPE.group}>What this means</h3>
-      <div className="flex flex-col gap-2" data-artifact-preview>
-        {meaning.lines.map((l, i) => (
-          <p key={i} className={TYPE.body}>{l}</p>
-        ))}
-        {meaning.example ? <p className={cn(TYPE.helper, "tabular-nums")} data-meaning-example data-counts={meaning.counts === undefined ? undefined : String(meaning.counts)}>{meaning.example}</p> : null}
-      </div>
-    </div>
-  )
-}
+/**
+ * Labels, controls and errors only, on every Configure and Evaluation settings page (Romit 2026-11-02, D-L34: "I thought I was
+ * clear that I don't want so much dense text"). No "What this means" panels, option descriptions, toggle details or helper lines.
+ */
+
 
 /** The fields and their "What this means" panel: side by side from a 48rem step, stacked below that. */
 export function WithMeaning({ meaning, className, children, ...rest }: { meaning: Meaning; className?: string; children: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={cn("grid grid-cols-1 gap-6 @min-[48rem]:grid-cols-[minmax(0,1fr)_minmax(15rem,19rem)] @min-[48rem]:items-start @min-[48rem]:gap-10", className)} {...rest}>
-      <div className="flex min-w-0 flex-col gap-6">{children}</div>
-      <MeaningPanel meaning={meaning} />
-    </div>
-  )
+  void meaning
+  return <div className={cn("flex min-w-0 flex-col gap-6", className)} {...rest}>{children}</div>
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -194,9 +182,8 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
                     <i className={`fa-light ${MODEL_ICON[m]} text-muted-foreground`} aria-hidden="true" />
                     {MODEL_LABEL[m]}
                   </span>
-                  <span className="text-sm text-muted-foreground">{MODEL_HELP[m]}</span>
                 </span>
-                <span className="flex shrink-0 flex-wrap gap-1 @min-[30rem]:max-w-[20rem] @min-[30rem]:justify-end" aria-hidden="true" data-model-sample>
+                <span className="hidden" aria-hidden="true" data-model-sample>
                   {MODEL_SAMPLE[m].map((s) => (
                     <span key={s} className="rounded-[var(--radius)] border border-border bg-background px-1.5 py-0.5 text-xs text-muted-foreground">{s}</span>
                   ))}
@@ -308,22 +295,26 @@ function ListEditor({ idBase, noun, values, onChange, onRemove, onMove, addId, o
  * which outcome qualifies or how many times. Only the preset that fits the chosen model is offered.
  */
 export function PresetChips({ rule, setRule }: Pick<SectionProps, "rule" | "setRule">) {
-  const ids: LabelPresetId[] = rule.model === "binary" ? ["approval"] : rule.model === "demonstration" ? ["independence"] : []
+  // A menu of named starting sets (audit fix 2026-11-02): it reads as an action, never as the current value. Labels only.
+  const ids: LabelPresetId[] = rule.model === "binary" ? ["metnotmet", "approval"] : rule.model === "demonstration" ? ["independence", "performance", "aacn"] : []
   if (ids.length === 0) return null
-  const current = (id: LabelPresetId) => {
-    const p = LABEL_PRESETS[id]
-    return p.outcomes ? p.outcomes.join("|") === rule.outcomeLabels.join("|") : (p.levels ?? []).join("|") === rule.levels.join("|")
-  }
   return (
-    <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby="cfg-preset-label" data-presets>
-      <span id="cfg-preset-label" className="text-sm text-muted-foreground">
-        Start from
-      </span>
-      {ids.map((id) => (
-        <Button key={id} id={`cfg-preset-${id}`} type="button" variant="outline" size="sm" aria-pressed={current(id)} onClick={() => setRule((r) => applyPreset(r, id))}>
-          {LABEL_PRESETS[id].label}
-        </Button>
-      ))}
+    <div data-presets>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button id="cfg-preset" type="button" variant="outline" size="sm">
+            Use a starting set
+            <i className="fa-light fa-chevron-down ms-1" aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {ids.map((id) => (
+            <DropdownMenuItem key={id} id={`cfg-preset-${id}`} onSelect={() => setRule((r) => applyPreset(r, id))}>
+              {`${LABEL_PRESETS[id].label}: ${(LABEL_PRESETS[id].levels ?? LABEL_PRESETS[id].outcomes ?? []).join(", ")}`}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
@@ -397,6 +388,7 @@ export function OutcomesSection({ rule, setRule, issues, showErrors, qualifyingI
             onMove={(i, j) => setRule((r) => swapItems(r, "levels", i, j))}
           />
         </FieldSet>
+        <CountsFromField rule={rule} setRule={setRule} err={err} />
       </WithMeaning>
     )
   }
@@ -444,10 +436,45 @@ export function OutcomesSection({ rule, setRule, issues, showErrors, qualifyingI
   )
 }
 
+/**
+ * Which levels count toward achievement (Romit 2026-11-02): one choice, the lowest level that counts, every level above it counting
+ * too. Nothing is preselected; a preset fills the labels only. Options follow the list order (lowest first) and are rebuilt from it,
+ * so a rename shows at once, a move carries the choice with its level, and removing the chosen level clears it (removeLevel).
+ */
+function CountsFromField({ rule, setRule, err }: { rule: LabRule; setRule: SectionProps["setRule"]; err: (f: string) => string | undefined }) {
+  const from = countsFromIndex(rule)
+  const id = "cfg-counts-from"
+  const message = err(id)
+  const enough = rule.levels.length >= 2
+  return (
+    <FieldSet data-counts-from>
+      <FieldLegend variant="label">Which levels count toward achievement?</FieldLegend>
+      {enough ? (
+        <RadioGroup
+          id={id}
+          tabIndex={-1}
+          value={from === null || from >= rule.levels.length ? "" : String(from)}
+          onValueChange={(v) => setRule((r) => withCountsFrom(r, Number(v)))}
+          className="flex flex-col gap-3 outline-none"
+          {...errProps(id, message)}
+        >
+          {rule.levels.map((_, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <RadioGroupItem id={`${id}-${i}`} value={String(i)} />
+              <Label htmlFor={`${id}-${i}`}>{countsFromOption(rule.levels, i)}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+      ) : null}
+      <Err id={id} message={message} />
+    </FieldSet>
+  )
+}
+
 // ---------------------------------------------------------------------------------------------------------------------
 // Rule [REQ SC-05, SC-07, SC-10, SC-11, SC-12]: what qualifies one evaluation, how many, and the setting minimums.
 
-export function RuleSection({ rule, setRule, issues, showErrors, settings }: SectionProps & { withMore?: boolean }) {
+export function RuleSection({ rule, setRule, issues, showErrors, settings, conditions = true }: SectionProps & { withMore?: boolean; conditions?: boolean }) {
   const err = useErr(issues, showErrors)
   if (!rule.model) return <p className="text-sm text-muted-foreground">Choose how it&apos;s judged first. The rule depends on it.</p>
   const needErr = err("cfg-need")
@@ -462,18 +489,29 @@ export function RuleSection({ rule, setRule, issues, showErrors, settings }: Sec
         <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby="cfg-need-lead">
           <span id="cfg-need-lead" className={TYPE.body}>The student needs</span>
           <RuleNumber id="cfg-need" label="Evaluations that count, needed" value={rule.need} error={!!needErr} onChange={(n) => setRule((r) => ({ ...r, need: n }))} />
-          <span className={TYPE.body}>{rule.need === 1 ? "evaluation that counts" : "evaluations that count"}</span>
+          <span className={TYPE.body}>{needTail(rule)}</span>
         </div>
+        {/* Levels: the count names the levels chosen on the Levels step; until they are chosen, say where. */}
         {/* School-defined, so the count starts empty and asks; there is no platform default and no preset [CALL 10-26 B.5]. */}
-        {!hasNeed(rule) && !needErr ? <FieldDescription data-empty-need>Your program sets this number.</FieldDescription> : null}
         <Err id="cfg-need" message={needErr} />
       </div>
-      <FieldSet className="flex flex-col gap-2">
-        <FieldLegend variant="label">Conditions (optional)</FieldLegend>
-        <RuleConditions rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} settings={settings} />
-      </FieldSet>
+      {/* Program settings (lib/lab/program-settings.ts) leave the conditions to each skill: setting and level minimums are per skill. */}
+      {conditions ? (
+        <FieldSet className="flex flex-col gap-2">
+          <FieldLegend variant="label">Conditions (optional)</FieldLegend>
+          <RuleConditions rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} settings={settings} />
+        </FieldSet>
+      ) : null}
     </WithMeaning>
   )
+}
+
+/** The words after the count: "evaluations that count", or for levels "evaluations rated independent" (one source: the Levels step). */
+function needTail(rule: LabRule): string {
+  const noun = rule.need === 1 ? "evaluation" : "evaluations"
+  const phrase = rule.model === "demonstration" ? countingLevelsPhrase(rule) : ""
+  if (phrase) return `${noun} ${phrase}`
+  return rule.need === 1 ? "evaluation that counts" : "evaluations that count"
 }
 
 function QuestionRuleField({ rule, setRule, err }: { rule: LabRule; setRule: SectionProps["setRule"]; err: (f: string) => string | undefined }) {
@@ -530,7 +568,7 @@ export function QuestionSubsetPicker({ rule, setRule, error, className }: { rule
     <div id="cfg-qrule-subset" tabIndex={-1} className={cn("flex flex-col gap-2", className)} role="group" aria-label="Questions that must be Yes">
       {m > 0 ? (
         <div className="flex flex-wrap items-center gap-2" data-subset-tools>
-          <span className="text-sm text-muted-foreground tabular-nums" aria-live="polite">{`${ticked} of ${m} ticked`}</span>
+          <span className="text-sm text-muted-foreground tabular-nums" aria-live="polite">{`${ticked} of ${m} selected`}</span>
           <Button type="button" variant="ghost" size="sm" disabled={ticked === m} onClick={() => setRule((x) => setSubsetRange(x, 1, m, true))}>
             Select all
           </Button>
@@ -538,13 +576,13 @@ export function QuestionSubsetPicker({ rule, setRule, error, className }: { rule
             Clear
           </Button>
           {m > 10 ? (
-            <span className="flex flex-wrap items-center gap-2" role="group" aria-label="Tick a range of questions">
+            <span className="flex flex-wrap items-center gap-2" role="group" aria-label="Select a range of questions">
               <Label htmlFor="cfg-qsub-from" className="text-sm font-normal">Questions</Label>
               <Input id="cfg-qsub-from" inputMode="numeric" className="w-16" value={from} onChange={(e) => setFrom(e.target.value.replace(/\D/g, ""))} aria-label="First question in the range" />
               <Label htmlFor="cfg-qsub-to" className="text-sm font-normal">to</Label>
               <Input id="cfg-qsub-to" inputMode="numeric" className="w-16" value={to} onChange={(e) => setTo(e.target.value.replace(/\D/g, ""))} aria-label="Last question in the range" />
               <Button type="button" variant="outline" size="sm" disabled={!rangeOk} onClick={() => range(true)}>
-                Tick range
+                Select range
               </Button>
             </span>
           ) : null}
@@ -552,7 +590,7 @@ export function QuestionSubsetPicker({ rule, setRule, error, className }: { rule
       ) : null}
       <Card size="sm" className="py-0">
       <CardContent className="flex max-h-56 flex-col gap-2 overflow-y-auto py-3">
-        {m === 0 ? <p className="text-sm text-muted-foreground">Write the questions first, then tick the ones that must be Yes.</p> : null}
+        {m === 0 ? <p className="text-sm text-muted-foreground">Write the questions first, then select the ones that must be Yes.</p> : null}
         {rule.questions.map((q, i) => (
           <div key={i} className="flex items-center gap-2">
             <Checkbox id={`cfg-qsub-${i}`} checked={r.indices.includes(i)} onCheckedChange={(c) => setRule((x) => ({ ...x, questionRule: { kind: "subset", indices: c ? [...r.indices, i] : r.indices.filter((k) => k !== i) } }))} />
@@ -593,7 +631,7 @@ function PasteQuestions({ onAdd }: { onAdd: (lines: string[]) => void }) {
           <Field>
             <FieldLabel htmlFor="cfg-paste-questions">Questions</FieldLabel>
             <Textarea id="cfg-paste-questions" rows={10} value={text} onChange={(e) => { setText(e.target.value); setTried(false) }} {...errProps("cfg-paste-questions", tried && !lines.length ? PASTE_EMPTY : undefined)} />
-            {tried && !lines.length ? <Err id="cfg-paste-questions" message={PASTE_EMPTY} /> : <FieldDescription aria-live="polite">{lines.length ? `${lines.length} ${lines.length === 1 ? "question" : "questions"} will be added after the ones already written.` : "Paste from a document or a spreadsheet column."}</FieldDescription>}
+            {tried && !lines.length ? <Err id="cfg-paste-questions" message={PASTE_EMPTY} /> : null}
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" size="default" onClick={() => setOpen(false)}>
@@ -651,9 +689,13 @@ function ScoredRuleField({ rule, setRule, err }: { rule: LabRule; setRule: Secti
 // Who signs [REQ SC-13, SC-14, SC-15, SC-16]
 
 /** A toggle with its title; `detail` only when the title alone would hide a consequence (say it once). */
-function ToggleRow({ id, title, detail, checked, onChange }: { id: string; title: string; detail?: string; checked: boolean; onChange: (v: boolean) => void }) {
+function ToggleRow({ id, title, detail: given, checked, onChange }: { id: string; title: string; detail?: string; checked: boolean; onChange: (v: boolean) => void }) {
+  void given
+  const detail: string | undefined = undefined
+  // The switch sits right before its label (Romit 2026-11-02: toggles floated far from their text at wide widths).
   return (
-    <div className="flex max-w-2xl items-start justify-between gap-4 py-1">
+    <div className="flex items-start gap-3 py-1">
+      <ToggleSwitch id={id} checked={checked} onChange={onChange} aria-labelledby={detail ? `${id}-label ${id}-detail` : `${id}-label`} />
       <div className="flex min-w-0 flex-col gap-0.5">
         <p id={`${id}-label`} className="text-sm font-medium text-foreground">
           {title}
@@ -664,7 +706,6 @@ function ToggleRow({ id, title, detail, checked, onChange }: { id: string; title
           </p>
         ) : null}
       </div>
-      <ToggleSwitch id={id} checked={checked} onChange={onChange} aria-labelledby={detail ? `${id}-label ${id}-detail` : `${id}-label`} />
     </div>
   )
 }
@@ -766,80 +807,112 @@ function FieldDialog({ open, onOpenChange, onSave, taken, initial }: { open: boo
  * column grouped by subject, each with its own switch, in the order the work happens: 1 Student (fields, self-evaluation),
  * 2 Evaluator (roles, feedback), 3 Approval. The full-width rule (D-L5) is met by the preview aside, not by splitting fields.
  */
-export function SignOffSection({ rule, setRule, issues, showErrors }: SectionProps) {
+/** What the student adds when submitting [REQ SC-13]: the field list with Edit, Remove and Add a field. */
+export function StudentFieldsField({ rule, setRule, issues, showErrors }: SectionProps) {
   const err = useErr(issues, showErrors)
-  const roleErr = err("cfg-role-preceptor")
   const [adding, setAdding] = React.useState(false)
   const [editing, setEditing] = React.useState<number | null>(null)
   return (
+    <FieldSet>
+      <FieldLegend variant="label">What the student adds</FieldLegend>
+      <ul className="flex flex-col divide-y divide-border rounded-[var(--radius)] border border-border">
+        {rule.studentFields.map((f, i) => {
+          const id = `cfg-field-${i}`
+          const name = f.label.trim() || `field ${i + 1}`
+          return (
+            <li key={i} className="flex flex-col gap-1 px-3 py-1.5">
+              {/* Below 640 px the name takes its own line, so it is never cut by the type and Required columns. */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span className={cn("min-w-0 basis-full sm:basis-0 sm:flex-1 sm:truncate", TYPE.body)}>{f.label.trim() || "Untitled field"}</span>
+                <span className={cn("w-28 shrink-0", TYPE.helper)}>{`${FIELD_TYPE_LABEL[f.type]}${f.type === "choice" && f.choices?.length ? ` (${f.choices.length})` : ""}`}</span>
+                <span className={cn("w-20 shrink-0", TYPE.helper)}>{f.mandatory ? "Required" : "Optional"}</span>
+                <span className="ms-auto flex items-center gap-1">
+                  <Button type="button" variant="ghost" size="sm" aria-label={`Edit ${name}`} onClick={() => setEditing(i)}>
+                    Edit
+                  </Button>
+                  <RemoveButton id={id} label={`Remove ${name}`} onClick={() => setRule((r) => ({ ...r, studentFields: r.studentFields.filter((_, k) => k !== i) }))} />
+                </span>
+              </div>
+              <Err id={id} message={err(id)} />
+            </li>
+          )
+        })}
+        {rule.studentFields.length === 0 ? <li className={cn("px-3 py-2", TYPE.helper)}>Nothing beyond the evaluation itself.</li> : null}
+      </ul>
+      <div>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(true)}>
+          Add a field
+        </Button>
+      </div>
+      <FieldDialog open={adding} onOpenChange={setAdding} taken={rule.studentFields.map((f) => f.label)} onSave={(f) => setRule((r) => ({ ...r, studentFields: [...r.studentFields, f] }))} />
+      <FieldDialog
+        open={editing !== null}
+        onOpenChange={(o) => !o && setEditing(null)}
+        taken={rule.studentFields.map((f) => f.label)}
+        initial={editing !== null ? rule.studentFields[editing] ?? null : null}
+        onSave={(f) => setRule((r) => ({ ...r, studentFields: r.studentFields.map((x, k) => (k === editing ? f : x)) }))}
+      />
+    </FieldSet>
+  )
+}
+
+/** Student rates themselves first [REQ SC-15]. */
+export function SelfRatingToggle({ rule, setRule }: Pick<SectionProps, "rule" | "setRule">) {
+  return <ToggleRow id="cfg-self" title="Student rates themselves first" checked={rule.selfEvaluation} onChange={(v) => setRule((r) => ({ ...r, selfEvaluation: v }))} />
+}
+
+/** Which evaluator roles can sign off [REQ SC-16]. */
+export function SignersField({ rule, setRule, issues, showErrors }: SectionProps) {
+  const roleErr = useErr(issues, showErrors)("cfg-role-preceptor")
+  return (
+    <FieldSet>
+      <FieldLegend variant="label">Who can sign off</FieldLegend>
+      <div className="flex flex-wrap gap-x-6 gap-y-3">
+        {ROLES.map((role) => (
+          <div key={role} className="flex items-center gap-2">
+            <Checkbox
+              id={`cfg-role-${role}`}
+              checked={rule.evaluatorRoles.includes(role)}
+              onCheckedChange={(c) => setRule((r) => ({ ...r, evaluatorRoles: c ? [...r.evaluatorRoles, role] : r.evaluatorRoles.filter((x) => x !== role) }))}
+              {...errProps("cfg-role-preceptor", roleErr)}
+            />
+            <Label htmlFor={`cfg-role-${role}`}>{ROLE_LABEL[role]}</Label>
+          </div>
+        ))}
+      </div>
+      <Err id="cfg-role-preceptor" message={roleErr} />
+    </FieldSet>
+  )
+}
+
+/** Feedback is required [REQ SC-14]. */
+export function FeedbackToggle({ rule, setRule }: Pick<SectionProps, "rule" | "setRule">) {
+  return <ToggleRow id="cfg-feedback" title="Feedback is required" checked={rule.feedbackRequired} onChange={(v) => setRule((r) => ({ ...r, feedbackRequired: v }))} />
+}
+
+/** Approval before it counts [REQ SC-15]. */
+export function ApprovalToggle({ rule, setRule }: Pick<SectionProps, "rule" | "setRule">) {
+  return <ToggleRow id="cfg-approval" title="Approval before it counts" checked={rule.approvalRequired} onChange={(v) => setRule((r) => ({ ...r, approvalRequired: v }))} />
+}
+
+export function SignOffSection(props: SectionProps) {
+  const { rule, setRule } = props
+  return (
     <div className="flex flex-col gap-6" data-section="signoff">
       <ConfigSubsection n={1} first title="Student" id="cfg-signoff-student">
-        <FieldSet>
-          <FieldLegend variant="label">What the student adds</FieldLegend>
-          <ul className="flex flex-col divide-y divide-border rounded-[var(--radius)] border border-border">
-            {rule.studentFields.map((f, i) => {
-              const id = `cfg-field-${i}`
-              const name = f.label.trim() || `field ${i + 1}`
-              return (
-                <li key={i} className="flex flex-col gap-1 px-3 py-1.5">
-                  <div className="flex items-center gap-3">
-                    <span className={cn("min-w-0 flex-1 truncate", TYPE.body)}>{f.label.trim() || "Untitled field"}</span>
-                    <span className={cn("w-28 shrink-0", TYPE.helper)}>{`${FIELD_TYPE_LABEL[f.type]}${f.type === "choice" && f.choices?.length ? ` (${f.choices.length})` : ""}`}</span>
-                    <span className={cn("w-20 shrink-0", TYPE.helper)}>{f.mandatory ? "Required" : "Optional"}</span>
-                    <Button type="button" variant="ghost" size="sm" aria-label={`Edit ${name}`} onClick={() => setEditing(i)}>
-                      Edit
-                    </Button>
-                    <RemoveButton id={id} label={`Remove ${name}`} onClick={() => setRule((r) => ({ ...r, studentFields: r.studentFields.filter((_, k) => k !== i) }))} />
-                  </div>
-                  <Err id={id} message={err(id)} />
-                </li>
-              )
-            })}
-            {rule.studentFields.length === 0 ? <li className={cn("px-3 py-2", TYPE.helper)}>Nothing beyond the evaluation itself.</li> : null}
-          </ul>
-          <div>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(true)}>
-              Add a field
-            </Button>
-          </div>
-          <FieldDialog open={adding} onOpenChange={setAdding} taken={rule.studentFields.map((f) => f.label)} onSave={(f) => setRule((r) => ({ ...r, studentFields: [...r.studentFields, f] }))} />
-          <FieldDialog
-            open={editing !== null}
-            onOpenChange={(o) => !o && setEditing(null)}
-            taken={rule.studentFields.map((f) => f.label)}
-            initial={editing !== null ? rule.studentFields[editing] ?? null : null}
-            onSave={(f) => setRule((r) => ({ ...r, studentFields: r.studentFields.map((x, k) => (k === editing ? f : x)) }))}
-          />
-        </FieldSet>
-        <ToggleRow id="cfg-self" title="Student rates themselves first" detail="The evaluator sees it after their own answers." checked={rule.selfEvaluation} onChange={(v) => setRule((r) => ({ ...r, selfEvaluation: v }))} />
+        <StudentFieldsField {...props} />
+        <SelfRatingToggle rule={rule} setRule={setRule} />
       </ConfigSubsection>
 
       <ConfigSubsection n={2} title="Evaluator" id="cfg-signoff-evaluator">
-        <FieldSet>
-          <FieldLegend variant="label">Who can sign off</FieldLegend>
-          <div className="flex flex-wrap gap-6">
-            {ROLES.map((role) => (
-              <div key={role} className="flex items-center gap-2">
-                <Checkbox
-                  id={`cfg-role-${role}`}
-                  checked={rule.evaluatorRoles.includes(role)}
-                  onCheckedChange={(c) => setRule((r) => ({ ...r, evaluatorRoles: c ? [...r.evaluatorRoles, role] : r.evaluatorRoles.filter((x) => x !== role) }))}
-                  {...errProps("cfg-role-preceptor", roleErr)}
-                />
-                <Label htmlFor={`cfg-role-${role}`}>{ROLE_LABEL[role]}</Label>
-              </div>
-            ))}
-          </div>
-          <Err id="cfg-role-preceptor" message={roleErr} />
-        </FieldSet>
-        <ToggleRow id="cfg-feedback" title="Feedback is required" checked={rule.feedbackRequired} onChange={(v) => setRule((r) => ({ ...r, feedbackRequired: v }))} />
+        <SignersField {...props} />
+        <FeedbackToggle rule={rule} setRule={setRule} />
       </ConfigSubsection>
 
       <ConfigSubsection n={3} title="Approval" id="cfg-signoff-approval">
-        <ToggleRow id="cfg-approval" title="Approval before it counts" detail="A reviewer approves each evaluation before it counts." checked={rule.approvalRequired} onChange={(v) => setRule((r) => ({ ...r, approvalRequired: v }))} />
+        <ApprovalToggle rule={rule} setRule={setRule} />
       </ConfigSubsection>
 
-      {rule.model ? <GroupCheckOffSection rule={rule} setRule={setRule} /> : null}
     </div>
   )
 }
@@ -849,25 +922,30 @@ export function SignOffSection({ rule, setRule, issues, showErrors }: SectionPro
  * group on the course offering page without a student submission, and what one tick records. On by default for Met or Unmet and
  * for levels; off for questions and scores, which the program can switch on and nominate the score. Shared by Configure A, B and C.
  */
-export function GroupCheckOffSection({ rule, setRule }: Pick<SectionProps, "rule" | "setRule">) {
+export function GroupCheckOffSection({ rule, setRule, bare = false }: Pick<SectionProps, "rule" | "setRule"> & { bare?: boolean }) {
   const allowed = ruleAllowsCheckOff(rule)
   const co = rule.checkOff ?? { enabled: null, levelIndex: null, score: null }
   const set = (patch: Partial<NonNullable<LabRule["checkOff"]>>) => setRule((r) => ({ ...r, checkOff: { ...(r.checkOff ?? { enabled: null, levelIndex: null, score: null }), ...patch } }))
   const levels = rule.levels.map((l, i) => ({ i, label: l.trim() || `Level ${i + 1}` }))
   const levelIndex = levels.length ? (co.levelIndex !== null && co.levelIndex < levels.length ? co.levelIndex : levels.length - 1) : null
   const score = ruleCheckOffScore(rule)
+  // Bare: the page gives the group its own heading (Evaluation settings); otherwise the Configure subsection.
+  const Wrap = React.useCallback(
+    ({ children }: { children: React.ReactNode }) =>
+      bare ? <div className="flex flex-col gap-3" data-section="checkoff">{children}</div> : <ConfigSubsection n={4} title={CHECKOFF_LABEL} id="cfg-signoff-checkoff">{children}</ConfigSubsection>,
+    [bare],
+  )
   return (
-    <ConfigSubsection n={4} title={CHECKOFF_LABEL} id="cfg-signoff-checkoff">
+    <Wrap>
       <ToggleRow
         id="cfg-checkoff"
         title="Allow group check-off"
-        detail={`${COURSE_FACULTY} can tick this off for a whole group on the course offering page, without a student submission.`}
         checked={allowed}
         onChange={(v) => set({ enabled: v })}
       />
       {allowed && rule.model === "demonstration" && levels.length ? (
         <Field className="max-w-64">
-          <FieldLabel htmlFor="cfg-checkoff-level">A tick records</FieldLabel>
+          <FieldLabel htmlFor="cfg-checkoff-level">Checked-off students get</FieldLabel>
           <Select value={String(levelIndex)} onValueChange={(v) => set({ levelIndex: Number(v) })}>
             <SelectTrigger id="cfg-checkoff-level">
               <SelectValue />
@@ -880,12 +958,11 @@ export function GroupCheckOffSection({ rule, setRule }: Pick<SectionProps, "rule
               ))}
             </SelectContent>
           </Select>
-          <FieldDescription>One tick cannot choose a level, so the program names one.</FieldDescription>
         </Field>
       ) : null}
       {allowed && rule.model === "scored" ? (
         <Field className="max-w-64">
-          <FieldLabel htmlFor="cfg-checkoff-score">A tick records</FieldLabel>
+          <FieldLabel htmlFor="cfg-checkoff-score">Checked-off students get</FieldLabel>
           <Select value={String(score)} onValueChange={(v) => set({ score: Number(v) })}>
             <SelectTrigger id="cfg-checkoff-score" className="w-24">
               <SelectValue />
@@ -898,21 +975,21 @@ export function GroupCheckOffSection({ rule, setRule }: Pick<SectionProps, "rule
               ))}
             </SelectContent>
           </Select>
-          <FieldDescription>The same score on every item.</FieldDescription>
         </Field>
       ) : null}
-      <p className={TYPE.helper} data-checkoff-line>
-        {allowed ? `${ruleTickRecords(rule)}. A check-off writes an ordinary evaluation and is counted by the same achievement rules.` : ruleCheckOffOff(rule)}
-      </p>
-      {allowed && rule.selfEvaluation ? <AmberNote region="">{`This ${skillNoun()} asks the student to rate themselves first. A check-off skips that step, so the two routes produce different records.`}</AmberNote> : null}
-      {allowed && (rule.model === "question" || rule.model === "scored") ? <AmberNote region="">A tick is a strong claim here: it records the same answer on every item. Confirm the program means that before allowing it.</AmberNote> : null}
-    </ConfigSubsection>
+    </Wrap>
   )
 }
 
 export const SECTION_BODY: Record<SectionId, (p: SectionProps) => React.ReactElement> = {
   model: (p) => <ModelSection {...p} />,
   outcomes: (p) => <OutcomesSection {...p} />,
-  rule: (p) => <RuleSection {...p} />,
+  // How many evaluations, then group check-off (one hierarchy, 2026-11-02).
+  rule: (p) => (
+    <div className="flex flex-col gap-6">
+      <RuleSection {...p} />
+      {p.rule.model ? <GroupCheckOffSection rule={p.rule} setRule={p.setRule} /> : null}
+    </div>
+  ),
   signoff: (p) => <SignOffSection {...p} />,
 }

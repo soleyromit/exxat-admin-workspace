@@ -151,7 +151,7 @@ export const FLAG_ICON = { hasEvidence: "fa-solid fa-circle-check", awaiting: "f
 export const isTickable = (f: CellFlags): boolean => !f.hasEvidence
 
 /** The quiet record-bar line while nothing is ticked, so faculty know where saving happens (D-L8d). */
-export const NOTHING_TICKED = "Tick students to record check-offs"
+export const NOTHING_TICKED = "Select students to record check-offs"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Record

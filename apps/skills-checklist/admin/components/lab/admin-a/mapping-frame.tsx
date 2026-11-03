@@ -4,6 +4,10 @@
  * Chrome shared by both course mapping variants: page header, the demo states, and the shared model (offerings, coverage, term
  * options, the N-13 count). The variant lays out the toolbar and the body.
  */
+import Link from "next/link"
+import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { useLabHref } from "@/components/lab/lab-bar/page-context"
+import { RESULT_SCREEN } from "./result-parts"
 import * as React from "react"
 import { PageFrame } from "@/components/skills/page-header"
 import { importHref } from "@/lib/lab/library"
@@ -35,6 +39,7 @@ export interface MappingModel extends AdminData {
 }
 
 export function MappingFrame({ variant, children }: { variant: string; children: (m: MappingModel) => React.ReactNode }) {
+  const to = useLabHref()
   const data = useAdminData()
   const [overlay, setOverlay] = useMappingOverlay()
   const { lists } = useLists(data.state)
@@ -74,7 +79,8 @@ export function MappingFrame({ variant, children }: { variant: string; children:
   else body = children({ ...data, state, overlay, setOverlay, lists, ...model, setDidactic })
 
   return (
-    <PageFrame title="Course mapping">
+    // The end state of groups, assigning and mapping, one click away (Romit 2026-11-02); no extra line on the page.
+    <PageFrame title="Course mapping" actions={<Button asChild variant="outline" size="sm"><Link href={to(RESULT_SCREEN)}>See the result</Link></Button>}>
       <div className="flex flex-col gap-4" data-page-type="list" data-admin-lab={`course-mapping-${variant}`}>
         {body}
       </div>

@@ -23,6 +23,10 @@ import { draftFromRow } from "./skill-sheet"
 import { plural } from "@/lib/v2/format"
 
 
+/** These dialogs also open from the skill detail panel, so they sit on the DS layer above FloatingSheetPanel (z-80),
+ *  the same layer the DS gives the panel's own menus. */
+const ABOVE_SHEET = "z-[90]"
+
 export function deleteBlockReason(r: LibraryRow): string | null {
   if (r.evidence > 0) return `Has ${plural(r.evidence, "evaluation", "evaluations")}`
   if (!r.canDelete) return "Has requests or log entries"
@@ -83,28 +87,26 @@ export function DeactivateDialog({ rows, onOpenChange, onConfirm }: { rows: Libr
   const open = !!rows && rows.length > 0
   const list = rows ?? []
   const evidence = list.reduce((n, r) => n + r.evidence, 0)
-  const courses = list.reduce((n, r) => n + r.courses, 0)
   const subject = list.length === 1 ? list[0]!.name : countSkills(list.length)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={`${ABOVE_SHEET} sm:max-w-lg`} overlayClassName={ABOVE_SHEET}>
         <DialogHeader>
           <DialogTitle>{`Why remove ${subject}?`}</DialogTitle>
-          <DialogDescription>{evidence ? `${plural(evidence, "evaluation stays", "evaluations stay")} on student records either way.` : "No evaluations are recorded against it yet."}</DialogDescription>
+          <DialogDescription>{evidence ? "Evaluations are kept." : "No evaluations yet."}</DialogDescription>
         </DialogHeader>
         <RadioGroup value={intent} onValueChange={(v) => setIntent(v as "mistake" | "standard")} aria-label="Reason" className="flex flex-col gap-3">
           <div className="flex items-start gap-3 rounded-md border border-border p-3">
             <RadioGroupItem id="intent-mistake" value="mistake" className="mt-0.5" />
             <Label htmlFor="intent-mistake" className="flex flex-col items-start gap-1 font-normal">
               <span className="font-medium text-foreground">It was added by mistake</span>
-              <span className="text-sm text-muted-foreground">{`Deactivate. It leaves mapping${courses ? ` on ${plural(courses, "course", "courses")}` : ""}, student selection and reports. You can reactivate it.`}</span>
+              <span className="text-sm text-muted-foreground">You can reactivate it.</span>
             </Label>
           </div>
           <div className="flex items-start gap-3 rounded-md border border-border p-3">
             <RadioGroupItem id="intent-standard" value="standard" className="mt-0.5" />
             <Label htmlFor="intent-standard" className="flex flex-col items-start gap-1 font-normal">
               <span className="font-medium text-foreground">A new standard replaces it</span>
-              <span className="text-sm text-muted-foreground">Keep it for current cohorts and start a new list for the next one.</span>
             </Label>
           </div>
         </RadioGroup>
@@ -128,10 +130,10 @@ export function DeactivateDialog({ rows, onOpenChange, onConfirm }: { rows: Libr
 export function DeleteDialog({ row, onOpenChange, onConfirm }: { row: LibraryRow | null; onOpenChange: (o: boolean) => void; onConfirm: (r: LibraryRow) => void }) {
   return (
     <AlertDialog open={!!row} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className={ABOVE_SHEET} overlayClassName={ABOVE_SHEET}>
         <AlertDialogHeader>
           <AlertDialogTitle>{`Delete ${row?.name ?? ""}?`}</AlertDialogTitle>
-          <AlertDialogDescription>{row?.unmapFrom.length ? `It has no evidence. It will be unmapped from ${row.unmapFrom.join(", ")}. Deleting cannot be undone.` : "It has no evidence and no course. Deleting cannot be undone."}</AlertDialogDescription>
+          <AlertDialogDescription>{row?.unmapFrom.length ? `Unmaps it from ${row.unmapFrom.join(", ")}. This cannot be undone.` : "This cannot be undone."}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel variant="outline" size="sm">Keep it</AlertDialogCancel>
@@ -148,10 +150,10 @@ export function CopySettingsDialog({ targets, sources, onOpenChange, onConfirm }
   const list = targets ?? []
   return (
     <Dialog open={list.length > 0} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={`${ABOVE_SHEET} sm:max-w-lg`} overlayClassName={ABOVE_SHEET}>
         <DialogHeader>
           <DialogTitle>{`Copy settings to ${countSkills(list.length)}`}</DialogTitle>
-          <DialogDescription>The model, achievement rule and evaluator roles are copied as a draft. Each stays not configured until you check and save it.</DialogDescription>
+          <DialogDescription>Copied as a draft, not configured.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">
           <Label htmlFor="copy-source">Copy from</Label>
@@ -159,7 +161,7 @@ export function CopySettingsDialog({ targets, sources, onOpenChange, onConfirm }
             <SelectTrigger id="copy-source" className="w-full">
               <SelectValue placeholder={`Choose a configured ${skillNoun()}`} />
             </SelectTrigger>
-            <SelectContent className="max-h-72">
+            <SelectContent className={`${ABOVE_SHEET} max-h-72`}>
               {sources.map((s) => (
                 <SelectItem key={s.id} value={s.id}>{`${s.name}, ${s.modelLabel}`}</SelectItem>
               ))}

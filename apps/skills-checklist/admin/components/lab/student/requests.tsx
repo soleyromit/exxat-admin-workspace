@@ -20,16 +20,6 @@ import { EvaluatorNameBadge } from "@/components/lab/status-pill"
 /** Link state and revision in one quiet line ("Link open since Oct 26", "Revision 2"). */
 export const linkLine = (row: RequestRow) => [row.link, row.revision > 0 ? `Revision ${row.revision}` : ""].filter(Boolean).join(". ")
 
-/** Said once per page [brief section 5.4: handoff cue]. */
-export function NoLoginNote() {
-  return (
-    <p className="flex items-center gap-2 text-sm text-muted-foreground" data-no-login-note>
-      <i className="fa-light fa-envelope-open-text" aria-hidden="true" />
-      Evaluators sign through a link, no account needed.
-    </p>
-  )
-}
-
 export function EvaluatorHeading({ g }: { g: EvaluatorGroup }) {
   return (
     <div className="flex min-w-0 items-center gap-3">

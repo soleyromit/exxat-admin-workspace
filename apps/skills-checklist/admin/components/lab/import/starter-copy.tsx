@@ -19,7 +19,6 @@ import type { Skill } from "@/lib/v2/types"
 export function StartingPointPreview({ point }: { point: StartingPoint }) {
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">{point.summary}</p>
       {sectionsOf(point).map((s) => {
         const list = point.skills.filter((k) => k.section === s)
         return (

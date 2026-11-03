@@ -15,7 +15,10 @@ import { labHref, navHref, type LinkContext } from "./links"
 
 export const SKILLS_PANEL_ID = "lab-skills"
 
-export type SkillsPanelKey = "library" | "groups" | "categories" | "mapping"
+/** The end state of setup, reached from the checklist, Assign and Course mapping (Proposed 2026-11-02). */
+export const SETUP_RESULT_SCREEN = "admin/setup-result"
+
+export type SkillsPanelKey = "library" | "groups" | "categories" | "settings" | "mapping"
 
 export interface SkillsPanelItem {
   key: SkillsPanelKey
@@ -26,10 +29,15 @@ export interface SkillsPanelItem {
   icon: string
 }
 
+/**
+ * Panel rows in Sankalp's order of the admin's work [CALL 11-02] (Proposed 2026-11-02, contract V2-06). Evaluation settings
+ * (program level, times needed included) sits after Categories and tags. No checklist page (Romit 2026-11-02).
+ */
 export const SKILLS_PANEL: SkillsPanelItem[] = [
   { key: "library", label: () => "Library", screen: "admin/skills-library", icon: "fa-book" },
-  { key: "groups", label: () => `Groups of ${skillNounPlural()}`, screen: "admin/lists-cohorts", icon: "fa-layer-group" },
   { key: "categories", label: () => "Categories and tags", screen: "admin/categories-tags", icon: "fa-tags" },
+  { key: "settings", label: () => "Evaluation settings", screen: "admin/evaluation-settings", icon: "fa-sliders" },
+  { key: "groups", label: () => `Groups of ${skillNounPlural()}`, screen: "admin/lists-cohorts", icon: "fa-layer-group" },
   { key: "mapping", label: () => "Course mapping", screen: "admin/course-mapping", icon: "fa-sitemap" },
 ]
 
@@ -46,6 +54,8 @@ export function settingsSectionOf(params: Params | null | undefined): SettingsSe
 /** The Skills panel item the page is on, if any. Settings is never one (D-L21). */
 export function skillsPanelItemFor(screen: string | undefined, _params?: Params | null): SkillsPanelItem | undefined {
   if (!screen) return undefined
+  // The setup summary is course mapping's end state: it sits under Course mapping (crumb "Skills > Setup summary").
+  if (screen === SETUP_RESULT_SCREEN) return SKILLS_PANEL.find((i) => i.key === "mapping")
   return SKILLS_PANEL.find((i) => i.screen === screen)
 }
 

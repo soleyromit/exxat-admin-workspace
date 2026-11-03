@@ -333,6 +333,8 @@ export interface EvaluatorOption {
   eligible: boolean
   reason: string | null
   initials: string
+  /** A preceptor signs through a link with no account [REQ EV-01]; clinical faculty and lab instructors sign in to Prism. */
+  signsByLink?: boolean
 }
 
 const facilityOf = (location: string) => location.split(",")[0].trim()
@@ -359,7 +361,7 @@ export function evaluatorsFor(s: V2State, skillIds: string[], placementLocation:
     const choices = skillIds.length ? evaluatorChoices(s, skillIds, setting) : evaluatorChoices(s, [], setting).map((c) => ({ ...c, eligible: true, reasons: [] }))
     return choices
       .filter((c) => c.person.kind !== "preceptor")
-      .map((c) => ({ id: c.person.id, name: c.person.name, role: c.person.title, here: c.person.kind === "lab-instructor", eligible: c.eligible, reason: c.reasons[0] ?? null, initials: initialsOf(c.person.name) }))
+      .map((c) => ({ id: c.person.id, name: c.person.name, role: c.person.title, here: c.person.kind === "lab-instructor", eligible: c.eligible, reason: c.reasons[0] ?? null, initials: initialsOf(c.person.name), signsByLink: false }))
       .sort((a, b) => Number(b.here) - Number(a.here) || Number(b.eligible) - Number(a.eligible) || a.name.localeCompare(b.name))
   }
   // Match by record: the placement's site and each preceptor's home site (Person.homeSiteId), same facility. Title text is
@@ -375,7 +377,7 @@ export function evaluatorsFor(s: V2State, skillIds: string[], placementLocation:
     if (p.kind === "lab-instructor") continue
     const here = !!facility && p.kind === "preceptor" && (placeSite ? homeFacility(p) === placeSite.facility : p.title.includes(facility))
     if (p.kind === "preceptor" && facility && !here) continue
-    out.push({ id: p.id, name: p.name, role: p.title, here, eligible: c.eligible, reason: c.reasons[0] ?? null, initials: initialsOf(p.name) })
+    out.push({ id: p.id, name: p.name, role: p.title, here, eligible: c.eligible, reason: c.reasons[0] ?? null, initials: initialsOf(p.name), signsByLink: p.kind === "preceptor" })
   }
   return out.sort((a, b) => Number(b.here) - Number(a.here) || Number(b.eligible) - Number(a.eligible) || a.name.localeCompare(b.name))
 }
@@ -427,18 +429,32 @@ export function needsApproval(s: V2State, skillIds: string[]): boolean {
   return skillIds.some((id) => skillById(s, id)?.config?.approvalRequired === true)
 }
 
-/** Compose screen: how an evaluator signs [REQ EV-01: no login]. */
-export const NO_ACCOUNT_LINE = "Evaluators sign through a link, no account needed."
+/**
+ * Compose screen: how this signer signs, only when they sign through a link [REQ EV-01: preceptors have no login]. A preceptor, or a
+ * new name the student types (no Prism account exists for them), gets the line; clinical faculty and lab instructors sign in to
+ * Prism, so nothing is said (Romit 2026-11-02: the blanket "Evaluators sign through a link" was wrong for them).
+ */
+export function noAccountLine(signsByLink: boolean, name: string): string {
+  if (!signsByLink) return ""
+  // Credentials after the first comma ("J. Delgado, RN") read awkwardly mid-sentence; this line uses the name alone.
+  const who = name.split(",")[0]!.trim() || "Your evaluator"
+  return `${who.charAt(0).toUpperCase()}${who.slice(1)} signs through a link, no account needed.`
+}
 
 /**
  * The single "what happens next" sentence after Send [REQ ST-13, EV-07]. Said once, on the result. When it counts is not here: each
  * skill's own rule says it beside the skill (countsWhen), so a skill that needs 3 Met evaluations is never told "it counts when
  * they answer met".
  */
-export function nextSentence(opts: { method: SignoffMethod; who: string; approval: boolean; offline: boolean; newName: boolean }): string {
+/**
+ * `signsByLink`: a preceptor or a student-typed new name (no Prism account); only then does the line say "no account needed"
+ * (Romit 2026-11-02). Optional so older callers read as a Prism signer.
+ */
+export function nextSentence(opts: { method: SignoffMethod; who: string; approval: boolean; offline: boolean; newName: boolean; signsByLink?: boolean }): string {
   if (opts.method === "photo") return `The photo goes to your program for review. ${opts.offline ? "It uploads when you reconnect. " : ""}It counts once a reviewer enters the outcome.`
   if (opts.offline && !methodById(opts.method).offline) return `Kept on this device. It goes to ${opts.who} when you reconnect.`
-  const lead = opts.method === "qr" ? `${opts.who} scans the code and signs, no account needed.` : opts.method === "handover" ? `${opts.who} signs on this device, no account needed.` : `${opts.who} gets one email with a link to this request only.`
+  const noAccount = opts.signsByLink ? ", no account needed" : ""
+  const lead = opts.method === "qr" ? `${opts.who} scans the code and signs${noAccount}.` : opts.method === "handover" ? `${opts.who} signs on this device${noAccount}.` : `${opts.who} gets one email with a link to this request only.`
   return `${lead}${opts.newName ? " Your program records their name first." : ""}`
 }
 

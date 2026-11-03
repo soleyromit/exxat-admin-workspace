@@ -8,6 +8,7 @@
  *  - manage: the standalone Lists screen (manage flow). Title "Lists", one primary "New list".
  * No "Sample data" chip in either: lab labels belong to the lab bar, the page carries product chrome only (Romit 2026-10-27).
  */
+import { RESULT_SCREEN } from "./result-parts"
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -114,7 +115,7 @@ function Shell({ variant, mode, onNew, banner, footerContext, children }: { vari
         <FormPage
           title={assignTitle}
           banner={banner ?? undefined}
-          footer={<StickyFooter context={footerContext} primary={{ label: "Map to courses", href: to("admin/course-mapping") }} />}
+          footer={<StickyFooter context={footerContext} secondary={{ label: "See the result", href: to(RESULT_SCREEN) }} primary={{ label: "Map to courses", href: to("admin/course-mapping", { by: "skill" }) }} />}
         >
           {children}
         </FormPage>

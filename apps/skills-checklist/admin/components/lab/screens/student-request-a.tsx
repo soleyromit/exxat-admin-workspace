@@ -19,7 +19,7 @@ import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart,
 import { SectionTitle } from "@/components/lab/student/parts"
 import { FormSkeleton } from "./student-log-a"
 import { aNoun, countSkills, skillNounPlural } from "@/lib/lab/terms"
-import { NO_ACCOUNT_LINE, methodById, needsApproval, settingWords, student2Href } from "@/lib/lab/student2"
+import { noAccountLine, methodById, needsApproval, settingWords, student2Href } from "@/lib/lab/student2"
 
 export function StudentRequestA() {
   return (
@@ -81,9 +81,9 @@ function RequestForm({ ctx }: { ctx: Student2Ctx }) {
               <dt className="text-muted-foreground">Counts</dt>
               <dd className="text-foreground">{d.method === "photo" ? "After review" : approval ? "After approval" : "When they answer met"}</dd>
             </dl>
-            {/* One paragraph: how the evaluator signs (no account, REQ EV-01), then what they see. Variant B says "no account
-                needed" on its "They are not here" choice, so it does not repeat it here. */}
-            <p className="text-sm text-muted-foreground" data-scope-sentence>{d.method === "photo" ? scopeSentence(d) : `${NO_ACCOUNT_LINE} ${scopeSentence(d)}`}</p>
+            {/* One paragraph: how this signer signs, only when it is through a link (a preceptor or a new name: no account, REQ
+                EV-01; faculty and lab instructors sign in to Prism), then what they see. */}
+            <p className="text-sm text-muted-foreground" data-scope-sentence>{[d.method === "photo" || !d.who ? "" : noAccountLine(d.whoSignsByLink, d.whoName), scopeSentence(d)].filter(Boolean).join(" ")}</p>
             <SavedForLater d={d} />
             <SendBlockedNote d={d} />
             {/* Save for later keeps it in My requests, Drafts; nothing counts until it is sent (LEDGER D-L10). */}

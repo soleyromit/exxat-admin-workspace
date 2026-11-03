@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/compo
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
-import { afterSubmitLine, carriedNotes, HOW_MANY_LABEL, ruleSentence, settingNote, type Impact, type LabRule, type RecordState } from "@/lib/lab/configure"
+import { carriedNotes, HOW_MANY_LABEL, ruleSentence, settingNote, type Impact, type LabRule, type RecordState } from "@/lib/lab/configure"
 import { StateBadge as RecordStateBadge } from "@/components/lab/status-pill"
 import type { RecordStateKey } from "@/lib/v2/labels"
 import { fmt } from "@/lib/v2/format"
@@ -34,51 +34,38 @@ export function fullRuleText(rule: LabRule): string {
   return [ruleSentence(rule), settingNote(rule), ...carriedNotes(rule)].filter(Boolean).join(" ")
 }
 
+/**
+ * Static samples of what each person sees, shown only on Check and save (audit fix 2026-11-02): a muted framed surface with plain
+ * text, no option circles and no empty input boxes, so nothing reads as a control. Data only, no explanation lines (D-L34).
+ */
+const SAMPLE = "flex cursor-default select-none flex-col gap-2 rounded-md bg-muted p-3 text-sm text-foreground"
+
 export function StudentPreview({ skillName, rule }: { skillName: string; rule: LabRule }) {
   const fields = rule.studentFields.filter((f) => f.label.trim())
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="student" data-artifact-preview>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-foreground">{skillName}</p>
-        {rule.model ? <StateBadge state="no-evidence" /> : null}
-      </div>
-      <p className="text-sm text-foreground">{rule.model ? ruleSentence(rule, "student") : "Not open for sign-off yet. It opens once the program saves how it's judged."}</p>
-      {settingNote(rule) ? <p className="text-sm text-muted-foreground">{settingNote(rule)}</p> : null}
-      {fields.length || rule.selfEvaluation ? (
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium text-foreground">When you send it</p>
-          <ul className="flex flex-col gap-0.5 text-sm text-muted-foreground">
-            {fields.map((f, i) => (
-              <li key={i}>{`${f.label.trim()}${f.mandatory ? " (required)" : ""}`}</li>
-            ))}
-            {rule.selfEvaluation ? <li>Your own rating first</li> : null}
-          </ul>
-        </div>
-      ) : null}
+    <div className={SAMPLE} data-preview="student" data-artifact-preview>
+      <p className="font-semibold">{skillName}</p>
+      {rule.model ? <p>{ruleSentence(rule, "student")}</p> : null}
+      {fields.length ? <p className="text-muted-foreground">{fields.map((f) => `${f.label.trim()}${f.mandatory ? " (required)" : ""}`).join(", ")}</p> : null}
+      {rule.selfEvaluation ? <p className="text-muted-foreground">Own rating first</p> : null}
     </div>
   )
 }
 
-/**
- * The evaluator sees what the program configured and nothing about how achievement is judged [REQ EV-03].
- * A picture of the form, not a disabled copy of it (D-X30): option glyphs and an empty feedback box, so the preview never
- * reads as dead controls and nothing in it can take focus.
- */
+/** The evaluator sees what the program configured and nothing about how achievement is judged [REQ EV-03]: a plain list. */
 export function EvaluatorPreview({ skillName, rule }: { skillName: string; rule: LabRule }) {
-  const option = (label: string, key: string) => (
-    <li key={key} className="flex items-center gap-2 text-sm text-foreground">
-      <i className="fa-light fa-circle text-xs text-muted-foreground" aria-hidden="true" />
-      {label}
-    </li>
-  )
+  const options =
+    rule.model === "binary" ? rule.outcomeLabels.map((x) => x.trim()).filter(Boolean) : rule.model === "demonstration" ? rule.levels.map((x, i) => x.trim() || `Level ${i + 1}`) : []
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-border p-3" data-preview="evaluator" data-artifact-preview role="group" aria-label="Evaluator form preview, read only">
-      <p className="text-sm font-semibold text-foreground">{skillName}</p>
-      {rule.model === "binary" ? (
-        <ul className="flex flex-wrap gap-4" aria-label="Outcome">{[0, 1].map((i) => option(rule.outcomeLabels[i] || "Outcome", `o${i}`))}</ul>
+    <div className={SAMPLE} data-preview="evaluator" data-artifact-preview role="group" aria-label="Evaluator form sample, read only">
+      <p className="font-semibold">{skillName}</p>
+      {options.length ? (
+        <ul className="flex flex-col gap-0.5" aria-label={rule.model === "demonstration" ? "Levels" : "Outcomes"}>
+          {options.map((o, i) => <li key={i}>{o}</li>)}
+        </ul>
       ) : null}
       {rule.model === "question" || rule.model === "scored" ? (
-        <ol className="flex flex-col gap-1 text-sm text-foreground">
+        <ol className="flex flex-col gap-0.5">
           {rule.questions.slice(0, 4).map((q, i) => (
             <li key={i} className="flex justify-between gap-3">
               <span className="min-w-0 truncate">{q.trim() || `Question ${i + 1}`}</span>
@@ -88,15 +75,7 @@ export function EvaluatorPreview({ skillName, rule }: { skillName: string; rule:
           {rule.questions.length > 4 ? <li className="text-muted-foreground">{`and ${rule.questions.length - 4} more questions`}</li> : null}
         </ol>
       ) : null}
-      {rule.model === "demonstration" ? (
-        <ul className="flex flex-col gap-1.5" aria-label="Level">{rule.levels.map((l, i) => option(l.trim() || `Level ${i + 1}`, `l${i}`))}</ul>
-      ) : null}
-      {!rule.model ? <p className="text-sm text-muted-foreground">The form appears once you choose how it&apos;s judged.</p> : null}
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-foreground">{`Feedback${rule.feedbackRequired ? " (required)" : " (optional)"}`}</p>
-        <div className="h-14 rounded-md border border-border" aria-hidden="true" />
-      </div>
-      <p className="text-sm text-muted-foreground">{afterSubmitLine(rule)}</p>
+      <p className="text-muted-foreground">{`Feedback ${rule.feedbackRequired ? "required" : "optional"}`}</p>
     </div>
   )
 }

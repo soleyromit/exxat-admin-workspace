@@ -86,7 +86,7 @@ for (const v of ["B", "C"]) {
     await page.waitForTimeout(500)
     await page.locator("#cfg-qsub-from").fill("12")
     await page.locator("#cfg-qsub-to").fill("40")
-    await page.getByRole("button", { name: "Tick range" }).click()
+    await page.getByRole("button", { name: "Select range" }).click()
     await page.waitForTimeout(300)
     const count = await page.locator("[data-subset-tools]").innerText()
     check(`SC-06 ${v}: range 12 to 40 ticks 29`, /29 of 60 ticked/.test(count), count.replace(/\s+/g, " "))

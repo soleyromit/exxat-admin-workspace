@@ -386,7 +386,7 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
       {
         key: "name",
         label: capitalize(skillNoun()),
-        width: 250,
+        width: termName ? 250 : 150,
         sortable: true,
         cell: (r) => (
           <span className="flex min-w-0 flex-col py-0.5">
@@ -397,8 +397,9 @@ export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect,
       },
       {
         key: "carriers",
-        label: `${termName} courses`,
-        width: 168,
+        // No term: the count is across every term's offerings (variant B, CALL 11-02).
+        label: termName ? `${termName} courses` : "Offerings",
+        width: termName ? 168 : 130,
         sortable: true,
         cell: (r) =>
           !r.configured ? (

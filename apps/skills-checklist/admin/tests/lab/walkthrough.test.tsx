@@ -39,15 +39,19 @@ import { FULFILLMENT_ENTRY, FULFILLMENT_WALKTHROUGH_ID, WALKTHROUGH_ENTRY, WALKT
 // Agreed step names (2026-10-27): one string per step for the lab bar step title, the H1, the present breadcrumb and the first
 // heading. Order: Sankalp's Thursday list (docs/knowledge/design/thursday-flows-sankalp.md), A1 to A6 and S1 to S2.
 const AGREED = [
-  ["library", "Skills"], // A1, one at a time (Add a skill) and Add several from here
-  ["add", "Add a skill"], // A1
-  ["bulk", "Bulk upload"], // A1, bulk (Import)
-  ["categories", "Categories and tags"], // A2
-  ["configure", "Configure the skill"], // A3
-  ["publish", "Check and save"], // A3, through the receipt
-  ["lists", "Groups of skills"], // A4, optional
-  ["assign", "Assign skills to student groups"], // A5
-  ["map", "Course mapping"], // A6
+  // Proposed 2026-11-02: Sankalp's six steps [CALL 11-02], from the library; no checklist page (Romit, same day).
+  ["library", "Skills"], // 1, one at a time (Add a skill) and Add several from here
+  ["add", "Add a skill"], // 1
+  ["paste", "Paste several"], // 1
+  ["bulk", "Bulk upload"], // 1, bulk (Import), later
+  ["starter", "Starting points"], // 1, copy from a starter library [CALL 11-02], later (SL-01 conflict, D-X5)
+  ["categories", "Categories and tags"], // 2
+  ["settings", "Evaluation settings"], // 3, program level, times needed on the same page
+  ["lists", "Groups of skills"], // 4, optional
+  ["assign", "Assign skills to student groups"], // 5
+  ["map-skill", "Course mapping by skill"], // 6, by skill first (Sarah: the more useful view) [CALL 11-02]
+  ["map", "Course mapping"], // 6, by course
+  ["result", "Setup summary"], // the end state
 ] as const
 // S1 central and per course, then S2 through Send for evaluation C (course first); the confirmation follows Send on the last step.
 const AGREED_STUDENT = [
@@ -84,7 +88,7 @@ describe("walkthrough definition", () => {
     expect(flow().sets.map((s) => s.id)).toEqual(["1"])
     expect(mainSteps(ful()).map((s) => [s.id, s.label])).toEqual(AGREED_STUDENT.map(([id, l]) => [id, l]))
     // Groups of skills is the one optional step (Sankalp: "non mandatory").
-    expect(flow().steps.filter((s) => s.tag === "Optional").map((s) => s.id)).toEqual(["lists"])
+    expect(flow().steps.filter((s) => s.tag === "Optional").map((s) => s.id)).toEqual(["lists", "configure"])
     expect(ful().steps.filter((s) => s.tag === "Optional")).toEqual([])
   })
 
@@ -93,7 +97,8 @@ describe("walkthrough definition", () => {
       for (const st of findFlow(id)!.steps) {
         const { persona, slug } = splitScreen(st.screen)
         const r = resolveStep(id, st.id, "1")!
-        const want = st.screen === "student/request-signoff" ? "C" : findScreen(persona, slug)!.recommended
+        // Send C (course first), and the steps that show a second way in (Paste several is Add a skill C, by skill is mapping B).
+        const want = st.screen === "student/request-signoff" || st.id === "paste" || st.id === "map-skill" ? st.variants["1"]! : findScreen(persona, slug)!.recommended
         expect(r.variant.id, st.id).toBe(want)
         expect(r.planned, st.id).toBe(false)
       }
@@ -105,11 +110,11 @@ describe("walkthrough definition", () => {
     for (const s of ["skills", "self", "send"]) expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, s, "1")!.params).toEqual({ course: "crs-nurs350", step: s })
   })
 
-  it("opens the assign step in assign mode, configure on a skill not configured yet, and Check and save on the check step", () => {
+  it("opens the assign step in assign mode; Change one skill is the one optional side branch", () => {
     expect(resolveStep(WALKTHROUGH_ID, "assign", "1")!.params).toEqual({ view: "assign" })
     expect(resolveStep(WALKTHROUGH_ID, "configure", "1")!.params).toEqual({ skill: "sk-pressure-injury" })
-    // Check and save needs a rule to compare: a configured skill (vital signs) with a sample change, before and after.
-    expect(resolveStep(WALKTHROUGH_ID, "publish", "1")!.params).toEqual({ skill: "sk-vitals", step: "check", change: "sample" })
+    expect(flow().steps.filter((s) => s.side).map((s) => [s.id, s.label, s.tag])).toEqual([["configure", "Change one skill", "Optional"]])
+    expect(resolveStep(WALKTHROUGH_ID, "map-skill", "1")!.params).toEqual({ by: "skill" })
   })
 
   it("has one entry URL each that lands on the first step in present mode, both listed on the present index", () => {
@@ -150,10 +155,8 @@ describe("the step a page is really on follows the screen's own params (effectiv
     expect(eff(flow(), "lists", "")).toBe("lists")
   })
 
-  it("keeps the route's step when no sibling matches (configure on a skill just added; Check and save on it)", () => {
+  it("keeps the route's step when no sibling matches (Change one skill on a skill just added)", () => {
     expect(eff(flow(), "configure", "skill=sk-new-1")).toBe("configure")
-    expect(eff(flow(), "publish", "skill=sk-new-1&step=check&change=sample")).toBe("publish")
-    expect(eff(flow(), "publish", "skill=sk-vitals&step=check&change=sample")).toBe("publish")
   })
 
   it("the presenter reads the effective step: Step 4 of 5 on Evaluate yourself, Previous to Choose skills", () => {
@@ -180,21 +183,22 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
     expect([l.flowId, l.stepId, l.q.get("skill"), l.q.get("present"), l.q.get("set")]).toEqual([WALKTHROUGH_ID, "configure", "sk-new-1", "1", "1"])
   })
 
-  it("Map to courses (assign footer) opens the map step", () => {
-    const l = landing(labHref("admin/course-mapping", {}, ctxFor("assign", "set=1&present=1&skill=sk-pressure-injury&view=assign")))
-    expect([l.flowId, l.stepId, l.q.get("present")]).toEqual([WALKTHROUGH_ID, "map", "1"])
+  it("Map to courses (assign footer) opens the next step, mapping by skill; a plain link still opens the map step", () => {
+    const l = landing(labHref("admin/course-mapping", { by: "skill" }, ctxFor("assign", "set=1&present=1&skill=sk-pressure-injury&view=assign")))
+    expect([l.flowId, l.stepId, l.q.get("present")]).toEqual([WALKTHROUGH_ID, "map-skill", "1"])
+    expect(landing(labHref("admin/course-mapping", {}, ctxFor("assign", "set=1&present=1&view=assign"))).stepId).toBe("map")
     expect(l.q.get("view")).toBeNull()
   })
 
   it("the receipt's links stay inside the walkthrough (Done returns to Skills, Map to courses to the map step)", () => {
-    const ctx = ctxFor("publish", "set=1&present=1&skill=sk-pressure-injury")
+    const ctx = ctxFor("configure", "set=1&present=1&skill=sk-pressure-injury")
     expect(landing(rewriteLabUrl(mappingHref("sk-pressure-injury"), ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "map" })
     expect(landing(labHref("admin/skills-library", { skill: "sk-pressure-injury" }, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "library" })
     // A plain link to the lists screen lands on Groups of skills; one with view=assign on the assign step.
     expect(landing(labHref("admin/lists-cohorts", {}, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "lists" })
     expect(landing(labHref("admin/lists-cohorts", { view: "assign" }, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "assign" })
-    // A deep link to the check step on the Check and save skill lands on Check and save (the most specific step wins).
-    expect(landing(labHref("admin/configure-skill", { skill: "sk-vitals", step: "check", change: "sample" }, ctxFor("configure")))).toMatchObject({ stepId: "publish" })
+    // A link to one skill's page lands on the side branch.
+    expect(landing(labHref("admin/configure-skill", { skill: "sk-vitals" }, ctxFor("settings")))).toMatchObject({ stepId: "configure" })
   })
 
   it("Import's Open the library and the library's Start a new list stay inside the walkthrough", () => {
@@ -244,14 +248,10 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
     }
   })
 
-  it("does not carry the skill back to the library and add steps (it would open a skill panel there)", () => {
-    const w = walkthroughPosition(WALKTHROUGH_ID, "configure", new URLSearchParams("set=1&present=1&skill=sk-pressure-injury"))!
-    expect(landing(w.prev!.href).q.get("skill")).toBeNull()
-    // A step's own params win: Check and save opens on its configured skill, Groups of skills onward carry the skill in hand.
-    expect([...landing(w.next!.href).q.entries()]).toEqual(expect.arrayContaining([["skill", "sk-vitals"], ["step", "check"], ["change", "sample"]]))
-    const after = walkthroughPosition(WALKTHROUGH_ID, "publish", new URLSearchParams("set=1&present=1&skill=sk-vitals&step=check&change=sample"))!
-    expect(landing(after.next!.href).q.get("skill")).toBe("sk-vitals")
-    expect(landing(after.next!.href).q.get("step")).toBeNull()
+  it("one skill's own pages sit off the main path: no step count there", () => {
+    expect(walkthroughPosition(WALKTHROUGH_ID, "configure", new URLSearchParams("set=1&present=1&skill=sk-pressure-injury"))).toBeUndefined()
+    const w = walkthroughPosition(WALKTHROUGH_ID, "settings", new URLSearchParams("set=1&present=1"))!
+    expect([w.index, w.total, landing(w.prev!.href).stepId, landing(w.next!.href).stepId]).toEqual([7, 12, "categories", "lists"])
   })
 })
 
@@ -293,10 +293,10 @@ describe("presenter control", () => {
   }
 
   it("shows step n of N, previous, next and exit, and nothing a client should not see (no Sample data chip either)", () => {
-    const { container } = renderAt("configure")
-    expect(screen.getByText("Step 5 of 9")).toBeInTheDocument()
+    const { container } = renderAt("settings")
+    expect(screen.getByText("Step 7 of 12")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Previous: Categories and tags" })).toHaveAttribute("href", "/lab/flow/setup-walkthrough/categories?set=1&present=1")
-    expect(screen.getByRole("link", { name: "Next: Check and save" }).getAttribute("href")).toMatch(/^\/lab\/flow\/setup-walkthrough\/publish\?/)
+    expect(screen.getByRole("link", { name: "Next: Groups of skills" }).getAttribute("href")).toMatch(/^\/lab\/flow\/setup-walkthrough\/lists\?/)
     expect(screen.getByRole("link", { name: "Exit" })).toHaveAttribute("href", WALKTHROUGH_EXIT)
     const text = `${container.textContent ?? ""} ${[...container.querySelectorAll("[aria-label]")].map((e) => e.getAttribute("aria-label")).join(" ")}`
     for (const w of BANNED) expect(text, w).not.toContain(w)
@@ -324,7 +324,7 @@ describe("presenter control", () => {
 
   it("marks Groups of skills optional with a Skip that goes to the assign step", () => {
     renderAt("lists")
-    expect(screen.getByText("Step 7 of 9, optional")).toBeInTheDocument()
+    expect(screen.getByText("Step 8 of 12, optional")).toBeInTheDocument()
     const skip = screen.getByRole("link", { name: "Skip to Assign skills to student groups" })
     expect(skip).toHaveTextContent("Skip")
     expect(skip.getAttribute("href")).toMatch(/^\/lab\/flow\/setup-walkthrough\/assign\?/)
@@ -333,7 +333,7 @@ describe("presenter control", () => {
   it("disables previous on the first step and finishes on the last", () => {
     renderAt("library")
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled()
-    renderAt("map")
+    renderAt("result")
     expect(screen.getByRole("link", { name: "Finish the walkthrough" })).toHaveAttribute("href", WALKTHROUGH_EXIT)
   })
 
@@ -357,7 +357,7 @@ describe("presenter control", () => {
 
 describe("no lab variant is deleted or hidden", () => {
   it("still registers 38 screens and at least 92 variants (2026-10-27: Categories and tags A and B added, D-L21; the evaluator directory's A and B live on as Settings A and B, section Evaluators, D-L24; 2026-10-28: Group check-off A and B added; 2026-10-30: director reports A and B live on as the Readiness tab of director Reports A and B, D-L8c)", () => {
-    expect(SCREENS.length).toBe(38)
+    expect(SCREENS.length).toBe(40) // 2026-11-02: Evaluation settings and Setup summary added (Proposed); 2026-11-03: the placement sketch removed (Romit)
     expect(SCREENS.reduce((n, s) => n + s.variants.length, 0)).toBeGreaterThanOrEqual(92)
   })
 

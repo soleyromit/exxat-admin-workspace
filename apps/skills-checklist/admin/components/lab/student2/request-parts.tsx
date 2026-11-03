@@ -169,6 +169,8 @@ export function useRequestDraft(ctx: Student2Ctx) {
   const whoOption = who?.kind === "person" ? options.find((o) => o.id === who.id) : undefined
   const whoName = whoOption?.name ?? (who?.kind === "new" ? fresh.name.trim() || "your evaluator" : "your evaluator")
   const whoRole = whoOption?.role ?? (who?.kind === "new" ? (setting === "clinical" ? "Not yet recorded" : "Lab instructor, not yet recorded") : "")
+  // Only a preceptor, or a new name with no Prism account, signs through a link (Romit 2026-11-02).
+  const whoSignsByLink = who?.kind === "new" ? true : !!whoOption?.signsByLink
 
   const inputFor = (extra: { course?: string | null; step?: string | null } = {}): LoggedInput | null => {
     if (!chosen) return null
@@ -241,7 +243,7 @@ export function useRequestDraft(ctx: Student2Ctx) {
         return sendNew(n.state, input, studentId, n.submission)
       })
     }
-    setResult({ id, method, who: whoName, skillIds: skills, queued, lines, counts, submission, sentence: nextSentence({ method, who: whoName, approval: needsApproval(s, skills), offline, newName: who?.kind === "new" }) })
+    setResult({ id, method, who: whoName, skillIds: skills, queued, lines, counts, submission, sentence: nextSentence({ method, who: whoName, approval: needsApproval(s, skills), offline, newName: who?.kind === "new", signsByLink: whoSignsByLink }) })
     return true
   }
   const toggle = (id: string) => setSkills((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]))
@@ -254,7 +256,7 @@ export function useRequestDraft(ctx: Student2Ctx) {
     setPhoto(null)
     setNote("")
   }
-  return { s, studentId, offline, picks, where, chosen, whereVal, setWhere, location, setLocation, details, setDetails, detailErrs, fields, blocked, note, setNote, skills, setSkills, toggle, options, who, setWho, fresh, setFresh, freshErrors, method, setMethod, photo, setPhoto, tried, errors, issues, valid, send, result, reset, whoName, ratings, setRatings, answers, setAnswer, selfIds, selfIssues, saveForLater, saveError, savedAt, draftId }
+  return { s, studentId, offline, picks, where, chosen, whereVal, setWhere, location, setLocation, details, setDetails, detailErrs, fields, blocked, note, setNote, skills, setSkills, toggle, options, who, setWho, fresh, setFresh, freshErrors, method, setMethod, photo, setPhoto, tried, errors, issues, valid, send, result, reset, whoName, whoSignsByLink, ratings, setRatings, answers, setAnswer, selfIds, selfIssues, saveForLater, saveError, savedAt, draftId }
 }
 
 export type RequestDraft = ReturnType<typeof useRequestDraft>

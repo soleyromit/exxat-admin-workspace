@@ -18,12 +18,12 @@ const words = (s: string) => s.trim().split(/\s+/).length
 const binary = (patch: Partial<LabRule> = {}): LabRule => ({ ...withModel(emptyRule(), "binary"), ...patch })
 
 describe("step headings: the question the admin answers, one short line at most", () => {
-  it("gives every step a question title that does not repeat its stepper label, and keeps each step under the 45-word budget", () => {
+  it("titles every editing step with its section name (one vocabulary, 2026-11-02) and no lead line", () => {
     for (const s of CONFIGURE_STEPS) {
       for (const model of [null, "binary", "question", "demonstration", "scored"] as const) {
         const h = configureStepHead(s.id, model)
-        expect(h.title.endsWith("?")).toBe(true)
-        expect(h.title).not.toBe(s.label)
+        if (s.id !== "check") expect(h.title).toBe(s.label)
+        expect(h.lead).toBeUndefined()
         expect(words(h.title) + (h.lead ? words(h.lead) : 0)).toBeLessThanOrEqual(20)
         if (h.lead) expect(words(h.lead)).toBeLessThanOrEqual(12)
         expect(`${h.title} ${h.lead ?? ""}`).not.toMatch(/—|publish|\bitems?\b/i)

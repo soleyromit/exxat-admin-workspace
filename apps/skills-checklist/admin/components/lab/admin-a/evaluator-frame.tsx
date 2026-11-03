@@ -43,7 +43,7 @@ export function EvaluatorFrame({ variant, summaryInToolbar = false, embedded = f
     body = (
       <EmptyBlock
         title="No evaluators yet"
-        body="Evaluators appear when you add them or when a student names one in a submission. They need no account."
+        body="Evaluators appear when you add them or when a student names one in a submission."
         action={{ label: "Add an evaluator" }}
         onAction={() => setAdding(true)}
       />

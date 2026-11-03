@@ -30,9 +30,9 @@ function engineOn(rule: LabRule, x: { scores?: number[]; answers?: Array<"yes" |
 
 describe("answer step: format first, one aligned list, icon-only Remove", () => {
   for (const model of ["question", "scored", "demonstration", "binary"] as const) {
-    it(`renders the ${model} answer step with a What this means panel`, () => {
+    it(`renders the ${model} answer step with labels and controls only (no What this means panel, D-L36)`, () => {
       const { container } = render(<OutcomesSection {...props(RULES[model])} />)
-      expect(screen.getByRole("group", { name: /^What this means/ })).toBeInTheDocument()
+      expect(screen.queryByRole("group", { name: /^What this means/ })).toBeNull()
       if (model === "binary") return
       const noun = model === "demonstration" ? "level" : "question"
       const items = model === "demonstration" ? RULES[model].levels : RULES[model].questions
@@ -65,14 +65,13 @@ describe("answer step: format first, one aligned list, icon-only Remove", () => 
 
 describe("when it counts: compact rule sentences and a worked example that matches the engine", () => {
   for (const model of ["question", "scored", "demonstration", "binary"] as const) {
-    it(`renders the ${model} rule step as sentences with the meaning panel`, () => {
+    it(`renders the ${model} rule step as sentences, no meaning panel (D-L36)`, () => {
       const { container } = render(<RuleSection {...props(RULES[model])} />)
       expect(screen.getByText("The student needs")).toBeInTheDocument()
       expect(document.getElementById("cfg-need")).not.toBeNull()
       expect(screen.getByRole("button", { name: "Add a condition" }).getAttribute("data-variant")).toBe("ghost")
       if (model === "scored") expect(screen.getByText("Counts when")).toBeInTheDocument()
-      const panel = screen.getByRole("group", { name: /^What this means/ })
-      expect(panel.textContent).toContain(`The student needs ${RULES[model].need} evaluations that count.`)
+      expect(screen.queryByRole("group", { name: /^What this means/ })).toBeNull()
       expect(container.textContent).not.toMatch(/—/)
     })
   }

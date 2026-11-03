@@ -191,12 +191,13 @@ describe("configure: impact over the real dataset (123 students)", () => {
 
 describe("configure: five steps and where each check lives", () => {
   it("has five short steps named the way the client says them, Check last", () => {
-    expect(CONFIGURE_STEPS.map((x) => x.label)).toEqual(["How it's judged", "Evaluation criteria", "How many times", "Who signs", "Check and save"])
+    // One vocabulary with Evaluation settings (2026-11-02).
+    expect(CONFIGURE_STEPS.map((x) => x.label)).toEqual(["How skills are judged", "What counts as achieved", "How many evaluations", "Who signs", "Check and save"])
     expect(CONFIGURE_STEPS.map((x) => x.id)).toEqual(["model", "outcomes", "rule", "signoff", "check"])
-    expect(CONFIGURE_STEPS.every((x) => x.label.split(" ").length <= 3)).toBe(true)
+    expect(CONFIGURE_STEPS.every((x) => x.label.split(" ").length <= 4)).toBe(true)
     // The step keeps one name for every model; what it holds is named inside it.
-    expect(outcomesLabel("question")).toBe("Evaluation criteria")
-    expect(outcomesLabel("demonstration")).toBe("Evaluation criteria")
+    expect(outcomesLabel("question")).toBe("What counts as achieved")
+    expect(outcomesLabel("demonstration")).toBe("What counts as achieved")
     expect(criteriaKind("question")).toBe("Questions")
     expect(criteriaKind("demonstration")).toBe("Levels")
   })
@@ -242,11 +243,11 @@ describe("configure: ties are said once (J7)", () => {
   })
   it("configDiff lists only what changed, and the rule as what it adds (no repeated sentence)", () => {
     const d = configDiff(before, after)
-    expect(d.map((x) => x.label)).toEqual(["How many times"])
+    expect(d.map((x) => x.label)).toEqual(["How many evaluations"])
     expect(d[0].after).toBe("Adds from 2 different evaluators and 1 in inpatient.")
     expect(d[0].before).toBe("Get 3 evaluations rated met.")
-    expect(configDiff(before, { ...before, outcomeLabels: ["Pass", "Fail"] }).map((x) => x.label)).toEqual(["Evaluation criteria"])
-    expect(configDiff(null, after).some((x) => x.label === "How it's judged" && x.before === "Not set")).toBe(true)
+    expect(configDiff(before, { ...before, outcomeLabels: ["Pass", "Fail"] }).map((x) => x.label)).toEqual(["What counts as achieved"])
+    expect(configDiff(null, after).some((x) => x.label === "How skills are judged" && x.before === "Not set")).toBe(true)
   })
 })
 

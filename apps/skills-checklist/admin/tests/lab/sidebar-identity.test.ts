@@ -33,7 +33,7 @@ import { PERSONAS } from "@/lib/lab/personas"
 import { SCREENS, screenKey, screensFor, type PersonaId } from "@/lib/lab/screens"
 import { FLOWS, findFlow, flowsForPersona, mainSteps, resolveStep } from "@/lib/lab/flows"
 import { variantCounts } from "@/lib/lab/links"
-import { SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
+import { SETUP_RESULT_SCREEN, SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 
 afterEach(() => {
   cleanup()
@@ -84,7 +84,8 @@ function screenOfPath(path: string): string {
   return screen ? `${screen[1]}/${screen[2]}` : `unknown ${path}`
 }
 
-const PANEL_SCREENS = new Set(SKILLS_PANEL.map((i) => i.screen))
+// The setup summary sits under Set up (Proposed 2026-11-02), so it is a panel page too.
+const PANEL_SCREENS = new Set([...SKILLS_PANEL.map((i) => i.screen), SETUP_RESULT_SCREEN])
 
 /** LabFrame with children passed as the createElement argument (the lint rule forbids a children prop). */
 const Frame = LabFrame as React.ComponentType<Omit<React.ComponentProps<typeof LabFrame>, "children"> & { children?: React.ReactNode }>

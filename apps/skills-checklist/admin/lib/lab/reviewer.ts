@@ -585,7 +585,8 @@ export interface ItemDetail {
   otherEvaluators: Array<{ id: string; name: string; title: string }>
   /** Who "Assign to someone else" may send the evidence to: qualified, adopted preceptors, lab instructors and clinical faculty
    *  (not reviewers or directors), not the current evaluator; the evaluator's own site first. */
-  assignTo: Array<{ id: string; name: string; title: string }>
+  /** `signsByLink`: a preceptor signs through an email link with no account; faculty and lab instructors sign in to Prism. */
+  assignTo: Array<{ id: string; name: string; title: string; signsByLink: boolean }>
   /** Existing evaluators a new name might be (merge targets): same site first. */
   mergeCandidates: Array<{ id: string; name: string; title: string }>
   feedback: string
@@ -611,7 +612,7 @@ export function itemDetail(state: V2State, rows: ReviewRow[], key: string): Item
     evaluatorInQueue: row.evaluatorId ? rows.filter((r) => r.evaluatorId === row.evaluatorId).length : 0,
     otherEvaluators: others.map((c) => ({ id: c.person.id, name: c.person.name, title: c.person.title })),
     mergeCandidates: merge.map((p) => ({ id: p.id, name: p.name, title: p.title })),
-    assignTo: assignTargets(state, row).map((p) => ({ id: p.id, name: p.name, title: p.title })),
+    assignTo: assignTargets(state, row).map((p) => ({ id: p.id, name: p.name, title: p.title, signsByLink: p.kind === "preceptor" })),
     feedback: evaluations.map((e) => e.versions[e.versions.length - 1]?.detail?.feedback ?? "").find(Boolean) ?? "",
     revisions: (sub?.returns ?? []).map((r) => ({ at: r.at, by: personById(state, r.byId)?.name ?? "A reviewer", reason: r.reason, revision: r.revision })),
     sentAt: sub?.createdAt ?? null,

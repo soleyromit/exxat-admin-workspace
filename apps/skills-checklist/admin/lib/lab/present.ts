@@ -25,9 +25,10 @@ export interface MarqueeItem {
 export const MARQUEE: MarqueeItem[] = [
   { label: "Skills library", who: "Program", flow: "set-up-skills", step: "library" },
   { label: "Add a skill", who: "Program", flow: "set-up-skills", step: "add" },
-  { label: "Configure a skill", who: "Program", flow: "set-up-skills", step: "configure" },
+  { label: "Evaluation settings", who: "Program", flow: "setup-walkthrough", step: "settings" },
   { label: "Assign to a cohort or group", who: "Program", flow: "set-up-skills", step: "assign" },
   { label: "Course mapping", who: "Program", flow: "set-up-skills", step: "map" },
+  { label: "Setup summary", who: "Program", flow: "setup-walkthrough", step: "result" },
   { label: "My progress", who: "Student", flow: "my-progress", step: "home" },
   { label: "Log a skill", who: "Student", flow: "ask-for-evaluation", step: "send" },
   { label: "My requests", who: "Student", flow: "ask-for-evaluation", step: "requests" },

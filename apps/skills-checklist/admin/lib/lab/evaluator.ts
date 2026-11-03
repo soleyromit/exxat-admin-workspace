@@ -196,7 +196,7 @@ function ruleHintFor(skill: Skill, preset: LabelPresetId | null = null): string 
   if (!a || !skill.config) return ""
   const named = programLabels(skill, preset)
   const min = a.minLevelIndex
-  if (min !== null && needsLevels(skill.model, skill.config)) return `Counts at ${inSentence(named.levels[min] ?? skill.config.levels[min])} or above.`
+  if (min !== null && min > 0 && needsLevels(skill.model, skill.config)) return `Counts at ${inSentence(named.levels[min] ?? skill.config.levels[min])} or above.`
   return `${named.outcomes[0]} counts toward the program's rule.`
 }
 

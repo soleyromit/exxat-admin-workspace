@@ -61,7 +61,7 @@ function SkillPicker({ skills, selected, onToggle, label, idPrefix }: { skills: 
           )
         })}
         {!shown.length ? <li className="py-3 text-sm text-muted-foreground">{`No configured ${skillNounPlural()} match. Clear the search.`}</li> : null}
-        {matches.length > shown.length ? <li className="py-2 text-xs text-muted-foreground">{`Showing ${fmt(shown.length)} of ${fmt(matches.length)}. Search to find the rest.`}</li> : null}
+        {matches.length > shown.length ? <li className="py-2 text-xs text-muted-foreground">{`Showing ${fmt(shown.length)} of ${fmt(matches.length)}.`}</li> : null}
       </ul>
     </div>
   )
@@ -130,11 +130,7 @@ export function IndividualAssign({ model, onCreateGroup }: { model: ListsModel; 
       </FieldSet>
       <FieldSet className="min-w-0">
         <FieldLegend className={TYPE.section}>2. Student groups</FieldLegend>
-        {!picked.length ? (
-          <p className="text-sm text-muted-foreground" data-pick-first>{`Pick at least one ${skillNoun()}, then the groups that get it.`}</p>
-        ) : (
-          <p className="text-sm text-foreground" data-assign-consequence>{`A cohort's clinical courses offer the ${picked.length === 1 ? `picked ${skillNoun()}` : `${fmt(picked.length)} picked ${skillNounPlural()}`}.`}</p>
-        )}
+        {!picked.length ? <p className="text-sm text-muted-foreground" data-pick-first>{`Pick ${aNoun()} first.`}</p> : null}
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-1">
             <p className="text-xs font-medium text-muted-foreground" id="individual-cohorts">Cohorts</p>

@@ -211,14 +211,12 @@ export function EvidenceChoice({ value, onChange, error }: { value: PublishMode 
           <RadioGroupItem id="cfg-mode-reapply" value="reapply" className="mt-0.5" />
           <div className="flex flex-col">
             <Label htmlFor="cfg-mode-reapply">Re-evaluate it now</Label>
-            <span className="text-sm text-muted-foreground">Status is recalculated now.</span>
           </div>
         </div>
         <div className="flex items-start gap-2">
           <RadioGroupItem id="cfg-mode-new" value="new-only" className="mt-0.5" />
           <div className="flex flex-col">
             <Label htmlFor="cfg-mode-new">Apply to new evidence only</Label>
-            <span className="text-sm text-muted-foreground">Status stays; later evaluations use it.</span>
           </div>
         </div>
       </RadioGroup>
@@ -272,22 +270,21 @@ export function ImpactSummary({ current, impact, lead = "counts", expandPeople =
  * "One student's record: 5 attempts, 2 not approved: 3 count." Nothing when no record has a non-qualifying attempt.
  */
 export function AttemptExample({ rule, impact }: { rule: LabRule; impact: Impact | null }) {
-  const line = impact?.example && rule.model ? attemptLine(rule, impact.example) : ""
-  if (!line) return null
-  return (
-    <p className="text-sm text-foreground" data-attempt-line>
-      <span className="text-muted-foreground">One student&apos;s record: </span>
-      <span className="tabular-nums">{`${line}.`}</span>
-    </p>
-  )
+  // Labels and data only (D-L34): the worked example is gone; the student screens show each record's own counts.
+  void rule
+  void impact
+  void attemptLine
+  return null
 }
 
 /** Who sees the change, said once. */
 export function WhoSees({ impact }: { impact: Impact | null }) {
   const verified = impact?.changedVerified ?? 0
+  // Only the figure that changes something for someone (D-L34): verified records that will show Changed since verified.
+  if (verified === 0) return null
   return (
     <p className="text-sm text-muted-foreground" data-who-sees>
-      {`Completed evaluations stay as recorded.${verified > 0 ? ` ${verified} verified ${verified === 1 ? "record shows" : "records show"} Changed since verified.` : ""}`}
+      {`${verified} verified ${verified === 1 ? "record shows" : "records show"} Changed since verified.`}
     </p>
   )
 }

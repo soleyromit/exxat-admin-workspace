@@ -163,7 +163,9 @@ function Crumbs() {
     if (panelItem.key === "library") groupLeaf = skillsLabel()
     else {
       crumbs.push({ label: skillsLabel(), href: libraryHref })
-      groupLeaf = params?.get("view") === "assign" && title ? withNoun(title) : panelItem.label()
+      // The assign step keeps its step words; a page under a panel row that is not the row's own page (the setup summary) reads
+      // its own title.
+      groupLeaf = (params?.get("view") === "assign" || link.screen !== panelItem.screen) && title ? withNoun(title) : panelItem.label()
     }
   } else if (settingsLeafLabel) {
     crumbs.push({ label: "Settings", href: settingsHref(link) })

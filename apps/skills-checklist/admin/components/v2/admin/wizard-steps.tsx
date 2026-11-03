@@ -295,7 +295,7 @@ export function StepSimulation({ ctx }: { ctx: WizardCtx }) {
               <RadioGroup aria-label="Simulation limit" value={s.mode} onValueChange={(v) => setS({ mode: v as "cap" | "allow-list" })} className="grid gap-2 sm:grid-cols-2">
                 {[
                   { v: "cap", t: "A share cap", b: "Simulation can supply up to a share of the evaluations needed." },
-                  { v: "allow-list", t: "An allow list", b: "Only the simulation settings you tick count." },
+                  { v: "allow-list", t: "An allow list", b: "Only the simulation settings you select count." },
                 ].map((o) => (
                   <label key={o.v} htmlFor={`wiz-sim-mode-${o.v}`} data-state={s.mode === o.v ? "checked" : "unchecked"} className="flex cursor-pointer items-start gap-3 rounded-lg border border-border p-3 hover:bg-muted/50 has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50 data-[state=checked]:border-ring data-[state=checked]:ring-2 data-[state=checked]:ring-ring">
                     <RadioGroupItem id={`wiz-sim-mode-${o.v}`} value={o.v} className="mt-0.5" />

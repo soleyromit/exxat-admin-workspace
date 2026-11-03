@@ -138,7 +138,7 @@ export function validateDraft(draft: { model: EvalModel | null; config: SkillCon
   const sim = c.simulation
   if (sim.allowed) {
     if (sim.mode === "cap" && (!isInt(sim.maxSharePercent) || sim.maxSharePercent < 0 || sim.maxSharePercent > 100)) add(3, "wiz-sim-cap", "range", "Enter a share between 0 and 100 percent.")
-    if (sim.mode === "allow-list" && sim.allowList.length === 0) add(3, "wiz-sim-list", "none", "Tick at least one simulation setting, or choose a share cap instead.")
+    if (sim.mode === "allow-list" && sim.allowList.length === 0) add(3, "wiz-sim-list", "none", "Select at least one simulation setting, or choose a share cap instead.")
   }
 
   const p = c.prerequisites
@@ -185,7 +185,8 @@ export function strengthHint(model: EvalModel | null, c: SkillConfig): StrengthH
   const a = c.achievement
   const need = isInt(a.need) && a.need > 0 ? a.need : 1
   const distinct = isInt(a.distinctEvaluators) && a.distinctEvaluators > 0 ? a.distinctEvaluators : 1
-  const lvl = needsLevels(model, c) && a.minLevelIndex !== null ? c.levels[a.minLevelIndex]?.trim() : ""
+  // The lowest level means every level counts: nothing to add to the sentence (the lab writes 0 when the admin picks "Any level").
+  const lvl = needsLevels(model, c) && a.minLevelIndex !== null && a.minLevelIndex > 0 ? c.levels[a.minLevelIndex]?.trim() : ""
 
   let points = 0
   if (need >= 3) points++

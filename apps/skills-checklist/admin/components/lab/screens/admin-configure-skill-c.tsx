@@ -15,7 +15,6 @@
  *
  * URL: ?skill= or ?skills=a,b,c · ?impact=open (opens Check) · ?change=sample · ?state=loading. Listens for `lab:reset`.
  */
-import { RulePreviewAside } from "@/components/lab/configure/live-panel"
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -23,7 +22,7 @@ import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { FormPage, StickyFooter, ValidationSummary } from "@/components/lab/layout"
-import { bulkImpact, configureStepHead, hasNeed, leftToConfigure, ruleMeaning, saveLabRuleToMany, type LabRule, type PublishMode, type RuleIssue, type SetupGroup } from "@/lib/lab/configure"
+import { bulkImpact, configureStepHead, leftToConfigure, ruleMeaning, saveLabRuleToMany, type LabRule, type PublishMode, type RuleIssue, type SetupGroup } from "@/lib/lab/configure"
 import { buildLibrary } from "@/lib/lab/library"
 import type { V2State } from "@/lib/v2/types"
 import { skillById } from "@/lib/v2/evidence-index"
@@ -31,7 +30,7 @@ import { fmt } from "@/lib/v2/format"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import { useV2Store } from "@/lib/v2/react"
 import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { ModelSection, OutcomesSection, RuleSection, SignOffSection, WithMeaning, type SectionProps } from "@/components/lab/configure/fields"
+import { GroupCheckOffSection, ModelSection, OutcomesSection, RuleSection, SignOffSection, WithMeaning, type SectionProps } from "@/components/lab/configure/fields"
 import { ConfigSection } from "@/components/lab/configure/section"
 import { EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
 import { CheckSection, ConfigureReceiptPage, EvidenceDecision, ManyLedger, openDecisions, PeopleSee, Readiness, ReceiptFooter, saveBlockedReason, SavedBanner, SetupSummary, WhoItAffects } from "@/components/lab/configure/check"
@@ -221,7 +220,7 @@ export function AdminConfigureSkillC() {
       // D-X30: what students and evaluators will see, beside the sentence from 1280 px. Check shows both views itself.
       // Check (SC-19): the student and evaluator views stay beside the review from 1280 px, so the admin reads what each person
       // will be asked next to who it affects, not only the impact (2026-10-30 review). Below 1280 px they follow inline.
-      aside={checking ? (m.rule.model ? <PeopleSee skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} /> : undefined) : <RulePreviewAside skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} current={isMany ? undefined : m.current} impact={isMany ? null : impact} showRule={false} />}
+      aside={checking && m.rule.model ? <PeopleSee skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} /> : undefined}
       footer={footer}
     >
       {checking ? (
@@ -261,7 +260,6 @@ export function AdminConfigureSkillC() {
                 {m.rule.model === "binary" ? (
                   <WithMeaning meaning={ruleMeaning(m.rule)}>
                     <div className="flex flex-col gap-2">
-                      {!hasNeed(m.rule) ? <p className="text-sm text-muted-foreground" data-empty-need>Your program sets this number.</p> : null}
                       <SentenceBuilder rule={m.rule} setRule={m.setRule} issues={m.issues} showErrors={showErrors} settings={m.settings} />
                     </div>
                   </WithMeaning>
@@ -269,7 +267,9 @@ export function AdminConfigureSkillC() {
                   <RuleSection {...props} />
                 )}
               </ConfigSection>
-              <ConfigSection n={4} title={configureStepHead("signoff", m.rule.model).title} lead={configureStepHead("signoff", m.rule.model).lead} id="cfg-sec-signoff">
+              {/* Group check-off belongs with how many evaluations (one hierarchy, 2026-11-02). */}
+              <GroupCheckOffSection rule={m.rule} setRule={m.setRule} />
+              <ConfigSection n={4} title={configureStepHead("signoff", m.rule.model).title} id="cfg-sec-signoff">
                 <SignOffSection {...props} />
               </ConfigSection>
             </>

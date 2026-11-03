@@ -191,7 +191,7 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{`Delete "${deleting?.name ?? ""}"?`}</AlertDialogTitle>
-            <AlertDialogDescription>Nothing uses it, so nothing else changes. This cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel variant="outline" size="sm">Keep it</AlertDialogCancel>

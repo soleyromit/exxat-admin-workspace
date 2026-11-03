@@ -71,7 +71,6 @@ export const studentsWithEvidence = (state: V2State, skillId: string) => new Set
 export function SkillTitle({ state, skill }: { state: V2State; skill: Skill }) {
   const configured = isConfigured(skill)
   const spec = STATUS_META[configured ? "configured" : "not-configured"]
-  const n = studentsWithEvidence(state, skill.id)
   const draft = state.configDrafts?.[skill.id]
   const category = skill.category?.trim()
   // One line (Romit 2026-10-27, "Needs to be in one line"): h1, status chip, then the category as a quiet neutral badge that
@@ -99,7 +98,6 @@ export function SkillTitle({ state, skill }: { state: V2State; skill: Skill }) {
           </Badge>
         ) : null}
         {draft ? <span className="text-sm text-muted-foreground" data-draft-note>{`Draft saved ${shortDate(draft.at.slice(0, 10))}`}</span> : null}
-        {configured && n > 0 ? <span className="text-sm text-muted-foreground tabular-nums">{`${n} students have evidence`}</span> : null}
       </div>
     </div>
   )

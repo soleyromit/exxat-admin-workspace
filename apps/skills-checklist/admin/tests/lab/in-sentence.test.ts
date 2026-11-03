@@ -25,16 +25,16 @@ describe("inSentence: a program label placed mid-sentence (Romit 2026-10-29)", (
 describe("tickRecordsLine: what a tick marks the student as (Romit 2026-10-29)", () => {
   const p = { outcomeLabels: ["Met", "Unmet"], qualifyingLabel: 0 as const, levels: ["Observed", "With assistance", "Works alone"], levelIndex: null, questions: ["a", "b", "c"], score: 4 }
   it("binary, question and scored", () => {
-    expect(tickRecordsLine("binary", p)).toBe("A tick marks the student as met")
-    expect(tickRecordsLine("binary", { ...p, outcomeLabels: ["Achieved", "Not yet"] })).toBe("A tick marks the student as achieved")
-    expect(tickRecordsLine("question", p)).toBe("A tick marks every question Yes")
-    expect(tickRecordsLine("scored", p)).toBe("A tick scores the student 4 on every item")
+    expect(tickRecordsLine("binary", p)).toBe("Checking it off marks the student as met")
+    expect(tickRecordsLine("binary", { ...p, outcomeLabels: ["Achieved", "Not yet"] })).toBe("Checking it off marks the student as achieved")
+    expect(tickRecordsLine("question", p)).toBe("Checking it off marks every question Yes")
+    expect(tickRecordsLine("scored", p)).toBe("Checking it off scores the student 4 on every question")
   })
   it("levels: 'as' for a state, the colon form for a label that starts with a verb or preposition", () => {
     // The seed's level sets: lib/v2 seed levels (Observed, With assistance, Works alone) and a state-style set.
-    expect(tickRecordsLine("demonstration", p)).toBe("A tick marks the student at the level: works alone")
-    expect(tickRecordsLine("demonstration", { ...p, levelIndex: 1 })).toBe("A tick marks the student at the level: with assistance")
-    expect(tickRecordsLine("demonstration", { ...p, levelIndex: 0 })).toBe("A tick marks the student as observed")
+    expect(tickRecordsLine("demonstration", p)).toBe("Checking it off marks the student at the level: works alone")
+    expect(tickRecordsLine("demonstration", { ...p, levelIndex: 1 })).toBe("Checking it off marks the student at the level: with assistance")
+    expect(tickRecordsLine("demonstration", { ...p, levelIndex: 0 })).toBe("Checking it off marks the student as observed")
     expect(levelPhrase("Independent")).toBe("as independent")
     expect(levelPhrase("Proficient")).toBe("as proficient")
     expect(levelPhrase("Needs prompting")).toBe("at the level: needs prompting")

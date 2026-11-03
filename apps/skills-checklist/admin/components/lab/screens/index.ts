@@ -2,6 +2,11 @@ import type * as React from "react"
 import { AdminDashboardAShared, AdminDashboardBShared, AdminDashboardCShared, AdminDashboardDShared, AdminDashboardEShared, AdminDashboardFShared, DirectorDashboardAShared, DirectorDashboardBShared } from "./shared-drills"
 import { AdminDashboardDrill } from "./admin-dashboard-drill"
 import { AdminDashboardDrillB } from "./admin-dashboard-drill-b"
+import { AdminEvaluationSettingsA } from "./admin-evaluation-settings-a"
+import { AdminEvaluationSettingsB } from "./admin-evaluation-settings-b"
+import { AdminEvaluationSettingsC } from "./admin-evaluation-settings-c"
+import { AdminSetupResultA } from "./admin-setup-result-a"
+import { AdminSetupResultB } from "./admin-setup-result-b"
 import { AdminSkillsLibraryA } from "./admin-skills-library-a"
 import { AdminSkillsLibraryB } from "./admin-skills-library-b"
 import { AdminSkillsLibraryC } from "./admin-skills-library-c"
@@ -92,6 +97,11 @@ import { DirectorAttainmentB } from "./director-attainment-b"
  * lib/lab/screens.json, register it here, then run `node scripts/lab-ds-gate.mjs --write`.
  */
 export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
+  "admin/evaluation-settings/A": AdminEvaluationSettingsA,
+  "admin/evaluation-settings/B": AdminEvaluationSettingsB,
+  "admin/evaluation-settings/C": AdminEvaluationSettingsC,
+  "admin/setup-result/A": AdminSetupResultA,
+  "admin/setup-result/B": AdminSetupResultB,
   "admin/course-mapping/A": AdminCourseMappingA,
   "admin/course-mapping/B": AdminCourseMappingB,
   "course-faculty/offering-checkoff/A": CourseFacultyOfferingCheckoffA,

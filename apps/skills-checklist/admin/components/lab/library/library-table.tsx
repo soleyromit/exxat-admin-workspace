@@ -19,7 +19,7 @@ import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { FieldError } from "@exxatdesignux/ui/components/ui/field"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { useTableState } from "@exxatdesignux/ui/components/data-table/use-table-state"
@@ -32,6 +32,10 @@ import { LINK, LibraryStatusBadge } from "./library-chrome"
 import { CategoryName, TagBadges, tagLineText } from "./category-tag-pickers"
 import { RowActions, type RowActionHandlers } from "./row-actions"
 import { LibraryFilterMenu, useLibraryFilter } from "./library-filter"
+import { SetTimesDialog, TimesNeededCell } from "./times-needed"
+import { useV2State } from "@/lib/v2/react"
+import { timesCellOf, type TimesManyResult } from "@/lib/lab/program-settings"
+import type { LibraryBanner } from "./use-library"
 
 export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string) => void): ColumnDef<LibraryRow>[] {
   return [
@@ -43,8 +47,8 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
     {
       key: "name",
       label: capitalize(skillNoun()),
-      width: 360,
-      minWidth: 240,
+      width: 260,
+      minWidth: 220,
       sortable: true,
       // At most two lines (name, then one quiet line), and every row holds the two-line height, so rows are one height
       // whatever they carry and the content sits centred in it.
@@ -78,22 +82,25 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
         </span>
       ),
     },
+    // Times needed [CALL 11-02]: the program's number on every row, edited in place; one source with Evaluation settings.
+    // Beside the name so the row being edited stays in view at 1024 (the name column is not pinned).
+    { key: "times", label: "Times needed", width: 160, sortable: true, cell: (r) => <TimesNeededCell id={r.id} name={r.name} /> },
     // No column filter: the tabs filter by status, search finds a name and the one Filter control (category, tag; REQ SL-10)
     // sits on the tab row, so a DS filter bar would be another way to narrow the same list (list toolbar budget, rule L3).
     { key: "section", label: "Category", width: 200, sortable: true, cell: (r) => <CategoryName name={r.section} inactive={r.categoryInactive} /> },
-    { key: "status", label: "Status", width: 170, sortable: true, cell: (r) => <LibraryStatusBadge status={r.status} draft={r.draft} /> },
-    { key: "modelLabel", label: "How it's judged", width: 230, sortable: true, cell: (r) => (r.modelLabel ? <span className="block whitespace-normal" data-model-label>{r.modelLabel}</span> : <span className="text-muted-foreground">Not chosen</span>) },
+    { key: "status", label: "Status", width: 150, sortable: true, cell: (r) => <LibraryStatusBadge status={r.status} draft={r.draft} /> },
+    { key: "modelLabel", label: "How it's judged", width: 180, sortable: true, cell: (r) => (r.modelLabel ? <span className="block whitespace-normal" data-model-label>{r.modelLabel}</span> : <span className="text-muted-foreground">Not chosen</span>) },
     {
       key: "courses",
       label: "Courses",
-      width: 150,
+      width: 110,
       sortable: true,
       cell: (r) =>
         r.status === "not-configured" || r.status === "inactive" ? <span className="text-muted-foreground">None</span>
           : r.courses === 0 ? <span className="text-muted-foreground">Not mapped</span>
             : <span className="tabular-nums">{plural(r.courses, "course", "courses")}</span>,
     },
-    { key: "evidence", label: "Evaluations", width: 130, sortable: true, cell: (r) => (r.evidence ? <span className="tabular-nums">{fmt(r.evidence)}</span> : <span className="text-muted-foreground">None</span>) },
+    { key: "evidence", label: "Evaluations", width: 120, sortable: true, cell: (r) => (r.evidence ? <span className="tabular-nums">{fmt(r.evidence)}</span> : <span className="text-muted-foreground">None</span>) },
     {
       key: "tags",
       label: "Tags",
@@ -131,12 +138,21 @@ export interface LibraryTableProps {
   renderFrame: (toolbar: React.ReactNode, table: React.ReactNode) => React.ReactNode
   /** Called with the rows in view, in order (Previous and Next in the detail panel). */
   onRowsInView?: (rows: LibraryRow[]) => void
+  /** Called after "Set times needed" with the result banner. */
+  onTimesSet?: (b: LibraryBanner) => void
 }
 
-export function LibraryTable({ rows, visible, tab, handlers, openId, onOpen, onCopySettings, onClearTab, renderFrame, onRowsInView }: LibraryTableProps) {
+export function LibraryTable({ rows, visible, tab, handlers, openId, onOpen, onCopySettings, onClearTab, renderFrame, onRowsInView, onTimesSet }: LibraryTableProps) {
   const columns = React.useMemo(() => libraryColumns(handlers, onOpen), [handlers, onOpen])
   const [filter, setFilter] = useLibraryFilter()
-  const data = React.useMemo(() => filterLibrary(visible, filter), [visible, filter])
+  const v2 = useV2State()
+  // Each row carries its times needed so the column sorts like the others (null sorts as "Not set").
+  const data = React.useMemo(() => filterLibrary(visible, filter).map((r) => ({ ...r, times: timesCellOf(v2, r.id).value })), [visible, filter, v2])
+  const [timesFor, setTimesFor] = React.useState<string[] | null>(null)
+  const timesDone = (r: TimesManyResult, need: number) => {
+    const set = r.written.length + r.unchanged.length
+    onTimesSet?.({ variant: "success", title: `Times needed set to ${need} for ${countSkills(set)}`, body: r.failed.length ? `${countSkills(r.failed.length)} stay as they are.` : "" })
+  }
   const ts = useTableState<LibraryRow>(data, columns)
   const [viewId, setViewId] = React.useState(SAVED_VIEWS[0]!.id)
   const [custom, setCustom] = React.useState<SavedView[]>([])
@@ -200,6 +216,7 @@ export function LibraryTable({ rows, visible, tab, handlers, openId, onOpen, onC
             <Link href={configureMany(unconfigured.map((r) => r.id)).href}>{configureMany(unconfigured.map((r) => r.id)).label}</Link>
           </Button>
         ) : null}
+        <Button type="button" variant="outline" size="sm" disabled={active.length === 0} onClick={() => setTimesFor(active.map((r) => r.id))}>Set times needed</Button>
         <Button type="button" variant="outline" size="sm" disabled={active.length === 0} onClick={() => { onCopySettings(active); ts.setSelected(new Set()) }}>Copy settings</Button>
         <Button type="button" variant="outline" size="sm" disabled={active.length === 0} onClick={() => { handlers.onDeactivate(active); ts.setSelected(new Set()) }}>Deactivate</Button>
       </span>
@@ -266,11 +283,11 @@ export function LibraryTable({ rows, visible, tab, handlers, openId, onOpen, onC
   return (
     <>
       {renderFrame(toolbar, table)}
+      <SetTimesDialog ids={timesFor ?? []} open={timesFor !== null} onOpenChange={(o) => { if (!o) setTimesFor(null) }} onDone={(r, n) => { timesDone(r, n); ts.setSelected(new Set()) }} />
       <Dialog open={naming} onOpenChange={(open) => { setNaming(open); if (!open) setNameTried(false) }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Save this view</DialogTitle>
-            <DialogDescription>Keeps the current grouping and columns. Only you see it.</DialogDescription>
           </DialogHeader>
           <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); saveView() }}>
             <Label htmlFor="view-name">Name</Label>

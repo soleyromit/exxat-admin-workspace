@@ -612,6 +612,12 @@ export interface V2State {
    * a lib/lab/configure.ts LabRule, typed loosely here so the data layer does not import the lab. Optional so older state loads.
    */
   configDrafts?: Record<string, ConfigDraftRecord>
+  /**
+   * The program's evaluation settings (lab, Proposed 2026-11-02): one lib/lab/configure.ts LabRule every skill inherits, with
+   * each skill keeping its own times needed (lib/lab/program-settings.ts). Typed loosely so the data layer does not import the
+   * lab. Optional so older state loads; absent until the program saves them.
+   */
+  programSettings?: { rule: unknown; at: string } | null
   /** Walkthrough step id -> ISO time the presenter marked it reviewed. */
   stepsReviewed: Record<string, string>
   /** Stage 2: student placements, log entries, lab check-offs, the phone's state and the log flow draft. */

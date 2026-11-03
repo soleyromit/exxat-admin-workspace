@@ -89,7 +89,7 @@ function ReviewSheet({ lib, existing, onClose, onCopied }: { lib: StarterLibrary
                 <label htmlFor={id} className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5">
                   <span className="text-sm font-medium text-foreground">{k.name}</span>
                   <span className="text-xs text-muted-foreground">{`${k.category}. ${k.description}`}</span>
-                  {isDup(i) ? <span className="text-xs text-muted-foreground">Already in your library. Tick it to add a second copy.</span> : null}
+                  {isDup(i) ? <span className="text-xs text-muted-foreground">Already in your library. Select it to add a second copy.</span> : null}
                 </label>
               </li>
             )
@@ -111,7 +111,7 @@ function ReviewSheet({ lib, existing, onClose, onCopied }: { lib: StarterLibrary
           </div>
           {n === 0 ? (
             <p id="copy-reason" className="text-right text-xs text-muted-foreground">
-              Tick at least one skill to copy.
+              Select at least one skill to copy.
             </p>
           ) : null}
         </SheetFooter>

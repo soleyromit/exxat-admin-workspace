@@ -202,6 +202,101 @@
     },
     {
       "persona": "admin",
+      "slug": "evaluation-settings",
+      "title": "Evaluation settings",
+      "tier": 2,
+      "recommended": "B",
+      "variants": [
+        {
+          "id": "A",
+          "question": "Sections with a side index: do the four sections (How skills are judged, What counts as achieved, How many evaluations, Who signs) as titled sections, with an index to jump between them, read clearer than numbered steps? (Proposed)",
+          "file": "components/lab/screens/admin-evaluation-settings-a.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "B",
+          "question": "Settings beside a live summary: does seeing the resulting settings as label and value pairs while editing the four sections make the page easiest to understand? Recommended. (Proposed)",
+          "file": "components/lab/screens/admin-evaluation-settings-b.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "C",
+          "question": "One group at a time: do line tabs for the four sections, with one Save across them, beat one long page? (Proposed)",
+          "file": "components/lab/screens/admin-evaluation-settings-c.tsx",
+          "pageType": "form"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "Button",
+        "DataTable",
+        "Input",
+        "Dialog",
+        "Tabs",
+        "StatusBadge"
+      ],
+      "scenarios": [
+        {
+          "group": "Data",
+          "label": "Times needed",
+          "params": {
+            "tab": "times"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "admin",
+      "slug": "setup-result",
+      "title": "Setup summary",
+      "tier": 3,
+      "recommended": "A",
+      "variants": [
+        {
+          "id": "A",
+          "question": "End state as a table: does one row per student group (skills to complete, expected in a course, no course yet) with a drill to each skill's courses and levels show what the setup adds up to? (Proposed)",
+          "file": "components/lab/screens/admin-setup-result-a.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "B",
+          "question": "End state as a chain: does each student group drawn as groups of skills, student group, courses, left to do, make the connection clearer than a table? (Proposed)",
+          "file": "components/lab/screens/admin-setup-result-b.tsx",
+          "pageType": "list"
+        }
+      ],
+      "requiredDsComponents": [
+        "PageHeader",
+        "DataTable",
+        "Tabs",
+        "StatusBadge"
+      ],
+      "scenarios": [
+        {
+          "group": "Data",
+          "label": "One student group",
+          "params": {
+            "sg": "coh:BSN 2027"
+          }
+        },
+        {
+          "group": "States",
+          "label": "Loading",
+          "params": {
+            "state": "loading"
+          }
+        }
+      ]
+    },
+    {
+      "persona": "admin",
       "slug": "add-skill",
       "title": "Add a skill",
       "tier": 1,
@@ -397,15 +492,15 @@
     {
       "persona": "admin",
       "slug": "configure-skill",
-      "title": "Configure the skill",
+      "title": "Change one skill",
       "tier": 1,
       "recommended": "A",
       "variants": [
         {
           "id": "A",
-          "question": "Five steps with the live preview beside each (How it's judged, Evaluation criteria, How many times, Who signs, Check and save): does a full-width wizard that ends on Save configuration get a skill configured right first time?",
+          "question": "Change one skill: does a page in the same four sections as Evaluation settings, with only times needed, minimums and its own questions editable and everything inherited shown as plain values, make one-off changes clear? (Proposed 2026-11-02)",
           "file": "components/lab/screens/admin-configure-skill-a.tsx",
-          "pageType": "wizard"
+          "pageType": "form"
         },
         {
           "id": "B",
@@ -429,7 +524,6 @@
         "Field",
         "RadioGroup",
         "ToggleSwitch",
-        "Tabs",
         "LocalBanner",
         "Dialog",
         "Table",
@@ -610,13 +704,13 @@
       "variants": [
         {
           "id": "A",
-          "question": "Grid, as in Sankalp's prototype: on their course offering's Skills section, can course faculty tick the mapped skills off for the registered group in one sitting (students down, skills across), see which skills cannot be checked off and why, and see who already has evidence or an evaluation out? Open: whether this sits under Course, Learning activities or its own place; whether lab evidence counts the same as rotation evidence beyond the clinical-setting rule; whether an administrator can record a check-off on behalf of faculty (ask Aarti).",
+          "question": "Grid, as in Sankalp's prototype: on their course offering's Skills section, can course faculty check off the mapped skills off for the registered group in one sitting (students down, skills across), see which skills cannot be checked off and why, and see who already has evidence or an evaluation out? Open: whether this sits under Course, Learning activities or its own place; whether lab evidence counts the same as rotation evidence beyond the clinical-setting rule; whether an administrator can record a check-off on behalf of faculty (ask Aarti).",
           "file": "components/lab/screens/course-faculty-offering-checkoff-a.tsx",
           "pageType": "list"
         },
         {
           "id": "B",
-          "question": "One skill at a time, like a paper sign-off sheet: is picking a skill and ticking the students who showed it faster and less error-prone than the grid when the offering maps 140 skills?",
+          "question": "One skill at a time, like a paper sign-off sheet: is picking a skill and checking off the students who showed it faster and less error-prone than the grid when the offering maps 140 skills?",
           "file": "components/lab/screens/course-faculty-offering-checkoff-b.tsx",
           "pageType": "list"
         }

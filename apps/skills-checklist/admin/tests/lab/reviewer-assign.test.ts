@@ -104,6 +104,8 @@ describe("Assign to someone else", () => {
     // The picker offers only adopted preceptors, lab instructors and clinical faculty, never the current evaluator.
     const offered = itemDetail(state, reviewRows(state), row.key)!.assignTo.map((o) => state.people.find((p) => p.id === o.id)!)
     expect(offered.length).toBeGreaterThan(0)
+    // Only a preceptor is told "sign without an account" (Romit 2026-11-02); faculty and lab instructors sign in to Prism.
+    for (const o of itemDetail(state, reviewRows(state), row.key)!.assignTo) expect(o.signsByLink).toBe(state.people.find((p) => p.id === o.id)!.kind === "preceptor")
     for (const p of offered) {
       expect(["preceptor", "lab-instructor", "faculty"]).toContain(p.kind)
       expect(p.verified).not.toBe(false)

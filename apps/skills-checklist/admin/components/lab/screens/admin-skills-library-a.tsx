@@ -81,6 +81,7 @@ export function SkillsLibraryTablePage({ startAdding = false }: { startAdding?: 
           onCopySettings={(rows) => life.copy(rows)}
           onClearTab={() => setTab("all")}
           onRowsInView={setInView}
+          onTimesSet={api.setBanner}
           renderFrame={(toolbar, table) => (
             <LibraryTabs counts={tabCounts} value={tab} onChange={setTab} toolbar={toolbar}>
               {table}

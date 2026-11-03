@@ -182,7 +182,8 @@ function JourneyCluster({ m }: { m: LabBarModel }) {
       <StepArrow m={m} target={prev} dir="prev" />
       <span className="flex min-w-0 items-baseline gap-2 px-1" data-lab-step={step.id}>
         <span className="whitespace-nowrap font-medium text-foreground @max-[40rem]:hidden" aria-current="step">{step.label}</span>
-        <span className={cn("whitespace-nowrap tabular-nums text-muted-foreground", step.side ? "@max-[40rem]:hidden" : "hidden @6xl:inline")}>{position}</span>
+        {/* The configure pages carry their own step rail; a second "Step n of m" here would count something else (audit fix 2026-11-02). */}
+        <span className={cn("whitespace-nowrap tabular-nums text-muted-foreground", step.screen === "admin/configure-skill" ? "hidden" : step.side ? "@max-[40rem]:hidden" : "hidden @6xl:inline")}>{position}</span>
         <span className="whitespace-nowrap font-medium tabular-nums text-foreground @[40rem]:hidden" aria-label={`${step.label}, ${position.toLowerCase()}`}>{step.side ? (step.tag ?? "Side") : `${index}/${total}`}</span>
       </span>
       <ol className="hidden items-center @6xl:flex" aria-label="Steps" data-lab-dots>

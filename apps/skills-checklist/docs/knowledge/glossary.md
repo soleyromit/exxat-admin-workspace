@@ -366,7 +366,7 @@ Format: `file:line` | current | proposed | reason. Lines are from the working tr
 6. Say the rule, not the verdict. A negative outcome states which rule was not met and what the student can do next. `[REQ SH-03]`
 7. Do not hard-code the skill noun. Use `{itemNoun}` forms. Do not name Prism as the supplier of skills. `[PROTO 2.6]` `[REQ SL-01]`
 8. Status never rests on colour. Every state keeps its glyph and label. `[PROTO rule 7]`
-9. Never use "item", "pending", "entry" (alone), "ticket", "record" as a verb, "reject", "fail" or "retake" in UI.
+9. Never use "item", "pending", "entry" (alone), "ticket", "tick" (Romit 2026-11-02: "The word tick remains confusing to me"; say "check off", "mark done" or "select"), "record" as a verb, "reject", "fail" or "retake" in UI.
 10. Evaluator copy is shorter than student copy. One instruction per screen. `[ux/09]`
 11. No colloquialisms ("heads up", "oops"), no exclamation marks, no emoji.
 

@@ -326,7 +326,7 @@ export function AddEvaluatorDialog({ open, onOpenChange, existing, onAdded, site
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add an evaluator</DialogTitle>
-          <DialogDescription>A name and an email are enough. They need no account.</DialogDescription>
+          <DialogDescription>{role === "preceptor" ? "A name and an email are enough. Preceptors sign through a link and need no account." : "A name and an email are enough."}</DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={(ev) => { ev.preventDefault(); submit() }}>
           <div className="flex flex-col gap-1.5">

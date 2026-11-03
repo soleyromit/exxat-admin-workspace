@@ -24,7 +24,7 @@ import { CONFIGURE_STEPS, configureStepHead, outcomesLabel, type ConfigureStepId
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { SECTION_BODY, type SectionProps } from "@/components/lab/configure/fields"
 import { ConfigSection } from "@/components/lab/configure/section"
-import { RuleFooterSummary, RulePreviewAside } from "@/components/lab/configure/live-panel"
+import { RuleFooterSummary } from "@/components/lab/configure/live-panel"
 import { EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
 import { ConfigureReceiptPage, DecisionPanel, PeopleSee, saveBlockedReason, SetupSummary, useMinWidth, WhoItAffects } from "@/components/lab/configure/check"
 import { BulkApplySheet, bulkAppliedNote, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
@@ -196,7 +196,7 @@ export function AdminConfigureSkillB() {
         banner={banner}
         // D-X29/D-X30: the live preview panel beside the page from 1280 px; Check uses it too (its own tabs are narrow only).
         // Layout "checklist" (redesign 2026-10-27): while Check is in view the side column becomes the sticky decision panel.
-        aside={onCheck && wide ? decisions : <RulePreviewAside skillName={skill.name} rule={m.rule} current={m.current} impact={impact} onSeeChange={() => scrollToSection("check")} />}
+        aside={onCheck && wide ? decisions : undefined}
         footer={
           <StickyFooter
             summary={<RuleFooterSummary skillName={skill.name} rule={m.rule} impact={impact} onSeeChange={() => scrollToSection("check")} asideWide />}

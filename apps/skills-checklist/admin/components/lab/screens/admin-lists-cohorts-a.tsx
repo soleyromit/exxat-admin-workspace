@@ -28,13 +28,13 @@ import { listById, listsHref, skillGroups, type SkillList } from "@/lib/lab/list
 import { skillNounPlural } from "@/lib/lab/terms"
 import { GROUPS_STEP, ListsFrame, type ListsContext } from "@/components/lab/admin-a/lists-frame"
 import { useLabLinkContext } from "@/components/lab/lab-bar/page-context"
-import { AssignChecklist, AssignConsequence, ListStatus, ListsTable, RuleDialog, assignFooterLine, listSize } from "@/components/lab/admin-a/lists-parts"
-import { IndividualAssign, individualFooterLine } from "@/components/lab/admin-a/lists-individual"
+import { AssignChecklist, ListStatus, ListsTable, RuleDialog, listSize } from "@/components/lab/admin-a/lists-parts"
+import { IndividualAssign } from "@/components/lab/admin-a/lists-individual"
 import { PaneHeading } from "@/components/lab/admin-a/parts"
 
 export function AdminListsCohortsA() {
   return (
-    <ListsFrame variant="A" footerContext={footerLine}>
+    <ListsFrame variant="A">
       {(c) => (c.mode === "assign" ? <AssignOne c={c} /> : <ListFirst c={c} />)}
     </ListsFrame>
   )
@@ -42,32 +42,19 @@ export function AdminListsCohortsA() {
 
 const byIndividual = (c: ListsContext) => c.mode === "assign" && c.query.get("by") === "skills"
 
-function footerLine(c: ListsContext): string | null {
-  if (byIndividual(c)) return individualFooterLine(c.model)
-  const l = selectedList(c)
-  return l ? assignFooterLine(c.model, l) : null
-}
-
 const selectedList = (c: ListsContext): SkillList | undefined => {
   const groups = skillGroups(c.model.lists)
   return listById(groups, c.query.get("list")) ?? groups.find((l) => l.isDefault) ?? groups[0]
 }
 
-/** Checklist beside what it does: two columns once the page is wide enough (decision D-X30, no white space at 1920). */
+/** Which students use this group of skills: the checklist, full width. Labels and controls only (Romit 2026-11-02, no subtext). */
 function AssignColumns({ c, list }: { c: ListsContext; list: SkillList }) {
   const { model, actions } = c
   return (
-    // The panel sits right beside the rows it explains (2026-10-30 review: it floated a column away): the checklist keeps a
-    // readable width and the panel takes the rest of the row, so nothing is left empty at 1920 (D-X30).
-    <div className="grid min-w-0 gap-6 @min-[60rem]:grid-cols-[minmax(0,40rem)_minmax(20rem,1fr)]">
-      <FieldSet className="min-w-0">
-        <FieldLegend className={TYPE.section}>{`Which students use this group of ${skillNounPlural()}?`}</FieldLegend>
-        <AssignChecklist model={model} list={list} onToggle={(g, on) => actions.toggle(list.id, g, on)} onCreateGroup={actions.openGroup} idPrefix={`assign-${list.id}`} />
-      </FieldSet>
-      <div className="min-w-0 @min-[60rem]:pt-8">
-        <AssignConsequence model={model} list={list} />
-      </div>
-    </div>
+    <FieldSet className="min-w-0">
+      <FieldLegend className={TYPE.section}>{`Which students use this group of ${skillNounPlural()}?`}</FieldLegend>
+      <AssignChecklist model={model} list={list} onToggle={(g, on) => actions.toggle(list.id, g, on)} onCreateGroup={actions.openGroup} idPrefix={`assign-${list.id}`} />
+    </FieldSet>
   )
 }
 
@@ -99,7 +86,6 @@ function AssignOne({ c }: { c: ListsContext }) {
                   ))}
                 </SelectContent>
               </Select>
-              <span className="text-sm text-muted-foreground tabular-nums" data-list-size>{listSize(list)}</span>
               {list.isDefault ? <Badge variant="secondary">Default</Badge> : null}
               <Button type="button" variant="link" size="sm" className="ms-auto h-auto p-0" onClick={() => c.query.set({ by: "skills" })}>{`Assign individual ${nounPl} instead`}</Button>
             </div>

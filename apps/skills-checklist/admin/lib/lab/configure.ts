@@ -7,7 +7,7 @@ import { isConfigured } from "@/lib/v2/population"
 import { ratingKind, ratingOptions } from "@/lib/v2/student"
 import type { EvalModel, Evaluation, EvaluatorRole, LevelMinimum, Person, PublishedRuleSnapshot, QuestionRule, RuleChangeRecord, ScoredRule, Skill, SkillConfig, V2State } from "@/lib/v2/types"
 import { inSentence, skillNoun } from "./terms"
-import { checkOffAllowedFor, checkOffOffReason, checkOffScore, tickRecordsLine } from "./checkoff-rules"
+import { checkOffAllowedFor, checkOffLevelIndex, checkOffOffReason, checkOffScore, tickRecordsLine } from "./checkoff-rules"
 
 /** The Configure setting's name, in "Who signs", Check and save, and "What you changed". */
 export const CHECKOFF_LABEL = "Group check-off"
@@ -71,8 +71,13 @@ export interface LabRule {
    * rule's own threshold). Optional so drafts saved before it existed still load.
    */
   checkOff?: { enabled: boolean | null; levelIndex: number | null; score: number | null }
-  /** Read-only, carried from the published v2 rule. Not in REQ. Removing them is an edit like any other. */
-  carried: { window: number | null; minLevelIndex: number | null; simulationCapPercent: number | null; simulationExcluded: boolean }
+  /**
+   * Carried from the published v2 rule. Not in REQ. Removing them is an edit like any other. Exception: for the levels model,
+   * `minLevelIndex` is the admin's own choice on the Levels step, "which levels count toward achievement" (Romit 2026-11-02): the
+   * lowest level that counts, every level above it counting too. It is the engine's `minLevelIndex`, so this one field is the single
+   * source for the step, the rule sentence, the summaries and the student screens. Read it through `countsFromIndex`.
+   */
+  carried:{ window: number | null; minLevelIndex: number | null; simulationCapPercent: number | null; simulationExcluded: boolean }
 }
 
 export type RecordState = "achieved" | "in-progress" | "not-qualifying" | "no-evidence"
@@ -120,12 +125,16 @@ export const MODEL_HELP: Record<EvalModel, string> = {
  * Two preset label sets the program can start from and then edit [CALL 10-26 B.3]. Levels are stored lowest first, the order the
  * Levels editor uses. A preset only fills labels; it never chooses which outcome qualifies or how many are needed.
  */
-export type LabelPresetId = "approval" | "independence"
+export type LabelPresetId = "metnotmet" | "approval" | "independence" | "performance" | "aacn"
+/** Named starting sets (audit fix 2026-11-02): labels only; never which level counts or how many [REQ SC-02]. Lowest first. */
 export const LABEL_PRESETS: Record<LabelPresetId, { label: string; outcomes?: [string, string]; levels?: string[] }> = {
+  metnotmet: { label: "Met / Not met", outcomes: ["Met", "Not met"] },
   approval: { label: "Approved / Not approved", outcomes: ["Approved", "Not approved"] },
-  independence: { label: "Independent / With assistance / Observed", levels: ["Observed", "With assistance", "Independent"] },
+  independence: { label: "Independence", levels: ["Observed", "With assistance", "Independent"] },
+  performance: { label: "Performance", levels: ["Observed", "Assisted", "Performed"] },
+  aacn: { label: "AACN developmental", levels: ["Underdeveloped", "Developing", "Developed"] },
 }
-export const isLabelPreset = (v: string | null | undefined): v is LabelPresetId => v === "approval" || v === "independence"
+export const isLabelPreset = (v: string | null | undefined): v is LabelPresetId => !!v && v in LABEL_PRESETS
 
 /** Fill the labels from a preset. Binary keeps its qualifying choice; renamed levels keep their minimums only while they exist. */
 export function applyPreset(rule: LabRule, id: LabelPresetId): LabRule {
@@ -135,7 +144,13 @@ export function applyPreset(rule: LabRule, id: LabelPresetId): LabRule {
     const levels = [...p.levels]
     const co = rule.checkOff
     const checkOff = co && co.levelIndex !== null && co.levelIndex >= levels.length ? { ...co, levelIndex: null } : co
-    return { ...rule, levels, levelMinimums: rule.levelMinimums.filter((m) => m.levelIndex < levels.length), checkOff }
+    // The level that counts follows its name into the preset; if the preset has no level of that name, the choice is cleared and
+    // asked again (a preset never picks it).
+    const from = rule.carried.minLevelIndex
+    const name = from === null ? "" : norm(rule.levels[from] ?? "")
+    const moved = name ? levels.findIndex((l) => norm(l) === name) : -1
+    const carried = { ...rule.carried, minLevelIndex: moved >= 0 ? moved : null }
+    return { ...rule, levels, levelMinimums: rule.levelMinimums.filter((m) => m.levelIndex < levels.length), checkOff, carried }
   }
   return rule
 }
@@ -205,7 +220,9 @@ export function fromV2(skill: Pick<Skill, "model" | "config">): LabRule {
     checkOff: { enabled: typeof c.checkOff?.enabled === "boolean" ? c.checkOff.enabled : null, levelIndex: c.checkOff?.levelIndex ?? null, score: c.checkOff?.score ?? null },
     carried: {
       window: a.kind === "last-n" && a.window ? a.window : null,
-      minLevelIndex: a.minLevelIndex,
+      // A published levels rule with no minimum let every level count; read that back as the explicit choice it already was
+      // (the lowest level), so the Levels step shows it rather than asking again. Same engine result.
+      minLevelIndex: a.minLevelIndex === null && skill.model === "demonstration" && c.levels.length > 0 ? 0 : a.minLevelIndex,
       simulationCapPercent: c.simulation.allowed && c.simulation.mode === "cap" ? c.simulation.maxSharePercent : null,
       simulationExcluded: !c.simulation.allowed,
     },
@@ -369,9 +386,56 @@ function qualifierOf(rule: LabRule): string {
       if (r.kind === "minEach") return `scoring at least ${r.value} on every question`
       return `totalling ${r.value} or more`
     }
+    case "demonstration":
+      return countingLevelsPhrase(rule)
     default:
       return ""
   }
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Which levels count (levels model; Romit 2026-11-02, "ask the user to define which value counts towards achievement here
+// itself"). One choice: the lowest level that counts, every level above it counting too (the engine's minLevelIndex, at or above).
+
+/** The index of the lowest level that counts, or null until the admin chooses (never preset, never defaulted). */
+export const countsFromIndex = (rule: Pick<LabRule, "model" | "carried">): number | null => (rule.model === "demonstration" ? rule.carried.minLevelIndex : null)
+
+/** Set the lowest level that counts. */
+export const withCountsFrom = (rule: LabRule, index: number | null): LabRule => ({ ...rule, carried: { ...rule.carried, minLevelIndex: index } })
+
+/** The named levels that count, lowest first. Empty until chosen. */
+export function countingLevels(rule: LabRule): string[] {
+  const i = countsFromIndex(rule)
+  if (i === null || i < 0 || i >= rule.levels.length) return []
+  return rule.levels.slice(i).map((l) => l.trim()).filter(Boolean)
+}
+
+/**
+ * The counting levels as a clause for the rule sentence: "at any level", "rated independent", "rated with assistance or independent",
+ * "rated with assistance or above" (three or more). Labels are lowercase mid-sentence (inSentence). Empty until chosen.
+ */
+export function countingLevelsPhrase(rule: LabRule): string {
+  const i = countsFromIndex(rule)
+  const named = countingLevels(rule)
+  if (i === null || named.length === 0) return ""
+  if (i === 0) return "at any level"
+  if (named.length === 1) return `rated ${inSentence(named[0]!)}`
+  if (named.length === 2) return `rated ${inSentence(named[0]!)} or ${inSentence(named[1]!)}`
+  return `rated ${inSentence(named[0]!)} or above`
+}
+
+/** The option label for "count from level i" on the Levels step (a label standing alone, so the level keeps its case). */
+export function countsFromOption(levels: readonly string[], i: number): string {
+  const name = levels[i]?.trim() || `Level ${i + 1}`
+  if (i === 0) return "Any level"
+  if (i === levels.length - 1) return `${name} only`
+  return `${name} or above`
+}
+
+/** One summary line for Check and the setup summary: "Counts: With assistance or above", or that it is not chosen. */
+export function countsLine(rule: LabRule): string {
+  const i = countsFromIndex(rule)
+  return i !== null && countingLevels(rule).length ? `Counts: ${countsFromOption(rule.levels, i)}` : "Which levels count is not chosen"
 }
 
 /** True once the program has said how many times. Until then the rule has no count, by design (no platform default). */
@@ -421,7 +485,8 @@ export function carriedNotes(rule: LabRule): string[] {
     const max = Math.floor((need * rule.carried.simulationCapPercent) / 100)
     out.push(max === 0 ? "Simulation evidence does not count here." : `Up to ${max} of ${need} may come from simulation.`)
   }
-  if (rule.carried.minLevelIndex !== null) out.push("A minimum level from the earlier rule applies.")
+  // For the levels model the minimum level is the admin's own "which levels count" choice and is in the rule sentence already.
+  if (rule.carried.minLevelIndex !== null && rule.model !== "demonstration") out.push("A minimum level from the earlier rule applies.")
   return out
 }
 
@@ -448,6 +513,13 @@ function fakeEvaluation(x: { outcome?: "met" | "unmet"; answers?: Array<"yes" | 
   return { outcome: x.outcome ?? "unmet", versions: [{ detail: { answers: x.answers, scores: x.scores } }] } as unknown as Evaluation
 }
 
+/** Whether one completed evaluation at level `levelIndex` is used by the rule: the engine's own run, not a copy of its test. */
+function levelCounts(rule: LabRule, levelIndex: number): boolean {
+  const e = { ...fakeEvaluation({ outcome: "met" }), id: "example", status: "counted", date: "2026-01-01", levelIndex, evaluatorId: "example", setting: "clinical" } as unknown as Evaluation
+  const run = runRule({ ...engineRuleOfLab(rule), need: 1, window: null, simulationExcluded: false, simulationCapPercent: null, distinctEvaluators: 1, settingMinimums: [], levelMinimums: [] }, [e])
+  return run.valid ? run.used.length === 1 : false
+}
+
 /** What the evaluator records, said plainly, with a sample of it. */
 export function criteriaMeaning(rule: LabRule): Meaning {
   const m = rule.model
@@ -460,7 +532,23 @@ export function criteriaMeaning(rule: LabRule): Meaning {
   if (m === "demonstration") {
     const named = rule.levels.map((l) => l.trim()).filter(Boolean)
     if (named.length === 0) return { lines: ["The evaluator picks one level per evaluation."] }
-    return { lines: [`The evaluator picks one of ${named.length} ${plural(named.length, "level", "levels")}, ${inSentence(named[0]!)} lowest.`], example: `Example: the evaluator records ${inSentence(named[Math.min(1, named.length - 1)]!)}.` }
+    const lines = [`The evaluator picks one of ${named.length} ${plural(named.length, "level", "levels")}, ${inSentence(named[0]!)} lowest.`]
+    const from = countsFromIndex(rule)
+    const counting = countingLevels(rule)
+    if (from === null || counting.length === 0) return { lines: [...lines, "Choose which levels count toward achievement."] }
+    lines.push(
+      from === 0
+        ? "An evaluation at any level counts toward achievement."
+        : counting.length === 1
+          ? `Only an evaluation at ${inSentence(counting[0]!)} counts toward achievement.`
+          : `An evaluation at ${inSentence(counting[0]!)} or above counts toward achievement.`,
+    )
+    // The worked example takes the level just below the line (or the lowest when every level counts); the engine gives the verdict.
+    const exIndex = from === 0 ? 0 : from - 1
+    const exName = rule.levels[exIndex]?.trim()
+    if (!exName) return { lines }
+    const counts = levelCounts(rule, exIndex)
+    return { lines, example: `Example: the evaluator records ${inSentence(exName)}: ${counts ? "counts" : "does not count"}.`, counts }
   }
   const n = rule.questions.length
   if (m === "question") {
@@ -478,7 +566,11 @@ export function ruleMeaning(rule: LabRule): Meaning {
   const m = rule.model
   if (!m) return { lines: [`Choose how this ${skillNoun()} is judged first.`] }
   const lines: string[] = []
-  lines.push(hasNeed(rule) ? `The student needs ${rule.need} ${plural(rule.need, "evaluation", "evaluations")} that count.` : "Nothing counts until you set how many evaluations are needed.")
+  // Levels: the count names the levels chosen on the Levels step ("3 evaluations rated independent"), from the same field.
+  const levelsPhrase = m === "demonstration" ? countingLevelsPhrase(rule) : ""
+  if (!hasNeed(rule)) lines.push("Nothing counts until you set how many evaluations are needed.")
+  else if (levelsPhrase) lines.push(`The student needs ${rule.need} ${plural(rule.need, "evaluation", "evaluations")} ${levelsPhrase}.`)
+  else lines.push(`The student needs ${rule.need} ${plural(rule.need, "evaluation", "evaluations")} that count.`)
   const c = ruleClauses(rule)
   const extra = [...c.levels, c.distinct ? c.distinct.replace(/^from /, "") : "", ...c.settings].filter(Boolean)
 
@@ -578,9 +670,10 @@ export type SectionId = "model" | "outcomes" | "rule" | "signoff"
 
 /** The two configuration dimensions, named the way the client says them [CALL 10-26 A.2, B.1]. */
 /** The model step, in the client's words: "Model" is an internal word (UX critique 2026-10-26). The question stays "How is this skill evaluated?". */
-export const MODEL_STEP_LABEL = "How it's judged"
-export const CRITERIA_LABEL = "Evaluation criteria"
-export const HOW_MANY_LABEL = "How many times"
+/** One vocabulary on the program page and the per-skill page (Romit 2026-11-02, audit fix): four sections, same names, same order. */
+export const MODEL_STEP_LABEL = "How skills are judged"
+export const CRITERIA_LABEL = "What counts as achieved"
+export const HOW_MANY_LABEL = "How many evaluations"
 export type ConfigureStepId = SectionId | "check"
 
 export const SECTIONS: Array<{ id: SectionId; label: string }> = [
@@ -616,21 +709,19 @@ export const isConfigureStep = (v: string | null | undefined): v is ConfigureSte
  * never repeats it. On Check the fix list says what is left, so the lead shows only when nothing is.
  */
 export function configureStepHead(id: ConfigureStepId, model: EvalModel | null, ready = true): { title: string; lead?: string } {
-  // No instruction lines (Romit 2026-10-27): the order of the sections already says what comes first. A lead stays only where
-  // it states a fact the fields cannot show.
+  // One vocabulary (2026-11-02): the step heading is the section's name, on every page; no lead lines (D-L34, D-L36).
+  void model
   switch (id) {
     case "model":
-      return { title: `How is this ${skillNoun()} judged?` }
+      return { title: MODEL_STEP_LABEL }
     case "outcomes":
-      if (model === "question" || model === "scored") return { title: "What does the evaluator answer?" }
-      if (model === "demonstration") return { title: "Which levels can the evaluator choose?" }
-      return { title: "What does the evaluator record?" }
+      return { title: CRITERIA_LABEL }
     case "rule":
-      return { title: "When does it count?" }
+      return { title: HOW_MANY_LABEL }
     case "signoff":
-      return { title: "Who signs, and what does the student add?", lead: "Evaluators sign through a link. They need no account." }
+      return { title: "Who signs" }
     case "check":
-      return ready ? { title: "Ready to save?", lead: "Your choices, who they affect and what people see." } : { title: "What is left before saving?" }
+      return ready ? { title: "Ready to save?" } : { title: "What is left before saving?" }
   }
 }
 
@@ -641,7 +732,11 @@ export function configureStepValue(id: SectionId, rule: LabRule): string | undef
   if (!m) return undefined
   if (id === "outcomes") {
     if (m === "binary") return rule.qualifyingLabel === null ? undefined : `${rule.outcomeLabels[rule.qualifyingLabel].trim() || "Outcome"} counts`
-    if (m === "demonstration") return rule.levels.length ? `${rule.levels.length} ${rule.levels.length === 1 ? "level" : "levels"}` : undefined
+    if (m === "demonstration") {
+      const from = countsFromIndex(rule)
+      if (from !== null && from < rule.levels.length && rule.levels[from]?.trim()) return countsFromOption(rule.levels, from)
+      return rule.levels.length ? `${rule.levels.length} ${rule.levels.length === 1 ? "level" : "levels"}` : undefined
+    }
     const n = rule.questions.filter((q) => q.trim()).length
     return n ? `${n} ${n === 1 ? "question" : "questions"}` : undefined
   }
@@ -702,7 +797,7 @@ export function validateRule(rule: LabRule): RuleIssue[] {
     const r = rule.questionRule
     if (!r) add("rule", "cfg-qrule", "missing", "Choose what makes an evaluation qualify.")
     else if (r.kind === "atLeast" && (!isInt(r.n) || r.n < 1 || r.n > rule.questions.length)) add("rule", "cfg-qrule-n", "range", `Enter a number from 1 to ${rule.questions.length}.`)
-    else if (r.kind === "subset" && r.indices.filter((i) => i < rule.questions.length).length === 0) add("rule", "cfg-qrule-subset", "empty", "Tick at least one question that must be Yes.")
+    else if (r.kind === "subset" && r.indices.filter((i) => i < rule.questions.length).length === 0) add("rule", "cfg-qrule-subset", "empty", "Select at least one question that must be Yes.")
   }
 
   if (m === "scored") {
@@ -722,6 +817,12 @@ export function validateRule(rule: LabRule): RuleIssue[] {
       if (!l.trim()) add("outcomes", `cfg-level-${i}`, "blank", `Level ${i + 1} has no name.`)
       else if (dup.has(i)) add("outcomes", `cfg-level-${i}`, "dup", `Level ${i + 1} repeats another level.`)
     })
+    // Which levels count is the program's choice, never defaulted [REQ SC-02 spirit; Romit 2026-11-02]. A removed level clears it.
+    const from = rule.carried.minLevelIndex
+    if (rule.levels.length >= 2) {
+      if (from === null) add("outcomes", "cfg-counts-from", "missing", "Choose which levels count toward achievement.")
+      else if (from < 0 || from >= rule.levels.length) add("outcomes", "cfg-counts-from", "range", "That level was removed. Choose which levels count.")
+    }
   }
 
   if (!isInt(rule.need) || rule.need < 1) add("rule", "cfg-need", "need", NEED_UNSET_MESSAGE)
@@ -1117,7 +1218,7 @@ export function configDiff(before: LabRule | null, after: LabRule): Array<{ labe
   const roles = (r: LabRule) => r.evaluatorRoles.map((x) => ROLE_LABEL[x]).join(", ") || "None"
   const fields = (r: LabRule) => r.studentFields.filter((f) => f.label.trim()).map((f) => f.label.trim()).join(", ") || "None"
   const labels = (r: LabRule) =>
-    r.model === "binary" ? r.outcomeLabels.join(" or ") : r.model === "demonstration" ? r.levels.filter((l) => l.trim()).join(", ") : `${r.questions.length} ${plural(r.questions.length, "question", "questions")}`
+    r.model === "binary" ? r.outcomeLabels.join(" or ") : r.model === "demonstration" ? `${r.levels.filter((l) => l.trim()).join(", ")}. ${countsLine(r)}` : `${r.questions.length} ${plural(r.questions.length, "question", "questions")}`
   const push = (label: string, b: string, a: string) => {
     if (b !== a) out.push({ label, before: b, after: a })
   }
@@ -1335,7 +1436,7 @@ export function setupSummary(rule: LabRule): SetupGroup[] {
           rule.qualifyingLabel === null ? "Qualifying outcome not chosen" : `${rule.outcomeLabels[rule.qualifyingLabel] || "Chosen outcome"} qualifies`,
         ]
       : m === "demonstration"
-        ? [rule.levels.filter((l) => l.trim()).join(", ") || "No levels yet"]
+        ? [rule.levels.filter((l) => l.trim()).join(", ") || "No levels yet", countsLine(rule)]
         : [`${rule.questions.length} ${plural(rule.questions.length, "question", "questions")}${m === "scored" ? `, scored 1 to ${rule.scaleMax}` : ""}`]
   const fields = rule.studentFields.filter((f) => f.label.trim())
   const roles = rule.evaluatorRoles.map((r) => ROLE_LABEL[r])
@@ -1344,6 +1445,8 @@ export function setupSummary(rule: LabRule): SetupGroup[] {
     { id: "model", step: "model", label: MODEL_STEP_LABEL, lines: [m ? LAB_MODEL_LABEL[m] : none] },
     { id: "criteria", step: "outcomes", label: CRITERIA_LABEL, lines: criteria },
     { id: "rule", step: "rule", label: HOW_MANY_LABEL, lines: m ? [ruleSentence(rule), settingNote(rule), ...carriedNotes(rule)].filter(Boolean) : [none] },
+    // Group check-off sits with how many evaluations (one hierarchy, 2026-11-02).
+    { id: "checkoff", step: "rule", label: CHECKOFF_LABEL, lines: [m ? checkOffLine(rule) : none] },
     // Same order as the step's groups (2026-10-28): Student, Evaluator, Approval.
     { id: "student", step: "signoff", label: "What the student adds", lines: [fields.length ? fields.map((f) => `${f.label.trim()}${f.mandatory ? " (required)" : ""}`).join(", ") : "Nothing beyond the evidence"] },
     { id: "signers", step: "signoff", label: "Who signs", lines: [roles.length ? roles.join(", ") : "No role chosen"] },
@@ -1353,7 +1456,6 @@ export function setupSummary(rule: LabRule): SetupGroup[] {
       label: "Before it counts",
       lines: [`Self-evaluation first: ${onOff(rule.selfEvaluation)}. Feedback required: ${onOff(rule.feedbackRequired)}. Approval: ${onOff(rule.approvalRequired)}.`],
     },
-    { id: "checkoff", step: "signoff", label: CHECKOFF_LABEL, lines: [m ? checkOffLine(rule) : none] },
   ]
 }
 
@@ -1416,7 +1518,12 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
             : { label: "Counts when", value: rule.outcomeLabels[rule.qualifyingLabel] || "Chosen outcome" },
         ]
       : m === "demonstration"
-        ? [{ label: "Levels", value: realLevels.join(", ") || "None yet", missing: realLevels.length < 2 }]
+        ? [
+            { label: "Levels", value: realLevels.join(", ") || "None yet", missing: realLevels.length < 2 },
+            countingLevels(rule).length
+              ? { label: "Counts", value: countsFromOption(rule.levels, countsFromIndex(rule)!) }
+              : { label: "Counts", value: "Not chosen", missing: true },
+          ]
         : [
             { label: "Questions", value: realQuestions ? `${rule.questions.length} ${plural(rule.questions.length, "question", "questions")}` : "None yet", missing: realQuestions === 0 },
             ...(m === "scored" ? [{ label: "Scale", value: `1 to ${rule.scaleMax}` }] : []),
@@ -1427,6 +1534,7 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
         hasNeed(rule) ? { label: "Rule", value: ruleSentence(rule) } : { label: "Rule", value: "Not set", missing: true },
         ...(settingNote(rule) ? [{ label: "Setting", value: settingNote(rule) }] : []),
         ...carriedNotes(rule).map((n) => ({ label: "Kept", value: n })),
+        { label: CHECKOFF_LABEL, value: m ? checkOffLine(rule) : "Not set" },
       ]
   const fields = rule.studentFields.filter((f) => f.label.trim())
   const roles = rule.evaluatorRoles.map((r) => ROLE_LABEL[r])
@@ -1444,7 +1552,6 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
         roles.length ? { label: "Who signs", value: roles.join(", ") } : { label: "Who signs", value: "Not chosen", missing: true },
         { label: "Feedback required", value: yesNo(rule.feedbackRequired) },
         { label: "Approval before it counts", value: yesNo(rule.approvalRequired) },
-        { label: CHECKOFF_LABEL, value: m ? checkOffLine(rule) : "Not set" },
       ],
     },
   ]
@@ -1471,14 +1578,22 @@ export const ruleAllowsCheckOff = (rule: LabRule): boolean => checkOffAllowedFor
 /** The score one tick records under this rule. */
 export const ruleCheckOffScore = (rule: LabRule): number => checkOffScore(rule.scaleMax, rule.scoredRule, rule.checkOff?.score, rule.questions.length)
 
-/** "A tick marks the student as met", "... as independent", "... at the level: works alone": what one tick writes. */
+/** "Checking it off marks the student as met", "... as independent", "... at the level: works alone": what one tick writes. */
 export function ruleTickRecords(rule: LabRule): string {
   return tickRecordsLine(rule.model, { outcomeLabels: rule.outcomeLabels, qualifyingLabel: rule.qualifyingLabel, levels: rule.levels, levelIndex: rule.checkOff?.levelIndex, questions: rule.questions, score: ruleCheckOffScore(rule) })
 }
 
-/** "Allowed. A tick marks the student as met." or "Not allowed": one line for Check and save and "What you changed". */
+/** "Allowed, records Independent" or "Not allowed": the value for Check and save and "What you changed" (data, no sentence). */
 export function checkOffLine(rule: LabRule): string {
-  return ruleAllowsCheckOff(rule) ? `Allowed. ${ruleTickRecords(rule)}.` : "Not allowed"
+  if (!ruleAllowsCheckOff(rule)) return "Not allowed"
+  if (rule.model === "demonstration") {
+    const level = rule.levels[checkOffLevelIndex(rule.levels, rule.checkOff?.levelIndex)]?.trim()
+    return level ? `Allowed, marks ${inSentence(level)}` : "Allowed"
+  }
+  if (rule.model === "binary") return `Allowed, marks ${inSentence(rule.outcomeLabels[rule.qualifyingLabel ?? 0]?.trim() || "Met")}`
+  if (rule.model === "scored") return `Allowed, scores ${ruleCheckOffScore(rule)}`
+  if (rule.model === "question") return "Allowed, every question Yes"
+  return "Allowed"
 }
 
 /** Why the rule does not allow a check-off, in the same words the course offering page uses. */

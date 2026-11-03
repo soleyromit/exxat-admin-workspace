@@ -562,9 +562,15 @@
             "3": "B"
           },
           "params": {
-            "1": { "tab": "readiness" },
-            "2": { "tab": "readiness" },
-            "3": { "tab": "readiness" }
+            "1": {
+              "tab": "readiness"
+            },
+            "2": {
+              "tab": "readiness"
+            },
+            "3": {
+              "tab": "readiness"
+            }
           }
         },
         {
@@ -664,7 +670,7 @@
         {
           "id": "2",
           "label": "One skill at a time",
-          "summary": "Pick a skill, tick the students who showed it"
+          "summary": "Pick a skill, check off the students who showed it"
         }
       ],
       "steps": [
@@ -690,7 +696,7 @@
         {
           "id": "1",
           "label": "Recommended",
-          "summary": "The recommended design of each configuration step, in Sankalp's order"
+          "summary": "The recommended design of each setup step, in Sankalp's order"
         }
       ],
       "steps": [
@@ -711,12 +717,35 @@
           }
         },
         {
+          "id": "paste",
+          "label": "Paste several",
+          "screen": "admin/add-skill",
+          "variants": {
+            "1": "C"
+          },
+          "params": {
+            "1": {
+              "how": "several"
+            }
+          }
+        },
+        {
           "id": "bulk",
           "label": "Bulk upload",
           "screen": "admin/import-ai-review",
           "variants": {
             "1": "A"
-          }
+          },
+          "tag": "Later"
+        },
+        {
+          "id": "starter",
+          "label": "Starting points",
+          "screen": "admin/starter-library",
+          "variants": {
+            "1": "A"
+          },
+          "tag": "Later"
         },
         {
           "id": "categories",
@@ -727,31 +756,11 @@
           }
         },
         {
-          "id": "configure",
-          "label": "Configure the skill",
-          "screen": "admin/configure-skill",
+          "id": "settings",
+          "label": "Evaluation settings",
+          "screen": "admin/evaluation-settings",
           "variants": {
-            "1": "A"
-          },
-          "params": {
-            "1": {
-              "skill": "sk-pressure-injury"
-            }
-          }
-        },
-        {
-          "id": "publish",
-          "label": "Check and save",
-          "screen": "admin/configure-skill",
-          "variants": {
-            "1": "A"
-          },
-          "params": {
-            "1": {
-              "skill": "sk-vitals",
-              "step": "check",
-              "change": "sample"
-            }
+            "1": "B"
           }
         },
         {
@@ -777,12 +786,49 @@
           }
         },
         {
+          "id": "map-skill",
+          "label": "Course mapping by skill",
+          "screen": "admin/course-mapping",
+          "variants": {
+            "1": "B"
+          },
+          "params": {
+            "1": {
+              "by": "skill"
+            }
+          }
+        },
+        {
           "id": "map",
           "label": "Course mapping",
           "screen": "admin/course-mapping",
           "variants": {
             "1": "A"
           }
+        },
+        {
+          "id": "result",
+          "label": "Setup summary",
+          "screen": "admin/setup-result",
+          "variants": {
+            "1": "A"
+          }
+        },
+        {
+          "id": "configure",
+          "label": "Change one skill",
+          "screen": "admin/configure-skill",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "skill": "sk-pressure-injury"
+            }
+          },
+          "side": true,
+          "after": "settings",
+          "tag": "Optional"
         }
       ]
     },

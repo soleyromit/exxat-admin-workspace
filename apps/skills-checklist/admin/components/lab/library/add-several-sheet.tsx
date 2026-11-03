@@ -16,7 +16,7 @@ import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
@@ -108,10 +108,9 @@ export function AddSeveralSheet({ open, onOpenChange, rows, onAdd }: {
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   aria-invalid={!!error || undefined}
-                  aria-describedby={error ? "several-names-error several-names-help" : "several-names-help"}
+                  aria-describedby={error ? "several-names-error" : undefined}
                   className="font-normal"
                 />
-                <FieldDescription id="several-names-help">Paste from an email, or from a sheet with Name, Category, Tags and Description columns.</FieldDescription>
                 {error ? <FieldError id="several-names-error">{error}</FieldError> : null}
               </Field>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
