@@ -32,6 +32,9 @@ const flows = JSON.parse(fs.readFileSync(path.join(root, "lib/lab/flows.json"), 
 const screens = JSON.parse(fs.readFileSync(path.join(root, "lib/lab/screens.json"), "utf8")).screens
 const screenDef = (key) => screens.find((s) => `${s.persona}/${s.slug}` === key)
 const flowById = (id) => flows.find((f) => f.id === id)
+/** A focus-workflow variant (registry `frame: "focus"`, D-L44): its own route frame with no sidebar by design (DS
+ * exxat-focus-workflow), so it is exempt from "a shell persona page has a sidebar" and from the per-persona sidebar identity. */
+const isFocus = (key, variant) => !!screenDef(key)?.variants.find((v) => v.id === variant)?.frame
 const mainSteps = (f) => f.steps.filter((s) => !s.side)
 
 /** (screen, variant, flow, set) a link resolves to, or null for links the crawl does not judge (/lab index, external). */
@@ -83,10 +86,10 @@ function judge(link, page) {
 const PAGES = []
 for (const f of flows) {
   if (onlyFlow && f.id !== onlyFlow) continue
-  for (const set of f.sets) for (const st of f.steps) PAGES.push({ flow: f.id, set: set.id, step: st.id, persona: st.screen.split("/")[0], url: `/lab/flow/${f.id}/${st.id}?set=${set.id}&term=Fall%202026` })
+  for (const set of f.sets) for (const st of f.steps) PAGES.push({ flow: f.id, set: set.id, step: st.id, persona: st.screen.split("/")[0], focus: isFocus(st.screen, st.variants[set.id]), url: `/lab/flow/${f.id}/${st.id}?set=${set.id}&term=Fall%202026` })
 }
 // Every variant of every screen, for the nav identity check only (their links are not judged: a screen URL has no set).
-if (!onlyFlow) for (const s of screens) for (const v of s.variants) PAGES.push({ navOnly: true, persona: s.persona, step: `${s.slug}/${v.id}`, url: `/lab/${s.persona}/${s.slug}?variant=${v.id}&term=Fall%202026` })
+if (!onlyFlow) for (const s of screens) for (const v of s.variants) PAGES.push({ navOnly: true, persona: s.persona, step: `${s.slug}/${v.id}`, focus: v.frame === "focus", url: `/lab/${s.persona}/${s.slug}?variant=${v.id}&term=Fall%202026` })
 
 // One browser, relaunched if it goes away (a long dev-server crawl can lose it), and one context per page so memory stays flat.
 let browser = await chromium().launch()
@@ -108,7 +111,7 @@ async function visit(p) {
     row.nav = await tab.$$eval("a[data-sidebar=menu-button]", (els) => els.map((e) => e.textContent.trim().replace(/\s*\d+$/, "")))
     row.journey = await tab.$$eval("[data-lab-dots] a", (els) => els.map((e) => e.getAttribute("aria-label")))
     // A shell persona page without a sidebar did not finish rendering (dev recompile): retry rather than report a difference.
-    if (SHELL.has(p.persona) && row.nav.length === 0) throw new Error("no sidebar rendered")
+    if (SHELL.has(p.persona) && !p.focus && row.nav.length === 0) throw new Error("no sidebar rendered")
     if (!p.navOnly) {
       const hrefs = await tab.$$eval("a[href]", (as) => as.map((a) => a.getAttribute("href")).filter((h) => h && (h.startsWith("/lab") || h.startsWith("?"))))
       // Sidebar rows have bare urls (the DS highlights by path); the set rides along at click time (lab-frame SidebarCarry,
@@ -188,6 +191,7 @@ results.sort((a, b) => PAGES.findIndex((p) => p.url === a.url) - PAGES.findIndex
 const navFails = []
 const byPersona = new Map()
 for (const r of results) {
+  if (r.focus) continue
   const key = JSON.stringify(r.nav ?? [])
   if (!byPersona.has(r.persona)) byPersona.set(r.persona, new Map())
   const m = byPersona.get(r.persona)

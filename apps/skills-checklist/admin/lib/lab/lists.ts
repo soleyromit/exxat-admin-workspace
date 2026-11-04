@@ -152,6 +152,8 @@ export { customGroup, customGroupValue, type CustomGroup, type GroupRule }
  * the next standard exists with no group yet.
  */
 export function seedLists(s: V2State): SkillList[] {
+  // A program with no skills has no groups of skills yet (Set up skills starts from one, D-L44).
+  if (s.skills.length === 0) return []
   const checklist = s.skills.filter((k) => k.hgtc)
   const COMPETENCY_SECTIONS = new Set(["Communication", "Documentation", "Teaching Learning Principles", "Psycho-social assessment", "Emotional/Cognitive"])
   const competencies = s.skills.filter((k) => COMPETENCY_SECTIONS.has(k.category) || (!k.hgtc && k.specialty === "bsn-med-surg"))

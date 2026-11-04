@@ -87,10 +87,10 @@ describe("flows.json", () => {
     // Decided with Romit's defaults: Set 2 "One page" = B (split page), Set 3 "Many at once" = C (paste); spec 03 had C and B swapped.
     expect(row("import")).toBe("ABC")
     expect(row("configure")).toBe("ABC")
-    expect(row("assign")).toBe("ABB")
+    expect(row("assign")).toBe("CCC")
     // Sankalp A4, optional: groups of skills before assigning; the assign step opens in assign mode by its params.
     expect(f.steps.find((s) => s.id === "lists")).toMatchObject({ tag: "Optional" })
-    expect(row("lists")).toBe("ABB")
+    expect(row("lists")).toBe("CCC")
     expect(resolveStep("set-up-skills", "assign", "1")!.params).toEqual({ view: "assign" })
     expect(row("publish")).toBe("ABC")
     expect(row("map")).toBe("ABA")

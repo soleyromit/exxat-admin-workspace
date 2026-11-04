@@ -52,6 +52,8 @@ export interface SectionProps {
   legendHidden?: boolean
   /** The rule sentence holds "which outcome counts" (Configure C), so the outcomes section does not ask it twice. */
   qualifyingInRule?: boolean
+  /** The rule sentence holds "which levels count" (Evaluation settings D), so the levels section does not ask it twice. */
+  countsFromInRule?: boolean
 }
 
 const MODEL_ICON: Record<EvalModel, string> = { binary: "fa-circle-half-stroke", question: "fa-list-check", scored: "fa-star-half-stroke", demonstration: "fa-stairs" }
@@ -228,7 +230,15 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
  * An editable list of questions or levels. `onRemove` and `onMove` let the caller carry rule references with the item they name
  * (removeQuestion, removeLevel, swapItems) so nothing in a rule points at the wrong item afterwards [REQ AE-07].
  */
-const PLACEHOLDER: Record<string, string> = { Question: "For example, maintains aseptic technique", Level: "For example, Independent" }
+const PLACEHOLDER: Record<string, string> = { Question: "For example, maintains aseptic technique" }
+/** Level examples, lowest first (D-L43 follow-up): each row its own, the last row always the highest. */
+const LEVEL_EXAMPLES = ["Observed", "Assisted", "Independent"] as const
+function placeholderFor(noun: string, i: number, count: number): string | undefined {
+  if (noun !== "Level") return PLACEHOLDER[noun]
+  const top = LEVEL_EXAMPLES.length - 1
+  const k = i === count - 1 ? top : Math.min(i, top - 1)
+  return `For example, ${LEVEL_EXAMPLES[k]}`
+}
 
 function ListEditor({ idBase, noun, values, onChange, onRemove, onMove, addId, ordered, err, extra }: { idBase: string; noun: string; values: string[]; onChange: (v: string[]) => void; onRemove?: (i: number) => void; onMove?: (i: number, j: number) => void; addId: string; ordered?: boolean; err: (f: string) => string | undefined; /** A second add action beside "Add a …" (Paste a list, for questions). */ extra?: React.ReactNode }) {
   const move = (i: number, d: -1 | 1) => {
@@ -258,7 +268,7 @@ function ListEditor({ idBase, noun, values, onChange, onRemove, onMove, addId, o
                   <InputGroupAddon align="inline-start">
                     <InputGroupText className="w-5 justify-end tabular-nums" aria-hidden="true">{i + 1}</InputGroupText>
                   </InputGroupAddon>
-                  <InputGroupInput id={id} aria-label={`${noun} ${i + 1}`} placeholder={PLACEHOLDER[noun]} value={v} onChange={(ev) => onChange(values.map((x, k) => (k === i ? ev.target.value : x)))} {...errProps(id, e)} />
+                  <InputGroupInput id={id} aria-label={`${noun} ${i + 1}`} placeholder={placeholderFor(noun, i, values.length)} value={v} onChange={(ev) => onChange(values.map((x, k) => (k === i ? ev.target.value : x)))} {...errProps(id, e)} />
                 </InputGroup>
                 {ordered ? (
                   <>
@@ -319,7 +329,7 @@ export function PresetChips({ rule, setRule }: Pick<SectionProps, "rule" | "setR
   )
 }
 
-export function OutcomesSection({ rule, setRule, issues, showErrors, qualifyingInRule, legendHidden }: SectionProps) {
+export function OutcomesSection({ rule, setRule, issues, showErrors, qualifyingInRule, countsFromInRule, legendHidden }: SectionProps) {
   const err = useErr(issues, showErrors)
   if (!rule.model) return <p className="text-sm text-muted-foreground">Choose how it&apos;s judged first. The criteria depend on it.</p>
   const meaning = criteriaMeaning(rule)
@@ -388,7 +398,7 @@ export function OutcomesSection({ rule, setRule, issues, showErrors, qualifyingI
             onMove={(i, j) => setRule((r) => swapItems(r, "levels", i, j))}
           />
         </FieldSet>
-        <CountsFromField rule={rule} setRule={setRule} err={err} />
+        {countsFromInRule ? null : <CountsFromField rule={rule} setRule={setRule} err={err} />}
       </WithMeaning>
     )
   }
@@ -514,7 +524,7 @@ function needTail(rule: LabRule): string {
   return rule.need === 1 ? "evaluation that counts" : "evaluations that count"
 }
 
-function QuestionRuleField({ rule, setRule, err }: { rule: LabRule; setRule: SectionProps["setRule"]; err: (f: string) => string | undefined }) {
+export function QuestionRuleField({ rule, setRule, err }: { rule: LabRule; setRule: SectionProps["setRule"]; err: (f: string) => string | undefined }) {
   const r = rule.questionRule
   const m = rule.questions.length
   return (
@@ -647,7 +657,7 @@ function PasteQuestions({ onAdd }: { onAdd: (lines: string[]) => void }) {
   )
 }
 
-function ScoredRuleField({ rule, setRule, err }: { rule: LabRule; setRule: SectionProps["setRule"]; err: (f: string) => string | undefined }) {
+export function ScoredRuleField({ rule, setRule, err }: { rule: LabRule; setRule: SectionProps["setRule"]; err: (f: string) => string | undefined }) {
   const r = rule.scoredRule
   // The pass mark can be typed before the "which score" choice: it waits here and goes into the rule with the choice (else the
   // earlier starting value, 60% of the scale, as before).
@@ -815,15 +825,17 @@ export function StudentFieldsField({ rule, setRule, issues, showErrors }: Sectio
   return (
     <FieldSet>
       <FieldLegend variant="label">What the student adds</FieldLegend>
-      <ul className="flex flex-col divide-y divide-border rounded-[var(--radius)] border border-border">
+      <ul className="@container flex flex-col divide-y divide-border rounded-[var(--radius)] border border-border">
         {rule.studentFields.map((f, i) => {
           const id = `cfg-field-${i}`
           const name = f.label.trim() || `field ${i + 1}`
           return (
             <li key={i} className="flex flex-col gap-1 px-3 py-1.5">
-              {/* Below 640 px the name takes its own line, so it is never cut by the type and Required columns. */}
+              {/* When the list is narrower than 32rem (a card in a two-column page at 1280 px, or a phone) the name takes its own
+                  line and wraps, so it is never cut by the type and Required columns; wider, it shares the row. Container query,
+                  not a viewport breakpoint: the card's width, not the window's, decides. */}
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className={cn("min-w-0 basis-full sm:basis-0 sm:flex-1 sm:truncate", TYPE.body)}>{f.label.trim() || "Untitled field"}</span>
+                <span className={cn("min-w-0 basis-full break-words @min-[32rem]:basis-0 @min-[32rem]:flex-1 @min-[32rem]:truncate", TYPE.body)}>{f.label.trim() || "Untitled field"}</span>
                 <span className={cn("w-28 shrink-0", TYPE.helper)}>{`${FIELD_TYPE_LABEL[f.type]}${f.type === "choice" && f.choices?.length ? ` (${f.choices.length})` : ""}`}</span>
                 <span className={cn("w-20 shrink-0", TYPE.helper)}>{f.mandatory ? "Required" : "Optional"}</span>
                 <span className="ms-auto flex items-center gap-1">
@@ -926,8 +938,9 @@ export function GroupCheckOffSection({ rule, setRule, bare = false }: Pick<Secti
   const allowed = ruleAllowsCheckOff(rule)
   const co = rule.checkOff ?? { enabled: null, levelIndex: null, score: null }
   const set = (patch: Partial<NonNullable<LabRule["checkOff"]>>) => setRule((r) => ({ ...r, checkOff: { ...(r.checkOff ?? { enabled: null, levelIndex: null, score: null }), ...patch } }))
-  const levels = rule.levels.map((l, i) => ({ i, label: l.trim() || `Level ${i + 1}` }))
-  const levelIndex = levels.length ? (co.levelIndex !== null && co.levelIndex < levels.length ? co.levelIndex : levels.length - 1) : null
+  // Only named levels are offered, by their names; the select stays hidden until at least one level has a name.
+  const levels = rule.levels.map((l, i) => ({ i, label: l.trim() })).filter((l) => l.label)
+  const levelIndex = levels.length ? (levels.some((l) => l.i === co.levelIndex) ? co.levelIndex! : levels[levels.length - 1]!.i) : null
   const score = ruleCheckOffScore(rule)
   // Bare: the page gives the group its own heading (Evaluation settings); otherwise the Configure subsection.
   const Wrap = React.useCallback(

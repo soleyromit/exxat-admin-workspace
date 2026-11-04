@@ -12,7 +12,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { PageFrame } from "@/components/skills/page-header"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
-import { approvalsHref, itemDetail, reviewItemHref, ruleCheck, type ItemDetail, type RuleCheck } from "@/lib/lab/reviewer"
+import { itemDetail, reviewItemHref, ruleCheck, type ItemDetail, type RuleCheck } from "@/lib/lab/reviewer"
 import { DecisionBanner, DecisionProvider } from "@/components/lab/reviewer/decisions"
 import { DecisionFooter, ReviewNoteProvider } from "@/components/lab/reviewer/review-parts"
 import { QueueSkeleton } from "@/components/lab/reviewer/parts"
@@ -55,16 +55,12 @@ export function ReviewItemFrame({ variant, children }: { variant: string; childr
             <CardContent className="flex flex-col items-start gap-2 py-1">
               <p className="text-sm font-semibold">This submission is no longer waiting for approval</p>
               <p className="text-sm text-muted-foreground">It was approved, returned or sent to someone else. The student record shows the result.</p>
-              <span className="flex gap-2">
-                {next ? (
-                  <Button asChild variant="default" size="sm">
-                    <Link href={next.href}>Next submission</Link>
-                  </Button>
-                ) : null}
-                <Button asChild variant="outline" size="sm">
-                  <Link href={approvalsHref(ctx.scope)}>Back to Approvals</Link>
+              {/* The way back is the "Approvals" crumb (navigation model A, D-L42): no "Back to Approvals" here. */}
+              {next ? (
+                <Button asChild variant="default" size="sm">
+                  <Link href={next.href}>Next submission</Link>
                 </Button>
-              </span>
+              ) : null}
             </CardContent>
           </Card>
         </PageFrame>

@@ -8,6 +8,7 @@
  * The course column is pinned; many terms scroll inside the table region.
  */
 import * as React from "react"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { createPortal } from "react-dom"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -66,6 +67,7 @@ export function SkillAcrossPanel({
   didactic?: boolean
   filter: OfferingFilterProps
 }) {
+  const inWorkflow = useEmbeddedStep() !== null
   const f = filter.value
   const listArg = lists.length ? lists : undefined
   const reach = React.useMemo(() => skillAcrossTerms(state, overlay, skill.id, didactic, listArg), [state, overlay, skill.id, didactic, listArg])
@@ -145,7 +147,11 @@ export function SkillAcrossPanel({
             <span className="flex min-w-0 items-start gap-2 py-0.5">
               <Checkbox size="sm" className="mt-0.5" checked={tickOf(ids, picked)} onCheckedChange={(v) => toggle(ids, v === true)} aria-label={`Select ${r.code} in every term`} />
               <span className="flex min-w-0 flex-col">
-                <Link className={`${LINK} whitespace-normal`} href={mappingLink({ term: first?.termId, offering: first?.id, q: skill.name })} title={`${r.code} ${r.name}`}>{`${r.code} ${r.name}`}</Link>
+                {inWorkflow ? (
+                  <span className="whitespace-normal font-medium" title={`${r.code} ${r.name}`}>{`${r.code} ${r.name}`}</span>
+                ) : (
+                  <Link className={`${LINK} whitespace-normal`} href={mappingLink({ term: first?.termId, offering: first?.id, q: skill.name })} title={`${r.code} ${r.name}`}>{`${r.code} ${r.name}`}</Link>
+                )}
                 {first ? <span className="truncate text-xs text-muted-foreground">{`${first.cohort}${r.kind === "didactic" ? " · Didactic" : ""}`}</span> : null}
               </span>
             </span>
@@ -206,7 +212,8 @@ export function SkillAcrossPanel({
       <PaneHeading
         title={<span id="skill-heading">{skill.name}</span>}
         end={
-          skill.configured ? (
+          // Inside Set up skills (D-L44) the reach counts are not the step's job (setting a level per course): hub only.
+          skill.configured && !inWorkflow ? (
             <span className="flex items-center gap-4">
             {mostFromList ? <FromListTag source="list" /> : null}
             <span className="text-sm" aria-label={`${reach.carriers} of ${reach.offerings} offerings, ${reach.mandatory} mandatory`}>
@@ -228,21 +235,21 @@ export function SkillAcrossPanel({
         </Card>
       ) : (
         <>
-          <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
-            <div role="search" aria-label="Find an offering" className="flex flex-wrap items-center gap-2" data-offering-filters>
+          {inWorkflow && !shownPicked.length ? null : <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
+            {inWorkflow ? <span /> : <div role="search" aria-label="Find an offering" className="flex flex-wrap items-center gap-2" data-offering-filters>
               <SearchField value={f.q} onChange={(v) => filter.onChange({ q: v })} label="Search offerings by course, term, cohort or year" placeholder="Search offerings" className="w-56" />
               <FilterSelect value={f.cohort} onChange={(v) => filter.onChange({ cohort: v })} label="Cohort" allLabel="All cohorts" options={filter.cohortOpts} className="w-36" />
               <FilterSelect value={f.year} onChange={(v) => filter.onChange({ year: v })} label="Professional year" allLabel="All years" options={filter.yearOpts} className="w-32" />
-            </div>
+            </div>}
           {shownPicked.length ? (
             <div role="group" aria-label="Set a level for the selected offerings" className="flex flex-wrap items-center gap-2" data-bulk-bar>
               <span className="text-sm font-medium tabular-nums">{`${plural(shownPicked.length, "offering", "offerings")} selected`}</span>
               <LevelSelect value={bulkLevel} onChange={setBulkLevel} label="Level for the selected offerings" className="w-42" />
-              <Button variant="default" size="sm" onClick={applyBulk}>Set level</Button>
+              <Button variant={inWorkflow ? "outline" : "default"} size="sm" onClick={applyBulk}>Set level</Button>
               <Button variant="ghost" size="sm" onClick={() => setPicked(new Set())}>Clear selection</Button>
             </div>
           ) : null}
-          </div>
+          </div>}
           <LiveNote text={note} />
           <div ref={wrap} className="relative min-w-0">
           <ScrollLabel label="Offerings by term">

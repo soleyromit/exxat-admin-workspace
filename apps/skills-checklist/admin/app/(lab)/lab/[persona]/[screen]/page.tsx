@@ -1,6 +1,7 @@
 import * as React from "react"
 import { notFound, redirect } from "next/navigation"
 import { LabFrame } from "@/components/lab/lab-frame"
+import { FocusFrame } from "@/components/lab/focus-frame"
 import { LabBar } from "@/components/lab/lab-bar"
 import { PlaceholderScreen } from "@/components/lab/placeholder-screen"
 import { VARIANT_COMPONENTS } from "@/components/lab/screens"
@@ -57,6 +58,14 @@ export default async function LabScreenPage({ params, searchParams }: { params: 
       <LabBar persona={persona} screen={screenKey(screen)} variant={variant.id} />
     </React.Suspense>
   )
+  // A focus workflow (Set up skills, D-L44) has its own route with no sidebar and no breadcrumbs (DS exxat-focus-workflow).
+  if (variant.frame === "focus") {
+    return (
+      <FocusFrame bar={bar} page={{ screen: screenKey(screen), variant: variant.id }}>
+        <React.Suspense fallback={null}>{Built ? <Built /> : <PlaceholderScreen screen={screen} variant={variant} />}</React.Suspense>
+      </FocusFrame>
+    )
+  }
   return (
     <LabFrame persona={persona} bar={bar} page={{ screen: screenKey(screen), variant: variant.id }}>
       <React.Suspense fallback={null}>{Built ? <Built /> : <PlaceholderScreen screen={screen} variant={variant} />}</React.Suspense>

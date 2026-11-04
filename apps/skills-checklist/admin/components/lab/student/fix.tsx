@@ -17,7 +17,6 @@
  * Sending is local to the lab (read-only data): the outcome sentence and what was sent are said once, in a LocalBanner, never a toast.
  */
 import * as React from "react"
-import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { FormPage } from "@/components/lab/layout/form-page"
 import { useStudentPage } from "@/components/lab/student/use-student"
@@ -235,15 +234,16 @@ export function FixSent({ f, api }: { f: FixModel; api: FixApi }) {
   )
 }
 
-/** The page footer: Back (My requests) on the left; Save for later (further attempt) and the one primary on the right. */
+/**
+ * The page footer: Save for later (further attempt) and the one primary on the right. No Back: the "My requests" crumb is the way
+ * back (navigation model A, D-L42; DS exxat-breadcrumbs-no-back).
+ */
 export function FixFooter({ f, api, offline, studentId }: { f: FixModel; api: FixApi; offline: boolean; studentId: string }) {
-  const router = useLabRouter()
   const requests = studentHref("my-requests", {}, studentId)
-  if (api.sent) return <StickyFooter back={{ label: "Back", onClick: () => router.push(requests) }} primary={{ label: "Go to My requests", href: requests }} />
+  if (api.sent) return <StickyFooter primary={{ label: "Go to My requests", href: requests }} />
   const label = f.case === "correction" ? (f.origin === "waiting" ? "Send corrected request" : "Send correction") : offline ? "Keep and send later" : "Send for evaluation"
   return (
     <StickyFooter
-      back={{ label: "Back", onClick: () => router.push(requests) }}
       context={api.savedId ? <span data-saved-draft>Saved to Drafts</span> : offline ? "Kept on this device until you reconnect." : null}
       secondary={f.case === "attempt" ? { label: "Save for later", onClick: api.saveForLater } : undefined}
       primary={{ label, onClick: () => api.send(offline) }}

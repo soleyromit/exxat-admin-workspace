@@ -10,6 +10,8 @@ import {
   buildInvitation,
   buildRequest,
   choicesFor,
+  levelOnly,
+  ratingLabel,
   programLabels,
   doneCount,
   labSessionSkills,
@@ -101,8 +103,12 @@ describe("evaluator request view model", () => {
 })
 
 describe("validation", () => {
-  it("needs an outcome per skill, then the level once graded", () => {
-    expect(validate(req, {}).map((i) => i.message)).toEqual(["Choose an outcome.", "Choose an outcome."])
+  it("needs an outcome per skill, then the level once graded; an independence-level skill asks the level only", () => {
+    // The first skill is an independence-level skill: the level is its answer [REQ SC-08], so the level is what is missing.
+    expect(levelOnly(req.skills[0])).toBe(true)
+    expect(levelOnly(req.skills[1])).toBe(false)
+    expect(validate(req, {}).map((i) => i.message)).toEqual(["Choose the level observed.", "Choose an outcome."])
+    expect(validate(req, {})[0].field).toBe(`ev-lvl-${req.skills[0].id}`)
     const r: Record<string, EvResponse> = { [req.skills[0].id]: { ...blankResponse(req.skills[0]), outcome: "met" } }
     expect(validate(req, r).map((i) => i.field)).toEqual([`ev-lvl-${req.skills[0].id}`, `ev-out-${req.skills[1].id}`])
     expect(doneCount(req, r)).toBe(0)
@@ -120,6 +126,16 @@ describe("validation", () => {
     const q = long.skills.find((k) => k.answerKind === "yes-no")!
     const issues = validate(long, { [q.id]: { ...blankResponse(q), outcome: "met" } }).filter((i) => i.skillId === q.id)
     expect(issues.map((i) => i.message)).toEqual(["Answer every question."])
+  })
+})
+
+describe("independence-level answers", () => {
+  it("records the level as a completed demonstration and reads back as the level alone", () => {
+    const k = req.skills[0]
+    expect(ratingLabel(k, { outcome: "met", level: 0 })).toBe(k.levels[0])
+    const b = req.skills[1]
+    expect(ratingLabel(b, { outcome: "met", level: null })).toBe(b.choices[0].label)
+    expect(validate(req, { [k.id]: { ...blankResponse(k), outcome: "met", level: 0 } }).filter((i) => i.skillId === k.id)).toEqual([])
   })
 })
 

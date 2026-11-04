@@ -18,7 +18,10 @@ export const SKILLS_PANEL_ID = "lab-skills"
 /** The end state of setup, reached from the checklist, Assign and Course mapping (Proposed 2026-11-02). */
 export const SETUP_RESULT_SCREEN = "admin/setup-result"
 
-export type SkillsPanelKey = "library" | "groups" | "categories" | "settings" | "mapping"
+/** Add a skill: every variant renders the library with the add surface open. */
+export const ADD_SKILL_SCREEN = "admin/add-skill"
+
+export type SkillsPanelKey = "library" | "groups" | "categories" | "settings" | "mapping" | "summary"
 
 export interface SkillsPanelItem {
   key: SkillsPanelKey
@@ -39,6 +42,8 @@ export const SKILLS_PANEL: SkillsPanelItem[] = [
   { key: "settings", label: () => "Evaluation settings", screen: "admin/evaluation-settings", icon: "fa-sliders" },
   { key: "groups", label: () => `Groups of ${skillNounPlural()}`, screen: "admin/lists-cohorts", icon: "fa-layer-group" },
   { key: "mapping", label: () => "Course mapping", screen: "admin/course-mapping", icon: "fa-sitemap" },
+  // Navigation model A (D-L42): the summary is one click from every setup page, so it is a panel row, not a footer or a back link.
+  { key: "summary", label: () => "Setup summary", screen: SETUP_RESULT_SCREEN, icon: "fa-list-check" },
 ]
 
 /** The panel's title and the Skills crumb: the program's noun ("Skills", "Competencies"). */
@@ -54,9 +59,18 @@ export function settingsSectionOf(params: Params | null | undefined): SettingsSe
 /** The Skills panel item the page is on, if any. Settings is never one (D-L21). */
 export function skillsPanelItemFor(screen: string | undefined, _params?: Params | null): SkillsPanelItem | undefined {
   if (!screen) return undefined
-  // The setup summary is course mapping's end state: it sits under Course mapping (crumb "Skills > Setup summary").
-  if (screen === SETUP_RESULT_SCREEN) return SKILLS_PANEL.find((i) => i.key === "mapping")
+  // Add a skill is the library with its add sheet (or inline row) open, so it is a Library page: Skills row lit, panel open,
+  // Library selected, crumb "Skills" (D-X33 extended 2026-11-03, D-L41), the same sidebar as the steps around it.
+  if (screen === ADD_SKILL_SCREEN) return SKILLS_PANEL.find((i) => i.key === "library")
   return SKILLS_PANEL.find((i) => i.screen === screen)
+}
+
+/**
+ * The panel row to select. The setup summary has its own row (D-L42), so it is selected there; lighting Course mapping on the
+ * summary was wrong (Romit 2026-11-03).
+ */
+export function selectedSkillsPanelKey(screen: string | undefined, params?: Params | null): SkillsPanelKey | undefined {
+  return skillsPanelItemFor(screen, params)?.key
 }
 
 /** Pages under the Settings link: Settings (clinical settings, evaluators). */

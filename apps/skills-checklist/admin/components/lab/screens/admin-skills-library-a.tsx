@@ -20,9 +20,11 @@ import { AddSeveralSheet } from "@/components/lab/library/add-several-sheet"
 import { useLifecycle, useStableHandlers } from "@/components/lab/library/row-actions"
 import { useLibrary } from "@/components/lab/library/use-library"
 import { useLibraryFilter } from "@/components/lab/library/library-filter"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 
 export function SkillsLibraryTablePage({ startAdding = false }: { startAdding?: boolean }) {
   const api = useLibrary()
+  const embedded = useEmbeddedStep() !== null
   const router = useLabRouter()
   const life = useLifecycle(api)
   const [tab, setTab] = useStatusTab()
@@ -66,7 +68,9 @@ export function SkillsLibraryTablePage({ startAdding = false }: { startAdding?: 
       tab={tab}
       onAdd={() => { setOpenId(null); setAddingSeveral(false); setAdding(true) }}
       onAddSeveral={() => { setOpenId(null); setAdding(false); setAddingSeveral(true) }}
-      primaryElsewhere={adding || addingSeveral || !!openRow}
+      // Inside Set up skills (D-L44) the wizard's Next is the one filled button, and an empty library's one filled action is
+      // Set up skills, so Add a skill is outline in both.
+      primaryElsewhere={embedded || (api.hydrated && api.rows.length === 0) || adding || addingSeveral || !!openRow}
       overlays={overlays}
       pageType={adding || addingSeveral || openRow ? "split" : "list"}
     >

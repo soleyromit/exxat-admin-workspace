@@ -19,6 +19,7 @@
  * The same sheet edits a skill's details (mode="edit"); evaluation settings stay on Configure.
  */
 import * as React from "react"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
@@ -26,7 +27,7 @@ import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
 import { Field, FieldContent, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
-import { EMPTY_DRAFT, NO_CATEGORY, findDuplicate, validateDraft, type DraftErrors, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
+import { EMPTY_DRAFT, NO_CATEGORY, findDuplicate, normName, validateDraft, type DraftErrors, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
 import { CategoryPicker, TagsPicker, useVocabOptions } from "./category-tag-pickers"
 
@@ -56,7 +57,9 @@ export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, de
   React.useEffect(() => { if (open) { setD(initial); setErrors({}); setAttempted(false) } }, [open, initial])
   // The shared categories and tags Settings edits (SL-03 to SL-06): active ones offered, inactive ones marked.
   const opts = useVocabOptions()
-  const others = React.useMemo(() => rows.filter((r) => r.id !== editing?.id), [rows, editing])
+  const inWorkflow = useEmbeddedStep() !== null
+  // Versions of one skill share its name (version badge), so a sibling version is not a duplicate of the one being edited.
+  const others = React.useMemo(() => rows.filter((r) => r.id !== editing?.id && !(editing?.version && r.version && normName(r.name) === normName(editing.name))), [rows, editing])
   const names = React.useMemo(() => others.map((r) => r.name), [others])
   const dirty = JSON.stringify(d) !== JSON.stringify(initial)
   const set = <K extends keyof SkillDraft>(k: K, v: SkillDraft[K]) => {
@@ -143,7 +146,10 @@ export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, de
               {/* Add: the header's close (and Escape) is the one way out, so the footer holds the two saves only (density
                   budget: Description, REQ SL-02, took the place of a second Cancel). */}
               {mode === "add" ? null : <Button type="button" variant="ghost" size="sm" onClick={requestClose}>Cancel</Button>}
-              {mode === "add" ? (
+              {mode === "add" && inWorkflow ? (
+                // Inside Set up skills (D-L44) configuring is a later step of the same workflow: one Save.
+                <Button type="submit" variant="default" size="sm">Save</Button>
+              ) : mode === "add" ? (
                 <>
                   <Button type="button" variant="outline" size="sm" onClick={() => submit("close")}>Save for later</Button>
                   <Button type="submit" variant="default" size="sm">Save and configure</Button>

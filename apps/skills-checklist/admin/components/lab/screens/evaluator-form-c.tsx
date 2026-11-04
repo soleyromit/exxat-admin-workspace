@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@exxatdesignux/ui/components/ui/sheet"
 import { useIsMobile } from "@exxatdesignux/ui/hooks/use-mobile"
-import { evFieldId } from "@/lib/lab/evaluator"
+import { evFieldId, levelOnly } from "@/lib/lab/evaluator"
 import { EvaluatorGate } from "@/components/lab/evaluator/gate"
 import { StickyBar } from "@/components/lab/evaluator/frame"
 import { ChoiceTiles, ErrorSummary, RequestSummary, SelfNote, SkillFields, StateBanners, contextLine, skillsWord } from "@/components/lab/evaluator/fields"
@@ -68,7 +68,9 @@ export function EvaluatorFormC() {
                   const detailIssue = rowIssues.some((i) => i.field !== evFieldId.outcome(k.id))
                   const graded = r.outcome === "met" || r.outcome === "not-met"
                   const outId = evFieldId.outcome(k.id)
-                  const needs = (graded && (k.answerKind || (isMobile && k.levels.length))) || k.feedbackRequired || r.outcome === "not-yet"
+                  // An independence-level skill asks the level only (levelOnly): no outcome chips; on a phone its level is in the sheet.
+                  const byLevel = levelOnly(k)
+                  const needs = (graded && (k.answerKind || (isMobile && k.levels.length))) || (byLevel && isMobile && !r.outcome) || k.feedbackRequired || r.outcome === "not-yet"
                   return (
                     <TableRow key={k.id} className="align-middle">
                       <TableCell className="ps-3 whitespace-normal">
@@ -78,18 +80,18 @@ export function EvaluatorFormC() {
                           {k.self?.rating ? `${req.student.first} rated ${k.self.rating}` : k.answerKind ? `${k.questions.length} criteria` : ""}
                           {r.feedback.trim() ? `${k.self?.rating || k.answerKind ? " · " : ""}Feedback added` : ""}
                         </p>
-                        {isMobile ? (
+                        {isMobile && !byLevel ? (
                           <div className="mt-2">
                             <ChoiceTiles id={outId} labelId={`${outId}-label`} options={k.choices} value={r.outcome} onChange={(v) => m.setAnswer(k.id, { outcome: v as typeof r.outcome })} invalid={rowIssues.some((i) => i.field === outId)} cols={k.choices.length === 3 ? 3 : 2} compact />
                           </div>
                         ) : null}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {isMobile ? null : <ChoiceTiles id={outId} labelId={`${outId}-label`} options={k.choices} value={r.outcome} onChange={(v) => m.setAnswer(k.id, { outcome: v as typeof r.outcome })} invalid={rowIssues.some((i) => i.field === outId)} cols={k.choices.length === 3 ? 3 : 2} compact />}
+                        {isMobile ? null : byLevel ? <span className="sr-only">{`Answered by level for this ${skillNoun()}`}</span> : <ChoiceTiles id={outId} labelId={`${outId}-label`} options={k.choices} value={r.outcome} onChange={(v) => m.setAnswer(k.id, { outcome: v as typeof r.outcome })} invalid={rowIssues.some((i) => i.field === outId)} cols={k.choices.length === 3 ? 3 : 2} compact />}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         {k.levels.length ? (
-                          <Select value={r.level === null ? "" : String(r.level)} onValueChange={(v) => m.setAnswer(k.id, { level: Number(v) })}>
+                          <Select value={r.level === null ? "" : String(r.level)} onValueChange={(v) => m.setAnswer(k.id, byLevel ? { outcome: "met", level: Number(v) } : { level: Number(v) })}>
                             <SelectTrigger id={evFieldId.level(k.id)} size="sm" className="w-full" aria-label={`${k.levelsLabel}, ${k.name}`} aria-invalid={rowIssues.some((i) => i.field === evFieldId.level(k.id)) || undefined}>
                               <SelectValue placeholder="Choose" />
                             </SelectTrigger>

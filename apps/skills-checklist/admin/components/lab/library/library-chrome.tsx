@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxat
 import { ButtonGroup, ButtonGroupSeparator } from "@exxatdesignux/ui/components/ui/button-group"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { PageFrame } from "@/components/skills/page-header"
+import { SetupEmptyEntry, SetupResumeCue } from "@/components/lab/setup/setup-entry"
 import { LaterBadge } from "@/components/lab/import/sample-badge"
 import { usePresent } from "@/components/lab/lab-bar/present"
 import { withFrom } from "@/lib/lab/return-to"
@@ -299,14 +300,16 @@ export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, 
   // The title follows the program's noun (Settings > Naming); the hook re-renders the frame when it changes.
   const terms = useTerms()
   const title = capitalize(terms.skillNounPlural)
+  // Navigation model A (D-L42): the header holds the page's actions, one filled; there is no flow footer.
   const actions = <LibraryActions onAdd={onAdd} onAddSeveral={onAddSeveral} primaryElsewhere={primaryElsewhere} />
   let body: React.ReactNode = children
   if (!api.hydrated || api.demo === "loading") body = <LibraryLoading />
   else if (api.demo === "error") body = <LibraryError />
-  else if (api.rows.length === 0) body = <LibraryEmpty onAdd={onAdd} onAddSeveral={onAddSeveral} />
+  else if (api.rows.length === 0) body = <SetupEmptyEntry fallback={<LibraryEmpty onAdd={onAdd} onAddSeveral={onAddSeveral} />} />
   return (
-    <div data-page-type={pageType} className="flex w-full flex-col">
-      <PageFrame title={title} actions={actions}>
+    <div data-page-type={pageType} className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
+      <PageFrame title={title} actions={actions} className="flex-1">
+        <SetupResumeCue />
         <LibraryBanner api={api} tab={tab} />
         {body}
         {overlays}

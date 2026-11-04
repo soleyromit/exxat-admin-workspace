@@ -18,7 +18,7 @@ import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/st
 import { SyncBadge, VersionText, useSyncQueue } from "@/components/lab/student2/sync-parts"
 import { SectionTitle } from "@/components/lab/student/parts"
 import { VIZ } from "@/components/lab/viz"
-import { student2Href, type SyncRow } from "@/lib/lab/student2"
+import { type SyncRow } from "@/lib/lab/student2"
 import { shortDate } from "@/lib/v2/format"
 
 export function StudentOfflineA() {
@@ -27,7 +27,7 @@ export function StudentOfflineA() {
       title="Offline and sync"
       showSync={false}
       width="wide"
-      empty={(c) => <EmptyBlock title="Nothing waiting on this device" body="Everything you logged has reached your program." action={{ label: "Back to My progress", href: student2Href("home", {}, c.studentId) }} />}
+      empty={() => <EmptyBlock title="Nothing waiting on this device" body="Everything you logged has reached your program." />}
     >
       {(ctx) => <Ledger ctx={ctx} />}
     </Student2Frame>

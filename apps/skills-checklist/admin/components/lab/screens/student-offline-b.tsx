@@ -18,7 +18,6 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/student2/frame"
 import { SyncBadge, VersionText, useSyncQueue, type Choice } from "@/components/lab/student2/sync-parts"
 import { TOUCH_ROW } from "@/components/lab/student2/touch"
-import { student2Href } from "@/lib/lab/student2"
 
 export function StudentOfflineB() {
   return (
@@ -26,7 +25,7 @@ export function StudentOfflineB() {
       title="Offline and sync"
       showSync={false}
       width="reading"
-      empty={(c) => <EmptyBlock title="Nothing waiting on this device" body="Everything you logged has reached your program." action={{ label: "Back to My progress", href: student2Href("home", {}, c.studentId) }} />}
+      empty={() => <EmptyBlock title="Nothing waiting on this device" body="Everything you logged has reached your program." />}
     >
       {(ctx) => <OneAtATime ctx={ctx} />}
     </Student2Frame>

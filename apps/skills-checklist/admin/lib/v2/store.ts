@@ -1,4 +1,4 @@
-import { createSeed, SEED_VERSION } from "./seed"
+import { createSeed as createSeedState, SEED_VERSION } from "./seed"
 import type { AuditEntry, V2State } from "./types"
 
 export const STORAGE_KEY = "skills-checklist:v2:store"
@@ -171,8 +171,10 @@ function write(storage: Storage | null, key: string, base: V2State, state: V2Sta
   }
 }
 
-export function createV2Store(opts: { storage?: Storage | null; key?: string } = {}): V2Store {
+export function createV2Store(opts: { storage?: Storage | null; key?: string; seed?: () => V2State } = {}): V2Store {
   const key = opts.key ?? STORAGE_KEY
+  // `seed`: another starting program (Set up skills starts from an empty one, D-L44); default the seeded program.
+  const createSeed = opts.seed ?? createSeedState
   const storage = safeStorage(opts.storage)
   // The seed is regenerated on every load; only the difference from it is saved.
   const serverSeed = createSeed()

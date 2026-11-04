@@ -5,7 +5,11 @@ import { AdminDashboardDrillB } from "./admin-dashboard-drill-b"
 import { AdminEvaluationSettingsA } from "./admin-evaluation-settings-a"
 import { AdminEvaluationSettingsB } from "./admin-evaluation-settings-b"
 import { AdminEvaluationSettingsC } from "./admin-evaluation-settings-c"
+import { AdminEvaluationSettingsD } from "./admin-evaluation-settings-d"
+import { AdminEvaluationSettingsE } from "./admin-evaluation-settings-e"
+import { AdminEvaluationSettingsF } from "./admin-evaluation-settings-f"
 import { AdminSetupResultA } from "./admin-setup-result-a"
+import { AdminSetupSkillsA } from "./admin-setup-skills-a"
 import { AdminSetupResultB } from "./admin-setup-result-b"
 import { AdminSkillsLibraryA } from "./admin-skills-library-a"
 import { AdminSkillsLibraryB } from "./admin-skills-library-b"
@@ -68,6 +72,8 @@ import { CourseFacultyOfferingCheckoffA } from "./course-faculty-offering-checko
 import { CourseFacultyOfferingCheckoffB } from "./course-faculty-offering-checkoff-b"
 import { AdminListsCohortsA } from "./admin-lists-cohorts-a"
 import { AdminListsCohortsB } from "./admin-lists-cohorts-b"
+import { AdminListsCohortsC } from "./admin-lists-cohorts-c"
+import { AdminListsCohortsD } from "./admin-lists-cohorts-d"
 import { AdminAttainmentA } from "./admin-attainment-a"
 import { AdminAttainmentB } from "./admin-attainment-b"
 import { AdminExportA } from "./admin-export-a"
@@ -100,7 +106,11 @@ export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
   "admin/evaluation-settings/A": AdminEvaluationSettingsA,
   "admin/evaluation-settings/B": AdminEvaluationSettingsB,
   "admin/evaluation-settings/C": AdminEvaluationSettingsC,
+  "admin/evaluation-settings/D": AdminEvaluationSettingsD,
+  "admin/evaluation-settings/E": AdminEvaluationSettingsE,
+  "admin/evaluation-settings/F": AdminEvaluationSettingsF,
   "admin/setup-result/A": AdminSetupResultA,
+  "admin/setup-result/C": AdminSetupSkillsA,
   "admin/setup-result/B": AdminSetupResultB,
   "admin/course-mapping/A": AdminCourseMappingA,
   "admin/course-mapping/B": AdminCourseMappingB,
@@ -108,6 +118,8 @@ export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
   "course-faculty/offering-checkoff/B": CourseFacultyOfferingCheckoffB,
   "admin/lists-cohorts/A": AdminListsCohortsA,
   "admin/lists-cohorts/B": AdminListsCohortsB,
+  "admin/lists-cohorts/C": AdminListsCohortsC,
+  "admin/lists-cohorts/D": AdminListsCohortsD,
   "admin/attainment/A": AdminAttainmentA,
   "admin/attainment/B": AdminAttainmentB,
   "admin/export/A": AdminExportA,

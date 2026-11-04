@@ -5,7 +5,8 @@
  *
  * Assign mode (set-up flow step, Guided set; Sankalp 2026-10-27 review and his Thursday flow A4/A5): ONE job, assigning skills to
  * student groups. One question, "Which students use this group of skills?" (D-L6; 2026-10-30 review: the "group or individual"
- * radio at the top was a second decision before the work). Individual skills stay one quiet link away (A5 is kept, not dropped):
+ * radio at the top was a second decision before the work). 2026-11-03 (Romit: the far-right "instead" link read as isolated): the two
+ * ways are one "Assign" segmented choice at the top, the chosen way's control directly beneath it (A5 is kept, not dropped):
  *  - "A group of skills": the group of skills is context (name, size, required to graduate, a quiet switch), the checklist of
  *    cohorts and groups is the work, and one panel says what it does now [CALL 10-26 "define the skills once, tag them to a
  *    cohort"; LEDGER D-X27].
@@ -21,6 +22,7 @@ import { TYPE } from "@/components/lab/type-scale"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
+import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
@@ -31,6 +33,7 @@ import { useLabLinkContext } from "@/components/lab/lab-bar/page-context"
 import { AssignChecklist, ListStatus, ListsTable, RuleDialog, listSize } from "@/components/lab/admin-a/lists-parts"
 import { IndividualAssign } from "@/components/lab/admin-a/lists-individual"
 import { PaneHeading } from "@/components/lab/admin-a/parts"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 
 export function AdminListsCohortsA() {
   return (
@@ -50,30 +53,48 @@ const selectedList = (c: ListsContext): SkillList | undefined => {
 /** Which students use this group of skills: the checklist, full width. Labels and controls only (Romit 2026-11-02, no subtext). */
 function AssignColumns({ c, list }: { c: ListsContext; list: SkillList }) {
   const { model, actions } = c
+  // Inside Set up skills the step heading is the section title, so the question sits one step below it (D-L44).
+  const inWorkflow = useEmbeddedStep() !== null
   return (
     <FieldSet className="min-w-0">
-      <FieldLegend className={TYPE.section}>{`Which students use this group of ${skillNounPlural()}?`}</FieldLegend>
+      <FieldLegend className={inWorkflow ? TYPE.card : TYPE.section}>{`Which students use this group of ${skillNounPlural()}?`}</FieldLegend>
       <AssignChecklist model={model} list={list} onToggle={(g, on) => actions.toggle(list.id, g, on)} onCreateGroup={actions.openGroup} idPrefix={`assign-${list.id}`} />
     </FieldSet>
   )
 }
 
-function AssignOne({ c }: { c: ListsContext }) {
+type AssignBy = "group" | "skills"
+
+/**
+ * The two ways to assign as one visible choice (Romit 2026-11-03: the far-right "instead" link read as isolated). "Assign" names
+ * a DS ViewSegmentedControl (radiogroup, arrow keys, Home and End); the control for the chosen way sits directly beneath it, on
+ * the same left edge. The choice is the URL's `by` (absent: a group of skills; `skills`: individual skills), both ways.
+ */
+function AssignByChoice({ c, by }: { c: ListsContext; by: AssignBy }) {
+  const nounPl = skillNounPlural()
+  const options = [
+    { value: "group", label: `A group of ${nounPl}` },
+    { value: "skills", label: `Individual ${nounPl}` },
+  ] as const
+  return (
+    <div className="flex flex-col gap-2" data-assign-choice>
+      <span className="text-sm font-medium leading-none text-foreground" aria-hidden="true">Assign</span>
+      <ViewSegmentedControl<AssignBy> aria-label="Assign" value={by} onValueChange={(v) => c.query.set({ by: v === "skills" ? "skills" : undefined })} options={options} />
+    </div>
+  )
+}
+
+export function AssignOne({ c }: { c: ListsContext }) {
   const list = selectedList(c)
   const individual = byIndividual(c) || !list
   const nounPl = skillNounPlural()
   return (
     <div className="flex flex-col gap-8" data-lists-assign data-assign-by={individual ? "skills" : "group"}>
-      {individual ? (
-        <>
-          {list ? (
-            <Button type="button" variant="link" size="sm" className="h-auto self-start p-0" onClick={() => c.query.set({ by: undefined })}>{`Assign a group of ${nounPl} instead`}</Button>
-          ) : null}
-          <IndividualAssign model={c.model} onCreateGroup={c.actions.openGroup} />
-        </>
-      ) : list ? (
-        <>
-          <section aria-label={`Group of ${nounPl}`} className="flex flex-col gap-2">
+      <section aria-label="How to assign" className="flex flex-col gap-4">
+        {/* With no group of skills yet there is nothing to choose: individual skills is the only way. */}
+        {list ? <AssignByChoice c={c} by={individual ? "skills" : "group"} /> : null}
+        {!individual && list ? (
+          <div className="flex flex-col gap-2">
             <Label htmlFor="assign-list">{`Group of ${nounPl}`}</Label>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <Select value={list.id} onValueChange={(id) => c.query.set({ list: id })}>
@@ -87,12 +108,13 @@ function AssignOne({ c }: { c: ListsContext }) {
                 </SelectContent>
               </Select>
               {list.isDefault ? <Badge variant="secondary">Default</Badge> : null}
-              <Button type="button" variant="link" size="sm" className="ms-auto h-auto p-0" onClick={() => c.query.set({ by: "skills" })}>{`Assign individual ${nounPl} instead`}</Button>
             </div>
-          </section>
-          <AssignColumns c={c} list={list} />
-        </>
-      ) : null}
+          </div>
+        ) : (
+          <IndividualAssign model={c.model} onCreateGroup={c.actions.openGroup} />
+        )}
+      </section>
+      {!individual && list ? <AssignColumns c={c} list={list} /> : null}
     </div>
   )
 }

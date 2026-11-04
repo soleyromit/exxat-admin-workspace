@@ -94,6 +94,12 @@ export interface LibraryRow extends Record<string, unknown> {
   categoryInactive: boolean
   /** Tags on the row that have been deactivated since they were assigned [REQ SL-06]: they stay, marked "Inactive". */
   inactiveTags: string[]
+  /** The newer version that replaced this skill, for some or every student group [CALL 10-09; INFER]. */
+  replacedBy?: { id: string; name: string; version: number; cohorts: string[] } | null
+  /** The older version this skill replaces. */
+  replaces?: { id: string; name: string; version: number } | null
+  /** Version number when the skill has been replaced or replaces another (shown as a "Version n" badge); null otherwise. */
+  version?: number | null
 }
 
 interface HgtcRow {
@@ -197,6 +203,17 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
   const batchLabel = new Map(state.batches.map((b) => [b.id, b.label]))
   const modelOf = new Map<string, EvalModel | null>([...state.skills.map((k) => [k.id, k.model] as const), ...overlay.added.map((a) => [a.id, a.model] as const)])
   const copied = (id: string): EvalModel | null | undefined => (overlay.copiedFrom[id] ? modelOf.get(overlay.copiedFrom[id]!) ?? null : undefined)
+  const successor = new Map<string, Skill>()
+  for (const k of state.skills) if (k.replaces && !deleted.has(k.id)) successor.set(k.replaces.id, k)
+  const nameOf = new Map(state.skills.map((k) => [k.id, overlay.edits[k.id]?.name ?? k.name]))
+  const skillById = new Map(state.skills.map((k) => [k.id, k]))
+  const versionOf = (id: string): number => {
+    let n = 1
+    let k = skillById.get(id)
+    const seen = new Set<string>()
+    while (k?.replaces && !seen.has(k.id)) { seen.add(k.id); n += 1; k = skillById.get(k.replaces.id) }
+    return n
+  }
   const rows: LibraryRow[] = state.skills
     .filter((k) => !deleted.has(k.id))
     .map((k0) => {
@@ -229,6 +246,9 @@ export function buildLibrary(state: V2State, overlay: LibraryOverlay = EMPTY_OVE
         unmapFrom: [...(c?.all ?? [])].map((id) => courseName.get(id) ?? id).sort(),
         requiredToGraduate: !!k.hgtc?.required || !!overlay.required?.includes(k.id),
         isNew: !!overlay.fresh?.includes(k.id),
+        replacedBy: successor.has(k.id) ? { id: successor.get(k.id)!.id, name: nameOf.get(successor.get(k.id)!.id) ?? "", version: versionOf(successor.get(k.id)!.id), cohorts: successor.get(k.id)!.replaces!.cohorts } : null,
+        replaces: k.replaces ? { id: k.replaces.id, name: nameOf.get(k.replaces.id) ?? "", version: versionOf(k.replaces.id) } : null,
+        version: k.replaces || successor.has(k.id) ? versionOf(k.id) : null,
       }
       return { ...base, ...vocabMarks(base) }
     })
@@ -395,11 +415,14 @@ export function nextToConfigure(rows: readonly LibraryRow[], afterId: string): L
 }
 
 export const configureHref = (id: string): string => `${LAB_ADMIN}/configure-skill?skill=${encodeURIComponent(id)}`
-export const mappingHref = (id: string): string => `${LAB_ADMIN}/course-mapping?skill=${encodeURIComponent(id)}`
+/** `by=skill`: a flow with a skill-first mapping step (course mapping B) lands there; elsewhere the skill is the selected record. */
+export const mappingHref = (id: string): string => `${LAB_ADMIN}/course-mapping?skill=${encodeURIComponent(id)}&by=skill`
 export const evidenceHref = (id: string): string => `${LAB_ADMIN}/attainment?skill=${encodeURIComponent(id)}`
 export const importHref = `${LAB_ADMIN}/import-ai-review`
 export const starterHref = `${LAB_ADMIN}/starter-library`
 export const newListHref = `${LAB_ADMIN}/lists-cohorts`
+/** Opens "Replace {skill}" over the library (the library reads ?replace=). */
+export const replaceHref = (id: string): string => `${LAB_ADMIN}/skills-library?replace=${encodeURIComponent(id)}`
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Add a skill: draft, validation

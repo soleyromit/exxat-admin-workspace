@@ -20,7 +20,7 @@ import { EvaluatorPicker, MethodTiles, TOUCH_ROW } from "@/components/lab/studen
 import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart, SendBlockedNote, SendIssues, SkillsField, WherePick, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
 import { FormSkeleton } from "./student-log-a"
 import { aNoun, skillNounPlural } from "@/lib/lab/terms"
-import { METHODS, methodById, needsApproval, student2Href } from "@/lib/lab/student2"
+import { METHODS, methodById, needsApproval } from "@/lib/lab/student2"
 
 type Situation = "with-me" | "not-here" | "paper"
 
@@ -35,7 +35,7 @@ export function StudentRequestB() {
     <Student2Frame
       title={`Log ${aNoun()}`}
       width="wide"
-      empty={(c) => <EmptyBlock title={`No ${skillNounPlural()} open yet`} body={`Your program has not set up ${skillNounPlural()} to send. Check back once it has.`} action={{ label: "Back to My progress", href: student2Href("home", {}, c.studentId) }} />}
+      empty={() => <EmptyBlock title={`No ${skillNounPlural()} open yet`} body={`Your program has not set up ${skillNounPlural()} to send. Check back once it has.`} />}
       loading={<FormSkeleton />}
     >
       {(ctx) => <SituationFirst ctx={ctx} />}

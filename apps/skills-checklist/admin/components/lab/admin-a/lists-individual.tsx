@@ -11,6 +11,7 @@
  *  - IndividualSkills (variant B's side panel): one student group fixed, tick its skills.
  */
 import * as React from "react"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { TYPE } from "@/components/lab/type-scale"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Checkbox as CheckboxDs } from "@exxatdesignux/ui/components/ui/checkbox"
@@ -92,6 +93,8 @@ function groupMeta(model: ListsModel, g: StudentGroup): string {
  * group beside that heading (same order as the group-of-skills path).
  */
 export function IndividualAssign({ model, onCreateGroup }: { model: ListsModel; onCreateGroup: () => void }) {
+  // Inside Set up skills the step heading is the section title, so these sit one step below it (D-L44).
+  const inWorkflow = useEmbeddedStep() !== null
   const skills = useAssignable(model)
   const [picked, setPicked] = React.useState<string[]>([])
   const pickedSet = new Set(picked)
@@ -125,11 +128,11 @@ export function IndividualAssign({ model, onCreateGroup }: { model: ListsModel; 
   return (
     <div className="grid min-w-0 gap-6 @min-[60rem]:grid-cols-2" data-individual-assign>
       <FieldSet className="min-w-0">
-        <FieldLegend className={TYPE.section}>{`1. ${skillNounPlural().charAt(0).toUpperCase()}${skillNounPlural().slice(1)}`}</FieldLegend>
+        <FieldLegend className={inWorkflow ? TYPE.card : TYPE.section}>{`1. ${skillNounPlural().charAt(0).toUpperCase()}${skillNounPlural().slice(1)}`}</FieldLegend>
         <SkillPicker skills={skills} selected={pickedSet} onToggle={togglePick} label={`${skillNounPlural()} to assign`} idPrefix="individual-pick" />
       </FieldSet>
       <FieldSet className="min-w-0">
-        <FieldLegend className={TYPE.section}>2. Student groups</FieldLegend>
+        <FieldLegend className={inWorkflow ? TYPE.card : TYPE.section}>2. Student groups</FieldLegend>
         {!picked.length ? <p className="text-sm text-muted-foreground" data-pick-first>{`Pick ${aNoun()} first.`}</p> : null}
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-1">
@@ -151,10 +154,10 @@ export function IndividualAssign({ model, onCreateGroup }: { model: ListsModel; 
   )
 }
 
-/** The footer line for the individual path: how many groups have skills assigned one at a time, 10 words or fewer. */
+/** The footer line for the individual path: how many groups have individual skills assigned, 10 words or fewer. */
 export function individualFooterLine(model: ListsModel): string {
   const withSkills = model.groups.filter((g) => individualSkillsFor(model.lists, g.id).length > 0)
-  if (!withSkills.length) return `No ${skillNounPlural()} assigned one at a time yet`
+  if (!withSkills.length) return `No individual ${skillNounPlural()} assigned yet`
   const n = new Set(withSkills.flatMap((g) => individualSkillsFor(model.lists, g.id))).size
   return `${plural(n, skillNoun(), skillNounPlural())} assigned to ${plural(withSkills.length, "group", "groups")}`
 }

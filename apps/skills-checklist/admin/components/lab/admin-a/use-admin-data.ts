@@ -9,7 +9,7 @@ import { useReviewer } from "@/components/lab/reviewer/use-reviewer"
 import { applyListsOverlay, diffLists, seedLists, EMPTY_LISTS_OVERLAY, type ListsOverlay, type SkillList } from "@/lib/lab/lists"
 import { EMPTY_MAPPING_OVERLAY, type MappingOverlay } from "@/lib/lab/mapping"
 import type { Person, V2State } from "@/lib/v2/types"
-import { createSessionStore, customGroupsStore } from "./session-store"
+import { createSessionStore, customGroupsStore, sessionSpace } from "./session-store"
 import { demoOf, useUrlParams, type DemoState } from "./parts"
 
 export const mappingStore = createSessionStore<MappingOverlay>("lab.admin.mapping.v1", EMPTY_MAPPING_OVERLAY)
@@ -43,7 +43,9 @@ export function useMappingOverlay(): [MappingOverlay, (o: MappingOverlay) => voi
 /** The program's lists with this session's edits, and a setter that stores only the difference from the seed. */
 export function useLists(state: V2State | null): { lists: SkillList[]; setLists: (next: SkillList[]) => void } {
   const overlay = listsStore.use()
-  const base = React.useMemo(() => (state ? seedLists(state) : []), [state])
+  // A new program (Set up skills, D-L44) has no seeded groups of skills, even once it has skills.
+  const seeded = sessionSpace() === ""
+  const base = React.useMemo(() => (state && seeded ? seedLists(state) : []), [state, seeded])
   const lists = React.useMemo(() => applyListsOverlay(base, overlay), [base, overlay])
   const setLists = React.useCallback(
     (next: SkillList[]) => {

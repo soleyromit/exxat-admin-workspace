@@ -37,7 +37,7 @@ export function StudentLogB() {
   return (
     <Student2Frame
       title={`Log ${aNoun()}`}
-      empty={(c) => <EmptyBlock title={`No ${skillNounPlural()} open yet`} body={`Your program has not set up ${skillNounPlural()} to send. Check back once it has.`} action={{ label: "Back to My progress", href: student2Href("home", {}, c.studentId) }} />}
+      empty={() => <EmptyBlock title={`No ${skillNounPlural()} open yet`} body={`Your program has not set up ${skillNounPlural()} to send. Check back once it has.`} />}
       loading={<FormSkeleton />}
     >
       {(ctx) => <ShiftLog ctx={ctx} />}

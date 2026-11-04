@@ -16,7 +16,7 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { SCORE_MAX } from "@/lib/v2/preceptor"
-import { evFieldId, type EvIssue, type EvRequest, type EvResponse, type EvSkill } from "@/lib/lab/evaluator"
+import { ratingLabel, evFieldId, levelOnly, type EvIssue, type EvRequest, type EvResponse, type EvSkill } from "@/lib/lab/evaluator"
 import { focusField, type EvaluatorModel } from "@/components/lab/evaluator/use-evaluator"
 
 export const TOUCH = "min-h-(--control-height-touch) h-auto whitespace-normal py-2 text-sm"
@@ -39,7 +39,7 @@ function FieldError({ id, issue }: { id: string; issue?: EvIssue }) {
 const UNSELECTED_NEUTRAL = "data-[state=off]:border-[var(--border-control-35)] data-[state=off]:hover:border-[var(--foreground)]"
 
 /** One choice from a short list, as touch tiles. Deselecting is not possible: an answer is changed, not cleared. */
-export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, describedBy, cols = 2, compact = false }: { id: string; labelId: string; options: Array<{ value: string; label: string }>; value: string | null; onChange: (v: string) => void; invalid?: boolean; describedBy?: string; cols?: 2 | 3 | 5; compact?: boolean }) {
+export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, describedBy, cols = 2, compact = false }: { id: string; labelId: string; options: Array<{ value: string; label: string }>; value: string | null; onChange: (v: string) => void; invalid?: boolean; describedBy?: string; cols?: 1 | 2 | 3 | 5; compact?: boolean }) {
   return (
     <ToggleGroup
       type="single"
@@ -50,7 +50,7 @@ export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, de
       aria-labelledby={labelId}
       aria-describedby={describedBy}
       aria-invalid={invalid || undefined}
-      className={cn("grid w-full gap-2", cols === 2 ? "grid-cols-2" : cols === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-5")}
+      className={cn("grid w-full gap-2", cols === 1 ? "grid-cols-1" : cols === 2 ? "grid-cols-2" : cols === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-5")}
     >
       {options.map((o, i) => (
         <ToggleGroupItem key={o.value} id={i === 0 ? id : undefined} value={o.value} aria-invalid={invalid || undefined} className={cn(compact ? "h-8 text-sm sm:h-8 max-sm:min-h-(--control-height-touch)" : TOUCH, "w-full justify-center px-3", UNSELECTED_NEUTRAL)}>
@@ -86,7 +86,7 @@ export function SelfNote({ skill, student, requestNote = "" }: { skill: EvSkill;
   )
 }
 
-/** All answers for one skill: outcome, then level and questions once graded, then feedback. */
+/** All answers for one skill: outcome, then level and questions once graded, then feedback. An independence-level skill asks the level only. */
 export function SkillFields({ m, skill, compactQuestions = false }: { m: EvaluatorModel; skill: EvSkill; compactQuestions?: boolean }) {
   const r = m.response(skill.id)
   const issues = m.issuesFor(skill.id)
@@ -95,20 +95,42 @@ export function SkillFields({ m, skill, compactQuestions = false }: { m: Evaluat
   const outId = evFieldId.outcome(skill.id)
   const fbId = evFieldId.feedback(skill.id)
   const fbRequired = skill.feedbackRequired || r.outcome === "not-yet"
+  const byLevel = levelOnly(skill)
+  const lvlId = evFieldId.level(skill.id)
   return (
     <div className="flex flex-col gap-4">
       {skill.prior ? (
         <p className="text-sm text-muted-foreground">
-          Earlier answer: <span className="text-foreground">{[skill.choices.find((c) => c.value === skill.prior!.outcome)?.label, skill.prior.level !== null ? skill.levels[skill.prior.level] : null].filter(Boolean).join(", ")}</span>
+          Earlier answer: <span className="text-foreground">{ratingLabel(skill, skill.prior)}</span>
         </p>
       ) : null}
+      {byLevel ? (
+        // An independence-level skill: the level is the answer; the program's "counts from" level decides (lib/lab/evaluator levelOnly).
+        <div className="flex flex-col gap-2">
+          <Label id={`${lvlId}-label`} className="text-sm font-medium">{skill.levelsLabel}</Label>
+          <ChoiceTiles
+            id={lvlId}
+            labelId={`${lvlId}-label`}
+            options={[...skill.levels.map((l, i) => ({ value: String(i), label: l })), ...skill.choices.filter((c) => c.value === "not-yet")]}
+            value={r.outcome === "not-yet" ? "not-yet" : r.level === null ? null : String(r.level)}
+            onChange={(v) => m.setAnswer(skill.id, v === "not-yet" ? { outcome: "not-yet", level: null } : { outcome: "met", level: Number(v) })}
+            invalid={!!issue(lvlId)}
+            describedBy={issue(lvlId) ? `${lvlId}-err` : undefined}
+            cols={3}
+          />
+          <FieldError id={`${lvlId}-err`} issue={issue(lvlId)} />
+          {m.options.ruleHint && skill.ruleHint ? <p className="text-xs text-muted-foreground">{skill.ruleHint}</p> : null}
+        </div>
+      ) : null}
+      {byLevel ? null : (
       <div className="flex flex-col gap-2">
         <Label id={`${outId}-label`} className="text-sm font-medium">Outcome</Label>
         <ChoiceTiles id={outId} labelId={`${outId}-label`} options={skill.choices} value={r.outcome} onChange={(v) => m.setAnswer(skill.id, { outcome: v as EvResponse["outcome"] })} invalid={!!issue(outId)} describedBy={issue(outId) ? `${outId}-err` : undefined} cols={skill.choices.length === 3 ? 3 : 2} />
         <FieldError id={`${outId}-err`} issue={issue(outId)} />
         {m.options.ruleHint && skill.ruleHint ? <p className="text-xs text-muted-foreground">{skill.ruleHint}</p> : null}
       </div>
-      {graded && skill.levels.length ? (
+      )}
+      {!byLevel && graded && skill.levels.length ? (
         <div className="flex flex-col gap-2">
           <Label id={`${evFieldId.level(skill.id)}-label`} className="text-sm font-medium">{skill.levelsLabel}</Label>
           <ChoiceTiles id={evFieldId.level(skill.id)} labelId={`${evFieldId.level(skill.id)}-label`} options={skill.levels.map((l, i) => ({ value: String(i), label: l }))} value={r.level === null ? null : String(r.level)} onChange={(v) => m.setAnswer(skill.id, { level: Number(v) })} invalid={!!issue(evFieldId.level(skill.id))} cols={3} />

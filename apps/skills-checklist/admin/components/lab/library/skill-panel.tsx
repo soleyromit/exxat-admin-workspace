@@ -17,6 +17,7 @@ import {
   FloatingSheetPanelHeader,
   FloatingSheetPanelToolbar,
   FloatingSheetPanelWorkflowFooter,
+  railTriggerProps,
 } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
@@ -114,6 +115,19 @@ export function SkillPanel({ row, rows, handlers, onOpen, onClose }: {
             <FloatingSheetPanelBody className="px-4 pb-4">
               <dl className="flex flex-col divide-y divide-border">
                 <Fact term="Status"><LibraryStatusBadge status={row.status} draft={row.draft} /></Fact>
+                {row.version ? <Fact term="Version">{row.version}</Fact> : null}
+                {/* Versions [CALL 10-09; INFER]: each version links to the other, so the handoff reads from either row. */}
+                {row.replacedBy ? (
+                  <Fact term="Replaced by">
+                    <Button type="button" variant="link" size="sm" className="h-auto px-0" {...railTriggerProps()} onClick={() => onOpen(row.replacedBy!.id)}>{`Version ${row.replacedBy.version}`}</Button>
+                    <span className="block text-muted-foreground">{row.replacedBy.cohorts.join(", ")}</span>
+                  </Fact>
+                ) : null}
+                {row.replaces ? (
+                  <Fact term="Replaces">
+                    <Button type="button" variant="link" size="sm" className="h-auto px-0" {...railTriggerProps()} onClick={() => onOpen(row.replaces!.id)}>{`Version ${row.replaces.version}`}</Button>
+                  </Fact>
+                ) : null}
                 <Fact term="Description"><DescriptionFact key={row.id} row={row} onSave={handlers.onSaveDescription} /></Fact>
                 {/* Category and tags together, so what the program grouped it under reads in one place (REQ SL-03, SL-04). */}
                 <Fact term="Category">{row.section === NO_CATEGORY ? <span className="text-muted-foreground">None</span> : <CategoryName name={row.section} inactive={row.categoryInactive} />}</Fact>

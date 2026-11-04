@@ -153,13 +153,14 @@ describe("Sankalp's Guided path A4 -> A5 -> A6 (Thursday flows)", () => {
       expect(fromGroup, `${off.id} carries a skill from the group of skills`).toBeDefined()
     }
   })
-  it("the groups step is optional and Skip goes to the assign step's individual path", () => {
+  it("the groups step is optional and its header links on to the assign step (no Skip footer, navigation model A, D-L42)", () => {
     const f = findFlow("set-up-skills")!
     const ids = f.steps.filter((x) => !x.side).map((x) => x.id)
     expect(ids.indexOf("lists")).toBe(ids.indexOf("assign") - 1)
     expect(stepOf(f, "lists")!.tag).toBe("Optional")
     const frame = here("components/lab/admin-a/lists-frame.tsx")
-    expect(frame).toMatch(/label: "Skip", href: assignHref\(\{ by: "skills" \}\)/)
+    expect(frame).toMatch(/Assign to student groups/)
+    expect(frame).not.toMatch(/StickyFooter|label: "Skip"/)
     expect(frame).toMatch(/flowHref\(ctx\.flowId, "assign"/)
   })
   it("course mapping is titled by the step", () => {

@@ -4,7 +4,7 @@ import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { isLabelPreset } from "@/lib/lab/configure"
-import { blankResponse, buildRequest, isEvState, receipt, sampleResponses, validate, doneCount, type EvOptions, type EvRequest, type EvResponse, type EvSample, type EvState, type EvIssue, type ReceiptLine } from "@/lib/lab/evaluator"
+import { blankResponse, buildRequest, levelOnly, isEvState, receipt, sampleResponses, validate, doneCount, type EvOptions, type EvRequest, type EvResponse, type EvSample, type EvState, type EvIssue, type ReceiptLine } from "@/lib/lab/evaluator"
 
 /** Lab URL params, so every state is a shareable link: ?state=&sample=&hint=1&fo=1&prefill=1&fb=1&hold=1 */
 export function useLabParams() {
@@ -109,7 +109,8 @@ export function useEvaluator(defaultState: EvState = "default", receiptStates: E
   })
   const setAll = (outcome: EvResponse["outcome"]) => setResponses((prev) => {
     const next = { ...prev }
-    for (const k of req?.skills ?? []) next[k.id] = { ...(prev[k.id] ?? blankResponse(k)), outcome }
+    // An independence-level skill has no outcome to mark: its level is its answer (levelOnly), so Mark all leaves it.
+    for (const k of req?.skills ?? []) if (!levelOnly(k)) next[k.id] = { ...(prev[k.id] ?? blankResponse(k)), outcome }
     return next
   })
   const issues = req ? validate(req, responses) : []

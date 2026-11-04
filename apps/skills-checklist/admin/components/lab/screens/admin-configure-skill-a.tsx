@@ -11,14 +11,15 @@
  * Save writes the rule through the same path as before (useConfigure, saveLabRule); when the change moves students who already
  * have evidence, the choice about that evidence is asked first, as a control [D-X27].
  *
- * Regions: header, sections, footer. URL: ?skill= · ?state=loading.
+ * Regions: header (Evaluation settings, Close, the one Save), sections. No footer and no back control (navigation model A, D-L42).
+ * URL: ?skill= · ?state=loading.
  */
 import * as React from "react"
 import Link from "next/link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { cn } from "@exxatdesignux/ui/lib/utils"
-import { FormPage, StickyFooter } from "@/components/lab/layout"
+import { FormPage } from "@/components/lab/layout"
 import { CRITERIA_LABEL, HOW_MANY_LABEL, LAB_MODEL_LABEL, MODEL_STEP_LABEL, ROLE_LABEL, checkOffLine, configureStepValue, type PublishMode } from "@/lib/lab/configure"
 import { programSettingsOf, resolveRule } from "@/lib/lab/program-settings"
 import { OutcomesSection, RuleSection, type SectionProps } from "@/components/lab/configure/fields"
@@ -27,7 +28,7 @@ import { ConfigureLoading, ConfigureNotFound, LeaveButton, SkillTitle } from "@/
 import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
 import { TYPE } from "@/components/lab/type-scale"
-import { skillNounPlural } from "@/lib/lab/terms"
+import { EVALUATION_SETTINGS_TITLE } from "@/components/lab/configure/program-layout"
 
 /** A read-only value row: label and value, nothing else. */
 function Value({ label, value }: { label: string; value: string }) {
@@ -97,15 +98,18 @@ export function AdminConfigureSkillA() {
       title={<SkillTitle state={m.state} skill={skill} />}
       actions={
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href={allSkillsHref}>{`Change for all ${skillNounPlural()}`}</Link>
-          </Button>
+          {/* Once, never twice: with no model yet the body's filled "Evaluation settings" is the way there (D-L40). */}
+          {r.model ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href={allSkillsHref}>{EVALUATION_SETTINGS_TITLE}</Link>
+            </Button>
+          ) : null}
           <LeaveButton dirty={m.dirty} skillId={skill.id} onSaveDraft={() => m.saveDraft(null)} />
+          {/* The one Save shows once there is something to save (no disabled control on arrival); header only (D-L42). */}
+          {r.model && (m.dirty || !m.current) ? <Button type="button" variant="default" size="sm" onClick={save}>Save</Button> : null}
         </div>
       }
       banner={m.saved ? <LocalBanner variant="success" dismissible onDismiss={m.dismissSaved}>Saved</LocalBanner> : undefined}
-      // The one Save shows once there is something to save (no disabled control on arrival).
-      footer={r.model && (m.dirty || !m.current) ? <StickyFooter primary={{ label: "Save", onClick: save }} /> : undefined}
     >
       <div className="flex flex-col gap-6" data-one-skill>
         <Section n={1} title={MODEL_STEP_LABEL} first>
@@ -116,7 +120,7 @@ export function AdminConfigureSkillA() {
           ) : (
             <div>
               <Button asChild variant="default" size="sm">
-                <Link href={allSkillsHref}>Set evaluation settings</Link>
+                <Link href={allSkillsHref}>{EVALUATION_SETTINGS_TITLE}</Link>
               </Button>
             </div>
           )}

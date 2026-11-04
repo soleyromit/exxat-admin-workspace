@@ -88,7 +88,8 @@ export function Student2Frame({
     </div>
   )
   const lead = backLink ? (
-    <Button asChild variant="ghost" size="sm" className="-ms-2 self-start text-muted-foreground">
+    // Phones only: from md up the breadcrumb is the way back (navigation model A, D-L42); below md it is hidden.
+    <Button asChild variant="ghost" size="sm" className="-ms-2 self-start text-muted-foreground md:hidden">
       <Link href={backLink.href}>
         <i className="fa-light fa-arrow-left" aria-hidden="true" />
         {backLink.label}

@@ -17,7 +17,7 @@ import { SidebarInset, SidebarTrigger, useSidebar } from "@exxatdesignux/ui/comp
 import { LeoAmbienceProvider } from "@exxatdesignux/ui/components/ui/leo-ambience-context"
 import { AppShellSlotsProvider, AppSidebar, SecondaryHubIconNavRow, SecondaryHubNavCompactShell, SecondaryHubNavRow, SecondaryPanel, SecondaryPanelProvider, SidebarShell, useSecondaryHubNavChrome, useSecondaryPanel, type AppShellData, type AppShellRoutePolicy, type AppShellSlots, type SecondaryPanelSpec, type ShellNav } from "@exxatdesignux/ui/components/shell"
 import { ResizablePanel, ResizablePanelGroup } from "@exxatdesignux/ui/components/ui/resizable"
-import { SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, settingsHref, settingsLeaf, skillsLabel, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
+import { SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, settingsHref, settingsLeaf, skillsLabel, selectedSkillsPanelKey, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { utilityBarActionButtonClass } from "@exxatdesignux/ui/components/shell/utility-bar-chrome"
 import { cn } from "@exxatdesignux/ui/lib/utils"
@@ -29,6 +29,8 @@ import { SCOPE_CARRY, labHref, navHref } from "@/lib/lab/links"
 import { findFlow } from "@/lib/lab/flows"
 import { usePresent } from "@/components/lab/lab-bar/present"
 import { WalkthroughControls } from "@/components/lab/lab-bar/walkthrough-controls"
+import { customGroupsStore } from "@/components/lab/admin-a/use-admin-data"
+import { studentGroups } from "@/lib/lab/lists"
 import { useTerms } from "@/components/lab/library/use-terms"
 import { withNoun } from "@/lib/lab/terms"
 import { V2StoreProvider, useV2State } from "@/lib/v2/react"
@@ -140,6 +142,7 @@ function Crumbs() {
   // A page opened from another page (Skills > More > Bulk upload) carries ?from=: its crumb leads back, set-aware, and the
   // leaf is the page's own title so the crumb and the H1 agree (Romit 2026-10-27).
   const state = useV2State()
+  const customGroups = customGroupsStore.use()
   const back = returnTarget(params?.get(FROM_PARAM))
   const leaf = back && link.screen ? LEAF_TITLE[link.screen]?.() : undefined
   // Present mode shows no lab label: product crumbs only.
@@ -158,6 +161,8 @@ function Crumbs() {
   const panelItem = admin && !back ? skillsPanelItemFor(link.screen, params) : undefined
   const settingsLeafLabel = admin && !back && isSettingsArea(link.screen, params) ? settingsLeaf(link.screen, params) : undefined
   let groupLeaf: string | undefined
+  const sgId = panelItem?.key === "summary" ? params?.get("sg") : null
+  const sgGroup = sgId ? studentGroups(state, customGroups).find((g) => g.id === sgId) : undefined
   if (panelItem) {
     const libraryHref = navHref("admin/skills-library", link)
     if (panelItem.key === "library") groupLeaf = skillsLabel()
@@ -166,6 +171,12 @@ function Crumbs() {
       // The assign step keeps its step words; a page under a panel row that is not the row's own page (the setup summary) reads
       // its own title.
       groupLeaf = (params?.get("view") === "assign" || link.screen !== panelItem.screen) && title ? withNoun(title) : panelItem.label()
+    }
+    // One student group on the summary (?sg=) is a level below it: "Skills > Setup summary > {group}", so the crumb is the way
+    // back to every group and the page carries no back link (navigation model A, D-L42).
+    if (panelItem.key === "summary" && sgGroup) {
+      crumbs.push({ label: panelItem.label(), href: labHref(link.screen!, { sg: null }, link) })
+      groupLeaf = sgGroup.label
     }
   } else if (settingsLeafLabel) {
     crumbs.push({ label: "Settings", href: settingsHref(link) })
@@ -291,7 +302,7 @@ function SkillsPanelBody() {
   const params = useSearchParams()
   const { showCompactRail, openPanel } = useSecondaryHubNavChrome()
   useTerms()
-  const current = skillsPanelItemFor(link.screen, params)?.key
+  const current = selectedSkillsPanelKey(link.screen, params)
   const items = SKILLS_PANEL.map((i) => ({ key: i.key, label: i.label(), icon: i.icon, href: skillsPanelHref(i, link), active: i.key === current }))
   if (showCompactRail) {
     return (

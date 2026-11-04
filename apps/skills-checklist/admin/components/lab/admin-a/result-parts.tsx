@@ -15,33 +15,45 @@ import { StatusBadge } from "@exxatdesignux/ui"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
-import { cn } from "@exxatdesignux/ui/lib/utils"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
-import { buildLibrary } from "@/lib/lab/library"
+import { buildLibrary, countLibrary } from "@/lib/lab/library"
+import { programSettingsOf } from "@/lib/lab/program-settings"
 import { studentGroups } from "@/lib/lab/lists"
-import { setupResult, type GroupResult, type SetupResult } from "@/lib/lab/setup-result"
+import { setupRecap, setupResult, type GroupResult, type RecapRow, type SetupResult } from "@/lib/lab/setup-result"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
 import { useTerms } from "@/components/lab/library/use-terms"
 import { TYPE } from "@/components/lab/type-scale"
-import { LINK, LINK_IN_TABLE } from "@/components/lab/link-styles"
+import { LINK_IN_TABLE } from "@/components/lab/link-styles"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { customGroupsStore, useLists, useMappingOverlay } from "./use-admin-data"
 
 export const RESULT_SCREEN = "admin/setup-result"
+/** The summary's one name: its page title, its walkthrough step and the course mapping link to it. */
+export const RESULT_LABEL = "Setup summary"
 
-export function useSetupResult(): { ready: boolean; result: SetupResult } {
+export function useSetupResult(): { ready: boolean; result: SetupResult; recap: RecapRow[] } {
   useTerms()
   const state = useV2State()
   const hydrated = useV2Hydrated()
   const { lists } = useLists(hydrated ? state : null)
   const [overlay] = useMappingOverlay()
   const custom = customGroupsStore.use()
-  const result = React.useMemo(() => {
-    const ids = buildLibrary(state).filter((r) => r.status !== "inactive").map((r) => r.id)
-    return setupResult(state, lists, overlay, studentGroups(state, custom), ids)
-  }, [state, lists, overlay, custom])
-  return { ready: hydrated, result }
+  return React.useMemo(() => {
+    const rows = buildLibrary(state)
+    const live = rows.filter((r) => r.status !== "inactive")
+    const result = setupResult(state, lists, overlay, studentGroups(state, custom), live.map((r) => r.id))
+    const counts = countLibrary(rows)
+    const recap = setupRecap({
+      library: { total: counts.total, notConfigured: counts.notConfigured, inactive: counts.inactive },
+      categories: new Set(live.map((r) => r.category).filter(Boolean)).size,
+      tags: new Set(live.flatMap((r) => r.tags ?? [])).size,
+      settingsAt: programSettingsOf(state)?.at ?? null,
+      lists,
+      result,
+    })
+    return { ready: hydrated, result, recap }
+  }, [state, lists, overlay, custom, hydrated])
 }
 
 /** The student group a page is about: `?group=` or the cohort in scope, else the first with skills that have no course yet. */
@@ -59,7 +71,7 @@ type Show = "unplaced" | "placed" | "all"
 type SkillRow = GroupResult["skills"][number] & Record<string, unknown>
 
 /** One student group: the chain as three facts, the summary sentence, then each skill and where it is expected. */
-export function GroupDetail({ g, backHref }: { g: GroupResult; backHref?: string }) {
+export function GroupDetail({ g }: { g: GroupResult }) {
   const to = useLabHref()
   const [show, setShow] = React.useState<Show>(g.unplaced ? "unplaced" : "all")
   const rows = show === "all" ? g.skills : g.skills.filter((k) => (show === "placed" ? k.courses.length > 0 : k.courses.length === 0))
@@ -102,7 +114,6 @@ export function GroupDetail({ g, backHref }: { g: GroupResult; backHref?: string
     <section aria-labelledby="group-detail-h" className="flex flex-col gap-4" data-group-detail={g.group.id}>
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 id="group-detail-h" className={TYPE.section}>{g.group.label}</h2>
-        {backHref ? <Link href={backHref} className={cn(LINK, TYPE.body)}>All student groups</Link> : null}
       </div>
       <Tabs value={show} onValueChange={(v) => setShow(v === "placed" || v === "all" ? v : "unplaced")}>
         <TabsList variant="line" ariaLabel={`${capitalize(skillNounPlural())} by course`}>

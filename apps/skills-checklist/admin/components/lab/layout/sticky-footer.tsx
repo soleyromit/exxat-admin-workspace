@@ -32,7 +32,7 @@ export type StickyFooterPrimary = StickyFooterAction & {
 
 export type StickyFooterProps = {
   /** Outline Back button. Label defaults to "Back". Omit on the first step. */
-  back?: { label?: string; onClick: () => void }
+  back?: { label?: string; onClick?: () => void; href?: string }
   /** Short context line, 10 words or fewer: the step outcome in numbers or the blocking reason. Announced politely. */
   context?: React.ReactNode
   /** The single filled primary action. */
@@ -98,9 +98,15 @@ export function StickyFooter({ back, context, primary, secondary, summary, class
   const hasContext = contextContent !== undefined && contextContent !== null && contextContent !== false
 
   const backButton = back ? (
-    <Button type="button" variant="outline" size="default" className={BUTTON_CLASS} onClick={back.onClick} data-footer-back>
-      {back.label ?? "Back"}
-    </Button>
+    back.href ? (
+      <Button asChild variant="outline" size="default" className={BUTTON_CLASS}>
+        <Link href={back.href} data-footer-back>{back.label ?? "Back"}</Link>
+      </Button>
+    ) : (
+      <Button type="button" variant="outline" size="default" className={BUTTON_CLASS} onClick={back.onClick} data-footer-back>
+        {back.label ?? "Back"}
+      </Button>
+    )
   ) : null
 
   return (

@@ -204,8 +204,8 @@
       "persona": "admin",
       "slug": "evaluation-settings",
       "title": "Evaluation settings",
-      "tier": 2,
-      "recommended": "B",
+      "tier": 1,
+      "recommended": "D",
       "variants": [
         {
           "id": "A",
@@ -215,7 +215,7 @@
         },
         {
           "id": "B",
-          "question": "Settings beside a live summary: does seeing the resulting settings as label and value pairs while editing the four sections make the page easiest to understand? Recommended. (Proposed)",
+          "question": "Settings beside a live summary: does seeing the resulting settings as label and value pairs while editing the four sections make the page easiest to understand? (Proposed)",
           "file": "components/lab/screens/admin-evaluation-settings-b.tsx",
           "pageType": "form"
         },
@@ -223,6 +223,24 @@
           "id": "C",
           "question": "One group at a time: do line tabs for the four sections, with one Save across them, beat one long page? (Proposed)",
           "file": "components/lab/screens/admin-evaluation-settings-c.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "D",
+          "question": "One sentence: is the rule as one sentence of inline pickers, with the evaluator form and student request redrawn live below, the clearest way to set it? Recommended. (Chosen 2026-11-03)",
+          "file": "components/lab/screens/admin-evaluation-settings-d.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "E",
+          "question": "Journey: do four stage cards in work order (student logs, evaluator rates, admin approves, achieved), each opening its settings below, make who does what obvious? (Proposed)",
+          "file": "components/lab/screens/admin-evaluation-settings-e.tsx",
+          "pageType": "form"
+        },
+        {
+          "id": "F",
+          "question": "Edit on the form: does editing each setting in place on drawn evaluator and student forms remove the need for a settings column? (Proposed)",
+          "file": "components/lab/screens/admin-evaluation-settings-f.tsx",
           "pageType": "form"
         }
       ],
@@ -270,6 +288,13 @@
           "question": "End state as a chain: does each student group drawn as groups of skills, student group, courses, left to do, make the connection clearer than a table? (Proposed)",
           "file": "components/lab/screens/admin-setup-result-b.tsx",
           "pageType": "list"
+        },
+        {
+          "id": "C",
+          "question": "Set up skills as one focus workflow: does a route of its own with a six-step rail (Skills, Categories and tags, Evaluation settings, Groups and assignment, Course mapping, Review), Next gated where a later step depends on it and Skip only on optional steps, ending on this summary as its Review step, tell the admin what comes next better than the hub pages? (Proposed, D-L44)",
+          "file": "components/lab/screens/admin-setup-skills-a.tsx",
+          "pageType": "wizard",
+          "frame": "focus"
         }
       ],
       "requiredDsComponents": [
@@ -292,6 +317,11 @@
           "params": {
             "state": "loading"
           }
+        },
+        {
+          "group": "Data",
+          "label": "Start over",
+          "event": "lab:reset"
         }
       ]
     },
@@ -373,7 +403,8 @@
           "id": "A",
           "question": "Four steps, one job each: does Upload, Review, Fix, Confirm with the drop as the hero and only the lines that need a decision get a 154-line import created safely?",
           "file": "components/lab/screens/admin-import-a.tsx",
-          "pageType": "wizard"
+          "pageType": "wizard",
+          "frame": "focus"
         },
         {
           "id": "B",
@@ -729,8 +760,8 @@
       "persona": "admin",
       "slug": "lists-cohorts",
       "title": "Groups of skills",
-      "tier": 2,
-      "recommended": "A",
+      "tier": 1,
+      "recommended": "C",
       "variants": [
         {
           "id": "A",
@@ -742,6 +773,18 @@
           "id": "B",
           "question": "All at once: does a student groups by lists grid, with the next new cohort as a row, make which group uses which list clearer than opening each list?",
           "file": "components/lab/screens/admin-lists-cohorts-b.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "C",
+          "question": "Row actions: with Assign, Make default, Duplicate, Completion rule and Delete on each row, a Students count that opens Reports and no footer, does the page read as the place to manage groups of skills? Recommended. (Chosen 2026-11-03)",
+          "file": "components/lab/screens/admin-lists-cohorts-c.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "D",
+          "question": "Row actions and outcome: does C plus on track and behind this term per group of skills, each count opening Reports, answer whether a group of skills is working without leaving setup?",
+          "file": "components/lab/screens/admin-lists-cohorts-d.tsx",
           "pageType": "list"
         }
       ],
@@ -1128,7 +1171,8 @@
           "id": "C",
           "question": "Course first (Sankalp's fulfillment path): does choosing the course, then its mandatory skills, reading the questions the program configured, rating yourself only where asked, and choosing a preceptor, faculty or lab instructor, one step per page, get a student to a correct request with no guesswork?",
           "file": "components/lab/screens/student-request-c.tsx",
-          "pageType": "wizard"
+          "pageType": "wizard",
+          "frame": "focus"
         }
       ],
       "requiredDsComponents": [

@@ -30,6 +30,7 @@ import { selfEvalEnabled } from "@/lib/lab/student2"
 import { skillById } from "@/lib/v2/evidence-index"
 import { createSeed } from "@/lib/v2/seed"
 import { FULFILLMENT_ENTRY, FULFILLMENT_WALKTHROUGH_ID, WALKTHROUGH_ENTRY, WALKTHROUGH_EXIT, WALKTHROUGH_ID, WALKTHROUGH_ROUTES, effectiveStep, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
+import { SETUP_RESULT_SCREEN, SKILLS_PANEL, selectedSkillsPanelKey } from "@/lib/lab/admin-ia"
 
 /**
  * The two walkthroughs (Romit 2026-10-27, for Sankalp's Thursday meeting): the recommended design of each step in Sankalp's order,
@@ -51,7 +52,7 @@ const AGREED = [
   ["lists", "Groups of skills"], // 4, optional
   ["assign", "Assign skills to student groups"], // 5
   ["map-skill", "Course mapping by skill"], // 6, by skill first (Sarah: the more useful view) [CALL 11-02]
-  ["map", "Course mapping"], // 6, by course
+  ["map", "Course mapping by course"], // 6, by course (D-L39: the footer names the view it moves to)
   ["result", "Setup summary"], // the end state
 ] as const
 // S1 central and per course, then S2 through Send for evaluation C (course first); the confirmation follows Send on the last step.
@@ -206,7 +207,7 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
     expect(landing(labHref("admin/configure-skill", { skill: "sk-vitals" }, ctxFor("settings")))).toMatchObject({ stepId: "configure" })
   })
 
-  it("Import's Open the library and the library's Start a new list stay inside the walkthrough", () => {
+  it("Import's Open the library and the library's Replace with a new version stay inside the walkthrough", () => {
     expect(landing(labHref("admin/skills-library", {}, ctxFor("bulk")))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "library" })
     expect(landing(rewriteLabUrl("/lab/admin/import-ai-review", ctxFor("library")))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "bulk" })
     expect(landing(rewriteLabUrl("/lab/admin/lists-cohorts", ctxFor("library")))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "lists" })
@@ -280,6 +281,24 @@ describe("demo data: Sankalp's exact path shows the self-evaluation step", () =>
 })
 
 const BANNED = ["Tests", "Variant", "variant", "Components", "Scenario", "Tier", "Planned", "Built", "Set 1", "Recommended", "Sample data", "Design lab", "More variants", "Guided"]
+
+describe("navigation model A on the admin walkthrough (D-L42: hub pages, breadcrumbs and the Skills panel, no wizard chrome)", () => {
+  const f = () => findFlow(WALKTHROUGH_ID)!
+  it("keeps every step id and route, with no chapters or footer labels in the flow data", () => {
+    expect(f().steps.map((s) => s.id)).toEqual(["library", "add", "paste", "bulk", "starter", "categories", "settings", "lists", "assign", "map-skill", "map", "result", "configure"])
+    expect("chapters" in f()).toBe(false)
+    for (const s of f().steps) {
+      expect("chapter" in s, s.id).toBe(false)
+      expect("short" in s, s.id).toBe(false)
+    }
+  })
+
+  it("puts Setup summary in the Skills panel, one click from every setup page, and selects it there", () => {
+    expect(SKILLS_PANEL.map((i) => i.label())).toEqual(["Library", "Categories and tags", "Evaluation settings", "Groups of skills", "Course mapping", "Setup summary"])
+    expect(SKILLS_PANEL.find((i) => i.key === "summary")?.screen).toBe(SETUP_RESULT_SCREEN)
+    expect(selectedSkillsPanelKey(SETUP_RESULT_SCREEN)).toBe("summary")
+  })
+})
 
 describe("presenter control", () => {
   const renderAt = (step: string, search = "set=1&present=1", f = flow()) => {

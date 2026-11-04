@@ -46,7 +46,7 @@ export function AdminSetupResultB() {
       {loading ? (
         <Skeleton className="h-80 w-full" aria-label="Loading" />
       ) : chosen ? (
-        <GroupDetail g={chosen} backHref={to(RESULT_SCREEN, { sg: null })} />
+        <GroupDetail g={chosen} />
       ) : (
         <div className="flex flex-col gap-4" data-setup-result>
           <h2 className={TYPE.section}>By student group</h2>

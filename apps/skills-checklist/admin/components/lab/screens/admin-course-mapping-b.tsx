@@ -12,13 +12,16 @@
  */
 import * as React from "react"
 import { mappingLink, skillReach } from "@/lib/lab/mapping"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { aNoun, skillNounPlural } from "@/lib/lab/terms"
 import { MappingFrame, type MappingModel } from "@/components/lab/admin-a/mapping-frame"
 import { SkillReachTable, courseKindField } from "@/components/lab/admin-a/mapping-parts"
 import { SkillAcrossPanel } from "@/components/lab/admin-a/skill-across"
+import { useSetupResult } from "@/components/lab/admin-a/result-parts"
+import { courseGapIds } from "@/lib/lab/setup-result"
 import { AppliedFilterChips, FiltersControl, SearchField, Toolbar, type FilterField } from "@/components/lab/admin-a/parts"
 
-type Show = "" | "required" | "gaps" | "unconfigured"
+type Show = "" | "required" | "gaps" | "unconfigured" | "nocourse"
 
 export function AdminCourseMappingB() {
   return <MappingFrame variant="B">{(m) => <SkillFirst m={m} />}</MappingFrame>
@@ -26,15 +29,21 @@ export function AdminCourseMappingB() {
 
 function SkillFirst({ m }: { m: MappingModel }) {
   const { query } = m
+  const inWorkflow = useEmbeddedStep() !== null
   const q = query.get("q")
   const show = (query.get("show") || "") as Show
   // Every term's offerings: the skill's reach across the program, not one term [CALL 11-02].
   const all = React.useMemo(() => skillReach(m.state, m.overlay, "", m.lists, m.didactic), [m.state, m.overlay, m.lists, m.didactic])
   const gaps = React.useMemo(() => all.filter((r) => r.required && r.carriers === 0).length, [all])
+  // "No course yet": assigned to a student group that has courses, and none of that group's courses expects it. The Setup
+  // summary's course mapping figure is this same set (lib/lab/setup-result.ts courseGapIds), so the drill matches the figure.
+  const { result } = useSetupResult()
+  const noCourse = React.useMemo(() => courseGapIds(result), [result])
   const rows = React.useMemo(() => {
     const t = q.trim().toLowerCase()
-    return all.filter((r) => (!t || r.haystack.includes(t)) && (show === "" || (show === "required" ? r.required : show === "gaps" ? r.required && r.carriers === 0 : !r.configured)))
-  }, [all, q, show])
+    const pass = (r: (typeof all)[number]) => (show === "required" ? r.required : show === "gaps" ? r.required && r.carriers === 0 : show === "nocourse" ? noCourse.has(r.id) : show === "unconfigured" ? !r.configured : true)
+    return all.filter((r) => (!t || r.haystack.includes(t)) && pass(r))
+  }, [all, q, show, noCourse])
   // The skill's offerings are found by search (course, term, academic year, cohort), cohort and professional year in its pane [REQ CM-02].
   const oq = query.get("oq")
   const cohort = query.get("cohort")
@@ -57,6 +66,7 @@ function SkillFirst({ m }: { m: MappingModel }) {
         // N-13 as a count on its own filter, not a sentence above the list (Romit 2026-10-28: "too many text").
         { value: "gaps", label: gaps ? `Required, in no course (${gaps})` : "Required, in no course" },
         { value: "unconfigured", label: "Not configured" },
+        { value: "nocourse", label: noCourse.size ? `No course yet (${noCourse.size.toLocaleString("en-US")})` : "No course yet" },
       ],
       onChange: (v) => query.set({ show: v || null, skill: null }),
     },
@@ -66,9 +76,10 @@ function SkillFirst({ m }: { m: MappingModel }) {
     <>
       <Toolbar label={`Find ${aNoun()}`}>
         <SearchField value={q} onChange={(v) => query.set({ q: v || null })} label={`Search ${skillNounPlural()} by name or section`} placeholder={`Search ${skillNounPlural()}`} />
-        <FiltersControl fields={fields} courseKind={m.didactic ? "all" : "clinical"} />
+        {/* Inside Set up skills (D-L44) the step only sets a level per course: the hub's Show and course-kind filters stay on the hub. */}
+        {inWorkflow ? null : <FiltersControl fields={fields} courseKind={m.didactic ? "all" : "clinical"} />}
       </Toolbar>
-      <AppliedFilterChips fields={fields} />
+      {inWorkflow ? null : <AppliedFilterChips fields={fields} />}
       {/* Side by side from 1280 px, the list narrow (15rem) so at 1440 the pinned course column and three terms fit without
           scrolling, "Recommended" whole in each select; later terms scroll. Below 1280 the skill list is a short scroll box above. */}
       <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] xl:gap-4">

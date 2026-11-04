@@ -83,7 +83,8 @@ describe.each(NOUNS)("with the noun $one", (n) => {
     search = new URLSearchParams("state=empty")
     const send = wrap(<StudentRequestA />)
     await waitFor(() => expect(send.container.textContent).toContain(`Your program has not set up ${n.many} to send.`))
-    expect(screen.getByRole("link", { name: "Back to My progress" })).toBeTruthy()
+    // Navigation model A (D-L42): no "Back to My progress" on the empty state; the sidebar row is the way there.
+    expect(screen.queryByRole("link", { name: "Back to My progress" })).toBeNull()
     expect(send.container.textContent).not.toMatch(BAD)
     send.unmount()
     search = new URLSearchParams()

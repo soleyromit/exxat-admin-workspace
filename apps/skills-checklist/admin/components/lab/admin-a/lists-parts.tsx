@@ -10,6 +10,7 @@
 import { TYPE } from "@/components/lab/type-scale"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -476,18 +477,33 @@ function groupMeta(state: V2State, g: StudentGroup): string {
   return courses === null ? `${GROUP_KIND_LABEL[g.kind]} · ${students}` : `${students} · ${plural(courses, "clinical course", "clinical courses")}`
 }
 
+/** `?focus=` (the Setup summary's "student group with none" link): that group's checkbox takes focus and the row is marked. */
+function useFocusGroup(): string | null {
+  return useSearchParams()?.get("focus") ?? null
+}
+
 function GroupRows({ model, list, groups, onToggle, idPrefix }: { model: ListsModel; list: SkillList; groups: StudentGroup[]; onToggle: (groupId: string, on: boolean) => void; idPrefix: string }) {
+  const focus = useFocusGroup()
+  const focusRef = React.useRef<HTMLButtonElement>(null)
+  const focused = groups.some((g) => g.id === focus)
+  React.useEffect(() => {
+    if (!focused) return
+    focusRef.current?.scrollIntoView({ block: "center" })
+    focusRef.current?.focus()
+  }, [focused])
   return (
     <ul className="flex flex-col">
       {groups.map((g) => {
         const id = `${idPrefix}-${g.id.replace(/[^a-z0-9]+/gi, "-")}`
+        const mine = g.id === focus
         return (
-          <li key={g.id} className="flex min-h-11 items-center gap-3 border-b border-border py-2 last:border-b-0">
-            <CheckboxDs id={id} checked={list.groupIds.includes(g.id)} onCheckedChange={(v) => onToggle(g.id, v === true)} />
+          <li key={g.id} className="flex min-h-11 items-center gap-3 border-b border-border py-2 last:border-b-0" data-focused-group={mine ? "" : undefined}>
+            <CheckboxDs ref={mine ? focusRef : undefined} id={id} checked={list.groupIds.includes(g.id)} onCheckedChange={(v) => onToggle(g.id, v === true)} />
             <Label htmlFor={id} className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-0.5 font-normal">
               <span className="font-medium text-foreground">{g.label}</span>
               <span className="text-sm text-muted-foreground tabular-nums">{groupMeta(model.state, g)}</span>
             </Label>
+            {mine && !list.groupIds.includes(g.id) ? <StatusBadge label="None assigned" tone="warning" icon="fa-triangle-exclamation" size="sm" /> : null}
           </li>
         )
       })}
@@ -507,7 +523,8 @@ export function AssignChecklist({ model, list, onToggle, onCreateGroup, idPrefix
   const others = model.groups.filter((g) => g.kind !== "cohort")
   const shown = others.slice(0, OTHERS_VISIBLE)
   const rest = others.slice(OTHERS_VISIBLE)
-  const restOn = rest.some((g) => list.groupIds.includes(g.id))
+  const focusId = useFocusGroup()
+  const restOn = rest.some((g) => list.groupIds.includes(g.id) || g.id === focusId)
   const [open, setOpen] = React.useState(restOn)
   React.useEffect(() => {
     if (restOn) setOpen(true)

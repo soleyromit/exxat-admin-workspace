@@ -99,3 +99,77 @@ describe("SL-02: the skill panel shows the description and edits it in place", (
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ id: row.id }), "Done at the bedside")
   }, 20000)
 })
+
+describe("SL-11: row actions split Deactivate from Replace, and Delete explains a block", () => {
+  const handlers = () => ({ onEdit: vi.fn(), onDeactivate: vi.fn(), onReactivate: vi.fn(), onDelete: vi.fn() })
+
+  it("an active row offers Deactivate and Replace with a new version; a blocked Delete is disabled with its reason described", async () => {
+    const { RowActions } = await import("@/components/lab/library/row-actions")
+    const row = { ...buildLibrary(seed)[0]!, status: "configured" as const, evidence: 3, canDelete: false }
+    const h = handlers()
+    render(<RowActions row={row} handlers={h} />)
+    await userEvent.click(screen.getByRole("button", { name: `Actions for ${row.name}` }))
+    expect(screen.queryByRole("menuitem", { name: /Deactivate or replace/ })).toBeNull()
+    // Without an in-place handler, Replace links to the library's replace flow carrying the skill (not a generic lists page).
+    expect(screen.getByRole("menuitem", { name: "Replace with a new version" })).toHaveAttribute("href", expect.stringContaining(`replace=${encodeURIComponent(row.id)}`))
+    const del = screen.getByRole("menuitem", { name: "Delete" })
+    expect(del).toHaveAttribute("data-disabled")
+    expect(del).toHaveAttribute("data-variant", "destructive")
+    expect(del).toHaveAccessibleDescription("Has 3 evaluations, so it cannot be deleted")
+    await userEvent.click(screen.getByRole("menuitem", { name: "Deactivate" }))
+    expect(h.onDeactivate).toHaveBeenCalledWith([row])
+  }, 20000)
+
+  it("Replace opens in place with the row when the page handles it", async () => {
+    const { RowActions } = await import("@/components/lab/library/row-actions")
+    const row = { ...buildLibrary(seed)[0]!, status: "configured" as const }
+    const h = { ...handlers(), onReplace: vi.fn() }
+    render(<RowActions row={row} handlers={h} />)
+    await userEvent.click(screen.getByRole("button", { name: `Actions for ${row.name}` }))
+    await userEvent.click(screen.getByRole("menuitem", { name: "Replace with a new version" }))
+    expect(h.onReplace).toHaveBeenCalledWith(row)
+  }, 20000)
+
+  it("an inactive row offers Reactivate and no Replace", async () => {
+    const { RowActions } = await import("@/components/lab/library/row-actions")
+    const row = { ...buildLibrary(seed)[0]!, status: "inactive" as const }
+    render(<RowActions row={row} handlers={handlers()} />)
+    await userEvent.click(screen.getByRole("button", { name: `Actions for ${row.name}` }))
+    expect(screen.getByRole("menuitem", { name: "Reactivate" })).toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: "Replace with a new version" })).toBeNull()
+    expect(screen.queryByRole("menuitem", { name: "Deactivate" })).toBeNull()
+  }, 20000)
+
+  it("choosing from the menu does not reach the row's click handler (no skill panel behind the dialog)", async () => {
+    const { RowActions } = await import("@/components/lab/library/row-actions")
+    const row = { ...buildLibrary(seed)[0]!, status: "configured" as const }
+    const onRowClick = vi.fn()
+    const h = handlers()
+    render(<div onClick={onRowClick}><RowActions row={row} handlers={h} /></div>)
+    await userEvent.click(screen.getByRole("button", { name: `Actions for ${row.name}` }))
+    await userEvent.click(screen.getByRole("menuitem", { name: "Deactivate" }))
+    expect(h.onDeactivate).toHaveBeenCalled()
+    expect(onRowClick).not.toHaveBeenCalled()
+  }, 20000)
+
+  it("the Deactivate dialog shows what it withdraws before confirm (SL-11)", async () => {
+    const { DeactivateDialog } = await import("@/components/lab/library/row-actions")
+    const { retireImpact } = await import("@/lib/lab/retire")
+    const row = buildLibrary(seed).find((r) => r.status === "configured" && r.courses > 0)!
+    render(<DeactivateDialog rows={[row]} impactOf={(id) => retireImpact(seed, id)} onOpenChange={vi.fn()} onConfirm={vi.fn()} />)
+    const i = retireImpact(seed, row.id)!
+    expect(screen.getByText("Leaves courses").nextSibling).toHaveTextContent(String(i.courses))
+    expect(screen.getByText("Evaluations kept").nextSibling).toHaveTextContent(i.evidence.toLocaleString("en-US"))
+  }, 20000)
+
+  it("the Deactivate dialog is a plain confirm with no reason step", async () => {
+    const { DeactivateDialog } = await import("@/components/lab/library/row-actions")
+    const row = { ...buildLibrary(seed)[0]!, evidence: 2 }
+    const onConfirm = vi.fn()
+    render(<DeactivateDialog rows={[row]} onOpenChange={vi.fn()} onConfirm={onConfirm} />)
+    expect(screen.getByRole("alertdialog", { name: `Deactivate ${row.name}?` })).toHaveAccessibleDescription("Evaluations are kept, and you can reactivate it later.")
+    expect(screen.queryByRole("radiogroup")).toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: "Deactivate" }))
+    expect(onConfirm).toHaveBeenCalledWith([row.id])
+  }, 20000)
+})

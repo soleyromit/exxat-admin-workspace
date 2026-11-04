@@ -24,6 +24,8 @@ export function updateActiveV2Store(fn: (s: V2State) => V2State): boolean {
 export function V2StoreProvider({ children, store }: { children: React.ReactNode; store?: V2Store }) {
   const [s] = React.useState<V2Store>(() => store ?? createV2Store())
   React.useEffect(() => {
+    // A nested provider (Set up skills' new program, D-L44) hands the active store back to the outer one when it unmounts.
+    const prev = activeStore
     activeStore = s
     s.hydrate()
     const onStorage = (e: StorageEvent) => {
@@ -32,7 +34,7 @@ export function V2StoreProvider({ children, store }: { children: React.ReactNode
     window.addEventListener("storage", onStorage)
     return () => {
       window.removeEventListener("storage", onStorage)
-      if (activeStore === s) activeStore = null
+      if (activeStore === s) activeStore = prev
     }
   }, [s])
   return <StoreContext.Provider value={s}>{children}</StoreContext.Provider>

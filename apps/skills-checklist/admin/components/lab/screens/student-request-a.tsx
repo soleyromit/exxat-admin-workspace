@@ -19,13 +19,13 @@ import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart,
 import { SectionTitle } from "@/components/lab/student/parts"
 import { FormSkeleton } from "./student-log-a"
 import { aNoun, countSkills, skillNounPlural } from "@/lib/lab/terms"
-import { noAccountLine, methodById, needsApproval, settingWords, student2Href } from "@/lib/lab/student2"
+import { noAccountLine, methodById, needsApproval, settingWords } from "@/lib/lab/student2"
 
 export function StudentRequestA() {
   return (
     <Student2Frame
       title={`Log ${aNoun()}`}
-      empty={(c) => <EmptyBlock title={`No ${skillNounPlural()} open yet`} body={`Your program has not set up ${skillNounPlural()} to send. Check back once it has.`} action={{ label: "Back to My progress", href: student2Href("home", {}, c.studentId) }} />}
+      empty={() => <EmptyBlock title={`No ${skillNounPlural()} open yet`} body={`Your program has not set up ${skillNounPlural()} to send. Check back once it has.`} />}
       loading={<FormSkeleton />}
     >
       {(ctx) => <RequestForm ctx={ctx} />}

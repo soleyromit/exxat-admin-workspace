@@ -254,6 +254,11 @@ export interface Skill {
    * every report figure (decision D-X14). Absent means active.
    */
   active?: boolean
+  /**
+   * Set on a new version made by "Replace with a new version" in the lab library [CALL 10-09; INFER]: the skill it replaces and
+   * the student groups (cohort names) that moved to it. The old skill keeps its evidence; when every group moved it is inactive.
+   */
+  replaces?: { id: string; cohorts: string[] }
 }
 
 /**

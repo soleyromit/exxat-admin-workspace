@@ -29,13 +29,19 @@ import {
   type SkillDraft,
 } from "@/lib/lab/library"
 import { countSkills, skillNoun } from "@/lib/lab/terms"
+import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
+import { applyReplace, undoReplace, versionOf, type ReplaceDraft } from "@/lib/lab/replace"
+import { LAB_ADMIN } from "@/lib/lab/library"
+import { LINK } from "@/components/lab/link-styles"
+import { cohortsOf } from "@/lib/v2/reports"
+import { plural } from "@/lib/v2/format"
 
 export type LibraryDemo = "loading" | "empty" | "error" | null
 
 export interface LibraryBanner {
   variant: "success" | "info" | "warning"
   title: string
-  body: string
+  body: React.ReactNode
   action?: { label: string; href?: string; onClick?: () => void }
 }
 
@@ -162,7 +168,7 @@ export function useLibrary() {
       const s = draftToSkill(d, id)
       return { ...o, edits: { ...o.edits, [id]: { name: s.name, description: s.description ?? "", section: s.section, group: s.group, category: s.category, tags: s.tags } } }
     })
-    setBanner({ variant: "success", title: "Changes saved", body: "Evaluation settings did not change." })
+    setBanner({ variant: "success", title: `${draftToSkill(d, id).name} saved`, body: "Evaluation settings did not change." })
   }, [keepVocab])
 
   /** Store skills carry the flag; skills added by hand in this tab stay in the overlay. */
@@ -175,19 +181,48 @@ export function useLibrary() {
   }, [store])
 
   const deactivate = React.useCallback((ids: string[]) => {
+    const one = ids.length === 1 ? store.getSnapshot().skills.find((k) => k.id === ids[0])?.name : undefined
     setActive(ids, false)
     setBanner({
       variant: "success",
-      title: `${countSkills(ids.length)} deactivated`,
+      title: `${one ?? countSkills(ids.length)} deactivated`,
       body: ids.length === 1 ? "Evidence is kept. It no longer appears in mapping, student selection or reports." : "Evidence is kept. They no longer appear in mapping, student selection or reports.",
       action: { label: "Undo", onClick: () => { setActive(ids, true); setBanner(null) } },
     })
-  }, [setActive])
+  }, [setActive, store])
 
   const reactivate = React.useCallback((ids: string[]) => {
+    const one = ids.length === 1 ? store.getSnapshot().skills.find((k) => k.id === ids[0])?.name : undefined
     setActive(ids, true)
-    setBanner({ variant: "success", title: `${countSkills(ids.length)} reactivated`, body: ids.length === 1 ? "It can be mapped and selected again." : "They can be mapped and selected again." })
-  }, [setActive])
+    setBanner({ variant: "success", title: `${one ?? countSkills(ids.length)} reactivated`, body: ids.length === 1 ? "It can be mapped and selected again." : "They can be mapped and selected again." })
+  }, [setActive, store])
+
+  /**
+   * Replace with a new version [CALL 10-09; INFER]: writes the new version, its course mapping and (when every group moves) the
+   * old version inactive to the shared store; the result names both versions, links each row, and offers Undo.
+   */
+  const replace = React.useCallback((oldId: string, d: ReplaceDraft): string | null => {
+    seq.current += 1
+    const newId = `lab-skill-${Date.now().toString(36)}-${seq.current}`
+    const old = store.getSnapshot().skills.find((k) => k.id === oldId)
+    if (!old) return null
+    let allMove = false
+    store.update((s) => { const r = applyReplace(withVocab(s, [{ category: d.category, tags: d.tags }]), oldId, d, newId, ACTOR, at()); if (!r) return s; allMove = r.allMove; return r.state })
+    setOverlay((o) => ({ ...o, fresh: [...(o.fresh ?? []), newId] }))
+    const after = store.getSnapshot()
+    const staying = cohortsOf(after).filter((c) => !d.cohorts.includes(c))
+    const vNew = versionOf(after, newId)
+    const rowLink = (id: string, name: string) => <Link className={LINK} href={`${LAB_ADMIN}/skills-library?skill=${encodeURIComponent(id)}`}>{name}</Link>
+    setBanner({
+      variant: "success",
+      title: `${old.name} replaced`,
+      body: allMove
+        ? <>{rowLink(newId, `Version ${vNew}`)} is live for every student group. {rowLink(oldId, `Version ${vNew - 1}`)} is inactive.</>
+        : <>{rowLink(newId, `Version ${vNew}`)} is live for {plural(d.cohorts.length, "student group", "student groups")}. {rowLink(oldId, `Version ${vNew - 1}`)} stays for {staying.join(", ")}.</>,
+      action: { label: "Undo", onClick: () => { store.update((s) => undoReplace(s, newId, ACTOR, at())); setBanner(null) } },
+    })
+    return newId
+  }, [store])
 
   const remove = React.useCallback((id: string, name: string) => {
     let unmapped: string[] = []
@@ -203,7 +238,7 @@ export function useLibrary() {
     setBanner({ variant: "success", title: `Settings copied to ${countSkills(targetIds.length)}`, body: `From ${source?.name ?? `the chosen ${skillNoun()}`}, as drafts. Open each to check and save it.` })
   }, [byId])
 
-  return { hydrated, demo, rows, counts, names, byId, overlay, banner, setBanner, add, addMany, edit, deactivate, reactivate, remove, copyConfig }
+  return { hydrated, demo, rows, counts, names, byId, overlay, banner, setBanner, add, addMany, edit, deactivate, reactivate, replace, remove, copyConfig }
 }
 
 export type LibraryApi = ReturnType<typeof useLibrary>

@@ -40,6 +40,7 @@ export function useWalkthrough() {
 export function WalkthroughControls() {
   const w = useWalkthrough()
   if (!w) return null
+  // Lab tooling only (the product pages carry no Next, navigation model A, D-L42): names the next step.
   const nextLabel = w.next ? `Next: ${withNoun(w.next.step.label)}` : "Finish the walkthrough"
   return (
     <div role="group" aria-label="Walkthrough" data-lab-chrome data-lab-walkthrough className="ms-auto flex shrink-0 items-center gap-1">

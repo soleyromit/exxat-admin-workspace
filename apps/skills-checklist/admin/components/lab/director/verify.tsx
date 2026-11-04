@@ -16,7 +16,7 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
-import { DIRECTOR_NAME, detailHref, directorHref, evidenceHref, plural, shortDate, type DetailModel, type SkillLine } from "@/lib/lab/director"
+import { DIRECTOR_NAME, detailHref, evidenceHref, plural, shortDate, type DetailModel, type SkillLine } from "@/lib/lab/director"
 import { StateBadge } from "@/components/lab/status-pill"
 import type { LabScope } from "@/lib/lab/scope"
 import { LINK, LINK_U, StatusMark } from "@/components/lab/director/parts"
@@ -195,9 +195,12 @@ export function VerifyAction({ d, flow, scope, idPrefix, queue }: { d: DetailMod
         <LocalBanner variant="success" title={`Verified, version ${flow.done.version}`}>
           {r.gaps.length ? `The record states its ${r.gaps.length === 1 ? "gap" : "gaps"}.` : `The record states every required ${skillNoun()} achieved.`}
         </LocalBanner>
-        <Button asChild variant="outline" size="sm" className="self-start">
-          <Link href={next ? detailHref(scope, next, { queue: queue.join(",") }) : directorHref("dashboard", scope)}>{next ? `Next record, ${at + 2} of ${queue.length}` : "Back to the dashboard"}</Link>
-        </Button>
+        {/* Next in the queue only; the way back is the "Dashboard" crumb (navigation model A, D-L42). */}
+        {next ? (
+          <Button asChild variant="outline" size="sm" className="self-start">
+            <Link href={detailHref(scope, next, { queue: queue.join(",") })}>{`Next record, ${at + 2} of ${queue.length}`}</Link>
+          </Button>
+        ) : null}
       </div>
     )
   return (

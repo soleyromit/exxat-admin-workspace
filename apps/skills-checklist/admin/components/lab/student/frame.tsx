@@ -9,7 +9,6 @@
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { cn } from "@exxatdesignux/ui/lib/utils"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
@@ -60,8 +59,11 @@ export function StudentFrame({
   /** The page's one filled action. */
   primary?: { label: string; href: string } | ((ctx: StudentFrameCtx) => { label: string; href: string } | null) | null
   showSync?: boolean
-  /** A quiet way back to where the student came from. */
-  back?: (ctx: StudentFrameCtx) => { label: string; href: string; /** Phone only: the breadcrumb says it from md up. */ phoneOnly?: boolean } | null
+  /**
+   * A quiet way back, phones only: from md up the breadcrumb is the way back (navigation model A, D-L42; DS
+   * exxat-breadcrumbs-no-back), and below md the breadcrumb is hidden. `phoneOnly` is kept for callers; it is always true now.
+   */
+  back?: (ctx: StudentFrameCtx) => { label: string; href: string; phoneOnly?: boolean } | null
   /** Context under the title (the course view: "Skills by course"). */
   subtitle?: (ctx: StudentFrameCtx) => string | null
   children: (ctx: StudentFrameCtx) => React.ReactNode
@@ -73,7 +75,7 @@ export function StudentFrame({
   const heading = typeof title === "function" ? (full ? title(full) : "") : title
   const backLink = back && full ? back(full) : null
   const lead = backLink ? (
-    <Button asChild variant="ghost" size="sm" className={cn("-ms-2 self-start text-muted-foreground", backLink.phoneOnly ? "md:hidden" : "")}>
+    <Button asChild variant="ghost" size="sm" className="-ms-2 self-start text-muted-foreground md:hidden">
       <Link href={backLink.href}>
         <i className="fa-light fa-arrow-left" aria-hidden="true" />
         {backLink.label}

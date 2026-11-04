@@ -33,7 +33,7 @@ import { PERSONAS } from "@/lib/lab/personas"
 import { SCREENS, screenKey, screensFor, type PersonaId } from "@/lib/lab/screens"
 import { FLOWS, findFlow, flowsForPersona, mainSteps, resolveStep } from "@/lib/lab/flows"
 import { variantCounts } from "@/lib/lab/links"
-import { SETUP_RESULT_SCREEN, SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
+import { ADD_SKILL_SCREEN, SETUP_RESULT_SCREEN, SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 
 afterEach(() => {
   cleanup()
@@ -85,7 +85,7 @@ function screenOfPath(path: string): string {
 }
 
 // The setup summary sits under Set up (Proposed 2026-11-02), so it is a panel page too.
-const PANEL_SCREENS = new Set([...SKILLS_PANEL.map((i) => i.screen), SETUP_RESULT_SCREEN])
+const PANEL_SCREENS = new Set([...SKILLS_PANEL.map((i) => i.screen), SETUP_RESULT_SCREEN, ADD_SKILL_SCREEN])
 
 /** LabFrame with children passed as the createElement argument (the lint rule forbids a children prop). */
 const Frame = LabFrame as React.ComponentType<Omit<React.ComponentProps<typeof LabFrame>, "children"> & { children?: React.ReactNode }>
@@ -160,6 +160,11 @@ describe("admin IA: Categories and tags under Skills, Settings on its own sectio
     expect(item.screen).toBe("admin/categories-tags")
     expect(item.label()).toBe("Categories and tags")
     expect(skillsPanelHref(item, {})).toMatch(/^\/lab\/flow\/keep-library-right\/categories\?set=1/)
+  })
+
+  it.each(["A", "B", "C"])("Add a skill (%s) is a Library page: Skills row lit, panel open on Library (D-L41)", (variant) => {
+    const params = new URLSearchParams(`variant=${variant}`)
+    expect(skillsPanelItemFor("admin/add-skill", params)?.key).toBe("library")
   })
 
   it.each(["A", "B"])("on Categories and tags (%s) the Skills row and panel item are lit; Settings is not", (variant) => {

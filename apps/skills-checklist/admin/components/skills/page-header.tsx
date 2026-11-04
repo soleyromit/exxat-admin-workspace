@@ -1,6 +1,10 @@
+"use client"
+
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { PageHeader, type PageHeaderActionItem } from "@exxatdesignux/ui/components/ui/page-header"
 import { cn } from "@exxatdesignux/ui/lib/utils"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 
 export type PageFrameWidth = "full" | "reading" | "wide" | "form" | "wizard"
 
@@ -51,6 +55,18 @@ export function PageFrame({
   className?: string
   children?: React.ReactNode
 }) {
+  const embedded = useEmbeddedStep()
+  if (embedded) {
+    // A step of a focus workflow (Set up skills): the wizard owns the h1 and the step heading, so no PageHeader here.
+    const keep = embedded.actions === "keep" && (actions || actionItems?.length)
+    return (
+      <div className={cn("flex w-full min-w-0 flex-col gap-4", className)}>
+        {lead}
+        {keep && actions ? (embedded.actionsTarget ? createPortal(actions, embedded.actionsTarget) : <div className="flex flex-wrap items-center justify-end gap-2" data-embedded-actions>{actions}</div>) : null}
+        {children}
+      </div>
+    )
+  }
   return (
     <div className={cn("flex w-full flex-col gap-4 py-5", gutter === "fixed" ? "px-6" : "px-4 md:px-6", WIDTH_CLASS[width], className)}>
       {lead}

@@ -18,6 +18,7 @@ import { StickyBar } from "@/components/lab/evaluator/frame"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { RequestSummary, SelfNote, SkillFields, StateBanners, contextLine, skillsWord } from "@/components/lab/evaluator/fields"
 import { focusField, useEvaluator } from "@/components/lab/evaluator/use-evaluator"
+import { ratingLabel } from "@/lib/lab/evaluator"
 
 export function EvaluatorFormB() {
   const m = useEvaluator()
@@ -112,7 +113,7 @@ export function EvaluatorFormB() {
                         {skills.map((k, i) => {
                           const r = m.response(k.id)
                           const open = openIn(i).length > 0
-                          const answer = [k.choices.find((c) => c.value === r.outcome)?.label, r.level !== null ? k.levels[r.level] : null].filter(Boolean).join(", ")
+                          const answer = ratingLabel(k, r)
                           return (
                             <li key={k.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                               <div className="min-w-0">

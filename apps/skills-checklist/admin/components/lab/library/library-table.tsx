@@ -26,7 +26,7 @@ import { useTableState } from "@exxatdesignux/ui/components/data-table/use-table
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { SAVED_VIEWS, filterLibrary, type LibraryRow, type LibraryTab, type SavedView } from "@/lib/lab/library"
 import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { fmt, plural } from "@/lib/v2/format"
+import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { LINK, LibraryStatusBadge } from "./library-chrome"
 import { CategoryName, TagBadges, tagLineText } from "./category-tag-pickers"
@@ -65,11 +65,28 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
             >
               {r.name}
             </Link>
-            {r.isNew ? <Badge variant="outline">New</Badge> : null}
+            {/* Versions share a name; the badge tells them apart (the new one reads "Version 2", the replaced one "Version 1"). */}
+            {r.version ? <Badge variant="outline" className="shrink-0" data-version={r.version}>{`Version ${r.version}`}</Badge> : r.isNew ? <Badge variant="outline">New</Badge> : null}
           </span>
           {/* One quiet line under the name: group, required to graduate, then the tags (02 section 7), so tags show in
               every view without a wide extra column and the row never grows to a third line. */}
-          {r.group || r.requiredToGraduate || r.tags.length ? (
+          {/* A replaced skill's quiet line is its successor, a link to that row (the handoff from Replace, CALL 10-09). */}
+          {r.replacedBy ? (
+            <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" data-replaced-by={r.replacedBy.id}>
+              <span className="shrink-0">Replaced by</span>
+              <Link
+                className={`${LINK} inline-flex shrink-0 items-center gap-1`}
+                href={`?skill=${encodeURIComponent(r.replacedBy.id)}`}
+                scroll={false}
+                aria-label={`Replaced by ${r.replacedBy.name}, version ${r.replacedBy.version}`}
+                {...railTriggerProps()}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpen(r.replacedBy!.id) }}
+              >
+                {`Version ${r.replacedBy.version}`}
+                <i className="fa-light fa-arrow-right" aria-hidden="true" />
+              </Link>
+            </span>
+          ) : r.group || r.requiredToGraduate || r.tags.length ? (
             <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
               {r.group || r.requiredToGraduate ? (
                 <span className="truncate">{[r.group, r.requiredToGraduate ? "Required to graduate" : ""].filter(Boolean).join(", ")}</span>
@@ -100,7 +117,8 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
           : r.courses === 0 ? <span className="text-muted-foreground">Not mapped</span>
             : <span className="tabular-nums">{plural(r.courses, "course", "courses")}</span>,
     },
-    { key: "evidence", label: "Evaluations", width: 120, sortable: true, cell: (r) => (r.evidence ? <span className="tabular-nums">{fmt(r.evidence)}</span> : <span className="text-muted-foreground">None</span>) },
+    // No Evaluations column (Sankalp 2026-11-04 via Romit, D-L45): the count stays where it acts, in the row menu's Delete reason and
+    // the skill panel.
     {
       key: "tags",
       label: "Tags",

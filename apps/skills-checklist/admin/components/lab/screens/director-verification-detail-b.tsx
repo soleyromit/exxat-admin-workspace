@@ -8,7 +8,6 @@
  */
 import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
-import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
@@ -18,7 +17,7 @@ import type { V2State } from "@/lib/v2/types"
 import { EvidenceLink, FluxList, GapChecks, RecordLine, SkillState, VerifyAction, useVerifyFlow } from "@/components/lab/director/verify"
 import type { DirectorContext } from "@/components/lab/director/use-director"
 import { DiamondGlyph } from "@/components/lab/viz"
-import { detailModel, directorHref, shortDate, type DetailModel, type Readiness } from "@/lib/lab/director"
+import { detailModel, shortDate, type DetailModel, type Readiness } from "@/lib/lab/director"
 import { fmt } from "@/lib/v2/format"
 
 function Step({ n, title, count, done, children, region }: { n: number; title: string; count?: number; done?: boolean; children: React.ReactNode; region: string }) {
@@ -111,9 +110,7 @@ function Detail({ d, m, ctx }: { d: DetailModel; m: Readiness; ctx: DirectorCont
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <RecordLine d={d} flow={flow} />
-        <Button asChild variant="ghost" size="sm">
-          <Link href={directorHref("dashboard", m.scope)}>Back to the dashboard</Link>
-        </Button>
+        {/* The way back is the "Dashboard" crumb (navigation model A, D-L42): no "Back to the dashboard" here. */}
       </div>
       {/* The "what changed" step appears only when something changed or is in flux. Otherwise the record line above already
           says "Never verified" or the version and date, so a step saying it again would repeat it (strategy/07 K4). */}

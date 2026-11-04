@@ -98,6 +98,11 @@ export const CRUMB_PARENTS: Record<string, CrumbParent> = {
   "reviewer/student-record": { parent: "reviewer/students" },
   "admin/dashboard-drill": { parent: "admin/dashboard", leaf: "heading" },
   "admin/dashboard": { parent: "admin/dashboard", when: "list", drop: DRILL_PARAMS, leaf: "heading" },
+  // Navigation model A (D-L42): the crumb is the way back, so these pages carry no "Back to" control from md up.
+  "director/verification-detail": { parent: "director/dashboard" },
+  "student/skill-detail": { parent: "student/home" },
+  "student/share-record": { parent: "student/record" },
+  "student/fix-returned": { parent: "student/my-requests" },
 }
 
 /** The crumb parent for a page, with the parent row's title, or undefined when the page sits at the top of its row. */

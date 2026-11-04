@@ -69,7 +69,7 @@ describe("StickyFooter contract", () => {
 })
 
 describe("Change one skill (Configure A, 2026-11-02): one page, one Save", () => {
-  it("shows the four sections and a footer with Save as its only action", async () => {
+  it("shows the four sections, no footer, and the one Save in the header once there is a change (navigation model A, D-L42)", async () => {
     nav.search = "variant=A&skill=sk-med-admin"
     let view: ReturnType<typeof render> | null = null
     await act(async () => {
@@ -85,12 +85,14 @@ describe("Change one skill (Configure A, 2026-11-02): one page, one Save", () =>
     await waitFor(() => expect(root.querySelector("[data-one-skill]")).not.toBeNull())
     const titles = [...root.querySelectorAll("[data-one-skill] h2")].map((h) => h.textContent?.replace(/^\d+/, ""))
     expect(titles).toEqual(["How skills are judged", "What counts as achieved", "How many evaluations", "Who signs"])
-    // Nothing to save on arrival, so no footer; a change brings the one Save.
+    const filled = () => [...root.querySelectorAll<HTMLElement>('[data-slot="button"][data-variant="default"]')].map((b) => b.textContent)
+    // Nothing to save on arrival, so no Save; never a footer or a back control.
     expect(root.querySelector('[data-region="footer"]')).toBeNull()
+    expect(filled()).not.toContain("Save")
     await act(async () => { fireEvent.change(document.getElementById("cfg-need")!, { target: { value: "5" } }) })
-    await waitFor(() => expect(root.querySelector('[data-region="footer"]')).not.toBeNull())
-    const footer = root.querySelector('[data-region="footer"]')!
-    expect(buttonsIn(footer as HTMLElement).map((b) => b.textContent)).toEqual(["Save"])
+    await waitFor(() => expect(filled()).toEqual(["Save"]))
+    expect(root.querySelector('[data-region="footer"]')).toBeNull()
+    expect(root.querySelector("[data-footer-back]")).toBeNull()
     view!.unmount()
   })
 })

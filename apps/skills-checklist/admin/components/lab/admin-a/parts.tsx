@@ -38,13 +38,17 @@ export function useUrlParams() {
   const get = React.useCallback((k: string) => params?.get(k) ?? "", [params])
   const set = React.useCallback(
     (p: Record<string, string | null | undefined>) => {
-      const q = new URLSearchParams(params?.toString() ?? "")
+      // Merge into the URL as it is now, not as it was at render: a write that lands after another one (a wizard step change, a
+      // second filter) must not put back the params that one replaced (Set up skills step 5, D-L44).
+      const live = typeof window !== "undefined" ? window.location : null
+      const q = new URLSearchParams(live ? live.search : params?.toString() ?? "")
       for (const [k, v] of Object.entries(p)) {
         if (v) q.set(k, v)
         else q.delete(k)
       }
       const s = q.toString()
-      router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false })
+      const path = live?.pathname ?? pathname
+      router.replace(s ? `${path}?${s}` : path, { scroll: false })
     },
     [params, pathname, router],
   )

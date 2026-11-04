@@ -21,6 +21,22 @@ export interface SessionStore<T> {
 export interface StoreOptions {
   /** "session" (default): this tab, until it closes. "local": every tab, across reloads. */
   persist?: "session" | "local"
+  /** False keeps one value in every data space (custom student groups are not skills data). Default true. */
+  spaced?: boolean
+}
+
+/**
+ * The lab data space. "" is the seeded program every hub page reads; Set up skills (D-L44) switches to "new-program" while it
+ * is mounted, so its skills data (lists and mapping edits) starts empty and never leaks into the seeded program. Each spaced store
+ * keeps its own key per space.
+ */
+let space = ""
+const spacedStores = new Set<() => void>()
+export const sessionSpace = (): string => space
+export function setSessionSpace(next: string) {
+  if (next === space) return
+  space = next
+  spacedStores.forEach((reload) => reload())
 }
 
 /** The browser storage for a store, or null when there is none or it is blocked (private window, disabled site data). */
@@ -33,8 +49,10 @@ function storageFor(persist: "session" | "local"): Storage | null {
   }
 }
 
-export function createSessionStore<T>(key: string, initial: T, opts: StoreOptions = {}): SessionStore<T> {
+export function createSessionStore<T>(baseKey: string, initial: T, opts: StoreOptions = {}): SessionStore<T> {
   const persist = opts.persist ?? "session"
+  const spaced = opts.spaced ?? true
+  let key = baseKey
   let value = initial
   let loaded = false
   let watching = false
@@ -80,6 +98,15 @@ export function createSessionStore<T>(key: string, initial: T, opts: StoreOption
     emit()
   }
   const reset = () => set(initial)
+  if (spaced) {
+    spacedStores.add(() => {
+      key = space ? `${baseKey}:${space}` : baseKey
+      loaded = false
+      value = initial
+      load()
+      emit()
+    })
+  }
   const subscribe = (fn: () => void) => {
     listeners.add(fn)
     return () => {
@@ -97,4 +124,4 @@ export function createSessionStore<T>(key: string, initial: T, opts: StoreOption
  * so the shared scope bar can read it without pulling in the admin data hooks.
  */
 export const CUSTOM_GROUPS_KEY = "lab.admin.groups.v1"
-export const customGroupsStore = createSessionStore<CustomGroup[]>(CUSTOM_GROUPS_KEY, [], { persist: "local" })
+export const customGroupsStore = createSessionStore<CustomGroup[]>(CUSTOM_GROUPS_KEY, [], { persist: "local", spaced: false })

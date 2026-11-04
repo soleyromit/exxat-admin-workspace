@@ -34,6 +34,8 @@ import { WizardPage } from "@/components/lab/layout/wizard-page"
 import { StickyFooter } from "@/components/lab/layout/sticky-footer"
 import { ValidationSummary, type ValidationIssue } from "@/components/lab/layout/validation-summary"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
+import { DiscardDialog } from "@/components/lab/import/import-parts"
+import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { useStudentPage } from "@/components/lab/student/use-student"
 import { StateLabel } from "@/components/lab/student/parts"
 import { Unit } from "@/components/lab/student/dashboard"
@@ -70,6 +72,14 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
   const course = courses.find((c) => c.id === courseId) ?? null
   const selfIds = d.selfIds
   const [issues, setIssues] = React.useState<ValidationIssue[]>([])
+  // A focus workflow (D-L42, D-L44): no sidebar and no breadcrumb, so the header carries the one way out. With a course or skills
+  // chosen and not saved for later, Cancel confirms first (Save for later in the footer keeps them in My requests).
+  const router = useLabRouter()
+  const [asking, setAsking] = React.useState(false)
+  const exitHref = "student/home"
+  const hasWork = !!course && !d.savedAt
+  const cancel = <Button type="button" variant="outline" size="sm" onClick={() => (hasWork ? setAsking(true) : router.push(exitHref))}>Cancel</Button>
+  const discard = <DiscardDialog open={asking} onOpenChange={setAsking} onDiscard={() => router.push(exitHref)} title="Discard this request?" body={`The course and ${skillNounPlural()} you chose will be lost.`} />
 
   // The self-rating step exists only when a chosen skill asks for one [REQ SC-15, ST-11].
   const order: StepId[] = ["course", "skills", ...(selfIds.length ? (["self"] as StepId[]) : []), "send"]
@@ -158,7 +168,7 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
   return (
     <WizardPage
       title={TITLE[step]}
-      actions={<SampleDataBadge />}
+      actions={<>{cancel}<SampleDataBadge /></>}
       steps={steps}
       current={index}
       onStepClick={(i) => go(order[i])}
@@ -175,6 +185,7 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
           {step === "send" ? <SendStep d={d} /> : null}
         </WizardPanel>
       </div>
+      {discard}
     </WizardPage>
   )
 }

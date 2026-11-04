@@ -312,13 +312,29 @@ export interface EvIssue {
 
 const graded = (r: EvResponse) => r.outcome === "met" || r.outcome === "not-met"
 
+/**
+ * An independence-level skill: the evaluator records the level only [REQ SC-08: "a level of supervision per demonstration";
+ * strategy/02: every completed demonstration is evidence], and the program's "counts from" level decides whether it qualifies
+ * (D-L33; engine `runRule` levelOk). No separate Met / Unmet is asked. Picking a level records the demonstration as completed
+ * ("met") with that level, so the current rule's level re-applies to it later [REQ AE-02]; "Feedback only" stays available.
+ */
+export const levelOnly = (k: Pick<EvSkill, "model" | "levels">): boolean => k.model === "demonstration" && k.levels.length > 0
+
+/** What the evaluator answered for one skill, in their words: "Met, Independent" or, for a level skill, "Independent". */
+export function ratingLabel(k: Pick<EvSkill, "model" | "levels" | "choices">, r: Pick<EvResponse, "outcome" | "level">): string {
+  const level = r.level !== null && k.levels[r.level] ? k.levels[r.level] : null
+  const choice = k.choices.find((c) => c.value === r.outcome)?.label ?? null
+  if (levelOnly(k)) return (r.outcome === "not-yet" ? choice : level) ?? ""
+  return [choice, level].filter(Boolean).join(", ")
+}
+
 /** What still blocks submit, in form order. Each message says what to do. */
 export function validate(req: EvRequest, responses: Record<string, EvResponse>): EvIssue[] {
   const out: EvIssue[] = []
   for (const k of req.skills) {
     const r = responses[k.id] ?? blankResponse(k)
     const base = { skillId: k.id, skillName: k.name }
-    if (!r.outcome) out.push({ ...base, field: evFieldId.outcome(k.id), message: "Choose an outcome." })
+    if (!r.outcome) out.push(levelOnly(k) ? { ...base, field: evFieldId.level(k.id), message: `Choose the ${k.levelsLabel.toLowerCase()}.` } : { ...base, field: evFieldId.outcome(k.id), message: "Choose an outcome." })
     if (graded(r) && k.levels.length && r.level === null) out.push({ ...base, field: evFieldId.level(k.id), message: `Choose the ${k.levelsLabel.toLowerCase()}.` })
     if (graded(r) && k.answerKind) {
       const missing = k.questions.findIndex((_, i) => (r.answers[i] ?? null) === null)
@@ -351,8 +367,7 @@ export interface ReceiptLine {
 export function receipt(req: EvRequest, responses: Record<string, EvResponse>, opts: { offline?: boolean } = {}): ReceiptLine[] {
   return req.skills.map((k) => {
     const r = responses[k.id] ?? blankResponse(k)
-    const choice = k.choices.find((c) => c.value === r.outcome)
-    const answer = [choice?.label ?? "No answer", r.level !== null && k.levels[r.level] ? k.levels[r.level] : null].filter(Boolean).join(", ")
+    const answer = ratingLabel(k, r) || "No answer"
     if (opts.offline) return { skillId: k.id, name: k.name, answer, status: "queued", word: "Queued on this device", icon: "fa-cloud-arrow-up" }
     if (r.outcome === "not-yet") return { skillId: k.id, name: k.name, answer, status: "feedback", word: "Feedback recorded", icon: "fa-comment" }
     if (k.holds) return { skillId: k.id, name: k.name, answer, status: "waits", word: "Waits for program approval", icon: "fa-clock" }

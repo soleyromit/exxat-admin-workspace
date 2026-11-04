@@ -1,6 +1,7 @@
 import * as React from "react"
 import { notFound, redirect } from "next/navigation"
 import { LabFrame } from "@/components/lab/lab-frame"
+import { FocusFrame } from "@/components/lab/focus-frame"
 import { LabBar } from "@/components/lab/lab-bar"
 import { PlaceholderScreen } from "@/components/lab/placeholder-screen"
 import { VARIANT_COMPONENTS } from "@/components/lab/screens"
@@ -64,6 +65,15 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
       <LabBar persona={navPersona} flow={r.flow.id} step={step.id} set={r.set} variant={variant.id} />
     </React.Suspense>
   )
+  // A focus workflow (D-L44: Set up skills, Bulk upload A, Send for evaluation C) keeps its own frame on a flow step too: no
+  // sidebar, no breadcrumbs (DS exxat-focus-workflow).
+  if (variant.frame === "focus") {
+    return (
+      <FocusFrame bar={bar} page={{ flow: r.flow.id, step: step.id, screen: screenKey(r.screen), variant: variant.id }}>
+        <React.Suspense fallback={null}>{Built ? <Built /> : <PlaceholderScreen screen={r.screen} variant={variant} />}</React.Suspense>
+      </FocusFrame>
+    )
+  }
   return (
     // A walkthrough names each page by its step, one string per step for the step, the breadcrumb and the page (comprehension
     // audit 2026-10-27); the design flows keep the screen's registry title, except Sankalp's A4 to A6 steps (2026-10-27: the

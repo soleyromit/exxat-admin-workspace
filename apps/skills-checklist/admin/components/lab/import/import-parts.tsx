@@ -839,13 +839,13 @@ export function DoneBanner({ session }: { session: ImportSession }) {
 }
 
 /** Cancel with work in hand asks first; "Keep working" has focus. */
-export function DiscardDialog({ open, onOpenChange, onDiscard }: { open: boolean; onOpenChange: (o: boolean) => void; onDiscard: () => void }) {
+export function DiscardDialog({ open, onOpenChange, onDiscard, title = "Discard this import?", body = "The file and your decisions will be lost." }: { open: boolean; onOpenChange: (o: boolean) => void; onDiscard: () => void; title?: string; body?: string }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Discard this import?</AlertDialogTitle>
-          <AlertDialogDescription>The file and your decisions will be lost.</AlertDialogDescription>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{body}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel variant="outline" autoFocus>Keep working</AlertDialogCancel>

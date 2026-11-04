@@ -15,6 +15,7 @@
  * the list behind it with the same length. Feedback is a LocalBanner, never a toast. URL: ?tab=, ?uses=, ?state=.
  */
 import * as React from "react"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -138,7 +139,8 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
   const openUses = (r: SettingsRow, what?: SettingUse) => setParams({ uses: `${tab}|${r.id}|${what ?? ""}` })
 
   return (
-    <PageFrame title={scopeTitle(scope, section)} actions={<SampleDataBadge />}>
+    <div className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
+    <PageFrame title={scopeTitle(scope, section)} actions={<SampleDataBadge />} className="flex-1">
       <div className="flex flex-col gap-4" data-settings-lab data-settings-scope={scope} data-page-type="list" data-tab={section}>
         <Tabs value={section} onValueChange={(v) => { setBanner(null); setCreateError(null); setQuery(""); setParams({ tab: v === sections[0] ? null : v, list: null, uses: null, ...EVALUATOR_FILTERS_OFF }) }}>
           <TabsList variant="line" ariaLabel={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings lists"}>
@@ -216,6 +218,7 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
         </FloatingSheetPanelContent>
       </FloatingSheetPanel>
     </PageFrame>
+    </div>
   )
 }
 
@@ -297,6 +300,7 @@ function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDele
       </span>
     ),
   }
+  const inWorkflow = useEmbeddedStep() !== null
   const actionsCol: ColumnDef<SettingsRow> = {
     key: "actions",
     label: "Actions",
@@ -324,8 +328,11 @@ function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDele
   }
   type R = SettingsRow & Record<string, number | string | boolean>
   const n = (r: SettingsRow, k: string) => Number((r as R)[k] ?? 0)
+  // Inside Set up skills (D-L44) the step creates categories and tags: the usage counts (skills, across categories) are hub only.
   const middle: ColumnDef<SettingsRow>[] =
-    tab === "categories"
+    inWorkflow && (tab === "categories" || tab === "tags")
+      ? []
+      : tab === "categories"
       ? [{ key: "skills", label: `${skillNounPlural().replace(/^./, (c) => c.toUpperCase())}`, width: 120, sortable: true, cell: (r) => count(r, n(r, "skills"), plural(n(r, "skills"), skillNoun(), skillNounPlural())) }]
       : tab === "tags"
         ? [

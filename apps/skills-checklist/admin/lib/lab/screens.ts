@@ -13,6 +13,8 @@ export interface VariantDef {
   pageType?: PageType
   /** URL params this variant accepts beyond the screen's own (configure C takes `skills` for several at once). */
   accepts?: string[]
+  /** "focus": a DS focus workflow (own route, no sidebar, no breadcrumbs), drawn by components/lab/focus-frame.tsx. */
+  frame?: "focus"
 }
 
 export type PageType = "list" | "wizard" | "form" | "detail" | "split" | "dashboard" | "evaluator" | "student"
@@ -57,4 +59,14 @@ export const screenKey = (s: Pick<ScreenDef, "persona" | "slug">): string => `${
 /** The variant to show: the requested one when it exists, else the recommended one. */
 export function resolveVariant(s: ScreenDef, requested?: string | null): VariantDef {
   return s.variants.find((v) => v.id === requested) ?? s.variants.find((v) => v.id === s.recommended) ?? s.variants[0]
+}
+
+/**
+ * The URL of a screen's focus-workflow variant (frame "focus", e.g. Set up skills on the Setup summary screen, D-L44). Read from
+ * the registry, so no link names the letter; the set-aware builder would send the screen to its walkthrough step instead.
+ */
+export function focusHref(persona: string, slug: string): string {
+  const s = findScreen(persona, slug)
+  const v = s?.variants.find((x) => x.frame === "focus")
+  return screenHref(persona, slug, v?.id)
 }

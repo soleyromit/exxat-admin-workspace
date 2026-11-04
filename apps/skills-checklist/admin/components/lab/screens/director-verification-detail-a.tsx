@@ -9,8 +9,6 @@
 import { TYPE } from "@/components/lab/type-scale"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
-import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
@@ -18,7 +16,7 @@ import { DirectorPage } from "@/components/lab/director/frame"
 import type { V2State } from "@/lib/v2/types"
 import { ChangedBanner, EvidenceLink, FluxList, GapChecks, RecordLine, SkillState, VerifyAction, useVerifyFlow } from "@/components/lab/director/verify"
 import type { DirectorContext } from "@/components/lab/director/use-director"
-import { detailModel, directorHref, shortDate, type DetailModel, type Readiness } from "@/lib/lab/director"
+import { detailModel, shortDate, type DetailModel, type Readiness } from "@/lib/lab/director"
 
 function titleOf(ctx: DirectorContext): string {
   const m = ctx.model
@@ -73,9 +71,7 @@ function Detail({ d, m, ctx }: { d: DetailModel; m: Readiness; ctx: DirectorCont
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <RecordLine d={d} flow={flow} />
-        <Button asChild variant="ghost" size="sm">
-          <Link href={directorHref("dashboard", m.scope)}>Back to the dashboard</Link>
-        </Button>
+        {/* The way back is the "Dashboard" crumb (navigation model A, D-L42): no "Back to the dashboard" here. */}
       </div>
       <ChangedBanner d={d} />
       <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
