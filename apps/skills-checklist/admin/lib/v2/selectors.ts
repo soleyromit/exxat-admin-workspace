@@ -20,8 +20,8 @@ export const COUNTERS: CounterDef[] = [
   { id: "published", label: "Skills in use", value: (s) => s.skills.filter((k) => k.published).length },
   { id: "mapped", label: "Skills mapped to the focus course", value: (s) => s.mappings.filter((m) => m.courseId === s.course.id).length },
   // One definition with the dashboard: each student's mandatory skills from their own cohort's offerings this term.
-  { id: "mandatory", label: "Mandatory skill records this term", value: (s) => populationTotals(populationRows(s)).records },
-  { id: "behind", label: "Students behind the term clock", value: (s) => populationTotals(populationRows(s)).behind },
+  { id: "mandatory", label: "Mandatory skill records this term", value: (s) => populationTotals(populationRows(s, undefined, undefined, { set: "term" })).records },
+  { id: "behind", label: "Students behind the term clock", value: (s) => populationTotals(populationRows(s, undefined, undefined, { set: "term" })).behind },
   { id: "students", label: "Students in the cohort", value: (s) => students(s).length },
   { id: "evalsCounted", label: "Evaluations that count", value: (s) => s.evaluations.filter((e) => e.status === "counted").length },
   { id: "evalsWaiting", label: "Evaluations awaiting approval", value: (s) => s.evaluations.filter((e) => e.status === "awaiting-approval").length },

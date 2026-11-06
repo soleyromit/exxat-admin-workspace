@@ -20,7 +20,7 @@
         {
           "id": "3",
           "label": "Many at once",
-          "summary": "Setup board, paste several names, paste a list to import, one rule for many"
+          "summary": "Setup board, add several names, paste a list to import, one rule for many"
         }
       ],
       "steps": [
@@ -49,7 +49,7 @@
           "label": "Configure the skill",
           "screen": "admin/configure-skill",
           "variants": {
-            "1": "A",
+            "1": "B",
             "2": "B",
             "3": "C"
           }
@@ -59,13 +59,13 @@
           "label": "Check and save",
           "screen": "admin/configure-skill",
           "variants": {
-            "1": "A",
+            "1": "B",
             "2": "B",
             "3": "C"
           },
           "params": {
             "1": {
-              "step": "check",
+              "section": "check",
               "change": "sample"
             },
             "2": {
@@ -80,34 +80,12 @@
         },
         {
           "id": "lists",
-          "label": "Groups of skills",
+          "label": "Skill lists",
           "screen": "admin/lists-cohorts",
           "variants": {
             "1": "C",
             "2": "C",
             "3": "C"
-          },
-          "tag": "Optional"
-        },
-        {
-          "id": "assign",
-          "label": "Assign skills to student groups",
-          "screen": "admin/lists-cohorts",
-          "variants": {
-            "1": "C",
-            "2": "C",
-            "3": "C"
-          },
-          "params": {
-            "1": {
-              "view": "assign"
-            },
-            "2": {
-              "view": "assign"
-            },
-            "3": {
-              "view": "assign"
-            }
           }
         },
         {
@@ -240,7 +218,7 @@
         },
         {
           "id": "lists",
-          "label": "Groups of skills",
+          "label": "Skill lists",
           "screen": "admin/lists-cohorts",
           "variants": {
             "1": "C",
@@ -696,17 +674,68 @@
         {
           "id": "1",
           "label": "Recommended",
-          "summary": "The recommended design of each setup step, in Sankalp's order"
+          "summary": "The recommended page of each setup stop, in Sankalp's order"
         }
       ],
       "steps": [
         {
+          "id": "lists",
+          "label": "Skill lists",
+          "screen": "admin/lists-cohorts",
+          "variants": {
+            "1": "C"
+          }
+        },
+        {
+          "id": "settings",
+          "label": "Evaluation settings",
+          "screen": "admin/evaluation-settings",
+          "variants": {
+            "1": "B"
+          }
+        },
+        {
+          "id": "map",
+          "label": "Course mapping",
+          "screen": "admin/course-mapping",
+          "variants": {
+            "1": "B"
+          }
+        },
+        {
           "id": "library",
-          "label": "Skills",
+          "label": "Library",
           "screen": "admin/skills-library",
           "variants": {
             "1": "A"
-          }
+          },
+          "side": true,
+          "after": "lists"
+        },
+        {
+          "id": "categories",
+          "label": "Categories and tags",
+          "screen": "admin/categories-tags",
+          "variants": {
+            "1": "A"
+          },
+          "side": true,
+          "after": "lists"
+        },
+        {
+          "id": "configure",
+          "label": "Configure the skill",
+          "screen": "admin/configure-skill",
+          "variants": {
+            "1": "B"
+          },
+          "params": {
+            "1": {
+              "skill": "sk-ng-tube"
+            }
+          },
+          "side": true,
+          "after": "lists"
         },
         {
           "id": "add",
@@ -714,20 +743,24 @@
           "screen": "admin/add-skill",
           "variants": {
             "1": "A"
-          }
+          },
+          "side": true,
+          "after": "lists"
         },
         {
           "id": "paste",
-          "label": "Paste several",
+          "label": "Add several",
           "screen": "admin/add-skill",
           "variants": {
-            "1": "C"
+            "1": "A"
           },
           "params": {
             "1": {
               "how": "several"
             }
-          }
+          },
+          "side": true,
+          "after": "lists"
         },
         {
           "id": "bulk",
@@ -736,7 +769,9 @@
           "variants": {
             "1": "A"
           },
-          "tag": "Later"
+          "tag": "Later",
+          "side": true,
+          "after": "lists"
         },
         {
           "id": "starter",
@@ -745,101 +780,16 @@
           "variants": {
             "1": "A"
           },
-          "tag": "Later"
-        },
-        {
-          "id": "categories",
-          "label": "Categories and tags",
-          "screen": "admin/categories-tags",
-          "variants": {
-            "1": "A"
-          }
-        },
-        {
-          "id": "settings",
-          "label": "Evaluation settings",
-          "screen": "admin/evaluation-settings",
-          "variants": {
-            "1": "D"
-          }
-        },
-        {
-          "id": "lists",
-          "label": "Groups of skills",
-          "screen": "admin/lists-cohorts",
-          "variants": {
-            "1": "C"
-          },
-          "tag": "Optional"
-        },
-        {
-          "id": "assign",
-          "label": "Assign skills to student groups",
-          "screen": "admin/lists-cohorts",
-          "variants": {
-            "1": "C"
-          },
-          "params": {
-            "1": {
-              "view": "assign"
-            }
-          }
-        },
-        {
-          "id": "map-skill",
-          "label": "Course mapping by skill",
-          "screen": "admin/course-mapping",
-          "variants": {
-            "1": "B"
-          },
-          "params": {
-            "1": {
-              "by": "skill"
-            }
-          }
-        },
-        {
-          "id": "map",
-          "label": "Course mapping by course",
-          "screen": "admin/course-mapping",
-          "variants": {
-            "1": "A"
-          },
-          "params": {
-            "1": {
-              "by": "course"
-            }
-          }
-        },
-        {
-          "id": "result",
-          "label": "Setup summary",
-          "screen": "admin/setup-result",
-          "variants": {
-            "1": "A"
-          }
-        },
-        {
-          "id": "configure",
-          "label": "Change one skill",
-          "screen": "admin/configure-skill",
-          "variants": {
-            "1": "A"
-          },
-          "params": {
-            "1": {
-              "skill": "sk-pressure-injury"
-            }
-          },
+          "tag": "Later",
           "side": true,
-          "after": "settings",
-          "tag": "Optional"
+          "after": "lists"
         }
-      ]
+      ],
+      "then": "fulfillment-walkthrough"
     },
     {
       "id": "fulfillment-walkthrough",
-      "title": "Student walkthrough",
+      "title": "Student and evaluator",
       "short": "Fulfill",
       "persona": "student",
       "walkthrough": true,
@@ -848,7 +798,7 @@
         {
           "id": "1",
           "label": "Recommended",
-          "summary": "The recommended design of each student step, in Sankalp's order"
+          "summary": "One student and one skill, from My progress to the evaluator and back"
         }
       ],
       "steps": [
@@ -869,9 +819,13 @@
           },
           "params": {
             "1": {
-              "course": "crs-nurs350"
+              "course": "crs-nurs350",
+              "skill": "sk-ng-tube"
             }
-          }
+          },
+          "matchOn": [
+            "course"
+          ]
         },
         {
           "id": "skills",
@@ -885,7 +839,9 @@
               "course": "crs-nurs350",
               "step": "skills"
             }
-          }
+          },
+          "side": true,
+          "after": "course"
         },
         {
           "id": "self",
@@ -897,6 +853,7 @@
           "params": {
             "1": {
               "course": "crs-nurs350",
+              "skills": "sk-ng-tube",
               "step": "self"
             }
           }
@@ -911,9 +868,98 @@
           "params": {
             "1": {
               "course": "crs-nurs350",
+              "skills": "sk-ng-tube",
               "step": "send"
             }
           }
+        },
+        {
+          "id": "email",
+          "label": "Email to the preceptor",
+          "screen": "evaluator/invitation-email",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "student": "stu-maya",
+              "skills": "sk-ng-tube",
+              "to": "pre-castillo"
+            }
+          },
+          "side": true,
+          "after": "send"
+        },
+        {
+          "id": "form",
+          "label": "Evaluation form",
+          "screen": "evaluator/evaluation-form",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "student": "stu-maya",
+              "skills": "sk-ng-tube",
+              "to": "pre-castillo"
+            }
+          }
+        },
+        {
+          "id": "result",
+          "label": "Skill progress",
+          "screen": "student/skill-detail",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "skill": "sk-ng-tube"
+            }
+          }
+        },
+        {
+          "id": "faculty",
+          "label": "Faculty check-off",
+          "screen": "course-faculty/offering-checkoff",
+          "variants": {
+            "1": "A"
+          },
+          "params": {
+            "1": {
+              "offering": "off-nurs350-fa26"
+            }
+          }
+        },
+        {
+          "id": "requests",
+          "label": "My requests",
+          "screen": "student/my-requests",
+          "variants": {
+            "1": "A"
+          },
+          "side": true,
+          "after": "result"
+        },
+        {
+          "id": "record",
+          "label": "My evaluations",
+          "screen": "student/record",
+          "variants": {
+            "1": "A"
+          },
+          "side": true,
+          "after": "result"
+        },
+        {
+          "id": "fix",
+          "label": "Fix or further attempt",
+          "screen": "student/fix-returned",
+          "variants": {
+            "1": "A"
+          },
+          "side": true,
+          "after": "progress"
         }
       ]
     }

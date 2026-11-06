@@ -157,8 +157,8 @@ export function useFixDraft(f: FixModel | null, state: V2State, studentId: strin
     const sentence = offline
       ? `Kept on this device. It goes to ${to} when you reconnect.`
       : f.case === "correction"
-        ? `Sent to ${to} as revision ${f.nextNumber}. Their email holds a new link for this request. It counts after they answer met.`
-        : `Sent to ${to} as attempt ${f.nextNumber}. It counts after they answer met.`
+        ? `Sent to ${to} as revision ${f.nextNumber}. Their email holds a new link for this request. It counts once the evaluation meets the rule.`
+        : `Sent to ${to} as attempt ${f.nextNumber}. It counts once the evaluation meets the rule.`
     setSent({ sentence, lines: confirmationLines({ skillNames: f.skillNames, who: to, role, setting: settingWords(chosen), location: loc, date: draft.details.date, note: draft.note }) })
   }
   return { draft, setDraft, sent, tried, errors, issues, send, choices, chosen, sameOk, who, others, freshErrors, detailErrs, fields, setting, loc, toName, saveForLater, savedId, all }
@@ -267,7 +267,7 @@ export function FixSummary({ f, api }: { f: FixModel; api: FixApi }) {
         <dt className="text-muted-foreground">Who signs</dt>
         <dd className="min-w-0 text-foreground">{who || <span className="text-muted-foreground">Not chosen yet</span>}</dd>
         <dt className="text-muted-foreground">Counts</dt>
-        <dd className="text-foreground">When they answer met</dd>
+        <dd className="text-foreground">When the evaluation meets the rule</dd>
       </dl>
     </section>
   )

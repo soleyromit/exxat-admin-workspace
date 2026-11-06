@@ -6,7 +6,7 @@
  * (search, group, chosen skills, one count in the save bar, lab label once). Feedback (EV-06): a Feedback button per row once a
  * result is recorded; a skill that requires it says so on the skill line, and Save names any result still missing it.
  */
-import { capitalize, skillNoun } from "@/lib/lab/terms"
+import { capitalize, inSentence, skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
@@ -25,7 +25,7 @@ export function LabInstructorLabBatchGridB() {
   const isMobile = useIsMobile()
   const [active, setActive] = React.useState<string | null>(null)
   const skill = g.chosenSkills.find((k) => k.id === active) ?? g.chosenSkills[0] ?? null
-  const l = skill ? g.labels(skill.id) : { met: "Met", notMet: "Unmet" }
+  const l = skill ? g.labels(skill.id) : { met: "Met", notMet: "Unmet", qualifying: "Met" }
   const left = skill ? g.rows.filter((r) => !g.isAbsent(r.id) && !g.mark(r.id, skill.id)).length : 0
   return (
     <EvaluatorFrame program={g.programName} width="wide" footer={g.hydrated ? <LabSaveBar g={g} /> : undefined}>
@@ -54,7 +54,7 @@ export function LabInstructorLabBatchGridB() {
                   <FeedbackRequiredCue skill={skill} />
                 </p>
                 {/* Hidden, not disabled, once every present student has a mark (strategy/07: no disabled control above the fold). */}
-                {left > 0 ? <Button type="button" variant="outline" size="sm" onClick={() => g.fillColumn(skill.id)}>{`Mark the rest ${l.met}`}</Button> : null}
+                {left > 0 ? <Button type="button" variant="outline" size="sm" onClick={() => g.fillColumn(skill.id)}>{`Mark the rest ${inSentence(l.qualifying)}`}</Button> : null}
               </CardContent>
             ) : null}
             <Table scrollLabel={`Students for this ${skillNoun()}`} containerClassName="max-h-[min(62dvh,640px)] overflow-auto">

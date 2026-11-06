@@ -22,7 +22,7 @@ import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { FormPage, StickyFooter, ValidationSummary } from "@/components/lab/layout"
-import { bulkImpact, configureStepHead, leftToConfigure, ruleMeaning, saveLabRuleToMany, type LabRule, type PublishMode, type RuleIssue, type SetupGroup } from "@/lib/lab/configure"
+import { bulkImpact, configureStepHead, leftToConfigure, ruleMeaning, saveLabRuleToMany, type LabRule, type RuleIssue, type SetupGroup } from "@/lib/lab/configure"
 import { buildLibrary } from "@/lib/lab/library"
 import type { V2State } from "@/lib/v2/types"
 import { skillById } from "@/lib/v2/evidence-index"
@@ -30,10 +30,10 @@ import { fmt } from "@/lib/v2/format"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import { useV2Store } from "@/lib/v2/react"
 import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { GroupCheckOffSection, ModelSection, OutcomesSection, RuleSection, SignOffSection, WithMeaning, type SectionProps } from "@/components/lab/configure/fields"
+import { ModelSection, OutcomesSection, RuleSection, SignOffSection, WithMeaning, type SectionProps } from "@/components/lab/configure/fields"
 import { ConfigSection } from "@/components/lab/configure/section"
-import { EVIDENCE_CHOICE_MISSING, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
-import { CheckSection, ConfigureReceiptPage, EvidenceDecision, ManyLedger, openDecisions, PeopleSee, Readiness, ReceiptFooter, saveBlockedReason, SavedBanner, SetupSummary, WhoItAffects } from "@/components/lab/configure/check"
+import { useLiveImpact } from "@/components/lab/configure/impact"
+import { CheckSection, ConfigureReceiptPage, ManyLedger, openDecisions, PeopleSee, Readiness, ReceiptFooter, saveBlockedReason, SavedBanner, SetupSummary, WhoItAffects } from "@/components/lab/configure/check"
 import { BulkApplySheet, bulkAppliedNote, CopyFromDialog } from "@/components/lab/configure/bulk-apply"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { SentenceBuilder } from "@/components/lab/configure/sentence-builder"
@@ -47,8 +47,6 @@ export function AdminConfigureSkillC() {
   const store = useV2Store()
   const [showErrors, setShowErrors] = React.useState(false)
   const [checking, setChecking] = React.useState(params?.get("impact") === "open")
-  const [mode, setMode] = React.useState<PublishMode | null>(null)
-  const [modeTried, setModeTried] = React.useState(false)
   const [manyDone, setManyDone] = React.useState<{ ids: string[]; rule: LabRule } | null>(null)
   const [copyOpen, setCopyOpen] = React.useState(false)
   const [bulkOpen, setBulkOpen] = React.useState(false)
@@ -58,16 +56,13 @@ export function AdminConfigureSkillC() {
   React.useEffect(() => {
     setShowErrors(false)
     setManyDone(null)
-    setMode(null)
-    setModeTried(false)
   }, [m.skillId])
 
   const targets = React.useMemo(() => (many.length > 1 ? many.map((id) => skillById(m.state, id)).filter((k): k is NonNullable<typeof k> => !!k) : []), [many, m.state])
-  const manyRows = React.useMemo(() => (targets.length > 1 && m.rule.model ? bulkImpact(m.state, targets.map((t) => t.id), m.rule) : []), [targets, m.state, m.rule])
   const nextAfterMany = React.useMemo(() => {
     if (!manyDone) return null
     const done = new Set(manyDone.ids)
-    return buildLibrary(m.state).find((r) => r.status === "not-configured" && !done.has(r.id)) ?? null
+    return buildLibrary(m.state).find((r) => r.status === "active" && r.configuration === "not-configured" && !done.has(r.id)) ?? null
   }, [manyDone, m.state])
 
   if (!m.ready) return <ConfigureLoading />
@@ -100,10 +95,9 @@ export function AdminConfigureSkillC() {
   const props: SectionProps = { rule: m.rule, setRule: m.setRule, issues: m.issues, showErrors, settings: m.settings }
   // While the summary lists the problems, field errors stay for screen readers only (say it once, rule L11).
   const quietErrors = showErrors && m.issues.length > 0 ? "[&_[data-slot=field-error]]:sr-only" : undefined
-  const choice = isMany ? manyRows.some((r) => r.configured && r.changed > 0) : needsEvidenceChoice(m.current, impact)
   const n = m.issues.length
-  const blocked = saveBlockedReason(m.issues, choice, mode)
-  const open = openDecisions(m.issues, choice, mode)
+  const blocked = saveBlockedReason(m.issues)
+  const open = openDecisions(m.issues)
   const partsToFix = new Set(m.issues.map((i) => i.section)).size
 
   // Check always opens (redesign 2026-10-27): it is where what is left to fix is listed, each problem inside its card.
@@ -125,27 +119,20 @@ export function AdminConfigureSkillC() {
 
   const save = () => {
     if (n > 0) return
-    if (choice && !mode) {
-      setModeTried(true)
-      requestAnimationFrame(() => focusField("cfg-mode"))
-      return
-    }
     if (!isMany) {
-      m.save(choice ? mode : null)
+      m.save(null)
       return
     }
     // Several at once [REQ IM-14]: the same rule is saved to each skill through the one-skill save path (saveLabRuleToMany), each
-    // gets its own rule version. "New evidence only" is not decided, so it writes nothing (as for one skill).
+    // gets its own rule version.
     const ids = targets.map((t) => t.id)
     let written = ids
-    if (mode !== "new-only") {
-      const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
-      store.update((s) => {
-        const r = saveLabRuleToMany(s, ids, m.rule, { at, byId: IDS.ross, mode })
-        written = r.written
-        return r.written.length ? r.state : s
-      })
-    }
+    const at = `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
+    store.update((s) => {
+      const r = saveLabRuleToMany(s, ids, m.rule, { at, byId: IDS.ross, mode: "reapply" })
+      written = r.written
+      return r.written.length ? r.state : s
+    })
     setManyDone({ ids: written, rule: m.rule })
   }
 
@@ -228,18 +215,16 @@ export function AdminConfigureSkillC() {
         // cards with problems first; the evidence decision; who it affects (one row per skill when several); the two views.
         <div className="@container flex flex-col gap-8" data-check-layout="ledger">
           <CheckSection
-            title={open > 0 ? `${partsToFix + (choice && !mode ? 1 : 0)} of ${4 + (choice ? 1 : 0)} parts need a decision` : "Every part is set"}
+            title={open > 0 ? `${partsToFix} of 4 parts need a decision` : "Every part is set"}
             badge={open === 0 ? <Readiness open={0} /> : undefined}
           >
-            {/* The evidence choice is a part to decide too: first, at the width of one card. */}
-            {choice ? <EvidenceDecision mode={mode} onMode={setMode} error={modeTried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
             <SetupSummary rule={m.rule} current={isMany ? null : m.current} issues={m.issues} layout="ledger" onEdit={editGroup} onFix={goToIssue} />
           </CheckSection>
           <CheckSection title="Who it affects">
             {isMany ? (
               <ManyLedger state={m.state} ids={targets.map((t) => t.id)} rule={m.rule} />
             ) : (
-              <WhoItAffects state={m.state} skill={skill} current={m.current} rule={m.rule} impact={impact} mode={mode} />
+              <WhoItAffects state={m.state} skill={skill} current={m.current} rule={m.rule} impact={impact} />
             )}
           </CheckSection>
           {m.rule.model ? <PeopleSee className="min-[1280px]:hidden" skillName={isMany ? targets[0]?.name ?? skill.name : skill.name} rule={m.rule} /> : null}
@@ -267,8 +252,6 @@ export function AdminConfigureSkillC() {
                   <RuleSection {...props} />
                 )}
               </ConfigSection>
-              {/* Group check-off belongs with how many evaluations (one hierarchy, 2026-11-02). */}
-              <GroupCheckOffSection rule={m.rule} setRule={m.setRule} />
               <ConfigSection n={4} title={configureStepHead("signoff", m.rule.model).title} id="cfg-sec-signoff">
                 <SignOffSection {...props} />
               </ConfigSection>

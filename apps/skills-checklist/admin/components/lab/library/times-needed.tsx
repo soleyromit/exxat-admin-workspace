@@ -2,24 +2,27 @@
 
 /**
  * Times needed in the library [CALL 11-02]: the program's number prefilled on every skill, edited in place where a skill needs
- * a different one, or set for the selected rows at once. One source with the Evaluation settings list ("Different from n"):
+ * a different one; Edit N skills sets it for the selected rows (bulk-edit-sheet.tsx). One source with the Evaluation settings list ("Different from n"):
  * `timesCellOf` and `setTimesNeededMany` in lib/lab/program-settings.ts. With no program settings a skill that has no number of its
- * own reads "Not set" (Prism never supplies the number) [REQ SC-02].
+ * own reads "Not set" (Prism never supplies the number) [REQ SC-02]. Every row is editable, Not configured and Inactive included (D-L92, D-L93).
  *
- * A change saves straight away through the skill's rule (its own rule version and audit line); no rule impact preview here.
+ * A change that moves nobody's progress saves straight away through the skill's rule. One that does names the students first, in the same dialog
+ * as the edit panel, and Cancel restores the number (map D0 rule 9) [REQ AE-02].
  */
 import * as React from "react"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
-import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { FieldError } from "@exxatdesignux/ui/components/ui/field"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
+import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { useV2State, useV2Store } from "@/lib/v2/react"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
-import { TIMES_MAX, setTimesNeededMany, timesCellOf, type TimesManyResult } from "@/lib/lab/program-settings"
-import { countSkills } from "@/lib/lab/terms"
+import { TIMES_MAX, setTimesNeededMany, timesCellOf, timesNeededImpact, type TimesManyResult } from "@/lib/lab/program-settings"
+import { ABOVE_PANEL } from "@/components/lab/overlay-layer"
+import { plural } from "@/lib/v2/format"
+import { skillNoun } from "@/lib/lab/terms"
+import { holdSecondPress, returnFocus } from "@/components/lab/shared/focus"
 import { TYPE } from "@/components/lab/type-scale"
 
 const stamp = () => ({ at: `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`, byId: IDS.ross })
@@ -49,7 +52,73 @@ function useSetTimes() {
   )
 }
 
-/** One row's cell: the number, editable in place; bold with "Different" when it is not the program's number. */
+/** Who a save reaches, by name, the same sentence wherever it is asked (map D0 rule 9). */
+export function progressChanges(students: ReadonlyArray<{ name: string }>): string {
+  if (!students.length) return "No student's progress changes."
+  const named = students.slice(0, 8).map((s) => s.name).join(", ")
+  return `Progress changes for ${plural(students.length, "student", "students")}: ${named}${students.length > 8 ? ` and ${students.length - 8} more` : ""}.`
+}
+
+/** The one dialog before a save that changes achievement [REQ AE-02, SC-09]: the cell, the panel and Reactivate all ask with this. */
+export function ImpactDialog({ open, title, students, cleared = [], confirm = "Save changes", skillId, focusAfter, listed, onCancel, onConfirm }: {
+  open: boolean
+  title: string
+  students: ReadonlyArray<{ name: string }>
+  /** What a model change clears, in the admin's words. */
+  cleared?: readonly string[]
+  confirm?: string
+  skillId?: string
+  /** Where focus goes when it closes, if not back to what had it. Read at that moment: null returns it. */
+  focusAfter?: React.RefObject<(() => HTMLElement | null) | null>
+  /** The words of the Evaluation settings save dialog: a count and Show names, for a skill that may reach many students (map D1c). */
+  listed?: boolean
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const had = React.useRef<Element | null>(null)
+  const [names, setNames] = React.useState(false)
+  React.useEffect(() => { if (!open) setNames(false) }, [open])
+  return (
+    <AlertDialog open={open} onOpenChange={(o) => { if (!o) onCancel() }}>
+      <AlertDialogContent className={ABOVE_PANEL} overlayClassName={ABOVE_PANEL} {...railTriggerProps()} data-impact-dialog onOpenAutoFocus={() => { had.current = document.activeElement }} onCloseAutoFocus={(e) => {
+        e.preventDefault()
+        const next = focusAfter?.current?.()
+        if (focusAfter) focusAfter.current = null
+        if (next) next.focus()
+        else returnFocus(had.current, skillId)
+      }}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription className={listed ? "sr-only" : undefined}>{progressChanges(students)}</AlertDialogDescription>
+        </AlertDialogHeader>
+        {listed && students.length ? (
+          <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-6 gap-y-2">
+            <dt className={TYPE.body}>Students whose progress changes</dt>
+            <dd className="text-end text-sm font-medium tabular-nums text-foreground">
+              {students.length}
+              <Button type="button" variant="link" size="sm" className="ms-2 h-auto p-0" aria-expanded={names} onClick={() => setNames((x) => !x)}>{names ? "Hide names" : "Show names"}</Button>
+            </dd>
+          </dl>
+        ) : null}
+        {listed && names ? <ul className="max-h-40 overflow-y-auto rounded-[var(--radius)] border border-border p-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring" tabIndex={0} aria-label="Students whose progress changes" data-impact-names>{students.map((x) => <li key={x.name}>{x.name}</li>)}</ul> : null}
+        {cleared.length ? <p className={TYPE.body} data-impact-cleared>{`Cleared: ${cleared.join(", ")}.`}</p> : null}
+        <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" size="sm">Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="default" size="sm" onClick={(e) => { holdSecondPress(e); onConfirm() }}>{confirm}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+
+/** Enter moves to the next row's cell, so a run of numbers can be typed down the column (map D1). */
+function nextCell(inputId: string): HTMLInputElement | null {
+  const cells = [...document.querySelectorAll<HTMLInputElement>("input[id^='times-cell-']")]
+  return cells[cells.findIndex((c) => c.id === inputId) + 1] ?? null
+}
+const focusNextCell = (inputId: string) => { nextCell(inputId)?.focus() }
+
+/** One row's cell: the number, editable in place; bold when it is the skill's own number, and said to a screen reader. */
 export function TimesNeededCell({ id, name }: { id: string; name: string }) {
   const state = useV2State()
   const cell = React.useMemo(() => timesCellOf(state, id), [state, id])
@@ -58,27 +127,44 @@ export function TimesNeededCell({ id, name }: { id: string; name: string }) {
   const [draft, setDraft] = React.useState(saved)
   const [error, setError] = React.useState<string | null>(null)
   const focused = React.useRef(false)
+  const [justSaved, setJustSaved] = React.useState(false)
+  React.useEffect(() => {
+    if (!justSaved) return
+    const timer = window.setTimeout(() => setJustSaved(false), 2500)
+    return () => window.clearTimeout(timer)
+  }, [justSaved])
   React.useEffect(() => { if (!focused.current) { setDraft(saved); setError(null) } }, [saved])
 
   // Keep clicks and keys in the cell from opening the row's detail panel.
   const stop = (e: React.SyntheticEvent) => e.stopPropagation()
 
-  if (!cell.editable) {
-    return cell.value === null
-      ? <span className="text-muted-foreground" data-times-cell={id}>Not set</span>
-      : <span className="tabular-nums" data-times-cell={id}>{cell.value}</span>
-  }
-
-  const commit = () => {
-    if (draft.trim() === saved) { setError(null); return }
-    const n = parseTimes(draft)
-    if (n === null) { setError(RANGE_ERROR); return }
+  // A number that changes someone's progress waits here until the admin has seen who.
+  const [ask, setAsk] = React.useState<{ need: number; students: Array<{ id: string; name: string }>; next: boolean } | null>(null)
+  const inputId = `times-cell-${id}`
+  // After the dialog's confirm, the same as Enter with no dialog: on to the next row's cell (map D1). Set only on that path, so Cancel returns to this cell.
+  // Tab out of the cell opens the dialog in the middle of the blur, with nothing focused yet: both answers go where Tab was going, else back to this cell.
+  const afterDialog = React.useRef<(() => HTMLElement | null) | null>(null)
+  const write = (n: number, next: boolean, viaDialog = false) => {
     const r = setTimes([id], n)
     if (r?.failed.length) setError(r.failed[0]!.error)
-    else setError(null)
+    else {
+      setError(null)
+      setJustSaved(true)
+      if (!next) return
+      if (viaDialog) afterDialog.current = () => nextCell(inputId)
+      else focusNextCell(inputId)
+    }
+  }
+  const commit = (next = false) => {
+    if (ask) return
+    if (draft.trim() === saved) { setError(null); if (next) focusNextCell(inputId); return }
+    const n = parseTimes(draft)
+    if (n === null) { setError(RANGE_ERROR); return }
+    const students = timesNeededImpact(state, id, n)
+    if (students.length) { setAsk({ need: n, students, next }); return }
+    write(n, next)
   }
 
-  const inputId = `times-cell-${id}`
   const badgeId = `${inputId}-differs`
   const errorId = `${inputId}-error`
   const describedBy = [cell.differs ? badgeId : null, error ? errorId : null].filter(Boolean).join(" ") || undefined
@@ -92,84 +178,38 @@ export function TimesNeededCell({ id, name }: { id: string; name: string }) {
           min={1}
           max={TIMES_MAX}
           step={1}
-          className={cn("h-8 w-14 shrink-0 tabular-nums", cell.differs && "font-semibold")}
+          className={cn("h-8 shrink-0 tabular-nums", draft === "" ? "w-24" : "w-14", cell.differs && "font-semibold")}
           aria-label={`Times needed for ${name}`}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           placeholder="Not set"
           value={draft}
-          onFocus={() => { focused.current = true }}
+          onFocus={() => { focused.current = true; afterDialog.current = null }}
           onChange={(e) => { setDraft(e.target.value); if (error) setError(null) }}
-          onBlur={() => { focused.current = false; commit() }}
+          onBlur={(e) => {
+            focused.current = false
+            const went = e.relatedTarget instanceof HTMLElement ? e.relatedTarget : null
+            afterDialog.current = () => (went?.isConnected ? went : document.getElementById(inputId))
+            commit()
+          }}
           onKeyDown={(e) => {
             e.stopPropagation()
-            if (e.key === "Enter") { e.preventDefault(); commit() }
+            if (e.key === "Enter") { e.preventDefault(); commit(true) }
             if (e.key === "Escape") { setDraft(saved); setError(null) }
           }}
         />
-        {cell.differs ? <Badge id={badgeId} variant="outline">Different</Badge> : null}
+        {justSaved ? <span className="text-xs text-muted-foreground" role="status">Saved</span> : cell.differs ? <span id={badgeId} className="sr-only">{`This ${skillNoun()}'s own number`}</span> : null}
       </span>
       {error ? <FieldError id={errorId} className="text-xs">{error}</FieldError> : null}
+      <ImpactDialog
+        open={!!ask}
+        title={`Change times needed for ${name}?`}
+        students={ask?.students ?? []}
+        skillId={id}
+        focusAfter={afterDialog}
+        onCancel={() => { setAsk(null); setDraft(saved); setError(null) }}
+        onConfirm={() => { if (ask) write(ask.need, ask.next, true); setAsk(null) }}
+      />
     </span>
-  )
-}
-
-/**
- * Bulk "Set times needed" for the selected rows. The rows that cannot take a number (no program settings and none of their own,
- * or a model that needs their own questions) are counted on the dialog and left as they are.
- */
-export function SetTimesDialog({ ids, open, onOpenChange, onDone }: { ids: readonly string[]; open: boolean; onOpenChange: (o: boolean) => void; onDone?: (r: TimesManyResult, need: number) => void }) {
-  const state = useV2State()
-  const setTimes = useSetTimes()
-  const cells = React.useMemo(() => ids.map((id) => timesCellOf(state, id)), [state, ids])
-  const editable = cells.filter((c) => c.editable).length
-  const blocked = ids.length - editable
-  const programNeed = cells.find((c) => c.programNeed !== null)?.programNeed ?? null
-  const [value, setValue] = React.useState("")
-  const [tried, setTried] = React.useState(false)
-  React.useEffect(() => {
-    if (open) { setValue(programNeed === null ? "" : String(programNeed)); setTried(false) }
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
-  const n = parseTimes(value)
-  const error = tried && n === null ? RANGE_ERROR : null
-  const apply = () => {
-    setTried(true)
-    if (n === null || editable === 0) return
-    const r = setTimes(ids, n)
-    if (r) onDone?.(r, n)
-    onOpenChange(false)
-  }
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{`Set times needed for ${countSkills(editable)}`}</DialogTitle>
-          <DialogDescription className="sr-only">{`Times needed for the selected ${countSkills(ids.length)}.`}</DialogDescription>
-        </DialogHeader>
-        <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); apply() }} data-set-times>
-          <Label htmlFor="set-times-value">Times needed</Label>
-          <Input
-            id="set-times-value"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={TIMES_MAX}
-            step={1}
-            autoFocus
-            className="w-24 tabular-nums"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? "set-times-error" : undefined}
-          />
-          {error ? <FieldError id="set-times-error">{error}</FieldError> : null}
-          {blocked ? <p className={TYPE.helper} data-set-times-blocked>{`${countSkills(blocked)} can't take a number yet and stay as they are.`}</p> : null}
-        </form>
-        <DialogFooter>
-          <Button type="button" variant="outline" size="default" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button type="button" variant="default" size="default" disabled={editable === 0} onClick={apply}>{`Set for ${countSkills(editable)}`}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }

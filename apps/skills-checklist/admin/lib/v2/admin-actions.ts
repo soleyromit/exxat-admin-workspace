@@ -151,9 +151,9 @@ export function allCourses(s: V2State): Course[] {
 /** "NURS 350 Adult Health II": how a course is named in an impact list. */
 export const courseLabel = (c: Pick<Course, "code" | "name">): string => `${c.code} ${c.name}`
 
-/** Courses a skill is mapped to (mandatory or non-mandatory), as labels, sorted. Delete lists these as impact (D-X15). */
+/** Courses a skill is mapped to (mandatory or recommended; a stored Optional reads as Not mapped, D-L76), as labels, sorted. Delete lists these as impact (D-X15). */
 export function mappedCourses(s: V2State, skillId: string): string[] {
-  const ids = new Set(s.mappings.filter((m) => m.skillId === skillId && m.level !== "not-expected").map((m) => m.courseId))
+  const ids = new Set(s.mappings.filter((m) => m.skillId === skillId && (m.level === "mandatory" || m.level === "recommended")).map((m) => m.courseId))
   return allCourses(s).filter((c) => ids.has(c.id)).map(courseLabel).sort()
 }
 

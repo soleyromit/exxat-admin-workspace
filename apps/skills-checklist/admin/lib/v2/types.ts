@@ -101,6 +101,10 @@ export interface Program {
   cohorts: string[]
   /** Program-defined clinical settings (SL-07). Evidence in a named setting is counted per setting (SC-11). */
   clinicalSettings: string[]
+  /** Deactivated clinical settings: out of the list above, so no longer offered, and still shown on the Clinical settings page. */
+  inactiveClinicalSettings?: string[]
+  /** Stored clinical setting name to current name, after a rename. Records keep what they were written with (lib/v2/setting-names.ts). */
+  clinicalSettingAliases?: Record<string, string>
   /** Simulation settings the program can allow-list. */
   simulationSettings: string[]
   /** Program-defined places where evidence is gathered, with what each offers (RP-01, RP-09). Sample data. */
@@ -140,6 +144,8 @@ export type EvaluatorRole = "preceptor" | "faculty" | "lab-instructor"
 export interface SkillConfig {
   /** Binary model: [qualifying label, other label] (SC-03). */
   outcomeLabels: [string, string]
+  /** The program saved these two words itself, so "Not met" is its own word, not the legacy default read as "Unmet". */
+  ownLabels?: boolean
   /** Question and scored models: the program-defined question set (SC-04). */
   questions: string[]
   /** Program-named levels, ordered lowest to highest. Never hard-coded Observed, Assisted, Independent (SC-08). */
@@ -176,7 +182,7 @@ export interface SkillConfig {
   scoredRule?: ScoredRule | null
   /** "At least N at this level or above" [REQ SC-10]. Absent means no level minimum. */
   levelMinimums?: LevelMinimum[]
-  /** Which outcome label qualifies [REQ SC-03]; presentation only, the engine reads the recorded outcome [REQ AE-06]. */
+  /** Which outcome label qualifies [REQ SC-03]: the engine reads it (`outcomeQualifies`). Renaming a label changes nothing [REQ AE-06]; choosing the other one does [REQ AE-02]. */
   qualifyingLabel?: 0 | 1 | null
   /** Scored model: the top of the program's response scale, 2 to 10 [REQ SC-07]. Absent on the seed: 5. */
   scaleMax?: number
@@ -227,7 +233,7 @@ export interface ImportBatch {
   id: string
   at: string
   actorId: string
-  kind: "starter-library" | "file-import"
+  kind: "starter-library" | "file-import" | "add-several"
   label: string
   skillIds: string[]
 }
@@ -241,6 +247,19 @@ export interface Skill {
   model: EvalModel | null
   configured: boolean
   published: boolean
+  /** A detached copy of the program's settings, edited for this skill; later program saves leave it alone (D-L72, map D0 rule 7). */
+  edited?: boolean
+  /** Someone changed this skill's Times needed, so it keeps it through program saves even when the two numbers come to match (map D0 rule 6). */
+  ownNeed?: boolean
+  /** Someone gave this skill its own questions, so it keeps them through program saves even when the two sets come to match (map D0 rule 6, note 2026-11-05) [REQ SC-04]. */
+  ownQuestions?: boolean
+  /**
+   * The rule as it stood before the first save while Inactive (map D0 rule 9, D-L93): those saves name nobody, because the skill is
+   * outside reporting scope, so Reactivate names who changes against this rule. Cleared on Reactivate.
+   */
+  inactiveBaseline?: unknown
+  /** Added by hand or by a paste, not from the program's file: it joins no live list on its own (map C3). */
+  addedByHand?: boolean
   config: SkillConfig | null
   description?: string
   /** Program-defined tags (SL-07). A skill may carry several. Sample data: no tag ships with the product. */
@@ -254,11 +273,6 @@ export interface Skill {
    * every report figure (decision D-X14). Absent means active.
    */
   active?: boolean
-  /**
-   * Set on a new version made by "Replace with a new version" in the lab library [CALL 10-09; INFER]: the skill it replaces and
-   * the student groups (cohort names) that moved to it. The old skill keeps its evidence; when every group moved it is inactive.
-   */
-  replaces?: { id: string; cohorts: string[] }
 }
 
 /**
@@ -266,6 +280,7 @@ export interface Skill {
  * recommended (feeds "Likely here" and the placement-ending nudge), optional (submittable, counts on the record, never required),
  * or not expected.
  */
+/** "optional" is stored in the seed only and reads as Not mapped (D-L76, lib/v2/mapping-in-force.ts). */
 export type MappingLevel = "mandatory" | "recommended" | "optional" | "not-expected"
 
 export interface MappingRow {
@@ -273,6 +288,9 @@ export interface MappingRow {
   skillId: string
   level: MappingLevel
 }
+
+/** A level set on one offering; "none" is Not mapped. */
+export type MappingLevelEdit = "mandatory" | "recommended" | "none"
 
 export type Outcome = "met" | "not-met" | "not-yet"
 
@@ -440,7 +458,8 @@ export interface LogEntry {
   /** Self-rating: one of the skill's own level names or outcome labels, else null. */
   rating: string | null
   /** Question model self-rating: one answer per question. */
-  answers: Array<"yes" | "no"> | null
+  /** The student's own answers: Yes or No per question, or a score per question on a scored skill [REQ ST-11]. */
+  answers: Array<"yes" | "no" | number> | null
   /** At most one narrative note per entry (ST-12). */
   note: string
   at: string
@@ -451,7 +470,7 @@ export interface LogEntry {
    * (the entry's `at` is when it was saved); `course` and `step` reopen Send at the step it was left; `who` and `method` keep the
    * evaluator choice. Present only on lab drafts. Not evidence until it is sent and an evaluator answers. [INFER]
    */
-  sitting?: { where: string; date: string; unit: string; case: string; course?: string; step?: string; who?: string; method?: string; answers?: Record<string, Array<"yes" | "no" | null>>; /** Configured details beyond date, unit and case, by field id [REQ SC-13, ST-10]. */ extra?: Record<string, string> }
+  sitting?: { where: string; date: string; unit: string; case: string; course?: string; step?: string; who?: string; method?: string; answers?: Record<string, Array<"yes" | "no" | number | null>>; /** Configured details beyond date, unit and case, by field id [REQ SC-13, ST-10]. */ extra?: Record<string, string> }
 }
 
 /** A lab check-off recorded by a lab instructor (a prerequisite, SC-15 family). */
@@ -480,7 +499,7 @@ export interface LogDraft {
   where: string
   location: string
   ratings: Record<string, string>
-  answers: Record<string, Array<"yes" | "no" | null>>
+  answers: Record<string, Array<"yes" | "no" | number | null>>
   notes: Record<string, string>
 }
 
@@ -623,6 +642,15 @@ export interface V2State {
    * lab. Optional so older state loads; absent until the program saves them.
    */
   programSettings?: { rule: unknown; at: string } | null
+  /**
+   * Course mapping edits, saved: offering id -> skill id -> level ("none" is Not mapped) [REQ CM-03, CM-06, CM-08]. They replace the
+   * course's mapping row for that one offering. Every reader goes through lib/v2/mapping-in-force.ts. Optional so older state loads.
+   */
+  offeringLevels?: Record<string, Record<string, MappingLevelEdit>>
+  /** Skill list edits (lib/lab/lists.ts ListsOverlay, typed loosely so the data layer does not import the lab). Read through programLists. */
+  listEdits?: unknown
+  /** A new program (D-L44): no lists are derived from the seed, only the ones its admin makes. */
+  ownListsOnly?: boolean
   /** Walkthrough step id -> ISO time the presenter marked it reviewed. */
   stepsReviewed: Record<string, string>
   /** Stage 2: student placements, log entries, lab check-offs, the phone's state and the log flow draft. */

@@ -25,7 +25,7 @@ import { skillsWord, TOUCH } from "@/components/lab/evaluator/fields"
 import type { EvaluatorModel } from "@/components/lab/evaluator/use-evaluator"
 
 const HEADER = "px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0"
-const TONE: Record<ReceiptLine["status"], "neutral" | "warning"> = { counts: "neutral", waits: "warning", queued: "neutral", feedback: "neutral" }
+const TONE: Record<ReceiptLine["status"], "neutral" | "warning"> = { counts: "neutral", waits: "warning", queued: "neutral", feedback: "neutral", "not-counted": "neutral" }
 
 /** Lab controls plus the no-chrome frame, with loading handled once. The body is the variant. */
 export function OutcomeShell({ m, states, defaultState, children }: { m: EvaluatorModel; states: Array<{ id: string; label: string }>; defaultState: string; children: (req: EvRequest) => React.ReactNode }) {
@@ -50,8 +50,8 @@ const outcomeTitle = (lines: ReceiptLine[], offline: boolean) => {
   if (offline) return "Saved on this phone"
   const s = receiptSummary(lines)
   const many = lines.length > 1
-  if (s.waits === 0 && s.feedback === 0) return many ? "Signed off. They count now." : "Signed off. It counts now."
-  if (s.counts === 0 && s.feedback === 0) return many ? "Signed off. They wait for approval." : "Signed off. It waits for approval."
+  if (s.counts === lines.length) return many ? "Signed off. They count now." : "Signed off. It counts now."
+  if (s.waits === lines.length) return many ? "Signed off. They wait for approval." : "Signed off. It waits for approval."
   return "Signed off"
 }
 
@@ -71,6 +71,7 @@ export function NextSteps({ req, lines, offline }: { req: EvRequest; lines: Rece
       ]
     : [
         ...(s.counts + s.feedback > 0 ? [{ key: "counts", done: true, title: s.counts ? `Counted now: ${skillsWord(s.counts)}` : "Feedback recorded", lines: [...byStatus("counts"), ...byStatus("feedback")] }] : []),
+        ...(s.notCounted > 0 ? [{ key: "not-counted", done: true, title: `Does not count: ${skillsWord(s.notCounted)}`, lines: byStatus("not-counted") }] : []),
         ...(s.waits > 0 ? [{ key: "waits", done: false, title: "Awaits program approval", lines: byStatus("waits") }] : []),
         { key: "student", done: s.waits === 0, title: s.waits === 0 ? `${req.student.first} sees it` : `Then ${req.student.first} sees it` },
       ]

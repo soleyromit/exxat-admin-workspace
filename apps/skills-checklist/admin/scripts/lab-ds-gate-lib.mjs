@@ -45,6 +45,8 @@ export function collectUsage(file, root, depth = 3, seen = new Set()) {
   direct.push(...parseDsImports(src))
   for (const li of parseLocalImports(src)) {
     if (li.spec.startsWith("components/chart-card")) direct.push({ name: "ChartCard", from: "@/components/chart-card (vendored)" })
+    // The DS root with rule E6 added: importing it is using the DS component, however deep the page reaches it.
+    if (li.spec === "components/lab/shared/sheet") direct.push({ name: "FloatingSheetPanel", from: "@/components/lab/shared/sheet (the DS root, rule E6)" })
     if (depth <= 0 || !li.spec.startsWith("components/")) continue
     const f = resolveLocal(root, li.spec)
     if (!f) continue

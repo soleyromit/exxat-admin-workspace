@@ -106,7 +106,7 @@ describe("Sent for a new evaluation: what the student sees", () => {
     const { next } = assigned()
     const b = facts(seed, DEFAULT_SCOPE)
     const a = facts(next, DEFAULT_SCOPE)
-    expect(a.mandatoryAchieved).toBe(b.mandatoryAchieved)
+    expect(a.listAchieved).toBe(b.listAchieved)
     expect(a.behind).toBe(b.behind)
     expect(a.awaitingApproval).toBe(b.awaitingApproval - 1)
     expect(a.waitingRequests).toBe(b.waitingRequests + 1)

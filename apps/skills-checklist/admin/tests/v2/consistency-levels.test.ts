@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { createSeed } from "@/lib/v2/seed"
 import { facts } from "@/lib/v2/facts"
-import { populationRows, type PopulationScope } from "@/lib/v2/population"
+import { populationRows, type PopulationScope, populationTotals } from "@/lib/v2/population"
 import { customGroupValue, inGroup, students } from "@/lib/v2/filters"
 import { offeringRows } from "@/lib/lab/mapping"
 import { buildStudent } from "@/lib/lab/student"
@@ -25,7 +25,9 @@ const legacy: V2State = { ...s, mappings: s.mappings.map((m) => (m.level === "re
 
 describe("three per-course levels leave every Required this term figure unchanged", () => {
   it("facts match the pre-split data for every term, cohort, group and course scope", () => {
-    for (const sc of scopes) expect(facts(s, sc)).toEqual(facts(legacy, sc))
+    // Mandatory this term: what a course's levels can move (D-L102). The list's figures read the list, and a chosen course narrows them to what it maps.
+    const term = (st: V2State, sc: PopulationScope) => populationTotals(populationRows(st, sc, undefined, { set: "term" }))
+    for (const sc of scopes) expect(term(s, sc)).toEqual(term(legacy, sc))
   })
 
   it("the split only relabels non-mandatory rows, about half each, and never touches mandatory", () => {
@@ -35,8 +37,8 @@ describe("three per-course levels leave every Required this term figure unchange
     expect(Math.abs(n(s, "recommended") - n(s, "optional"))).toBeLessThanOrEqual(s.courses!.length)
   })
 
-  it("offering totals add up: mapped = mandatory + recommended + optional", () => {
-    for (const r of offeringRows(s)) expect(r.mandatory + r.recommended + r.optional).toBe(r.mapped)
+  it("offering totals add up: mapped = mandatory + recommended (D-L76)", () => {
+    for (const r of offeringRows(s)) expect(r.mandatory + r.recommended).toBe(r.mapped)
   })
 
   it("Likely here reads mandatory and recommended only; optional stays a record that can be submitted", () => {

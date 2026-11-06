@@ -6,7 +6,7 @@
  * configure no (the admin views carry no configure links, so nothing is hidden, only nothing is added). The frame is the director's
  * own (components/lab/director/frame.tsx): the cohort is preselected to the graduating cohort and stays a filter. Above the view, a
  * readiness line for that cohort from the same model the director dashboard uses (buildReadiness), each figure a link to the list,
- * in the four graduation bands (D-X11). The view is read against "Required to graduate" by default for the graduating cohort
+ * in the four readiness bands (D-X11). The view is read against "All assigned" by default for the graduating cohort
  * (D-X12, `defaultRequiredSet`), so the matrix totals equal the readiness line; "Required this term" (and "All skills" on the skills view) sit in the set control on the scope bar's row (`required`, `skills`).
  * Director and verification are v2 proposals, not REQ [AUDIT T3]; nothing here verifies.
  */
@@ -72,8 +72,8 @@ export function AttainmentBody({ ctx, view, exportOpen, setExportOpen }: { ctx: 
   if (!model || !state) return null
   const term = ctx.model.population.term
   const lines = [...scopeLines(ctx.scope, term.name, BASIS_LABEL[basisOf(ctx.scope)], ctx.asOf, ctx.chip), `Required set: ${model.basisLabel}`]
-  const toGraduate = model.basis === "toGraduate"
-  const behindLabel = toGraduate ? GRADUATION_STAGE_LABEL.far : "Behind"
+  const allAssigned = model.basis === "assigned"
+  const behindLabel = allAssigned ? GRADUATION_STAGE_LABEL.far : "Behind"
   const fileStem = `attainment-${(ctx.scope.cohort || "all-cohorts").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${attView}`
   return (
     <>
@@ -85,7 +85,7 @@ export function AttainmentBody({ ctx, view, exportOpen, setExportOpen }: { ctx: 
           <span className={`${TYPE.meta} tabular-nums font-normal`} data-view-count>{fmt(view === "matrix" ? model.students.length : model.skills.length + extraSkills.length)}</span>
         </h2>
         {view === "matrix" ? (
-          <MatrixLegend behindLabel={toGraduate ? behindLabel : conditionLabel(basisOf(ctx.scope))} />
+          <MatrixLegend behindLabel={allAssigned ? behindLabel : conditionLabel(basisOf(ctx.scope))} />
         ) : (
           <span className="flex flex-wrap items-center gap-3">
             <StateLegend />
@@ -95,7 +95,7 @@ export function AttainmentBody({ ctx, view, exportOpen, setExportOpen }: { ctx: 
         )}
       </div>
       <div data-region="view">
-        {view === "matrix" ? <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} /> : <SkillsTable rows={model.skills} peekHref={url.peekHref} extra={allSkills ? extraSkills : undefined} notRequiredLabel={toGraduate ? "Not required to graduate" : "Not required this term"} search={query} />}
+        {view === "matrix" ? <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} /> : <SkillsTable rows={model.skills} peekHref={url.peekHref} extra={allSkills ? extraSkills : undefined} notRequiredLabel={allAssigned ? "Not assigned" : "Not required this term"} search={query} />}
       </div>
       <EvidencePeek peek={peek} data={state} evidence={model.pop.evidenceState} scope={ctx.scope} onClose={url.closePeek} />
       {can(ROLE, "export") ? <ExportPanel open={exportOpen} onOpenChange={setExportOpen} model={model} data={state} view={attView} scopeLines={lines} fileStem={fileStem} /> : null}
@@ -115,10 +115,10 @@ export function ReadinessLine({ ctx }: { ctx: DirectorContext & { model: Readine
   const m = ctx.model
   const who = ctx.scope.cohort || "All cohorts"
   return (
-    <section aria-label={`Graduation readiness, ${who}`} className="flex flex-wrap items-baseline gap-x-6 gap-y-2 rounded-lg border border-border bg-(--brand-tint-subtle) px-4 py-3" data-region="readiness">
+    <section aria-label={`Readiness, ${who}`} className="flex flex-wrap items-baseline gap-x-6 gap-y-2 rounded-lg border border-border bg-(--brand-tint-subtle) px-4 py-3" data-region="readiness">
       <p className="text-sm text-muted-foreground">
         <span className="font-semibold text-foreground">{who}</span>
-        {` ready to graduate, every required ${skillNoun()} · ${plural(m.rows.length, "student", "students")}`}
+        {` complete, every assigned ${skillNoun()} · ${plural(m.rows.length, "student", "students")}`}
       </p>
       {/* Empty bands are not printed (design review 2026-10-30, others: "0 short" was a zero bucket); Complete always is, so
           the line still names the cohort's verdict. The bands shown sum to the cohort. */}

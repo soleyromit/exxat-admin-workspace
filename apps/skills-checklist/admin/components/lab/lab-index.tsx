@@ -197,8 +197,7 @@ function WorkingIndex() {
   }
   return (
     <PageFrame
-      title="Design lab"
-      subtitle="Walk a whole job in one design direction, or open any screen on its own. Everything here is sample data."
+      title="All variants"
       actions={
         <span className="flex items-center gap-3">
           {PRESENT_WALKTHROUGHS.map((w) => (

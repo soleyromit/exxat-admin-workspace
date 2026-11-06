@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * Readiness pipeline for one cohort: a unit chart, one square per student, grouped by the four graduation bands (decision D-X11,
+ * Readiness pipeline for one cohort: a unit chart, one square per student, grouped by the four readiness bands (decision D-X11,
  * `graduationStageOf`): Complete, One skill short, Short (2 to 3 missing), Far behind (4 or more), with a hatched overlay where a
  * sign-off request is open (an overlay, never a state). An empty band other than Complete is not drawn (Short is empty in the
  * generated data). Complete is neutral ink; every short band is the one amber accent. Counts are printed above each group and each count links to its list. The squares are decorative
@@ -29,10 +29,10 @@ const swatchStyle = (st: GraduationStage): React.CSSProperties => ({ background:
 const HATCH = "repeating-linear-gradient(135deg, var(--background) 0 1.5px, transparent 1.5px 4.5px)"
 // Getters, so each hint follows the program's noun when it changes (Settings > Naming).
 export const STAGE_HINT: Record<GraduationStage, string> = {
-  get complete() { return `Every required ${skillNoun()} achieved` },
-  get "one-short"() { return `Exactly one required ${skillNoun()} not achieved` },
-  get short() { return `Two to ${FAR_BEHIND_MISSING - 1} required ${skillNounPlural()} not achieved` },
-  get far() { return `${FAR_BEHIND_MISSING} or more required ${skillNounPlural()} not achieved` },
+  get complete() { return `Every assigned ${skillNoun()} achieved` },
+  get "one-short"() { return `Exactly one assigned ${skillNoun()} not achieved` },
+  get short() { return `Two to ${FAR_BEHIND_MISSING - 1} assigned ${skillNounPlural()} not achieved` },
+  get far() { return `${FAR_BEHIND_MISSING} or more assigned ${skillNounPlural()} not achieved` },
 }
 /** Bands drawn: Complete always, the others only when someone is in them. */
 export const shownBands = (m: Readiness): GraduationStage[] => GRADUATION_STAGES.filter((st) => st === "complete" || m.graduation[st] > 0)
@@ -67,7 +67,7 @@ export function ReadinessPipeline({ m, demoPartial = false }: { m: Readiness; de
   return (
     <Card className="py-0" data-region="pipeline">
       <CardContent className="flex flex-col gap-4 py-4">
-        <h2 className={TYPE.card}>{`Graduation readiness, ${cohort}`}</h2>
+        <h2 className={TYPE.card}>{`Readiness, ${cohort}`}</h2>
         {/* ONE hero (design review 2026-10-30, others #7): the director's act is to verify, so "ready to verify" leads, stated
             against the cohort ("29 of 38"). Complete is a band of the chart under it, set smaller, not a second hero. */}
         <div className="flex flex-col gap-1" data-hero>

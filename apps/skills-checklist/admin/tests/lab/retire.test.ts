@@ -28,7 +28,7 @@ describe("deactivate, new list, delete (SL-11, CALL 10-09)", () => {
   })
 
   it("counts students who have it now the same way Attainment does", () => {
-    const m = buildAttainment(seed, EMPTY_SCOPE)
+    const m = buildAttainment(seed, EMPTY_SCOPE, undefined, { basis: "thisTerm" })
     const k = m.skills.find((s) => s.skillId === id)
     expect(i.requiredFor).toBe(k ? k.total : 0)
   })

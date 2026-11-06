@@ -1,4 +1,5 @@
 import type { Result } from "./admin-actions"
+import { answersQualify, engineRuleOf, outcomeQualifiesOn, qualifiesOn, scoresQualify } from "./rules"
 import { needsLevels, needsQuestions } from "./config"
 import { nextIdFor, OUTCOME_WORD } from "./outcomes"
 import type { RuleIssue } from "./rules"
@@ -13,8 +14,13 @@ import type { ConcernFlag, Evaluation, EvaluationDetail, Outcome, Person, Skill,
  */
 
 export const FEEDBACK_MAX = 2000
-/** The scored model has no scale in the configuration, so the form uses 1 to 5. [INFER] */
+/** A scored skill saved before the scale was configurable reads 1 to 5 [INFER]. A saved scale always wins [REQ SC-07]. */
 export const SCORE_MAX = 5
+/** The top of a scored skill's scale, as the program configured it [REQ SC-07]. */
+export const scoreMaxOf = (skill: Pick<Skill, "config">): number => {
+  const top = skill.config?.scaleMax
+  return typeof top === "number" && Number.isInteger(top) && top >= 2 ? top : SCORE_MAX
+}
 
 export const isEvaluatorKind = (p: Person) => p.kind === "preceptor" || p.kind === "lab-instructor" || p.kind === "reviewer" || p.kind === "director"
 
@@ -164,12 +170,14 @@ export function validatePass(s: V2State, input: PassInput): FieldIssue[] {
     if (!skill?.config) continue
     const c = skill.config
     const name = skill.name
-    if (!r.outcome) out.push({ field: fieldIds.outcome(skill.id), message: `Choose an outcome for ${name}: ${outcomeChoices(skill)[0].label}, ${outcomeChoices(skill)[1].label} or Not yet.` })
-    const graded = r.outcome === "met" || r.outcome === "not-met"
+    // The question and scored models have no outcome to choose: the answers or scores decide it (D-L73; Sankalp 11-04, the result derives from the answers).
+    const decided = skill.model === "question" || skill.model === "scored"
+    if (!r.outcome && !decided) out.push({ field: fieldIds.outcome(skill.id), message: `Choose an outcome for ${name}: ${outcomeChoices(skill)[0].label}, ${outcomeChoices(skill)[1].label} or Not yet.` })
+    const graded = r.outcome === "met" || r.outcome === "not-met" || decided
     if (graded && needsQuestions(skill.model)) {
       c.questions.forEach((q, i) => {
         if (skill.model === "question" && (r.answers[i] ?? null) === null) out.push({ field: fieldIds.question(skill.id, i), message: `Answer Yes or No to "${q}" for ${name}.` })
-        if (skill.model === "scored" && (r.scores[i] ?? null) === null) out.push({ field: fieldIds.question(skill.id, i), message: `Give a score from 1 to ${SCORE_MAX} for "${q}" in ${name}.` })
+        if (skill.model === "scored" && (r.scores[i] ?? null) === null) out.push({ field: fieldIds.question(skill.id, i), message: `Give a score from 1 to ${scoreMaxOf(skill)} for "${q}" in ${name}.` })
       })
     }
     if (graded && needsLevels(skill.model, c) && r.levelIndex === null) out.push({ field: fieldIds.level(skill.id), message: `Choose the ${skill.model === "demonstration" ? "level of supervision you observed" : "overall supervision rating"} for ${name}.` })
@@ -185,15 +193,40 @@ export function validatePass(s: V2State, input: PassInput): FieldIssue[] {
   return out
 }
 
+/** The outcome a question skill's answers give, under its SC-05 rule. Every question is answered by the time this runs (validatePass). */
+export function outcomeFromAnswers(skill: Skill, answers: SkillResponse["answers"]): "met" | "not-met" {
+  return answersQualify(skill.config?.questionRule ?? { kind: "all" }, answers) ? "met" : "not-met"
+}
+
 /** A note beside an answer when it points away from the outcome chosen. Never blocks; Met is the evaluator's call. */
 export function criteriaNote(skill: Skill, r: SkillResponse): string | null {
   const c = skill.config
-  if (!c || r.outcome !== "met") return null
+  // Whichever label qualifies [REQ SC-03]: the note is about the answer that would count.
+  if (!c || !r.outcome || !outcomeQualifiesOn(skill, r.outcome)) return null
   const noes = r.answers.filter((a) => a === "no").length
   if (noes > 0) return `You answered No to ${noes} ${noes === 1 ? "question" : "questions"}. Met is still your call.`
   const min = c.achievement.minLevelIndex
-  if (min !== null && r.levelIndex !== null && r.levelIndex < min && needsLevels(skill.model, c)) return `This level is below the minimum the program counts (${c.levels[min]}). The evaluation is recorded as Met and is left out of the achievement rule.`
+  if (min !== null && r.levelIndex !== null && r.levelIndex < min && needsLevels(skill.model, c)) return `This level is below the minimum the program counts (${c.levels[min]}). The evaluation is recorded as ${outcomeChoices(skill).find((o) => o.value === r.outcome)?.label ?? "Met"} and is left out of the achievement rule.`
   return null
+}
+
+/**
+ * What the evaluator is told about a submitted evaluation, in the program's words: the label they chose, and whether it counts. The engine's own test, so the receipt and the record cannot
+ * disagree [REQ EV-07, SC-03, AE-02]: which label qualifies is the program's, and a level below the one that counts is left out (`runRule`).
+ */
+export function recordedOutcome(skill: Skill | null | undefined, e: Pick<Evaluation, "outcome" | "versions" | "levelIndex">): { word: string; counts: boolean; tone: Outcome } {
+  const rule = skill ? engineRuleOf(skill) : null
+  const levelOk = !rule || rule.minLevelIndex === null || e.levelIndex === undefined || e.levelIndex >= rule.minLevelIndex
+  const counts = !!rule && e.outcome !== "not-yet" && levelOk && qualifiesOn(rule, e as Evaluation)
+  if (skill?.model === "binary" && e.outcome !== "not-yet") return { word: outcomeChoices(skill).find((o) => o.value === e.outcome)?.label ?? OUTCOME_WORD[e.outcome], counts, tone: counts ? "met" : "not-met" }
+  return { word: e.outcome === "not-met" ? "Did not meet criteria" : OUTCOME_WORD[e.outcome], counts, tone: e.outcome }
+}
+
+/** The outcome a scored skill's scores give, under its SC-07 rule. Every question is scored by the time this runs (validatePass). */
+export function outcomeFromScores(skill: Skill, scores: SkillResponse["scores"]): "met" | "not-met" {
+  const rule = skill.config?.scoredRule
+  // A rule is required to save a scored skill; a seeded one with none falls back to a 60 percent average, the earlier starting value [INFER].
+  return scoresQualify(rule ?? { kind: "average", value: Math.ceil(scoreMaxOf(skill) * 0.6) }, scores) ? "met" : "not-met"
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -238,6 +271,8 @@ export function submitEvaluation(s: V2State, input: PassInput, at: string): Resu
     const c = skill.config as NonNullable<Skill["config"]>
     const entry = s.logEntries.filter((e) => (x.entryIds ?? []).includes(e.id) && e.skillId === skill.id).sort((a, b) => (a.at < b.at ? 1 : -1))[0]
     const holds = !!c.approvalRequired
+    // Never the evaluator's word on the question model: all Yes with Not met cannot be recorded (D-L73).
+    const outcome: Outcome = skill.model === "question" ? outcomeFromAnswers(skill, r.answers) : skill.model === "scored" ? outcomeFromScores(skill, r.scores) : (r.outcome as Outcome)
     const id = nextIdFor("ev-v2", [...evIds, ...created.map((e) => e.id)])
     const detail: EvaluationDetail = {
       feedback: r.feedback.trim(),
@@ -254,11 +289,14 @@ export function submitEvaluation(s: V2State, input: PassInput, at: string): Resu
       setting: entry?.setting ?? "clinical",
       date: at,
       status: holds ? "awaiting-approval" : "counted",
-      outcome: r.outcome as Outcome,
+      outcome,
       currentVersion: 1,
-      versions: [{ version: 1, outcome: r.outcome as Outcome, at, by: input.evaluatorId, reason: null, detail }],
+      versions: [{ version: 1, outcome, at, by: input.evaluatorId, reason: null, detail }],
       submissionId: x.id,
       ...((entry?.setting ?? "clinical") === "clinical" && entry?.clinicalSetting ? { clinicalSetting: entry.clinicalSetting } : {}),
+      // Where and on which course it was performed, when the student's request says so [REQ SH-06, RP-08].
+      ...(entry?.location ? { location: entry.location } : {}),
+      ...(entry?.sitting?.course ? { courseId: entry.sitting.course } : {}),
       ...(needsLevels(skill.model, c) && r.levelIndex !== null ? { levelIndex: r.levelIndex } : {}),
     }
     created.push(ev)
@@ -267,7 +305,7 @@ export function submitEvaluation(s: V2State, input: PassInput, at: string): Resu
   state = { ...state, evaluations: [...state.evaluations, ...created] }
   for (const ev of created) {
     const skill = skills.find((k) => k.id === ev.skillId) as Skill
-    state = appendAudit(state, input.evaluatorId, holds(skill) ? "Submitted an evaluation, held for approval" : "Submitted an evaluation", `${skill.name} for ${studentNameOf(s, x.studentId)}: ${OUTCOME_WORD[ev.outcome]}`, at)
+    state = appendAudit(state, input.evaluatorId, holds(skill) ? "Submitted an evaluation, held for approval" : "Submitted an evaluation", `${skill.name} for ${studentNameOf(s, x.studentId)}: ${skill.model === "binary" ? recordedOutcome(skill, ev).word : OUTCOME_WORD[ev.outcome]}`, at)
   }
   let concernId: string | null = null
   if (input.concern.raised) {

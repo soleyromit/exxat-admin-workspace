@@ -8,7 +8,7 @@
  * Feedback (EV-06): once a cell has a result, a small comment button beside it opens that result's feedback; a skill that
  * requires feedback says so under its column name, and Save names any result still missing it.
  */
-import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
@@ -68,7 +68,7 @@ export function LabInstructorLabBatchGridA() {
                           <span className="line-clamp-2 text-xs font-medium">{k.name}</span>
                           <FeedbackRequiredCue skill={k} />
                         </span>
-                        <Button type="button" variant="ghost" size="xs" onClick={() => g.fillColumn(k.id)} aria-label={`Mark every visible student ${g.labels(k.id).met} for ${k.name}`}>All</Button>
+                        <Button type="button" variant="ghost" size="xs" onClick={() => g.fillColumn(k.id)} aria-label={`Mark every visible student ${inSentence(g.labels(k.id).qualifying)} for ${k.name}`}>{`All ${inSentence(g.labels(k.id).qualifying)}`}</Button>
                       </div>
                     </TableHead>
                   ))}
@@ -95,7 +95,7 @@ export function LabInstructorLabBatchGridA() {
                             ) : (
                               <div className="flex items-center gap-1">
                                 <Button type="button" variant={m ? "outline" : "ghost"} size="sm" className={cn("min-w-0 flex-1 justify-start gap-1.5 max-sm:min-h-(--control-height-touch)", !m && "text-muted-foreground")} onClick={() => g.setMark(r.id, k.id, nextMark(m))} aria-label={`${k.name}, ${r.name}: ${word}. Press to change.`}>
-                                  <i className={m === "met" ? "fa-solid fa-circle-check" : m === "not-met" ? "fa-light fa-circle-xmark" : "fa-light fa-circle-dashed"} aria-hidden="true" />
+                                  <i className={m === l.qualifyingValue ? "fa-solid fa-circle-check" : m ? "fa-light fa-circle-xmark" : "fa-light fa-circle-dashed"} aria-hidden="true" />
                                   {m ? word : null}
                                 </Button>
                                 {m ? <LabFeedback g={g} row={r} skill={k} /> : null}

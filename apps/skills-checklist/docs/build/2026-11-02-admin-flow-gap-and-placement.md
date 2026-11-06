@@ -54,7 +54,7 @@ Note, Angular and React: on the transcript the concern is raised from Romit's mi
 | 1 | Data seam: split `LabRule` into `ProgramSettings` (model, labels, levels, `minLevelIndex`, scale and scored rule, question rule, distinct evaluators, student fields, feedback, self-evaluation, approval, roles, check-off) and per-skill `SkillSettings` (`need`, `levelMinimums`, `settingMinimums`, questions); `resolveRule()` returns today's `LabRule`, so `runRule` and every student and dashboard figure stay unchanged | Indirectly (same fields) | Tests first: resolved rule equals today's rule for the seeded skills |
 | 2 | Evaluation settings page (program level) from the existing sections: `ModelSection`, `OutcomesSection` with `CountsFromField` (D-L27), `SignOffSection` (D-L26), `GroupCheckOffSection`, `ConfigSection` and the preview panel | Yes, reused as is | "How many times" becomes one number "Times needed for each skill" (the program's own, typed; no shipped default) reusing the D-L28 sentence ("needs [3] evaluations rated independent") |
 | 3 | Library Times needed column, inline number edit, bulk set for selected rows; Configured counts follow | No | Replaces Setup board C as the "work through" view; IM-10 progress = skills without a number |
-| 4 | Per-skill override: Configure A/B kept as "Change for this skill" (any section differs from the program, marked "Differs from program settings") | Yes, the same steps in skill scope | Keeps SC-14, SC-15, SC-16 per skill (D1) |
+| 4 | (Replaced 2026-11-05 by editing in the panel, D-L91.) Per-skill override: Configure A/B kept as "Change for this skill" (any section differs from the program, marked "Differs from program settings") | Yes, the same steps in skill scope | Keeps SC-14, SC-15, SC-16 per skill (D1) |
 | 5 | Program settings change impact: reuse Rule change impact A/B with named students before save | No (reuses `impact.tsx`) | Program-wide change hits every skill; needs the impact preview most |
 | 6 | Course mapping B longitudinal (terms as columns), make skill-first the default with a toggle | No | CM-02, CM-06 |
 | 7 | Rename and level words once Romit answers D3, D4 | No | Copy only, through `labels.ts` and `terms.ts` |
@@ -79,7 +79,7 @@ Ledger drift seen: D-L20 is used twice in 3b (admin IA and My requests search). 
 ## Open questions for Romit
 
 1. Placement: take option 2 (one Skills module, settings on their own page, times needed in the library) to Sankalp as the point of view? (OD-02 stays open.)
-2. Per-skill override: keep "Change for this skill" (needed for REQ SC-14 to SC-16), or hide it from the Wednesday walkthrough?
+2. (Closed 2026-11-05: the button is replaced by editing in the panel, D-L91.) Per-skill override: keep "Change for this skill" (needed for REQ SC-14 to SC-16), or hide it from the Wednesday walkthrough?
 3. Name for Groups of skills: "Requirements" collides with the glossary; take it, or propose another?
 4. Mapping levels: two (Mandatory, Recommended) plus unmapped, or keep Optional?
 5. Times needed: should the program settings carry the number (typed by the program), or should the matrix start empty?

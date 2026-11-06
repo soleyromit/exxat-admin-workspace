@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createSeed } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed } from "@/lib/v2/seed"
 import { isConfigured } from "@/lib/v2/population"
 import { emptyRule, fromV2, validateRule, type LabRule } from "@/lib/lab/configure"
 import { buildLibrary } from "@/lib/lab/library"
@@ -10,11 +10,17 @@ import {
   programSettingsOf,
   resolveRule,
   saveProgramSettings,
+  configurationOf,
   setTimesNeeded,
+  timesCellOf,
   timesRows,
 } from "@/lib/lab/program-settings"
 
-const seed = createSeed()
+/** D-L72: the seed now holds saved program settings. These tests are about a program before its first save, so they start from one. */
+const seed = (() => {
+  const s = createSeed()
+  return { ...s, programSettings: null, skills: s.skills.map(({ edited: _own, ...k }) => k) }
+})()
 const opts = { at: "2026-11-02T10:00:00Z", byId: "adm-ross" }
 
 /** A complete levels program: three levels, independent counts, 3 times, preceptors and faculty sign. */
@@ -57,7 +63,7 @@ describe("program evaluation settings (Proposed 2026-11-02)", () => {
     expect(res.ok).toBe(true)
     if (!res.ok) return
     const { state, plan } = res.result
-    expect(plan.newlyConfigured).toBe(before)
+    expect(plan.change.length + plan.unchanged.length).toBe(ids.length)
     expect(notConfiguredIds(state, ids)).toEqual([])
     expect(programSettingsOf(state)?.rule.need).toBe(3)
     // A skill configured before keeps its own number.
@@ -66,7 +72,7 @@ describe("program evaluation settings (Proposed 2026-11-02)", () => {
     expect(fromV2(after).need).toBe(fromV2(k).need)
   })
 
-  it("keeps skills with settings of their own on a later save unless they are included", () => {
+  it("keeps skills with settings of their own on a later save, always (D-L72, D0 rule 7)", () => {
     const ids = libraryIds()
     const first = saveProgramSettings(seed, levelsProgram(3), { ...opts, only: ids })
     if (!first.ok) throw new Error("first save")
@@ -74,11 +80,10 @@ describe("program evaluation settings (Proposed 2026-11-02)", () => {
     // One skill changed on its own (approval on).
     const one = ids[0]!
     const k = s1.skills.find((x) => x.id === one)!
-    const s2 = { ...s1, skills: s1.skills.map((x) => (x.id === one ? { ...x, config: { ...x.config!, approvalRequired: true } } : x)) }
+    const s2 = { ...s1, skills: s1.skills.map((x) => (x.id === one ? { ...x, edited: true, config: { ...x.config!, approvalRequired: true } } : x)) }
     expect(differsFromProgram(fromV2(s2.skills.find((x) => x.id === one)!), levelsProgram(3))).toContain("approvalRequired")
     const next = { ...levelsProgram(3), feedbackRequired: true }
-    expect(planProgramApply(s2, next, { only: ids }).own).toEqual([k.id])
-    expect(planProgramApply(s2, next, { only: ids, includeOwn: true }).own).toEqual([])
+    expect(planProgramApply(s2, next, { only: ids }).edited).toEqual([k.id])
   })
 
   it("refuses settings that are not complete, and a question model without questions blocks each skill with the reason", () => {
@@ -95,12 +100,33 @@ describe("program evaluation settings (Proposed 2026-11-02)", () => {
     const other = seed.skills.find((x) => isConfigured(x) && x.id !== k.id)!
     expect(r.state.skills.find((x) => x.id === other.id)).toBe(other)
     const nc = seed.skills.find((x) => !isConfigured(x))!
-    expect(setTimesNeeded(seed, nc.id, 2, opts)).toEqual({ ok: false, error: "Set the evaluation settings first." })
+    // D-L92: Times needed is always editable, on a skill Not configured too; it stays Not configured.
+    const held = setTimesNeeded(seed, nc.id, 2, opts)
+    if (!held.ok) throw new Error(held.error)
+    expect(timesCellOf(held.state, nc.id).value).toBe(2)
+    expect(configurationOf(held.state, held.state.skills.find((x) => x.id === nc.id)!)).toBe("not-configured")
     expect(setTimesNeeded(seed, k.id, 0, opts).ok).toBe(false)
   })
 
   it("lists times rows in library order, inactive skills left out", () => {
     const rows = timesRows(seed, buildLibrary(seed))
     expect(rows.length).toBe(libraryIds().filter((id) => seed.skills.some((k) => k.id === id)).length)
+  })
+})
+
+describe("the save dialog's rows add up (map D3, S14, 2026-11-05)", () => {
+  it("a skill that keeps its own questions is on that row only, not also on Already on these settings", () => {
+    const program: LabRule = { ...levelsProgram(), model: "question", levels: [], questions: ["One", "Two", "Three"], questionRule: { kind: "all" } }
+    const first = saveProgramSettings(seed, program, opts)
+    if (!first.ok) throw new Error("first save failed")
+    const own = first.result.state.skills.find((k) => !k.edited && k.config?.questions.length === 3)!
+    const s1 = { ...first.result.state, skills: first.result.state.skills.map((k) => (k.id === own.id ? { ...k, config: { ...k.config!, questions: ["Own hygiene check", "Two", "Three"] } } : k)) }
+    const next: LabRule = { ...program, questions: ["One", "Two", "Three", "Four"] }
+    const plan = planProgramApply(s1, next)
+    expect(plan.ownQuestions).toBeGreaterThan(0)
+    expect(plan.unchanged).toContain(own.id)
+    // Adding a question changes every skill on the program's set, so whatever stands still keeps its own and is named on that row.
+    expect(plan.alreadyOnSettings).toBe(0)
+    expect(plan.programQuestions + plan.ownQuestions).toBe(plan.change.length + plan.unchanged.length)
   })
 })

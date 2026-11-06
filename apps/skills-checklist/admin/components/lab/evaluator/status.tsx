@@ -15,7 +15,7 @@ import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import type { EvRequest, ReceiptLine } from "@/lib/lab/evaluator"
 
 const HEADER = "px-0 pt-0 pb-0 lg:px-0 lg:pt-0 lg:pb-0"
-const TONE: Record<ReceiptLine["status"], "neutral" | "warning"> = { counts: "neutral", waits: "warning", queued: "neutral", feedback: "neutral" }
+const TONE: Record<ReceiptLine["status"], "neutral" | "warning"> = { counts: "neutral", waits: "warning", queued: "neutral", feedback: "neutral", "not-counted": "neutral" }
 
 export function Receipt({ req, lines, offline }: { req: EvRequest; lines: ReceiptLine[]; offline: boolean }) {
   const waits = lines.filter((l) => l.status === "waits").length

@@ -340,6 +340,8 @@ DOCUMENTED_HAND_ROLLS = {
     "components/lab/reviewer/review-parts.tsx",
     "components/lab/configure/impact.tsx",
     "components/lab/configure/bulk-apply.tsx",
+    # Levels that count: a short bounded form grid, one DS Checkbox per row. 2026-11-06.
+    "components/lab/configure/skill-sections.tsx",
     # Import review: its Dialog splits, merges or adds a skill line; the file-type ACCEPT
     # list (.csv/.xlsx) trips the export-drawer heuristic, but nothing is exported. 2026-10-30.
     "components/lab/import/import-parts.tsx",

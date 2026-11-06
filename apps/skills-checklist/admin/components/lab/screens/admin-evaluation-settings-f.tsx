@@ -104,7 +104,7 @@ function ModelEditor({ p }: { p: ContextPage }) {
   const err = p.m.showErrors ? p.m.issues.find((i) => i.field === "cfg-model")?.message : undefined
   return (
     <div className="flex flex-col gap-2">
-      <RadioGroup id="cfg-model" tabIndex={-1} value={p.m.rule.model ?? ""} onValueChange={onValue} aria-label={MODEL_STEP_LABEL} aria-invalid={err ? true : undefined} aria-describedby={err ? "cfg-model-error" : undefined} className="grid gap-2 outline-none">
+      <RadioGroup id="cfg-model" value={p.m.rule.model ?? ""} onValueChange={onValue} aria-label={MODEL_STEP_LABEL} aria-invalid={err ? true : undefined} aria-describedby={err ? "cfg-model-error" : undefined} className="grid gap-2 outline-none">
         {LAB_MODELS.map((x) => (
           <div key={x} className="flex items-center gap-3">
             <RadioGroupItem id={`f-model-${x}`} value={x} />
@@ -188,7 +188,7 @@ function EvaluatorForm({ p, region, setRegion }: { p: ContextPage; region: Regio
               {LAB_MODEL_LABEL[r.model]}
             </span>
           </EditRegion>
-          <EditRegion id="criterion" label={CRITERIA_LABEL} wide warn={failsOn(m, CRITERIA_FIELDS.filter((f) => f !== "cfg-qrule" && f !== "cfg-srule"))} editor={<OutcomesSection {...props} />} {...ctl("criterion")} className="min-h-24">
+          <EditRegion id="criterion" label={CRITERIA_LABEL} wide warn={failsOn(m, CRITERIA_FIELDS)} editor={<OutcomesSection {...props} />} {...ctl("criterion")} className="min-h-24">
             <DrawnJudgement rule={r} />
           </EditRegion>
         </>
@@ -207,7 +207,7 @@ function EvaluatorForm({ p, region, setRegion }: { p: ContextPage; region: Regio
         </span>
       </EditRegion>
       {r.model ? (
-        <EditRegion id="checkoff" label="Group check-off" editor={<GroupCheckOffSection rule={r} setRule={m.setRule} bare />} {...ctl("checkoff")}>
+        <EditRegion id="checkoff" label="Group check-off" editor={<GroupCheckOffSection rule={r} setRule={m.setRule} />} {...ctl("checkoff")}>
           <span className="flex items-center gap-2 text-sm">
             <i className="fa-light fa-users" aria-hidden="true" />
             <span className="text-foreground">Group check-off</span>

@@ -21,7 +21,14 @@ Order: `skills-module-context` → this skill → (Romit confirms) → `ds-adopt
 6. **Mobbin**: run searches by job type (needs authenticated Mobbin MCP). If unavailable, say so — do not invent references.
 7. **Write the contract** as a DRAFT to `docs/build/contracts/_draft-<S-id>-<surface>.md` from `docs/build/02-design-contract-template.md`. The code-gate hook ignores `_draft-` files. Only after Romit confirms, rename it (drop the `_draft-` prefix) — that is the unlock.
 8. **Spawn** `skills-requirements-auditor` (claims vs source) and `skills-ux-critic` (multi-hat critique) on the contract. Paste their literal verdicts.
-9. End with: *Contract written to <path> — review or confirm.* Do not edit app code before confirmation.
+9. **Check it:** `node .claude/hooks/skills-contract-check.mjs <contract>` must print VALID. Paste the output. A page contract needs the single job, primary action, a table of every other action with where it lives and why, each task as entry, steps, finish, landing, states, what must not be on the page, and task test IDs.
+10. End with: *Contract written to <path> — review or confirm.* Do not edit app code before confirmation.
+
+## Admin pages: the map is the spec
+Section D of `docs/build/2026-11-04-admin-workflow-map.md` is the page spec for Library, Edit panel, Bulk edit, Add, Evaluation settings, Per-skill settings, Categories and tags, Skill lists, Assign and Course mapping. Do not rewrite it in the contract. Add `Page spec: docs/build/2026-11-04-admin-workflow-map.md#D<n>`, the section F task IDs, and only what `node .claude/hooks/skills-contract-check.mjs --needs` lists. The gate rejects restatement. File-to-page mapping: `docs/build/contracts/_page-registry.json`.
+
+## After the build
+Done means `docs/build/done-definition.md`, not a passing contract.
 
 ## Reject the contract if
 A state is "TBD" · an OD is treated as decided · the only reference is the prototype · acceptance tests missing · copy uses colloquialisms or em-dashes · two filled primary CTAs.

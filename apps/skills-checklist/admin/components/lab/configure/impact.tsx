@@ -2,18 +2,14 @@
 
 /**
  * Rule-change impact pieces for Check and the rule impact pages [REQ SC-19, AE-02; strategy 03 section 9]: one headline figure,
- * the before and after counts, the students grouped by the move they make with what they share said ONCE (J7), and the open
- * choice of how evidence already held is treated (PENDING-ROMIT AE-02 versus option B: nothing preselected, marked "Decision
- * pending"). Check itself and the receipt after "Save configuration" live in ./check.tsx (decisions D-X31, D-X32).
+ * the before and after counts, and the students grouped by the move they make with what they share said ONCE (J7). A rule change
+ * re-applies to evidence held [REQ AE-02]; "Apply to new evidence only" is not offered (D-L78). Check itself and the receipt after "Save configuration" live in ./check.tsx (decisions D-X31, D-X32).
  */
 import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
-import { FieldError, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
-import { Label } from "@exxatdesignux/ui/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import {
   attemptLine,
@@ -27,7 +23,6 @@ import {
   type Impact,
   type ImpactGroup,
   type LabRule,
-  type PublishMode,
 } from "@/lib/lab/configure"
 import { studentHref } from "@/lib/lab/dashboard"
 import { EMPTY_SCOPE } from "@/lib/lab/scope"
@@ -42,9 +37,6 @@ const NONE = fromV2({ model: null, config: null })
 export function useLiveImpact(state: V2State, skill: Skill | undefined, current: LabRule | null, rule: LabRule): Impact | null {
   return React.useMemo(() => (skill && rule.model ? computeImpact(state, skill.id, current ?? NONE, rule, "reapply") : null), [state, skill, current, rule])
 }
-
-/** The evidence choice is asked only when a saved rule changes who qualifies and someone has evidence [REQ AE-02, AE-06]. */
-export const needsEvidenceChoice = (current: LabRule | null, impact: Impact | null) => !!current && !!impact?.ruleChanged && impact.withEvidence > 0
 
 /** One figure (wizard budget): the headline above the table. */
 export function impactHeadline(current: LabRule | null, impact: Impact | null): string {
@@ -189,43 +181,6 @@ function ImpactGroupBlock({ g, expanded, counted }: { g: ImpactGroup; expanded: 
     </section>
   )
 }
-
-/** The open choice. Neither option is preselected; saving asks for it explicitly. */
-export function EvidenceChoice({ value, onChange, error }: { value: PublishMode | null; onChange: (m: PublishMode) => void; error?: string }) {
-  // The open decision (D-X27) is a lab note only (screens.json); the product shows the two options, never a "pending" label.
-  return (
-    <FieldSet className="flex flex-col gap-3" data-pending-choice>
-      <FieldLegend variant="label" className="mb-0">
-        Evidence already held
-      </FieldLegend>
-      <RadioGroup
-        id="cfg-mode"
-        tabIndex={-1}
-        value={value ?? ""}
-        onValueChange={(v) => onChange(v as PublishMode)}
-        className="flex flex-col gap-3 outline-none"
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? "cfg-mode-error" : undefined}
-      >
-        <div className="flex items-start gap-2">
-          <RadioGroupItem id="cfg-mode-reapply" value="reapply" className="mt-0.5" />
-          <div className="flex flex-col">
-            <Label htmlFor="cfg-mode-reapply">Re-evaluate it now</Label>
-          </div>
-        </div>
-        <div className="flex items-start gap-2">
-          <RadioGroupItem id="cfg-mode-new" value="new-only" className="mt-0.5" />
-          <div className="flex flex-col">
-            <Label htmlFor="cfg-mode-new">Apply to new evidence only</Label>
-          </div>
-        </div>
-      </RadioGroup>
-      {error ? <FieldError id="cfg-mode-error">{error}</FieldError> : null}
-    </FieldSet>
-  )
-}
-
-export const EVIDENCE_CHOICE_MISSING = "Choose how evidence already held is treated."
 
 /**
  * Impact for one skill: headline, then counts or people first. `lead="counts"` opens on the before and after table with the

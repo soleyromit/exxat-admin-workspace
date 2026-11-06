@@ -60,6 +60,7 @@ describe("answer step: format first, one aligned list, icon-only Remove", () => 
   it("offers the scale top as a DS select from 2 to 10 on one sentence line", () => {
     render(<OutcomesSection {...props(RULES.scored)} />)
     expect(document.getElementById("cfg-scale")?.getAttribute("role")).toBe("combobox")
+    expect(screen.getByText("Counts when")).toBeInTheDocument()
   })
 })
 
@@ -70,7 +71,8 @@ describe("when it counts: compact rule sentences and a worked example that match
       expect(screen.getByText("The student needs")).toBeInTheDocument()
       expect(document.getElementById("cfg-need")).not.toBeNull()
       expect(screen.getByRole("button", { name: "Add a condition" }).getAttribute("data-variant")).toBe("ghost")
-      if (model === "scored") expect(screen.getByText("Counts when")).toBeInTheDocument()
+      // "Counts when" sits with the questions now (D-L52).
+      expect(screen.queryByText("Counts when")).toBeNull()
       expect(screen.queryByRole("group", { name: /^What this means/ })).toBeNull()
       expect(container.textContent).not.toMatch(/—/)
     })

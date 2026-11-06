@@ -24,6 +24,11 @@ export interface FlowStep {
   variants: Record<string, string>
   /** Extra URL params the step needs per set (for example the configure check step). */
   params?: Record<string, Record<string, string>>
+  /**
+   * On a walkthrough: the params that alone say a page is on this step, with any value. The step's other params stay what a hop to it pins: My progress opens a course with `?course=`, and only
+   * Next carries the sample skill.
+   */
+  matchOn?: string[]
   side?: boolean
   /** For a side step: the main step it hangs off. */
   after?: string
@@ -46,6 +51,8 @@ export interface FlowDef {
    * screen-to-flow inference never see it, so adding it changes no existing link.
    */
   walkthrough?: boolean
+  /** The walkthrough that continues from this one: Next on the last stop opens its first stop, and Back from there returns (D-L67). */
+  then?: string
 }
 
 const ALL_FLOWS = registry.flows as FlowDef[]

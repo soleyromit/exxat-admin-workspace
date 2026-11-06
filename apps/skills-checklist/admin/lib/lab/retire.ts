@@ -43,9 +43,9 @@ export function retireImpact(state: V2State, skillId: string, today: string = DE
   const k = skillById(state, skillId)
   if (!k) return null
   const evs = evalsOfSkill(state, skillId)
-  const pop = populationRows(state, EMPTY_SCOPE, today)
+  const pop = populationRows(state, EMPTY_SCOPE, today, { set: "term" })
   const requiredFor = pop.rows.filter((r) => r.requiredIds.includes(skillId)).length
-  const courses = new Set(state.mappings.filter((m) => m.skillId === skillId && m.level !== "not-expected").map((m) => m.courseId)).size
+  const courses = new Set(state.mappings.filter((m) => m.skillId === skillId && (m.level === "mandatory" || m.level === "recommended")).map((m) => m.courseId)).size
   const openRequests = state.submissions.filter((x) => OPEN.has(x.status) && x.skillIds.includes(skillId)).length
   const evidence = evs.length
   const blocked = deleteBlockOf(trackedAgainst(state, skillId))
@@ -94,7 +94,7 @@ export function defaultSkillId(state: V2State): string {
 /** A skill nothing has been tracked against (for showing delete enabled); a mapped one first, so the unmap list shows. */
 export function deletableSkillId(state: V2State): string | null {
   const free = state.skills.filter((k) => trackedAgainst(state, k.id).total === 0)
-  const mapped = free.find((k) => state.mappings.some((m) => m.skillId === k.id && m.level !== "not-expected"))
+  const mapped = free.find((k) => state.mappings.some((m) => m.skillId === k.id && (m.level === "mandatory" || m.level === "recommended")))
   return (mapped ?? free[0])?.id ?? null
 }
 

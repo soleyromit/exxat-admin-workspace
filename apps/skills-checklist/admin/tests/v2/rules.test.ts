@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { defaultConfig, rebuildForModel } from "@/lib/v2/config"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed, IDS } from "@/lib/v2/seed"
 import { qualifiedEvaluators, simulationShare, strengthHint, validateDraft, WIZARD_STEPS } from "@/lib/v2/rules"
 import type { SkillConfig, V2State } from "@/lib/v2/types"
 

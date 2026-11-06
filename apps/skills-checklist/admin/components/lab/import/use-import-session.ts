@@ -6,15 +6,15 @@
  *
  * The file goes to the program's default list unless the admin changes it (skill-setup-journey 02, J1): nothing blocks the drop.
  * Demo states in the URL: ?state=empty | reading | failed | review | clear | large | done (the lab bar's Scenario menu sets them).
- * ?source=paste reads sessionStorage "lab:import:paste" ({ text, category }) written by add a skill, paste several.
+ * ?source=paste reads sessionStorage "lab:import:paste" ({ text, category }) written by add several.
  * The window event "lab:reset" (lab bar, Reset edits) clears the import.
  */
 import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
-import { skillNounPlural } from "@/lib/lab/terms"
+import { skillListNoun } from "@/lib/lab/terms"
 import {
-  DEFAULT_LIST,
+  LIBRARY_TARGET,
   NEW_LIBRARY,
   PASTE_KEY,
   SAMPLE_FILE_NAME,
@@ -66,7 +66,7 @@ export function useImportSession() {
   const [fileNames, setFileNames] = React.useState<string[]>([])
   /** Pasted or custom text; null means the sample file for `scale`. */
   const [sourceText, setSourceText] = React.useState<string | null>(null)
-  const [target, setTarget] = React.useState<string>(DEFAULT_LIST)
+  const [target, setTarget] = React.useState<string>(LIBRARY_TARGET)
   const [newLibraryName, setNewLibraryName] = React.useState("")
   const [batchName, setBatchName] = React.useState("")
   const [decisions, setDecisions] = React.useState<Decisions>({})
@@ -79,13 +79,13 @@ export function useImportSession() {
   const [rowDescriptions, setRowDescriptions] = React.useState<Record<string, string>>({})
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const targets = React.useMemo(() => importTargets(state.skills), [state.skills])
+  const targets = React.useMemo(() => [{ id: LIBRARY_TARGET, label: "The library", count: state.skills.length }, ...importTargets(state.skills)], [state.skills])
   const library: LibrarySkill[] = React.useMemo(
-    () => (target && target !== NEW_LIBRARY ? state.skills.filter((k) => k.specialty === target).map((k) => ({ id: k.id, name: k.name, configured: k.configured })) : []),
+    () => (target && target !== NEW_LIBRARY ? state.skills.filter((k) => target === LIBRARY_TARGET || k.specialty === target).map((k) => ({ id: k.id, name: k.name, configured: k.configured })) : []),
     [state.skills, target],
   )
   const isNewList = target === NEW_LIBRARY
-  const targetLabel = isNewList ? newLibraryName.trim() || `a new group of ${skillNounPlural()}` : TARGET_LABEL[target] ?? ""
+  const targetLabel = isNewList ? newLibraryName.trim() || `a new ${skillListNoun()}` : target === LIBRARY_TARGET ? "the library" : TARGET_LABEL[target] ?? ""
 
   const text = React.useMemo(() => (phase === "review" || phase === "done" ? sourceText ?? buildSampleText(scale) : ""), [phase, scale, sourceText])
   /** Split, merge and added entries [REQ IM-05], applied over the reading so the file's own lines stay as read. */
@@ -155,7 +155,7 @@ export function useImportSession() {
     setDecisions({})
     setNames({})
     setEdits(NO_EDITS)
-    setTarget(DEFAULT_LIST)
+    setTarget(LIBRARY_TARGET)
     const name = demo === "empty" ? null : SAMPLE_FILE_NAME[big ? "large" : "standard"]
     setFileName(name)
     setFileNames(name ? [name] : [])
@@ -163,7 +163,7 @@ export function useImportSession() {
     setPhase(demo === "clear" || demo === "large" ? "review" : demo === "done" ? "done" : (demo as Phase))
   }, [demo, hydrated])
 
-  // Hand-off from add a skill, paste several: read the pasted text straight away (instant parse, no file).
+  // Hand-off from add several: read the pasted text straight away (instant parse, no file).
   const appliedPaste = React.useRef(false)
   React.useEffect(() => {
     if (!hydrated || !fromPaste || appliedPaste.current) return

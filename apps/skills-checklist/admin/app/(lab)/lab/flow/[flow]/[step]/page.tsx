@@ -2,6 +2,7 @@ import * as React from "react"
 import { notFound, redirect } from "next/navigation"
 import { LabFrame } from "@/components/lab/lab-frame"
 import { FocusFrame } from "@/components/lab/focus-frame"
+import { ProgramScope } from "@/components/lab/setup/new-program-scope"
 import { LabBar } from "@/components/lab/lab-bar"
 import { PlaceholderScreen } from "@/components/lab/placeholder-screen"
 import { VARIANT_COMPONENTS } from "@/components/lab/screens"
@@ -12,7 +13,7 @@ import { effectiveStep } from "@/lib/lab/walkthrough"
 import { screenKey } from "@/lib/lab/screens"
 import { legacySettingsHref } from "@/lib/lab/admin-ia"
 
-/** Screens whose flow steps are titled by the step in the breadcrumb too (groups of skills, assign, map). */
+/** Screens whose flow steps are titled by the step in the breadcrumb too (skill lists, assign, map). */
 const STEP_TITLED_SCREENS = new Set(["admin/lists-cohorts", "admin/course-mapping"])
 
 type Search = Record<string, string | string[] | undefined>
@@ -28,6 +29,19 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
   const sp = await searchParams
   const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined)
   // Present mode shows only the recommended variant of each screen (granola 2026-10-26 item 20).
+  // A walkthrough is always presented: without the param it gets it, and `?variant=` on its URL is ignored (D-L64).
+  if (findFlow(flowId)?.walkthrough && !isPresent(one("present"))) {
+    const q = new URLSearchParams()
+    for (const [k, v] of Object.entries(sp)) if (typeof v === "string") q.set(k, v)
+    q.set("present", "1")
+    redirect(`/lab/flow/${flowId}/${stepId}?${q.toString()}`)
+  }
+  // The Assign stop is gone (D-L106): who a list is assigned to is in its panel on Skill lists. An old link lands there, and the page reads the list it named.
+  if (stepId === "assign" && findFlow(flowId)?.steps.some((s) => s.id === "lists")) {
+    const q = new URLSearchParams()
+    for (const [k, v] of Object.entries(sp)) if (typeof v === "string") q.set(k, v)
+    redirect(`/lab/flow/${flowId}/lists?${q.toString()}`)
+  }
   const present = isPresent(one("present"))
   const requestedSet = present ? findFlow(flowId)?.recommendedSet : one("set")
   const r = resolveStep(flowId, stepId, requestedSet)
@@ -41,7 +55,8 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
     if (moved) redirect(moved)
   }
 
-  const missing = Object.entries(r.params).filter(([k]) => one(k) === undefined)
+  // A step's record is its default: a link naming several (`skills`, the bulk page) has no use for one `skill` on top.
+  const missing = Object.entries(r.params).filter(([k]) => one(k) === undefined && !(k === "skill" && one("skills") !== undefined))
   if (missing.length) {
     const q = new URLSearchParams()
     for (const [k, v] of Object.entries(sp)) if (typeof v === "string") q.set(k, v)
@@ -59,7 +74,8 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
   const variant = (override && r.screen.variants.find((v) => v.id === override)) || r.variant
   const key = `${screenKey(r.screen)}/${variant.id}`
   const Built = variant.file ? VARIANT_COMPONENTS[key] : undefined
-  const navPersona = isPersonaId(r.flow.persona) ? r.flow.persona : persona
+  // A walkthrough can cross roles (student, evaluator, faculty): its breadcrumb names the role of the page, not the flow's first role.
+  const navPersona = !r.flow.walkthrough && isPersonaId(r.flow.persona) ? r.flow.persona : persona
   const bar = (
     <React.Suspense fallback={<div className="h-10 shrink-0 border-b border-border" data-lab-chrome aria-hidden="true" />}>
       <LabBar persona={navPersona} flow={r.flow.id} step={step.id} set={r.set} variant={variant.id} />
@@ -70,16 +86,16 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
   if (variant.frame === "focus") {
     return (
       <FocusFrame bar={bar} page={{ flow: r.flow.id, step: step.id, screen: screenKey(r.screen), variant: variant.id }}>
-        <React.Suspense fallback={null}>{Built ? <Built /> : <PlaceholderScreen screen={r.screen} variant={variant} />}</React.Suspense>
+        <React.Suspense fallback={null}><ProgramScope>{Built ? <Built /> : <PlaceholderScreen screen={r.screen} variant={variant} />}</ProgramScope></React.Suspense>
       </FocusFrame>
     )
   }
   return (
     // A walkthrough names each page by its step, one string per step for the step, the breadcrumb and the page (comprehension
     // audit 2026-10-27); the design flows keep the screen's registry title, except Sankalp's A4 to A6 steps (2026-10-27: the
-    // step, the breadcrumb and the H1 all say the step), where one screen serves two jobs (groups of skills, assign).
+    // step, the breadcrumb and the H1 all say the step), where one screen serves two jobs (skill lists, assign).
     <LabFrame persona={persona} navPersona={navPersona} title={r.flow.walkthrough || STEP_TITLED_SCREENS.has(step.screen) ? step.label : r.screen.title} bar={bar} page={{ flow: r.flow.id, step: step.id, screen: screenKey(r.screen), variant: variant.id }}>
-      <React.Suspense fallback={null}>{Built ? <Built /> : <PlaceholderScreen screen={r.screen} variant={variant} />}</React.Suspense>
+      <React.Suspense fallback={null}><ProgramScope>{Built ? <Built /> : <PlaceholderScreen screen={r.screen} variant={variant} />}</ProgramScope></React.Suspense>
     </LabFrame>
   )
 }

@@ -50,7 +50,7 @@ describe("Assign to someone else", () => {
     expect(approvalsBadgeCount(next)).toBe(badgeBefore - 1)
     expect(after.waitingRequests).toBe(before.waitingRequests + 1)
     // Nothing else moves: achievement, behind and students are unchanged (held evidence never counted, and still does not).
-    expect(after.mandatoryAchieved).toBe(before.mandatoryAchieved)
+    expect(after.listAchieved).toBe(before.listAchieved)
     expect(after.behind).toBe(before.behind)
     expect(after.studentsInScope).toBe(before.studentsInScope)
     // The same holds for a cohort scope that contains the student.

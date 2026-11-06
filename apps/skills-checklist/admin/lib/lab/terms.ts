@@ -45,6 +45,9 @@ const emit = () => listeners.forEach((l) => l())
 export const skillNoun = (): string => current.skillNoun
 export const skillNounPlural = (): string => current.skillNounPlural
 export const getTerms = (): Terms => current
+/** A program's named set of skills (stakeholder review 2026-11-04, D-L58): "skill list", following the program's noun. */
+export const skillListNoun = (): string => `${current.skillNoun} list`
+export const skillListsNoun = (): string => `${current.skillNoun} lists`
 
 /** Blank or missing parts fall back to the default, so a half-filled value never renders as an empty word. */
 function clean(t: Partial<Terms>): Terms {

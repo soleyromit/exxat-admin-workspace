@@ -6,10 +6,11 @@
  * carries the destination and the one primary, Create.
  * Question it tests: when the list arrives as an email, a spreadsheet column or several course files, is paste-and-fix on one
  * page faster than a stepper?
- * The draft is kept in sessionStorage "lab:import:paste" ({ text, category }), the key add a skill (paste several) writes, so a
+ * The draft is kept in sessionStorage "lab:import:paste" ({ text, category }), the key add several writes, so a
  * hand-off or a reload lands on the same list. Demo states as variant A (?state=...): review and large fill the box with the
  * sample checklist; several dropped files read the larger sample (four course levels).
  */
+import { UPLOAD_LATER } from "@/lib/lab/import"
 import * as React from "react"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -37,7 +38,7 @@ import {
 } from "@/components/lab/import/import-parts"
 import { useImportSession } from "@/components/lab/import/use-import-session"
 import { PASTE_KEY, buildSampleText, parsePastePayload } from "@/lib/lab/import"
-import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
 const PARSE_MS = 250
 
@@ -114,8 +115,8 @@ export function AdminImportC() {
   let footer: StickyFooterProps
   if (done) footer = { secondary: { label: "Import another list", onClick: () => { setDraft(""); saveDraft(""); session.reset() } }, primary: { label: "Open the library", href: LIBRARY_HREF } }
   else if (reviewing) {
-    const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? `Name the new group of ${skillNounPlural()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
-    footer = { context: reason ? undefined : "All decided.", primary: { label: `Create ${countSkills(total)}`, onClick: session.confirm, disabled: !!reason, disabledReason: reason } }
+    const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? `Name the new ${skillListNoun()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
+    footer = { context: reason ? undefined : "All decided.", primary: { label: `Create ${countSkills(total)}`, onClick: () => undefined, disabled: true, disabledReason: UPLOAD_LATER } }
   } else footer = { context: session.phase === "reading" ? "Reading the files" : undefined }
 
   return (

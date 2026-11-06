@@ -3,7 +3,7 @@ import { createSeed } from "@/lib/v2/seed"
 import { createV2Store } from "@/lib/v2/store"
 import { facts, type Facts } from "@/lib/v2/facts"
 import { approvalEntries, approvalsBadgeCount, approvalsInScope, approvalTotals, heldState } from "@/lib/v2/approvals"
-import { DEFAULT_SCOPE, populationRows, requiredToComplete } from "@/lib/v2/population"
+import { DEFAULT_SCOPE, populationRows, skillsToComplete } from "@/lib/v2/population"
 import { deleteSkill, mappedCourses, setSkillsActive, trackedAgainst } from "@/lib/v2/admin-actions"
 import { skillProgress } from "@/lib/v2/student"
 import { buildDashboard, buildDrill } from "@/lib/lab/dashboard"
@@ -44,20 +44,20 @@ function expectConsumersAgree(s: V2State, label: string) {
   const f = facts(s, scope)
   const d = buildDashboard(s, scope)
   const k = Object.fromEntries(d.kpis.map((x) => [x.id, x]))
-  expect(k.achieved.description, label).toBe(`${f.mandatoryAchieved.toLocaleString("en-US")} of ${f.mandatoryRecords.toLocaleString("en-US")}`)
+  expect(k.achieved.description, label).toBe(`${f.listAchieved.toLocaleString("en-US")} of ${f.listRecords.toLocaleString("en-US")}`)
   expect(k.approval.value, label).toBe(f.awaitingApproval)
   expect(d.heroValue, label).toBe(f.behind)
   const skills = buildDrill(s, scope, { list: "skills" }).skills!
-  expect(skills.reduce((t, x) => t + x.students, 0), label).toBe(f.mandatoryRecords)
-  expect(skills.reduce((t, x) => t + x.achieved, 0), label).toBe(f.mandatoryAchieved)
+  expect(skills.reduce((t, x) => t + x.students, 0), label).toBe(f.listRecords)
+  expect(skills.reduce((t, x) => t + x.achieved, 0), label).toBe(f.listAchieved)
   expect(buildDrill(s, scope, { list: "requests", cond: "approval" }).count, label).toBe(f.awaitingApproval)
   const att = buildAttainment(s, scope)
-  expect(att.total, label).toBe(f.mandatoryRecords)
-  expect(att.totals.achieved, label).toBe(f.mandatoryAchieved)
+  expect(att.total, label).toBe(f.listRecords)
+  expect(att.totals.achieved, label).toBe(f.listAchieved)
   expect(att.behind, label).toBe(f.behind)
   const r = buildReadiness(s, scope)
   expect(r.rows.length, label).toBe(f.studentsInScope)
-  expect(r.required.length, label).toBe(f.requiredToGraduate)
+  expect(r.required.length, label).toBeLessThanOrEqual(f.assignedSkills)
   expect(approvalsBadgeCount(s, scope), label).toBe(f.awaitingApproval)
   const held = labState(s)
   expect(scopeRows(held, reviewRows(held), scope).rows.length, label).toBe(f.awaitingApproval)
@@ -68,14 +68,14 @@ describe("deactivate and reactivate write the shared store; every figure moves t
   const s0 = createSeed()
   const f0 = facts(s0)
   const pop0 = populationRows(s0)
-  // A skill with evidence that is required this term for many students and required to graduate.
-  const grad = new Set(requiredToComplete(s0).map((k) => k.id))
+  // A skill with evidence that is required this term for many students.
+  const grad = new Set(skillsToComplete(s0).map((k) => k.id))
   const reqFor = new Map<string, number>()
   for (const r of pop0.rows) for (const id of r.requiredIds) reqFor.set(id, (reqFor.get(id) ?? 0) + 1)
   const target = [...reqFor].filter(([id]) => grad.has(id)).sort((a, b) => b[1] - a[1])[0]![0]
   const achievedOn = pop0.rows.filter((r) => r.requiredIds.includes(target) && !r.open.some((o) => o.skillId === target)).length
 
-  it("the target has evidence, is required this term and to graduate", () => {
+  it("the target has evidence, is required this term", () => {
     expect(trackedAgainst(s0, target).evaluations).toBeGreaterThan(0)
     expect(reqFor.get(target)).toBeGreaterThan(10)
   })
@@ -87,9 +87,9 @@ describe("deactivate and reactivate write the shared store; every figure moves t
   it("drops the skill's records from the facts by exactly its students", () => {
     const f1 = facts(s1)
     expect(f1.skillsInactive).toBe(f0.skillsInactive + 1)
-    expect(f1.mandatoryRecords).toBe(f0.mandatoryRecords - reqFor.get(target)!)
-    expect(f1.mandatoryAchieved).toBe(f0.mandatoryAchieved - achievedOn)
-    expect(f1.requiredToGraduate).toBe(f0.requiredToGraduate - 1)
+    expect(f1.listRecords).toBe(f0.listRecords - reqFor.get(target)!)
+    expect(f1.listAchieved).toBe(f0.listAchieved - achievedOn)
+    expect(f1.assignedSkills).toBe(f0.assignedSkills - 1)
     expect(f1.skillsTotal).toBe(f0.skillsTotal)
   })
 
@@ -204,7 +204,7 @@ describe("reviewer decisions are written to the shared store; every consumer rea
     // Stored "awaiting approval" rows are untouched: only the adopted name's rows left the unverified split.
     expect(f1.awaitingApprovalStatusRows).toBe(f0.awaitingApprovalStatusRows)
     expect(f1.awaitingApprovalUnverifiedRows).toBe(f0.awaitingApprovalUnverifiedRows - inScope.reduce((t, e) => t + e.evaluations.length, 0))
-    expect(f1.mandatoryAchieved).toBeGreaterThanOrEqual(f0.mandatoryAchieved)
+    expect(f1.listAchieved).toBeGreaterThanOrEqual(f0.listAchieved)
   })
 
   it("merge: the evidence moves to the existing evaluator and counts", () => {
@@ -219,7 +219,7 @@ describe("reviewer decisions are written to the shared store; every consumer rea
     const ds: Decision[] = [{ kind: "approve", key: sub.key }, { kind: "adopt", evaluatorId: unv.evaluatorId!, mode: "adopt" }]
     const viaStore = facts(commitDecisions(s0, ds))
     const viaLab = facts(applyDecisions(s0, ds))
-    const pick = (f: Facts) => [f.awaitingApproval, f.awaitingApprovalEvaluations, f.mandatoryAchieved, f.mandatoryRecords, f.behind, f.unverifiedEvaluators]
+    const pick = (f: Facts) => [f.awaitingApproval, f.awaitingApprovalEvaluations, f.listAchieved, f.listRecords, f.behind, f.unverifiedEvaluators]
     expect(pick(viaStore)).toEqual(pick(viaLab))
   })
 

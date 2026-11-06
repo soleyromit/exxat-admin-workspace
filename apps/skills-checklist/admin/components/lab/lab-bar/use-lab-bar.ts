@@ -7,6 +7,7 @@ import { flowHref, flowsForScreen, findFlow, mainSteps, neighbours, resolveSet, 
 import { flowFor, lettersOutsideSets, stepFor } from "@/lib/lab/links"
 import { LAB_EVENTS, labNotesFor, scenariosFor, type Scenario } from "./scenarios"
 import { readStoredSet, writeStoredSet } from "./page-context"
+import { resetHere } from "./reset"
 
 /** What the page tells the lab bar. The flow route passes flow, step and set; the screen route passes the screen and variant. */
 export interface LabBarProps {
@@ -157,6 +158,7 @@ export function useLabBar(props: LabBarProps): LabBarModel {
       for (const [k, v] of Object.entries(s.params)) q.set(k, v)
       router.replace(`${pathname}?${q.toString()}`)
     }
+    if (s.event === LAB_EVENTS.reset) { resetHere(); return }
     if (s.event) window.dispatchEvent(new CustomEvent(s.event))
     window.dispatchEvent(new CustomEvent(LAB_EVENTS.scenario, { detail: s }))
   }, [params, pathname, router, screen])

@@ -131,7 +131,7 @@ export function RecordLine({ d, flow }: { d: DetailModel; flow: VerifyFlow }) {
       <span className="text-muted-foreground">{r.cohort}</span>
       <span className="tabular-nums" data-figure>
         <span className="font-semibold text-foreground">{`${r.achieved} of ${r.required}`}</span>
-        <span className="text-muted-foreground">{` required ${skillNounPlural()} achieved`}</span>
+        <span className="text-muted-foreground">{` assigned ${skillNounPlural()} achieved`}</span>
       </span>
       <span className="text-muted-foreground">
         {flow.done ? `Version ${flow.done.version}, ${shortDate(flow.done.at)}` : r.verifiedAt ? `Version ${r.version}, ${shortDate(r.verifiedAt)}, ${DIRECTOR_NAME}` : "Never verified"}
@@ -193,7 +193,7 @@ export function VerifyAction({ d, flow, scope, idPrefix, queue }: { d: DetailMod
     return (
       <div className="flex flex-col gap-3">
         <LocalBanner variant="success" title={`Verified, version ${flow.done.version}`}>
-          {r.gaps.length ? `The record states its ${r.gaps.length === 1 ? "gap" : "gaps"}.` : `The record states every required ${skillNoun()} achieved.`}
+          {r.gaps.length ? `The record states its ${r.gaps.length === 1 ? "gap" : "gaps"}.` : `The record states every assigned ${skillNoun()} achieved.`}
         </LocalBanner>
         {/* Next in the queue only; the way back is the "Dashboard" crumb (navigation model A, D-L42). */}
         {next ? (

@@ -4,7 +4,7 @@
  * Skill detail pieces (build prompt stuitem): the rule in one plain sentence, its parts as fractions, the attempt timeline or
  * ledger, and why something did not count with the failed rule in numbers and the next step [REQ SH-01..SH-03, AE-04].
  */
-import { aNoun } from "@/lib/lab/terms"
+import { aNoun, capitalize, skillListNoun, skillNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -16,7 +16,7 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { VIZ } from "@/components/lab/viz"
 import { ATTEMPT_WORD, attemptCountLine, attempts, shortDate, studentHref, type AttemptRow, type SkillRecord, type StudentModel } from "@/lib/lab/student"
 import type { V2State } from "@/lib/v2/types"
-import { rowHeaderLabels } from "@/lib/v2/labels"
+import { MAPPING_LEVEL_LABEL, rowHeaderLabels } from "@/lib/v2/labels"
 import type { StudentFrameCtx } from "@/components/lab/student/frame"
 import { ViewEvaluationButton } from "@/components/lab/student/evaluation-sheet"
 
@@ -28,14 +28,16 @@ export function pickSkill(ctx: StudentFrameCtx): SkillRecord | null {
 }
 
 /** The page's one filled action, by state: fix a return, make a further attempt, view the open request, or send. */
-export function skillPrimary(r: SkillRecord | null, studentId: string): { label: string; href: string } | null {
+export function skillPrimary(r: SkillRecord | null, studentId: string, ask?: { href: string }): { label: string; href: string } | null {
   if (!r) return null
-  // Deactivated [REQ SL-11]: nothing new can be sent for it; an open request can still be viewed.
-  if (r.active === false) return r.waiting ? { label: "View request", href: studentHref("my-requests", {}, studentId) } : null
+  // Deactivated [REQ SL-11] or Not configured [REQ IM-09]: nothing new can be sent for it; an open request can still be viewed.
+  if (r.active === false || !r.setUp) return r.waiting ? { label: "View request", href: studentHref("my-requests", {}, studentId) } : null
   if (r.returned) return { label: "Fix and send", href: studentHref("fix-returned", { submission: r.returned.submissionId }, studentId) }
   if (r.waiting) return { label: "View request", href: studentHref("my-requests", {}, studentId) }
   if (r.state === "achieved") return null
   if (r.state === "dnq") return { label: "Make a further attempt", href: studentHref("fix-returned", { skill: r.id }, studentId) }
+  // The skill's own page asks for this skill by name; "another" once one has counted, until the times needed are met.
+  if (ask) return { label: r.counted > 0 ? "Ask for another evaluation" : "Ask for evaluation", href: ask.href }
   return { label: `Log ${aNoun()}`, href: studentHref("request-signoff", { skill: r.id }, studentId) }
 }
 
@@ -267,22 +269,34 @@ export function WhyNotCounted({ record, studentId, withAction = true }: { record
   )
 }
 
-export function WhereItCounts({ model, record }: { model: StudentModel; record: SkillRecord }) {
-  const courses = model.courses.filter((c) => c.mandatory + c.optional > 0)
+export function WhereItCounts({ model, record, brief = false }: { model: StudentModel; record: SkillRecord; /** Only what the student acts on: no Section, no Counts across. */ brief?: boolean }) {
+  const courses = model.courses.filter((c) => c.mandatory + c.recommended > 0)
+  // Where it can be done, from course mapping (D-L102).
+  const mappedOn = model.courses.flatMap((c) => c.skills.filter((x) => x.id === record.id).map((x) => `${MAPPING_LEVEL_LABEL[x.level]} on ${c.code}`))
   const placement = model.placements.find((p) => p.likelyIds.includes(record.id))
   return (
     <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
-      <dt className="text-muted-foreground">Section</dt>
-      <dd className="text-foreground">{record.section}</dd>
+      {brief ? null : (
+        <>
+          <dt className="text-muted-foreground">Section</dt>
+          <dd className="text-foreground">{record.section}</dd>
+        </>
+      )}
+      {model.lists.length ? (
+        <>
+          <dt className="text-muted-foreground">{capitalize(skillListNoun())}</dt>
+          <dd className="text-foreground" data-on-list>{record.onLists.length ? record.onLists.map((l) => l.name).join(", ") : `Not on your ${skillListNoun()}. It counts on this ${skillNoun()}'s record.`}</dd>
+        </>
+      ) : null}
       <dt className="text-muted-foreground">Expected</dt>
-      <dd className="text-foreground">{record.active === false ? "No longer in use. Your evidence stays in My evaluations." : record.required ? "Required this term" : record.level === "recommended" ? "Recommended this term" : record.level === "optional" ? "Optional this term" : "Not mapped to a current course"}</dd>
+      <dd className="text-foreground">{record.active === false ? "No longer in use. Your evidence stays in My evaluations." : !record.setUp ? "Your evidence stays in My evaluations." : mappedOn.length ? mappedOn.join(", ") : "Not mapped to your courses this term. You can still send it."}</dd>
       {placement ? (
         <>
           <dt className="text-muted-foreground">Likely at</dt>
           <dd className="text-foreground">{`${placement.location}, ends ${shortDate(placement.ends)}`}</dd>
         </>
       ) : null}
-      {courses.length === 0 ? null : (
+      {brief || courses.length === 0 ? null : (
         <>
           <dt className="text-muted-foreground">Counts across</dt>
           <dd className="text-foreground">All your courses</dd>

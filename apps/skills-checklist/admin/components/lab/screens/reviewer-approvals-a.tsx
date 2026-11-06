@@ -8,6 +8,7 @@
  * makes one selected row vanish mid-approve (a colleague got there first), so the bulk result is partial.
  */
 import * as React from "react"
+import { BulkCount } from "@/components/lab/shared/bulk-count"
 import { LabLink as Link, useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
@@ -57,7 +58,7 @@ function Triage({ rows, scope, summary, errorDemo, partialDemo }: { rows: Review
             showQueryControls={false}
             edgeInset={false}
             lazyLoading={{ enabled: rows.length > 60 }}
-            bulkActionsSlot={(selected) => <BulkSlot rows={rows} selected={selected} partial={partialDemo} />}
+            bulkActionsSlot={(selected) => <><BulkCount n={selected.size} /><BulkSlot rows={rows} selected={selected} partial={partialDemo} /></>}
             emptyState={<EmptyBlock compact title="No submissions wait in this scope" />}
           />
         </div>

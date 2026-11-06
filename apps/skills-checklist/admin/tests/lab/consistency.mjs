@@ -152,9 +152,9 @@ const in26 = grab(drill26.text, /(\d[\d,]*) students? in scope/)
 check("Director: graduating cohort size = admin drill for BSN 2026", { director: dirPop?.[1], drill: in26?.[0] })
 seen.director = { dirPop, in26 }
 
-// Required to graduate (D-X11, D-X12): the director's readiness bands (complete / one short / short / far) equal the attainment
-// matrix totals read against "Required to graduate", on the director's own Attainment (default basis for the graduating cohort)
-// and on the admin Attainment with required=graduate for the same cohort.
+// All assigned (D-X11, D-L54): the director's readiness bands (complete / one short / short / far) equal the attainment matrix totals
+// read against "All assigned", on the director's own Attainment (default basis for the graduating cohort) and on the admin
+// Attainment with required=assigned for the same cohort.
 async function bandsOn(path) {
   await open(path)
   return page.evaluate(() => {
@@ -171,12 +171,12 @@ async function bandsOn(path) {
   })
 }
 const dirAtt = await bandsOn(`/lab/director/attainment?${TERM}&variant=A`)
-const admAtt = await bandsOn(`/lab/admin/attainment?${TERM}&cohort=BSN+2026&required=graduate&variant=A`)
+const admAtt = await bandsOn(`/lab/admin/attainment?${TERM}&cohort=BSN+2026&required=assigned&variant=A`)
 const labels = ["complete", "one short", "short", "far behind"]
-labels.forEach((l, i) => check(`Required to graduate: director readiness ${l} = director matrix = admin matrix (required=graduate)`, { readiness: dirAtt.readiness?.[i], directorMatrix: dirAtt.matrix?.[i], adminMatrix: admAtt.matrix?.[i] }))
-check("Required to graduate: the graduating cohort reads 31 / 4 / 0 / 3 (dataset-spec 12.10)", { got: (dirAtt.readiness ?? []).join("/"), expected: "31/4/0/3" })
-check("Required to graduate: director Attainment defaults to the graduate basis", { basis: dirAtt.basis === "toGraduate" ? 1 : 0, expected: 1 })
-seen.requiredToGraduate = { dirAtt, admAtt }
+labels.forEach((l, i) => check(`All assigned: director readiness ${l} = director matrix = admin matrix (required=assigned)`, { readiness: dirAtt.readiness?.[i], directorMatrix: dirAtt.matrix?.[i], adminMatrix: admAtt.matrix?.[i] }))
+check("All assigned: the graduating cohort reads 31 / 4 / 0 / 3 (its assigned list, D-L54, D-L62)", { got: (dirAtt.readiness ?? []).join("/"), expected: "31/4/0/3" })
+check("All assigned: director Attainment defaults to the assigned basis", { basis: dirAtt.basis === "assigned" ? 1 : 0, expected: 1 })
+seen.allAssigned = { dirAtt, admAtt }
 
 // Oct 26 call (U3). Group is its own filter: with no cohort, a group's hero "of N" equals its drill list (program group and a
 // custom rule group spanning cohorts). Clinical courses first: the scope bar shows "Clinical only" by default and including didactic
@@ -308,25 +308,30 @@ seen.assign = { assigned, asgQueueBefore, asgBadgeBefore, waitingBase }
       const m = label.match(/(\d+) mapped: (\d+) mandatory/)
       const meta = document.querySelector("[data-region=offering]")?.textContent ?? ""
       const cohort = document.querySelector("[data-region=offering]")?.getAttribute("data-cohort") ?? (meta.match(/(A?BSN \d{4})/) ?? [])[1] ?? null
-      return { mapped: m ? Number(m[1]) : null, mandatory: m ? Number(m[2]) : null, cohort, fromList: document.querySelectorAll("[data-level-source=list]").length }
+      return { mapped: m ? Number(m[1]) : null, mandatory: m ? Number(m[2]) : null, cohort }
     })
   }
   const before = await offTotals()
   const adding = before.cohort !== "BSN 2027"
   const groupIds = adding ? ["coh:BSN 2027", `coh:${before.cohort}`] : []
-  await page.evaluate((ids) => {
-    try { sessionStorage.setItem("lab.admin.lists.v1", JSON.stringify({ created: [], edits: { "list-competencies": { groupIds: ids } } })) } catch { /* storage blocked */ }
-  }, groupIds)
+  // List edits live on the shared store now (lib/lab/lists.ts programLists), so student pages and reports read them too.
+  const setListEdits = (edits) => page.evaluate((e) => {
+    const key = "skills-checklist:v2:store"
+    const env = JSON.parse(localStorage.getItem(key) ?? "null")
+    if (!env) return false
+    if (e) env.patch.set.listEdits = e
+    else delete env.patch.set.listEdits
+    localStorage.setItem(key, JSON.stringify(env))
+    return true
+  }, edits)
+  if (!(await setListEdits({ created: [], edits: { "list-competencies": { groupIds } } }))) throw new Error("Inheritance: the store has no saved envelope to edit; an earlier step must have written it")
   const after = await offTotals()
-  check(`Inheritance: ${adding ? "assigning" : "removing"} a list on ${before.cohort} ${adding ? "raises" : "lowers"} the open offering's mapped count`, {
-    moved: before.mapped != null && after.mapped != null ? (adding ? after.mapped > before.mapped : after.mapped < before.mapped) ? 1 : 0 : null,
-    expected: 1,
-  })
-  check("Inheritance: a list never adds Mandatory (the open offering's mandatory is unchanged)", { before: before.mandatory, after: after.mandatory })
-  check("Inheritance: inherited rows carry the From list tag", { tagged: after.fromList > 0 ? 1 : 0, expected: 1 })
-  await page.evaluate(() => { try { sessionStorage.removeItem("lab.admin.lists.v1") } catch { /* storage blocked */ } })
+  // D-L76: a list gives no level, so assigning one moves neither figure on the offering.
+  check(`Lists give no level: ${adding ? "assigning" : "removing"} a list on ${before.cohort} leaves the open offering's mapped count`, { before: before.mapped, after: after.mapped })
+  check("Lists give no level: the open offering's mandatory is unchanged", { before: before.mandatory, after: after.mandatory })
+  await setListEdits(null)
   const restored = await offTotals()
-  check("Inheritance: undoing the assignment restores the mapped count", { before: before.mapped, restored: restored.mapped })
+  check("Lists give no level: undoing the assignment leaves the mapped count", { before: before.mapped, restored: restored.mapped })
   seen.inheritance = { before, after, restored }
 }
 
@@ -374,7 +379,7 @@ seen.assign = { assigned, asgQueueBefore, asgBadgeBefore, waitingBase }
   const lineAfter = await lineOf()
   const dashAfter = await open(`/lab/admin/dashboard?${TERM}&variant=A`)
   const achAfter = grab(dashAfter.text, /Required skills achieved\s+(\d+)%\s+(\d[\d,]*) of (\d[\d,]*)/)
-  check("Rule write-back: before publish, Maya's sterile dressing line counts on outcome", { ok: lineBefore === "2 attempts, 2 not valid: 0 count" ? 1 : 0, expected: 1 })
+  check("Rule write-back: before publish, Maya's sterile dressing line counts under the seeded rule", { ok: lineBefore?.startsWith("2 attempts, 2 not valid: 0 count") ? 1 : 0, expected: 1 })
   check("Rule write-back: after publish and reload, Maya's line applies the published question rule", {
     ok: published && lineAfter === "2 attempts, 1 not valid: 1 counts. At least 2 of 3 questions answered Yes counts as one." ? 1 : 0,
     expected: 1,

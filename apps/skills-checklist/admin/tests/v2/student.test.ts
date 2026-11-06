@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createSeed as createFullSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createFullSeed, IDS } from "@/lib/v2/seed"
 import type { V2State as FullState } from "@/lib/v2/types"
 
 /**
@@ -235,7 +235,7 @@ describe("self-rating uses the skill's own scale", () => {
     expect(ratingKind(s.skills.find((k) => k.id === "sk-med-admin")!)).toBe("outcome")
     expect(ratingOptions(s.skills.find((k) => k.id === "sk-med-admin")!)).toEqual(["Met", "Not met"])
     expect(ratingKind(s.skills.find((k) => k.id === "sk-sterile-dressing")!)).toBe("questions")
-    expect(ratingKind(s.skills.find((k) => k.id === "sk-handoff")!)).toBe("none")
+    expect(ratingKind(s.skills.find((k) => k.id === "sk-handoff")!)).toBe("scores")
   })
 })
 

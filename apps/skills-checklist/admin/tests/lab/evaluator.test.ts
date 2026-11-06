@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { createSeed } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed } from "@/lib/v2/seed"
 import { binaryLabels } from "@/lib/v2/labels"
 import {
   DEFAULT_OPTIONS,

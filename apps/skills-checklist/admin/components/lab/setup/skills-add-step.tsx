@@ -73,7 +73,7 @@ export function SkillsAddStep() {
         />
       </section>
       <AddSeveralSheet open={pasting} onOpenChange={setPasting} rows={api.rows} onAdd={(items, d) => api.addMany(items, d)} />
-      <SkillSheet open={adding} onOpenChange={setAdding} rows={api.rows} onSave={(d) => { api.add(d) }} />
+      <SkillSheet open={adding} onOpenChange={setAdding} rows={api.rows} onSave={api.addDraft} />
       <span className="sr-only" aria-live="polite">{rows.length ? `${capitalize(nounPl)} added: ${rows.length}` : ""}</span>
     </div>
   )

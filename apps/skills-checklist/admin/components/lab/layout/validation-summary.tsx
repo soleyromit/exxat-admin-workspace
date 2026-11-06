@@ -37,7 +37,7 @@ export function ValidationSummary({ issues, title = "Fix these to continue", aut
       <LocalBanner variant="error" title={title}>
         <ul className="flex flex-col gap-1">
           {issues.map((issue) => (
-            <li key={issue.fieldId}>
+            <li key={`${issue.fieldId}-${issue.message}`}>
               <Button
                 type="button"
                 variant="link"

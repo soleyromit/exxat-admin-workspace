@@ -12,7 +12,6 @@
  */
 import * as React from "react"
 import { useConfigureMany } from "@/components/lab/library/configure-many"
-import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -20,15 +19,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/comp
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { STATUS_META, STATUS_ORDER, byStatus, configureHref, countLibrary, filterLibrary, rowsForTab, type LibraryRow, type LibraryStatus, type SkillDraft } from "@/lib/lab/library"
+import { BOARD_ORDER, CONFIGURATION_META, STATUS_META, isUsableRow, byBoardColumn, type BoardColumn, countLibrary, filterLibrary, rowsForTab, type LibraryRow } from "@/lib/lab/library"
 import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
-import { LINK, LibraryFrame, LibraryStatusBadge, LibraryTabs, useOpenSkill, useStatusTab, useUrlParam } from "@/components/lab/library/library-chrome"
+import { ConfigurationBadge, LINK, LibraryFrame, LibraryStatusBadge, LibraryTabs, useOpenSkill, useStatusTab, useUrlParam } from "@/components/lab/library/library-chrome"
 import { LibraryTable } from "@/components/lab/library/library-table"
 import { AddSeveralSheet } from "@/components/lab/library/add-several-sheet"
 import { useLifecycle, useStableHandlers } from "@/components/lab/library/row-actions"
-import { SkillPanel } from "@/components/lab/library/skill-panel"
+import { SkillPanel, usePanelGuard } from "@/components/lab/library/skill-panel"
 import { SkillSheet } from "@/components/lab/library/skill-sheet"
 import { useLibrary } from "@/components/lab/library/use-library"
 import { LibraryFilterMenu, useLibraryFilter } from "@/components/lab/library/library-filter"
@@ -52,16 +51,16 @@ function SkillCard({ r, onOpen, selected }: { r: LibraryRow; onOpen: (id: string
         {r.isNew ? <Badge variant="outline">New</Badge> : null}
       </span>
       <span className="truncate text-xs text-muted-foreground">
-        {[r.categoryInactive ? `${r.section} (inactive)` : r.section, r.draft ? "Draft saved" : "", r.status === "configured" && r.courses ? plural(r.courses, "course", "courses") : ""].filter(Boolean).join(", ")}
+        {[r.categoryInactive ? `${r.section} (inactive)` : r.section, isUsableRow(r) && r.courses ? plural(r.courses, "course", "courses") : ""].filter(Boolean).join(", ")}
       </span>
     </li>
   )
 }
 
-function Column({ status, rows, filtered, openId, onOpen }: { status: LibraryStatus; rows: LibraryRow[]; filtered: boolean; openId: string | null; onOpen: (id: string) => void }) {
+function Column({ status, rows, filtered, openId, onOpen }: { status: BoardColumn; rows: LibraryRow[]; filtered: boolean; openId: string | null; onOpen: (id: string) => void }) {
   const [shown, setShown] = React.useState(PAGE)
   React.useEffect(() => setShown(PAGE), [rows.length])
-  const m = STATUS_META[status]
+  const m = status === "inactive" ? STATUS_META.inactive : CONFIGURATION_META[status]
   const visible = rows.slice(0, shown)
   const configureMany = useConfigureMany()
   const together = status === "not-configured" && rows.length > 1
@@ -70,7 +69,7 @@ function Column({ status, rows, filtered, openId, onOpen }: { status: LibrarySta
     <Card size="sm" data-board-column={status} className="min-w-0">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LibraryStatusBadge status={status} />
+          {status === "inactive" ? <LibraryStatusBadge status="inactive" /> : <ConfigurationBadge value={status} />}
           <span className="tabular-nums text-sm font-semibold text-foreground">{rows.length}</span>
           <span className="sr-only">{m.label}</span>
         </CardTitle>
@@ -98,7 +97,6 @@ function Column({ status, rows, filtered, openId, onOpen }: { status: LibrarySta
 
 export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: boolean }) {
   const api = useLibrary()
-  const router = useLabRouter()
   const life = useLifecycle(api)
   const [viewParam, setView] = useUrlParam("view")
   const view: "board" | "list" = viewParam === "list" ? "list" : "board"
@@ -108,9 +106,7 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
   const [filter, setFilter] = useLibraryFilter()
   const [adding, setAdding] = React.useState(false)
   const [addingSeveral, setAddingSeveral] = React.useState(false)
-  const [editing, setEditing] = React.useState<LibraryRow | null>(null)
   const [inView, setInView] = React.useState<LibraryRow[]>([])
-  const handlers = useStableHandlers(api, life, setEditing)
   const started = React.useRef(false)
   React.useEffect(() => {
     if (startAdding && api.hydrated && !started.current) { started.current = true; setAddingSeveral(true) }
@@ -120,22 +116,24 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
   const scoped = React.useMemo(() => filterLibrary(api.rows, filter), [api.rows, filter])
   const tabCounts = React.useMemo(() => countLibrary(scoped), [scoped])
   const filtered = React.useMemo(() => scoped.filter((r) => !query || r.name.toLowerCase().includes(query)), [scoped, query])
-  const columns = React.useMemo(() => byStatus(filtered), [filtered])
-  const boardOrder = React.useMemo(() => STATUS_ORDER.flatMap((s) => columns[s]), [columns])
+  const columns = React.useMemo(() => byBoardColumn(filtered), [filtered])
+  const boardOrder = React.useMemo(() => BOARD_ORDER.flatMap((s) => columns[s]), [columns])
   const visible = React.useMemo(() => rowsForTab(api.rows, tab), [api.rows, tab])
   const openRow = openId ? api.byId.get(openId) ?? null : null
-  const open = React.useCallback((id: string) => { setAdding(false); setAddingSeveral(false); setOpenId(id) }, [setOpenId])
+  // A skill that is gone (deleted, or a bad link) leaves nothing in the URL and nothing half open.
+  React.useEffect(() => { if (api.hydrated && !api.demo && openId && !openRow) setOpenId(null) }, [api.hydrated, api.demo, openId, openRow, setOpenId])
+  const [panelDirty, setPanelDirty] = React.useState(false)
+  const guard = usePanelGuard(panelDirty, () => setPanelDirty(false))
+  const { attempt } = guard
+  const open = React.useCallback((id: string) => attempt(() => { setAdding(false); setAddingSeveral(false); setOpenId(id) }), [attempt, setOpenId])
+  const handlers = useStableHandlers(api, life, (r) => open(r.id), attempt)
 
-  const save = (d: SkillDraft, next: "close" | "configure") => {
-    const id = api.add(d)
-    if (next === "configure") router.push(configureHref(id))
-  }
   const overlays = (
     <>
-      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addMany(items, d)} />
-      <SkillSheet open={adding} onOpenChange={setAdding} rows={api.rows} onSave={save} onOpenExisting={open} />
-      <SkillSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} rows={api.rows} mode="edit" editing={editing} onSave={(d) => editing && api.edit(editing.id, d)} />
-      <SkillPanel row={adding || addingSeveral || editing ? null : openRow} rows={view === "board" ? boardOrder : inView.length ? inView : visible} handlers={handlers} onOpen={open} onClose={() => setOpenId(null)} />
+      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addSeveral(items, d)} />
+      <SkillSheet open={adding} onOpenChange={setAdding} rows={api.rows} onSave={api.addDraft} onOpenExisting={open} />
+      <SkillPanel row={adding || addingSeveral ? null : openRow} rows={view === "board" ? boardOrder : inView.length ? inView : visible} allRows={api.rows} handlers={handlers} api={api} onOpen={open} onClose={() => guard.attempt(() => setOpenId(null))} dirty={panelDirty} onDirty={setPanelDirty} attempt={attempt} discards={guard.discards} />
+      {guard.dialog}
       {life.dialogs}
     </>
   )
@@ -169,7 +167,7 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
             </div>
             {/* One board answers one question (where each skill is in setup), so it is one region, like a table. */}
             <div data-region="board" role="group" aria-label={`${capitalize(skillNounPlural())} by configuration status`} className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {STATUS_ORDER.map((s) => <Column key={s} status={s} rows={columns[s]} filtered={!!(filter.cat || filter.tag || query)} openId={openRow?.id ?? null} onOpen={open} />)}
+              {BOARD_ORDER.map((s) => <Column key={s} status={s} rows={columns[s]} filtered={!!(filter.cat || filter.tag || query)} openId={openRow?.id ?? null} onOpen={open} />)}
             </div>
           </>
         ) : (
@@ -180,12 +178,11 @@ export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: 
             handlers={handlers}
             openId={openRow ? openRow.id : null}
             onOpen={open}
-            onCopySettings={(rows) => life.copy(rows)}
+            onBulkEdit={api.bulkEdit}
             onClearTab={() => setTab("all")}
             onRowsInView={setInView}
-            onTimesSet={api.setBanner}
             renderFrame={(toolbar, table) => (
-              <LibraryTabs counts={tabCounts} value={tab} onChange={setTab} toolbar={<>{viewSwitch}{toolbar}</>}>
+              <LibraryTabs counts={tabCounts} value={tab} onChange={(t) => attempt(() => { if (panelDirty) setOpenId(null); setTab(t) })}toolbar={<>{viewSwitch}{toolbar}</>}>
                 {table}
               </LibraryTabs>
             )}

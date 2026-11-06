@@ -3,10 +3,11 @@
 /**
  * Evaluation form, variant C: fast batch. A compact DS Table, one row per skill with inline outcome chips; level, criteria
  * and feedback for any row open in one shared drawer (Sheet). Mental model: a lab roll call. A per-request link exposes only
- * its own request (D-L2), so rows are this student's skills, never other students. "Mark all" sets the first outcome label on
+ * its own request (D-L2), so rows are this student's skills, never other students. "Mark all" sets the outcome label that qualifies on
  * every row; the evaluator still owns each answer.
  */
-import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { plural } from "@/lib/v2/format"
+import { capitalize, inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -16,7 +17,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@exxatdesignux/ui/components/ui/sheet"
 import { useIsMobile } from "@exxatdesignux/ui/hooks/use-mobile"
-import { evFieldId, levelOnly } from "@/lib/lab/evaluator"
+import { qualifyingOutcome } from "@/lib/v2/rules"
+import { evFieldId, levelOnly, answersDecide } from "@/lib/lab/evaluator"
 import { EvaluatorGate } from "@/components/lab/evaluator/gate"
 import { StickyBar } from "@/components/lab/evaluator/frame"
 import { ChoiceTiles, ErrorSummary, RequestSummary, SelfNote, SkillFields, StateBanners, contextLine, skillsWord } from "@/components/lab/evaluator/fields"
@@ -30,7 +32,12 @@ export function EvaluatorFormC() {
   const [open, setOpen] = React.useState<string | null>(null)
   const openSkill = skills.find((k) => k.id === open) ?? null
   const openIdx = openSkill ? skills.indexOf(openSkill) : -1
-  const firstLabel = skills[0]?.choices[0]?.label ?? "Met"
+  // The label that qualifies, per skill [REQ SC-03]. Skills with different labels share one plain "Mark all as counting" [INFER].
+  const markable = skills.filter((k) => !levelOnly(k) && !answersDecide(k))
+  // No Level column when no skill in the request has levels.
+  const anyLevels = skills.some((k) => k.levels.length > 0)
+  const markWords = new Set(markable.map((k) => k.choices.find((c) => c.value === qualifyingOutcome(k))?.label ?? "Met"))
+  const markAll = markWords.size === 1 ? `Mark all ${inSentence([...markWords][0]!)}` : "Mark all as counting"
 
   return (
     <EvaluatorGate
@@ -50,14 +57,15 @@ export function EvaluatorFormC() {
           <Card size="sm" className="gap-0 overflow-hidden py-0" data-region="skill">
             <CardContent className="flex items-center justify-between gap-3 border-b border-border py-2">
               <p className="text-sm font-medium text-foreground">{skillsWord(skills.length)}</p>
-              <Button type="button" variant="outline" size="sm" onClick={() => m.setAll("met")}>{`Mark all ${firstLabel}`}</Button>
+              {/* Mark all sets an outcome. A questions skill has none (D-L73), so the button is only for skills that take one. */}
+              {markable.length ? <Button type="button" variant="outline" size="sm" onClick={m.setAll}>{markAll}</Button> : null}
             </CardContent>
             <Table scrollLabel={`${capitalize(skillNounPlural())} in this request`}>
               <TableHeader>
                 <TableRow>
                   <TableHead scope="col" className="ps-3">{capitalize(skillNoun())}</TableHead>
                   <TableHead scope="col" className="hidden w-[13rem] md:table-cell">Outcome</TableHead>
-                  <TableHead scope="col" className="hidden w-[11rem] md:table-cell">Level</TableHead>
+                  {anyLevels ? <TableHead scope="col" className="hidden w-[11rem] md:table-cell">Level</TableHead> : null}
                   <TableHead scope="col" className="w-12 pe-3 text-end"><span className="sr-only">Details</span></TableHead>
                 </TableRow>
               </TableHeader>
@@ -70,26 +78,28 @@ export function EvaluatorFormC() {
                   const outId = evFieldId.outcome(k.id)
                   // An independence-level skill asks the level only (levelOnly): no outcome chips; on a phone its level is in the sheet.
                   const byLevel = levelOnly(k)
-                  const needs = (graded && (k.answerKind || (isMobile && k.levels.length))) || (byLevel && isMobile && !r.outcome) || k.feedbackRequired || r.outcome === "not-yet"
+                  // The question model has no outcome chips: its questions are in the sheet, and the answers decide (D-L73).
+                  const byAnswers = answersDecide(k)
+                  const needs = byAnswers || (graded && (k.answerKind || (isMobile && k.levels.length))) || (byLevel && isMobile && !r.outcome) || k.feedbackRequired || r.outcome === "not-yet"
                   return (
                     <TableRow key={k.id} className="align-middle">
                       <TableCell className="ps-3 whitespace-normal">
                         <p id={`${outId}-label`} className="text-sm font-medium text-foreground">{k.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {k.attempt ? `Attempt ${k.attempt.n} · ` : ""}
-                          {k.self?.rating ? `${req.student.first} rated ${k.self.rating}` : k.answerKind ? `${k.questions.length} criteria` : ""}
+                          {k.self?.rating ? `${req.student.first} rated ${inSentence(k.self.rating)}` : k.answerKind ? plural(k.questions.length, "question", "questions") : ""}
                           {r.feedback.trim() ? `${k.self?.rating || k.answerKind ? " · " : ""}Feedback added` : ""}
                         </p>
-                        {isMobile && !byLevel ? (
+                        {isMobile && !byLevel && !byAnswers ? (
                           <div className="mt-2">
                             <ChoiceTiles id={outId} labelId={`${outId}-label`} options={k.choices} value={r.outcome} onChange={(v) => m.setAnswer(k.id, { outcome: v as typeof r.outcome })} invalid={rowIssues.some((i) => i.field === outId)} cols={k.choices.length === 3 ? 3 : 2} compact />
                           </div>
                         ) : null}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        {isMobile ? null : byLevel ? <span className="sr-only">{`Answered by level for this ${skillNoun()}`}</span> : <ChoiceTiles id={outId} labelId={`${outId}-label`} options={k.choices} value={r.outcome} onChange={(v) => m.setAnswer(k.id, { outcome: v as typeof r.outcome })} invalid={rowIssues.some((i) => i.field === outId)} cols={k.choices.length === 3 ? 3 : 2} compact />}
+                        {isMobile ? null : byAnswers ? <span className="text-sm text-muted-foreground">{`${r.answers.filter((a) => a !== null).length} of ${k.questions.length} answered`}</span> : byLevel ? <span className="sr-only">{`Answered by level for this ${skillNoun()}`}</span> : <ChoiceTiles id={outId} labelId={`${outId}-label`} options={k.choices} value={r.outcome} onChange={(v) => m.setAnswer(k.id, { outcome: v as typeof r.outcome })} invalid={rowIssues.some((i) => i.field === outId)} cols={k.choices.length === 3 ? 3 : 2} compact />}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      {anyLevels ? <TableCell className="hidden md:table-cell">
                         {k.levels.length ? (
                           <Select value={r.level === null ? "" : String(r.level)} onValueChange={(v) => m.setAnswer(k.id, byLevel ? { outcome: "met", level: Number(v) } : { level: Number(v) })}>
                             <SelectTrigger id={evFieldId.level(k.id)} size="sm" className="w-full" aria-label={`${k.levelsLabel}, ${k.name}`} aria-invalid={rowIssues.some((i) => i.field === evFieldId.level(k.id)) || undefined}>
@@ -100,7 +110,7 @@ export function EvaluatorFormC() {
                             </SelectContent>
                           </Select>
                         ) : <span className="sr-only">{`No level for this ${skillNoun()}`}</span>}
-                      </TableCell>
+                      </TableCell> : null}
                       <TableCell className="pe-3 text-end">
                         <Button type="button" variant={detailIssue ? "outline" : "ghost"} size="icon" className="max-sm:size-11" aria-label={`Details and feedback, ${k.name}${needs ? ", needs input" : ""}`} onClick={() => setOpen(k.id)}>
                           <i className={detailIssue ? "fa-solid fa-message-exclamation text-(--lab-viz-behind-ink)" : r.feedback.trim() ? "fa-solid fa-message-lines" : "fa-light fa-message"} aria-hidden="true" />

@@ -262,7 +262,7 @@ describe("EV-06 / SC-14 mandatory comment", () => {
     const token = addRequest({ skillIds: [SK.vitals] })
     view(token)
     await answerAll(user, cardOf(SK.vitals))
-    expect(screen.getByText("1 item still to complete. Next: a comment for Vital Signs Assessment.")).toBeInTheDocument()
+    expect(screen.getByText("1 answer still to complete. Next: a comment for Vital Signs Assessment.")).toBeInTheDocument()
     expect(isDisabledLooking(submitButton())).toBe(true)
     const before = db().evaluations.length
     await user.click(submitButton())
@@ -270,7 +270,7 @@ describe("EV-06 / SC-14 mandatory comment", () => {
     expect(screen.getByText("Add a comment for Vital Signs Assessment before you submit. The program requires one.")).toBeInTheDocument()
     expect(within(cardOf(SK.vitals)).getByRole("textbox")).toHaveFocus()
     expect(within(cardOf(SK.vitals)).getByRole("textbox")).toHaveAttribute("aria-invalid", "true")
-    expect(screen.getByTestId("live")).toHaveTextContent("Not submitted. 1 item needs your attention.")
+    expect(screen.getByTestId("live")).toHaveTextContent("Not submitted. 1 answer needs your attention.")
   })
 
   it("an optional comment never blocks Submit; a whitespace-only mandatory comment still does", async () => {

@@ -3,7 +3,7 @@
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { PAGE_TITLE_TYPE_CLASS } from "@exxatdesignux/ui/components/ui/page-header"
 import { LATER_LABEL } from "@/lib/lab/import"
-import { usePresent } from "@/components/lab/lab-bar/present"
+import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 
 /**
  * Retired (Romit 2026-10-27: "remove sample data tags from everywhere"; LEDGER D-L11, supersedes the label part of D-X23). The
@@ -14,12 +14,10 @@ export function SampleDataBadge(): null {
 }
 
 /**
- * Marks a phase 2 route (import a file, starting points) wherever it is offered or shown. Calm, never a warning colour. A lab
- * label: present mode hides it, like every internal label (Romit 2026-10-27, walkthrough text cut).
+ * Marks a phase 2 route (import a file, starting points) wherever it is offered or shown. Calm, never a warning colour. It is not a lab
+ * label: it says these do not add skills yet, so it stays when presenting too (a success message must be true).
  */
 export function LaterBadge({ className }: { className?: string }) {
-  const { present } = usePresent()
-  if (present) return null
   return <Badge variant="secondary" className={className}>{LATER_LABEL}</Badge>
 }
 
@@ -34,4 +32,9 @@ export function LaterTitle({ children }: { children: string }) {
       <LaterBadge />
     </div>
   )
+}
+
+/** Says the plain truth on a Later page: it previews, and adds nothing. */
+export function LaterNotice({ children }: { children: string }) {
+  return <LocalBanner variant="info">{children}</LocalBanner>
 }

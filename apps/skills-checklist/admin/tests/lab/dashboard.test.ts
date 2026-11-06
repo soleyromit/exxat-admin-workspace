@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { createSeed } from "@/lib/v2/seed"
-import { behindSeries, buildDashboard, buildDrill, buildExceptions, countedPerWeek, lanes, populationRows, resolveTerm, sectionGaps, sectionMatrix, withClearState } from "@/lib/lab/dashboard"
-import { PACE_MARGIN } from "@/lib/v2/reports"
+import { behindSeries, buildDashboard, buildDrill, buildExceptions, countedPerWeek, lanes, populationRows, sectionGaps, sectionMatrix, withClearState } from "@/lib/lab/dashboard"
+import { listPaceMargin } from "@/lib/v2/population"
 import { heldState } from "@/lib/v2/approvals"
 import { EMPTY_SCOPE, clearFilters, parseScope, removeScope, scopeQuery, setScope, withBasis, type LabScope } from "@/lib/lab/scope"
 
@@ -30,7 +30,7 @@ describe("dashboard model at scale", () => {
     expect(m.inScope).toBe(123)
     expect(m.term.name).toBe("Fall 2026")
     expect(m.kpis).toHaveLength(4)
-    expect(m.heroSentence).toMatch(/^\d+ of 123 students (is|are) behind the term clock$/)
+    expect(m.heroSentence).toMatch(/^\d+ of 123 students (is|are) behind the program clock$/)
   })
 
   it("names the basis in the hero and changes figures when the basis changes", () => {
@@ -97,7 +97,7 @@ describe("dashboard model at scale", () => {
     const c = withClearState(m)
     expect(c.kind).toBe("clear")
     expect(c.pop.rows).toHaveLength(123)
-    expect(c.heroSentence).toMatch(/^Nobody is behind the term clock/)
+    expect(c.heroSentence).toMatch(/^Nobody is behind the program clock/)
   })
 
   it("never uses banned words in generated copy", () => {
@@ -107,14 +107,13 @@ describe("dashboard model at scale", () => {
 })
 
 describe("hero count against an independent raw count (not circular)", () => {
-  it("equals a raw filter of populationRows rows, and a recount from evaluations under the term clock", () => {
+  it("equals a raw filter of populationRows rows, and a recount from evaluations under the program clock", () => {
     for (const scope of [EMPTY_SCOPE, { ...EMPTY_SCOPE, cohort: "BSN 2028" }, { ...EMPTY_SCOPE, cohort: "BSN 2027" }]) {
       const d = buildDashboard(seed, scope)
       const raw = populationRows(seed, scope).rows.filter((r) => r.behind)
       expect(d.heroValue).toBe(raw.length)
-      // Recount "behind" from each row's own counted and needed evaluations with the term share, without the behind flag.
-      const share = resolveTerm(seed, scope).share
-      const recount = populationRows(seed, scope).rows.filter((r) => Math.floor(r.needed * share) - r.collected > PACE_MARGIN).length
+      // Recount "behind" from each row's own counted and needed evaluations with its program clock, without the behind flag.
+      const recount = populationRows(seed, scope).rows.filter((r) => Math.floor(r.needed * r.share) - r.collected > listPaceMargin(r.needed)).length
       expect(d.heroValue).toBe(recount)
       expect(d.heroValue).toBeGreaterThan(0)
     }

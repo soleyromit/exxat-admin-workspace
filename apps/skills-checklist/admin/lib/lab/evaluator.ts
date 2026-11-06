@@ -10,10 +10,12 @@
  */
 import { needsLevels, needsQuestions } from "@/lib/v2/config"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed"
-import { SCORE_MAX, studentContext, waitingFor } from "@/lib/v2/preceptor"
+import { SCORE_MAX, scoreMaxOf, studentContext, waitingFor } from "@/lib/v2/preceptor"
 import { labSkills, labStudents } from "@/lib/v2/lab"
 import { binaryLabels, outcomeWord } from "@/lib/v2/labels"
-import type { EvalModel, Outcome, Person, Skill, Submission, V2State } from "@/lib/v2/types"
+import { answersQualify, outcomeQualifies, outcomeQualifiesOn, scoresQualify } from "@/lib/v2/rules"
+import { detailFieldsFor } from "./student2"
+import type { LogEntry, QuestionRule, ScoredRule, EvalModel, Outcome, Person, Skill, Submission, V2State } from "@/lib/v2/types"
 import { LABEL_PRESETS, type LabelPresetId } from "./configure"
 import { aNoun, capitalize, inSentence, skillNoun, skillNounPlural } from "./terms"
 import { checkOffAllowedFor, checkOffOffReason } from "./checkoff-rules"
@@ -75,7 +77,7 @@ export const DEFAULT_OPTIONS: EvOptions = { ruleHint: false, feedbackOnly: false
 
 /** The program's binary labels and level names for a skill, through an optional preset. Labels only; the recorded outcome never changes. */
 export function programLabels(skill: Skill, preset: LabelPresetId | null | undefined): { outcomes: [string, string]; levels: string[] } {
-  const outcomes = binaryLabels(skill.config?.outcomeLabels)
+  const outcomes = binaryLabels(skill.config?.outcomeLabels, skill.config?.ownLabels)
   const levels = skill.config && needsLevels(skill.model as EvalModel, skill.config) ? [...skill.config.levels] : []
   const p = preset ? LABEL_PRESETS[preset] : null
   return {
@@ -105,8 +107,8 @@ export interface EvChoice {
 export interface EvSelf {
   /** The student's self-rating in the skill's own words, or null. */
   rating: string | null
-  /** Question model: the student's own Yes or No per question. */
-  answers: Array<"yes" | "no"> | null
+  /** Question model: the student's own Yes or No per question. Scored model: the student's own score per question. */
+  answers: Array<"yes" | "no" | number> | null
   note: string
 }
 
@@ -120,6 +122,16 @@ export interface EvSkill {
   levelsLabel: string
   questions: string[]
   answerKind: AnswerKind
+  /** How the answers decide the outcome on the question model [REQ SC-05]. */
+  questionRule: QuestionRule | null
+  /** How the scores decide the outcome on the scored model [REQ SC-07]. */
+  scoredRule: ScoredRule | null
+  /** The top of the scored model's scale, as the program configured it [REQ SC-07]. */
+  scaleMax: number
+  /** Which of the two labels qualifies on the binary model [REQ SC-03]. */
+  qualifyingLabel: 0 | 1 | null
+  /** The lowest level that counts on the levels model (D-L33), or null when any does. */
+  minLevelIndex: number | null
   feedbackRequired: boolean
   holds: boolean
   self: EvSelf | null
@@ -141,6 +153,8 @@ export interface EvRequest {
   performed: string | null
   /** The student's own words on the request (EV-04, field `studentNote`, also written by the student Send flow); empty when none. */
   studentNote: string
+  /** What else the student entered, in the program's field names (EV-04, SC-13). The date performed is `performed`. */
+  details: Array<{ label: string; value: string }>
   programName: string
   skills: EvSkill[]
   /** 1 for a first request; 2 or more after the student corrected and sent it again (RV-02). */
@@ -197,7 +211,7 @@ function ruleHintFor(skill: Skill, preset: LabelPresetId | null = null): string 
   const named = programLabels(skill, preset)
   const min = a.minLevelIndex
   if (min !== null && min > 0 && needsLevels(skill.model, skill.config)) return `Counts at ${inSentence(named.levels[min] ?? skill.config.levels[min])} or above.`
-  return `${named.outcomes[0]} counts toward the program's rule.`
+  return `${named.outcomes[skill.model === "binary" ? skill.config.qualifyingLabel ?? 0 : 0]} counts toward the program's rule.`
 }
 
 export const blankResponse = (k: Pick<EvSkill, "questions">): EvResponse => ({ outcome: null, level: null, answers: k.questions.map(() => null), feedback: "" })
@@ -217,16 +231,17 @@ function toEvSkill(s: V2State, skill: Skill, x: Submission | null, studentId: st
   // The student's self-rating reads in the same labels as the evaluator's choices, so the two sit side by side.
   const selfWord = (rating: string) => {
     const w = outcomeWord(rating)
-    const [seedMet, seedNot] = binaryLabels(c.outcomeLabels)
+    const [seedMet, seedNot] = binaryLabels(c.outcomeLabels, c.ownLabels)
     if (w === seedMet) return named.outcomes[0]
     if (w === seedNot) return named.outcomes[1]
     const li = needsLevels(model, c) ? c.levels.indexOf(w) : -1
-    return li >= 0 && named.levels[li] ? named.levels[li] : w
+    // A word this skill no longer offers (a level, on a skill the program has moved to labels) is not shown as if it were an answer here.
+    return li >= 0 && named.levels[li] ? named.levels[li] : levels.includes(w) ? w : null
   }
-  const earlier = s.evaluations.filter((e) => e.studentId === studentId && e.skillId === skill.id && e.outcome === "not-met").length
+  const earlier = s.evaluations.filter((e) => e.studentId === studentId && e.skillId === skill.id && e.outcome !== "not-yet" && !outcomeQualifiesOn(skill, e.outcome)).length
   const prior: EvResponse | null =
     state === "corrected"
-      ? { outcome: "met", level: levels.length ? Math.min(1, levels.length - 1) : null, answers: questions.map(() => (model === "scored" ? 4 : "yes")), feedback: "Clear steps and good patient explanation." }
+      ? { outcome: "met", level: levels.length ? Math.min(1, levels.length - 1) : null, answers: questions.map(() => (model === "scored" ? scoreMaxOf(skill) : "yes")), feedback: "Clear steps and good patient explanation." }
       : null
   return {
     id: skill.id,
@@ -237,6 +252,11 @@ function toEvSkill(s: V2State, skill: Skill, x: Submission | null, studentId: st
     levelsLabel: model === "demonstration" ? "Level observed" : "Overall rating",
     questions,
     answerKind: model === "question" ? "yes-no" : model === "scored" ? "score" : null,
+    questionRule: model === "question" ? c.questionRule ?? null : null,
+    scoredRule: model === "scored" ? c.scoredRule ?? null : null,
+    scaleMax: scoreMaxOf(skill),
+    qualifyingLabel: model === "binary" ? c.qualifyingLabel ?? 0 : null,
+    minLevelIndex: model === "demonstration" ? c.achievement.minLevelIndex : null,
     feedbackRequired: o.requireFeedback || !!c.feedbackRequired,
     holds: o.holdForApproval || !!c.approvalRequired,
     self: entry && (entry.rating || entry.answers || entry.note) ? { rating: entry.rating ? selfWord(entry.rating) : entry.rating, answers: entry.answers, note: entry.note } : null,
@@ -251,6 +271,19 @@ function toEvSkill(s: V2State, skill: Skill, x: Submission | null, studentId: st
  * sent it: its own evaluator, setting, date performed and note [REQ EV-01, EV-04, ST-12]. Without it, or for an id the store does
  * not hold, the seeded request opens. Null only when the seed lacks the request.
  */
+const courseOfRequest = (s: V2State, id: string | undefined | null): { code: string; name: string } => {
+  const c = id ? s.courses?.find((x) => x.id === id) : null
+  return c ? { code: c.code, name: c.name } : { code: s.course.code, name: s.course.name }
+}
+
+/** The details the student entered, by the program's own field labels, without the date (shown as "Performed"). */
+function suppliedDetails(s: V2State, skillIds: readonly string[], entry: LogEntry | undefined): EvRequest["details"] {
+  const sit = entry?.sitting
+  if (!sit) return []
+  const values: Record<string, string> = { unit: sit.unit, case: sit.case, ...(sit.extra ?? {}) }
+  return detailFieldsFor(s, [...skillIds]).filter((f) => f.id !== "date" && (values[f.id] ?? "").trim()).map((f) => ({ label: f.label, value: values[f.id]!.trim() }))
+}
+
 export function buildRequest(s: V2State, sample: EvSample, state: EvState, o: EvOptions = DEFAULT_OPTIONS, requestId: string | null = null): EvRequest | null {
   const asked = requestId ? s.submissions.find((r) => r.id === requestId) ?? null : null
   const x = asked ?? s.submissions.find((r) => r.id === SEED_REQUEST_ID) ?? waitingFor(s, EVALUATOR_ID)[0] ?? null
@@ -277,10 +310,11 @@ export function buildRequest(s: V2State, sample: EvSample, state: EvState, o: Ev
     id: x.id,
     evaluator: { name: evaluator.name, first: firstName(evaluator.name) },
     student: { name: student.name, first: firstName(student.name) },
-    course: { code: s.course.code, name: s.course.name },
+    course: courseOfRequest(s, entry?.sitting?.course),
     where,
     performed,
     studentNote: (x.studentNote ?? "").trim(),
+    details: suppliedDetails(s, x.skillIds, entry),
     programName: `${s.program.school} ${s.program.name}`,
     skills,
     revision: state === "corrected" ? (x.revisions ?? 0) + 2 : 1,
@@ -313,6 +347,19 @@ export interface EvIssue {
 const graded = (r: EvResponse) => r.outcome === "met" || r.outcome === "not-met"
 
 /**
+ * The question and scored models have no final result (D-L73; Sankalp 11-04): the evaluator answers or scores each question, and the outcome comes from those answers through the
+ * SC-05 or SC-07 rule. So nobody can answer every question Yes and record Unmet, or score zero out of five and record Met.
+ */
+export const answersDecide = (k: Pick<EvSkill, "answerKind">): boolean => k.answerKind === "yes-no" || k.answerKind === "score"
+
+/** The outcome the answers give, or null until every question is answered. */
+export function outcomeFromAnswers(k: Pick<EvSkill, "questions" | "questionRule"> & Partial<Pick<EvSkill, "answerKind" | "scoredRule" | "scaleMax">>, answers: EvResponse["answers"]): "met" | "not-met" | null {
+  if (!k.questions.length || k.questions.some((_, i) => (answers[i] ?? null) === null)) return null
+  if (k.answerKind === "score") return scoresQualify(k.scoredRule ?? { kind: "average", value: Math.ceil((k.scaleMax ?? SCORE_MAX) * 0.6) }, answers) ? "met" : "not-met"
+  return answersQualify(k.questionRule ?? { kind: "all" }, answers) ? "met" : "not-met"
+}
+
+/**
  * An independence-level skill: the evaluator records the level only [REQ SC-08: "a level of supervision per demonstration";
  * strategy/02: every completed demonstration is evidence], and the program's "counts from" level decides whether it qualifies
  * (D-L33; engine `runRule` levelOk). No separate Met / Unmet is asked. Picking a level records the demonstration as completed
@@ -321,7 +368,10 @@ const graded = (r: EvResponse) => r.outcome === "met" || r.outcome === "not-met"
 export const levelOnly = (k: Pick<EvSkill, "model" | "levels">): boolean => k.model === "demonstration" && k.levels.length > 0
 
 /** What the evaluator answered for one skill, in their words: "Met, Independent" or, for a level skill, "Independent". */
-export function ratingLabel(k: Pick<EvSkill, "model" | "levels" | "choices">, r: Pick<EvResponse, "outcome" | "level">): string {
+export function ratingLabel(k: Pick<EvSkill, "model" | "levels" | "choices"> & Partial<Pick<EvSkill, "answerKind" | "questions">>, r: Pick<EvResponse, "outcome" | "level"> & Partial<Pick<EvResponse, "answers">>): string {
+  // No final result on these two models: what was answered is the answers, in the evaluator's words.
+  if (k.answerKind === "score") return r.answers?.length ? `Scored ${r.answers.filter((a) => a !== null).join(", ")}` : ""
+  if (k.answerKind === "yes-no") return r.answers?.length ? `${r.answers.filter((a) => a === "yes").length} of ${k.questions?.length ?? r.answers.length} Yes` : ""
   const level = r.level !== null && k.levels[r.level] ? k.levels[r.level] : null
   const choice = k.choices.find((c) => c.value === r.outcome)?.label ?? null
   if (levelOnly(k)) return (r.outcome === "not-yet" ? choice : level) ?? ""
@@ -334,11 +384,11 @@ export function validate(req: EvRequest, responses: Record<string, EvResponse>):
   for (const k of req.skills) {
     const r = responses[k.id] ?? blankResponse(k)
     const base = { skillId: k.id, skillName: k.name }
-    if (!r.outcome) out.push(levelOnly(k) ? { ...base, field: evFieldId.level(k.id), message: `Choose the ${k.levelsLabel.toLowerCase()}.` } : { ...base, field: evFieldId.outcome(k.id), message: "Choose an outcome." })
+    if (!r.outcome && !answersDecide(k)) out.push(levelOnly(k) ? { ...base, field: evFieldId.level(k.id), message: `Choose the ${k.levelsLabel.toLowerCase()}.` } : { ...base, field: evFieldId.outcome(k.id), message: "Choose an outcome." })
     if (graded(r) && k.levels.length && r.level === null) out.push({ ...base, field: evFieldId.level(k.id), message: `Choose the ${k.levelsLabel.toLowerCase()}.` })
-    if (graded(r) && k.answerKind) {
+    if ((graded(r) || answersDecide(k)) && k.answerKind) {
       const missing = k.questions.findIndex((_, i) => (r.answers[i] ?? null) === null)
-      if (missing >= 0) out.push({ ...base, field: evFieldId.question(k.id, missing), message: k.answerKind === "score" ? `Score every question from 1 to ${SCORE_MAX}.` : "Answer every question." })
+      if (missing >= 0) out.push({ ...base, field: evFieldId.question(k.id, missing), message: k.answerKind === "score" ? `Score every question from 1 to ${k.scaleMax}.` : "Answer every question." })
     }
     if ((k.feedbackRequired || r.outcome === "not-yet") && !r.feedback.trim()) out.push({ ...base, field: evFieldId.feedback(k.id), message: "Write feedback. The program requires it." })
   }
@@ -351,7 +401,7 @@ export function doneCount(req: EvRequest, responses: Record<string, EvResponse>)
   return req.skills.filter((k) => !open.has(k.id)).length
 }
 
-export type ReceiptStatus = "counts" | "waits" | "queued" | "feedback"
+export type ReceiptStatus = "counts" | "waits" | "queued" | "feedback" | "not-counted"
 
 export interface ReceiptLine {
   skillId: string
@@ -371,6 +421,9 @@ export function receipt(req: EvRequest, responses: Record<string, EvResponse>, o
     if (opts.offline) return { skillId: k.id, name: k.name, answer, status: "queued", word: "Queued on this device", icon: "fa-cloud-arrow-up" }
     if (r.outcome === "not-yet") return { skillId: k.id, name: k.name, answer, status: "feedback", word: "Feedback recorded", icon: "fa-comment" }
     if (k.holds) return { skillId: k.id, name: k.name, answer, status: "waits", word: "Waits for program approval", icon: "fa-clock" }
+    // An outcome that does not qualify counts toward nothing, so the receipt must not say it does. Which label qualifies is the program's [REQ SC-03].
+    const belowLevels = k.minLevelIndex !== null && r.level !== null && r.level < k.minLevelIndex
+    if (belowLevels || (r.outcome !== null && !outcomeQualifies({ model: k.model, qualifyingLabel: k.qualifyingLabel }, r.outcome))) return { skillId: k.id, name: k.name, answer, status: "not-counted", word: "Did not meet criteria", icon: "fa-circle-minus" }
     return { skillId: k.id, name: k.name, answer, status: "counts", word: "Counts now", icon: "fa-circle-check" }
   })
 }
@@ -378,7 +431,7 @@ export function receipt(req: EvRequest, responses: Record<string, EvResponse>, o
 /** A filled response for every skill: the lab "submitted" state and the receipt preview. */
 export function sampleResponses(req: EvRequest): Record<string, EvResponse> {
   return Object.fromEntries(
-    req.skills.map((k) => [k.id, { outcome: "met", level: k.levels.length ? Math.min(1, k.levels.length - 1) : null, answers: k.questions.map(() => (k.answerKind === "score" ? 4 : "yes")), feedback: k.feedbackRequired ? "Safe technique, explained each step." : "" } as EvResponse]),
+    req.skills.map((k) => [k.id, { outcome: k.model === "binary" && k.qualifyingLabel === 1 ? "not-met" : "met", level: k.levels.length ? Math.min(1, k.levels.length - 1) : null, answers: k.questions.map(() => (k.answerKind === "score" ? k.scaleMax : "yes")), feedback: k.feedbackRequired ? "Safe technique, explained each step." : "" } as EvResponse]),
   )
 }
 
@@ -426,7 +479,7 @@ export function buildInvitation(s: V2State, evaluatorId: string = EVALUATOR_ID, 
     return {
       requestId: x.id,
       student: st?.name ?? "A student",
-      course: s.course.code,
+      course: courseOfRequest(s, entry?.sitting?.course).code,
       skills: x.skillIds.map((id) => s.skills.find((k) => k.id === id)?.name ?? capitalize(aNoun())),
       where,
       link: `https://evaluate.example.edu/r/${x.id}`,
@@ -508,6 +561,9 @@ export interface LabSkillRow {
   feedbackRequired: boolean
   /** The skill's own "Approval before it counts" setting: its results wait for program approval (EV-07). */
   holds: boolean
+  /** Which recorded result counts [REQ SC-03]; unset reads the first label. */
+  model?: Skill["model"]
+  qualifyingLabel?: 0 | 1 | null
 }
 
 /**
@@ -515,14 +571,23 @@ export interface LabSkillRow {
  * skill's own configuration, in the words of the preceptor receipt ("Counts now", "Waits for program approval").
  */
 export function labSavedLine(entries: LabSavedResult[], skills: LabSkillRow[]): string {
-  const held = new Set(skills.filter((k) => k.holds).map((k) => k.id))
-  const waits = entries.filter((e) => held.has(e.skillId))
-  const counts = entries.length - waits.length
-  const names = [...new Set(waits.map((e) => skills.find((k) => k.id === e.skillId)?.name ?? ""))].filter(Boolean)
+  const byId = new Map(skills.map((k) => [k.id, k]))
+  // In the order of the preceptor receipt: a held result waits whatever it says; of the rest, only the label that qualifies counts [REQ SC-03].
+  const waits = entries.filter((e) => byId.get(e.skillId)?.holds)
+  const rest = entries.filter((e) => !byId.get(e.skillId)?.holds)
+  const counts = rest.filter((e) => { const k = byId.get(e.skillId); return outcomeQualifies({ model: k?.model, qualifyingLabel: k?.qualifyingLabel }, e.outcome) }).length
+  const didNot = rest.length - counts
+  const names = [...new Set(waits.map((e) => byId.get(e.skillId)?.name ?? ""))].filter(Boolean)
   const n = (x: number) => (x === 1 ? "1 result" : `${x} results`)
-  if (waits.length === 0) return `${counts === 1 ? "It counts" : "They count"} now.`
-  if (counts === 0) return `${waits.length === 1 ? "It waits" : "They wait"} for program approval.`
-  return `${n(counts)} ${counts === 1 ? "counts" : "count"} now; ${n(waits.length)} for ${names.join(" and ")} ${waits.length === 1 ? "waits" : "wait"} for program approval.`
+  if (!waits.length && !didNot) return `${counts === 1 ? "It counts" : "They count"} now.`
+  if (!counts && !didNot) return `${waits.length === 1 ? "It waits" : "They wait"} for program approval.`
+  if (!counts && !waits.length) return `${didNot === 1 ? "It" : "They"} did not meet criteria.`
+  const parts = [
+    ...(counts ? [`${n(counts)} ${counts === 1 ? "counts" : "count"} now`] : []),
+    ...(didNot ? [`${n(didNot)} did not meet criteria`] : []),
+    ...(waits.length ? [`${n(waits.length)} for ${names.join(" and ")} ${waits.length === 1 ? "waits" : "wait"} for program approval`] : []),
+  ]
+  return `${parts.join("; ")}.`
 }
 
 /** Session skills. `requireFeedback` is the lab's "Program requires feedback" option (?fb=1), the same one the evaluator form reads. */
@@ -532,7 +597,7 @@ export function labSessionSkills(s: V2State, requireFeedback = false): LabSkillR
   // the course offering's Group check-off screen reads; then the instructor's qualification.
   return labSkills(s, "lab", inst).map((x) => {
     const off = checkOffOffReason(x.skill.model, checkOffAllowedFor(x.skill.model, x.skill.config?.checkOff?.enabled), !!x.skill.config && x.skill.configured !== false, x.skill.config?.questions.length ?? 0)
-    return { id: x.skill.id, name: x.skill.name, blocked: off ? off.split(/(?<=\.)\s/)[0] : x.blocked, feedbackRequired: requireFeedback || !!x.skill.config?.feedbackRequired, holds: !!x.skill.config?.approvalRequired }
+    return { id: x.skill.id, name: x.skill.name, blocked: off ? off.split(/(?<=\.)\s/)[0] : x.blocked, feedbackRequired: requireFeedback || !!x.skill.config?.feedbackRequired, holds: !!x.skill.config?.approvalRequired, model: x.skill.model, qualifyingLabel: x.skill.config?.qualifyingLabel ?? null }
   })
 }
 
@@ -621,11 +686,12 @@ export interface ReceiptSummary {
   waits: number
   queued: number
   feedback: number
+  notCounted: number
 }
 
 export function receiptSummary(lines: ReceiptLine[]): ReceiptSummary {
   const n = (s: ReceiptStatus) => lines.filter((l) => l.status === s).length
-  return { counts: n("counts"), waits: n("waits"), queued: n("queued"), feedback: n("feedback") }
+  return { counts: n("counts"), waits: n("waits"), queued: n("queued"), feedback: n("feedback"), notCounted: n("not-counted") }
 }
 
 /** What the student sees on their progress for each skill after this submit, in the student's words (glossary). */
@@ -634,6 +700,7 @@ export const STUDENT_SEES: Record<ReceiptStatus, { word: string; icon: string }>
   waits: { word: "Awaiting approval", icon: "fa-hourglass-half" },
   queued: { word: "Waiting for evaluator", icon: "fa-clock" },
   feedback: { word: "Feedback received", icon: "fa-comment" },
+  "not-counted": { word: "Did not meet criteria", icon: "fa-circle-minus" },
 }
 
 /** How an inbox list shows the email before it is opened: sender, subject, and the first 40 characters of the body. */

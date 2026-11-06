@@ -5,7 +5,7 @@
  * Configure A (components/lab/layout/wizard-page.tsx): Upload > Review > Fix > Confirm.
  * Spec: docs/knowledge/design/skill-setup-journey/02 section 3.0 to 3.4; layout rules 01 (L1 to L12). Romit 2026-10-27: one left
  * axis, numbered sections in the configure style, no oversized drop box, the standard footer (Back slot left, primary right).
- * - Upload: 1 "Where should they go?" (Select of groups of skills, J1), 2 "Your file" (a compact drop target). Next stays
+ * - Upload: 1 "Where should they go?" (Select of skill lists, J1), 2 "Your file" (a compact drop target). Next stays
  *   disabled, with its reason, until a file is read.
  * - Review: one sentence with the engine's figures and the file's own categories, collapsed, with counts (J2, J3).
  * - Fix: one counts line, "Accept all suggestions" at the top (with Undo), groups as header strips with one Accept each. A
@@ -16,6 +16,7 @@
  * (set from the lab bar's Scenario menu, never from the page). ?source=paste&step=fix opens a list pasted in add a skill.
  */
 import * as React from "react"
+import { SceneArt, SectionTitle, SetupPrompt } from "@/components/lab/first-run"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -33,7 +34,6 @@ import {
   FixIntro,
   FixList,
   ImportNameField,
-  ImportSection,
   LIBRARY_HREF,
   NewListField,
   NotCreatedList,
@@ -43,7 +43,12 @@ import {
   useCancel,
 } from "@/components/lab/import/import-parts"
 import { useImportSession } from "@/components/lab/import/use-import-session"
-import { confirmSentence } from "@/lib/lab/import"
+import { confirmSentence, notCreated, plainLinesOf } from "@/lib/lab/import"
+import { addSkillsToStore, draftToSkill, EMPTY_DRAFT, normName, setSkillDetailsInStore } from "@/lib/lab/library"
+import { useV2Store } from "@/lib/v2/react"
+import { IDS } from "@/lib/v2/seed-core"
+import { ensureVocab } from "@/lib/v2/vocabulary"
+import { cn } from "@exxatdesignux/ui/lib/utils"
 import { LaterTitle } from "@/components/lab/import/sample-badge"
 import { TYPE } from "@/components/lab/type-scale"
 import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -70,6 +75,39 @@ const UPLOAD_COLUMN = "w-full max-w-[40rem]"
 
 export function AdminImportA() {
   const session = useImportSession()
+  const store = useV2Store()
+  const [createdCount, setCreatedCount] = React.useState<number | undefined>(undefined)
+  // Only what the admin confirmed reaches the library, and it arrives not configured [REQ IM-05, IM-09], with the import's name so it can be told apart [REQ IM-11].
+  const createSkills = () => {
+    const ready = session.resolved.filter((r) => r.status === "ready")
+    const at = new Date().toISOString()
+    const stamp = Date.now().toString(36)
+    const fresh = ready.filter((r) => !r.replaces)
+    const added = fresh.map((r, i) => draftToSkill({ ...EMPTY_DRAFT, name: r.name, category: r.section ?? "", section: r.section ?? "" }, `sk-import-${stamp}-${i}`))
+    const ids = new Set(added.map((a) => a.id))
+    const categories = [...new Set(ready.map((r) => r.section).filter((x): x is string => !!x))]
+    store.update((st) => {
+      let next = addSkillsToStore(ensureVocab(st, "categories", categories, IDS.ross, at), added, IDS.ross, at, { id: `batch-${stamp}`, kind: "file-import", label: session.batchName })
+      for (const r of ready) {
+        if (!r.replaces) continue
+        const twin = next.skills.find((k) => normName(k.name) === normName(r.replaces!))
+        if (twin && r.section) next = setSkillDetailsInStore(next, [twin.id], { category: r.section }, IDS.ross, at)
+      }
+      return { ...next, skills: next.skills.map((k) => (ids.has(k.id) ? { ...k, model: null, configured: false, published: false, config: null } : k)) }
+    })
+    setCreatedCount(ready.length)
+    session.confirm()
+  }
+  // A list we can read here is read for real. PDF, Word and Excel still show the sample until reading them is built.
+  const onFiles = async (files: File[]) => {
+    const file = files[0]
+    if (file && /\.(csv|txt)$/i.test(file.name)) {
+      session.readText(plainLinesOf(await file.text(), file.name))
+      session.setBatchName(file.name)
+    } else session.readFiles(files)
+  }
+  const leftBehind = notCreated(session.resolved)
+  const notAdded = leftBehind.leftOut.length + leftBehind.merged.length + leftBehind.joined.length
   const router = useLabRouter()
   const params = useSearchParams()
   const [step, setStep] = React.useState(0)
@@ -127,10 +165,9 @@ export function AdminImportA() {
       primary: { label: "Next", onClick: () => go(3), disabled: left > 0, disabledReason: `${lines(left)} left to decide.` },
     }
   } else {
-    const reason = left > 0 ? "Decide the lines left in Fix first." : session.isNewList && !session.newLibraryName.trim() ? `Name the new group of ${skillNounPlural()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
     footer = {
       back: { onClick: () => go(left > 0 ? 2 : 1) },
-      primary: { label: `Create ${countSkills(total)}`, onClick: session.confirm, disabled: !!reason, disabledReason: reason },
+      primary: { label: `Create ${countSkills(total)}`, onClick: createSkills },
     }
   }
 
@@ -148,10 +185,8 @@ export function AdminImportA() {
       >
         <div data-import-lab="A" className="contents">
           <WizardPanel step={0} className="flex flex-col gap-6">
-            <ImportSection n={1} id="import-where" title="Where should they go?" first className={UPLOAD_COLUMN}>
-              <TargetField session={session} labelledBy="import-where" />
-            </ImportSection>
-            <ImportSection n={2} id="import-file" title="Your file" className={UPLOAD_COLUMN}>
+            {/* The file comes first: it is why the admin is here. What happens next is said once, under it, so nothing about a file feels final [REQ IM-03, IM-05, IM-08]. */}
+            <section aria-label="Your file" className="flex flex-col gap-4" data-import-file>
               {session.phase === "reading" ? (
                 <ReadingState session={session} />
               ) : session.phase === "failed" ? (
@@ -159,9 +194,27 @@ export function AdminImportA() {
               ) : session.phase === "review" ? (
                 <FileStatus session={session} />
               ) : (
-                <Dropzone compact onFiles={(f) => session.readFiles(f)} />
+                <>
+                  <Dropzone art={<SceneArt scene="upload" className="block w-52" />} hint="PDF, Word or Excel, any layout." onFiles={onFiles} />
+                  <ul className="grid gap-4 md:grid-cols-3" data-import-promises>
+                    {[
+                      ["fa-file-lines", "No template", `Your list as it is. We look for names, descriptions and headings.`],
+                      ["fa-list-check", "You check it first", `Nothing is added until you confirm.`],
+                      ["fa-magnifying-glass", "Nothing goes missing", `Any line we cannot read is shown to you.`],
+                    ].map(([icon, title, body]) => (
+                      <li key={title} className="flex items-start gap-3">
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-brand-tint text-brand"><i className={`fa-light ${icon} text-xs`} aria-hidden="true" /></span>
+                        <span className="flex min-w-0 flex-col gap-0.5"><span className={TYPE.label}>{title}</span><span className={TYPE.meta}>{body}</span></span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
-            </ImportSection>
+            </section>
+            <section aria-labelledby="import-where" className="flex flex-col gap-2 border-t border-border pt-6" data-import-section>
+              <h3 id="import-where" className={TYPE.card}>Where should they go?</h3>
+              <TargetField session={session} labelledBy="import-where" className={UPLOAD_COLUMN} />
+            </section>
           </WizardPanel>
           <WizardPanel step={1} className="flex flex-col gap-6">
             {session.phase === "review" ? (
@@ -181,26 +234,36 @@ export function AdminImportA() {
           </WizardPanel>
           <WizardPanel step={3} className="flex flex-col gap-6">
             {done ? (
-              <DoneBanner session={session} />
+              <DoneBanner session={session} count={createdCount} />
             ) : session.phase === "review" ? (
               <div className="flex flex-col gap-6" data-confirm-panel>
-                <ImportSection n={1} id="confirm-what" title="What will be created" first>
-                  <div className="flex flex-col gap-3">
+                {/* The answer first: what the button will do. Then what it will not, then the one thing left to type. */}
+                <SetupPrompt
+                  scene="upload"
+                  text={
                     <div className="flex flex-col gap-1">
-                      <p className={TYPE.label} data-plan-sentence>
-                        {confirmSentence(session.plan, session.targetLabel, { one: skillNoun(), many: skillNounPlural() })}
-                      </p>
-                      <p className={TYPE.helper}>Each starts not configured.</p>
+                      <p className={cn(TYPE.card, "text-foreground")} data-plan-sentence>{confirmSentence(session.plan, session.targetLabel, { one: skillNoun(), many: skillNounPlural() })}</p>
+                      <p>{`They start not configured. You set how they are judged next.`}</p>
                     </div>
+                  }
+                />
+                {notAdded ? (
+                  <section aria-labelledby="confirm-not" className="flex flex-col gap-2">
+                    <SectionTitle icon="fa-file-circle-minus" id="confirm-not" className={cn(TYPE.group, "flex items-baseline gap-2")}>
+                      Lines not added
+                      <span className="text-sm font-normal tabular-nums text-muted-foreground">{notAdded}</span>
+                    </SectionTitle>
                     <NotCreatedList session={session} />
-                  </div>
-                </ImportSection>
-                <ImportSection n={2} id="confirm-name" title="Name this import">
+                  </section>
+                ) : null}
+                <section aria-labelledby="confirm-name" className="flex flex-col gap-2">
+                  <SectionTitle icon="fa-tag" id="confirm-name" className={TYPE.group}>Name this import</SectionTitle>
+                  <p className={TYPE.helper}>{`So you can tell later which ${skillNounPlural()} came from this file.`}</p>
                   <div className="flex flex-col gap-4">
                     <NewListField session={session} />
                     <ImportNameField session={session} />
                   </div>
-                </ImportSection>
+                </section>
               </div>
             ) : null}
           </WizardPanel>

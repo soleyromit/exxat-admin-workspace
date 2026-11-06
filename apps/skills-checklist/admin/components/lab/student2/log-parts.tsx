@@ -6,6 +6,7 @@
  * optional self-evaluation, who signs off (site evaluators or anyone by name and email) and the four ways to reach them.
  * Compact DS controls (32 px) on desktop; touch height below the sm breakpoint.
  */
+import { scoreMaxOf } from "@/lib/v2/preceptor"
 import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { AvatarInitials } from "@exxatdesignux/ui/components/ui/avatar"
@@ -48,6 +49,7 @@ import {
   type WhereChoice,
 } from "@/lib/lab/student2"
 
+import { binaryLabels } from "@/lib/v2/labels"
 import { TOUCH_ROW } from "./touch"
 export { TOUCH_ROW }
 
@@ -257,24 +259,25 @@ export function DetailsFields({ values, onChange, errors, showErrors, idPrefix =
 
 /**
  * What the student picks when rating themselves: the evaluator's own scale (levels, or the outcome labels of an approved-or-not
- * skill). A questions skill has no single scale, so the student rates its final result in the program's outcome words; without
- * this a questions skill that asks for a self-evaluation showed no choice and blocked Continue (fulfillment walkthrough,
- * 2026-10-27).
+ * skill). A questions skill has no final result (D-L73): the student answers its questions, in SelfEvalCards, and picks nothing here.
  */
 export function selfEvalOptions(skill: Skill): string[] {
   const own = ratingOptions(skill)
   if (own.length) return own
-  return (skill.config?.outcomeLabels ?? []).filter((l) => l.trim())
+  const kind = ratingKind(skill)
+  return kind === "questions" || kind === "scores" ? [] : binaryLabels(skill.config?.outcomeLabels, skill.config?.ownLabels).filter((l) => l.trim())
 }
 
 export function SelfEvalFields({ s, ids, values, onChange, quiet = false }: { s: V2State; ids: string[]; values: Record<string, string>; onChange: (id: string, v: string) => void; /** The page already says it (Send C "Evaluate yourself" and its summary): legend for screen readers only, no helper. */ quiet?: boolean }) {
-  if (ids.length === 0) return null
+  // A questions skill has no single choice here (D-L73): this compact form leaves it out.
+  const rated = ids.filter((id) => { const k = skillById(s, id); return !!k && selfEvalOptions(k).length > 0 })
+  if (rated.length === 0) return null
   return (
     <FieldSet>
       <FieldLegend variant="label" className={quiet ? "sr-only" : undefined}>Self-evaluation</FieldLegend>
       {quiet ? null : <FieldDescription>Your evaluator sees this beside their own answer.</FieldDescription>}
       <ul className="flex flex-col gap-3">
-        {ids.map((id) => {
+        {rated.map((id) => {
           const skill = skillById(s, id)
           if (!skill) return null
           const labelId = `self-${id}`
@@ -406,12 +409,15 @@ export function EvaluatorPicker({ options, value, onChange, fresh, onFresh, erro
 // Self-evaluation against the evaluator's own criteria [REQ ST-11: "the student records a self-evaluation against the same
 // criteria the evaluator will use"; SC-15] (Romit 2026-10-27: "this layout isn't good at all")
 
-export type SelfAnswers = Record<string, Array<"yes" | "no" | null>>
+export type SelfAnswer = "yes" | "no" | number
+export type SelfAnswers = Record<string, Array<SelfAnswer | null>>
 
 interface SelfShape {
   skill: Skill
   questions: string[]
-  /** The single choice: the overall result of a questions skill (when it has one), the level, or the outcome. */
+  /** A scored skill: the top of its scale, each question taking a score from 1 to this [REQ ST-11, SC-07]. Null: Yes or No. */
+  scaleTop: number | null
+  /** The single choice: the level or the outcome. A questions or scored skill has none: its answers are the rating (D-L73). */
   overall: string[]
   overallLabel: string
   rule: string
@@ -420,9 +426,9 @@ interface SelfShape {
 export function selfShape(skill: Skill): SelfShape {
   const kind = ratingKind(skill)
   const c = skill.config
-  const questions = kind === "questions" && c ? c.questions.filter((x) => x.trim()) : []
-  const overall = kind === "questions" ? (c?.outcomeLabels ?? []).filter((l) => l.trim()) : selfEvalOptions(skill)
-  return { skill, questions, overall, overallLabel: kind === "levels" ? "Your level" : kind === "questions" ? "Overall result" : "Your result", rule: c ? evaluationPreview(skill).rule : "" }
+  const questions = (kind === "questions" || kind === "scores") && c ? c.questions.filter((x) => x.trim()) : []
+  const overall = kind === "questions" || kind === "scores" ? [] : selfEvalOptions(skill)
+  return { skill, questions, scaleTop: kind === "scores" ? scoreMaxOf(skill) : null, overall, overallLabel: kind === "levels" ? "Your level" : "Your result", rule: c ? evaluationPreview(skill).rule : "" }
 }
 
 /** What is still unanswered, in form order, each entry focusing its control. */
@@ -446,7 +452,7 @@ export function selfSummary(s: V2State, id: string, ratings: Record<string, stri
   if (!skill) return ""
   const sh = selfShape(skill)
   const a = answers[id] ?? []
-  const parts = [sh.questions.length ? `${a.filter((x) => x === "yes").length} of ${sh.questions.length} Yes` : "", ratings[id] ?? ""].filter(Boolean)
+  const parts = [sh.questions.length ? (sh.scaleTop ? `Scored ${a.filter((x) => x !== null && x !== undefined).join(", ")}` : `${a.filter((x) => x === "yes").length} of ${sh.questions.length} Yes`) : "", ratings[id] ?? ""].filter(Boolean)
   return parts.join(", ")
 }
 
@@ -454,7 +460,7 @@ export function selfSummary(s: V2State, id: string, ratings: Record<string, stri
  * One card per skill that asks for a self-evaluation: the skill name once, the evaluator's own questions each with Yes and No in
  * one row, then the overall result, level or outcome on the evaluator's scale, and the rule in one muted line. Single column at 375.
  */
-export function SelfEvalCards({ s, ids, ratings, answers, onRating, onAnswer, showErrors = false }: { s: V2State; ids: string[]; ratings: Record<string, string>; answers: SelfAnswers; onRating: (id: string, v: string) => void; onAnswer: (id: string, index: number, v: "yes" | "no") => void; showErrors?: boolean }) {
+export function SelfEvalCards({ s, ids, ratings, answers, onRating, onAnswer, showErrors = false, plain = false }: { s: V2State; ids: string[]; ratings: Record<string, string>; answers: SelfAnswers; onRating: (id: string, v: string) => void; onAnswer: (id: string, index: number, v: SelfAnswer) => void; showErrors?: boolean; /** Send C: the questions and answers only, no helper or rule sentence (D-L34; the skill's page states the rule). */ plain?: boolean }) {
   return (
     <div className="flex flex-col gap-4" data-self-eval>
       {ids.map((id) => {
@@ -468,7 +474,7 @@ export function SelfEvalCards({ s, ids, ratings, answers, onRating, onAnswer, sh
           <section key={id} className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4" aria-labelledby={head} data-self-card={id}>
             <div className="flex flex-col gap-0.5">
               <h2 id={head} className={TYPE.section}>{skill.name}</h2>
-              <p className="text-sm text-muted-foreground">What the evaluator checks; answer for yourself.</p>
+              {plain ? null : <p className="text-sm text-muted-foreground">What the evaluator checks; answer for yourself.</p>}
             </div>
             {sh.questions.length ? (
               <ol className="flex flex-col divide-y divide-border">
@@ -478,10 +484,16 @@ export function SelfEvalCards({ s, ids, ratings, answers, onRating, onAnswer, sh
                     <li key={q} className="grid grid-cols-[1.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2 py-2.5 sm:grid-cols-[1.5rem_minmax(0,1fr)_auto]">
                       <span className="text-xs tabular-nums text-muted-foreground" aria-hidden="true">{i + 1}</span>
                       <span id={qid} className="text-sm text-foreground" data-user-content>{q}</span>
-                      <ToggleGroup id={`self-${id}-q${i}`} type="single" variant="outline" spacing={2} value={a[i] ?? ""} onValueChange={(v) => { if (v === "yes" || v === "no") onAnswer(id, i, v) }} aria-labelledby={qid} className="col-start-2 justify-start sm:col-start-3">
+                      {sh.scaleTop ? (
+                        <ToggleGroup id={`self-${id}-q${i}`} type="single" variant="outline" spacing={2} value={a[i] === null || a[i] === undefined ? "" : String(a[i])} onValueChange={(v) => { if (v) onAnswer(id, i, Number(v)) }} aria-labelledby={qid} className="col-start-2 flex-wrap justify-start sm:col-start-3">
+                          {Array.from({ length: sh.scaleTop }, (_, n) => <ToggleGroupItem key={n} value={String(n + 1)} className={TOUCH_ROW}>{n + 1}</ToggleGroupItem>)}
+                        </ToggleGroup>
+                      ) : (
+                      <ToggleGroup id={`self-${id}-q${i}`} type="single" variant="outline" spacing={2} value={typeof a[i] === "string" ? a[i] : ""} onValueChange={(v) => { if (v === "yes" || v === "no") onAnswer(id, i, v) }} aria-labelledby={qid} className="col-start-2 justify-start sm:col-start-3">
                         <ToggleGroupItem value="yes" className={cn("min-w-16", TOUCH_ROW)}>Yes</ToggleGroupItem>
                         <ToggleGroupItem value="no" className={cn("min-w-16", TOUCH_ROW)}>No</ToggleGroupItem>
                       </ToggleGroup>
+                      )}
                     </li>
                   )
                 })}
@@ -496,7 +508,7 @@ export function SelfEvalCards({ s, ids, ratings, answers, onRating, onAnswer, sh
               </div>
             ) : null}
             {incomplete ? <FieldError>{sh.questions.length ? "Answer every question." : `Choose ${sh.overallLabel.toLowerCase()}.`}</FieldError> : null}
-            {sh.rule ? <p className="text-sm text-muted-foreground" data-user-content>{sh.rule}</p> : null}
+            {sh.rule && !plain ? <p className="text-sm text-muted-foreground" data-user-content>{sh.rule}</p> : null}
           </section>
         )
       })}
@@ -512,7 +524,10 @@ export function EvaluatorChecks({ s, id }: { s: V2State; id: string }) {
   const [open, setOpen] = React.useState(false)
   const skill = skillById(s, id)
   if (!skill) return null
-  const p = evaluationPreview(skill)
+  const seen = evaluationPreview(skill)
+  // A scored skill has no final result: the evaluator gives a score on each question (Sankalp 11-04), on the program's scale [REQ SC-07].
+  const scored = ratingKind(skill) === "scores"
+  const p = scored ? { ...seen, answer: `A score from 1 to ${scoreMaxOf(skill)} on each question`, items: (skill.config?.questions ?? []).filter((q) => q.trim()) } : seen
   return (
     <Collapsible open={open} onOpenChange={setOpen} data-evaluator-checks={id}>
       <CollapsibleTrigger asChild>
@@ -538,10 +553,10 @@ export function EvaluatorChecks({ s, id }: { s: V2State; id: string }) {
 // ---------------------------------------------------------------------------------------------------------------------
 // How it reaches them
 
-export function MethodTiles({ value, onChange, offline, methods = METHODS }: { value: SignoffMethod; onChange: (m: SignoffMethod) => void; offline: boolean; methods?: typeof METHODS }) {
+export function MethodTiles({ value, onChange, offline, methods = METHODS, label = "How they sign" }: { value: SignoffMethod; onChange: (m: SignoffMethod) => void; offline: boolean; methods?: typeof METHODS; label?: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-medium text-foreground" id="method-label">How they sign</span>
+      <span className="text-sm font-medium text-foreground" id="method-label">{label}</span>
       <SelectionTileGrid
         interaction="radio"
         idPrefix="method"

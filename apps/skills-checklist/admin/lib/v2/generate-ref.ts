@@ -102,6 +102,9 @@ export const isPulse2 = (h: HgtcRow) => h.group === "Pulse" && /apical|periphera
 function configFor(h: HgtcRow, model: Skill["model"]): SkillConfig {
   const c = defaultConfig(model)
   if (model === "question" || model === "scored") c.questions = [...SAMPLE_QUESTIONS]
+  // What makes one evaluation count (SEED_VERSION 2026-11-04.1-qualifying-rules; figures unchanged, see lib/v2/seed.ts configFor).
+  if (model === "question") c.questionRule = { kind: "all" }
+  if (model === "scored") c.scoredRule = { kind: "average", value: 3 }
   // Dataset rule mix: most rows need one Met; vitals-style rows need two different evaluators; IV therapy rows have a minimum level.
   c.achievement = { kind: "count", need: 1, minLevelIndex: null, distinctEvaluators: 1, settingMinimums: [] }
   if (DISTINCT2.has(h.id) || isPulse2(h)) c.achievement = { ...c.achievement, need: 2, distinctEvaluators: 2 }

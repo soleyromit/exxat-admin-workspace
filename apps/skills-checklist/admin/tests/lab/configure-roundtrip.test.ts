@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { createV2Store } from "@/lib/v2/store"
-import { createSeed } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed } from "@/lib/v2/seed"
 import { skillById } from "@/lib/v2/evidence-index"
 import { emptyRule, fromV2, saveLabRule, validateRule, withModel, type LabRule } from "@/lib/lab/configure"
 import type { V2State } from "@/lib/v2/types"

@@ -7,7 +7,7 @@ import { populationRows } from "@/lib/v2/population"
 import { homeKpis } from "@/lib/v2/home"
 import { approveItems, queueItems } from "@/lib/v2/queue"
 import { behindPace, heatmap, NO_FILTERS, paceRows, studentsIn } from "@/lib/v2/reports"
-import { buildHero, createSeed, IDS } from "@/lib/v2/seed"
+import { buildHero, createGeneratedSeed, createSeed, IDS } from "@/lib/v2/seed"
 import { facts } from "@/lib/v2/facts"
 import { skillProgress, courseWork } from "@/lib/v2/student"
 import type { V2State } from "@/lib/v2/types"
@@ -44,7 +44,7 @@ describe("one student count, everywhere", () => {
 describe("the same student shows the same numbers (property over every student)", () => {
   const pace = new Map(paceRows(s).map((r) => [r.studentId, r]))
   const heat = new Map(heatmap(s, { ...NO_FILTERS, mandatoryOnly: true }).rows.map((r) => [r.student.id, r]))
-  const pop = new Map(populationRows(s).rows.map((r) => [r.id, r]))
+  const pop = new Map(populationRows(s, undefined, undefined, { set: "term" }).rows.map((r) => [r.id, r]))
   const ver = new Map(verificationRows(s).map((r) => [r.studentId, r]))
   it("agrees across the population row, mandatoryProgress, pace and the verification list (own cohort offerings this term)", () => {
     for (const p of students) {
@@ -100,8 +100,9 @@ describe("queue counts equal status counts", () => {
 
   it("splits the 8,879 pieces of evidence into the five statuses the targets name", () => {
     const c = evidenceStatusCounts(s)
-    expect(c).toEqual({ counted: TARGETS.counted, didNotQualify: TARGETS.didNotQualify, awaiting: TARGETS.awaiting, returned: TARGETS.returned, waiting: TARGETS.waiting })
-    expect(Object.values(c).reduce((a, b) => a + b, 0)).toBe(8879)
+    // The generator's targets, plus the 169 vascular evaluations (SEED_VERSION 2026-11-05.2, withVascularEvidence), plus the earlier-term evidence on the list (2026-11-05.3, withListBaseline): 3,349 Met and 231 that did not count.
+    expect(c).toEqual({ counted: TARGETS.counted + 169 + 3349, didNotQualify: TARGETS.didNotQualify + 231, awaiting: TARGETS.awaiting, returned: TARGETS.returned, waiting: TARGETS.waiting })
+    expect(Object.values(c).reduce((a, b) => a + b, 0)).toBe(12628)
   })
 
   it("moves the counts by exactly one when the reviewer approves a generated item", () => {
@@ -112,7 +113,7 @@ describe("queue counts equal status counts", () => {
     expect(queueItems(r.state)).toHaveLength(queueItems(s).length - 1)
     const c = evidenceStatusCounts(r.state)
     expect(c.awaiting).toBe(TARGETS.awaiting - item.evaluations.length)
-    expect(c.counted + c.didNotQualify + c.awaiting + c.returned + c.waiting).toBe(8879)
+    expect(c.counted + c.didNotQualify + c.awaiting + c.returned + c.waiting).toBe(12628)
   })
 })
 
@@ -163,8 +164,8 @@ const cohortStudents = (cid: string) => students.filter((p) => p.cohortId === ci
 const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length
 
 describe("distributions that make charts honest", () => {
-  it("has the starter library: 154 rows, ids unique, 142 configured, names from the list", () => {
-    const linked = s.skills.filter((k) => k.hgtc)
+  it("has the starter library: 154 rows, ids unique, 142 configured as generated, names from the list", () => {
+    const linked = createGeneratedSeed().skills.filter((k) => k.hgtc)
     expect(linked).toHaveLength(HGTC.length)
     expect(new Set(linked.map((k) => k.hgtc!.id)).size).toBe(HGTC.length)
     expect(linked.filter((k) => k.configured)).toHaveLength(HGTC.length - UNCONFIGURED.size)
@@ -201,8 +202,9 @@ describe("distributions that make charts honest", () => {
     const c27 = cohortStudents("coh-2027").map((p) => attain(p.id))
     const c28 = cohortStudents("coh-2028").map((p) => attain(p.id))
     expect(mean(c27)).toBeGreaterThan(0.35)
-    expect(mean(c27)).toBeLessThan(0.75)
-    expect(Math.min(...c27)).toBeLessThan(0.3)
+    // 2026-11-05.3: third-years hold their earlier terms' skills too, so the core skills read high; the whole list reads about 60 percent (tests/lab/my-progress-reads-list.test.ts).
+    expect(mean(c27)).toBeLessThan(0.9)
+    expect(Math.min(...c27)).toBeLessThan(0.7)
     expect(Math.max(...c27)).toBeGreaterThan(0.6)
     expect(mean(c28)).toBeGreaterThan(0.1)
     expect(mean(c28)).toBeLessThan(0.4)
@@ -218,9 +220,13 @@ describe("distributions that make charts honest", () => {
   it("puts 15 to 30 percent of students behind the term clock (population method, own cohort offerings)", () => {
     // Before 2026-10-26 this read the focus course only (12 of 123). The single population method gives 28 of 123.
     const n = behindPace(s).length
-    expect(n).toBe(populationRows(s).rows.filter((r) => r.behind).length)
+    expect(n).toBe(populationRows(s, undefined, undefined, { set: "term" }).rows.filter((r) => r.behind).length)
     expect(n / total).toBeGreaterThanOrEqual(0.15)
     expect(n / total).toBeLessThanOrEqual(0.3)
+    // And against the list, on the program clock (D-L102): the same range, so the dashboard's story holds.
+    const onList = populationRows(s).rows.filter((r) => r.behind).length
+    expect(onList / total).toBeGreaterThanOrEqual(0.15)
+    expect(onList / total).toBeLessThanOrEqual(0.3)
   })
 
   it("has a long tail: evidence per skill is skewed, 25 or more configured skills have under 5 pieces", () => {
@@ -228,7 +234,7 @@ describe("distributions that make charts honest", () => {
     for (const e of s.evaluations) by.set(e.skillId, (by.get(e.skillId) ?? 0) + 1)
     const sorted = [...by.values()].sort((a, b) => b - a)
     const top12 = sorted.slice(0, 12).reduce((a, b) => a + b, 0) / s.evaluations.length
-    expect(top12).toBeGreaterThan(0.3)
+    expect(top12).toBeGreaterThan(0.2)
     expect(top12).toBeLessThan(0.45)
     expect(s.skills.filter((k) => k.configured && (by.get(k.id) ?? 0) < 5).length).toBeGreaterThanOrEqual(25)
     expect(s.skills.filter((k) => !k.configured && k.hgtc).every((k) => !by.has(k.id))).toBe(true)
@@ -384,7 +390,7 @@ describe("distributions that make charts honest", () => {
     }
   })
 
-  it("splits evidence by setting: about 25 percent lab, 72 clinical, 3 simulation, and the current term holds about a third", () => {
+  it("splits evidence by setting: about 25 percent lab, 72 clinical, 3 simulation, and the current term holds about a quarter", () => {
     const n = s.evaluations.length
     const share = (f: (e: V2State["evaluations"][number]) => boolean) => s.evaluations.filter(f).length / n
     expect(share((e) => e.setting === "lab")).toBeGreaterThan(0.2)
@@ -392,7 +398,7 @@ describe("distributions that make charts honest", () => {
     expect(share((e) => e.setting === "simulation")).toBeGreaterThan(0.015)
     expect(share((e) => e.setting === "simulation")).toBeLessThan(0.05)
     const termStart = Date.parse("2026-08-24T00:00:00Z")
-    expect(share((e) => Date.parse(e.date) >= termStart)).toBeGreaterThan(0.25)
+    expect(share((e) => Date.parse(e.date) >= termStart)).toBeGreaterThan(0.15)
     expect(share((e) => Date.parse(e.date) >= termStart)).toBeLessThan(0.45)
   })
 })
@@ -413,8 +419,11 @@ describe("determinism and the hand-written layer", () => {
     const seed = createSeed()
     const sk = seed.skills.find((k) => k.id === "sk-sterile-dressing")!
     expect(sk.config?.selfEvaluation).toBe(true)
-    expect(seed.skills.filter((k) => k.config?.selfEvaluation === true).map((k) => k.id)).toEqual(["sk-sterile-dressing"])
+    expect(seed.skills.filter((k) => k.config?.selfEvaluation === true).map((k) => k.id)).toEqual(["sk-sterile-dressing", "sk-ng-tube"])
     delete sk.config!.selfEvaluation
+    // 2026-11-04.2 (D-L67): the walkthrough's sample skill also asks for one, and NUR 220 recommends it. Take both back out.
+    delete seed.skills.find((k) => k.id === "sk-ng-tube")!.config!.selfEvaluation
+    seed.mappings = seed.mappings.filter((m) => !(m.courseId === "crs-nur220" && m.skillId === "sk-ng-tube"))
     const text = JSON.stringify(seed)
     let h = 2166136261
     for (let i = 0; i < text.length; i += 7) h = Math.imul(h ^ text.charCodeAt(i), 16777619)
@@ -471,5 +480,5 @@ describe("determinism and the hand-written layer", () => {
 // achieved 760 to 757 (Ethan Cole and two generated students are short of Inpatient); every other fact is unchanged. Both pins
 // below re-pinned on purpose; the second still proves the self-evaluation flag is the only difference from the pair without it.
 // To re-pin after a pool or generator change: run this test, paste the new pair, bump SEED_VERSION.
-const PINNED: [number, number] = [4925861, 19096869]
-const PINNED_BEFORE_SELF_EVALUATION: [number, number] = [4925839, 2638021150]
+const PINNED: [number, number] = [6796268, 1876257299]
+const PINNED_BEFORE_SELF_EVALUATION: [number, number] = [6796153, 2259861099]

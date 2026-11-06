@@ -1,62 +1,67 @@
 "use client"
 
 /**
- * Lists and cohort assignment building blocks: the model hook, the lists table, the assignment checklist and what it does, the
- * completion rule dialog with "what would change" (standalone Lists only), and
- * the dialogs that keep every change visible before it lands (attach to a group that already uses a list of the same noun, detach,
- * make default, start a new list). A new standard is a new list; standards themselves are managed in Program details, so a list
- * carries no standards field [CALL 10-26 B.12]. Nothing replaces a program's established list silently [CALL].
+ * Skill lists: the model hook, the page's actions and the small dialogs around them (designer 2026-11-05, D-L106). A list is like a shared document: you make it, choose who it
+ * applies to, and one can be what new student groups get. Who is on a list is added and removed at once, each with a result banner and Undo; there is no Save on the page.
+ * The panel is lists-panel.tsx and Add students lists-add-students.tsx. A new standard is a new list; standards are managed in Program details, so a list carries no standards field [CALL 10-26 B.12].
  */
-import { TYPE } from "@/components/lab/type-scale"
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import * as React from "react"
-import { useSearchParams } from "next/navigation"
-import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
+import { useV2State } from "@/lib/v2/react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Checkbox as CheckboxDs } from "@exxatdesignux/ui/components/ui/checkbox"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
-import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
-import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
-import { DataTable } from "@exxatdesignux/ui/components/data-table"
-import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
+import { ResultBanner } from "@/components/lab/shared/result-banner"
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
+import { DiscardChangesDialog, useDialogDiscard, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
+import { useUrlParam } from "@/components/lab/library/library-chrome"
 import {
-  achievedByStudent,
+  addToList,
   assign,
-  assignCheck,
-  assignmentSummary,
-  skillGroups,
-  clinicalOfferingsFor,
-  countNoun,
   createList,
+  ALL_STUDENTS_GROUP,
   customGroup,
-  groupLabel,
+  defaultForNewGroup,
+  detachGroup,
   groupRuleOptions,
-  groupStanding,
+  leftWithNoList,
   listById,
+  listSizeParts,
   makeDefault,
-  ruleImpact,
+  namesOf,
+  namesUpTo,
+  newVersion,
+  removeStudent,
+  renameList,
   ruleIsEmpty,
+  skillLists,
   studentGroups,
   studentsForRule,
-  validateCustomGroup,
-  type GroupRule,
   unassign,
-  validateMinTotal,
+  GROUP_NAME_MAX,
+  LIST_NAME_MAX,
+  nameTooLong,
+  validateCustomGroup,
+  validateListName,
   validateNewList,
-  type AssignMode,
-  type GroupStanding,
+  type GroupRule,
   type SkillList,
   type StudentGroup,
 } from "@/lib/lab/lists"
 import type { V2State } from "@/lib/v2/types"
-import type { CustomGroup } from "@/lib/v2/filters"
-import { FilterSelect, LINK, fmt, plural } from "./parts"
+import { parseCustomGroup, type CustomGroup } from "@/lib/v2/filters"
+import { FilterSelect, fmt, plural } from "./parts"
 import { customGroupsStore, useLists } from "./use-admin-data"
+import { ListPanel, type PanelView } from "@/components/lab/admin-a/lists-panel"
+import { AssignWizard, type AddedStudents } from "@/components/lab/admin-a/lists-add-students"
+import { ListSetupLevel, NewListPage } from "@/components/lab/admin-a/lists-new-page"
+import { useRovingChecks } from "./lists-focus"
+import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
+import { AppliedFilterChips, FiltersControl, SearchField, type FilterField } from "./parts"
+import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { TYPE } from "@/components/lab/type-scale"
+import { addStudentsButton, focusPanel, LIST_PANEL, listLink, useFocusBack, useOpeningPress, type FocusBack } from "./lists-focus"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Model
@@ -66,616 +71,575 @@ export interface ListsModel {
   lists: SkillList[]
   groups: StudentGroup[]
   setLists: (next: SkillList[]) => void
-  standing: (list: SkillList, groupId: string) => GroupStanding | null
   /** Custom groups made this session (filter rules); they also appear in the scope bar's Group filter. */
   addGroup: (g: CustomGroup) => void
+  renameGroup: (id: string, name: string) => void
+  /** Takes the group off the page. Its lists are the caller's to clear, through `applyNow`. */
+  removeGroup: (id: string) => void
+  /** Writes a change from the lists as they are now. */
+  applyNow: (change: (lists: SkillList[]) => SkillList[]) => void
 }
 
-export function useListsModel(state: V2State): ListsModel {
+export function useListsModel(snapshot: V2State): ListsModel {
+  // The reviewer's snapshot re-reads only on new evidence; a skill added inside a list must show at once.
+  const liveSkills = useV2State().skills
+  const state = React.useMemo(() => (snapshot.skills === liveSkills ? snapshot : { ...snapshot, skills: liveSkills }), [snapshot, liveSkills])
   const { lists, setLists } = useLists(state)
   const custom = customGroupsStore.use()
   const groups = React.useMemo(() => studentGroups(state, custom), [state, custom])
-  const addGroup = React.useCallback((g: CustomGroup) => customGroupsStore.set((prev) => (prev.some((x) => x.id === g.id) ? prev : [...prev, g])), [])
-  const achieved = React.useMemo(() => achievedByStudent(state), [state])
-  const standing = React.useCallback(
-    (list: SkillList, groupId: string) => {
-      const g = groups.find((x) => x.id === groupId)
-      return g ? groupStanding(state, list, g, achieved) : null
-    },
-    [state, groups, achieved],
-  )
-  return { state, lists, groups, setLists, standing, addGroup }
+  const addGroup = React.useCallback((g: CustomGroup) => customGroupsStore.set((prev) => (prev.some((x) => x.id === g.id && !x.removed) ? prev : [...prev.filter((x) => x.id !== g.id), g])), [])
+  const upsertGroup = React.useCallback((id: string, name: string, removed: boolean) => {
+    customGroupsStore.set((prev) => {
+      const rule = parseCustomGroup(id)
+      if (!rule) return prev
+      return [...prev.filter((x) => x.id !== id), { id, name, rule, ...(removed ? { removed } : {}) }]
+    })
+  }, [])
+  const renameGroup = React.useCallback((id: string, name: string) => upsertGroup(id, name.trim(), false), [upsertGroup])
+  const removeGroup = React.useCallback((id: string) => upsertGroup(id, "", true), [upsertGroup])
+  const applyNow = React.useCallback((change: (lists: SkillList[]) => SkillList[]) => setLists(change(lists)), [setLists, lists])
+  return { state, lists, groups, setLists, addGroup, renameGroup, removeGroup, applyNow }
 }
 
-export const GROUP_KIND_LABEL: Record<StudentGroup["kind"], string> = { cohort: "Cohort", track: "Track", custom: "Custom group" }
-
-export function ListStatus({ list }: { list: SkillList }) {
-  return list.status === "live" ? <StatusBadge label="Live" tone="neutral" icon="fa-circle-check" size="sm" /> : <StatusBadge label="Draft" tone="neutral" icon="fa-pen" size="sm" />
-}
+export const GROUP_KIND_LABEL: Record<StudentGroup["kind"], string> = { all: "All students", cohort: "Cohort", track: "Track", custom: "Custom group" }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Actions with their confirmations
+// Actions
 
 export interface Feedback {
   title: string
   body: string
+  /** The list it is about. */
+  listId?: string
+  /** A refusal rather than a result. */
+  tone?: "warning"
+  /** The next job, or undo. */
+  action?: { label: string; href?: string; onClick?: () => void }
+}
+
+/** Who a removal is about, once the alert has what it needs to say. */
+interface Removing {
+  listId: string
+  who: { kind: "group"; id: string; label: string } | { kind: "student"; id: string; label: string }
+  /** Students it leaves on no list. */
+  stranded: number
 }
 
 export function useListActions(model: ListsModel) {
   const { lists, setLists, groups } = model
-  const [attach, setAttach] = React.useState<{ listId: string; groupId: string } | null>(null)
-  const [detach, setDetach] = React.useState<{ listId: string; groupId: string } | null>(null)
-  const [defaulting, setDefaulting] = React.useState<string | null>(null)
-  const [creating, setCreating] = React.useState<{ fromId: string | null } | null>(null)
-  const [grouping, setGrouping] = React.useState(false)
+  // Dialogs return to what opened them, the panel to its row: two doors, two memories.
+  const back = useFocusBack()
+  const panelBack = useFocusBack()
+  // The record the panel shows (?list=), as the Library's ?skill=: a reload keeps it and a link can open it.
+  const [openId, setOpenId] = useUrlParam("list")
+  // The list asked for in the New skill list dialog. It is held here, not on the program, until Save list: every other way out leaves nothing to clean up.
+  const [fresh, setFresh] = React.useState<SkillList | null>(null)
+  const [view, setView] = React.useState<PanelView>("list")
+  const [switchTo, setSwitchTo] = React.useState<string | null>(null)
+  const [renaming, setRenaming] = React.useState<string | null>(null)
+  const [deleting, setDeleting] = React.useState<SkillList | null>(null)
+  const [creating, setCreating] = React.useState(false)
+  const [adding, setAdding] = React.useState<{ listId: string; query: string } | null>(null)
+  const [removing, setRemoving] = React.useState<Removing | null>(null)
   const [feedback, setFeedback] = React.useState<Feedback | null>(null)
+  const panelDirty = React.useRef(false)
+  const levelLeave = React.useRef<(() => void) | null>(null)
+  // New skill list goes on in this panel: step 2, then step 3 (D-L122).
+  const [setup, setSetup] = React.useState<{ listId: string; step: 2 | 3 } | null>(null)
+  const levelDirty = React.useRef(false)
+  const createdThenPanel = React.useRef(false)
+  // A double click on New version: the second press makes nothing.
+  const versioning = React.useRef(false)
 
-  const toggle = React.useCallback(
-    (listId: string, groupId: string, on: boolean) => {
-      if (!on) return setDetach({ listId, groupId })
-      const check = assignCheck(lists, listId, groupId)
-      const list = listById(lists, listId)
-      if (check.sameNoun.length || list?.status === "draft") return setAttach({ listId, groupId })
-      setLists(assign(lists, listId, groupId, "add"))
-      setFeedback({ title: `${groupLabel(groups, groupId)} now uses ${list?.name ?? `this ${G()}`}`, body: check.existing.length ? `It keeps ${check.existing.map((l) => l.name).join(" and ")}.` : "" })
-    },
-    [lists, setLists, groups],
-  )
+  const shownId = fresh?.id ?? openId
+  const shown = fresh ?? listById(lists, openId) ?? null
 
+  /** Every change to who is on a list says so once and can be undone: the banner is replaced by the next result, so the snapshot it holds is never stale. */
+  const withUndo = (listId: string, next: SkillList[], title: string) => {
+    const before = lists
+    setLists(next)
+    setFeedback({
+      title,
+      body: "",
+      listId,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          setLists(before)
+          setFeedback({ title: "Change undone.", body: "", listId })
+          requestAnimationFrame(() => { if (!document.activeElement || document.activeElement === document.body) (addStudentsButton() ?? document.querySelector<HTMLElement>("[data-new-list]"))?.focus({ preventScroll: true }) })
+        },
+      },
+    })
+  }
+
+  /** One door for a row click and its name: asks while the picker holds unsaved choices, otherwise goes there. */
+  const openList = (id: string) => {
+    if (id === shownId) return
+    if (shownId && (panelDirty.current || levelDirty.current)) return setSwitchTo(id)
+    setAdding(null)
+    setSetup(null)
+    if (!shownId) panelBack.remember(listLink(id))
+    setFresh(null)
+    setView("list")
+    setOpenId(id)
+  }
+  const closePanel = () => {
+    setAdding(null)
+    setSetup(null)
+    // Leaving a change of skills goes back to the list it started from, unchanged.
+    const backToList = !!fresh?.versionOf
+    setFresh(null)
+    setView("list")
+    if (!backToList) setOpenId(null)
+  }
+
+  /** Change skills on a list someone has: the skills open ticked, in this panel. Nothing exists until Save (Romit 2026-11-06, D-L119): leaving creates no stray copy, and the students stay where they are. */
+  const makeVersion = (id: string) => {
+    if (versioning.current) return
+    versioning.current = true
+    window.setTimeout(() => { versioning.current = false }, 800)
+    const created = newVersion(lists, id, `list-${Date.now().toString(36)}`)
+    if (!created) return
+    if (!shownId) panelBack.remember(listLink(id))
+    setOpenId(id)
+    setFeedback(null)
+    setFresh(created)
+    setView("skills")
+    requestAnimationFrame(focusPanel)
+  }
+
+  const removeNow = (r: Omit<Removing, "stranded">) => {
+    const list = listById(lists, r.listId)
+    if (!list) return
+    const next = r.who.kind === "group" ? unassign(lists, r.listId, r.who.id) : removeStudent(lists, r.listId, r.who.id)
+    withUndo(r.listId, next, `${r.who.label} removed from ${list.name}.`)
+  }
+  const requestRemove = (r: Omit<Removing, "stranded">) => {
+    const next = r.who.kind === "group" ? unassign(lists, r.listId, r.who.id) : removeStudent(lists, r.listId, r.who.id)
+    const stranded = leftWithNoList(lists, next, groups).length
+    if (!stranded) return removeNow(r)
+    back.remember(addStudentsButton())
+    setRemoving({ ...r, stranded })
+  }
+
+  const added = (listId: string, a: AddedStudents) => {
+    const list = listById(lists, listId)
+    if (!list) return
+    const groupNames = a.groupIds.map((id) => groups.find((g) => g.id === id)?.label ?? id)
+    const people = a.studentIds.length
+    const nameOf = (id: string) => model.state.people.find((p) => p.id === id)?.name ?? id
+    const who = [groupNames.length ? namesOf(groupNames) : "", people ? (groupNames.length ? plural(people, "student", "students") : namesUpTo(a.studentIds.map(nameOf))) : ""].filter(Boolean)
+    withUndo(listId, addToList(lists, listId, a, groups), a.groupIds.includes(ALL_STUDENTS_GROUP) ? `${list.name} assigned to all students.` : `${list.name} assigned to ${namesOf(who)}.`)
+    setAdding(null)
+    setSetup(null)
+    requestAnimationFrame(focusPanel)
+  }
+
+  const setAsDefault = (id: string) => {
+    const list = listById(lists, id)
+    if (!list) return
+    withUndo(id, makeDefault(lists, id), `New student groups now get ${list.name}.`)
+    // The switch has just disabled itself (off is not offered): focus stays in the panel.
+    requestAnimationFrame(focusPanel)
+  }
+
+  const addingList = adding ? listById(lists, adding.listId) ?? null : null
+  const setupList = setup ? listById(lists, setup.listId) ?? null : null
   const dialogs = (
     <>
-      <AttachDialog model={model} target={attach} onClose={() => setAttach(null)} onDone={setFeedback} />
-      <DetachDialog model={model} target={detach} onClose={() => setDetach(null)} onDone={setFeedback} />
-      <DefaultDialog
+      {creating ? (
+        <NewListPage
+          model={model}
+          onClose={() => setCreating(false)}
+          onSaved={(l) => {
+            setCreating(false)
+            setOpenId(l.id)
+            setView("list")
+            setFeedback(null)
+            setSetup({ listId: l.id, step: 2 })
+            requestAnimationFrame(focusPanel)
+          }}
+        />
+      ) : null}
+      <ListPanel
         model={model}
-        listId={defaulting}
-        onClose={() => setDefaulting(null)}
-        onConfirm={(id) => {
-          setLists(makeDefault(lists, id))
-          setFeedback({ title: `${listById(lists, id)?.name} is the default`, body: "" })
-          setDefaulting(null)
+        list={creating ? null : shown}
+        level={setupList && setup?.step === 2 ? (
+          <ListSetupLevel model={model} list={setupList} leaveRef={levelLeave} onBack={() => setSetup(null)} onNext={() => setSetup({ listId: setupList.id, step: 3 })} />
+        ) : setupList ? (
+          <AssignWizard key={setupList.id} model={model} list={setupList} initialQuery="" stepLabel="Step 3 of 3" leaveRef={levelLeave} dirtyRef={levelDirty} onClose={() => setSetup({ listId: setupList.id, step: 2 })} onAdd={(a) => added(setupList.id, a)} />
+        ) : addingList ? <AssignWizard key={addingList.id} model={model} list={addingList} initialQuery={adding?.query ?? ""} leaveRef={levelLeave} dirtyRef={levelDirty} onClose={() => { setAdding(null); requestAnimationFrame(() => addStudentsButton()?.focus({ preventScroll: true })) }} onAdd={(a) => added(addingList.id, a)} /> : null}
+        levelLeave={levelLeave}
+        isFresh={!!fresh}
+        view={view}
+        // A result belongs to the level it happened on: moving between levels clears it.
+        onView={(v) => { setFeedback(null); setView(v) }}
+        dirtyRef={panelDirty}
+        back={panelBack}
+        onClose={closePanel}
+        onSaved={(l, n) => {
+          setFeedback({ title: `${l.name} saved, ${plural(n, skillNoun(), skillNounPlural())}.`, body: "", listId: l.id })
+          // The next step, in place (365abc25 ch 9): the panel shows the list, with Add students as its one filled button.
+          if (fresh?.id === l.id) { setFresh(null); setOpenId(l.id) }
+          setView("list")
+        }}
+        onAddStudents={() => { if (shown) { back.remember(addStudentsButton()); setAdding({ listId: shown.id, query: "" }) } }}
+        onRemove={(who) => { if (shown) requestRemove({ listId: shown.id, who }) }}
+        onDefault={setAsDefault}
+        onNewVersion={makeVersion}
+        onRename={(id) => { back.remember(listLink(id)); setRenaming(id) }}
+        onDelete={(l) => { back.remember(listLink(l.id)); setDeleting(l) }}
+      />
+      <DiscardChangesDialog
+        open={switchTo !== null}
+        onKeep={() => setSwitchTo(null)}
+        onDiscard={() => {
+          const id = switchTo
+          setAdding(null)
+          setSetup(null)
+          setFresh(null)
+          setView("list")
+          setOpenId(id)
+          setSwitchTo(null)
+        }}
+        body={`The ${skillNounPlural()} you selected have not been saved.`}
+      />
+      <RemoveFromListDialog
+        target={removing}
+        listName={removing ? listById(lists, removing.listId)?.name ?? "" : ""}
+        back={back}
+        onKeep={() => setRemoving(null)}
+        onConfirm={() => { if (removing) removeNow(removing); setRemoving(null) }}
+      />
+      <NameDialog
+        open={!!renaming}
+        title={`Rename ${listById(lists, renaming)?.name ?? ""}`}
+        id="rename-list"
+        initial={listById(lists, renaming)?.name ?? ""}
+        maxLength={LIST_NAME_MAX}
+        back={back}
+        validate={(name) => validateListName(lists, name, renaming ?? undefined)}
+        onClose={() => setRenaming(null)}
+        onSave={(name) => {
+          const was = listById(lists, renaming)?.name
+          if (renaming) model.applyNow((ls) => renameList(ls, renaming, name))
+          setFeedback({ title: `${was} renamed to ${name}.`, body: "", listId: renaming ?? undefined })
         }}
       />
-      <NewListDialog model={model} target={creating} onClose={() => setCreating(null)} onDone={setFeedback} />
-      <CreateGroupDialog model={model} open={grouping} onClose={() => setGrouping(false)} onDone={setFeedback} />
+      <DeleteListDialog
+        list={deleting}
+        back={back}
+        onClose={() => setDeleting(null)}
+        onConfirm={(l) => {
+          // Row menu or panel menu: the row has gone, and focus lands on New skill list either way. Set on both, since the dialog and the panel each hand focus back as they close.
+          const next = document.querySelector<HTMLElement>("[data-new-list]")
+          back.point(next)
+          panelBack.point(next)
+          if (shown?.id === l.id) closePanel()
+          setLists(lists.filter((x) => x.id !== l.id))
+          setFeedback({ title: `${l.name} deleted.`, body: "", listId: l.id })
+          setDeleting(null)
+        }}
+      />
     </>
   )
 
-  const banner = feedback ? (
-    <div role="status" aria-live="polite">
-      <LocalBanner variant="promo" title={feedback.title} dismissible onDismiss={() => setFeedback(null)}>
-        {feedback.body || null}
-      </LocalBanner>
-    </div>
+  // A result is about one list: it shows on the page or in that list's panel, never in another's, where its Undo would change a list the admin is not looking at. It does not come back.
+  const aboutAnother = !!feedback && !!shownId && feedback.listId !== shownId
+  React.useEffect(() => {
+    if (aboutAnother) setFeedback(null)
+  }, [aboutAnother])
+  const banner = feedback && !aboutAnother ? (
+    <ResultBanner inPanel banner={{ variant: feedback.tone ?? "success", title: feedback.title, body: feedback.body || undefined, action: feedback.action }} onDismiss={() => {
+      setFeedback(null)
+      // Dismiss has gone with the banner: focus stays where the admin was working.
+      requestAnimationFrame(() => { if (document.activeElement === document.body) { if (document.querySelector(LIST_PANEL)) focusPanel(); else document.querySelector<HTMLElement>("[data-new-list]")?.focus({ preventScroll: true }) } })
+    }} />
   ) : null
 
-  return { toggle, requestDefault: setDefaulting, openNew: (fromId: string | null = null) => setCreating({ fromId }), openGroup: () => setGrouping(true), dialogs, banner, setFeedback }
+  return {
+    // Every door remembers what opened it, while that control is still known (a menu's item is gone a moment later).
+    openNew: () => { if (levelDirty.current) return; setAdding(null); setSetup(null); back.remember(); panelBack.remember(); setCreating(true) },
+    openRename: (id: string) => { back.remember(listLink(id)); setRenaming(id) },
+    openDelete: (l: SkillList) => { back.remember(listLink(l.id)); setDeleting(l) },
+    openList,
+    /** An old link named a group that is not on this list: Add students, already searching for that group. */
+    askToAdd: (listId: string, group: string) => setAdding({ listId, query: group }),
+    closePanel,
+    openId: shownId,
+    makeVersion,
+    back,
+    dialogs,
+    banner,
+    setFeedback,
+  }
 }
 
-const ANY_RULE = ""
+// ---------------------------------------------------------------------------------------------------------------------
+// Dialogs. z-[90]: they can open over the panel (z-80); the DS gives a dialog z-50.
 
-/** Sankalp's word for a list in UI copy: "group of skills" (Thursday flow A4). */
-const G = () => `group of ${skillNounPlural()}`
+const LAYER = "z-[90]"
+
+/** A dialog holding typed work: every way out asks first while it is dirty (map E rule 6), and Back does too. */
+function useDirtyDialog(open: boolean, dirty: boolean, onClose: () => void) {
+  const { close, question } = useDialogDiscard(open && dirty, onClose)
+  const leave = useLeaveGuard(open && dirty)
+  return {
+    close,
+    question: (
+      <>
+        {question}
+        <DiscardChangesDialog layer="z-[97]" open={leave.asking} onKeep={() => leave.setAsking(false)} onDiscard={() => leave.go(onClose)} />
+      </>
+    ),
+  }
+}
+
+/** One name, Enter saves. The button waits for a change; too long a name is refused with the limit, as soon as it is typed. */
+export function NameDialog({ open, title, id, initial, maxLength, back, validate, onClose, onSave }: { open: boolean; title: string; id: string; initial: string; maxLength: number; back: Pick<FocusBack, "onCloseAutoFocus">; validate: (name: string) => string | null; onClose: () => void; /** A string keeps the dialog open and shows it at the field. */ onSave: (name: string) => string | null | void }) {
+  const [name, setName] = React.useState("")
+  const [error, setError] = React.useState<string | null>(null)
+  // Set while rendering, not in an effect: a commit with the opening name not yet in the field would read as typed work and arm the leave guard. The name it opened on, not one that changes behind the dialog.
+  const [wasOpen, setWasOpen] = React.useState(false)
+  if (open !== wasOpen) {
+    setWasOpen(open)
+    if (open) {
+      setName(initial)
+      setError(null)
+    }
+  }
+  const changed = name.trim() !== initial
+  const { close, question } = useDirtyDialog(open, name !== initial, onClose)
+  const openingPress = useOpeningPress(open)
+  return (
+    <>
+      <Dialog open={open} onOpenChange={(o) => (o ? null : close())}>
+        <DialogContent className={`${LAYER} sm:max-w-md`} overlayClassName={LAYER} aria-describedby={undefined} onCloseAutoFocus={back.onCloseAutoFocus} onInteractOutside={openingPress}>
+          <DialogHeader>
+            <DialogTitle className="break-words">{title}</DialogTitle>
+          </DialogHeader>
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!changed) return
+              const err = validate(name)
+              if (err) return setError(err)
+              const refused = onSave(name.trim())
+              if (typeof refused === "string") return setError(refused)
+              onClose()
+            }}
+          >
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={id}>Name</Label>
+              <Input id={id} value={name} onChange={(e) => { setName(e.target.value); setError(nameTooLong(e.target.value, maxLength)) }} autoFocus aria-invalid={!!error} aria-describedby={error ? `${id}-error` : undefined} />
+              {error ? <p id={`${id}-error`} className="text-sm text-destructive" role="alert">{error}</p> : null}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" size="sm" onClick={close}>Cancel</Button>
+              <Button type="submit" variant="default" size="sm" disabled={!changed}>Save name</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {question}
+    </>
+  )
+}
+
+/** Removing a student group from the program: says who it reaches and which lists it holds before anything goes. Evidence belongs to the student, so it stays. */
+export function RemoveGroupDialog({ model, group, back, onClose, onDone }: { model: ListsModel; group: StudentGroup | null; back: FocusBack; onClose: () => void; onDone: (f: Feedback) => void }) {
+  const using = group ? skillLists(model.lists).filter((l) => l.groupIds.includes(group.id)) : []
+  const students = group ? plural(group.studentIds.length, "student", "students") : ""
+  const names = namesOf(using.map((l) => l.name))
+  return (
+    <AlertDialog open={!!group} onOpenChange={(o) => (o ? null : onClose())}>
+      <AlertDialogContent className="sm:max-w-md" onCloseAutoFocus={back.onCloseAutoFocus}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="break-words">{`Remove ${group?.label ?? "this group"}?`}</AlertDialogTitle>
+          <AlertDialogDescription>{using.length ? `It uses ${names}. Its ${students} stop getting ${using.length === 1 ? "that list" : "those lists"} through this group. Evidence is kept.` : `No ${skillListNoun()} uses it. Its ${students} stay in their cohorts.`}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" size="sm">Keep it</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              if (!group) return
+              model.applyNow((ls) => detachGroup(ls, group.id))
+              model.removeGroup(group.id)
+              onDone({ title: `${group.label} removed.`, body: using.length ? `${names} no longer ${using.length === 1 ? "uses" : "use"} it.` : "" })
+              onClose()
+            }}
+          >
+            Remove group
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
 
 /**
  * Create a group from filter rules (category, enrollment year, graduation year) with a live student count [CALL 10-26]. For programs
- * without a lockstep cohort; useful beyond skills. The group joins the assignment grid and the scope bar's Group filter.
+ * without a lockstep cohort; useful beyond skills. The group joins Add students and the scope bar's Group filter.
  */
-function CreateGroupDialog({ model, open, onClose, onDone }: { model: ListsModel; open: boolean; onClose: () => void; onDone: (f: Feedback) => void }) {
+/** The form itself, for the Settings dialog and for the Assign to students panel, which shows it in place (designer 2026-11-06: a pop-up over the panel was confusing). */
+export function useGroupForm(model: ListsModel, onDone: (f: Feedback, id: string) => void) {
+  const ANY = ""
   const [name, setName] = React.useState("")
-  const [cat, setCat] = React.useState(ANY_RULE)
-  const [enr, setEnr] = React.useState(ANY_RULE)
-  const [grad, setGrad] = React.useState(ANY_RULE)
+  const [cat, setCat] = React.useState(ANY)
+  const [enr, setEnr] = React.useState(ANY)
+  const [grad, setGrad] = React.useState(ANY)
   const [error, setError] = React.useState<string | null>(null)
-  React.useEffect(() => {
-    if (!open) return
-    setName("")
-    setCat(ANY_RULE)
-    setEnr(ANY_RULE)
-    setGrad(ANY_RULE)
-    setError(null)
-  }, [open])
+  const reset = React.useCallback(() => { setName(""); setCat(ANY); setEnr(ANY); setGrad(ANY); setQuery(""); setPicked(new Set()); setError(null) }, [])
   const opts = React.useMemo(() => groupRuleOptions(model.state), [model.state])
-  const rule: GroupRule = { ...(cat ? { category: cat } : {}), ...(enr ? { enrollmentYear: Number(enr) } : {}), ...(grad ? { graduationYear: Number(grad) } : {}) }
-  const count = ruleIsEmpty(rule) ? null : studentsForRule(model.state, rule).length
-  const cohortsSpanned = ruleIsEmpty(rule) ? 0 : new Set(studentsForRule(model.state, rule).map((p) => p.cohort)).size
-  const field = (id: string, label: string, value: string, set: (v: string) => void, options: Array<string | number>) => (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <FilterSelect id={id} value={value} onChange={(v) => { set(v); setError(null) }} label={label} allLabel="Any" options={options.map((o) => ({ value: String(o), label: String(o) }))} className="w-full" />
-    </div>
+  // Filters and search only narrow the list; the group is the students ticked (D-L118).
+  const [query, setQuery] = React.useState("")
+  const [picked, setPicked] = React.useState<ReadonlySet<string>>(new Set())
+  const needle = query.trim().toLowerCase()
+  const narrow: GroupRule = { ...(cat ? { category: cat } : {}), ...(enr ? { enrollmentYear: Number(enr) } : {}), ...(grad ? { graduationYear: Number(grad) } : {}) }
+  const shown = React.useMemo(() => (ruleIsEmpty(narrow) ? model.state.people.filter((p) => p.kind === "student") : studentsForRule(model.state, narrow)).filter((p) => !needle || p.name.toLowerCase().includes(needle)).sort((x, y) => x.name.localeCompare(y.name)), [model.state, cat, enr, grad, needle]) // eslint-disable-line react-hooks/exhaustive-deps
+  const allOn = shown.length > 0 && shown.every((p) => picked.has(p.id))
+  const roving = useRovingChecks()
+  const rule: GroupRule = { studentIds: [...picked] }
+  const count = picked.size
+  const dirty = !!name.trim() || count > 0
+  const submit = () => {
+    const err = validateCustomGroup(model.groups, name, rule)
+    if (err) { setError(err); return false }
+    const g = customGroup(name.trim(), rule)
+    model.addGroup(g)
+    // The default is what any new group gets (Aarti, 205da2dd ch 9), written with the group for all to see.
+    const start = defaultForNewGroup(model.lists)
+    if (start) model.applyNow((ls) => assign(ls, start.id, g.id))
+    onDone({ title: `${g.name} created.`, body: `${plural(count, "student", "students")}.${start ? ` On ${start.name}, the default.` : ""}` }, g.id)
+    return true
+  }
+  const narrowBy = (id: string, label: string, value: string, set: (v: string) => void, options: Array<string | number>): FilterField => ({ id, label, value, allLabel: "Any", options: options.map((o) => ({ value: String(o), label: String(o) })), onChange: set })
+  const fields: FilterField[] = [
+    narrowBy("group-cat", "Enrollment type", cat, setCat, opts.categories),
+    narrowBy("group-enr", "Enrolled in", enr, setEnr, opts.enrollmentYears),
+    narrowBy("group-grad", "Graduates in", grad, setGrad, opts.graduationYears),
+  ]
+  const body = (
+    <>
+      <Field data-invalid={!!error && !name.trim() ? true : undefined}>
+        <FieldLabel htmlFor="group-name">Name</FieldLabel>
+        <Input id="group-name" value={name} onChange={(e) => { setName(e.target.value); setError(nameTooLong(e.target.value, GROUP_NAME_MAX)) }} autoFocus placeholder="For example, Hybrid re-entry" aria-invalid={!!error} aria-describedby={error ? "group-error" : undefined} />
+      </Field>
+      <section className="flex min-w-0 flex-col gap-3" aria-labelledby="group-students-heading">
+        <div className="flex min-h-8 items-center justify-between gap-2">
+          <h2 id="group-students-heading" className={TYPE.group}>Students</h2>
+          <p className="text-sm tabular-nums text-muted-foreground" role="status" aria-live="polite" data-group-count={count}>{`${count} selected`}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <SearchField value={query} onChange={setQuery} label="Search students" placeholder="Search students" className="min-w-0 flex-1" />
+          <FiltersControl fields={fields} align="end" layer="z-[92]" />
+        </div>
+        <AppliedFilterChips fields={fields} />
+        {error ? <FieldError id="group-error">{error}</FieldError> : null}
+        {shown.length ? (
+          <>
+            <ul className="flex flex-col rounded-[var(--radius)] border border-border px-3" aria-label="Students" data-group-students={shown.length} {...roving}>
+              {shown.map((p) => {
+                const id = `group-student-${p.id}`
+                return (
+                  <li key={p.id} className="flex min-h-11 items-center gap-3 border-b border-border py-1.5 text-sm last:border-b-0 [contain-intrinsic-size:auto_2.75rem] [content-visibility:auto]">
+                    <Checkbox id={id} checked={picked.has(p.id)} onCheckedChange={(v) => { setPicked((x) => { const next = new Set(x); if (v === true) next.add(p.id); else next.delete(p.id); return next }); setError(null) }} />
+                    <Label htmlFor={id} className="flex min-w-0 flex-1 items-baseline justify-between gap-3 font-normal">
+                      <span className="min-w-0 truncate" title={p.name}>{p.name}</span>
+                      <span className="shrink-0 text-muted-foreground">{p.cohort ?? ""}</span>
+                    </Label>
+                  </li>
+                )
+              })}
+            </ul>
+            <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={() => setPicked((x) => { const next = new Set(x); for (const p of shown) { if (allOn) next.delete(p.id); else next.add(p.id) } return next })} data-group-all>{allOn ? "Clear all shown" : `Select all ${shown.length} shown`}</Button>
+          </>
+        ) : <p className="text-sm text-muted-foreground">No students match.</p>}
+      </section>
+    </>
   )
+  return { body, submit, dirty, reset }
+}
+
+export function CreateGroupDialog({ model, open, back, onClose, onDone }: { model: ListsModel; open: boolean; back: FocusBack; onClose: () => void; onDone: (f: Feedback) => void }) {
+  const form = useGroupForm(model, (f) => onDone(f))
+  const { reset } = form
+  React.useEffect(() => { if (open) reset() }, [open, reset])
+  const { close, question } = useDirtyDialog(open, form.dirty, onClose)
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
+    <>
+    <Dialog open={open} onOpenChange={(o) => (o ? null : close())}>
+      <DialogContent className="sm:max-w-lg" aria-describedby={undefined} onCloseAutoFocus={back.onCloseAutoFocus}>
         <DialogHeader>
-          <DialogTitle>Create a group</DialogTitle>
+          <DialogTitle>New student group</DialogTitle>
         </DialogHeader>
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault()
-            const err = validateCustomGroup(model.groups, name, rule)
-            if (err) return setError(err)
-            const g = customGroup(name.trim(), rule)
-            model.addGroup(g)
-            onDone({ title: `${g.name} created`, body: `${plural(count ?? 0, "student", "students")}.` })
-            onClose()
-          }}
-        >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="group-name">Name</Label>
-            <Input id="group-name" value={name} onChange={(e) => { setName(e.target.value); setError(null) }} autoFocus maxLength={60} placeholder="For example, Hybrid re-entry" aria-invalid={!!error && !name.trim()} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            {field("group-cat", "Category", cat, setCat, opts.categories)}
-            {field("group-enr", "Enrolled in", enr, setEnr, opts.enrollmentYears)}
-            {field("group-grad", "Graduates in", grad, setGrad, opts.graduationYears)}
-          </div>
-          <p className="text-sm" role="status" aria-live="polite" data-group-count={count ?? ""}>
-            {count === null ? null : (
-              <>
-                <span className="font-semibold tabular-nums">{plural(count, "student", "students")}</span>
-                <span className="text-muted-foreground">{count ? ` match, across ${plural(cohortsSpanned, "cohort", "cohorts")}.` : " match."}</span>
-              </>
-            )}
-          </p>
-          {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
+        <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); if (form.submit()) onClose() }}>
+          {form.body}
           <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" size="sm" onClick={close}>Cancel</Button>
             <Button type="submit" variant="default" size="sm">Create group</Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
+    {question}
+    </>
   )
 }
 
-function AttachDialog({ model, target, onClose, onDone }: { model: ListsModel; target: { listId: string; groupId: string } | null; onClose: () => void; onDone: (f: Feedback) => void }) {
-  const [mode, setMode] = React.useState<AssignMode>("add")
-  React.useEffect(() => setMode("add"), [target])
-  const list = target ? listById(model.lists, target.listId) : undefined
-  const check = target ? assignCheck(model.lists, target.listId, target.groupId) : null
-  const group = target ? groupLabel(model.groups, target.groupId) : ""
-  const old = check?.sameNoun[0]
+/** Only when a removal leaves someone with no list. Any other removal is at once, with Undo. */
+function RemoveFromListDialog({ target, listName, back, onKeep, onConfirm }: { target: Removing | null; listName: string; back: FocusBack; onKeep: () => void; onConfirm: () => void }) {
+  const who = !target ? "" : target.who.kind === "student" ? `${target.who.label} will have no ${skillListNoun()}. Their evaluations are kept.` : `${plural(target.stranded, "student", "students")} will have no ${skillListNoun()}. Their evaluations are kept.`
   return (
-    <Dialog open={!!target} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{`Assign ${list?.name ?? `this ${G()}`} to ${group}`}</DialogTitle>
-          <DialogDescription>{old ? `${group} already uses ${old.name}.` : list?.status === "draft" ? "Assigning makes it live." : ""}</DialogDescription>
-        </DialogHeader>
-        {old ? (
-          <RadioGroup value={mode} onValueChange={(v) => setMode(v as AssignMode)} className="gap-3">
-            <div className="flex items-start gap-2">
-              <RadioGroupItem id="attach-add" value="add" className="mt-0.5" />
-              <Label htmlFor="attach-add" className="flex flex-col items-start gap-0.5 font-normal">
-                <span className="font-medium">{`Add as a second ${G()}`}</span>
-              </Label>
-            </div>
-            <div className="flex items-start gap-2">
-              <RadioGroupItem id="attach-move" value="move" className="mt-0.5" />
-              <Label htmlFor="attach-move" className="flex flex-col items-start gap-0.5 font-normal">
-                <span className="font-medium">{`Move ${group} to this ${G()}`}</span>
-              </Label>
-            </div>
-          </RadioGroup>
-        ) : null}
-        <DialogFooter>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={() => {
-              if (!target || !list) return
-              model.setLists(assign(model.lists, target.listId, target.groupId, old ? mode : "add"))
-              onDone({ title: `${group} now uses ${list.name}`, body: old && mode === "move" ? `${old.name} no longer shows for ${group}.` : old ? `It keeps ${old.name}.` : "" })
-              onClose()
-            }}
-          >
-            {old && mode === "move" ? "Move group" : "Assign"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <AlertDialog open={!!target} onOpenChange={(o) => (o ? null : onKeep())}>
+      <AlertDialogContent className={`${LAYER} sm:max-w-md`} overlayClassName={LAYER} data-remove-from-list onCloseAutoFocus={back.onCloseAutoFocus}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="break-words">{target ? `Remove ${target.who.label} from ${listName}?` : "Remove"}</AlertDialogTitle>
+          <AlertDialogDescription>{who}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" size="sm">Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="default" size="sm" className="h-auto min-h-8 whitespace-normal [overflow-wrap:anywhere]" onClick={onConfirm}>{target ? `Remove ${target.who.label}` : "Remove"}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
-function DetachDialog({ model, target, onClose, onDone }: { model: ListsModel; target: { listId: string; groupId: string } | null; onClose: () => void; onDone: (f: Feedback) => void }) {
-  const list = target ? listById(model.lists, target.listId) : undefined
-  const group = target ? groupLabel(model.groups, target.groupId) : ""
+function DeleteListDialog({ list, back, onClose, onConfirm }: { list: SkillList | null; back: FocusBack; onClose: () => void; onConfirm: (l: SkillList) => void }) {
+  const n = list?.skillIds.length ?? 0
+  const body = !list ? "" : n === 0 ? `It holds no ${skillNounPlural()}.` : n === 1 ? `It holds 1 ${skillNoun()}. It stays in the library.` : `It holds ${fmt(n)} ${skillNounPlural()}. They stay in the library.`
   return (
-    <Dialog open={!!target} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{`Stop using ${list?.name ?? `this ${G()}`} for ${group}?`}</DialogTitle>
-          <DialogDescription>Evidence is kept.</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Keep it</Button>
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={() => {
-              if (!target || !list) return
-              model.setLists(unassign(model.lists, target.listId, target.groupId))
-              onDone({ title: `${group} no longer uses ${list.name}`, body: "" })
-              onClose()
-            }}
-          >
-            Stop using
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function DefaultDialog({ model, listId, onClose, onConfirm }: { model: ListsModel; listId: string | null; onClose: () => void; onConfirm: (id: string) => void }) {
-  const list = listId ? listById(model.lists, listId) : undefined
-  return (
-    <Dialog open={!!list} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{`Make ${list?.name ?? `this ${G()}`} the default?`}</DialogTitle>
-          <DialogDescription>New cohorts get it automatically.</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button type="button" variant="default" size="sm" onClick={() => list && onConfirm(list.id)}>Make default</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function NewListDialog({ model, target, onClose, onDone }: { model: ListsModel; target: { fromId: string | null } | null; onClose: () => void; onDone: (f: Feedback) => void }) {
-  const [name, setName] = React.useState("")
-  const [noun, setNoun] = React.useState(skillNoun)
-  const [nounPlural, setNounPlural] = React.useState(skillNounPlural)
-  const [from, setFrom] = React.useState<string>("empty")
-  const [error, setError] = React.useState<string | null>(null)
-  React.useEffect(() => {
-    if (!target) return
-    const src = target.fromId ? listById(model.lists, target.fromId) : undefined
-    setName("")
-    setNoun(src?.noun ?? skillNoun())
-    setNounPlural(src?.nounPlural ?? skillNounPlural())
-    setFrom(src ? src.id : "empty")
-    setError(null)
-  }, [target, model.lists])
-  const live = model.lists.filter((l) => l.status === "live")
-  return (
-    <Dialog open={!!target} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle>{`New group of ${skillNounPlural()}`}</DialogTitle>
-        </DialogHeader>
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault()
-            // No standards field: standards are managed in Program details (CALL 10-26 B.12). The data keeps an empty value.
-            const input = { name, noun, nounPlural, standard: "", fromListId: from === "empty" ? null : from }
-            const err = validateNewList(model.lists, input)
-            if (err) return setError(err)
-            const created = createList(model.lists, input, `list-${Date.now().toString(36)}`)
-            model.setLists([...model.lists, created])
-            onDone({ title: `${created.name} created as a draft`, body: "" })
-            onClose()
-          }}
-        >
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="list-name">Name</Label>
-            <Input id="list-name" value={name} onChange={(e) => { setName(e.target.value); setError(null) }} autoFocus maxLength={80} aria-invalid={!!error && !name.trim()} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="list-noun">It holds one</Label>
-              <Input id="list-noun" value={noun} onChange={(e) => { setNoun(e.target.value); setError(null) }} maxLength={30} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="list-noun-plural">Or several</Label>
-              <Input id="list-noun-plural" value={nounPlural} onChange={(e) => { setNounPlural(e.target.value); setError(null) }} maxLength={30} />
-            </div>
-          </div>
-          <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-medium">Start from</legend>
-            <RadioGroup value={from} onValueChange={setFrom} className="gap-2">
-              <div className="flex items-center gap-2">
-                <RadioGroupItem id="from-empty" value="empty" />
-                <Label htmlFor="from-empty" className="font-normal">{`An empty group of ${skillNounPlural()}`}</Label>
-              </div>
-              {live.map((l) => (
-                <div key={l.id} className="flex items-center gap-2">
-                  <RadioGroupItem id={`from-${l.id}`} value={l.id} />
-                  <Label htmlFor={`from-${l.id}`} className="font-normal">{`A copy of ${l.name} (${countNoun(l, l.skillIds.length)})`}</Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </fieldset>
-          {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-          <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-            <Button type="submit" variant="default" size="sm">{`Create group of ${skillNounPlural()}`}</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <AlertDialog open={!!list} onOpenChange={(o) => (o ? null : onClose())}>
+      <AlertDialogContent className={`${LAYER} sm:max-w-md`} overlayClassName={LAYER} onCloseAutoFocus={back.onCloseAutoFocus}>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="break-words">{list ? `Delete ${list.name}?` : "Delete"}</AlertDialogTitle>
+          <AlertDialogDescription>{body}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel variant="outline" size="sm">Cancel</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" size="sm" onClick={() => { if (list) onConfirm(list) }}>{`Delete ${skillListNoun()}`}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Lists table (variant A)
+// List sizes, in the program's noun.
 
-interface ListRow extends Record<string, unknown> {
-  id: string
-  list: SkillList
-  name: string
-  size: number
-  groups: number
+/** "154 skills", in the program's noun whatever the list is called. */
+export const listSize = (l: Pick<SkillList, "skillIds">): string => {
+  const n = l.skillIds.length
+  return `${fmt(n)} ${n === 1 ? skillNoun() : skillNounPlural()}`
 }
 
-export function ListsTable({ model, selectedId, hrefFor, onSelect }: { model: ListsModel; selectedId: string; hrefFor: (id: string) => string; onSelect: (id: string) => void }) {
-  const rows: ListRow[] = skillGroups(model.lists).map((l) => ({ id: l.id, list: l, name: l.name, size: l.skillIds.length, groups: l.groupIds.length }))
-  const columns = React.useMemo<ColumnDef<ListRow>[]>(
-    () => [
-      {
-        key: "name",
-        label: `Group of ${skillNounPlural()}`,
-        width: 340,
-        sortable: true,
-        cell: (r) => (
-          <span className="flex min-w-0 items-center gap-2 py-0.5">
-            <Link className={`${LINK} whitespace-normal`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined} title={r.name}>{r.name}</Link>
-            {r.list.isDefault ? <Badge variant="secondary">Default</Badge> : null}
-          </span>
-        ),
-      },
-      { key: "size", label: "Size", width: 260, sortable: true, cell: (r) => <span className="tabular-nums">{listSize(r.list)}</span> },
-      {
-        key: "groups",
-        label: "Assigned to",
-        width: 300,
-        sortable: true,
-        cell: (r) => (r.groups === 0 ? <span className="text-muted-foreground">No group yet</span> : <span className="whitespace-normal">{r.list.groupIds.map((g) => groupLabel(model.groups, g)).join(", ")}</span>),
-      },
-      { key: "status", label: "Status", width: 110, cell: (r) => <ListStatus list={r.list} /> },
-    ],
-    [hrefFor, selectedId, model.groups],
-  )
-  return (
-    <div data-region="lists">
-      <DataTable<ListRow>
-        data={rows}
-        columns={columns}
-        getRowId={(r) => r.id}
-        openRowId={selectedId || null}
-        onRowClick={(r) => onSelect(r.id)}
-        searchable={false}
-        showQueryControls={false}
-        edgeInset={false}
-        emptyState={<p className="p-4 text-sm text-muted-foreground">{`No groups of ${skillNounPlural()} yet.`}</p>}
-      />
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Which students use one list (variant A, both modes). Sankalp 2026-10-27: the old table mixed the assignment with reporting
-// ("Meet the rule", "Median achieved"); those figures belong in Attainment. One checkbox per group, its size and where the
-// skills land (a cohort's clinical courses), nothing else.
-
-/** "154 skills, 52 required to graduate" (decision D-X12 names the list's required set "Required to graduate"). */
-export const listSize = (l: SkillList): string => `${countNoun(l, l.skillIds.length)}, ${fmt(l.requiredIds.length)} required to graduate`
-
-function groupMeta(state: V2State, g: StudentGroup): string {
-  const students = plural(g.studentIds.length, "student", "students")
-  const courses = clinicalOfferingsFor(state, g)
-  return courses === null ? `${GROUP_KIND_LABEL[g.kind]} · ${students}` : `${students} · ${plural(courses, "clinical course", "clinical courses")}`
-}
-
-/** `?focus=` (the Setup summary's "student group with none" link): that group's checkbox takes focus and the row is marked. */
-function useFocusGroup(): string | null {
-  return useSearchParams()?.get("focus") ?? null
-}
-
-function GroupRows({ model, list, groups, onToggle, idPrefix }: { model: ListsModel; list: SkillList; groups: StudentGroup[]; onToggle: (groupId: string, on: boolean) => void; idPrefix: string }) {
-  const focus = useFocusGroup()
-  const focusRef = React.useRef<HTMLButtonElement>(null)
-  const focused = groups.some((g) => g.id === focus)
-  React.useEffect(() => {
-    if (!focused) return
-    focusRef.current?.scrollIntoView({ block: "center" })
-    focusRef.current?.focus()
-  }, [focused])
-  return (
-    <ul className="flex flex-col">
-      {groups.map((g) => {
-        const id = `${idPrefix}-${g.id.replace(/[^a-z0-9]+/gi, "-")}`
-        const mine = g.id === focus
-        return (
-          <li key={g.id} className="flex min-h-11 items-center gap-3 border-b border-border py-2 last:border-b-0" data-focused-group={mine ? "" : undefined}>
-            <CheckboxDs ref={mine ? focusRef : undefined} id={id} checked={list.groupIds.includes(g.id)} onCheckedChange={(v) => onToggle(g.id, v === true)} />
-            <Label htmlFor={id} className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-0.5 font-normal">
-              <span className="font-medium text-foreground">{g.label}</span>
-              <span className="text-sm text-muted-foreground tabular-nums">{groupMeta(model.state, g)}</span>
-            </Label>
-            {mine && !list.groupIds.includes(g.id) ? <StatusBadge label="None assigned" tone="warning" icon="fa-triangle-exclamation" size="sm" /> : null}
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
-/**
- * The assignment checklist: cohorts first (lockstep programs assign by cohort [CALL 10-26]), then tracks and custom groups (for
- * programs without a lockstep cohort), with "Create a group" beside that heading: it makes a custom group from rules [CALL 10-26].
- * Past OTHERS_VISIBLE groups, the rest sit behind one "Show all" disclosure (open whenever a hidden one uses the list).
- */
-const OTHERS_VISIBLE = 5
-
-export function AssignChecklist({ model, list, onToggle, onCreateGroup, idPrefix = "assign" }: { model: ListsModel; list: SkillList; onToggle: (groupId: string, on: boolean) => void; onCreateGroup: () => void; idPrefix?: string }) {
-  const cohorts = model.groups.filter((g) => g.kind === "cohort")
-  const others = model.groups.filter((g) => g.kind !== "cohort")
-  const shown = others.slice(0, OTHERS_VISIBLE)
-  const rest = others.slice(OTHERS_VISIBLE)
-  const focusId = useFocusGroup()
-  const restOn = rest.some((g) => list.groupIds.includes(g.id) || g.id === focusId)
-  const [open, setOpen] = React.useState(restOn)
-  React.useEffect(() => {
-    if (restOn) setOpen(true)
-  }, [restOn])
-  return (
-    <div className="flex flex-col gap-5" data-assign-checklist>
-      <div className="flex flex-col gap-1">
-        <p className="text-xs font-medium text-muted-foreground" id={`${idPrefix}-cohorts`}>Cohorts</p>
-        <div role="group" aria-labelledby={`${idPrefix}-cohorts`}>
-          <GroupRows model={model} list={list} groups={cohorts} onToggle={onToggle} idPrefix={idPrefix} />
-        </div>
-      </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-medium text-muted-foreground" id={`${idPrefix}-others`}>Tracks and custom groups</p>
-          <Button type="button" variant="outline" size="sm" onClick={onCreateGroup}>Create a group</Button>
-        </div>
-        <div role="group" aria-labelledby={`${idPrefix}-others`}>
-          {others.length ? <GroupRows model={model} list={list} groups={shown} onToggle={onToggle} idPrefix={idPrefix} /> : <p className="py-2 text-sm text-muted-foreground">No tracks or custom groups yet.</p>}
-          {rest.length ? (
-            <Collapsible open={open} onOpenChange={setOpen}>
-              <CollapsibleContent>
-                <GroupRows model={model} list={list} groups={rest} onToggle={onToggle} idPrefix={idPrefix} />
-              </CollapsibleContent>
-              <CollapsibleTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="-ms-2 mt-1">{open ? "Show fewer" : `Show all ${others.length}`}</Button>
-              </CollapsibleTrigger>
-            </Collapsible>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/**
- * What the assignment does, now (decision D-X27, the Oct 26 model "define the skills once, tag them to a cohort"): one sentence,
- * then the numbers it rests on, each shown once. Course mapping stays the override [REQ CM-03, CM-06].
- */
-export function AssignConsequence({ model, list }: { model: ListsModel; list: SkillList }) {
-  const sum = assignmentSummary(model.state, list, model.groups)
-  return (
-    <section aria-labelledby="assign-consequence" className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-4" data-assign-consequence>
-      <h2 id="assign-consequence" className={TYPE.section}>What this does</h2>
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
-        {sum.cohorts > 0 ? (
-          <>
-            <dt className="text-muted-foreground">Clinical courses</dt>
-            <dd className="tabular-nums">{`${fmt(sum.clinicalCourses)} in ${plural(sum.cohorts, "cohort", "cohorts")}`}</dd>
-          </>
-        ) : null}
-        {sum.waiting > 0 ? (
-          <>
-            <dt className="text-muted-foreground">Not configured</dt>
-            <dd className="tabular-nums">{`${fmt(sum.waiting)} join when configured`}</dd>
-          </>
-        ) : null}
-        {sum.otherGroups > 0 ? (
-          <>
-            <dt className="text-muted-foreground">Other groups</dt>
-            <dd>{`${fmt(sum.otherGroups)}, no course picks it up by itself`}</dd>
-          </>
-        ) : null}
-        {list.isDefault ? (
-          <>
-            <dt className="text-muted-foreground">New cohorts</dt>
-            <dd>{`Get this group of ${skillNounPlural()} automatically`}</dd>
-          </>
-        ) : null}
-      </dl>
-    </section>
-  )
-}
-
-/** The assign mode's footer line: who the list reaches, 10 words or fewer. */
-export function assignFooterLine(model: ListsModel, list: SkillList): string {
-  const sum = assignmentSummary(model.state, list, model.groups)
-  if (sum.groups === 0) return "No student group uses it yet"
-  const who = sum.otherGroups === 0 ? plural(sum.cohorts, "cohort", "cohorts") : plural(sum.groups, "group", "groups")
-  return `${who}, ${plural(sum.students, "student", "students")} use it`
-}
-
-/** The DS Checkbox in a table cell, with its own accessible name. */
-export function CheckboxCell({ checked, label, onChange }: { checked: boolean; label: string; onChange: (on: boolean) => void }) {
-  return <CheckboxDs checked={checked} aria-label={label} onCheckedChange={(v) => onChange(v === true)} />
-}
-
-// ---------------------------------------------------------------------------------------------------------------------
-// Completion rule with what would change. A proposal, not REQ: REQ sets achievement per skill (AE-*) and asks for "overall
-// attainment" (RP-02) without a list-level rule; the rule comes from the build prompt (section 5) and is an option toggle in
-// ledger Q7. Sankalp did not follow it on the assignment step (2026-10-27), so it left the step and lives behind the standalone
-// Lists screen's More menu, in this dialog. The data (SkillList.minTotal) is unchanged.
-
-export function RuleDialog({ model, list, open, onClose, onSaved }: { model: ListsModel; list: SkillList; open: boolean; onClose: () => void; onSaved: (f: Feedback) => void }) {
-  const [value, setValue] = React.useState(String(list.minTotal))
-  React.useEffect(() => setValue(String(list.minTotal)), [list.id, list.minTotal, open])
-  const n = Number(value)
-  const error = value.trim() === "" ? "Enter a number." : validateMinTotal(list, n)
-  const standings = list.groupIds.map((g) => model.standing(list, g)).filter((x): x is GroupStanding => !!x)
-  const impact = ruleImpact(standings, list, error ? list.minTotal : n)
-  const changed = !error && n !== list.minTotal
-  return (
-    <Dialog open={open} onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className="sm:max-w-lg" data-region="rule" aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle>{`Completion rule for ${list.name}`}</DialogTitle>
-        </DialogHeader>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span>{`Every required ${list.noun} (${fmt(list.requiredIds.length)}) and at least`}</span>
-          <Input id={`min-${list.id}`} type="number" inputMode="numeric" className="w-20" value={value} onChange={(e) => setValue(e.target.value)} aria-label={`Minimum ${list.nounPlural} achieved in total`} aria-invalid={!!error} aria-describedby={error ? `min-err-${list.id}` : undefined} />
-          <span>{`of ${fmt(list.skillIds.length)} in total`}</span>
-        </div>
-        {error ? <p id={`min-err-${list.id}`} className="text-sm text-destructive">{error}</p> : null}
-        {standings.length && changed ? (
-          <div className="flex flex-col gap-2" aria-live="polite">
-            <p className="text-xs font-medium text-muted-foreground">What would change</p>
-            <ul className="flex flex-col gap-1.5 text-sm">
-              {impact.map((r) => (
-                <li key={r.groupId} className="flex items-baseline justify-between gap-3">
-                  <span>{r.label}</span>
-                  <span className="tabular-nums">
-                    <span className="text-muted-foreground">{`${fmt(r.before)} to `}</span>
-                    <span className="font-semibold">{fmt(r.after)}</span>
-                    <span className="text-muted-foreground">{` of ${fmt(r.students)}`}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          {changed ? (
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              onClick={() => {
-                model.setLists(model.lists.map((l) => (l.id === list.id ? { ...l, minTotal: n } : l)))
-                const moved = impact.reduce((a, r) => a + (r.after - r.before), 0)
-                onSaved({ title: `Minimum set to ${fmt(n)}`, body: moved === 0 ? "No student changes status." : `${plural(Math.abs(moved), "student", "students")} ${moved > 0 ? "now meet" : "no longer meet"} the rule.` })
-                onClose()
-              }}
-            >
-              Save rule
-            </Button>
-          ) : null}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+/** "154 skills, 2 inactive": what the Skill lists table and the panel both say. */
+export const listSizeText = (s: V2State, l: Pick<SkillList, "skillIds">): string => {
+  const { inactive } = listSizeParts(s, l)
+  return inactive ? `${listSize(l)}, ${inactive} inactive` : listSize(l)
 }

@@ -30,15 +30,32 @@ describe("tag input", () => {
     expect(document.querySelector("[data-tags-picker] .fa-chevron-down")).toBeNull()
   })
 
-  it("suggests matching tags while typing and commits the highlighted one on Enter", () => {
+  it("suggests matching tags while typing; Enter creates what was typed unless the admin moved to a suggestion", () => {
     render(<Harness />)
     fireEvent.change(box(), { target: { value: "pat" } })
     expect(box()).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByRole("option", { name: "Patient safety" })).toHaveAttribute("aria-selected", "false")
+    expect(screen.getByRole("option", { name: 'Create "pat"' })).toHaveAttribute("aria-selected", "true")
+    fireEvent.keyDown(box(), { key: "Enter" })
+    expect(value()).toBe("pat")
+    expect(box()).toHaveValue("")
+  })
+
+  it("Enter takes an exact match in the program's spelling", () => {
+    render(<Harness />)
+    fireEvent.change(box(), { target: { value: "patient safety" } })
     expect(screen.getByRole("option", { name: "Patient safety" })).toHaveAttribute("aria-selected", "true")
-    expect(screen.getByRole("option", { name: 'Create "pat"' })).toBeInTheDocument()
     fireEvent.keyDown(box(), { key: "Enter" })
     expect(value()).toBe("Patient safety")
-    expect(box()).toHaveValue("")
+  })
+
+  it("an arrow key moves to a suggestion, and Enter then takes it", () => {
+    render(<Harness />)
+    fireEvent.change(box(), { target: { value: "pat" } })
+    fireEvent.keyDown(box(), { key: "ArrowDown" })
+    expect(screen.getByRole("option", { name: "Patient safety" })).toHaveAttribute("aria-selected", "true")
+    fireEvent.keyDown(box(), { key: "Enter" })
+    expect(value()).toBe("Patient safety")
   })
 
   it("creates a new tag from what was typed, with comma, and never twice", () => {

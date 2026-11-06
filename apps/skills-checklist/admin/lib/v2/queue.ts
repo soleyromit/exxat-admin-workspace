@@ -493,16 +493,19 @@ export function compareEvaluation(s: V2State, e: Evaluation): Comparison {
   }
   if (skill && c && skill.model === "question") {
     c.questions.forEach((q, i) => {
-      const mine = entry?.answers?.[i] ?? null
+      const given = entry?.answers?.[i] ?? null
+      const mine = given === "yes" || given === "no" ? given : null
       const theirs = d?.answers?.[i] ?? null
       rows.push({ label: q, student: mine ? yn(mine) : none, evaluator: d?.answers ? yn(theirs) : "Not recorded", agreement: mine && theirs ? (mine === theirs ? "agreed" : "differed") : "not-comparable" })
     })
   }
-  // Scored model (AR-03, RP-07): the score given on each question, never only the total. Students do not self-score.
+  // Scored model (AR-03, RP-07): the score given on each question, never only the total, beside the student's own where the program asks for one [REQ ST-11, AR-02].
   if (skill && c && skill.model === "scored") {
     c.questions.forEach((q, i) => {
       const score = d?.scores?.[i]
-      rows.push({ label: q, student: NOT_ASKED, evaluator: d?.scores ? (score !== null && score !== undefined ? `${score}` : "Not scored") : "Not recorded", agreement: "not-comparable" })
+      const mine = entry?.answers?.[i]
+      const given = score !== null && score !== undefined
+      rows.push({ label: q, student: typeof mine === "number" ? `${mine}` : NOT_ASKED, evaluator: d?.scores ? (given ? `${score}` : "Not scored") : "Not recorded", agreement: typeof mine === "number" && given ? (mine === score ? "agreed" : "differed") : "not-comparable" })
     })
   }
   // The evaluator's outcome beside the level, questions or scores (AR-03): a level alone does not say whether it was Met.

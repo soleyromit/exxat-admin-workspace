@@ -19,16 +19,14 @@ import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
-import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
-import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
+import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { PageFrame } from "@/components/skills/page-header"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { LINK_IN_TABLE } from "@/components/lab/link-styles"
-import { CopyDialog, StartingPointPreview, type CopyResult } from "@/components/lab/import/starter-copy"
-import { useV2State } from "@/lib/v2/react"
+import { StartingPointPreview } from "@/components/lab/import/starter-copy"
 import { IMPORT_GROUPING, sectionsOf, startingPoints, type StartingPoint } from "@/lib/lab/import"
-import { LaterTitle } from "@/components/lab/import/sample-badge"
+import { LaterNotice, LaterTitle } from "@/components/lab/import/sample-badge"
 import { countSkills, skillNounPlural } from "@/lib/lab/terms"
 
 const SECTIONS_ON_CARD = 4
@@ -36,7 +34,6 @@ const SECTIONS_ON_CARD = 4
 export function AdminStarterLibraryB() {
   const params = useSearchParams()
   const empty = params?.get("state") === "empty"
-  const state = useV2State()
   const points = React.useMemo(() => (empty ? [] : startingPoints()), [empty])
   const router = useRouter()
   const pathname = usePathname()
@@ -49,8 +46,6 @@ export function AdminStarterLibraryB() {
     return `${pathname}?${q.toString()}`
   }, [params, pathname])
   const setOpenId = (id: string | null) => router.replace(hrefFor(id), { scroll: false })
-  const [confirming, setConfirming] = React.useState<StartingPoint | null>(null)
-  const [done, setDone] = React.useState<CopyResult | null>(null)
   const [disc, setDisc] = React.useState("all")
   const open = points.find((p) => p.id === openId) ?? null
   const disciplines = React.useMemo(() => [...new Set(points.map((p) => p.discipline))].sort((a, b) => points.filter((p) => p.discipline === b).length - points.filter((p) => p.discipline === a).length || a.localeCompare(b)), [points])
@@ -61,11 +56,7 @@ export function AdminStarterLibraryB() {
       actions={<Button asChild variant="outline" size="sm"><Link href="/lab/admin/import-ai-review">{`Import ${skillNounPlural()}`}</Link></Button>}
     >
       <div className="flex flex-col gap-4" data-starter-lab="B" data-page-type="list">
-        {done ? (
-          <LocalBanner variant="success" title={`${countSkills(done.copied)} copied to ${done.target}`} dismissible onDismiss={() => setDone(null)} action={{ label: "Open the library", href: "/lab/admin/skills-library" }}>
-            Each is not configured yet.
-          </LocalBanner>
-        ) : null}
+        <LaterNotice>Later. You can look through these. Nothing is copied to the library yet.</LaterNotice>
         {points.length === 0 ? (
           <EmptyBlock title="No starting points are offered" body="Bring in the list you already have instead." action={{ label: `Import ${skillNounPlural()}`, href: "/lab/admin/import-ai-review" }} />
         ) : (
@@ -89,14 +80,10 @@ export function AdminStarterLibraryB() {
             <>
               <FloatingSheetPanelHeader title={open.label} subtitle={`${countSkills(open.skills.length)} in ${sectionsOf(open).length} ${IMPORT_GROUPING.categories}`} onClose={() => setOpenId(null)} />
               <FloatingSheetPanelBody className="px-4 pb-4"><StartingPointPreview point={open} /></FloatingSheetPanelBody>
-              <FloatingSheetPanelFooter className="flex justify-end gap-2">
-                <Button type="button" variant="default" size="default" onClick={() => { setConfirming(open); setOpenId(null) }}>Use as a starting point</Button>
-              </FloatingSheetPanelFooter>
             </>
           ) : null}
         </FloatingSheetPanelContent>
       </FloatingSheetPanel>
-      <CopyDialog point={confirming} skills={state.skills} onClose={() => setConfirming(null)} onCopied={setDone} />
     </PageFrame>
   )
 }

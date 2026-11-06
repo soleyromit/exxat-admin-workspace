@@ -21,7 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/compo
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/student2/frame"
-import { DetailsFields, LocationField, NoteField, SelfEvalFields, SkillPicker, TOUCH_ROW, WhereSelect } from "@/components/lab/student2/log-parts"
+import { DetailsFields, LocationField, NoteField, SelfEvalCards, SkillPicker, TOUCH_ROW, WhereSelect, selfEvalIssues } from "@/components/lab/student2/log-parts"
 import { SyncBadge } from "@/components/lab/student2/sync-parts"
 import { SectionTitle } from "@/components/lab/student/parts"
 import { FormSkeleton } from "./student-log-a"
@@ -57,6 +57,8 @@ interface ShiftRow {
   at: string
   details: DetailValues
   rating: string
+  /** A questions skill: the student's own Yes or No per question (D-L73). */
+  answers: Array<"yes" | "no" | number | null>
   sync: SyncState
   requestTo: string | null
   fresh: boolean
@@ -88,7 +90,7 @@ function ShiftLog({ ctx }: { ctx: Student2Ctx }) {
         const sub = subs.find((x) => x.entryIds?.includes(e.id) || x.id === e.requestId)
         const raw = syncStateOf(s, { entryId: e.id })
         const sync: SyncState = demo === "synced" ? "synced" : (demo === "queued" || demo === "offline") && raw === "synced" ? "queued" : raw
-        return { key: e.id, skillId: e.skillId, name: skillById(s, e.skillId)?.name ?? skillNoun(), where: e.location ?? (e.setting === "lab" ? "Lab" : "Simulation"), whereVal: valueFor(e.setting, e.location), location: e.location ?? "", clinical: e.setting === "clinical", at: e.at, details: { date: e.at.slice(0, 10), unit: unitOf(e.location), case: "" }, rating: e.rating ?? "", sync, requestTo: sub ? personById(s, sub.assignedToId)?.name ?? "an evaluator" : null, fresh: false }
+        return { key: e.id, skillId: e.skillId, name: skillById(s, e.skillId)?.name ?? skillNoun(), where: e.location ?? (e.setting === "lab" ? "Lab" : "Simulation"), whereVal: valueFor(e.setting, e.location), location: e.location ?? "", clinical: e.setting === "clinical", at: e.at, details: { date: e.at.slice(0, 10), unit: unitOf(e.location), case: "" }, rating: e.rating ?? "", answers: [], sync, requestTo: sub ? personById(s, sub.assignedToId)?.name ?? "an evaluator" : null, fresh: false }
       })
       .sort((a, b) => (a.at < b.at ? 1 : -1))
   }, [s, studentId, demo]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -104,7 +106,7 @@ function ShiftLog({ ctx }: { ctx: Student2Ctx }) {
     }
     const key = `new-${added.length + 1}-${skillId}`
     const loc = locationFor(w, location) ?? ""
-    setAdded((a) => [{ key, skillId, name: skillById(s, skillId)?.name ?? skillNoun(), where: w?.setting === "clinical" ? (w.location ?? `${w.label}, ${loc}`) : w?.label ?? "", whereVal, location: loc, clinical: w?.setting === "clinical", at: `${DEMO_TODAY}T14:${String(10 + a.length).padStart(2, "0")}:00Z`, details: { date: DEMO_TODAY, unit: unitOf(w?.location ?? null), case: "" }, rating: "", sync: offline ? "queued" : "synced", requestTo: null, fresh: true }, ...a])
+    setAdded((a) => [{ key, skillId, name: skillById(s, skillId)?.name ?? skillNoun(), where: w?.setting === "clinical" ? (w.location ?? `${w.label}, ${loc}`) : w?.label ?? "", whereVal, location: loc, clinical: w?.setting === "clinical", at: `${DEMO_TODAY}T14:${String(10 + a.length).padStart(2, "0")}:00Z`, details: { date: DEMO_TODAY, unit: unitOf(w?.location ?? null), case: "" }, rating: "", answers: [], sync: offline ? "queued" : "synced", requestTo: null, fresh: true }, ...a])
     setOpen(false)
     setExpanded(key)
   }
@@ -113,7 +115,7 @@ function ShiftLog({ ctx }: { ctx: Student2Ctx }) {
   const missing = (r: ShiftRow): string[] => {
     const fields = detailFieldsFor(s, [r.skillId])
     const out = Object.keys(detailErrors(r.details, fields)).map((k) => inSentence(fields.find((f) => f.id === k)?.label ?? k))
-    if (r.fresh && selfEvalEnabled(skillById(s, r.skillId)) && !r.rating) out.push("self-rating")
+    if (r.fresh && selfEvalEnabled(skillById(s, r.skillId)) && selfEvalIssues(s, [r.skillId], { [r.skillId]: r.rating }, { [r.skillId]: r.answers }).length) out.push("self-rating")
     return out
   }
   const ready = rows.filter((r) => !r.requestTo && r.sync !== "conflict" && missing(r).length === 0)
@@ -193,7 +195,17 @@ function ShiftLog({ ctx }: { ctx: Student2Ctx }) {
                       <CollapsibleContent>
                         <div className="mt-3 flex flex-col gap-4 rounded-md bg-muted/40 p-3">
                           <DetailsFields idPrefix={r.key} fields={detailFieldsFor(s, [r.skillId])} values={r.details} onChange={(id, v) => patch(r.key, { details: { ...r.details, [id]: v } })} errors={detailErrors(r.details, detailFieldsFor(s, [r.skillId]))} showErrors />
-                          {selfEvalEnabled(skillById(s, r.skillId)) ? <SelfEvalFields s={s} ids={[r.skillId]} values={{ [r.skillId]: r.rating }} onChange={(_, v) => patch(r.key, { rating: v })} /> : null}
+                          {selfEvalEnabled(skillById(s, r.skillId)) ? (
+                            <SelfEvalCards
+                              s={s}
+                              ids={[r.skillId]}
+                              plain
+                              ratings={{ [r.skillId]: r.rating }}
+                              answers={{ [r.skillId]: r.answers }}
+                              onRating={(_, v) => patch(r.key, { rating: v })}
+                              onAnswer={(_, i, v) => { const next = [...r.answers]; next[i] = v; patch(r.key, { answers: next }) }}
+                            />
+                          ) : null}
                         </div>
                       </CollapsibleContent>
                     </Collapsible>

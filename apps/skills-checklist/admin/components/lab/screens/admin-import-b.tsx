@@ -9,6 +9,7 @@
  * one primary, Create. Removed from the built B: the 4 KPI cards, the warning banner, the legend paragraph and the tabs.
  * Demo states as variant A (?state=...).
  */
+import { UPLOAD_LATER } from "@/lib/lab/import"
 import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
@@ -40,7 +41,7 @@ import {
 } from "@/components/lab/import/import-parts"
 import { useImportSession, type ImportSession } from "@/components/lab/import/use-import-session"
 import { CONFIDENCE_WORD, buildSampleText, readableText, type ResolvedRow } from "@/lib/lab/import"
-import { countSkills, skillNounPlural } from "@/lib/lab/terms"
+import { countSkills, skillListNoun, skillNounPlural } from "@/lib/lab/terms"
 
 const GLYPH: Record<string, { icon: string; word: string }> = {
   ready: { icon: "fa-circle-check", word: "Ready" },
@@ -172,11 +173,11 @@ export function AdminImportB() {
   let footer: StickyFooterProps | null = null
   if (done) footer = { secondary: { label: "Import another file", onClick: session.reset }, primary: { label: "Open the library", href: LIBRARY_HREF } }
   else if (reviewing) {
-    const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? `Name the new group of ${skillNounPlural()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
+    const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? `Name the new ${skillListNoun()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
     footer = {
       summary: <span className="flex flex-wrap items-center gap-x-3 gap-y-1"><TargetSummary session={session} /><NameThisImport session={session} /></span>,
       context: reason ? undefined : "All decided.",
-      primary: { label: `Create ${countSkills(total)}`, onClick: session.confirm, disabled: !!reason, disabledReason: reason },
+      primary: { label: `Create ${countSkills(total)}`, onClick: () => undefined, disabled: true, disabledReason: UPLOAD_LATER },
     }
   } else footer = { context: session.phase === "reading" ? "Reading the file" : undefined }
 

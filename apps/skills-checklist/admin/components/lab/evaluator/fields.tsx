@@ -15,8 +15,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { PageHeader } from "@exxatdesignux/ui/components/ui/page-header"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
-import { SCORE_MAX } from "@/lib/v2/preceptor"
-import { ratingLabel, evFieldId, levelOnly, type EvIssue, type EvRequest, type EvResponse, type EvSkill } from "@/lib/lab/evaluator"
+import { ratingLabel, evFieldId, levelOnly, type EvIssue, type EvRequest, type EvResponse, type EvSkill, answersDecide } from "@/lib/lab/evaluator"
 import { focusField, type EvaluatorModel } from "@/components/lab/evaluator/use-evaluator"
 
 export const TOUCH = "min-h-(--control-height-touch) h-auto whitespace-normal py-2 text-sm"
@@ -39,7 +38,7 @@ function FieldError({ id, issue }: { id: string; issue?: EvIssue }) {
 const UNSELECTED_NEUTRAL = "data-[state=off]:border-[var(--border-control-35)] data-[state=off]:hover:border-[var(--foreground)]"
 
 /** One choice from a short list, as touch tiles. Deselecting is not possible: an answer is changed, not cleared. */
-export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, describedBy, cols = 2, compact = false }: { id: string; labelId: string; options: Array<{ value: string; label: string }>; value: string | null; onChange: (v: string) => void; invalid?: boolean; describedBy?: string; cols?: 1 | 2 | 3 | 5; compact?: boolean }) {
+export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, describedBy, cols = 2, compact = false }: { id: string; labelId: string; options: Array<{ value: string; label: string }>; value: string | null; onChange: (v: string) => void; invalid?: boolean; describedBy?: string; cols?: 1 | 2 | 3 | 5 | "scale"; compact?: boolean }) {
   return (
     <ToggleGroup
       type="single"
@@ -50,7 +49,7 @@ export function ChoiceTiles({ id, labelId, options, value, onChange, invalid, de
       aria-labelledby={labelId}
       aria-describedby={describedBy}
       aria-invalid={invalid || undefined}
-      className={cn("grid w-full gap-2", cols === 1 ? "grid-cols-1" : cols === 2 ? "grid-cols-2" : cols === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-5")}
+      className={cn("grid w-full gap-2", cols === 1 ? "grid-cols-1" : cols === 2 ? "grid-cols-2" : cols === 3 ? "grid-cols-1 sm:grid-cols-3" : cols === "scale" ? "grid-cols-[repeat(auto-fit,minmax(2.75rem,1fr))]" : "grid-cols-5")}
     >
       {options.map((o, i) => (
         <ToggleGroupItem key={o.value} id={i === 0 ? id : undefined} value={o.value} aria-invalid={invalid || undefined} className={cn(compact ? "h-8 text-sm sm:h-8 max-sm:min-h-(--control-height-touch)" : TOUCH, "w-full justify-center px-3", UNSELECTED_NEUTRAL)}>
@@ -96,6 +95,8 @@ export function SkillFields({ m, skill, compactQuestions = false }: { m: Evaluat
   const fbId = evFieldId.feedback(skill.id)
   const fbRequired = skill.feedbackRequired || r.outcome === "not-yet"
   const byLevel = levelOnly(skill)
+  // The question and scored models have no final result: the answers are the evaluation, and the outcome comes from them (D-L73).
+  const byAnswers = answersDecide(skill)
   const lvlId = evFieldId.level(skill.id)
   return (
     <div className="flex flex-col gap-4">
@@ -122,7 +123,7 @@ export function SkillFields({ m, skill, compactQuestions = false }: { m: Evaluat
           {m.options.ruleHint && skill.ruleHint ? <p className="text-xs text-muted-foreground">{skill.ruleHint}</p> : null}
         </div>
       ) : null}
-      {byLevel ? null : (
+      {byLevel || byAnswers ? null : (
       <div className="flex flex-col gap-2">
         <Label id={`${outId}-label`} className="text-sm font-medium">Outcome</Label>
         <ChoiceTiles id={outId} labelId={`${outId}-label`} options={skill.choices} value={r.outcome} onChange={(v) => m.setAnswer(skill.id, { outcome: v as EvResponse["outcome"] })} invalid={!!issue(outId)} describedBy={issue(outId) ? `${outId}-err` : undefined} cols={skill.choices.length === 3 ? 3 : 2} />
@@ -137,9 +138,9 @@ export function SkillFields({ m, skill, compactQuestions = false }: { m: Evaluat
           <FieldError id={`${evFieldId.level(skill.id)}-err`} issue={issue(evFieldId.level(skill.id))} />
         </div>
       ) : null}
-      {graded && skill.answerKind ? (
+      {(graded || byAnswers) && skill.answerKind ? (
         <fieldset className="flex flex-col gap-3">
-          <legend className="mb-2 text-sm font-medium text-foreground">{skill.answerKind === "score" ? `Score each, 1 to ${SCORE_MAX}` : "Criteria"}</legend>
+          <legend className="mb-2 text-sm font-medium text-foreground">{skill.answerKind === "score" ? `Score each, 1 to ${skill.scaleMax}` : "Questions"}</legend>
           {skill.questions.map((q, i) => {
             const qid = evFieldId.question(skill.id, i)
             const val = r.answers[i] ?? null
@@ -148,13 +149,13 @@ export function SkillFields({ m, skill, compactQuestions = false }: { m: Evaluat
                 <div className={cn("flex flex-col gap-0.5", !compactQuestions && "sm:max-w-[55%]")}>
                   <p id={`${qid}-label`} className="text-sm text-foreground">{q}</p>
                   {/* The student's own answer beside the evaluator's, as context (EV-04); never prefilled into the evaluator's choice. */}
-                  {skill.self?.answers?.[i] ? <p className="text-xs text-muted-foreground" data-self-answer>{`Student said ${skill.self.answers[i] === "yes" ? "Yes" : "No"}`}</p> : null}
+                  {skill.self?.answers?.[i] ? <p className="text-xs text-muted-foreground" data-self-answer>{`Student said ${skill.self.answers[i] === "yes" ? "Yes" : skill.self.answers[i] === "no" ? "No" : skill.self.answers[i]}`}</p> : null}
                 </div>
-                <div className={skill.answerKind === "score" ? "w-full sm:w-64" : "w-full sm:w-44"}>
+                <div className={skill.answerKind === "score" ? (skill.scaleMax > 5 ? "w-full sm:w-96" : "w-full sm:w-64") : "w-full sm:w-44"}>
                   <ChoiceTiles
                     id={qid}
                     labelId={`${qid}-label`}
-                    options={skill.answerKind === "score" ? Array.from({ length: SCORE_MAX }, (_, n) => ({ value: String(n + 1), label: String(n + 1) })) : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
+                    options={skill.answerKind === "score" ? Array.from({ length: skill.scaleMax }, (_, n) => ({ value: String(n + 1), label: String(n + 1) })) : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
                     value={val === null ? null : String(val)}
                     onChange={(v) => {
                       const next = [...r.answers]
@@ -162,7 +163,7 @@ export function SkillFields({ m, skill, compactQuestions = false }: { m: Evaluat
                       m.setAnswer(skill.id, { answers: next })
                     }}
                     invalid={!!issue(qid)}
-                    cols={skill.answerKind === "score" ? 5 : 2}
+                    cols={skill.answerKind === "score" ? "scale" : 2}
                   />
                 </div>
               </div>
@@ -247,6 +248,7 @@ export function RequestSummary({ req, line }: { req: EvRequest; line: string }) 
       <figure className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-2 text-sm" data-user-content data-request-details data-request-note={req.studentNote ? "" : undefined}>
         <figcaption className="text-muted-foreground">{`From ${req.student.first}`}</figcaption>
         <p className="text-foreground" data-viz-label>{line}</p>
+        {req.details.map((d) => <p key={d.label} className="text-foreground" data-student-detail><span className="text-muted-foreground">{`${d.label}: `}</span>{d.value}</p>)}
         {req.studentNote ? <blockquote className="whitespace-pre-line break-words text-foreground">&ldquo;{req.studentNote}&rdquo;</blockquote> : null}
       </figure>
       {req.sample ? <Badge variant="outline" className="w-fit">Lab sample</Badge> : null}

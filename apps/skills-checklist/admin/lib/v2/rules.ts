@@ -207,6 +207,8 @@ export function strengthHint(model: EvalModel | null, c: SkillConfig): StrengthH
     const m = c.questions.length
     parts.push(qr.kind === "all" ? "each with every question answered Yes" : qr.kind === "atLeast" ? `each with at least ${qr.n} of ${m} questions answered Yes` : `each with ${plural(qr.indices.length, "question", "questions")} ${[...qr.indices].sort((x, y) => x - y).map((i) => i + 1).join(", ")} answered Yes`)
   }
+  const sr = model === "scored" ? c.scoredRule : null
+  if (sr) parts.push(sr.kind === "average" ? `each averaging ${sr.value} or more` : sr.kind === "minEach" ? `each scoring at least ${sr.value} on every question` : `each totalling ${sr.value} or more`)
   for (const lm of c.levelMinimums ?? []) if (c.levels[lm.levelIndex]?.trim()) parts.push(`at least ${lm.min} at ${inSentence(c.levels[lm.levelIndex]!.trim())} or above`)
   parts.push(distinct >= 2 ? `from at least ${distinct} different evaluators` : "from any single evaluator")
   if (lvl) parts.push(`at ${inSentence(lvl)} or above`)
@@ -265,6 +267,8 @@ export interface EngineRule {
   model: EvalModel | null
   questionRule: QuestionRule | null
   scoredRule: ScoredRule | null
+  /** Binary model: which of the two labels qualifies [REQ SC-03]. 0 is the first label (recorded "met"), 1 the second (recorded "not-met"). */
+  qualifyingLabel?: 0 | 1 | null
   /** How many valid attempts are needed (the frequency). Must be a whole number of 1 or more: no fallback. */
   need: number
   /** Last-N currency (v2, carried): only the latest `window` completed evaluations are read. */
@@ -325,24 +329,41 @@ export const NEED_UNSET_MESSAGE = "Enter how many evaluations that count are nee
  * outcome. An evaluation recorded before a question or score rule existed (no answers or scores) falls back to its outcome.
  * Renaming labels never changes this [REQ AE-06].
  */
-export function qualifiesOn(rule: Pick<EngineRule, "model" | "questionRule" | "scoredRule">, e: Evaluation): boolean {
+export function answersQualify(r: NonNullable<EngineRule["questionRule"]>, answers: ReadonlyArray<unknown>): boolean {
+  const yes = answers.map((a) => a === "yes")
+  if (r.kind === "all") return yes.length > 0 && yes.every(Boolean)
+  if (r.kind === "atLeast") return yes.filter(Boolean).length >= r.n
+  return r.indices.length > 0 && r.indices.every((i) => yes[i])
+}
+
+/** The scores given against a scored rule [REQ SC-07]: average, a minimum on every question, or a total. The result comes from the scores. */
+export function scoresQualify(r: ScoredRule, scores: ReadonlyArray<unknown>): boolean {
+  const s = scores.filter((x): x is number => typeof x === "number")
+  if (s.length === 0) return false
+  if (r.kind === "average") return s.reduce((a, b) => a + b, 0) / s.length >= r.value
+  if (r.kind === "minEach") return s.every((x) => x >= r.value)
+  return s.reduce((a, b) => a + b, 0) >= r.value
+}
+
+/**
+ * A recorded outcome against the skill's qualifying label [REQ SC-03, AE-02]. The recorded word is the position of the label the evaluator chose ("met" the first, "not-met" the
+ * second), never rewritten, so changing which label qualifies re-applies to evidence held. Every model but binary has one reading: "met".
+ */
+export function outcomeQualifies(rule: { model?: EvalModel | null; qualifyingLabel?: 0 | 1 | null }, outcome: Evaluation["outcome"]): boolean {
+  return rule.model === "binary" && rule.qualifyingLabel === 1 ? outcome === "not-met" : outcome === "met"
+}
+
+/** The recorded word of the label that qualifies: what a one-press "mark all" records and what a sentence about a skill's rule names. */
+export const qualifyingOutcome = (rule: { model?: EvalModel | null; qualifyingLabel?: 0 | 1 | null }): "met" | "not-met" => (rule.model === "binary" && rule.qualifyingLabel === 1 ? "not-met" : "met")
+
+/** The same test from a skill's saved configuration, for readers that hold a skill and an outcome rather than a rule. */
+export const outcomeQualifiesOn = (skill: Pick<Skill, "model" | "config"> | null | undefined, outcome: Evaluation["outcome"]): boolean => outcomeQualifies({ model: skill?.model ?? null, qualifyingLabel: skill?.config?.qualifyingLabel ?? null }, outcome)
+
+export function qualifiesOn(rule: Pick<EngineRule, "model" | "questionRule" | "scoredRule" | "qualifyingLabel">, e: Evaluation): boolean {
   const detail = e.versions[e.versions.length - 1]?.detail
-  if (rule.model === "question" && rule.questionRule && detail?.answers?.length) {
-    const yes = detail.answers.map((a) => a === "yes")
-    const r = rule.questionRule
-    if (r.kind === "all") return yes.length > 0 && yes.every(Boolean)
-    if (r.kind === "atLeast") return yes.filter(Boolean).length >= r.n
-    return r.indices.length > 0 && r.indices.every((i) => yes[i])
-  }
-  if (rule.model === "scored" && rule.scoredRule && detail?.scores?.length) {
-    const s = detail.scores.filter((x): x is number => typeof x === "number")
-    if (s.length === 0) return false
-    const r = rule.scoredRule
-    if (r.kind === "average") return s.reduce((a, b) => a + b, 0) / s.length >= r.value
-    if (r.kind === "minEach") return s.every((x) => x >= r.value)
-    return s.reduce((a, b) => a + b, 0) >= r.value
-  }
-  return e.outcome === "met"
+  if (rule.model === "question" && rule.questionRule && detail?.answers?.length) return answersQualify(rule.questionRule, detail.answers)
+  if (rule.model === "scored" && rule.scoredRule && detail?.scores?.length) return scoresQualify(rule.scoredRule, detail.scores)
+  return outcomeQualifies(rule, e.outcome)
 }
 
 /** True when the rule reads per-question answers (a published question rule), so the student line can say "2 of 3 questions". */
@@ -357,6 +378,7 @@ export function engineRuleOf(skill: Pick<Skill, "model" | "config">): EngineRule
     model: skill.model,
     questionRule: c.questionRule ?? null,
     scoredRule: c.scoredRule ?? null,
+    qualifyingLabel: c.qualifyingLabel ?? null,
     need: a.need,
     window: a.kind === "last-n" && a.window ? a.window : null,
     minLevelIndex: a.minLevelIndex,

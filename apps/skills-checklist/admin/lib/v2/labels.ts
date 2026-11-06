@@ -140,7 +140,7 @@ export const sentForNewEvaluationLabel = (name: string): string => `Sent to ${na
 export const SENT_FOR_NEW_EVALUATION_WORD = "Sent for a new evaluation"
 
 /**
- * Graduation readiness bands against "Required to graduate" (decision D-X11; `population.graduationStageOf`): exactly 1 missing is
+ * Graduation readiness bands against every assigned skill (decision D-X11; `population.graduationStageOf`): exactly 1 missing is
  * one short, 2 to 3 is short, FAR_BEHIND_MISSING (4) or more is far behind.
  */
 /** "One skill short" follows the program's noun (Settings > Naming): a getter, so it reads the noun when shown. */
@@ -167,13 +167,22 @@ export const outcomeWord = (label: string | null | undefined): string => {
   return t.toLowerCase() === LEGACY_NOT_MET.toLowerCase() ? UNMET_LABEL : t
 }
 /** The two binary labels to show, defaulting to Met / Unmet. */
-export const binaryLabels = (labels: readonly [string, string] | null | undefined): [string, string] => [outcomeWord(labels?.[0]) || OUTCOME_LABEL.met, outcomeWord(labels?.[1]) || UNMET_LABEL]
+/**
+ * A recorded outcome in the skill's own words: a program can rename its two labels and choose the second as the one that qualifies [REQ SC-03, AE-06]. Other models have no labels, so they read the shared word.
+ */
+export const outcomeWordOn = (skill: { model?: string | null; config?: { outcomeLabels?: readonly string[] | null; ownLabels?: boolean } | null } | null | undefined, outcome: keyof typeof OUTCOME_LABEL): string => {
+  const labels = skill?.model === "binary" ? skill.config?.outcomeLabels : undefined
+  const own = outcome === "met" ? labels?.[0] : outcome === "not-met" ? labels?.[1] : undefined
+  return own?.trim() ? (skill?.config?.ownLabels ? own : outcomeWord(own)) : OUTCOME_LABEL[outcome]
+}
+
+export const binaryLabels = (labels: readonly [string, string] | null | undefined, /** The program saved these words itself (`SkillConfig.ownLabels`): "Not met" is then its own word, not the legacy default. */ own = false): [string, string] => (own && labels ? [labels[0] || OUTCOME_LABEL.met, labels[1] || UNMET_LABEL] : [outcomeWord(labels?.[0]) || OUTCOME_LABEL.met, outcomeWord(labels?.[1]) || UNMET_LABEL])
 
 /**
  * Per-course level of a skill in an offering [REQ CM-03; CALL 10-26]. Only Mandatory feeds "Required this term" (D-X12);
  * Recommended marks "Likely here"; Optional can still be submitted and counts on the record.
  */
-export const MAPPING_LEVEL_LABEL = { mandatory: "Mandatory", recommended: "Recommended", optional: "Optional", "not-expected": "Not mapped" } as const
+export const MAPPING_LEVEL_LABEL = { mandatory: "Mandatory", recommended: "Recommended", "not-expected": "Not mapped" } as const
 
 /** Course type [CALL 10-26: clinical courses first, a default pending the client]. */
 export const COURSE_KIND_LABEL = { clinical: "Clinical", didactic: "Didactic" } as const

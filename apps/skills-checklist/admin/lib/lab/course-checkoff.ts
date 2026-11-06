@@ -19,7 +19,7 @@
  */
 import type { CourseOffering, EvalModel, Evaluation, EvaluationDetail, Person, Skill, V2State } from "@/lib/v2/types"
 import { ineligibleReason, openRequestFor, skillProgress } from "@/lib/v2/student"
-import { EMPTY_MAPPING_OVERLAY, LEVEL_LABEL, offeringLevels, type MapLevel } from "@/lib/lab/mapping"
+import { LEVEL_LABEL, offeringLevels, savedOverlay, type MapLevel } from "@/lib/lab/mapping"
 import { COURSE_FACULTY } from "./terms"
 import { CHECKOFF_DEFAULT, checkOffAllowedFor, checkOffLevelIndex, checkOffOffReason, checkOffScore, tickRecordsLine } from "./checkoff-rules"
 
@@ -91,12 +91,12 @@ export interface MappedSkill {
   levelLabel: string
 }
 
-const LEVEL_RANK: Record<Exclude<MapLevel, "none">, number> = { mandatory: 0, recommended: 1, optional: 2 }
+const LEVEL_RANK: Record<Exclude<MapLevel, "none">, number> = { mandatory: 0, recommended: 1 }
 
 /** Skills mapped to the offering at any level, active only; mandatory first, then by name. */
 export function offeringSkills(s: V2State, o: CourseOffering): MappedSkill[] {
   const out: MappedSkill[] = []
-  for (const [id, level] of offeringLevels(s, EMPTY_MAPPING_OVERLAY, o)) {
+  for (const [id, level] of offeringLevels(s, savedOverlay(s), o)) {
     if (level === "none") continue
     const skill = s.skills.find((k) => k.id === id)
     if (!skill || skill.active === false) continue
@@ -211,6 +211,8 @@ export function recordCheckoffs(s: V2State, session: CheckoffSession, keys: read
     const review = !!k.config?.approvalRequired
     const { detail, levelIndex } = tickDetail(k)
     const id = `ev-co-${session.sessionId}-${i}`
+    // One tick records the label that qualifies [REQ SC-03]: "met" is the first label, "not-met" the second (`outcomeQualifies`).
+    const outcome = k.model === "binary" && k.config?.qualifyingLabel === 1 ? ("not-met" as const) : ("met" as const)
     added.push({
       id,
       studentId,
@@ -219,9 +221,9 @@ export function recordCheckoffs(s: V2State, session: CheckoffSession, keys: read
       setting: session.setting,
       date: session.date,
       status: review ? "awaiting-approval" : "counted",
-      outcome: "met",
+      outcome,
       currentVersion: 1,
-      versions: [{ version: 1, outcome: "met", at, by: session.recorderId, reason: null, detail }],
+      versions: [{ version: 1, outcome, at, by: session.recorderId, reason: null, detail }],
       courseId: o.courseId,
       ...(typeof levelIndex === "number" ? { levelIndex } : {}),
       source: "checkoff",
@@ -235,9 +237,10 @@ export function recordCheckoffs(s: V2State, session: CheckoffSession, keys: read
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
-/** "Recorded 6 check-offs for Esteban Villarreal on Oct 26. 1 went to administrator review; the rest count now." */
+/** "Esteban Villarreal recorded 6 check-offs on Oct 26. 1 went to administrator review; the rest count now." */
 export function recordedSentence(count: number, review: number, who: string, date: string): string {
-  const head = `Recorded ${plural(count, "check-off", "check-offs")} for ${who} on ${date}.`
+  // The name is who recorded them, never the student ("for {name}" read as the student on the walkthrough, D-L70).
+  const head = `${who} recorded ${plural(count, "check-off", "check-offs")} on ${date}.`
   if (!review) return `${head} ${count === 1 ? "It counts" : "They count"} now.`
   if (review === count) return `${head} ${count === 1 ? "It went" : "All went"} to administrator review.`
   return `${head} ${review} went to administrator review; the rest count now.`

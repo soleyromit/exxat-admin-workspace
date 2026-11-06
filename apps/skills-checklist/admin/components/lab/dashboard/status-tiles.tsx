@@ -6,6 +6,7 @@
  * marks, one amber mark for the shortfall), a screen-reader table with the same numbers, and one link to the list behind it
  * with the same scope. Every mark that names a record is a link too. Numbers come from lib/lab/dashboard.ts only.
  */
+import { REQUIRED_SET_LABEL } from "@/lib/v2/population"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { LabKeyMetrics as KeyMetrics, type MetricItem } from "@/components/lab/lab-bar/lab-key-metrics"
@@ -37,11 +38,11 @@ export function StatusFigures({ model, series }: { model: DashboardModel; series
   const achieved = kpi("achieved")
   const waiting = kpi("waiting")
   const approval = kpi("approval")
-  const expectedNow = model.basis === "expected" ? `, expected now ${Math.round(model.term.share * 100)}%` : ""
+  const expectedNow = model.basis === "expected" ? `, expected now ${Math.round(model.expectedShare * 100)}%` : ""
   const metrics: MetricItem[] = [
     {
       id: "behind",
-      label: model.basis === "expected" ? "Behind the term clock" : model.basis === "median" ? "Below the scope median" : "Short of all required",
+      label: model.basis === "expected" ? "Behind the program clock" : model.basis === "median" ? "Below the scope median" : "Short of all required",
       value: fmt(model.heroValue),
       delta: "",
       trend: "neutral",
@@ -137,7 +138,7 @@ export function WhereBehindTile({ model, scope, partial, selector }: { model: Da
   const hidden = partial ? [...all.hidden, ...all.lanes.slice(lanes.length).map((l) => ({ label: l.label, n: 4 }))] : all.hidden
   const shown = lanes.slice(0, 4)
   const n = model.behind.length
-  const word = model.basis === "expected" ? "behind the term clock" : model.basis === "median" ? "below the scope median" : "short of all required"
+  const word = model.basis === "expected" ? "behind the program clock" : model.basis === "median" ? "below the scope median" : "short of all required"
   const summary = n === 0 ? `Nobody is ${word}. ${shown.map((l) => `${l.label}: ${l.rows.length} students`).join(", ")}.` : `${n} of ${model.inScope} students ${word}: ${shown.map((l) => `${l.label} ${l.rows.filter((r) => r.behind).length} of ${l.rows.length}`).join(", ")}.`
   return (
     <Tile
@@ -548,18 +549,18 @@ export function SetupTile({ configured, total, inactive, href }: { configured: n
   )
 }
 
-/** Required this term next to required to graduate (decision D-X12): two sets, named, never added together. */
-export function RequiredSetsTile({ term, graduate, termHref, graduateHref }: { term: { achieved: number; total: number }; graduate: { achieved: number; total: number }; termHref: string; graduateHref: string }) {
+/** All assigned next to Mandatory this term (decision D-X12, D-L54, D-L102): two sets, named, never added together. */
+export function RequiredSetsTile({ term, assigned, termHref, assignedHref }: { term: { achieved: number; total: number }; assigned: { achieved: number; total: number }; termHref: string; assignedHref: string }) {
   const pct = (a: number, t: number) => (t === 0 ? 0 : Math.round((a / t) * 100))
   const rows = [
-    { key: "term", name: "Required this term", href: termHref, a: term.achieved, t: term.total },
-    { key: "graduate", name: "Required to graduate", href: graduateHref, a: graduate.achieved, t: graduate.total },
+    { key: "assigned", name: REQUIRED_SET_LABEL.assigned, href: assignedHref, a: assigned.achieved, t: assigned.total },
+    { key: "term", name: REQUIRED_SET_LABEL.thisTerm, href: termHref, a: term.achieved, t: term.total },
   ]
   return (
     <Tile
       id="tile-required"
-      title="Required this term and to graduate"
-      meta={`Required ${skillNounPlural()} achieved, two separate sets`}
+      title="All assigned and mandatory this term"
+      meta={`${capitalize(skillNounPlural())} achieved, two separate sets`}
       summary={rows.map((r) => `${r.name}: ${fmt(r.a)} of ${fmt(r.t)} achieved, ${pct(r.a, r.t)}%`).join(". ")}
       table={<SrTable caption="Required sets" head={["Set", "Achieved", "Records", "Share"]} rows={rows.map((r) => [r.name, r.a, r.t, `${pct(r.a, r.t)}%`])} />}
     >

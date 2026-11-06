@@ -36,19 +36,27 @@ import { ValidationSummary, type ValidationIssue } from "@/components/lab/layout
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { DiscardDialog } from "@/components/lab/import/import-parts"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
+import { useInWalkthrough } from "@/components/lab/lab-bar/walkthrough-controls"
 import { useStudentPage } from "@/components/lab/student/use-student"
 import { StateLabel } from "@/components/lab/student/parts"
 import { Unit } from "@/components/lab/student/dashboard"
-import { EvaluatorChecks, EvaluatorPicker, MethodTiles, SelfEvalCards, TOUCH_ROW } from "@/components/lab/student2/log-parts"
+import { EvaluatorChecks, EvaluatorPicker, MethodTiles, SelectedSkills, SelfEvalCards, SkillPicker, TOUCH_ROW } from "@/components/lab/student2/log-parts"
 import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SendIssues, WherePick, scopeSentence, useRequestDraft, type RequestDraft } from "@/components/lab/student2/request-parts"
 import type { Student2Ctx } from "@/components/lab/student2/frame"
 import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
+import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { skillById } from "@/lib/v2/evidence-index"
 import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { methodById } from "@/lib/lab/student2"
+import { METHODS, methodById } from "@/lib/lab/student2"
 import { courseLevels, type CourseExpectation, type SkillRecord, type StudentModel } from "@/lib/lab/student"
 
 type StepId = "course" | "skills" | "self" | "send"
+
+/**
+ * On a phone the stacked footer took 200 px of an 812 px page and covered the last answers: the primary on its own row, Back and Save
+ * for later side by side under it, the course line (a span, the summary's words) dropped; a reason that blocks the step stays.
+ */
+const PHONE_FOOTER = "max-sm:grid max-sm:grid-cols-2 max-sm:gap-2 [&>[data-footer-back-slot]]:max-sm:order-none [&_[data-footer-back-slot]_a]:max-sm:w-full [&_[data-footer-back-slot]_button]:max-sm:w-full [&>[data-footer-actions]]:max-sm:contents [&>p]:max-sm:col-span-2 [&>p:has(>span)]:max-sm:hidden [&>[data-footer-actions]>*:last-child]:max-sm:col-span-2 [&>div:empty]:max-sm:hidden"
 
 export function StudentRequestC() {
   const page = useStudentPage()
@@ -66,7 +74,9 @@ export function StudentRequestC() {
 
 function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
   const m = ctx.model
-  const d = useRequestDraft(ctx)
+  // On a walkthrough the sent request goes on the URL, so the path bar's Next opens that request and Back returns to its result.
+  const inWalkthrough = useInWalkthrough()
+  const d = useRequestDraft(ctx, inWalkthrough ? { onSent: (id) => ctx.setParams({ request: id }), restore: ctx.param("request"), defaultDate: DEMO_TODAY } : {})
   const courses = React.useMemo(() => m.courses.filter((c) => c.skills.length > 0).sort((a, b) => b.mandatory - a.mandatory || a.code.localeCompare(b.code)), [m])
   const courseId = ctx.param("course")
   const course = courses.find((c) => c.id === courseId) ?? null
@@ -89,9 +99,14 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
   const LABEL: Record<StepId, string> = { course: "Course", skills: capitalize(skillNounPlural()), self: "Self-evaluation", send: "Send" }
   // Romit 2026-10-27 ("I still can't find a place to log a skill"): the flow is Log a skill; its last step is Send for evaluation.
   // The step names live in the stepper (Course, Skills, Self-evaluation, Send).
-  const TITLE: Record<StepId, string> = { course: `Log ${aNoun()}`, skills: `Log ${aNoun()}`, self: `Log ${aNoun()}`, send: "Send for evaluation" }
+  // Opened on a chosen skill (a row's or the skill page's Ask for evaluation), there is nothing to log: every step is "Send for evaluation".
+  const askedForOne = React.useRef(asked === "self" || asked === "send").current
+  const logTitle = askedForOne ? "Send for evaluation" : `Log ${aNoun()}`
+  const TITLE: Record<StepId, string> = { course: logTitle, skills: logTitle, self: logTitle, send: "Send for evaluation" }
   const steps: WizardStep[] = order.map((id) => ({ id: `fulfil-${id}`, label: LABEL[id] }))
 
+  // Each step and the result open at their top: the footer's button can be far down a phone page (setParams keeps the scroll).
+  React.useEffect(() => { window.scrollTo({ top: 0 }) }, [step, !!d.result]) // eslint-disable-line react-hooks/exhaustive-deps
   const go = (to: StepId, extra: Record<string, string | null> = {}) => {
     setIssues([])
     ctx.setParams({ step: to, ...extra })
@@ -140,6 +155,8 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
       if (d.selfIssues.length) return setIssues(d.selfIssues)
       return go("send")
     }
+    // Reached without answering (a link or the path bar): the self-evaluation is its own step, so Send goes back to it.
+    if (d.selfIssues.length) return go("self")
     d.send()
   }
   const back = index > 0 ? () => go(order[index - 1]) : undefined
@@ -149,7 +166,7 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
   if (d.result) {
     // The confirmation keeps the step's title: the walkthrough step, the stepper and the heading all say "Send for evaluation".
     return (
-      <WizardPage title={TITLE.send} actions={<SampleDataBadge />} steps={steps} current={order.length - 1} footer={<StickyFooter />}>
+      <WizardPage title={TITLE.send} actions={<SampleDataBadge />} steps={steps} current={order.length - 1} footer={null}>
         <WizardPanel step={order.length - 1}>
           <div data-student-lab="request-C" data-step="sent">
             <RequestResult d={d} wide r={d.result} />
@@ -160,7 +177,8 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
   }
 
   // The reason the step cannot move on sits in the footer, beside the primary (Romit 2026-10-27, self-evaluation).
-  const context = step === "self" && issues.length ? issues[0].message : course ? `${course.code} · ${d.skills.length ? countSkills(d.skills.length) : `no ${skillNounPlural()} yet`}` : null
+  // From 1280 px "Your request" says the course and skills, so the footer says them only below that.
+  const context = step === "self" && issues.length ? issues[0].message : course ? <span className="min-[80rem]:hidden">{`${course.code} · ${d.skills.length ? countSkills(d.skills.length) : `no ${skillNounPlural()} yet`}`}</span> : null
   const saved = d.saveError || d.savedAt ? <SavedForLater d={d} /> : null
   // Self-evaluation says what is missing once, in the footer beside Continue (and on the card); no banner on top.
   const banner = step === "send" && d.tried && !d.valid ? <SendIssues d={d} /> : issues.length && step !== "self" ? <ValidationSummary issues={issues} title="Fix this to continue" /> : saved
@@ -174,14 +192,14 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
       onStepClick={(i) => go(order[i])}
       banner={banner}
       aside={<RequestSummary d={d} model={m} course={course} selfLine={selfLine} step={step} />}
-      footer={<StickyFooter back={back ? { onClick: back } : undefined} context={context} secondary={step !== "course" ? { label: "Save for later", onClick: () => { setIssues([]); d.saveForLater({ course: course?.id ?? null, step }) } } : undefined} primary={{ label: step === "send" ? (d.offline ? "Keep and send later" : "Send") : "Continue", onClick: next, ...(step === "send" && d.blocked ? { disabled: true, disabledReason: "Fix the fields above to send." } : {}) }} />}
+      footer={<StickyFooter className={PHONE_FOOTER} back={back ? { onClick: back } : undefined} context={context} secondary={step !== "course" ? { label: "Save for later", onClick: () => { setIssues([]); d.saveForLater({ course: course?.id ?? null, step }) } } : undefined} primary={{ label: step === "send" ? (d.offline ? "Keep and send later" : "Send") : "Continue", onClick: next, ...(step === "send" && d.blocked ? { disabled: true, disabledReason: "Fix the fields above to send." } : {}) }} />}
     >
       <div data-student-lab="request-C" data-step={step}>
         <WizardPanel step={index}>
           {step === "course" ? <CourseStep courses={courses} value={course?.id ?? ""} onChange={pickCourse} model={m} /> : null}
           {step === "skills" && course ? <SkillsStep model={m} course={course} selected={d.skills} onToggle={d.toggle} d={d} /> : null}
           {/* The evaluator's own criteria, answered for yourself [REQ ST-11]: one card per skill, no third column. */}
-          {step === "self" ? <SelfEvalCards s={d.s} ids={selfIds} ratings={d.ratings} answers={d.answers} onRating={(id, v) => d.setRatings((r) => ({ ...r, [id]: v }))} onAnswer={d.setAnswer} showErrors={issues.length > 0} /> : null}
+          {step === "self" ? <SelfEvalCards s={d.s} ids={selfIds} ratings={d.ratings} answers={d.answers} onRating={(id, v) => d.setRatings((r) => ({ ...r, [id]: v }))} onAnswer={d.setAnswer} showErrors={issues.length > 0} plain /> : null}
           {step === "send" ? <SendStep d={d} /> : null}
         </WizardPanel>
       </div>
@@ -210,8 +228,7 @@ function RequestSummary({ d, model, course, selfLine, step }: { d: RequestDraft;
           {chosen.length === 0 ? <span className="text-muted-foreground">None yet</span> : (
             <ul className="flex flex-col gap-2">
               {chosen.map((x) => (
-                <li key={x.id} className="flex items-start gap-2">
-                  {x.r ? <Unit r={x.r} studentId={d.studentId} size={20} /> : null}
+                <li key={x.id}>
                   <span className="flex min-w-0 flex-col">
                     <span className="text-foreground">{x.name}</span>
                     {x.r ? <span className="text-xs text-muted-foreground" data-viz-label>{x.r.label}</span> : null}
@@ -235,8 +252,12 @@ function RequestSummary({ d, model, course, selfLine, step }: { d: RequestDraft;
             <dd className="text-foreground">{methodById(d.method).label}</dd>
           </>
         ) : null}
-        <dt className="text-muted-foreground">They see</dt>
-        <dd className="text-foreground">{scopeSentence(d).replace(/^They see /, "").replace(/^./, (c) => c.toUpperCase())}</dd>
+        {step === "send" ? (
+          <>
+            <dt className="text-muted-foreground">They see</dt>
+            <dd className="text-foreground">{scopeSentence(d).replace(/^They see /, "").replace(/^./, (c) => c.toUpperCase())}</dd>
+          </>
+        ) : null}
       </dl>
     </section>
   )
@@ -272,15 +293,20 @@ function CourseStep({ courses, value, onChange, model }: { courses: CourseExpect
   )
 }
 
-/** The course's skills, mandatory first and chosen by default; recommended and optional one click away [REQ ST-01, ST-02]. */
+/** The course's skills, mandatory first and chosen by default; recommended one click away [REQ ST-01, ST-02]. */
 function SkillsStep({ model, course, selected, onToggle, d }: { model: StudentModel; course: CourseExpectation; selected: string[]; onToggle: (id: string) => void; d: RequestDraft }) {
   // Selection lists only what Log and Send may offer (d.picks reads openToLog): a deactivated skill never appears here [REQ SL-11].
   const offered = React.useMemo(() => new Set(d.picks.map((p) => p.id)), [d.picks])
   const all = courseLevels(model, course)
-  const lv = { mandatory: all.mandatory.filter((r) => offered.has(r.id)), recommended: all.recommended.filter((r) => offered.has(r.id)), optional: all.optional.filter((r) => offered.has(r.id)) }
+  const lv = { mandatory: all.mandatory.filter((r) => offered.has(r.id)), recommended: all.recommended.filter((r) => offered.has(r.id)) }
   const mandatory = lv.mandatory.map((r) => ({ level: "mandatory", r }))
-  const others = [...lv.recommended.map((r) => ({ level: "recommended", r })), ...lv.optional.map((r) => ({ level: "optional", r }))]
+  const others = lv.recommended.map((r) => ({ level: "recommended", r }))
   const [open, setOpen] = React.useState(mandatory.length === 0)
+  // Mapping is an expectation, not a limit: any skill can be sent from any course, and it counts on the record [REQ CM-05, CM-07].
+  const onCourse = new Set([...lv.mandatory, ...lv.recommended].map((r) => r.id))
+  const elsewhere = React.useMemo(() => d.picks.filter((p) => !onCourse.has(p.id)), [d.picks, course.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const chosenElsewhere = selected.filter((id) => elsewhere.some((p) => p.id === id))
+  const [openOther, setOpenOther] = React.useState(chosenElsewhere.length > 0)
   const list = (items: Array<{ level: string; r: SkillRecord }>) => (
     <ul className="flex flex-col divide-y divide-border">
       {items.map(({ level, r }) => (
@@ -288,7 +314,7 @@ function SkillsStep({ model, course, selected, onToggle, d }: { model: StudentMo
           {r.waiting ? <i className="fa-light fa-clock w-4 text-center text-sm text-muted-foreground" aria-hidden="true" /> : <Checkbox id={`pick-${r.id}`} checked={selected.includes(r.id)} onCheckedChange={() => onToggle(r.id)} />}
           <Label htmlFor={r.waiting ? undefined : `pick-${r.id}`} className="min-w-0 truncate text-sm font-normal text-foreground">
             {r.name}
-            {level !== "mandatory" ? <span className="ms-2 text-xs text-muted-foreground">{MAPPING_LEVEL_LABEL[level as "recommended" | "optional"]}</span> : null}
+            {level !== "mandatory" ? <span className="ms-2 text-xs text-muted-foreground">{MAPPING_LEVEL_LABEL[level as "recommended"]}</span> : null}
           </Label>
           <span className="col-start-2 text-sm @2xl:col-start-3">{r.waiting ? <span className="text-muted-foreground">{`Waiting for ${r.waiting.evaluatorName}`}</span> : <StateLabel record={r} />}</span>
           {/* The questions, read where the skill is chosen (no separate step); a self-evaluated skill shows them on its own step. */}
@@ -311,10 +337,25 @@ function SkillsStep({ model, course, selected, onToggle, d }: { model: StudentMo
           <CollapsibleTrigger asChild>
             <Button type="button" variant="ghost" size="sm" className="-ms-2" aria-expanded={open}>
               <i className={cn("fa-light", open ? "fa-chevron-down" : "fa-chevron-right")} aria-hidden="true" />
-              {`Recommended and optional (${others.length})`}
+              {`Recommended (${others.length})`}
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent>{list(others)}</CollapsibleContent>
+        </Collapsible>
+      ) : null}
+      {elsewhere.length ? (
+        <Collapsible open={openOther} onOpenChange={setOpenOther} data-other-skills>
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="ghost" size="sm" className="-ms-2" aria-expanded={openOther}>
+              <i className={cn("fa-light", openOther ? "fa-chevron-down" : "fa-chevron-right")} aria-hidden="true" />
+              {`Other ${skillNounPlural()}, not on ${course.code} (${elsewhere.length})`}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="flex flex-col gap-2 pt-2">
+            <SelectedSkills s={d.s} ids={chosenElsewhere} onRemove={onToggle} />
+            <SkillPicker rows={elsewhere} selected={selected} onToggle={onToggle} />
+            {chosenElsewhere.filter((id) => !d.selfIds.includes(id)).map((id) => <EvaluatorChecks key={id} s={d.s} id={id} />)}
+          </CollapsibleContent>
         </Collapsible>
       ) : null}
     </div>
@@ -325,19 +366,32 @@ function SkillsStep({ model, course, selected, onToggle, d }: { model: StudentMo
  * Where it was performed decides who may sign; how they sign starts on Email a link (D-L2); then who, the details and the one note
  * [REQ ST-05..ST-10, ST-12]. Two columns once the step is wide (size container), one column on a phone.
  */
+/** Email or QR, the two ways the program asks about; hand over and the paper photo stay one click away [LEDGER D-X5, D-L67]. */
+function HowToSend({ d }: { d: RequestDraft }) {
+  const main = METHODS.filter((m) => m.id === "link" || m.id === "qr")
+  const other = !main.some((m) => m.id === d.method)
+  const [more, setMore] = React.useState(other)
+  return (
+    <div className="flex flex-col gap-1" data-how-to-send>
+      <MethodTiles label="How to send" value={d.method} onChange={d.setMethod} offline={d.offline} methods={more ? METHODS : main} />
+      {more ? null : <Button type="button" variant="ghost" size="sm" className="-ms-2 self-start" onClick={() => setMore(true)}>Other ways</Button>}
+    </div>
+  )
+}
+
 function SendStep({ d }: { d: RequestDraft }) {
   return (
     <div className="grid items-start gap-x-8 gap-y-6 @2xl:grid-cols-2">
       <div className="flex flex-col gap-5">
         <WherePick d={d} />
-        <MethodTiles value={d.method} onChange={d.setMethod} offline={d.offline} />
+        <HowToSend d={d} />
         {d.method === "photo" ? <PhotoField d={d} /> : null}
       </div>
       <div className="flex flex-col gap-2 @2xl:row-span-2">
         <EvaluatorPicker options={d.options} value={d.who} onChange={d.setWho} fresh={d.fresh} onFresh={d.setFresh} errors={d.freshErrors} showErrors={d.tried} compact />
         {d.tried && d.errors.who ? <FieldError>{d.errors.who}</FieldError> : null}
       </div>
-      <DetailsAndNote d={d} columns={false} />
+      <DetailsAndNote d={d} columns={false} noteHelper={null} />
     </div>
   )
 }

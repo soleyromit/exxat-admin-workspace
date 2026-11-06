@@ -10,6 +10,7 @@ import { createSeed } from "@/lib/v2/seed"
 import { heldState } from "@/lib/v2/approvals"
 import { setSkillsActive } from "@/lib/v2/admin-actions"
 import { REQUIRED_SET_LABEL } from "@/lib/v2/population"
+import { reachLists } from "@/lib/lab/lists"
 import { ineligibleReason, logSkills, openToLog, skillProgress } from "@/lib/v2/student"
 import type { Evaluation, V2State } from "@/lib/v2/types"
 import { attempts, buildStudent, courseLevels, fixModel, requestGroups, submissionWhere, waitingBins, waitingRows } from "@/lib/lab/student"
@@ -292,10 +293,7 @@ describe("My progress as a dashboard: the same numbers in every region", () => {
       expect(waitingBins(waitingRows(s, p.id)).reduce((n, b) => n + b.n, 0)).toBe(m.counts.waiting)
     }
   })
-  it("the course squares add up to Required this term: per course mandatory, achieved counts match the hero", () => {
-    const units = maya.courses.flatMap((c) => courseLevels(maya, c).mandatory)
-    expect(new Set(units.map((r) => r.id)).size).toBe(maya.counts.required)
-    expect(new Set(units.filter((r) => r.state === "achieved").map((r) => r.id)).size).toBe(maya.counts.achieved)
+  it("the course squares say where, per course: each course's mandatory and achieved counts match its squares", () => {
     for (const c of maya.courses) expect(courseLevels(maya, c).mandatory.filter((r) => r.state === "achieved")).toHaveLength(c.mandatoryAchieved)
   })
   it("My progress A, B and C are registered as dashboards with at most 3 charts (D-X21) and two regions with a chart each", () => {
@@ -304,11 +302,11 @@ describe("My progress as a dashboard: the same numbers in every region", () => {
   })
 })
 
-describe("Thursday S1: the central view and the per-course view use one definition", () => {
-  it("'Required this term' is exactly the union of the mandatory skills of the current courses (same numbers both ways)", () => {
-    const mandatory = new Set(maya.courses.flatMap((c) => c.skills.filter((x) => x.level === "mandatory").map((x) => x.id)))
-    expect(new Set(maya.required.map((r) => r.id))).toEqual(mandatory)
-    expect(maya.counts.required).toBe(mandatory.size)
+describe("Thursday S1: the central view reads the list, the per-course view reads mapping (D-L102)", () => {
+  it("what is owed is the skills on the list in force, whatever the courses map; each course says where", () => {
+    const onList = maya.list ? new Set(reachLists(seed).find((l) => l.id === maya.list!.id)!.skillIds) : new Set<string>()
+    expect(maya.required.every((r) => onList.has(r.id))).toBe(true)
+    expect(maya.counts.required).toBe(maya.required.length)
     const achieved = maya.required.filter((r) => r.state === "achieved").length
     expect(maya.counts.achieved).toBe(achieved)
     for (const c of maya.courses) {
@@ -368,10 +366,10 @@ describe("Thursday S2: course, mandatory skills, questions, self-evaluation, sen
 })
 
 describe("D-X12: My progress names the required set", () => {
-  it("says 'Required this term', never a bare 'Required skills'", () => {
-    expect(REQUIRED_SET_LABEL.thisTerm).toBe("Required this term")
+  it("names what it reads, the list, never a bare 'Required skills'", () => {
+    expect(REQUIRED_SET_LABEL.thisTerm).toBe("Mandatory this term")
     const files = ["components/lab/student/progress.tsx", "components/lab/screens/student-progress-a.tsx", "components/lab/screens/student-progress-b.tsx", "components/lab/screens/student-progress-c.tsx"]
     for (const f of files) expect(src(f)).not.toMatch(/`Required \$\{skillNounPlural\(\)\}/)
-    expect(src("components/lab/student/progress.tsx")).toMatch(/REQUIRED_SET_LABEL\.thisTerm/)
+    expect(src("components/lab/student/progress.tsx")).toMatch(/onYourList/)
   })
 })

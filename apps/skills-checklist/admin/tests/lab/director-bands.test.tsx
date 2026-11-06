@@ -19,10 +19,10 @@ const scope = { ...EMPTY_SCOPE, cohort: graduatingCohort(seed)!, term: "Fall 202
 const real = buildReadiness(seed, scope)
 
 function withSyntheticShort(m: Readiness): Readiness {
-  const i = m.rows.findIndex((r) => r.graduationStage === "far")
-  const far = m.rows[i]
-  const row = { ...far, gaps: far.gaps.slice(0, 2), achieved: far.required - 2, graduationStage: "short" as GraduationStage, stage: "far" as const }
-  const rows = m.rows.map((r, k) => (k === i ? row : r))
+  // One far-behind student into the empty Short band, so every band is drawn.
+  const first = m.rows.find((r) => r.graduationStage === "far")!
+  const into = (r: Readiness["rows"][number], missing: number, st: GraduationStage) => ({ ...r, gaps: r.gaps.slice(0, missing), achieved: r.required - missing, graduationStage: st, stage: (st === "complete" ? "complete" : st === "one-short" ? "short" : "far") as "complete" | "short" | "far" })
+  const rows = m.rows.map((r) => (r.id === first.id ? into(r, 2, "short") : r))
   const graduation = { complete: 0, "one-short": 0, short: 0, far: 0 } as Record<GraduationStage, number>
   const graduationOpen = { complete: 0, "one-short": 0, short: 0, far: 0 } as Record<GraduationStage, number>
   for (const r of rows) {
@@ -33,7 +33,7 @@ function withSyntheticShort(m: Readiness): Readiness {
 }
 
 describe("director graduation bands (four keys from graduationStageOf)", () => {
-  it("the generated data reads 31 / 4 / 0 / 3, and the Short band is not drawn while empty", () => {
+  it("the generated data reads 31 / 4 / 0 / 3 against the assigned list (D-L54, D-L62), and an empty band is not drawn", () => {
     expect(real.graduation).toEqual({ complete: 31, "one-short": 4, short: 0, far: 3 })
     expect(shownBands(real)).toEqual(["complete", "one-short", "far"])
     const { container } = render(<TooltipProvider><ReadinessPipeline m={real} /></TooltipProvider>)
@@ -51,7 +51,7 @@ describe("director graduation bands (four keys from graduationStageOf)", () => {
     expect(within(band).getByText("Short")).toBeTruthy()
     const link = within(band).getByRole("link", { name: /^1 short\. Open the list/ })
     expect(link.getAttribute("href")).toContain("list=several")
-    expect(STAGE_HINT.short).toBe("Two to 3 required skills not achieved")
+    expect(STAGE_HINT.short).toBe("Two to 3 assigned skills not achieved")
     // Each band's list has exactly the band's count (figure equals list by construction).
     for (const st of GRADUATION_STAGES) expect(filterRows(m.rows, { list: GRADUATION_LIST[st] }).length).toBe(m.graduation[st])
   })

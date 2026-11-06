@@ -327,7 +327,7 @@ function RateCard({ skill, draft, errors, patch }: { skill: Skill; draft: LogDra
   const kind = ratingKind(skill)
   const opts = ratingOptions(skill)
   const questions = skill.config?.questions ?? []
-  const answers = draft.answers[skill.id] ?? new Array<"yes" | "no" | null>(questions.length).fill(null)
+  const answers = draft.answers[skill.id] ?? new Array<"yes" | "no" | number | null>(questions.length).fill(null)
   const note = draft.notes[skill.id] ?? ""
   const errId = `rate-${skill.id}-error`
   return (
@@ -354,7 +354,7 @@ function RateCard({ skill, draft, errors, patch }: { skill: Skill; draft: LogDra
             {questions.map((q, i) => (
               <fieldset key={i} className="flex flex-col gap-1">
                 <legend className="text-sm text-foreground">{q}</legend>
-                <RadioGroup aria-label={`${q} for ${skill.name}`} value={answers[i] ?? ""} onValueChange={(v) => { const a = [...answers]; a[i] = v as "yes" | "no"; patch({ answers: { ...draft.answers, [skill.id]: a } }) }} className="grid grid-cols-2 gap-2">
+                <RadioGroup aria-label={`${q} for ${skill.name}`} value={String(answers[i] ?? "")} onValueChange={(v) => { const a = [...answers]; a[i] = v as "yes" | "no"; patch({ answers: { ...draft.answers, [skill.id]: a } }) }} className="grid grid-cols-2 gap-2">
                   {(["yes", "no"] as const).map((v) => (
                     <Label key={v} htmlFor={`rate-${skill.id}-${i}-${v}`} className={`${TOUCH} flex items-center gap-3 rounded-lg border border-border bg-card px-3 font-normal`}>
                       <RadioGroupItem id={`rate-${skill.id}-${i}-${v}`} value={v} />

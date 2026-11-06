@@ -2,6 +2,7 @@ import * as React from "react"
 import { notFound, redirect } from "next/navigation"
 import { LabFrame } from "@/components/lab/lab-frame"
 import { FocusFrame } from "@/components/lab/focus-frame"
+import { ProgramScope } from "@/components/lab/setup/new-program-scope"
 import { LabBar } from "@/components/lab/lab-bar"
 import { PlaceholderScreen } from "@/components/lab/placeholder-screen"
 import { VARIANT_COMPONENTS } from "@/components/lab/screens"
@@ -62,13 +63,13 @@ export default async function LabScreenPage({ params, searchParams }: { params: 
   if (variant.frame === "focus") {
     return (
       <FocusFrame bar={bar} page={{ screen: screenKey(screen), variant: variant.id }}>
-        <React.Suspense fallback={null}>{Built ? <Built /> : <PlaceholderScreen screen={screen} variant={variant} />}</React.Suspense>
+        <React.Suspense fallback={null}><ProgramScope>{Built ? <Built /> : <PlaceholderScreen screen={screen} variant={variant} />}</ProgramScope></React.Suspense>
       </FocusFrame>
     )
   }
   return (
     <LabFrame persona={persona} bar={bar} page={{ screen: screenKey(screen), variant: variant.id }}>
-      <React.Suspense fallback={null}>{Built ? <Built /> : <PlaceholderScreen screen={screen} variant={variant} />}</React.Suspense>
+      <React.Suspense fallback={null}><ProgramScope>{Built ? <Built /> : <PlaceholderScreen screen={screen} variant={variant} />}</ProgramScope></React.Suspense>
     </LabFrame>
   )
 }

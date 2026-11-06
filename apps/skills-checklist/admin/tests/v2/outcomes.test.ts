@@ -75,7 +75,9 @@ describe("reopenEvaluation", () => {
   })
 
   it("a reopened evaluation stops counting until the version is confirmed", () => {
-    const { s, e } = withDetailed()
+    // Read on the outcome: this legacy flow changes the outcome, not the answers, so a seeded question rule would still read Yes.
+    const { s: withRule, e } = withDetailed()
+    const s = { ...withRule, skills: withRule.skills.map((k) => (k.id === SD && k.config ? { ...k, config: { ...k.config, questionRule: null } } : k)) }
     const before = skillProgress(s, IDS.maya, SD)!.counted
     const r = reopenEvaluation(s, { evaluationId: e.id, outcome: "not-yet", feedback: null, reason: "Correction." }, ROSS, AT)
     if (!r.ok) throw new Error(r.error)
@@ -190,7 +192,8 @@ describe("remediation plans", () => {
     const ivYet: Evaluation = { ...ivFail, id: "ev-t-ivy", outcome: "not-yet", date: "2026-10-12T09:00:00Z" }
     const t = { ...s, evaluations: [...s.evaluations, ivFail, ivYet] }
     const a = attemptInfo(t, IDS.maya, IDS.ivCath)
-    expect(a).toMatchObject({ used: 1, limit: 3, failed: 1, minDays: 7, atLimit: false })
+    // Maya's two seeded evaluations (SEED_VERSION 2026-11-05.2) and the failed one here.
+    expect(a).toMatchObject({ used: 3, limit: 3, failed: 1, minDays: 7, atLimit: true })
     expect(a.nextFrom?.slice(0, 10)).toBe("2026-10-17")
   })
 })

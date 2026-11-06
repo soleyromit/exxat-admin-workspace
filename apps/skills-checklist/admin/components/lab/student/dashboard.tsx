@@ -19,12 +19,9 @@ import { VIZ } from "@/components/lab/viz"
 import { TYPE } from "@/components/lab/type-scale"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { MAPPING_LEVEL_LABEL, RECORD_STATE_META } from "@/lib/v2/labels"
-import { REQUIRED_SET_LABEL } from "@/lib/v2/population"
 import { ageLabel, courseLevels, shortDate, studentHref, waitingBins, type CourseExpectation, type SkillRecord, type StudentModel, type WaitingRow } from "@/lib/lab/student"
 import { FigureLink, LINK_IN_TABLE, NUM_LINK, SectionTitle, ShowAsTable, StateGlyph, stateWord, useSvgFont } from "@/components/lab/student/parts"
 import { PaceChart } from "@/components/lab/student/progress"
-
-const THIS_TERM = REQUIRED_SET_LABEL.thisTerm
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Unit squares: one per skill, three looks only (review 2026-10-30: a five-state glyph legend on small squares did not read).
@@ -98,18 +95,15 @@ export function courseHref(courseId: string, studentId: string) {
 export function CourseStrips({ model, studentId }: { model: StudentModel; studentId: string }) {
   const rows = model.courses.filter((c) => c.mandatory > 0).map((c) => ({ c, units: courseLevels(model, c).mandatory }))
   const others = model.courses.filter((c) => c.mandatory === 0 && c.skills.length > 0)
-  const k = model.counts
-  // The figure says how many; the description says how to read the squares (said once: "did not count" is Do this next's job).
+  // Where they can be done this term (course mapping), not what is owed: that is the list's figure on Am I on pace (D-L102).
   const summary = `One square per mandatory ${skillNoun()}.`
-  const spoken = `${k.achieved} of ${k.required} ${THIS_TERM.toLowerCase()} achieved across ${rows.length} ${rows.length === 1 ? "course" : "courses"}.${k.doesNotQualify ? ` ${k.doesNotQualify} did not count.` : ""}`
+  const achievedHere = rows.reduce((n, x) => n + x.c.mandatoryAchieved, 0)
+  const totalHere = rows.reduce((n, x) => n + x.c.mandatory, 0)
+  const spoken = `${achievedHere} of ${totalHere} mandatory ${skillNounPlural()} achieved across ${rows.length} ${rows.length === 1 ? "course" : "courses"}.`
   return (
     <div data-region="courses" className="h-full" data-chart-card>
       <ChartCard title={`Mandatory ${skillNounPlural()} by course`} description={summary} className="h-full">
         <div className="flex flex-col gap-4">
-          <p className="flex items-baseline gap-2" data-figure="hero" data-required-achieved={k.achieved} data-required-total={k.required}>
-            <Link className={cn(NUM_LINK, TYPE.figure)} href={studentHref("record", {}, studentId)}>{k.achieved}</Link>
-            <span className="text-sm text-muted-foreground" data-viz-label>{`of ${k.required} ${THIS_TERM.toLowerCase()}`}</span>
-          </p>
           <ul className="flex flex-col divide-y divide-border" role="list" aria-label={spoken} data-chart="course-strips">
             {rows.map(({ c, units }) => (
               <li key={c.id} className="flex flex-col gap-2 py-3 first:pt-0 md:grid md:grid-cols-[minmax(0,15rem)_1fr] md:items-center md:gap-x-6">
@@ -156,18 +150,20 @@ export function CourseStrips({ model, studentId }: { model: StudentModel; studen
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Am I on pace: counted evaluations against the term clock (burn-up) with the verdict as the summary
+// Am I on pace: the list's figure, and its evaluations against the program clock (burn-up), with the verdict as the summary
 
-export function PaceCard({ model, height = 200, className }: { model: StudentModel; height?: number; className?: string }) {
+export function PaceCard({ model, studentId, height = 200, className }: { model: StudentModel; studentId: string; height?: number; className?: string }) {
   const last = [...model.pace].reverse().find((p) => p.counted >= 0)
+  const k = model.counts
   return (
     <div data-region="pace" className={cn("h-full", className)} data-chart-card>
-      <ChartCard title="Am I on pace?" description={`${model.verdict}, ${model.term.name}.`} className="h-full">
+      <ChartCard title="Am I on pace?" description={`${model.list?.name ?? ""}. ${model.verdict}.`} className="h-full">
         <div className="flex flex-col gap-3">
-          <p className="flex items-baseline gap-2" data-figure="hero">
-            <span className={TYPE.figure} style={model.behind ? { color: VIZ.behindInk } : undefined}>{model.row?.collected ?? 0}</span>
-            <span className="text-sm text-muted-foreground" data-viz-label>{`of ${model.row?.needed ?? 0} evaluations counted, ${last?.expected ?? 0} expected now`}</span>
+          <p className="flex items-baseline gap-2" data-figure="hero" data-required-achieved={k.achieved} data-required-total={k.required} data-list={model.list?.id}>
+            <Link className={cn(NUM_LINK, TYPE.figure)} href={studentHref("record", {}, studentId)} style={model.behind ? { color: VIZ.behindInk } : undefined}>{k.achieved}</Link>
+            <span className="text-sm text-muted-foreground" data-viz-label>{`of ${k.required} ${skillNounPlural()} achieved`}</span>
           </p>
+          <p className="text-xs text-muted-foreground" data-viz-label>{`${model.row?.collected ?? 0} of ${model.row?.needed ?? 0} evaluations counted, ${last?.expected ?? 0} expected by now`}</p>
           <PaceChart model={model} height={height} />
         </div>
       </ChartCard>
@@ -276,7 +272,7 @@ export function AgingCard({ model, rows, studentId }: { model: StudentModel; row
 
 export function CourseSummary({ model, course, studentId }: { model: StudentModel; course: CourseExpectation; studentId: string }) {
   const lv = courseLevels(model, course)
-  const others = [...lv.recommended, ...lv.optional]
+  const others = lv.recommended
   const waiting = course.skills.map((x) => model.all.find((r) => r.id === x.id)).filter((r): r is SkillRecord => !!r && !!r.waiting)
   const place = model.placements.find((p) => p.courseId === course.id && p.status === "current") ?? model.placements.find((p) => p.courseId === course.id)
   // The list beside it already says "1 of 4 achieved" per level; the card says how to read the squares (say it once).
@@ -293,7 +289,7 @@ export function CourseSummary({ model, course, studentId }: { model: StudentMode
           ) : null}
           {others.length ? (
             <div className="flex flex-col gap-2">
-              <p className="text-xs text-muted-foreground" data-viz-label>{`${MAPPING_LEVEL_LABEL.recommended} or ${MAPPING_LEVEL_LABEL.optional.toLowerCase()}, ${others.filter((r) => r.state === "achieved").length} of ${others.length} achieved`}</p>
+              <p className="text-xs text-muted-foreground" data-viz-label>{`${MAPPING_LEVEL_LABEL.recommended}, ${others.filter((r) => r.state === "achieved").length} of ${others.length} achieved`}</p>
               <span className="flex flex-wrap gap-1.5">{others.map((r) => <Unit key={r.id} r={r} studentId={studentId} size={20} />)}</span>
             </div>
           ) : null}

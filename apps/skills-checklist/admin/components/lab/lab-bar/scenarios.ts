@@ -25,7 +25,9 @@ export const LAB_EVENTS = {
 } as const
 export type LabEventName = (typeof LAB_EVENTS)[keyof typeof LAB_EVENTS]
 
-const RESET: Scenario = { group: "Data", label: "Reset edits", event: LAB_EVENTS.reset }
+/** What it does, plainly: all of them, added skills and the new program included (lab-bar/reset.ts). `scenariosFor` gives every screen this one, and screens.json reads the same. */
+export const RESET_LABEL = "Reset all edits"
+const RESET: Scenario = { group: "Data", label: RESET_LABEL, event: LAB_EVENTS.reset }
 const listStates: Scenario[] = [
   { group: "States", label: "Loading", params: { state: "loading" } },
   { group: "States", label: "Empty", params: { state: "empty" } },
@@ -63,7 +65,8 @@ type WithScenarios = ScreenDef & { scenarios?: Scenario[]; labNotes?: string[] }
 export function scenariosFor(screen: ScreenDef | undefined): Scenario[] {
   if (!screen) return []
   const own = (screen as WithScenarios).scenarios
-  return own && own.length ? own : (SCENARIO_FALLBACK[`${screen.persona}/${screen.slug}`] ?? [])
+  const list = own && own.length ? own : (SCENARIO_FALLBACK[`${screen.persona}/${screen.slug}`] ?? [])
+  return list.map((s) => (s.event === LAB_EVENTS.reset ? { ...s, label: RESET_LABEL } : s))
 }
 
 /** Open-decision notes for the question tooltip (screens.json `labNotes`, added by the registry restructure). */

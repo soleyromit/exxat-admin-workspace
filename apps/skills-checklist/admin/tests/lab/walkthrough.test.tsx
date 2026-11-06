@@ -29,8 +29,8 @@ import { buildStudent } from "@/lib/lab/student"
 import { selfEvalEnabled } from "@/lib/lab/student2"
 import { skillById } from "@/lib/v2/evidence-index"
 import { createSeed } from "@/lib/v2/seed"
-import { FULFILLMENT_ENTRY, FULFILLMENT_WALKTHROUGH_ID, WALKTHROUGH_ENTRY, WALKTHROUGH_EXIT, WALKTHROUGH_ID, WALKTHROUGH_ROUTES, effectiveStep, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
-import { SETUP_RESULT_SCREEN, SKILLS_PANEL, selectedSkillsPanelKey } from "@/lib/lab/admin-ia"
+import { FULFILLMENT_ENTRY, FULFILLMENT_WALKTHROUGH_ID, WALKTHROUGH_ENTRY, WALKTHROUGH_EXIT, WALKTHROUGH_ID, WALKTHROUGH_ROUTES, effectiveStep, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
+import { SKILLS_PANEL, selectedSkillsPanelKey } from "@/lib/lab/admin-ia"
 
 /**
  * The two walkthroughs (Romit 2026-10-27, for Sankalp's Thursday meeting): the recommended design of each step in Sankalp's order,
@@ -41,28 +41,25 @@ import { SETUP_RESULT_SCREEN, SKILLS_PANEL, selectedSkillsPanelKey } from "@/lib
 // Agreed step names (2026-10-27): one string per step for the lab bar step title, the H1, the present breadcrumb and the first
 // heading. Order: Sankalp's Thursday list (docs/knowledge/design/thursday-flows-sankalp.md), A1 to A6 and S1 to S2.
 const AGREED = [
-  // Proposed 2026-11-02: Sankalp's six steps [CALL 11-02], from the library; no checklist page (Romit, same day).
-  ["library", "Skills"], // 1, one at a time (Add a skill) and Add several from here
-  ["add", "Add a skill"], // 1
-  ["paste", "Paste several"], // 1
-  ["bulk", "Bulk upload"], // 1, bulk (Import), later
-  ["starter", "Starting points"], // 1, copy from a starter library [CALL 11-02], later (SL-01 conflict, D-X5)
-  ["categories", "Categories and tags"], // 2
-  ["settings", "Evaluation settings"], // 3, program level, times needed on the same page
-  ["lists", "Groups of skills"], // 4, optional
-  ["assign", "Assign skills to student groups"], // 5
-  ["map-skill", "Course mapping by skill"], // 6, by skill first (Sarah: the more useful view) [CALL 11-02]
-  ["map", "Course mapping by course"], // 6, by course (D-L39: the footer names the view it moves to)
-  ["result", "Setup summary"], // the end state
+  // D-L64, D-L122: recommended pages only, the stops. Skill lists is the start; Library and the ways to add are side steps.
+  ["lists", "Skill lists"],
+  ["settings", "Evaluation settings"],
+  ["map", "Course mapping"],
 ] as const
-// S1 central and per course, then S2 through Send for evaluation C (course first); the confirmation follows Send on the last step.
+// D-L67: one student and one skill, from My progress to the evaluator and back, then the faculty's own way in. Log a skill, the
+// email and My requests hang off these stops.
 const AGREED_STUDENT = [
   ["progress", "My progress"],
   ["course", "Skills by course"],
-  ["skills", "Log a skill"],
   ["self", "Self-evaluation"],
   ["send", "Send for evaluation"],
+  ["form", "Evaluation form"],
+  ["result", "Skill progress"],
+  ["faculty", "Faculty check-off"],
 ] as const
+const MAYA = "stu-maya"
+const NURS350 = "crs-nurs350"
+const NG = "sk-ng-tube"
 
 const flow = () => findFlow(WALKTHROUGH_ID)!
 const ful = () => findFlow(FULFILLMENT_WALKTHROUGH_ID)!
@@ -89,8 +86,8 @@ describe("walkthrough definition", () => {
     expect(mainSteps(flow()).map((s) => [s.id, s.label])).toEqual(AGREED.map(([id, l]) => [id, l]))
     expect(flow().sets.map((s) => s.id)).toEqual(["1"])
     expect(mainSteps(ful()).map((s) => [s.id, s.label])).toEqual(AGREED_STUDENT.map(([id, l]) => [id, l]))
-    // Groups of skills is the one optional step (Sankalp: "non mandatory").
-    expect(flow().steps.filter((s) => s.tag === "Optional").map((s) => s.id)).toEqual(["lists", "configure"])
+    // No stop says optional: the bar holds only the path (D-L64).
+    expect(flow().steps.filter((s) => s.tag === "Optional")).toEqual([])
     expect(ful().steps.filter((s) => s.tag === "Optional")).toEqual([])
   })
 
@@ -99,30 +96,46 @@ describe("walkthrough definition", () => {
       for (const st of findFlow(id)!.steps) {
         const { persona, slug } = splitScreen(st.screen)
         const r = resolveStep(id, st.id, "1")!
-        // Send C (course first), and the steps that show a second way in (Paste several is Add a skill C, by skill is mapping B).
-        const want = st.screen === "student/request-signoff" || st.id === "paste" || st.id === "map-skill" ? st.variants["1"]! : findScreen(persona, slug)!.recommended
+        // Send C (course first), and the steps that show a second way in (mapping B opens by skill).
+        const want = st.screen === "student/request-signoff" || st.id === "paste" || st.id === "map" ? st.variants["1"]! : findScreen(persona, slug)!.recommended
         expect(r.variant.id, st.id).toBe(want)
         expect(r.planned, st.id).toBe(false)
       }
     }
   })
 
-  it("opens each Send C step on NURS 350 with its own step param", () => {
-    expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, "course", "1")!.params).toEqual({ course: "crs-nurs350" })
-    for (const s of ["skills", "self", "send"]) expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, s, "1")!.params).toEqual({ course: "crs-nurs350", step: s })
+  it("opens every stop on one student and one skill, and Send C on the course with its own step param", () => {
+    expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, "progress", "1")!.params).toEqual({})
+    expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, "course", "1")!.params).toEqual({ course: NURS350, skill: NG })
+    for (const s of ["self", "send"]) expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, s, "1")!.params).toEqual({ course: NURS350, skills: NG, step: s })
+    expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, "form", "1")!.params).toEqual({ student: MAYA, skills: NG, to: "pre-castillo" })
+    expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, "result", "1")!.params).toEqual({ skill: NG })
+    // Maya is the default student: a product link to her never names her, so no stop she reaches by a link may ask for it.
+    expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, "faculty", "1")!.params).toEqual({ offering: "off-nurs350-fa26" })
+    expect(ful().steps.filter((s) => s.side).map((s) => [s.id, s.after])).toEqual([["skills", "course"], ["email", "send"], ["requests", "result"], ["record", "result"], ["fix", "progress"]])
   })
 
-  it("opens the assign step in assign mode; Change one skill is the one optional side branch", () => {
-    expect(resolveStep(WALKTHROUGH_ID, "assign", "1")!.params).toEqual({ view: "assign" })
-    expect(resolveStep(WALKTHROUGH_ID, "configure", "1")!.params).toEqual({ skill: "sk-pressure-injury" })
-    expect(flow().steps.filter((s) => s.side).map((s) => [s.id, s.label, s.tag])).toEqual([["configure", "Change one skill", "Optional"]])
-    expect(resolveStep(WALKTHROUGH_ID, "map-skill", "1")!.params).toEqual({ by: "skill" })
-    expect(resolveStep(WALKTHROUGH_ID, "map", "1")!.params).toEqual({ by: "course" })
+  it("the student's path continues the admin's: Next on Course mapping opens My progress, Back from there returns, and Exit lists both", () => {
+    const end = walkthroughPosition(WALKTHROUGH_ID, "map", new URLSearchParams("set=1&present=1"))!
+    expect(landing(end.next!.href)).toMatchObject({ flowId: FULFILLMENT_WALKTHROUGH_ID, stepId: "progress" })
+    const start = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "progress", new URLSearchParams("set=1&present=1"))!
+    expect(start.index).toBe(1)
+    expect(landing(start.prev!.href)).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "map" })
+    expect(walkthroughPaths().map((p) => p.title)).toEqual(["Admin walkthrough", "Student and evaluator"])
+    expect(walkthroughPaths()[0]!.href).toBe(walkthroughStart())
+  })
+
+  it("has no assign stop (D-L106), opens Configure on the sample skill; Library and the ways to add are side steps of Skill lists", () => {
+    expect(resolveStep(WALKTHROUGH_ID, "assign", "1")).toBeFalsy()
+    expect(resolveStep(WALKTHROUGH_ID, "configure", "1")!.params).toEqual({ skill: NG })
+    expect(flow().steps.filter((s) => s.side).map((s) => [s.id, s.after])).toEqual([["library", "lists"], ["categories", "lists"], ["configure", "lists"], ["add", "lists"], ["paste", "lists"], ["bulk", "lists"], ["starter", "lists"]])
+    expect(resolveStep(WALKTHROUGH_ID, "map", "1")!.params).toEqual({})
+    expect(resolveStep(WALKTHROUGH_ID, "map", "1")!.variant.id).toBe("B")
   })
 
   it("has one entry URL each that lands on the first step in present mode, both listed on the present index", () => {
     expect(WALKTHROUGH_ROUTES).toEqual({ admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID })
-    expect(walkthroughStart()).toBe("/lab/flow/setup-walkthrough/library?set=1&present=1")
+    expect(walkthroughStart()).toBe("/lab/flow/setup-walkthrough/lists?set=1&present=1")
     expect(walkthroughStart(FULFILLMENT_WALKTHROUGH_ID)).toBe("/lab/flow/fulfillment-walkthrough/progress?set=1&present=1")
     expect(PRESENT_WALKTHROUGHS.map((w) => w.href)).toEqual([WALKTHROUGH_ENTRY, FULFILLMENT_ENTRY])
   })
@@ -144,17 +157,23 @@ describe("the step a page is really on follows the screen's own params (effectiv
   const eff = (f: ReturnType<typeof flow>, route: string, search: string) => effectiveStep(f, f.steps.find((s) => s.id === route)!, "1", new URLSearchParams(search)).id
 
   it("Send C's Continue writes ?step= on the same route: the page and the presenter follow it", () => {
-    expect(eff(ful(), "skills", "course=crs-nurs350&step=skills")).toBe("skills")
-    expect(eff(ful(), "skills", "course=crs-nurs350&step=self&skills=a,b")).toBe("self")
-    expect(eff(ful(), "self", "course=crs-nurs350&step=send")).toBe("send")
+    const own = `course=${NURS350}&skills=${NG}`
+    expect(eff(ful(), "self", `${own}&step=self`)).toBe("self")
+    expect(eff(ful(), "self", `${own}&step=send`)).toBe("send")
+    // Log a skill hangs off the course stop, so it is never a stop of its own.
+    expect(eff(ful(), "skills", `${own}&step=self`)).toBe("skills")
     // No Questions step (Romit 2026-10-27): the questions are read on Skills or answered on Self-evaluation.
     expect(ful().steps.some((s) => s.id === "questions")).toBe(false)
   })
 
-  it("My progress with ?course= is the course step; Groups of skills with ?view=assign is the assign step", () => {
+  it("My progress with ?course= is the course step; an old Skill lists link with ?view=assign stays on Skill lists", () => {
     expect(eff(ful(), "progress", "")).toBe("progress")
-    expect(eff(ful(), "progress", "course=crs-nurs350")).toBe("course")
-    expect(eff(flow(), "lists", "view=assign")).toBe("assign")
+    expect(eff(ful(), "progress", `course=${NURS350}&skill=${NG}`)).toBe("course")
+    // A course link from My progress names no skill, and any course is the course view: the bar follows, and Next still pins the sample.
+    expect(eff(ful(), "progress", `course=${NURS350}`)).toBe("course")
+    expect(eff(ful(), "progress", "course=crs-nur220")).toBe("course")
+    expect(eff(ful(), "progress", "")).toBe("progress")
+    expect(eff(flow(), "lists", "view=assign")).toBe("lists")
     expect(eff(flow(), "lists", "")).toBe("lists")
   })
 
@@ -162,35 +181,54 @@ describe("the step a page is really on follows the screen's own params (effectiv
     expect(eff(flow(), "configure", "skill=sk-new-1")).toBe("configure")
   })
 
-  it("the presenter reads the effective step: Step 4 of 5 on Evaluate yourself, Previous to Choose skills", () => {
-    const w = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "skills", new URLSearchParams("set=1&present=1&course=crs-nurs350&step=self&skills=sk-sterile-dressing"))!
-    expect([w.step.id, w.index, w.total]).toEqual(["self", 4, 5])
-    expect(landing(w.prev!.href)).toMatchObject({ stepId: "skills" })
+  it("the presenter reads the effective step: 3 of 7 on Self-evaluation, Back to the course, and the sent request rides along", () => {
+    const w = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "self", new URLSearchParams(`set=1&present=1&course=${NURS350}&step=self&skills=${NG}`))!
+    expect([w.step.id, w.index, w.total]).toEqual(["self", 3, 7])
+    expect(landing(w.prev!.href)).toMatchObject({ stepId: "course" })
     expect(landing(w.next!.href).stepId).toBe("send")
     // The chosen skills and the course ride along to the next Send C step.
-    expect(landing(w.next!.href).q.get("skills")).toBe("sk-sterile-dressing")
-    expect(landing(w.next!.href).q.get("course")).toBe("crs-nurs350")
+    expect(landing(w.next!.href).q.get("skills")).toBe(NG)
+    expect(landing(w.next!.href).q.get("course")).toBe(NURS350)
+    const sent = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "self", new URLSearchParams(`set=1&present=1&course=${NURS350}&step=send&skills=${NG}&request=req-1`))!
+    expect([sent.step.id, landing(sent.next!.href).stepId, landing(sent.next!.href).q.get("request")]).toEqual(["send", "form", "req-1"])
+  })
+
+  it("a course opened from My progress reads stop 2, and Next from stop 1 still pins the sample skill", () => {
+    const onCourse = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "progress", new URLSearchParams(`set=1&present=1&course=${NURS350}`))!
+    expect([onCourse.step.id, onCourse.index]).toEqual(["course", 2])
+    expect(landing(onCourse.next!.href).q.get("skills")).toBe(NG)
+    const stop1 = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "progress", new URLSearchParams("set=1&present=1"))!
+    expect(landing(stop1.next!.href).q.get("skill")).toBe(NG)
+    expect(landing(stop1.next!.href).q.get("course")).toBe(NURS350)
+  })
+
+  it("the fix flow is a side step of My progress: its bar stays, Back returns, and the product's links land on it", () => {
+    const fix = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "fix", new URLSearchParams("set=1&present=1&submission=sub-maya-2"))!
+    expect([fix.step.id, fix.index, fix.total]).toEqual(["fix", 1, 7])
+    expect(landing(fix.prev!.href).stepId).toBe("progress")
+    expect(landing(fix.next!.href).stepId).toBe("course")
+    expect(landing(labHref("student/fix-returned", { submission: "sub-maya-2" }, { flowId: FULFILLMENT_WALKTHROUGH_ID, set: "1", onFlowRoute: true, screen: "student/home", variant: "A" }))).toMatchObject({ flowId: FULFILLMENT_WALKTHROUGH_ID, stepId: "fix" })
   })
 
   it("Previous from the course view lands on My progress, not on the course again", () => {
-    const w = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "course", new URLSearchParams("set=1&present=1&course=crs-nurs350"))!
+    const w = walkthroughPosition(FULFILLMENT_WALKTHROUGH_ID, "course", new URLSearchParams(`set=1&present=1&course=${NURS350}&skill=${NG}`))!
     expect(landing(w.prev!.href)).toMatchObject({ stepId: "progress" })
     expect(landing(w.prev!.href).q.get("course")).toBeNull()
-    expect(landing(w.next!.href).q.get("course")).toBe("crs-nurs350")
+    expect(landing(w.next!.href).q.get("course")).toBe(NURS350)
   })
 })
 
 describe("the product's own buttons lead on inside the walkthrough", () => {
-  it("Save and configure (add sheet) opens the configure step on the new skill", () => {
+  it("One skill goes to its panel in the Library, on the same stop (D-L91)", () => {
     const l = landing(rewriteLabUrl(configureHref("sk-new-1"), ctxFor("add")))
-    expect([l.flowId, l.stepId, l.q.get("skill"), l.q.get("present"), l.q.get("set")]).toEqual([WALKTHROUGH_ID, "configure", "sk-new-1", "1", "1"])
+    expect([l.flowId, l.stepId, l.q.get("skill"), l.q.get("present"), l.q.get("set")]).toEqual([WALKTHROUGH_ID, "library", "sk-new-1", "1", "1"])
   })
 
-  it("Map to courses (assign footer) opens the next step, mapping by skill; a plain link opens skill first too, by=course or an offering opens the map step", () => {
-    const l = landing(labHref("admin/course-mapping", { by: "skill" }, ctxFor("assign", "set=1&present=1&skill=sk-pressure-injury&view=assign")))
-    expect([l.flowId, l.stepId, l.q.get("present")]).toEqual([WALKTHROUGH_ID, "map-skill", "1"])
-    const ctx = ctxFor("assign", "set=1&present=1&view=assign")
-    expect(landing(labHref("admin/course-mapping", {}, ctx)).stepId).toBe("map-skill")
+  it("every link to course mapping lands on its one stop, whichever view it asks for", () => {
+    const l = landing(labHref("admin/course-mapping", { by: "skill" }, ctxFor("lists", "set=1&present=1&skill=sk-pressure-injury&view=assign")))
+    expect([l.flowId, l.stepId, l.q.get("present")]).toEqual([WALKTHROUGH_ID, "map", "1"])
+    const ctx = ctxFor("lists", "set=1&present=1&view=assign")
+    expect(landing(labHref("admin/course-mapping", {}, ctx)).stepId).toBe("map")
     expect(landing(labHref("admin/course-mapping", { by: "course" }, ctx)).stepId).toBe("map")
     expect(landing(rewriteLabUrl(mappingLink({ offering: "off-x" }), ctx)).stepId).toBe("map")
     expect(l.q.get("view")).toBeNull()
@@ -198,12 +236,12 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
 
   it("the receipt's links stay inside the walkthrough (Done returns to Skills, Map to courses to mapping by skill)", () => {
     const ctx = ctxFor("configure", "set=1&present=1&skill=sk-pressure-injury")
-    expect(landing(rewriteLabUrl(mappingHref("sk-pressure-injury"), ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "map-skill" })
+    expect(landing(rewriteLabUrl(mappingHref("sk-pressure-injury"), ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "map" })
     expect(landing(labHref("admin/skills-library", { skill: "sk-pressure-injury" }, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "library" })
-    // A plain link to the lists screen lands on Groups of skills; one with view=assign on the assign step.
+    // A link to the lists screen lands on Skill lists, an old one with view=assign too.
     expect(landing(labHref("admin/lists-cohorts", {}, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "lists" })
-    expect(landing(labHref("admin/lists-cohorts", { view: "assign" }, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "assign" })
-    // A link to one skill's page lands on the side branch.
+    expect(landing(labHref("admin/lists-cohorts", { view: "assign" }, ctx))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "lists" })
+    // A link to one skill's page lands on the Configure stop.
     expect(landing(labHref("admin/configure-skill", { skill: "sk-vitals" }, ctxFor("settings")))).toMatchObject({ stepId: "configure" })
   })
 
@@ -227,14 +265,17 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
 
   it("student links stay inside the fulfillment walkthrough and land on Send C", () => {
     // By course: NURS 350 on My progress opens the course view.
-    expect(landing(labHref("student/home", { course: "crs-nurs350" }, fulCtx("progress")))).toMatchObject({ flowId: FULFILLMENT_WALKTHROUGH_ID, stepId: "course" })
-    // Send for evaluation on the course view (header and list, both carry the course) opens Choose skills in variant C.
-    const send = landing(labHref("student/request-signoff", { course: "crs-nurs350", skills: "sk-sterile-dressing" }, fulCtx("course", "set=1&present=1&course=crs-nurs350")))
-    expect(send).toMatchObject({ flowId: FULFILLMENT_WALKTHROUGH_ID, stepId: "skills" })
-    expect([send.q.get("course"), send.q.get("skills"), send.q.get("present")]).toEqual(["crs-nurs350", "sk-sterile-dressing", "1"])
-    expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, send.stepId!, "1")!.variant.id).toBe("C")
-    // The header's Send for evaluation on plain My progress lands on Send C too (the step's params open NURS 350).
+    expect(landing(labHref("student/home", { course: NURS350, skill: NG }, fulCtx("progress")))).toMatchObject({ flowId: FULFILLMENT_WALKTHROUGH_ID, stepId: "course" })
+    // A row's Ask for evaluation opens the request on that course and skill, at its self-evaluation.
+    const ask = landing(labHref("student/request-signoff", { course: NURS350, skills: NG, step: "self" }, fulCtx("course")))
+    expect(ask).toMatchObject({ flowId: FULFILLMENT_WALKTHROUGH_ID, stepId: "self" })
+    expect([ask.q.get("course"), ask.q.get("skills"), ask.q.get("present")]).toEqual([NURS350, NG, "1"])
+    expect(resolveStep(FULFILLMENT_WALKTHROUGH_ID, ask.stepId!, "1")!.variant.id).toBe("C")
+    // The header's Log a skill lands on Send C's Skills step, a side step that keeps the path bar.
     expect(landing(labHref("student/request-signoff", {}, fulCtx("progress")))).toMatchObject({ stepId: "skills" })
+    // The links off the path stay on it: the evaluator's form, My requests, My evaluations.
+    expect(landing(rewriteLabUrl("/lab/evaluator/evaluation-form?request=req-1", fulCtx("send")))).toMatchObject({ stepId: "form" })
+    expect(landing(labHref("student/my-requests", {}, fulCtx("result")))).toMatchObject({ flowId: FULFILLMENT_WALKTHROUGH_ID, stepId: "requests" })
   })
 
   it("the presenter's next always leads to the following step, and Finish on the last, in both walkthroughs", () => {
@@ -246,6 +287,7 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
         const w = walkthroughPosition(f.id, id, own)!
         expect([w.step.id, w.index, w.total], `${f.id}/${id}`).toEqual([id, i + 1, ids.length])
         if (i < ids.length - 1) expect(landing(w.next!.href)).toMatchObject({ flowId: f.id, stepId: ids[i + 1] })
+        else if (f.then) expect(landing(w.next!.href)).toMatchObject({ flowId: f.then, stepId: mainSteps(findFlow(f.then)!)[0]!.id })
         else expect(w.next).toBeUndefined()
         if (i > 0) expect(landing(w.prev!.href).stepId).toBe(ids[i - 1])
         // Present mode rides along on every hop.
@@ -254,10 +296,11 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
     }
   })
 
-  it("one skill's own pages sit off the main path: no step count there", () => {
-    expect(walkthroughPosition(WALKTHROUGH_ID, "configure", new URLSearchParams("set=1&present=1&skill=sk-pressure-injury"))).toBeUndefined()
+  it("Course mapping follows Evaluation settings, and a page off the path keeps the bar: Back to its stop, Next to the stop after", () => {
     const w = walkthroughPosition(WALKTHROUGH_ID, "settings", new URLSearchParams("set=1&present=1"))!
-    expect([w.index, w.total, landing(w.prev!.href).stepId, landing(w.next!.href).stepId]).toEqual([7, 12, "categories", "lists"])
+    expect([w.index, w.total, landing(w.prev!.href).stepId, landing(w.next!.href).stepId]).toEqual([2, 3, "lists", "map"])
+    const off = walkthroughPosition(WALKTHROUGH_ID, "paste", new URLSearchParams("set=1&present=1&how=several"))!
+    expect([off.step.id, off.index, landing(off.prev!.href).stepId, landing(off.next!.href).stepId]).toEqual(["paste", 1, "lists", "settings"])
   })
 })
 
@@ -266,7 +309,8 @@ describe("demo data: Sankalp's exact path shows the self-evaluation step", () =>
   it("sterile dressing change asks for a self-evaluation, is mandatory on NURS 350 and the demo student can still send it", () => {
     expect(selfEvalEnabled(skillById(s, "sk-sterile-dressing"))).toBe(true)
     // A questions skill rates its final result in the program's outcome words (no empty step that blocks Continue).
-    expect(selfEvalOptions(skillById(s, "sk-sterile-dressing")!)).toEqual(["Met", "Not met"])
+    // D-L73: a questions skill has no final result to rate; the student answers its questions.
+    expect(selfEvalOptions(skillById(s, "sk-sterile-dressing")!)).toEqual([])
     const m = buildStudent(s)!
     const nurs350 = m.courses.find((c) => c.id === "crs-nurs350")!
     expect(nurs350.skills.find((x) => x.id === "sk-sterile-dressing")?.level).toBe("mandatory")
@@ -285,7 +329,7 @@ const BANNED = ["Tests", "Variant", "variant", "Components", "Scenario", "Tier",
 describe("navigation model A on the admin walkthrough (D-L42: hub pages, breadcrumbs and the Skills panel, no wizard chrome)", () => {
   const f = () => findFlow(WALKTHROUGH_ID)!
   it("keeps every step id and route, with no chapters or footer labels in the flow data", () => {
-    expect(f().steps.map((s) => s.id)).toEqual(["library", "add", "paste", "bulk", "starter", "categories", "settings", "lists", "assign", "map-skill", "map", "result", "configure"])
+    expect(f().steps.map((s) => s.id)).toEqual(["lists", "settings", "map", "library", "categories", "configure", "add", "paste", "bulk", "starter"])
     expect("chapters" in f()).toBe(false)
     for (const s of f().steps) {
       expect("chapter" in s, s.id).toBe(false)
@@ -293,10 +337,10 @@ describe("navigation model A on the admin walkthrough (D-L42: hub pages, breadcr
     }
   })
 
-  it("puts Setup summary in the Skills panel, one click from every setup page, and selects it there", () => {
-    expect(SKILLS_PANEL.map((i) => i.label())).toEqual(["Library", "Categories and tags", "Evaluation settings", "Groups of skills", "Course mapping", "Setup summary"])
-    expect(SKILLS_PANEL.find((i) => i.key === "summary")?.screen).toBe(SETUP_RESULT_SCREEN)
-    expect(selectedSkillsPanelKey(SETUP_RESULT_SCREEN)).toBe("summary")
+  it("Setup summary is off the Skills panel (D-L77); Categories and tags stays on it", () => {
+    expect(SKILLS_PANEL.map((i) => i.label())).toEqual(["Skill lists", "Library", "Categories and tags", "Evaluation settings", "Course mapping"])
+    expect(selectedSkillsPanelKey("admin/setup-result")).toBeUndefined()
+    expect(selectedSkillsPanelKey("admin/categories-tags")).toBe("categories")
   })
 })
 
@@ -316,12 +360,15 @@ describe("presenter control", () => {
     )
   }
 
-  it("shows step n of N, previous, next and exit, and nothing a client should not see (no Sample data chip either)", () => {
+  it("shows the walkthrough, Back, the page, N of M, Next and Exit, and nothing else (no persona, flow, variant or score)", () => {
     const { container } = renderAt("settings")
-    expect(screen.getByText("Step 7 of 12")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Previous: Categories and tags" })).toHaveAttribute("href", "/lab/flow/setup-walkthrough/categories?set=1&present=1")
-    expect(screen.getByRole("link", { name: "Next: Groups of skills" }).getAttribute("href")).toMatch(/^\/lab\/flow\/setup-walkthrough\/lists\?/)
-    expect(screen.getByRole("link", { name: "Exit" })).toHaveAttribute("href", WALKTHROUGH_EXIT)
+    expect(screen.getByText("Admin walkthrough")).toBeInTheDocument()
+    expect(screen.getByText("Evaluation settings")).toBeInTheDocument()
+    expect(screen.getByText("2 of 3")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Back: Skill lists" })).toHaveAttribute("href", "/lab/flow/setup-walkthrough/lists?set=1&present=1")
+    expect(screen.getByRole("link", { name: "Next: Course mapping" }).getAttribute("href")).toMatch(/^\/lab\/flow\/setup-walkthrough\/map\?/)
+    expect(screen.getByRole("button", { name: "Exit" })).toBeInTheDocument()
+    expect(WALKTHROUGH_EXIT).toBe("/lab")
     const text = `${container.textContent ?? ""} ${[...container.querySelectorAll("[aria-label]")].map((e) => e.getAttribute("aria-label")).join(" ")}`
     for (const w of BANNED) expect(text, w).not.toContain(w)
   })
@@ -337,7 +384,7 @@ describe("presenter control", () => {
   })
 
   it("replaces the whole lab bar: no working bar and no floating present pill on a walkthrough step", () => {
-    for (const [f, step] of [[flow(), "assign"], [ful(), "self"]] as const) {
+    for (const [f, step] of [[flow(), "lists"], [ful(), "self"]] as const) {
       const { container, unmount } = renderAt(step, `set=1&present=1&${new URLSearchParams(f.steps.find((s) => s.id === step)!.params?.["1"] ?? {}).toString()}`, f)
       expect(container.querySelector("[data-lab-bar]")).toBeNull()
       expect(container.querySelector("[data-lab-present]")).toBeNull()
@@ -346,32 +393,28 @@ describe("presenter control", () => {
     }
   })
 
-  it("marks Groups of skills optional with a Skip that goes to the assign step", () => {
+  it("disables Back on the first stop and Next on the last", () => {
     renderAt("lists")
-    expect(screen.getByText("Step 8 of 12, optional")).toBeInTheDocument()
-    const skip = screen.getByRole("link", { name: "Skip to Assign skills to student groups" })
-    expect(skip).toHaveTextContent("Skip")
-    expect(skip.getAttribute("href")).toMatch(/^\/lab\/flow\/setup-walkthrough\/assign\?/)
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled()
+    // The admin's last stop leads on to the student's path; the last stop of that path ends it.
+    renderAt("faculty", "set=1&present=1&offering=off-nurs350-fa26", ful())
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled()
   })
 
-  it("disables previous on the first step and finishes on the last", () => {
-    renderAt("library")
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled()
-    renderAt("result")
-    expect(screen.getByRole("link", { name: "Finish the walkthrough" })).toHaveAttribute("href", WALKTHROUGH_EXIT)
+  it("carries no Skip or optional wording on any stop", () => {
+    const { container } = renderAt("lists")
+    expect(container.textContent).not.toMatch(/Skip|optional/i)
   })
 
-  // One name per step (2026-10-27): the lab bar step title outside present mode says the agreed name, for every step of both
-  // walkthroughs. The flow route titles the page (the present breadcrumb) with the same string; the H1 and first heading are
-  // checked at runtime by scripts/lab-present-check.mjs.
+  // One name per step (2026-10-27), read from the path bar. The flow route titles the page (the present breadcrumb) with the same
+  // string; the H1 and first heading are checked at runtime by scripts/lab-present-check.mjs.
   for (const [f, list] of [[WALKTHROUGH_ID, AGREED], [FULFILLMENT_WALKTHROUGH_ID, AGREED_STUDENT]] as const) {
     for (const [id, label] of list) {
-      it(`${f} ${id}: the lab bar step title and the presenter's step name are "${label}"`, () => {
+      it(`${f} ${id}: the path bar and the step name are "${label}"`, () => {
         const fd = findFlow(f)!
         const own = new URLSearchParams(fd.steps.find((s) => s.id === id)!.params?.["1"] ?? {}).toString()
-        const { container, unmount } = renderAt(id, `set=1${own ? `&${own}` : ""}`, fd)
-        expect(container.querySelector("[data-lab-walkthrough]")).toBeNull()
-        expect(container.querySelector("[data-lab-step] [aria-current=step]")?.textContent).toBe(label)
+        const { container, unmount } = renderAt(id, `set=1&present=1${own ? `&${own}` : ""}`, fd)
+        expect(container.querySelector("[data-walkthrough-name]")?.textContent).toBe(label)
         unmount()
         expect(walkthroughPosition(f, id, new URLSearchParams(`set=1&present=1&${own}`))!.step.label).toBe(label)
       })

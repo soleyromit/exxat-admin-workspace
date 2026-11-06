@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { blankPass, candidatesOf, criteriaNote, fieldIds, outcomeChoices, requestAccess, submitEvaluation, validatePass, waitingFor, type PassInput } from "@/lib/v2/preceptor"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed, IDS } from "@/lib/v2/seed"
 import { skillProgress, createRequest, logSkills } from "@/lib/v2/student"
 import { concernsFor } from "@/lib/v2/outcomes"
 import type { V2State } from "@/lib/v2/types"
@@ -101,11 +101,24 @@ describe("validatePass", () => {
     expect(issues[2].field).toBe(fieldIds.question(SD, 1))
   })
 
-  it("Not yet needs only feedback, never questions or a level", () => {
+  it("Not yet needs only feedback, never a level; a Questions skill has no outcome to choose, so its questions are always asked (D-L73)", () => {
     const { s, id } = requested()
     const p = goodPass(s, id)
-    p.responses = p.responses.map((r) => ({ ...r, outcome: "not-yet" as const, levelIndex: null, answers: r.answers.map(() => null), feedback: r.skillId === IV ? "Practise the flush step." : "" }))
-    expect(validatePass(s, p).map((i) => i.message)).toEqual(["Write feedback for Sterile dressing change. Not yet records feedback only, so the student needs your words."])
+    p.responses = p.responses.map((r) => (r.skillId === IV ? { ...r, outcome: "not-yet" as const, levelIndex: null, feedback: "" } : { ...r, outcome: null, answers: r.answers.map(() => null) }))
+    expect(validatePass(s, p).map((i) => i.message)).toEqual([
+      `Write feedback for IV catheter insertion. Not yet records feedback only, so the student needs your words.`,
+      ...s.skills.find((k) => k.id === SD)!.config!.questions.map((q) => `Answer Yes or No to "${q}" for Sterile dressing change.`),
+    ])
+  })
+
+  it("all Yes on a Questions skill records Met, whatever outcome was passed in (D-L73)", () => {
+    const { s, id } = requested()
+    const p = goodPass(s, id)
+    p.responses = p.responses.map((r) => (r.skillId === SD ? { ...r, outcome: "not-met" as const, answers: r.answers.map(() => "yes" as const) } : r))
+    const r = submitEvaluation(s, p, AT)
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.items.find((i) => i.skillId === SD)!.outcome).toBe("met")
   })
 
   it("checks length, the concern and the attestation", () => {
@@ -167,8 +180,9 @@ describe("submitEvaluation", () => {
     const r = submitEvaluation(s, blankPass(s, id, IDS.delgado), AT)
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error).toBe("Fix 4 problems before you submit.")
-    expect(r.issues?.map((i) => i.field)).toEqual([fieldIds.outcome(IV), fieldIds.feedback(IV), fieldIds.outcome(SD), fieldIds.attest])
+    // D-L73: a Questions skill asks its questions, never an outcome.
+    expect(r.error).toBe("Fix 6 problems before you submit.")
+    expect(r.issues?.map((i) => i.field)).toEqual([fieldIds.outcome(IV), fieldIds.feedback(IV), fieldIds.question(SD, 0), fieldIds.question(SD, 1), fieldIds.question(SD, 2), fieldIds.attest])
   })
 
   it("is completed once: a second submit, and a different evaluator on the same link, are refused", () => {

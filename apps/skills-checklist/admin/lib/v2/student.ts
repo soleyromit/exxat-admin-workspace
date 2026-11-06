@@ -1,10 +1,10 @@
 import { inSentence } from "@/lib/lab/terms"
 import type { Result } from "./admin-actions"
 import { needsLevels } from "./config"
-import { engineRuleOf, runRule, strengthHint } from "./rules"
+import { engineRuleOf, outcomeQualifiesOn, runRule, strengthHint } from "./rules"
 import { evalsOfStudentSkill, skillById } from "./evidence-index"
 import { IDS } from "./seed"
-import { sentForNewEvaluationLabel } from "./labels"
+import { outcomeWordOn, sentForNewEvaluationLabel } from "./labels"
 import { appendAudit } from "./store"
 import { flushQueue, queueChange, syncBlock } from "./sync"
 import type { Evaluation, EvaluatorRole, LogDraft, MappingRow, Person, Setting, SignoffMethod, Skill, Submission, V2State } from "./types"
@@ -72,7 +72,8 @@ export function skillProgress(s: V2State, studentId: string, skillId: string): S
   const a = skill.config.achievement
   const mine = evalsOfStudentSkill(s, studentId, skillId)
   // The one engine (lib/v2/rules.ts): the same call the lab configure impact makes, so published rules read the same everywhere.
-  const run = runRule(rule, mine)
+  // Not configured [REQ AE-02, IM-09]: the evidence is kept and listed, and no rule can qualify it, so nothing counts until the skill is set up again. Then it re-applies.
+  const run = runRule(rule, skill.configured ? mine : [])
   // A rule with no valid frequency has no progress to report (it cannot be published that way; never defaulted to 1).
   if (!run.valid) return null
   const awaiting = mine.filter((e) => e.status === "awaiting-approval").length
@@ -466,7 +467,7 @@ export function evaluatorChoices(s: V2State, skillIds: string[], setting: Settin
 // ---------------------------------------------------------------------------------------------------------------------
 // Logging (ST-04 to ST-13)
 
-export type RatingKind = "levels" | "outcome" | "questions" | "none"
+export type RatingKind = "levels" | "outcome" | "questions" | "scores" | "none"
 
 /** The kind of self-rating a skill offers, taken from its own configuration. Never a hard-coded scale (SC-08). */
 export function ratingKind(skill: Skill): RatingKind {
@@ -475,6 +476,8 @@ export function ratingKind(skill: Skill): RatingKind {
   if (needsLevels(skill.model, c)) return "levels"
   if (skill.model === "binary") return "outcome"
   if (skill.model === "question") return "questions"
+  // The same form the evaluator gets [REQ ST-11]: a score per question on the program's scale, never a final result.
+  if (skill.model === "scored") return "scores"
   return "none"
 }
 
@@ -494,7 +497,7 @@ export interface LogInput {
   clinicalSetting: string | null
   location: string | null
   ratings: Record<string, string>
-  answers: Record<string, Array<"yes" | "no" | null>>
+  answers: Record<string, Array<"yes" | "no" | number | null>>
   notes: Record<string, string>
 }
 
@@ -569,7 +572,7 @@ export function logSkills(s: V2State, input: LogInput, at: string, studentId: st
       clinicalSetting: input.setting === "clinical" ? input.clinicalSetting : null,
       location: input.location && clean(input.location) ? clean(input.location) : null,
       rating: kind === "levels" || kind === "outcome" ? (input.ratings[k.id] ?? null) : null,
-      answers: kind === "questions" && a ? (a as Array<"yes" | "no">) : null,
+      answers: (kind === "questions" || kind === "scores") && a ? (a as Array<"yes" | "no" | number>) : null,
       note: clean(input.notes[k.id] ?? ""),
       at,
       requestId: null,
@@ -702,10 +705,12 @@ export interface WhereOption {
  * one is simply preselected, ST-06); with no placement on record the program's full list is offered (ST-07). Lab and simulation are
  * always offered and are practice trials.
  */
-export function whereOptions(s: V2State, studentId: string = STUDENT_ID): WhereOption[] {
-  const placements = s.placements.filter((p) => p.studentId === studentId && p.courseId === s.course.id)
+export function whereOptions(s: V2State, studentId: string = STUDENT_ID, courseId: string = s.course.id): WhereOption[] {
+  // The student's placements for this course [REQ ST-06]; Send opened on another course (NUR 220) reads that course's placements.
+  const placements = s.placements.filter((p) => p.studentId === studentId && p.courseId === courseId)
+  const codeOf = (id: string) => (id === s.course.id ? s.course.code : s.courses?.find((c) => c.id === id)?.code ?? s.course.code)
   const clinical: WhereOption[] = placements.length
-    ? placements.map((p) => ({ value: `placement:${p.id}`, label: p.location, description: `${p.setting} placement for ${s.course.code}`, setting: "clinical" as const, clinicalSetting: p.setting, location: p.location, askLocation: false }))
+    ? placements.map((p) => ({ value: `placement:${p.id}`, label: p.location, description: `${p.setting} placement for ${codeOf(p.courseId)}`, setting: "clinical" as const, clinicalSetting: p.setting, location: p.location, askLocation: false }))
     : s.program.clinicalSettings.map((name) => ({ value: `program:${name}`, label: name, description: "From the program's list of settings. No placement is on record for this course.", setting: "clinical" as const, clinicalSetting: name, location: null, askLocation: true }))
   return [
     ...clinical,
@@ -782,9 +787,9 @@ export function studentHistory(s: V2State, studentId: string = STUDENT_ID): { sk
         attempts.push({ ...base, kind: "returned", outcome: "Returned for correction", counted: "Does not count. Your reviewer returned it, so it is kept in your record and a new attempt is needed.", returnReason: e.review?.note ?? null })
         summary.returned++
       } else if (e.status === "reopened") {
-        attempts.push({ ...base, kind: "reopened", outcome: `Reopened. Version ${e.currentVersion} says ${e.outcome === "met" ? "Met" : e.outcome === "not-yet" ? "Not yet" : "Did not meet the criteria"}`, counted: "Does not count while the reviewer has it open. Every earlier version is kept.", })
+        attempts.push({ ...base, kind: "reopened", outcome: `Reopened. Version ${e.currentVersion} says ${outcomeWordOn(skill, e.outcome)}`, counted: "Does not count while the reviewer has it open. Every earlier version is kept.", })
         summary.returned++
-      } else if (e.outcome === "met") {
+      } else if (outcomeQualifiesOn(skill, e.outcome)) {
         const why = progress.leftOut[e.id]
         attempts.push({ ...base, kind: "counted", outcome: "Counted", counted: why ?? (e.setting === "clinical" ? "Counts toward the rule" + (e.clinicalSetting ? ` and toward ${inSentence(e.clinicalSetting)}.` : ".") : `Counts toward the rule. ${e.setting === "lab" ? "Lab" : "Simulation"} evidence never counts toward a clinical setting.`) })
         summary.counted++

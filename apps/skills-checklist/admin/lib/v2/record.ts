@@ -1,3 +1,4 @@
+import { outcomeQualifiesOn } from "./rules"
 import type { Block, SignedContent } from "./pdf"
 import type { Evaluation, Person, Skill, V2State, Verification } from "./types"
 import { verificationStatus, type VerifyStatus } from "./verification"
@@ -53,7 +54,7 @@ export function verifiedRecord(s: V2State, studentId: string): VerifiedRecord {
   for (const ev of v.evidence) {
     const e = s.evaluations.find((x) => x.id === ev.evaluationId)
     if (!e || e.status !== "counted" || e.currentVersion !== ev.version) continue
-    if (e.outcome !== "met") {
+    if (!outcomeQualifiesOn(s.skills.find((k) => k.id === e.skillId), e.outcome)) {
       notMet++
       continue
     }

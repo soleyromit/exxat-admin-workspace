@@ -1,3 +1,4 @@
+import { outcomeQualifiesOn } from "./rules"
 import { inSentence } from "@/lib/lab/terms"
 import { evalsOfStudentSkill } from "./evidence-index"
 import { ALL, NO_FILTERS, SETTING_LABEL, TERM, cohortOf, groupOf, matchesEvidence, scoped, students, studentsIn, type ReportFilters } from "./filters"
@@ -186,7 +187,7 @@ export function heatmap(s: V2State, f: ReportFilters): { skills: ReportSkill[]; 
   const sc = scoped(s, f)
   // The grid lists the same students the summary counts: the population of the filters (students who take a filtered course in
   // the current term), never every student of the cohort.
-  const inScope = populationRows(s, populationScopeOf(f)).ids
+  const inScope = populationRows(s, populationScopeOf(f), undefined, { set: "term" }).ids
   const rows = studentsIn(s, f).filter((p) => inScope.has(p.id)).map((student): HeatRow => {
     const cells = skills.map((r) => heatCell(sc, student.id, r.skill))
     return {
@@ -245,7 +246,7 @@ const paceOf = (r: StudentRow): Omit<PaceRow, "studentId" | "name"> => ({ achiev
  * nothing this term gets an empty row. Behind means collected evidence is more than PACE_MARGIN short of the expected amount.
  */
 export function paceRows(s: V2State, today: string = DEMO_TODAY): PaceRow[] {
-  const rows = new Map(populationRows(s, DEFAULT_SCOPE, today).rows.map((r) => [r.id, r]))
+  const rows = new Map(populationRows(s, DEFAULT_SCOPE, today, { set: "term" }).rows.map((r) => [r.id, r]))
   return students(s).map((p): PaceRow => {
     const r = rows.get(p.id)
     return { studentId: p.id, name: p.name, ...(r ? paceOf(r) : { achieved: 0, total: 0, collected: 0, needed: 0, expected: 0, behindBy: 0, open: [] }) }
@@ -322,12 +323,14 @@ export interface RaterRow {
 
 export function raterRows(s: V2State, f: ReportFilters): RaterRow[] {
   const obs = observations(s, f)
-  const all = pct(obs.filter((e) => e.outcome === "met").length, obs.length)
+  const byId = new Map(s.skills.map((k) => [k.id, k]))
+  const qualified = (e: Evaluation) => outcomeQualifiesOn(byId.get(e.skillId), e.outcome)
+  const all = pct(obs.filter(qualified).length, obs.length)
   const ids = [...new Set(obs.map((e) => e.evaluatorId))]
   return ids
     .map((id): RaterRow => {
       const mine = obs.filter((e) => e.evaluatorId === id)
-      const met = mine.filter((e) => e.outcome === "met").length
+      const met = mine.filter(qualified).length
       const person = s.people.find((p) => p.id === id)
       return {
         id,
@@ -335,7 +338,7 @@ export function raterRows(s: V2State, f: ReportFilters): RaterRow[] {
         role: person?.title ?? "",
         evaluations: mine.length,
         met,
-        notMet: mine.filter((e) => e.outcome === "not-met").length,
+        notMet: mine.filter((e) => e.outcome !== "not-yet" && !qualified(e)).length,
         notYet: mine.filter((e) => e.outcome === "not-yet").length,
         metRate: pct(met, mine.length),
         vsAll: pct(met, mine.length) - all,
@@ -413,7 +416,7 @@ export function populationScopeOf(f: ReportFilters): PopulationScope {
 }
 
 export function reportSummary(s: V2State, f: ReportFilters): ReportSummary {
-  const tot = populationTotals(populationRows(s, populationScopeOf(f)))
+  const tot = populationTotals(populationRows(s, populationScopeOf(f), undefined, { set: "term" }))
   const obs = observations(s, f)
   return {
     students: tot.students,
@@ -636,7 +639,7 @@ function ledgerRow(sc: V2State, e: Evaluation, skill: Skill, used: Set<string>, 
   const person = (id: string) => sc.people.find((p) => p.id === id)
   const v = e.versions.find((x) => x.version === e.currentVersion)
   const counts = used.has(e.id)
-  const result: LedgerResult = counts ? "counts" : e.outcome === "met" ? "not-used" : e.outcome === "not-met" ? "did-not-meet" : "feedback-only"
+  const result: LedgerResult = counts ? "counts" : e.outcome === "not-yet" ? "feedback-only" : outcomeQualifiesOn(skill, e.outcome) ? "not-used" : "did-not-meet"
   return {
     evaluationId: e.id,
     studentId: e.studentId,

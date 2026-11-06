@@ -50,6 +50,18 @@ describe("Wave 3 student and evaluator gaps", () => {
     expect(labSavedLine([r("a"), r("a"), r("b")], skills)).toBe("2 results count now; 1 result for Sterile gloving waits for program approval.")
   })
 
+  it("SC-03: the lab session receipt counts only the label that qualifies", () => {
+    const second: LabSkillRow[] = [
+      { id: "a", name: "Hand hygiene", blocked: null, feedbackRequired: false, holds: false, model: "binary", qualifyingLabel: 1 },
+      { id: "b", name: "Sterile gloving", blocked: null, feedbackRequired: false, holds: true, model: "binary", qualifyingLabel: 1 },
+    ]
+    const r = (skillId: string, outcome: LabSavedResult["outcome"]): LabSavedResult => ({ studentId: "s", skillId, outcome, feedback: "" })
+    expect(labSavedLine([r("a", "not-met")], second)).toBe("It counts now.")
+    expect(labSavedLine([r("a", "met")], second)).toBe("It did not meet criteria.")
+    expect(labSavedLine([r("a", "met"), r("a", "met")], second)).toBe("They did not meet criteria.")
+    expect(labSavedLine([r("a", "not-met"), r("a", "met"), r("b", "met")], second)).toBe("1 result counts now; 1 result did not meet criteria; 1 result for Sterile gloving waits for program approval.")
+  })
+
   it("ST-12: a note conflict combines into the one note, it never offers two notes", () => {
     const note = conflictChoices({ field: "note", mine: "a", theirs: "b", theirsAt: "", theirsBy: "Your other device" })
     expect(note.find((c) => c.id === "both")?.label).toBe(COMBINE_NOTES_LABEL)

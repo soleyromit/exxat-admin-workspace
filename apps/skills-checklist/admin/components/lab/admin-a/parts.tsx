@@ -6,7 +6,9 @@
  * (?state=loading | empty | error) that every variant renders the same way.
  */
 import { TYPE } from "@/components/lab/type-scale"
+import { BulkCount } from "@/components/lab/shared/bulk-count"
 import * as React from "react"
+import { cn } from "@exxatdesignux/ui/lib/utils"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
@@ -30,29 +32,42 @@ import { fmt } from "@/lib/v2/format"
 // ---------------------------------------------------------------------------------------------------------------------
 // URL params
 
+/**
+ * The last write the location has not caught up with yet. The router commits later, so `location.search` is stale for a second write in the same tick:
+ * Clear all writes once per chip, and each write would put back the params the one before it removed.
+ */
+let unsettledWrite: { at: string; search: string } | null = null
+
 /** Reads and writes the URL search params (filters, demo state). Not a data fetch: the lab state is synchronous. */
 export function useUrlParams() {
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname() ?? ""
   const get = React.useCallback((k: string) => params?.get(k) ?? "", [params])
-  const set = React.useCallback(
-    (p: Record<string, string | null | undefined>) => {
+  const write = React.useCallback(
+    (p: Record<string, string | null | undefined>, how: "replace" | "push") => {
       // Merge into the URL as it is now, not as it was at render: a write that lands after another one (a wizard step change, a
       // second filter) must not put back the params that one replaced (Set up skills step 5, D-L44).
       const live = typeof window !== "undefined" ? window.location : null
-      const q = new URLSearchParams(live ? live.search : params?.toString() ?? "")
+      const at = live ? `${live.pathname}${live.search}` : ""
+      const q = new URLSearchParams(unsettledWrite?.at === at ? unsettledWrite.search : live ? live.search : params?.toString() ?? "")
       for (const [k, v] of Object.entries(p)) {
         if (v) q.set(k, v)
         else q.delete(k)
       }
       const s = q.toString()
+      unsettledWrite = live ? { at, search: s } : null
       const path = live?.pathname ?? pathname
-      router.replace(s ? `${path}?${s}` : path, { scroll: false })
+      router[how](s ? `${path}?${s}` : path, { scroll: false })
     },
     [params, pathname, router],
   )
-  return { get, set }
+  // New params mean the write landed, or Back moved past it: the location is the truth again.
+  React.useEffect(() => { unsettledWrite = null }, [params])
+  const set = React.useCallback((p: Record<string, string | null | undefined>) => write(p, "replace"), [write])
+  /** The same, as a step browser Back returns through: moving to another view or record, not narrowing a filter. */
+  const push = React.useCallback((p: Record<string, string | null | undefined>) => write(p, "push"), [write])
+  return { get, set, push }
 }
 
 export type DemoState = "loading" | "empty" | "error" | null
@@ -102,14 +117,14 @@ export interface Opt {
 const ALL = "__all"
 
 /** A select whose empty value reads "All ..."; options with `group` render under group labels (terms by academic year). */
-export function FilterSelect({ value, onChange, label, allLabel, options, className = "w-40", id }: { value: string; onChange: (v: string) => void; label: string; allLabel?: string; options: Opt[]; className?: string; id?: string }) {
+export function FilterSelect({ value, onChange, label, allLabel, options, className = "w-40", id, resting, layer }: { value: string; onChange: (v: string) => void; label: string; allLabel?: string; options: Opt[]; className?: string; id?: string; /** Shown muted while nothing is chosen, so a chosen filter stands out on a row of them. */ resting?: string; /** Stacking, for a select opened over a dialog that sits above a panel. */ layer?: string }) {
   const groups = [...new Set(options.map((o) => o.group ?? ""))]
   return (
-    <Select value={value || ALL} onValueChange={(v) => onChange(v === ALL ? "" : v)}>
+    <Select value={value || (resting ? "" : ALL)} onValueChange={(v) => onChange(v === ALL ? "" : v)}>
       <SelectTrigger id={id} className={className} aria-label={label}>
-        <SelectValue />
+        <SelectValue placeholder={resting} />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className={layer}>
         {allLabel ? <SelectItem value={ALL}>{allLabel}</SelectItem> : null}
         {groups.map((g) =>
           g ? (
@@ -127,20 +142,20 @@ export function FilterSelect({ value, onChange, label, allLabel, options, classN
 }
 
 /** Type-to-search picker for long option lists (the DS has no Combobox: Popover plus Command). */
-export function SearchPicker({ value, onChange, label, allLabel, options, className = "w-56" }: { value: string; onChange: (v: string) => void; label: string; allLabel: string; options: Opt[]; className?: string }) {
+export function SearchPicker({ value, onChange, label, allLabel, options, className = "w-56", id, layer }: { value: string; onChange: (v: string) => void; label: string; allLabel: string; options: Opt[]; className?: string; id?: string; layer?: string }) {
   const [open, setOpen] = React.useState(false)
   const current = options.find((o) => o.value === value)
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className={`${className} justify-between text-sm font-normal`} aria-label={`${label}: ${current?.label ?? allLabel}`}>
+        <Button id={id} type="button" variant="outline" size="sm" className={`${className} justify-between text-sm font-normal`} aria-label={`${label}: ${current?.label ?? allLabel}`} data-search-picker={label}>
           <span className="truncate">{current?.label ?? allLabel}</span>
           <i className="fa-light fa-chevron-down text-muted-foreground" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 p-0">
+      <PopoverContent align="start" className={cn("w-[min(20rem,calc(100vw-2rem))] p-0", layer)}>
         <Command>
-          <CommandInput placeholder={`Search ${label.toLowerCase()}`} />
+          <CommandInput placeholder={`Search ${label.toLowerCase()}`} aria-label={`Search ${label.toLowerCase()}`} />
           <CommandList>
             <CommandEmpty>{`No ${label.toLowerCase()} matches.`}</CommandEmpty>
             <CommandGroup>
@@ -164,20 +179,25 @@ export function SearchPicker({ value, onChange, label, allLabel, options, classN
 
 export function LevelGlyph({ level, size = 10 }: { level: MapLevel; size?: number }) {
   if (level === "none") return <span aria-hidden="true" className="inline-block h-px w-2.5 bg-[var(--border-control-3)]" />
-  // Mandatory: filled square. Recommended: outline with a centre dot. Optional: dashed outline. Shape, not colour, carries the level.
+  // Mandatory: filled square. Recommended: outline with a centre dot. Shape, not colour, carries the level.
   return (
     <svg width={size} height={size} viewBox="0 0 10 10" aria-hidden="true" className="shrink-0">
-      <rect x="0.75" y="0.75" width="8.5" height="8.5" rx="1.5" fill={level === "mandatory" ? "var(--foreground)" : "none"} stroke="var(--foreground)" strokeWidth="1.5" strokeDasharray={level === "optional" ? "2 1.5" : undefined} />
+      <rect x="0.75" y="0.75" width="8.5" height="8.5" rx="1.5" fill={level === "mandatory" ? "var(--foreground)" : "none"} stroke="var(--foreground)" strokeWidth="1.5" />
       {level === "recommended" ? <rect x="3.5" y="3.5" width="3" height="3" rx="0.5" fill="var(--foreground)" /> : null}
     </svg>
   )
 }
 
-export function LevelSelect({ value, onChange, label, size = "sm", className = "w-44" }: { value: MapLevel; onChange: (v: MapLevel) => void; label: string; size?: "sm" | "default"; className?: string }) {
+/**
+ * A level on one row. DS Select, because three choices repeat over many rows. "Not mapped" is quiet (muted, no border until hover or focus), and
+ * Mandatory and Recommended keep the trigger's normal chrome, so the eye finds what the program decided.
+ */
+export function LevelSelect({ value, onChange, label, size = "sm", className = "w-44", placeholder = "Set level" }: { value: MapLevel | null; onChange: (v: MapLevel) => void; label: string; placeholder?: string; size?: "sm" | "default"; className?: string }) {
+  const quiet = value === "none"
   return (
-    <Select value={value} onValueChange={(v) => onChange(v as MapLevel)}>
-      <SelectTrigger size={size} className={className} aria-label={label}>
-        <SelectValue />
+    <Select value={value ?? ""} onValueChange={(v) => onChange(v as MapLevel)}>
+      <SelectTrigger size={size} className={cn(className, quiet && "border-transparent text-muted-foreground hover:border-input")} aria-label={label} data-level={value ?? undefined}>
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         {LEVELS.map((l) => (
@@ -193,29 +213,56 @@ export function LevelSelect({ value, onChange, label, size = "sm", className = "
   )
 }
 
-/** One line that separates the program list's "Required to graduate" from the per-course levels (glossary, D-X12). */
-export const LEVELS_VS_GRADUATE = "Required to graduate comes from the program list. Mandatory, recommended and optional are set per course."
-
-/**
- * The level key. With `counts` (one offering, Romit 2026-10-28 "too many text"): one row of glyph + count + word for the three
- * levels, replacing the separate count line; "Not mapped" and "levels apply to this course only" move into the ⓘ.
- */
-export function LevelLegend({ counts }: { counts?: { mapped: number; mandatory: number; recommended: number; optional: number } } = {}) {
-  const tip = counts ? `${LEVELS_VS_GRADUATE} Levels set here apply to this course only. ${LEVEL_LABEL.none}: not expected in this course.` : LEVELS_VS_GRADUATE
+/** A row's unsaved level: a small dot, with the same words for a screen reader. The line beside Save says what it adds up to. */
+export function ChangedDot() {
   return (
-    <span
-      className={counts ? "flex flex-wrap items-center gap-4 text-sm" : "flex items-center gap-4 text-xs text-muted-foreground"}
-      data-level-legend
-      data-level-totals={counts ? "" : undefined}
-      role={counts ? "group" : undefined}
-      aria-label={counts ? `${counts.mapped} mapped: ${counts.mandatory} mandatory, ${counts.recommended} recommended, ${counts.optional} optional` : undefined}
-    >
-      <span className="flex flex-wrap items-center gap-4" aria-hidden={counts ? undefined : true}>
-        {(counts ? (["mandatory", "recommended", "optional"] as const) : LEVELS).map((l) => (
+    <span className="inline-flex size-4 shrink-0 items-center justify-center" data-level-changed>
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--brand-color)]" />
+      <span className="sr-only">Changed, not saved</span>
+    </span>
+  )
+}
+
+/** One bulk control in both views: choosing a level sets it on the selected rows, in the draft. There is no second button. */
+export function BulkLevelBar({ n, label, onApply }: { n: number; label: string; onApply: (level: MapLevel) => void }) {
+  // Esc or Clear removes the bar, and focus inside it would fall to the body: it goes to the row it was about, else the first row, else the pane's heading.
+  const bar = React.useRef<HTMLSpanElement>(null)
+  const row = React.useRef<HTMLElement | null>(null)
+  const pane = React.useRef<HTMLElement | null>(null)
+  React.useLayoutEffect(() => {
+    pane.current = bar.current?.closest<HTMLElement>("[data-region]") ?? null
+    row.current = pane.current?.querySelector<HTMLElement>('tbody [role="checkbox"][data-state="checked"]') ?? null
+  }, [n])
+  React.useLayoutEffect(() => () => {
+    const el = bar.current
+    requestAnimationFrame(() => {
+      if (el?.isConnected || (document.activeElement && document.activeElement !== document.body)) return
+      const heading = pane.current?.querySelector<HTMLElement>("h2") ?? null
+      if (heading) heading.setAttribute("tabindex", "-1")
+      const to = [row.current, pane.current?.querySelector<HTMLElement>('tbody [role="checkbox"]') ?? null, heading].find((c) => c?.isConnected)
+      to?.focus()
+    })
+  }, [])
+  return (
+    <span ref={bar} className="flex flex-nowrap items-center gap-2" data-bulk-bar>
+      <BulkCount n={n} />
+      <LevelSelect value={null} onChange={onApply} label={label} className="w-44 data-placeholder:text-current [&_i]:text-current" />
+    </span>
+  )
+}
+
+/** Mapped, Mandatory and Recommended for one offering [REQ CM-04]. Not mapped and its meaning sit in the tip [REQ CM-05]. */
+export function LevelLegend({ counts }: { counts: { mapped: number; mandatory: number; recommended: number } }) {
+  const tip = `Set per offering. ${LEVEL_LABEL.none}: not expected in this offering, and it can still be submitted and counts.`
+  return (
+    <span className="flex flex-wrap items-center gap-4 text-sm" data-level-legend data-level-totals="" role="group" aria-label={`${counts.mapped} mapped: ${counts.mandatory} mandatory, ${counts.recommended} recommended`}>
+      <span className="flex flex-wrap items-center gap-4">
+        <span className="flex items-center gap-1.5"><span className="font-semibold tabular-nums text-foreground">{fmt(counts.mapped)}</span><span className="text-muted-foreground">Mapped</span></span>
+        {(["mandatory", "recommended"] as const).map((l) => (
           <span key={l} className="flex items-center gap-1.5">
             <LevelGlyph level={l} />
-            {counts ? <span className="font-semibold tabular-nums text-foreground">{fmt(counts[l as keyof typeof counts])}</span> : null}
-            <span className={counts ? "text-muted-foreground" : undefined}>{LEVEL_LABEL[l]}</span>
+            <span className="font-semibold tabular-nums text-foreground">{fmt(counts[l])}</span>
+            <span className="text-muted-foreground">{LEVEL_LABEL[l]}</span>
           </span>
         ))}
       </span>
@@ -270,9 +317,25 @@ export function LoadingState({ label, rows = 10 }: { label: string; rows?: numbe
   )
 }
 
+/** Whether a truncated element is really cut off, so its Tip and its Tab stop exist only then (as `RowName` on Categories and tags). */
+export function useTextCut<T extends HTMLElement>(text: string) {
+  const ref = React.useRef<T>(null)
+  const [cut, setCut] = React.useState(false)
+  React.useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const measure = () => setCut(el.scrollWidth > el.clientWidth + 1)
+    measure()
+    const sized = new ResizeObserver(measure)
+    sized.observe(el)
+    return () => sized.disconnect()
+  }, [text])
+  return { ref, cut }
+}
+
 export function ErrorState({ what, onRetry }: { what: string; onRetry: () => void }) {
   return (
-    <LocalBanner variant="error" title={`${what} did not load`} retry={{ label: "Try again", onClick: onRetry }}>
+    <LocalBanner variant="error" title={`${what} did not load`} action={{ label: "Try again", onClick: onRetry }}>
       Nothing was changed. Check your connection and try again.
     </LocalBanner>
   )
@@ -318,30 +381,42 @@ export interface FilterField {
   onChange: (v: string) => void
 }
 
+/** `Select` for one of up to seven, `Popover` plus `Command` above seven (map section E rule 16). */
+const SELECT_MAX = 7
 const isApplied = (f: FilterField) => f.value !== (f.defaultValue ?? "")
 const valueLabel = (f: FilterField) => f.options.find((o) => o.value === f.value)?.label ?? (f.value || f.allLabel || "")
 
-export function FiltersControl({ fields, align = "start", courseKind }: { fields: FilterField[]; align?: "start" | "end"; /** Course kind in force ("clinical" by default), stated on the button as on the reporting Filters. */ courseKind?: "clinical" | "all" }) {
+export function FiltersControl({ fields, align = "start", courseKind, compact = false, layer }: { fields: FilterField[]; align?: "start" | "end"; /** Stacking, for a Filters button in a dialog that sits above a panel. */ layer?: string; /** Course kind in force ("clinical" by default), stated on the button as on the reporting Filters. */ courseKind?: "clinical" | "all"; /** A funnel beside a search in a narrow pane, not a word. */ compact?: boolean }) {
   const count = fields.filter(isApplied).length
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" size="sm" aria-haspopup="dialog" data-filters-button data-course-kind={courseKind}>
-          Filters
-          {count ? (
-            <>
-              <span className="tabular-nums">{count}</span>
-              <span className="sr-only"> applied</span>
-            </>
-          ) : null}
-        </Button>
+        {compact ? (
+          <Button type="button" variant="outline" size="icon" aria-haspopup="dialog" aria-label={count ? `Filters, ${count} applied` : "Filters"} data-filters-button data-course-kind={courseKind}>
+            <i className={cn(count ? "fa-solid" : "fa-light", "fa-filter")} aria-hidden="true" />
+          </Button>
+        ) : (
+          <Button type="button" variant="outline" size="sm" aria-haspopup="dialog" data-filters-button data-course-kind={courseKind}>
+            Filters
+            {count ? (
+              <>
+                <span className="tabular-nums">{count}</span>
+                <span className="sr-only"> applied</span>
+              </>
+            ) : null}
+          </Button>
+        )}
       </PopoverTrigger>
-      <PopoverContent align={align} className="w-[min(30rem,calc(100vw-2rem))] p-4" aria-label="Filters" data-filters-panel>
+      <PopoverContent align={align} className={cn("w-[min(30rem,calc(100vw-2rem))] p-4", layer)} aria-label="Filters" data-filters-panel>
         <div className="grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
           {fields.map((f) => (
             <div key={f.id} className="flex flex-col gap-1.5">
               <Label htmlFor={`flt-${f.id}`}>{f.label}</Label>
-              <FilterSelect id={`flt-${f.id}`} value={f.value} onChange={f.onChange} label={f.label} allLabel={f.allLabel} options={f.options} className="w-full" />
+              {f.options.length > SELECT_MAX ? (
+                <SearchPicker id={`flt-${f.id}`} value={f.value} onChange={f.onChange} label={f.label} allLabel={f.allLabel ?? ""} options={f.options} className="w-full" layer={layer ? "z-[94]" : undefined} />
+              ) : (
+                <FilterSelect id={`flt-${f.id}`} value={f.value} onChange={f.onChange} label={f.label} allLabel={f.allLabel} options={f.options} className="w-full" layer={layer ? "z-[94]" : undefined} />
+              )}
             </div>
           ))}
         </div>

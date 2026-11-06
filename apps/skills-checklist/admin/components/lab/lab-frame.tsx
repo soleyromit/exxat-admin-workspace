@@ -13,11 +13,13 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@exxatdesignux/ui/components/ui/tooltip"
+import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { SidebarInset, SidebarTrigger, useSidebar } from "@exxatdesignux/ui/components/ui/sidebar"
 import { LeoAmbienceProvider } from "@exxatdesignux/ui/components/ui/leo-ambience-context"
-import { AppShellSlotsProvider, AppSidebar, SecondaryHubIconNavRow, SecondaryHubNavCompactShell, SecondaryHubNavRow, SecondaryPanel, SecondaryPanelProvider, SidebarShell, useSecondaryHubNavChrome, useSecondaryPanel, type AppShellData, type AppShellRoutePolicy, type AppShellSlots, type SecondaryPanelSpec, type ShellNav } from "@exxatdesignux/ui/components/shell"
+import { AppShellSlotsProvider, AppSidebar, SecondaryHubNavCompactShell, SecondaryHubNavRow, SecondaryPanel, SecondaryPanelProvider, SidebarShell, useSecondaryHubNavChrome, useSecondaryPanel, type AppShellData, type AppShellRoutePolicy, type AppShellSlots, type SecondaryPanelSpec, type ShellNav } from "@exxatdesignux/ui/components/shell"
 import { ResizablePanel, ResizablePanelGroup } from "@exxatdesignux/ui/components/ui/resizable"
-import { SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, settingsHref, settingsLeaf, skillsLabel, selectedSkillsPanelKey, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
+import { installOriginCapture, shownSkillSnapshot, subscribeShownSkill } from "@/lib/lab/configure-origin"
+import { CONFIGURE_SKILL_SCREEN, SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, settingsHref, settingsLeaf, skillsLabel, selectedSkillsPanelKey, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { utilityBarActionButtonClass } from "@exxatdesignux/ui/components/shell/utility-bar-chrome"
 import { cn } from "@exxatdesignux/ui/lib/utils"
@@ -28,17 +30,20 @@ import { FROM_PARAM, LEAF_TITLE, returnTarget } from "@/lib/lab/return-to"
 import { SCOPE_CARRY, labHref, navHref } from "@/lib/lab/links"
 import { findFlow } from "@/lib/lab/flows"
 import { usePresent } from "@/components/lab/lab-bar/present"
+import { ResultBannerSlot } from "@/components/lab/shared/result-banner"
 import { WalkthroughControls } from "@/components/lab/lab-bar/walkthrough-controls"
-import { customGroupsStore } from "@/components/lab/admin-a/use-admin-data"
-import { studentGroups } from "@/lib/lab/lists"
 import { useTerms } from "@/components/lab/library/use-terms"
-import { withNoun } from "@/lib/lab/terms"
+import { clearForcedNavChange, readNavChoice, takeForcedNavChange, writeNavChoice } from "@/components/lab/library/beside-panel"
+import { capitalize, countSkills, skillListsNoun, withNoun } from "@/lib/lab/terms"
 import { V2StoreProvider, useV2State } from "@/lib/v2/react"
 import { approvalsBadgeCount } from "@/lib/v2/approvals"
 import { parseScope } from "@/lib/lab/scope"
 import { PERSONAS, PERSONA_BY_ID, crumbParentFor, isPersonaId, type PersonaDef } from "@/lib/lab/personas"
 import { findScreen, type PersonaId } from "@/lib/lab/screens"
 import { LightFrame } from "@/components/lab/light-frame"
+import { DEFAULT_SKILL } from "@/components/lab/configure/use-configure"
+import { configurableSkills, parseSkillIds } from "@/lib/lab/configure-many"
+import { skillById } from "@/lib/v2/evidence-index"
 
 export { PersonaSwitcher }
 
@@ -60,9 +65,9 @@ function makeData(persona: PersonaDef): AppShellData {
     return React.useMemo(() => {
       const rows = persona.nav?.() ?? []
       const admin = persona.id === "admin"
-      // On a Skills panel page (Library, Groups of skills, Categories and tags, Course mapping) the Skills row points at the
+      // On a Skills panel page (Library, Skill lists, Categories and tags, Course mapping) the Skills row points at the
       // page itself, so the DS lights it by path and a click on it reopens the panel instead of leaving (D-L20).
-      const onPanelPage = admin && !!skillsPanelItemFor(link.screen, params)
+      const onPanelPage = admin && !!skillsPanelItemFor(link.screen, params, link.variant)
       // The DS sidebar matches the active row by path and compares the whole url, query included, so a row url carries no
       // query; the set and scope ride along at click time (SidebarCarry below).
       const rowUrl = (slug: string) => {
@@ -142,7 +147,7 @@ function Crumbs() {
   // A page opened from another page (Skills > More > Bulk upload) carries ?from=: its crumb leads back, set-aware, and the
   // leaf is the page's own title so the crumb and the H1 agree (Romit 2026-10-27).
   const state = useV2State()
-  const customGroups = customGroupsStore.use()
+  const shownSkill = React.useSyncExternalStore(subscribeShownSkill, shownSkillSnapshot, () => null)
   const back = returnTarget(params?.get(FROM_PARAM))
   const leaf = back && link.screen ? LEAF_TITLE[link.screen]?.() : undefined
   // Present mode shows no lab label: product crumbs only.
@@ -155,31 +160,35 @@ function Crumbs() {
   const course = courseId ? state.courses?.find((c) => c.id === courseId) : undefined
   if (course) crumbs.push({ label: "My progress", href: navHref("student/home", link) })
   // Admin pages under the Skills panel read "Skills > {panel label}" and pages under the Settings footer link read
-  // "Settings > {section}" (D-L20). The library is the Skills root, so it reads "Skills". The assign step keeps its step words.
+  // "Settings > {section}" (D-L20). The library reads "Skills > Library" (D-L64). The assign step keeps its step words.
   // Product words, so they show in present mode too.
   const admin = persona === "admin"
-  const panelItem = admin && !back ? skillsPanelItemFor(link.screen, params) : undefined
+  const panelItem = admin && !back ? skillsPanelItemFor(link.screen, params, link.variant) : undefined
   const settingsLeafLabel = admin && !back && isSettingsArea(link.screen, params) ? settingsLeaf(link.screen, params) : undefined
   let groupLeaf: string | undefined
-  const sgId = panelItem?.key === "summary" ? params?.get("sg") : null
-  const sgGroup = sgId ? studentGroups(state, customGroups).find((g) => g.id === sgId) : undefined
   if (panelItem) {
     const libraryHref = navHref("admin/skills-library", link)
-    if (panelItem.key === "library") groupLeaf = skillsLabel()
-    else {
+    if (link.screen === CONFIGURE_SKILL_SCREEN) {
+      // One skill is a level below its panel row: "Skills > Library > {skill}" (or "Skills > Evaluation settings > {skill}").
       crumbs.push({ label: skillsLabel(), href: libraryHref })
-      // The assign step keeps its step words; a page under a panel row that is not the row's own page (the setup summary) reads
-      // its own title.
-      groupLeaf = (params?.get("view") === "assign" || link.screen !== panelItem.screen) && title ? withNoun(title) : panelItem.label()
-    }
-    // One student group on the summary (?sg=) is a level below it: "Skills > Setup summary > {group}", so the crumb is the way
-    // back to every group and the page carries no back link (navigation model A, D-L42).
-    if (panelItem.key === "summary" && sgGroup) {
-      crumbs.push({ label: panelItem.label(), href: labHref(link.screen!, { sg: null }, link) })
-      groupLeaf = sgGroup.label
+      crumbs.push({ label: panelItem.label(), href: skillsPanelHref(panelItem, link) })
+      // Several from the Library selection bar (D-L48): "Skills > Library > 12 skills", as the page title.
+      const manyIds = parseSkillIds(params?.get("skills"))
+      groupLeaf = shownSkill?.name ?? (manyIds.length > 1 ? countSkills(configurableSkills(state, manyIds).length) : skillById(state, manyIds[0] || params?.get("skill") || DEFAULT_SKILL)?.name ?? title)
+    } else if (panelItem.key === "library") {
+      crumbs.push({ label: skillsLabel() })
+      groupLeaf = panelItem.label()
+    } else {
+      crumbs.push({ label: skillsLabel(), href: libraryHref })
+      // A page under a panel row that is not the row's own page reads its own title.
+      groupLeaf = link.screen !== panelItem.screen && title ? withNoun(title) : panelItem.label()
     }
   } else if (settingsLeafLabel) {
-    crumbs.push({ label: "Settings", href: settingsHref(link) })
+    // Reached from Add students' "Manage student groups": the crumb returns to Skill lists, carrying the list it left (F:N6).
+    const fromLists = params?.get("tab") === "student-groups" ? params.get("from") : null
+    if (fromLists?.startsWith("/lab/")) {
+      crumbs.push({ label: skillsLabel(), href: labHref("admin/skills-library", {}, link) }, { label: withNoun(capitalize(skillListsNoun())), href: fromLists })
+    } else crumbs.push({ label: "Settings", href: settingsHref(link) })
     groupLeaf = settingsLeafLabel
   }
   // A page below a nav row reads "{row} > {page}" (lib/lab/personas.ts CRUMB_PARENTS): Approvals > Submission, Students >
@@ -294,20 +303,68 @@ export function FlyoutStartsClosed() {
 }
 
 /**
+ * The DS SecondaryPanel with two corrections, the DS package not being edited:
+ * - Below desktop width the DS opens the Skills flyout with every page (its "flyout visible" starts true, and each lab page mounts its own shell), so the drawer sat over
+ *   the page on every load. It starts closed; the sidebar trigger opens it.
+ * - It reads its stored width from localStorage in the first client render (usePersistedState), so a stored width that is not the default makes the first client render
+ *   disagree with the server's flex-basis: the hydration mismatch on a plain load. It renders only once hydrated, with a placeholder of the default width until then.
+ */
+function LabSecondaryPanel() {
+  const { activePanel, closeSecondaryFlyout } = useSecondaryPanel()
+  const { isNavFlyout } = useSidebar()
+  const [hydrated, setHydrated] = React.useState(false)
+  React.useEffect(() => setHydrated(true), [])
+  const shut = React.useRef<string | null>(null)
+  React.useLayoutEffect(() => {
+    if (!isNavFlyout || !activePanel || shut.current === activePanel) return
+    shut.current = activePanel
+    closeSecondaryFlyout()
+  }, [isNavFlyout, activePanel, closeSecondaryFlyout])
+  return hydrated ? <SecondaryPanel /> : <div aria-hidden="true" className="hidden w-64 shrink-0 bg-sidebar md:block" />
+}
+
+/**
+ * The DS's SecondaryHubIconNavRow with an accessible name: its link holds only an aria-hidden glyph, and its tooltip gives a pointer user a name and a screen reader none (the DS package is not
+ * edited; raised for the DS). Same classes and tooltip, with aria-label on the link.
+ */
+function SkillsRailRow({ href, active, iconClass, label }: { href: string; active: boolean; iconClass: string; label: string }) {
+  const { dismissNavFlyout } = useSidebar()
+  return (
+    <li className="flex w-full justify-center" role="none">
+      <Tip label={label} side="right">
+        <Link
+          href={href}
+          onClick={dismissNavFlyout}
+          aria-label={label}
+          aria-current={active ? "page" : undefined}
+          className={cn(
+            "flex size-9 shrink-0 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+            active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent/50",
+          )}
+        >
+          <span className="text-center text-md leading-none" aria-hidden="true"><i className={cn(active ? "fa-solid" : "fa-light", iconClass)} aria-hidden="true" /></span>
+        </Link>
+      </Tip>
+    </li>
+  )
+}
+
+/**
  * The Skills panel (D-L20): the DS SecondaryPanel body, built from the DS hub-nav rows. Expanded it lists the four places with
  * labels; on the compact icon rail it shows the same rows as icons. The current page's row is selected.
  */
 function SkillsPanelBody() {
   const link = useLabLinkContext()
   const params = useSearchParams()
-  const { showCompactRail, openPanel } = useSecondaryHubNavChrome()
+  // An icon row only navigates. It used to expand the labels too, undoing the admin's own collapse on the way to the next page.
+  const { showCompactRail } = useSecondaryHubNavChrome()
   useTerms()
-  const current = selectedSkillsPanelKey(link.screen, params)
+  const current = selectedSkillsPanelKey(link.screen, params, link.variant)
   const items = SKILLS_PANEL.map((i) => ({ key: i.key, label: i.label(), icon: i.icon, href: skillsPanelHref(i, link), active: i.key === current }))
   if (showCompactRail) {
     return (
       <SecondaryHubNavCompactShell ariaLabel={skillsLabel()} panelId={SKILLS_PANEL_ID}>
-        {items.map((i) => <SecondaryHubIconNavRow key={i.key} href={i.href} active={i.active} iconClass={i.icon} label={i.label} onClick={() => openPanel(SKILLS_PANEL_ID)} />)}
+        {items.map((i) => <SkillsRailRow key={i.key} href={i.href} active={i.active} iconClass={i.icon} label={i.label} />)}
       </SecondaryHubNavCompactShell>
     )
   }
@@ -329,6 +386,31 @@ function RestoreRailOnPanelClose() {
     if (prev.current && !activePanel) restoreSavedOpen()
     prev.current = activePanel
   }, [activePanel, restoreSavedOpen])
+  return null
+}
+
+/**
+ * The Skills menu stays as the admin set it (designer 2026-11-05: "I cannot close the skills panel"). Each page mounts its own shell, and the DS keeps the choice in that shell's
+ * state, so a collapse came undone on every stop and on reload. The choice lives in this browser instead, written only when the admin changes it: a fold the edit panel forces
+ * (library/beside-panel.ts) is announced and not recorded. Not below desktop width, where the menu is a flyout.
+ */
+function KeepSkillsNavChoice() {
+  const { activePanel, secondaryPanelCompact, collapseActiveSecondaryPanel } = useSecondaryPanel()
+  const { isNavFlyout } = useSidebar()
+  const was = React.useRef(secondaryPanelCompact)
+  const restored = React.useRef(false)
+  React.useEffect(() => { clearForcedNavChange() }, [])
+  React.useLayoutEffect(() => {
+    if (!activePanel || isNavFlyout || restored.current) return
+    restored.current = true
+    if (readNavChoice()) { was.current = true; collapseActiveSecondaryPanel() }
+  }, [activePanel, isNavFlyout, collapseActiveSecondaryPanel])
+  React.useEffect(() => {
+    if (was.current === secondaryPanelCompact) return
+    was.current = secondaryPanelCompact
+    if (!activePanel || isNavFlyout || !restored.current) return
+    if (!takeForcedNavChange(secondaryPanelCompact)) writeNavChoice(secondaryPanelCompact)
+  }, [secondaryPanelCompact, activePanel, isNavFlyout])
   return null
 }
 
@@ -356,7 +438,7 @@ function ShellFrame({ persona, bar, children }: { persona: PersonaDef; bar?: Rea
 function AdminShellFrame({ persona, bar, children }: { persona: PersonaDef; bar?: React.ReactNode; children: React.ReactNode }) {
   const link = useLabLinkContext()
   const params = useSearchParams()
-  const panelPage = !!skillsPanelItemFor(link.screen, params)
+  const panelPage = !!skillsPanelItemFor(link.screen, params, link.variant)
   const slots = useAdminSlots(panelPage)
   return (
     <LeoAmbienceProvider>
@@ -368,12 +450,15 @@ function AdminShellFrame({ persona, bar, children }: { persona: PersonaDef; bar?
           <div data-app-shell-row="" className="relative z-40 flex min-h-0 w-full min-w-0 flex-1 items-stretch overflow-visible has-data-[variant=inset]:bg-sidebar">
             <SecondaryPanelProvider>
               <RestoreRailOnPanelClose />
+              <KeepSkillsNavChoice />
               <AppSidebar variant="sidebar" />
               <ResizablePanelGroup id="lab-shell-workspace" orientation="horizontal" className="min-h-0 min-w-0 flex-1">
-                <SecondaryPanel />
+                <LabSecondaryPanel />
                 <ResizablePanel id="shell-main" minSize="30%" className="relative z-0 min-h-0 min-w-0">
-                  <SidebarInset aria-label="Main content" className="h-full min-h-0 min-w-0">
+                  {/* The variable is the Library edit panel's width while it is open (library/beside-panel.ts). */}
+                  <SidebarInset aria-label="Main content" className="h-full min-h-0 min-w-0" style={{ paddingInlineEnd: "var(--lab-rail-inset, 0px)" }}>
                     {bar}
+                    <ResultBannerSlot />
                     <div data-page-scroll className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
                   </SidebarInset>
                 </ResizablePanel>
@@ -399,6 +484,7 @@ function PlainShellFrame({ persona, bar, children }: { persona: PersonaDef; bar?
             <SidebarInset aria-label="Main content" className="min-w-0">
               {/* The lab bar sits above the single scrollport, so it never scrolls into the page. */}
               {bar}
+              <ResultBannerSlot />
               <div data-page-scroll className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
             </SidebarInset>
           </div>
@@ -409,6 +495,7 @@ function PlainShellFrame({ persona, bar, children }: { persona: PersonaDef; bar?
 }
 
 export function LabProviders({ children }: { children: React.ReactNode }) {
+  React.useEffect(() => installOriginCapture(), [])
   return (
     <V2StoreProvider>
       <TooltipProvider delayDuration={300}>

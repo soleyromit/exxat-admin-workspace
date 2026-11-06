@@ -31,7 +31,7 @@ export interface LoggedInput {
   /** Configured details beyond date, unit and case, by field id (lib/lab/student2.ts detailFieldsFor) [REQ SC-13, ST-10]. */
   extra?: Record<string, string>
   /** Self-evaluation answers to the evaluator's own questions, by skill id [REQ ST-11: "against the same criteria"]. */
-  answers?: Record<string, Array<"yes" | "no" | null>>
+  answers?: Record<string, Array<"yes" | "no" | number | null>>
   /** Course the request was started from (Send C) and the step it was left on, so Continue reopens there. */
   course?: string | null
   step?: string | null
@@ -60,7 +60,7 @@ export interface LoggedSitting {
   case: string
   note: string
   ratings: Record<string, string>
-  answers: Record<string, Array<"yes" | "no" | null>>
+  answers: Record<string, Array<"yes" | "no" | number | null>>
   extra: Record<string, string>
   course: string | null
   step: string | null
@@ -94,7 +94,7 @@ export function saveLogged(s0: V2State, input: LoggedInput, studentId: string, a
     location: input.location,
     rating: input.ratings[skillId] || null,
     // Complete answers go on the entry (the evaluator reads them beside their own); a draft keeps partial ones on the sitting.
-    answers: (input.answers?.[skillId]?.length && input.answers[skillId].every((x) => x !== null) ? (input.answers[skillId] as Array<"yes" | "no">) : null),
+    answers: (input.answers?.[skillId]?.length && input.answers[skillId].every((x) => x !== null) ? (input.answers[skillId] as Array<"yes" | "no" | number>) : null),
     // One note per sitting [REQ ST-12]: on the first entry only, so it is never read twice.
     note: i === 0 ? note : "",
     at,
@@ -130,7 +130,7 @@ export function loggedNotSent(s: V2State, studentId: string): LoggedSitting[] {
         case: sit.case,
         note: list.map((e) => e.note.trim()).find(Boolean) ?? "",
         ratings: Object.fromEntries(list.filter((e) => e.rating).map((e) => [e.skillId, e.rating as string])),
-        answers: sit.answers ?? Object.fromEntries(list.filter((e) => e.answers).map((e) => [e.skillId, e.answers as Array<"yes" | "no" | null>])),
+        answers: sit.answers ?? Object.fromEntries(list.filter((e) => e.answers).map((e) => [e.skillId, e.answers as Array<"yes" | "no" | number | null>])),
         extra: sit.extra ?? {},
         course: sit.course ?? null,
         step: sit.step ?? null,

@@ -3,17 +3,17 @@
 /**
  * Rule change impact, variant A: counts first (template T3 form). Outside the setup flow; set 1 shows the same content as
  * configure step 5. The rule now and after, one headline figure, the before and after table, the students grouped by move with
- * the shared reason said once per group (J7), the open evidence choice with nothing preselected, one primary, Save changes (decision D-X31: no publish stage).
+ * the shared reason said once per group (J7), one primary, Save changes (decision D-X31: no publish stage).
  * "Preview after you save" shows both views under the new rule, together [REQ SC-19].
  * URL: ?skill= · ?change=none shows no edit · ?state=loading. Opens on the sample stricter rule.
  */
+import { useConfigure } from "@/components/lab/configure/use-configure"
 import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
 import { FormPage, StickyFooter } from "@/components/lab/layout"
-import { HOW_MANY_LABEL, ruleSentence, type LabRule, type PublishMode } from "@/lib/lab/configure"
-import { EVIDENCE_CHOICE_MISSING, EvidenceChoice, ImpactSummary, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
+import { HOW_MANY_LABEL, ruleSentence, type LabRule } from "@/lib/lab/configure"
+import { ImpactSummary, useLiveImpact } from "@/components/lab/configure/impact"
 import { ConfigureLoading, ConfigureNotFound } from "@/components/lab/configure/shell"
-import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
 import { ConfigureReceiptPage } from "@/components/lab/configure/check"
 import { EvaluatorPreview, StudentPreview } from "@/components/lab/configure/live-panel"
 
@@ -54,22 +54,14 @@ export function RuleDiff({ current, after }: { current: string | null; after: st
 export function AdminRuleImpactA() {
   const m = useConfigure({ defaultSample: true })
   const impact = useLiveImpact(m.state, m.skill, m.current, m.rule)
-  const [mode, setMode] = React.useState<PublishMode | null>(null)
-  const [tried, setTried] = React.useState(false)
   if (!m.ready) return <ConfigureLoading title="Rule change" />
   if (!m.skill) return <ConfigureNotFound skillId={m.skillId} />
   const skill = m.skill
   if (m.saved) return <ConfigureReceiptPage state={m.state} skill={skill} result={m.saved} layout="sheet" nextSkill={m.nextSkill} />
-  const choice = needsEvidenceChoice(m.current, impact)
   const editHref = `/lab/admin/configure-skill?skill=${encodeURIComponent(m.skillId)}&change=sample&step=rule`
 
   const publish = () => {
-    if (choice && !mode) {
-      setTried(true)
-      requestAnimationFrame(() => focusField("cfg-mode"))
-      return
-    }
-    m.save(choice ? mode : null)
+    m.save(null)
   }
 
   return (
@@ -100,7 +92,6 @@ export function AdminRuleImpactA() {
               </h2>
               <RuleDiff current={m.current ? ruleSentence(m.current) : null} after={ruleSentence(m.rule)} />
             </section>
-            {choice ? <EvidenceChoice value={mode} onChange={setMode} error={tried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
             <BothViews skillName={skill.name} rule={m.rule} />
           </div>
         </div>

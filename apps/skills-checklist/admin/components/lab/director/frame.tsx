@@ -36,7 +36,7 @@ export interface DirectorPageProps {
   width?: "full" | "wide"
   /** List-shaped screens move Course into the scope bar's Filters popover (strategy/07 list budget). */
   courseInFilters?: boolean
-  /** A control that shares the scope bar's row, before Filters (Reports: the required-set control). */
+  /** A control that shares the scope bar's row, before Filters (Reports: the set control). */
   toolbar?: (ctx: DirectorContext) => React.ReactNode
   /**
    * Page tabs above the shared toolbar (Reports, D-L8c): one Filters control serves every tab, so the applied chips carry across.
@@ -83,7 +83,7 @@ export function DirectorPage({ title, variant, pageType, actionItems, showScope 
   const body = !ctx.ready || !m ? (
     <DirectorSkeleton />
   ) : ctx.demo === "empty" || m.required.length === 0 ? (
-    <Calm icon="fa-list-check" title={`No ${skillNounPlural()} are marked required for graduation`} body={`Readiness appears here once the program marks which ${skillNounPlural()} each student must achieve before graduating.`} />
+    <Calm icon="fa-list-check" title={`No ${skillNounPlural()} are assigned`} body={`Readiness appears here once ${skillNounPlural()} are assigned to student groups.`} />
   ) : impossible ? (
     <ImpossibleScopeBanner state={ctx.state} scope={ctx.scope} onChange={ctx.setScope} />
   ) : m.rows.length === 0 ? (

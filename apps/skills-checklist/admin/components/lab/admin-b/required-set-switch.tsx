@@ -2,10 +2,10 @@
 
 /**
  * The Reports set control (decisions D-X12, D-X16; Romit 2026-10-27 "can we improve the UI here?"): one DS ViewSegmentedControl
- * on the toolbar row beside Filters, "Required this term | Required to graduate | All skills". The two required sets are never
+ * on the toolbar row beside Filters, "Required this term | All assigned | All skills". The two required sets are never
  * mixed in one figure, so the control names the set the page reads. "All skills" is offered on the Skills view only, where it
  * applies: the published skills nobody in scope needs follow the required ones, and no figure changes.
- * State lives in the URL so links, the dashboard tiles and "Open in Reports" keep working: `required=term|graduate` (absent
+ * State lives in the URL so links, the dashboard tiles and "Open in Reports" keep working: `required=term|assigned` (absent
  * means the scope's default, `defaultRequiredSet`) and `skills=all`.
  */
 import * as React from "react"
@@ -15,7 +15,7 @@ import type { LabScope } from "@/lib/lab/scope"
 import type { V2State } from "@/lib/v2/types"
 import { skillNounPlural } from "@/lib/lab/terms"
 
-/** The set in force: the URL's `required`, else the default for the scope (graduating cohort reads "Required to graduate"). */
+/** The set in force: the URL's `required`, else the default for the scope (the graduating cohort reads "All assigned"). */
 export function useRequiredSet(state: V2State | null, scope: LabScope, param: (k: string) => string | null, hrefWith: (p: Record<string, string | null>) => string) {
   const raw = param(REQUIRED_SET_PARAM)
   const fallback: RequiredSetKey = state ? defaultRequiredSet(state, scope) : "thisTerm"

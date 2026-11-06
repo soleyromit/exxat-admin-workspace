@@ -67,11 +67,17 @@
 
 /* Skills library group divider: the DS draws the group's count at the bar's far end, which in this table lands in the
    actions column and reads as a value of that column. Here it sits beside the group label ("Airway 1"), on no column.
-   Covers the pinned clone of the divider too. Position only: the DS badge, its size, colour and aria-label are unchanged. */
-[data-library-table] div[data-dt-group-bar] > span:has(+ [data-slot="badge"]) {
+   Covers the pinned clone of the divider too, which the DS portals to the body, outside the table's region (hence :has on the page).
+   Position only: the DS badge, its size, colour and aria-label are unchanged. */
+body:has([data-library-table]) div[data-dt-group-bar] > span:has(+ [data-slot="badge"]) {
   flex: 0 1 auto;
 }
-[data-library-table] div[data-dt-group-bar] > [data-slot="badge"] {
+body:has([data-library-table]) div[data-dt-group-bar] > [data-slot="badge"] {
   margin-inline-start: 0;
 }
 
+/* The DS selection bar's red count chip reads as an error on its slab, and it has no prop for a neutral one: a bar that states "N selected" itself (components/lab/shared/bulk-count.tsx) drops the chip and its divider. */
+[data-exxat-bulk-bar]:has([data-bulk-selected]) > div:first-child,
+[data-exxat-bulk-bar]:has([data-bulk-selected]) > div:first-child + span {
+  display: none;
+}

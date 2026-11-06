@@ -13,6 +13,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { ExportDrawer } from "@exxatdesignux/ui/components/ui/export-drawer"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { PageFrame } from "@/components/skills/page-header"
+import { NoListNotice } from "@/components/lab/admin-b/no-list-notice"
 import type { V2State } from "@/lib/v2/types"
 import { DrillBack } from "@/components/lab/dashboard/drill-back"
 import { DASHBOARD_EXPORT_COLUMNS, buildDashboard, chipValue, dashboardHref, removeKeys, withClearState, type DashboardModel, type DemoState, type Split } from "@/lib/lab/dashboard"
@@ -122,6 +123,7 @@ export function DashboardPage({ title = "Dashboard", variant, basisInChart = fal
           <ScopeAppliedLine {...scopeProps} />
         )}
         <p role="status" aria-live="polite" className="sr-only" data-announce>{url.demo === "loading" ? "Loading dashboard" : model.announce}</p>
+        <NoListNotice students={model.pop.unassigned} />
         {model.recount ? <p className="text-sm text-muted-foreground" data-recount>{model.recount}</p> : null}
         {url.demo === "loading" ? (
           <LoadingShape />
@@ -138,7 +140,7 @@ export function DashboardPage({ title = "Dashboard", variant, basisInChart = fal
               </span>
             </span>
           </LocalBanner>
-        ) : model.kind === "empty" && url.demo !== "empty" ? (
+        ) : model.kind === "empty" && url.demo !== "empty" && model.pop.unassigned.length ? null /* The notice above already says who and why. */ : model.kind === "empty" && url.demo !== "empty" ? (
           <LocalBanner variant="info" title="No students in this scope">
             <span className="flex flex-col gap-2">
               <span>{`${emptyScopeText(model, url.scope, (k, v) => (snap.state ? chipValue(snap.state, k, v) : v))}`}</span>

@@ -1,3 +1,4 @@
+import { outcomeWordOn } from "./labels"
 import type { Block, SignedContent } from "./pdf"
 import { appliedFilters, behindPace, heatmap, paceRows, raterRows, reportSummary, skillStats, SMALL_NUMBERS, type ReportFilters } from "./reports"
 import type { V2State } from "./types"
@@ -39,7 +40,7 @@ export function studentReportContent(s: V2State, studentId: string, f: ReportFil
     blocks.push(M(`${fit(r.skill.name, 44)} ${fit(r.level === "mandatory" ? "Mandatory" : "Optional", 10)} ${c ? c.text : ""}`))
     for (const e of ev) {
       const who = s.people.find((p) => p.id === e.evaluatorId)?.name ?? "Unknown person"
-      blocks.push(M(`  ${day(e.date)}  ${fit(e.outcome === "met" ? "Met" : e.outcome === "not-met" ? "Not met" : "Not yet", 8)} ${fit(e.setting === "clinical" ? `Clinical${e.clinicalSetting ? `, ${e.clinicalSetting}` : ""}` : e.setting === "lab" ? "Lab" : "Simulation", 22)} ${who}, version ${e.currentVersion}`))
+      blocks.push(M(`  ${day(e.date)}  ${fit(outcomeWordOn(r.skill, e.outcome), 8)} ${fit(e.setting === "clinical" ? `Clinical${e.clinicalSetting ? `, ${e.clinicalSetting}` : ""}` : e.setting === "lab" ? "Lab" : "Simulation", 22)} ${who}, version ${e.currentVersion}`))
     }
     if (ev.length === 0) blocks.push(M("  No evaluation counts yet."))
   })

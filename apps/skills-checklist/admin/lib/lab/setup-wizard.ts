@@ -20,7 +20,7 @@ export const SETUP_STEPS: readonly SetupStepDef[] = [
   { id: "skills", label: "Skills", optional: false },
   { id: "categories", label: "Categories and tags", optional: true },
   { id: "settings", label: "Evaluation settings", optional: false },
-  { id: "assign", label: "Groups and assignment", optional: false },
+  { id: "assign", label: "Skill lists", optional: false },
   { id: "mapping", label: "Course mapping", optional: true },
   { id: "review", label: "Review", optional: false },
 ]
@@ -45,6 +45,8 @@ export interface SetupProgress {
   skipped: SetupStepId[]
   /** True once the admin pressed Finish. */
   finished?: boolean
+  /** The lab variant the setup was run in (C or D share one new program), so Continue setup reopens the same design. */
+  variant?: string
 }
 
 export const EMPTY_PROGRESS: SetupProgress = { current: 0, skipped: [] }
@@ -107,7 +109,7 @@ export function parseProgress(raw: string | null | undefined, f?: SetupFacts): S
       if (blocked !== null) current = blocked
     }
     const skipped = Array.isArray(v.skipped) ? (v.skipped.filter((s) => ids.has(s as SetupStepId)) as SetupStepId[]) : []
-    return { current, skipped, finished: v.finished === true }
+    return { current, skipped, finished: v.finished === true, ...(typeof v.variant === "string" && /^[A-Z]$/.test(v.variant) ? { variant: v.variant } : {}) }
   } catch {
     return EMPTY_PROGRESS
   }

@@ -28,6 +28,8 @@ export interface LabScope {
   basis?: Basis
   /** Absent means clinical courses only (the default, CALL 10-26); "didactic" includes didactic courses in the course list and population. */
   incl?: "didactic"
+  /** One skill list by id: figures read it alone. Absent: each student reads their own first list. Lists never merge (Aarti, 205da2dd ch 11). */
+  list?: string
 }
 
 export const EMPTY_SCOPE: LabScope = { cohort: "", group: "", term: "", course: "" }
@@ -40,7 +42,7 @@ export type MoreKey = (typeof MORE_KEYS)[number]
 export type ScopeKey = PrimaryKey | MoreKey
 export const FILTER_KEYS: ScopeKey[] = [...SCOPE_KEYS, ...MORE_KEYS]
 /** Every URL key the scope owns, in a fixed order. */
-export const URL_KEYS = [...FILTER_KEYS, "basis", "incl"] as const
+export const URL_KEYS = [...FILTER_KEYS, "basis", "incl", "skillList"] as const
 
 export const SCOPE_LABEL: Record<ScopeKey, string> = { cohort: "Cohort", group: "Group", term: "Term", course: "Course", cat: "Category", tag: "Tag", loc: "Location", setting: "Setting" }
 
@@ -57,6 +59,8 @@ export function parseScope(p: Params | null | undefined): LabScope {
   const basis = g("basis") as Basis
   if (BASES.includes(basis) && basis !== DEFAULT_BASIS) out.basis = basis
   if (g("incl") === "didactic") out.incl = "didactic"
+  // "list" in a URL is a drill's kind or the Skill lists page's own record: this one reads "skillList".
+  if (g("skillList")) out.list = g("skillList")
   return out
 }
 
@@ -72,6 +76,7 @@ export function scopeQuery(scope: LabScope, extra: Record<string, string | undef
   }
   if (scope.basis && scope.basis !== DEFAULT_BASIS) q.set("basis", scope.basis)
   if (scope.incl === "didactic") q.set("incl", "didactic")
+  if (scope.list) q.set("skillList", scope.list)
   for (const [k, v] of Object.entries(extra)) if (v) q.set(k, v)
   return q.toString()
 }

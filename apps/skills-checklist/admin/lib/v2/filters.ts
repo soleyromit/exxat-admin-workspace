@@ -58,6 +58,8 @@ export interface GroupRule {
   category?: string
   enrollmentYear?: number
   graduationYear?: number
+  /** A hand-picked group: exactly these students. It does not pick up new students by itself (D-L118). */
+  studentIds?: readonly string[]
 }
 
 export function customGroupValue(r: GroupRule): string {
@@ -65,6 +67,7 @@ export function customGroupValue(r: GroupRule): string {
   if (r.category) q.set("cat", r.category)
   if (r.enrollmentYear) q.set("enr", String(r.enrollmentYear))
   if (r.graduationYear) q.set("grad", String(r.graduationYear))
+  if (r.studentIds?.length) q.set("ids", [...r.studentIds].sort().join(","))
   return `${CUSTOM_GROUP_PREFIX}${q.toString()}`
 }
 
@@ -78,6 +81,8 @@ export function parseCustomGroup(value: string): GroupRule | null {
   const g = n("grad")
   if (e) r.enrollmentYear = e
   if (g) r.graduationYear = g
+  const ids = q.get("ids")
+  if (ids) r.studentIds = ids.split(",").filter(Boolean)
   return r
 }
 
@@ -89,7 +94,7 @@ export function graduationYearOf(s: V2State, p: Person): number | undefined {
 }
 
 export const matchesRule = (s: V2State, p: Person, r: GroupRule): boolean =>
-  (!r.category || p.enrollmentCategory === r.category) && (!r.enrollmentYear || p.enrollmentYear === r.enrollmentYear) && (!r.graduationYear || graduationYearOf(s, p) === r.graduationYear)
+  (!r.studentIds?.length || r.studentIds.includes(p.id)) && (!r.category || p.enrollmentCategory === r.category) && (!r.enrollmentYear || p.enrollmentYear === r.enrollmentYear) && (!r.graduationYear || graduationYearOf(s, p) === r.graduationYear)
 
 /** True when a student is in a group value (see above). An empty or "all" value matches everyone. */
 export function inGroup(s: V2State, p: Person, group: string): boolean {
@@ -105,9 +110,9 @@ export function groupValueLabel(s: V2State, group: string, extra: readonly Custo
   if (group.startsWith(TRACK_GROUP_PREFIX)) return (s.tracks ?? []).find((t) => t.id === group.slice(TRACK_GROUP_PREFIX.length))?.name ?? group
   const r = parseCustomGroup(group)
   if (!r) return group
-  const named = [...SAMPLE_CUSTOM_GROUPS, ...extra].find((c) => c.id === group)
+  const named = customGroupsOf(extra).find((c) => c.id === group)
   if (named) return named.name
-  const parts = [r.category, r.enrollmentYear ? `enrolled ${r.enrollmentYear}` : "", r.graduationYear ? `graduating ${r.graduationYear}` : ""].filter(Boolean) as string[]
+  const parts = [r.category, r.enrollmentYear ? `enrolled ${r.enrollmentYear}` : "", r.graduationYear ? `graduating ${r.graduationYear}` : "", r.studentIds?.length ? `${r.studentIds.length} chosen students` : ""].filter(Boolean) as string[]
   const text = parts.join(", ")
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : "Every student"
 }
@@ -117,12 +122,21 @@ export interface CustomGroup {
   id: string
   name: string
   rule: GroupRule
+  /** Removed by the admin. Kept as a marker because a sample group would otherwise come back on the next read. */
+  removed?: boolean
 }
 
 export const customGroup = (name: string, rule: GroupRule): CustomGroup => ({ id: customGroupValue(rule), name, rule })
 
 /** Sample data: one custom group a program without a lockstep cohort might keep (students who enrolled in 2025, across cohorts). */
 export const SAMPLE_CUSTOM_GROUPS: readonly CustomGroup[] = [customGroup("Enrolled in 2025", { enrollmentYear: 2025 })]
+
+/** The custom groups in force: the samples and the stored ones. A stored entry replaces a sample with the same id (a rename, or a removal). */
+export function customGroupsOf(extra: readonly CustomGroup[] = []): CustomGroup[] {
+  const byId = new Map<string, CustomGroup>()
+  for (const g of [...SAMPLE_CUSTOM_GROUPS, ...extra]) byId.set(g.id, g)
+  return [...byId.values()].filter((g) => !g.removed)
+}
 
 export interface GroupOption {
   value: string
@@ -139,12 +153,7 @@ export function groupOptions(s: V2State, extra: readonly CustomGroup[] = []): Gr
   const names = [...new Set(ps.map(groupOf).filter((g): g is string => !!g))].sort()
   const out: GroupOption[] = names.map((g) => ({ value: g, label: g, kind: "group" }))
   for (const t of s.tracks ?? []) if (ps.some((p) => p.trackIds?.includes(t.id))) out.push({ value: `${TRACK_GROUP_PREFIX}${t.id}`, label: t.name, kind: "track" })
-  const seen = new Set<string>()
-  for (const c of [...SAMPLE_CUSTOM_GROUPS, ...extra]) {
-    if (seen.has(c.id)) continue
-    seen.add(c.id)
-    out.push({ value: c.id, label: c.name, kind: "custom" })
-  }
+  for (const c of customGroupsOf(extra)) out.push({ value: c.id, label: c.name, kind: "custom" })
   return out
 }
 

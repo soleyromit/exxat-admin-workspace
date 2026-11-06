@@ -5,7 +5,7 @@
  * where the row sits and can be changed; tags can be picked or created on the same row (REQ SL-03, SL-04, SL-05; decision
  * D-X28). The optional description (REQ SL-02) is one click away ("Add a description"), so the row stays one line by default
  * and carries the same fields as the sheet (simplify guardrail). Category and tags stay set for the next name, so a run of skills shares them. Enter adds and keeps the row open;
- * Escape closes (with a guard when a name is typed). Required to graduate is set later from the skill's panel; the
+ * Escape closes (with a guard when a name is typed). The
  * evaluation model on Configure. Same name validation as the sheet (duplicates, length).
  */
 import * as React from "react"
@@ -105,7 +105,7 @@ export function InlineAddRow({ category, colSpan, names, onAdd, onClose }: {
             </Button>
           )}
           <Button type="submit" variant="default" size="sm">Add</Button>
-          <Button type="button" variant="ghost" size="sm" onClick={close}>Done</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={close}>Close</Button>
           <p id={`${id}-help`} className="basis-full text-xs text-muted-foreground" aria-live="polite">
             {added ? `${added} added. Type the next name, or press Escape.` : "Enter adds it. Escape closes."}
           </p>
@@ -113,7 +113,7 @@ export function InlineAddRow({ category, colSpan, names, onAdd, onClose }: {
         <AlertDialog open={guard} onOpenChange={setGuard}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>{`Discard the ${skillNoun()} you started?`}</AlertDialogTitle>
+              <AlertDialogTitle>Discard your changes?</AlertDialogTitle>
               <AlertDialogDescription>{`${name.trim()} has not been added.`}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

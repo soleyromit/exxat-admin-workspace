@@ -24,15 +24,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { FormPage, StickyFooter } from "@/components/lab/layout"
-import { affectedStudentLine, bulkImpact, checkGroups, leftToConfigure, openDecisions, saveBlockedReason, SECTIONS, type CheckGroup, type CheckRow, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { affectedStudentLine, bulkImpact, checkGroups, leftToConfigure, openDecisions, saveBlockedReason, SECTIONS, type CheckGroup, type CheckRow, type Impact, type LabRule, type RuleIssue } from "@/lib/lab/configure"
 import { listsCarrying } from "@/lib/lab/lists"
-import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { useLists } from "@/components/lab/admin-a/use-admin-data"
+import { capitalize, skillListsNoun, skillNoun } from "@/lib/lab/terms"
 import { shortDate } from "@/lib/v2/format"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import type { LibraryRow } from "@/lib/lab/library"
 import type { Skill, V2State } from "@/lib/v2/types"
-import { AttemptExample, EvidenceChoice, ImpactSummary, WhoSees } from "./impact"
+import { AttemptExample, ImpactSummary, WhoSees } from "./impact"
 import { EvaluatorPreview, StudentPreview } from "./live-panel"
 import { configureSkillHref, LIBRARY_HREF, libraryReturnHref, mappingHref, SkillTitle } from "./shell"
 import type { SavedResult } from "./use-configure"
@@ -213,34 +213,29 @@ export function SetupSummary({ rule, current = null, issues = [], onEdit, onFix,
 
 /** Question 3 for a skill that is not configured yet: nobody is affected until it is mapped; name the lists that pick it up. */
 function ReachesNobodyYet({ state, skill, saved = false }: { state: V2State; skill: Skill; saved?: boolean }) {
-  const carriers = React.useMemo(() => listsCarrying(state, skill.id), [state, skill.id])
+  const { lists } = useLists(state)
+  const carriers = React.useMemo(() => listsCarrying(state, skill.id, lists), [state, skill.id, lists])
   return (
     <div className="flex flex-col gap-2" data-affects="not-configured">
       <p className="text-base font-medium text-foreground" data-figure>
         {saved ? "Ready to map to courses." : "Nobody yet. It reaches students once mapped."}
       </p>
       {carriers.length ? (
-        <dl className="grid w-fit max-w-full grid-cols-[minmax(0,auto)_auto] gap-x-6 gap-y-1 text-sm" aria-label={`Groups of ${skillNounPlural()} that carry it`}>
-          {carriers.map((c) => (
-            <React.Fragment key={c.list.id}>
-              <dt className="text-foreground">{`${c.list.name}${c.groups.length ? ` (${c.groups.join(", ")})` : ""}`}</dt>
-              <dd className="text-muted-foreground">{`${MAPPING_LEVEL_LABEL[c.level]} in clinical courses`}</dd>
-            </React.Fragment>
-          ))}
-        </dl>
+        <ul className="flex flex-col gap-1 text-sm text-foreground" aria-label={`${capitalize(skillListsNoun())} that carry it`}>
+          {carriers.map((c) => <li key={c.list.id}>{`${c.list.name}${c.groups.length ? ` (${c.groups.join(", ")})` : ""}`}</li>)}
+        </ul>
       ) : null}
     </div>
   )
 }
 
-/** Question 3. The evidence choice is asked separately, as a decision (EvidenceDecision). */
-export function WhoItAffects({ state, skill, current, rule, impact, mode, lead = "counts" }: {
+/** Question 3. */
+export function WhoItAffects({ state, skill, current, rule, impact, lead = "counts" }: {
   state: V2State
   skill: Skill
   current: LabRule | null
   rule: LabRule
   impact: Impact | null
-  mode: PublishMode | null
   /** "people" in a narrow column: the students grouped by the move they make first, the counts table one click away. */
   lead?: "counts" | "people"
 }) {
@@ -249,25 +244,8 @@ export function WhoItAffects({ state, skill, current, rule, impact, mode, lead =
     <div className="flex flex-col gap-4" data-affects="configured">
       <ImpactSummary current={current} impact={impact} lead={lead} expandPeople={false} />
       <AttemptExample rule={rule} impact={impact} />
-      <WhoSees impact={mode === "new-only" ? null : impact} />
+      <WhoSees impact={impact} />
     </div>
-  )
-}
-
-/** The evidence choice on a rule change, shown with the decisions, not inside the impact. */
-export function EvidenceDecision({ mode, onMode, error, className }: { mode: PublishMode | null; onMode: (m: PublishMode) => void; error?: string; className?: string }) {
-  return (
-    <Card size="sm" className={className} data-decision="evidence">
-      <CardHeader>
-        <CardTitle className={`flex flex-wrap items-center gap-2 ${TYPE.card}`}>
-          Decide before saving
-          {mode ? null : <StatusBadge label="To fix" tone="warning" icon="fa-triangle-exclamation" size="sm" />}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <EvidenceChoice value={mode} onChange={onMode} error={error} />
-      </CardContent>
-    </Card>
   )
 }
 
@@ -351,16 +329,12 @@ export function useMinWidth(px: number): boolean {
  * Set 2's sticky decision panel: readiness, each problem with Fix, the evidence choice when asked, then who it affects.
  * Sits in the page's side column from 1280 px while Check is in view, inline above the review table below that.
  */
-export function DecisionPanel({ issues, onFix, choiceAsked, mode, onMode, modeError, affects }: {
+export function DecisionPanel({ issues, onFix, affects }: {
   issues: RuleIssue[]
   onFix: (i: RuleIssue) => void
-  choiceAsked: boolean
-  mode: PublishMode | null
-  onMode: (m: PublishMode) => void
-  modeError?: string
   affects: React.ReactNode
 }) {
-  const open = openDecisions(issues, choiceAsked, mode)
+  const open = openDecisions(issues)
   const id = React.useId()
   return (
     <section aria-labelledby={`${id}-h`} className="flex flex-col gap-4" data-decision-panel>
@@ -383,7 +357,6 @@ export function DecisionPanel({ issues, onFix, choiceAsked, mode, onMode, modeEr
           ))}
         </ul>
       ) : null}
-      {choiceAsked ? <EvidenceChoice value={mode} onChange={onMode} error={modeError} /> : null}
       <div className="flex flex-col gap-2 border-t border-border pt-4">
         <h4 className={TYPE.group}>Who it affects</h4>
         {affects}
@@ -440,7 +413,6 @@ export function SavedBanner({ title, body }: { title: string; body: string }) {
 
 /** The receipt's banner copy for one skill. */
 export function savedCopy(skill: Skill, result: SavedResult): { title: string; body: string } {
-  if (!result.written) return { title: `${skill.name} keeps its saved rule`, body: "Applying a rule to new evidence only is not decided yet, so nothing changed." }
   const n = result.impact.changed.length
   if (n > 0) return { title: `${skill.name} is configured`, body: `${n} ${n === 1 ? "student now sees" : "students now see"} what is left on it.` }
   return { title: `${skill.name} is configured`, body: "It can now be mapped to courses." }

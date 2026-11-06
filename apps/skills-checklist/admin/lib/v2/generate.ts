@@ -1273,7 +1273,9 @@ export function generate(hero: V2State): V2State {
   // Compose
 
   // Position-based post-passes (no PRNG draw, so nothing above shifts): three per-course levels, and the enrollment fields.
-  const mappings = splitNonMandatory([...hero.mappings, ...buildMappings(courses, hero.course.id)])
+  // The walkthrough's sample story (D-L67): Grace Yamada, BSN 2026, asks for Nasogastric tube care from NUR 220. Recommended, so no
+  // "Required this term" figure moves (Mandatory moved the dashboard's 49% to 50%); it is on her Core clinical skills list and no NUR 220 row carried it.
+  const mappings = [...splitNonMandatory([...hero.mappings, ...buildMappings(courses, hero.course.id)]), { courseId: "crs-nur220", skillId: "sk-ng-tube", level: "recommended" as const }]
   const program = {
     ...hero.program,
     cohorts: ["BSN 2026", "BSN 2027", "ABSN 2027", "BSN 2028"],

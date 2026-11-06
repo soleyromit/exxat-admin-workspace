@@ -1,17 +1,17 @@
 /**
- * The end state of setup (Proposed 2026-11-02, Romit: "I don't know what the end state looks like considering I have selected
- * student groups"): per student group, which skills they must complete (from the groups of skills assigned to them), in which
- * courses each is mandatory or recommended (course mapping, each level read per offering and term), and what is still unplaced.
+ * What setup adds up to, per student group: which skills they must complete (from the skill lists assigned to them), in which courses each is
+ * mandatory or recommended (course mapping, each level read per offering and term), and what has no course. Read only.
  *
- * One source for the Setup summary screen, the chain line on Groups of skills and Course mapping, and the checklist. Read only.
+ * Course mapping's Coverage view (D-L77) and the Set up skills Review step read this. Setup summary, the page it was written for, is gone
+ * (Sankalp, Granola 365abc25 chunk 17).
  * - Levels are per course offering and term [REQ CM-03, CM-06, CM-08]; nothing here copies one term's level to another (OD-01).
  * - A level says where a skill is expected, not where it may be done: a student can send any skill from any course [REQ CM-05].
- * - "No course yet": no offering of the group's cohorts marks the skill mandatory or recommended. Optional (inherited from the list,
- *   decision D-X27) is available, not placed.
+ * - "In no course": no offering of the group's cohorts marks the skill mandatory or recommended. Information, never a defect.
+ * - Clinical offerings unless `didactic`, the same offerings as `noCourseIds`, so a group's figure and the list it opens count alike.
  */
 import type { V2State } from "@/lib/v2/types"
-import type { SkillList, StudentGroup } from "./lists"
-import { offeringLevels, offeringRows, type MappingOverlay, type OfferingRow } from "./mapping"
+import { listHasAssignment, type SkillList, type StudentGroup } from "./lists"
+import { noCourseIds, offeringLevels, offeringRows, type MappingOverlay, type OfferingRow } from "./mapping"
 
 export type PlacedLevel = "mandatory" | "recommended"
 
@@ -20,6 +20,7 @@ export interface CoursePlacement {
   code: string
   name: string
   term: string
+  cohort: string
   current: boolean
   level: PlacedLevel
 }
@@ -27,27 +28,25 @@ export interface CoursePlacement {
 export interface SkillPlacement {
   skillId: string
   name: string
-  /** Names of the groups of skills that bring it to this student group (or "Assigned one at a time"). */
+  /** Names of the skill lists that bring it to this student group. */
   from: string[]
-  /** On a list's required-to-graduate set. */
-  required: boolean
   courses: CoursePlacement[]
 }
 
 export interface ListCount {
   id: string
   name: string
-  /** Skills on the group of skills, inactive included (the number its own page shows). */
+  /** Skills on the list, inactive included (the number its own page shows). */
   total: number
-  /** Of those, inactive: left out of "to complete" (D-X14), so 154 on the group of skills reads 152 here. */
+  /** Of those, inactive: left out of "to complete" (D-X14), so 154 on the skill list reads 152 here. */
   inactive: number
 }
 
 export interface GroupResult {
   group: StudentGroup
-  /** Groups of skills assigned to it, by name (individual picks read "Assigned one at a time"). */
+  /** Skill lists assigned to it, by name. */
   lists: string[]
-  /** The same groups of skills with their size, so "to complete" reconciles with the group of skills page. */
+  /** The same lists with their size, so "to complete" reconciles with the Skill lists page. */
   listCounts: ListCount[]
   skills: SkillPlacement[]
   /** Skills with at least one course marking them mandatory or recommended. */
@@ -62,25 +61,25 @@ export interface SetupResult {
   groups: GroupResult[]
   /** Student groups with no skills assigned. */
   emptyGroups: StudentGroup[]
-  /** Active skills on no live group of skills assigned to anyone. */
+  /** Active skills on no skill list assigned to anyone. */
   unassigned: Array<{ id: string; name: string }>
+  /** In no course, on a list or not: the same set Course mapping's "In no course" filter lists with no group chosen. */
+  noCourse: Set<string>
 }
 
-export const INDIVIDUAL_LABEL = "Individual skills"
-
-export function setupResult(s: V2State, lists: readonly SkillList[], overlay: MappingOverlay, groups: readonly StudentGroup[], activeIds: readonly string[]): SetupResult {
+export function setupResult(s: V2State, lists: readonly SkillList[], overlay: MappingOverlay, groups: readonly StudentGroup[], activeIds: readonly string[], didactic = false): SetupResult {
   const names = new Map(s.skills.map((k) => [k.id, k.name]))
   const active = new Set(activeIds)
-  const live = lists.filter((l) => l.status === "live")
+  const live = lists.filter((l) => listHasAssignment(l))
   const cohortOf = new Map(s.people.filter((p) => p.kind === "student").map((p) => [p.id, p.cohort]))
-  const offerings = offeringRows(s, overlay, lists as SkillList[])
+  const offerings = offeringRows(s, overlay).filter((o) => didactic || o.kind === "clinical")
   const offeringsById = new Map((s.offerings ?? []).map((o) => [o.id, o]))
   const levelCache = new Map<string, Map<string, string>>()
   const levelsOf = (row: OfferingRow) => {
     let m = levelCache.get(row.id)
     if (!m) {
       const off = offeringsById.get(row.id)
-      m = off ? (offeringLevels(s, overlay, off, lists as SkillList[]) as Map<string, string>) : new Map()
+      m = off ? (offeringLevels(s, overlay, off) as Map<string, string>) : new Map()
       levelCache.set(row.id, m)
     }
     return m
@@ -91,14 +90,12 @@ export function setupResult(s: V2State, lists: readonly SkillList[], overlay: Ma
   for (const g of groups) {
     const mine = live.filter((l) => l.groupIds.includes(g.id))
     const skillFrom = new Map<string, string[]>()
-    const required = new Set<string>()
     for (const l of mine) {
       for (const id of l.skillIds) {
         if (!active.has(id)) continue
-        skillFrom.set(id, [...(skillFrom.get(id) ?? []), l.individual ? INDIVIDUAL_LABEL : l.name])
+        skillFrom.set(id, [...(skillFrom.get(id) ?? []), l.name])
         assigned.add(id)
       }
-      for (const id of l.requiredIds) required.add(id)
     }
     if (!skillFrom.size) {
       emptyGroups.push(g)
@@ -111,18 +108,18 @@ export function setupResult(s: V2State, lists: readonly SkillList[], overlay: Ma
         const courses: CoursePlacement[] = []
         for (const o of mineOfferings) {
           const lv = levelsOf(o).get(skillId)
-          if (lv === "mandatory" || lv === "recommended") courses.push({ offeringId: o.id, code: o.code, name: o.name, term: o.term, current: o.current, level: lv })
+          if (lv === "mandatory" || lv === "recommended") courses.push({ offeringId: o.id, code: o.code, name: o.name, term: o.term, cohort: o.cohort, current: o.current, level: lv })
         }
         courses.sort((a, b) => Number(b.level === "mandatory") - Number(a.level === "mandatory") || a.code.localeCompare(b.code))
-        return { skillId, name: names.get(skillId) ?? skillId, from: [...new Set(from)], required: required.has(skillId), courses }
+        return { skillId, name: names.get(skillId) ?? skillId, from: [...new Set(from)], courses }
       })
       .sort((a, b) => Number(a.courses.length > 0) - Number(b.courses.length > 0) || a.name.localeCompare(b.name))
     const placed = skills.filter((k) => k.courses.length > 0).length
-    const listCounts: ListCount[] = mine.map((l) => ({ id: l.id, name: l.individual ? INDIVIDUAL_LABEL : l.name, total: l.skillIds.length, inactive: l.skillIds.filter((id) => !active.has(id)).length }))
-    out.push({ group: g, lists: [...new Set(mine.map((l) => (l.individual ? INDIVIDUAL_LABEL : l.name)))], listCounts, skills, placed, unplaced: skills.length - placed, offerings: mineOfferings.length })
+    const listCounts: ListCount[] = mine.map((l) => ({ id: l.id, name: l.name, total: l.skillIds.length, inactive: l.skillIds.filter((id) => !active.has(id)).length }))
+    out.push({ group: g, lists: [...new Set(mine.map((l) => l.name))], listCounts, skills, placed, unplaced: skills.length - placed, offerings: mineOfferings.length })
   }
   const unassigned = activeIds.filter((id) => !assigned.has(id)).map((id) => ({ id, name: names.get(id) ?? id }))
-  return { groups: out, emptyGroups, unassigned }
+  return { groups: out, emptyGroups, unassigned, noCourse: noCourseIds(s, overlay, lists, didactic) }
 }
 
 const fmt = (n: number) => n.toLocaleString("en-US")
@@ -144,16 +141,13 @@ export function unplacedSkillIds(r: SetupResult): Set<string> {
 }
 
 /**
- * Skills some student group must complete that none of its courses expects yet, counted only for groups that have courses: a
- * group with no course offerings cannot be fixed in course mapping, so its skills are not a course mapping gap. Each once.
- * The Setup summary's course mapping figure and course mapping's "No course yet" filter read this one function.
+ * In no clinical offering of any cohort, on a list or not: Course mapping's "In no course" filter and the Review step's figure, from `noCourseIds`. Coverage's per-group figures read
+ * each group's own courses, so a skill mapped only for another cohort counts there and not here.
  */
-export function courseGapIds(r: SetupResult): Set<string> {
-  return new Set(r.groups.filter((g) => g.offerings > 0).flatMap((g) => g.skills.filter((k) => k.courses.length === 0).map((k) => k.skillId)))
-}
+export const courseGapIds = (r: SetupResult): Set<string> => r.noCourse
 
 // ---------------------------------------------------------------------------------------------------------------------
-// The walkthrough recap (Romit 2026-11-03: "setup summary doesn't seem connected"). One row per setup step, in walkthrough order,
+// The recap on the Set up skills Review step. One row per setup step, in walkthrough order,
 // each with its state and the figure that sends the admin to where it is fixed. Pure: the screen builds the hrefs.
 
 export type RecapStep = "library" | "categories" | "settings" | "lists" | "assign" | "map"
@@ -166,8 +160,6 @@ export interface RecapFigure {
   count?: number
   screen: string
   params?: Record<string, string>
-  /** Opens the assign step (its href depends on the flow). */
-  assign?: boolean
   fix: boolean
 }
 
@@ -190,7 +182,7 @@ export interface RecapInput {
   tags: number
   /** Program evaluation settings saved (ISO date), or null when not set. */
   settingsAt: string | null
-  lists: ReadonlyArray<Pick<SkillList, "status" | "individual">>
+  lists: ReadonlyArray<Pick<SkillList, "groupIds" | "studentIds" | "individual">>
   result: SetupResult
 }
 
@@ -198,8 +190,8 @@ export const RECAP_STEP_LABEL: Record<RecapStep, string> = {
   library: "Library",
   categories: "Categories and tags",
   settings: "Evaluation settings",
-  lists: "Groups of skills",
-  assign: "Assign skills to student groups",
+  lists: "Skill lists",
+  assign: "Assigned to",
   map: "Course mapping",
 }
 
@@ -212,7 +204,7 @@ export function setupRecap(i: RecapInput): RecapRow[] {
     stepId: "library",
     screen: "admin/skills-library",
     state: i.library.notConfigured ? "attention" : "done",
-    fixes: i.library.notConfigured ? [{ text: `${n(i.library.notConfigured)} not configured`, count: i.library.notConfigured, screen: "admin/skills-library", params: { status: "not-configured" }, fix: true }] : [],
+    fixes: i.library.notConfigured ? [{ text: `${n(i.library.notConfigured)} not configured`, count: i.library.notConfigured, screen: "admin/skills-library", params: { config: "not-configured" }, fix: true }] : [],
     inPlace: [
       { text: `${n(active)} active`, screen: "admin/skills-library", fix: false },
       ...(i.library.inactive ? [{ text: `${n(i.library.inactive)} inactive`, screen: "admin/skills-library", params: { status: "inactive" }, fix: false }] : []),
@@ -238,8 +230,8 @@ export function setupRecap(i: RecapInput): RecapRow[] {
     inPlace: i.settingsAt ? [{ text: "Saved", screen: "admin/evaluation-settings", fix: false }] : [],
   }
   const named = i.lists.filter((l) => !l.individual)
-  const live = named.filter((l) => l.status === "live").length
-  const drafts = named.filter((l) => l.status === "draft").length
+  const live = named.filter((l) => listHasAssignment(l)).length
+  const unassigned = named.length - live
   const lists: RecapRow = {
     step: "lists",
     stepId: "lists",
@@ -248,7 +240,7 @@ export function setupRecap(i: RecapInput): RecapRow[] {
     fixes: [],
     inPlace: [
       ...(live ? [{ text: `${n(live)} in use`, screen: "admin/lists-cohorts", fix: false }] : []),
-      ...(drafts ? [{ text: `${n(drafts)} ${drafts === 1 ? "draft" : "drafts"}`, screen: "admin/lists-cohorts", fix: false }] : []),
+      ...(unassigned ? [{ text: `${n(unassigned)} not assigned`, screen: "admin/lists-cohorts", fix: false }] : []),
     ],
   }
   const un = i.result.unassigned.length
@@ -256,15 +248,14 @@ export function setupRecap(i: RecapInput): RecapRow[] {
   const assignedCount = active - un
   const assign: RecapRow = {
     step: "assign",
-    stepId: "assign",
+    stepId: "lists",
     screen: "admin/lists-cohorts",
-    params: { view: "assign" },
     state: un || empty ? "attention" : "done",
     fixes: [
-      ...(un ? [{ text: `${n(un)} not assigned`, screen: "admin/lists-cohorts", params: { by: "skills" }, assign: true, fix: true }] : []),
-      ...(empty ? [{ text: `${n(empty)} student ${empty === 1 ? "group" : "groups"} with none`, screen: "admin/lists-cohorts", params: { focus: i.result.emptyGroups[0]!.id }, assign: true, fix: true }] : []),
+      ...(un ? [{ text: `${n(un)} not assigned`, screen: "admin/lists-cohorts", fix: true }] : []),
+      ...(empty ? [{ text: `${n(empty)} student ${empty === 1 ? "group" : "groups"} with none`, screen: "admin/lists-cohorts", params: { focus: i.result.emptyGroups[0]!.id }, fix: true }] : []),
     ],
-    inPlace: [{ text: `${n(assignedCount)} assigned`, screen: "admin/lists-cohorts", params: { view: "assign" }, assign: true, fix: false }],
+    inPlace: [{ text: `${n(assignedCount)} assigned`, screen: "admin/lists-cohorts", fix: false }],
   }
   const gaps = courseGapIds(i.result).size
   const withCourses = i.result.groups.filter((g) => g.offerings > 0).length
@@ -273,9 +264,13 @@ export function setupRecap(i: RecapInput): RecapRow[] {
     stepId: "map-skill",
     screen: "admin/course-mapping",
     params: { by: "skill" },
-    state: gaps ? "attention" : "done",
-    fixes: gaps ? [{ text: `${n(gaps)} no course yet`, screen: "admin/course-mapping", params: { by: "skill", show: "nocourse" }, fix: true }] : [],
-    inPlace: [{ text: `${n(withCourses)} of ${n(i.result.groups.length)} student groups have courses`, screen: "admin/course-mapping", params: { by: "course" }, fix: false }],
+    // Information, not a problem to clear: mapping is an expectation only [REQ CM-05, Aarti 205da2dd].
+    state: "done",
+    fixes: [],
+    inPlace: [
+      { text: `${n(withCourses)} of ${n(i.result.groups.length)} student groups have courses`, screen: "admin/course-mapping", params: { by: "course" }, fix: false },
+      ...(gaps ? [{ text: `${n(gaps)} in no course`, screen: "admin/course-mapping", params: { by: "skill", show: "nocourse" }, fix: false }] : []),
+    ],
   }
   return [lib, cats, settings, lists, assign, map]
 }
@@ -284,11 +279,4 @@ export function setupRecap(i: RecapInput): RecapRow[] {
 export function nextFix(rows: readonly RecapRow[]): { row: RecapRow; fix: RecapFigure } | null {
   for (const row of rows) if (row.fixes[0]) return { row, fix: row.fixes[0] }
   return null
-}
-
-/** `?from=` on the summary: the step the admin came from, so its row is marked and its name leads back. */
-export function recapFrom(v: string | null | undefined): RecapStep | null {
-  if (!v) return null
-  const map: Record<string, RecapStep> = { library: "library", categories: "categories", settings: "settings", lists: "lists", assign: "assign", map: "map", "map-skill": "map" }
-  return map[v] ?? null
 }

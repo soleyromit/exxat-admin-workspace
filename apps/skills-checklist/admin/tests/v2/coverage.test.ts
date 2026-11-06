@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { coverageWarnings, mappingSummary, mapBlockReason } from "@/lib/v2/coverage"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed, IDS } from "@/lib/v2/seed"
 import type { V2State } from "@/lib/v2/types"
 
 const kinds = (s: V2State) => coverageWarnings(s).map((w) => w.kind)

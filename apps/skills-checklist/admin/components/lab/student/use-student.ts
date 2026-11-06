@@ -32,11 +32,12 @@ export function useStudentPage(): StudentPageCtx {
   const studentId = params?.get("student") || DEFAULT_STUDENT
   const raw = params?.get("state")
   const demo = DEMOS.includes(raw as StudentDemo) ? (raw as StudentDemo) : null
+  const listId = params?.get("list") ?? null
   const model = React.useMemo(() => {
     if (!hydrated) return null
-    const m = buildStudent(state, studentId)
+    const m = buildStudent(state, studentId, undefined, { listId })
     return m && demo === "done" ? withAllDone(m) : m
-  }, [state, studentId, hydrated, demo])
+  }, [state, studentId, hydrated, demo, listId])
   const setParams = React.useCallback(
     (p: Record<string, string | null>) => {
       const q = new URLSearchParams(params?.toString() ?? "")

@@ -78,7 +78,7 @@ describe("flows.json", () => {
   it("matches the spec's set up skills mapping exactly", () => {
     const f = findFlow("set-up-skills")!
     // Granola 2026-10-26 items 6 and 8: Library, Add, Configure, Publish, Assign, Map; import is Phase 2, an optional side step.
-    expect(mainSteps(f).map((s) => s.label)).toEqual(["Library", "Add a skill", "Configure the skill", "Check and save", "Groups of skills", "Assign skills to student groups", "Course mapping"])
+    expect(mainSteps(f).map((s) => s.label)).toEqual(["Library", "Add a skill", "Configure the skill", "Check and save", "Skill lists", "Course mapping"])
     const imp = f.steps.find((s) => s.id === "import")!
     expect(imp).toMatchObject({ side: true, after: "add", tag: "Later" })
     const row = (id: string) => ["1", "2", "3"].map((s) => variantLetter(f, f.steps.find((x) => x.id === id)!, s)).join("")
@@ -86,13 +86,12 @@ describe("flows.json", () => {
     expect(row("add")).toBe("ABC")
     // Decided with Romit's defaults: Set 2 "One page" = B (split page), Set 3 "Many at once" = C (paste); spec 03 had C and B swapped.
     expect(row("import")).toBe("ABC")
-    expect(row("configure")).toBe("ABC")
-    expect(row("assign")).toBe("CCC")
-    // Sankalp A4, optional: groups of skills before assigning; the assign step opens in assign mode by its params.
-    expect(f.steps.find((s) => s.id === "lists")).toMatchObject({ tag: "Optional" })
+    // D-L47: Configure the skill defaults to B, so set 1 opens B too.
+    expect(row("configure")).toBe("BBC")
+    // Assign is no step of its own (D-L106): who a list goes to is in its panel on Skill lists.
+    expect(f.steps.some((s) => s.id === "assign")).toBe(false)
     expect(row("lists")).toBe("CCC")
-    expect(resolveStep("set-up-skills", "assign", "1")!.params).toEqual({ view: "assign" })
-    expect(row("publish")).toBe("ABC")
+    expect(row("publish")).toBe("BBC")
     expect(row("map")).toBe("ABA")
   })
 
@@ -142,7 +141,7 @@ describe("resolvers", () => {
   })
 
   it("gives the publish step its per-set params", () => {
-    expect(resolveStep("set-up-skills", "publish", "1")!.params).toEqual({ step: "check", change: "sample" })
+    expect(resolveStep("set-up-skills", "publish", "1")!.params).toEqual({ section: "check", change: "sample" })
     expect(resolveStep("set-up-skills", "publish", "2")!.params).toEqual({ section: "check", change: "sample" })
     expect(resolveStep("set-up-skills", "publish", "3")!.params).toEqual({ impact: "open", change: "sample" })
     expect(resolveStep("set-up-skills", "configure", "1")!.params).toEqual({})
@@ -150,12 +149,11 @@ describe("resolvers", () => {
 
   it("names previous and next steps, with ends open and side steps anchored", () => {
     const f = findFlow("set-up-skills")!
-    expect(neighbours(f, "library")).toMatchObject({ index: 1, total: 7, prev: undefined, next: { id: "add" } })
-    expect(neighbours(f, "configure")).toMatchObject({ index: 3, total: 7, prev: { id: "add" }, next: { id: "publish" } })
-    expect(neighbours(f, "import")).toMatchObject({ index: 2, total: 7, prev: { id: "add" }, next: { id: "configure" } })
-    expect(neighbours(f, "lists")).toMatchObject({ index: 5, total: 7, prev: { id: "publish" }, next: { id: "assign" } })
-    expect(neighbours(f, "assign")).toMatchObject({ index: 6, total: 7, prev: { id: "lists" }, next: { id: "map" } })
-    expect(neighbours(f, "map")).toMatchObject({ index: 7, total: 7, prev: { id: "assign" }, next: undefined })
+    expect(neighbours(f, "library")).toMatchObject({ index: 1, total: 6, prev: undefined, next: { id: "add" } })
+    expect(neighbours(f, "configure")).toMatchObject({ index: 3, total: 6, prev: { id: "add" }, next: { id: "publish" } })
+    expect(neighbours(f, "import")).toMatchObject({ index: 2, total: 6, prev: { id: "add" }, next: { id: "configure" } })
+    expect(neighbours(f, "lists")).toMatchObject({ index: 5, total: 6, prev: { id: "publish" }, next: { id: "map" } })
+    expect(neighbours(f, "map")).toMatchObject({ index: 6, total: 6, prev: { id: "lists" }, next: undefined })
     const p = findFlow("my-progress")!
     expect(neighbours(p, "offline")).toMatchObject({ index: 1, prev: { id: "home" }, next: { id: "detail" } })
   })
@@ -189,8 +187,8 @@ describe("resolvers", () => {
   })
 
   it("reads a plain configure URL as the configure step and a check URL as the publish step", () => {
-    expect(flowsForScreen("admin", "configure-skill", "A")[0]).toMatchObject({ flow: { id: "set-up-skills" }, step: { id: "configure" }, set: "1" })
-    expect(flowsForScreen("admin", "configure-skill", "A", new URLSearchParams("step=check&change=sample"))[0]).toMatchObject({ step: { id: "publish" } })
+    expect(flowsForScreen("admin", "configure-skill", "B")[0]).toMatchObject({ flow: { id: "set-up-skills" }, step: { id: "configure" }, set: "1" })
+    expect(flowsForScreen("admin", "configure-skill", "B", new URLSearchParams("section=check&change=sample"))[0]).toMatchObject({ step: { id: "publish" } })
     expect(flowsForScreen("admin", "starter-library", "A")).toEqual([])
   })
 })

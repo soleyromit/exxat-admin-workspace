@@ -82,14 +82,14 @@ describe("publish writes to the shared store", () => {
     const s = createSeed()
     const before = facts(s)
     let next = s
-    // (A question skill cannot be republished as it stands: the seed has no question rule, and Publish asks for one.)
-    expect(validateRule(fromV2(skillById(s, STERILE)!)).map((i) => i.id)).toContain("cfg-qrule:missing")
+    // Every seeded rule is valid, so any skill can be republished as it stands (SEED_VERSION 2026-11-04.1-qualifying-rules).
+    expect(validateRule(fromV2(skillById(s, STERILE)!))).toEqual([])
     for (const id of [MED, "sk-urinary-cath", "sk-vitals"]) next = publish(next, id, fromV2(skillById(next, id)!))
     expect(facts(next)).toEqual(before)
     for (const id of [MED, "sk-urinary-cath", "sk-vitals"]) expect(screenCounts(next, id)).toEqual(screenCounts(s, id))
   })
 
-  it("keeps a rule version per publish and leaves new-evidence-only unwritten (not decided)", () => {
+  it("keeps a rule version per publish", () => {
     const s = createSeed()
     const k = skillById(s, MED)!
     const a = publish(s, MED, { ...fromV2(k), need: 2 })
@@ -102,9 +102,6 @@ describe("publish writes to the shared store", () => {
       [top + 2, 4],
     ])
     expect(skillById(b, MED)!.config!.achievement.need).toBe(4)
-    const w = publishLabRule(s, MED, { ...fromV2(k), need: 2 }, { at: AT, byId: BY, mode: "new-only" })
-    expect(w.ok && w.written).toBe(false)
-    expect(w.ok && w.state).toBe(s)
   })
 
   it("a stricter or looser rule: the impact after-counts equal the student screens and the dashboard after publish", () => {
@@ -125,24 +122,24 @@ describe("publish writes to the shared store", () => {
         expect(was && FROM_STUDENT[was.state]).toBe(row.before)
       }
 
-      // The dashboard "achieved" figure (facts.mandatoryAchieved) moves by exactly the impact's flips on required records.
+      // The dashboard "achieved" figure (facts.listAchieved) moves by exactly the impact's flips on required records.
       const required = new Set(populationRows(s, DEFAULT_SCOPE).rows.filter((r) => r.requiredIds.includes(MED)).map((r) => r.id))
       const gained = im.changed.filter((r) => required.has(r.studentId) && r.after === "achieved" && r.before !== "achieved").length
       const lost = im.changed.filter((r) => required.has(r.studentId) && r.before === "achieved" && r.after !== "achieved").length
-      expect(facts(after).mandatoryAchieved - facts(s).mandatoryAchieved).toBe(gained - lost)
+      expect(facts(after).listAchieved - facts(s).listAchieved).toBe(gained - lost)
     }
   })
 
   it("the '2 of 3 questions' demo: a published question rule changes the hero's progress, line and record, and nothing else", () => {
     const s = createSeed()
     const cur = fromV2(skillById(s, STERILE)!)
-    expect(cur.questionRule).toBeNull()
+    expect(cur.questionRule).toEqual({ kind: "all" })
     const next: LabRule = { ...cur, questionRule: { kind: "atLeast", n: 2 } }
     expect(validateRule(next)).toEqual([])
     const im = computeImpact(s, STERILE, cur, next)
     // Only Maya carries per-question answers in the seed: her first attempt (Yes, Yes, No) becomes one valid attempt.
     expect(im.changed.map((r) => [r.studentId, r.before, r.after])).toEqual([[DEFAULT_STUDENT, "not-qualifying", "in-progress"]])
-    expect(attemptCountLine(s, DEFAULT_STUDENT, STERILE)).toBe("2 attempts, 2 not valid: 0 count")
+    expect(attemptCountLine(s, DEFAULT_STUDENT, STERILE)).toMatch(/^2 attempts, 2 not valid: 0 count/)
 
     const after = publish(s, STERILE, next)
     expect(screenCounts(after, STERILE)).toEqual(im.after)
@@ -156,7 +153,7 @@ describe("publish writes to the shared store", () => {
     const rec = buildStudent(after)!.all.find((r) => r.id === STERILE)!
     expect(rec.state).toBe("progress")
     // The required-this-term figures follow the engine; here Maya is still short, so the achieved count is unchanged.
-    expect(facts(after).mandatoryAchieved).toBe(facts(s).mandatoryAchieved)
+    expect(facts(after).listAchieved).toBe(facts(s).listAchieved)
   })
 
   it("survives a reload: the published rule is part of the persisted delta", () => {

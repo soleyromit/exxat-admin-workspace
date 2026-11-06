@@ -100,22 +100,29 @@ describe("IM-05: split, merge and add during review", () => {
 
 describe("IM-05 / IM-06 in add several", () => {
   const rows = [
-    { id: "a", name: "Hand washing", status: "not-configured" as const, evidence: 0 },
-    { id: "b", name: "Bed bath", status: "configured" as const, evidence: 4 },
+    { id: "a", name: "Hand washing", configuration: "default" as const, evidence: 0 },
+    { id: "b", name: "Bed bath", configuration: "default" as const, evidence: 4 },
   ]
   const parsed = parseSeveral("Hand washing\tHygiene\nBed bath\nFoot care", rows.map((r) => r.name))
 
-  it("offers replace only for an unconfigured twin with no evidence", () => {
-    expect(duplicateChoices(rows[0])).toEqual(["skip", "keep-both", "replace"])
+  it("offers replace whenever the twin has no evidence, configured or not; with evidence, skip and keep both (OD-13 is open)", () => {
+    expect(duplicateChoices(rows[0])).toEqual(["skip", "replace", "keep-both"])
     expect(duplicateChoices(rows[1])).toEqual(["skip", "keep-both"])
+    expect(duplicateChoices({ evidence: 0, several: true })).toEqual(["skip", "keep-both"])
+    expect(duplicateChoices(undefined)).toEqual(["skip", "keep-both"])
+  })
+  it("a line repeated inside the paste is added under its (2) name by default, and can be skipped", () => {
+    const p = parseSeveral("Foot care\nfoot  CARE\nFoot care", [])
+    expect(severalItemsWithChoices(p, [], {}).map((i) => i.name)).toEqual(["Foot care", "foot CARE (2)", "Foot care (3)"])
+    expect(severalItemsWithChoices(p, [], { "foot care": "skip" }).map((i) => i.name)).toEqual(["Foot care"])
   })
   it("skip adds nothing; keep both adds a '(2)' name; replace updates the twin in place", () => {
     expect(severalItemsWithChoices(parsed, rows, {}).map((i) => i.name)).toEqual(["Foot care"])
     const items = severalItemsWithChoices(parsed, rows, { "hand washing": "replace", "bed bath": "keep-both" })
-    expect(items).toContainEqual({ name: "Hand washing", category: "Hygiene", replaces: "a", source: "Hand washing" })
-    expect(items).toContainEqual({ name: "Bed bath (2)", source: "Bed bath" })
+    expect(items).toContainEqual({ name: "Hand washing", replaces: "a", source: "Hand washing", line: 1 })
+    expect(items).toContainEqual({ name: "Bed bath (2)", source: "Bed bath", line: 2 })
   })
-  it("a replace on a configured twin is not applied", () => {
+  it("a replace on a twin with evidence is not applied", () => {
     expect(severalItemsWithChoices(parsed, rows, { "bed bath": "replace" }).map((i) => i.name)).toEqual(["Foot care"])
   })
   it("edits or leaves out one pasted line, keeping its other cells", () => {

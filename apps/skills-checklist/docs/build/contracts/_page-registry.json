@@ -1,0 +1,138 @@
+{
+  "_about": "Which code files belong to which page. Editing a listed file needs that page's contract to be confirmed and complete (.claude/hooks/skills-code-gate.mjs). File lists follow section G of the map. To bring a page under the gate, add a row. A page outside the map has no mapSection or taskSection and carries all seven sections itself.",
+  "mapFile": "docs/build/2026-11-04-admin-workflow-map.md",
+  "pages": [
+    {
+      "id": "D1",
+      "page": "Library",
+      "contract": "ADMIN-D1-library.md",
+      "mapSection": "D1",
+      "taskSection": "Library",
+      "files": [
+        "admin/components/lab/screens/admin-skills-library-*.tsx",
+        "admin/components/lab/library/library-table.tsx",
+        "admin/components/lab/library/library-chrome.tsx",
+        "admin/components/lab/library/library-filter.tsx",
+        "admin/components/lab/library/row-actions.tsx",
+        "admin/components/lab/library/times-needed.tsx",
+        "admin/components/lab/library/use-library.tsx"
+      ]
+    },
+    {
+      "id": "D1a",
+      "page": "Edit panel",
+      "contract": "ADMIN-D1a-edit-panel.md",
+      "mapSection": "D1a",
+      "taskSection": "Edit a skill",
+      "files": [
+        "admin/components/lab/library/skill-panel.tsx",
+        "admin/components/lab/library/row-actions.tsx"
+      ]
+    },
+    {
+      "id": "D1c",
+      "page": "Configure one skill",
+      "contract": "ADMIN-D1c-configure-skill.md",
+      "mapSection": "D1c",
+      "taskSection": "Configure one skill",
+      "files": [
+        "admin/components/lab/configure/one-skill-page.tsx",
+        "admin/components/lab/configure/skill-sections.tsx"
+      ]
+    },
+    {
+      "id": "D1b",
+      "page": "Bulk edit",
+      "contract": "ADMIN-D1b-bulk-edit.md",
+      "mapSection": "D1b",
+      "taskSection": "Bulk edit",
+      "files": [
+        "admin/components/lab/library/bulk-edit-sheet.tsx",
+        "admin/components/lab/configure/bulk-apply.tsx"
+      ]
+    },
+    {
+      "id": "D2",
+      "page": "Add",
+      "contract": "ADMIN-D2-add.md",
+      "mapSection": "D2",
+      "taskSection": "Add",
+      "files": [
+        "admin/components/lab/screens/admin-add-skill-*.tsx",
+        "admin/components/lab/screens/admin-import-*.tsx",
+        "admin/components/lab/screens/admin-starter-library-*.tsx",
+        "admin/components/lab/library/skill-sheet.tsx",
+        "admin/components/lab/library/add-several-sheet.tsx",
+        "admin/components/lab/library/inline-add-row.tsx",
+        "admin/components/lab/library/category-tag-pickers.tsx"
+      ]
+    },
+    {
+      "id": "D3",
+      "page": "Evaluation settings",
+      "contract": "ADMIN-D3-evaluation-settings.md",
+      "mapSection": "D3",
+      "taskSection": "Evaluation settings",
+      "files": [
+        "admin/components/lab/screens/admin-evaluation-settings-*.tsx",
+        "admin/components/lab/configure/program-*.tsx",
+        "admin/components/lab/configure/impact.tsx"
+      ]
+    },
+    {
+      "id": "D4",
+      "page": "Per-skill settings",
+      "contract": "ADMIN-D4-per-skill-settings.md",
+      "mapSection": "D4",
+      "taskSection": "Per-skill settings",
+      "files": [
+        "admin/components/lab/screens/admin-configure-skill-*.tsx",
+        "admin/components/lab/configure/shell.tsx",
+        "admin/components/lab/configure/steps-panel.tsx",
+        "admin/components/lab/configure/section-nav.tsx",
+        "admin/components/lab/configure/many-page.tsx",
+        "admin/components/lab/configure/bulk-apply.tsx"
+      ]
+    },
+    {
+      "id": "D5",
+      "page": "Categories and tags",
+      "contract": "ADMIN-D5-categories-tags.md",
+      "mapSection": "D5",
+      "taskSection": "Categories and tags",
+      "files": [
+        "admin/components/lab/screens/admin-categories-tags-*.tsx",
+        "admin/components/lab/admin-b/settings-page.tsx"
+      ]
+    },
+    {
+      "id": "D6",
+      "page": "Skill lists",
+      "contract": "ADMIN-D6-skill-lists.md",
+      "mapSection": "D6",
+      "taskSection": "Skill lists",
+      "files": [
+        "admin/components/lab/screens/admin-lists-cohorts-*.tsx",
+        "admin/components/lab/admin-a/lists-frame.tsx",
+        "admin/components/lab/admin-a/lists-groups-table.tsx",
+        "admin/components/lab/admin-a/lists-panel.tsx",
+        "admin/components/lab/admin-a/lists-add-students.tsx",
+        "admin/components/lab/admin-a/lists-focus.ts",
+        "admin/components/lab/admin-a/lists-parts.tsx"
+      ]
+    },
+    {
+      "id": "D8",
+      "page": "Course mapping",
+      "contract": "ADMIN-D8-course-mapping.md",
+      "mapSection": "D8",
+      "taskSection": "Course mapping",
+      "files": [
+        "admin/components/lab/screens/admin-course-mapping-*.tsx",
+        "admin/components/lab/admin-a/mapping-frame.tsx",
+        "admin/components/lab/admin-a/mapping-parts.tsx",
+        "admin/components/lab/admin-a/mapping-views.tsx"
+      ]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import {
   EMPTY_OVERLAY,
   buildLibrary,
   buildTree,
-  byStatus,
+  byBoardColumn,
   countLibrary,
   demoInactiveIds,
   draftToSkill,
@@ -41,10 +41,10 @@ describe("lab skills library model", () => {
 
   it("puts every skill in exactly one status and the counts add up", () => {
     const c = countLibrary(rows)
-    expect(c.notConfigured + c.configured + c.inactive).toBe(c.total)
-    expect(c.notConfigured).toBeGreaterThan(0)
+    expect(c.notConfigured + c.defaultConfiguration + c.edited).toBe(c.total)
+    expect(c.active + c.inactive).toBe(c.total)
     expect(c.inactive).toBe(demoInactiveIds(state).length)
-    const b = byStatus(rows)
+    const b = byBoardColumn(rows)
     expect(Object.values(b).flat().length).toBe(c.total)
   })
 
@@ -53,13 +53,12 @@ describe("lab skills library model", () => {
     expect(tree.length).toBeGreaterThanOrEqual(10)
     const sum = tree.reduce((n, s) => n + s.counts.total, 0)
     expect(sum).toBe(rows.length)
-    const groups = tree.flatMap((s) => s.groups)
-    expect(groups.length).toBeGreaterThanOrEqual(15)
+    // The category names the group now (D-L66), so few second levels remain.
     for (const s of tree) {
       const inner = s.rows.length + s.groups.reduce((n, g) => n + g.rows.length, 0)
       expect(inner).toBe(s.counts.total)
     }
-    expect(rollupLabel({ total: 10, notConfigured: 2, configured: 7, inactive: 1, ready: 7 })).toBe("7 of 9 configured")
+    expect(rollupLabel({ total: 10, active: 9, notConfigured: 2, defaultConfiguration: 6, edited: 2, inactive: 1, ready: 7 })).toBe("7 of 9 configured")
   })
 
   it("allows delete only while nothing is tracked against a skill; a mapping never blocks it (D-X15)", () => {
@@ -75,8 +74,8 @@ describe("lab skills library model", () => {
   it("adds, deactivates, reactivates and deletes through the overlay only", () => {
     const added = draftToSkill({ ...EMPTY_DRAFT, name: "  Wound   vac  ", section: "Safety" }, "lab-new-1")
     const next = buildLibrary(state, { ...EMPTY_OVERLAY, added: [added] })
-    expect(next[0]).toMatchObject({ id: "lab-new-1", name: "Wound vac", status: "not-configured", isNew: true, canDelete: true })
-    const target = rows.find((r) => r.status === "configured")!
+    expect(next[0]).toMatchObject({ id: "lab-new-1", name: "Wound vac", configuration: "not-configured", isNew: true, canDelete: true })
+    const target = rows.find((r) => (r.status === "active" && r.configuration === "default"))!
     const off = buildLibrary(state, { ...EMPTY_OVERLAY, inactive: [target.id] })
     expect(off.find((r) => r.id === target.id)?.status).toBe("inactive")
     const demo = demoInactiveIds(state)[0]!
@@ -100,36 +99,33 @@ describe("lab skills library model", () => {
     expect(isDirty({ ...EMPTY_DRAFT, name: "x" })).toBe(true)
   })
 
-  it("files a skill added without a category under No category, and keeps required to graduate", () => {
-    const a = draftToSkill({ ...EMPTY_DRAFT, name: "Chest tube care", requiredToGraduate: true }, "lab-new-2")
+  it("files a skill added without a category under No category", () => {
+    const a = draftToSkill({ ...EMPTY_DRAFT, name: "Chest tube care" }, "lab-new-2")
     const r = buildLibrary(state, { ...EMPTY_OVERLAY, added: [a] })[0]!
-    expect(r).toMatchObject({ section: NO_CATEGORY, requiredToGraduate: true, status: "not-configured", model: null })
+    expect(r).toMatchObject({ section: NO_CATEGORY, configuration: "not-configured", model: null })
     expect(pickerOptions([r, ...rows]).sections).not.toContain(NO_CATEGORY)
-    expect(rows.filter((x) => x.requiredToGraduate).length).toBe(state.skills.filter((k) => k.hgtc?.required).length)
   })
 
   it("status tab counts are the library counts and agree with the shared facts (consistency invariant)", () => {
     const c = countLibrary(rows)
     const f = facts(state)
-    expect(LIBRARY_TABS.map((t) => t.label)).toEqual(["All", "Not configured", "Configured", "Inactive"])
+    expect(LIBRARY_TABS.map((t) => t.label)).toEqual(["All", "Active", "Inactive"])
     for (const t of LIBRARY_TABS) expect(tabCount(c, t.value), t.value).toBe(rowsForTab(rows, t.value).length)
     expect(tabCount(c, "all")).toBe(state.skills.length)
     expect(tabCount(c, "inactive")).toBe(f.skillsInactive)
-    // facts counts inactive skills by configuration too; the tabs put every inactive skill under Inactive.
-    const inactiveUnconfigured = state.skills.filter((k) => k.active === false && !isConfigured(k)).length
-    expect(tabCount(c, "not-configured") + inactiveUnconfigured).toBe(f.skillsNotConfigured)
-    expect(tabCount(c, "configured") + (c.inactive - inactiveUnconfigured)).toBe(f.skillsConfigured)
+    expect(c.notConfigured).toBe(f.skillsNotConfigured)
+    expect(c.defaultConfiguration + c.edited).toBe(f.skillsConfigured)
   })
 
   it("moves a deactivated skill to the Inactive tab through the shared store, so facts and tabs change together (D-X14)", () => {
-    const target = rows.find((r) => r.status === "configured")!
+    const target = rows.find((r) => (r.status === "active" && r.configuration === "default"))!
     const r = setSkillsActive(state, [target.id], false, "u-admin", "2026-10-26T09:00:00Z")
     expect(r.ok).toBe(true)
     if (!r.ok) return
     const after = countLibrary(buildLibrary(r.state))
     expect(after.inactive).toBe(countLibrary(rows).inactive + 1)
     expect(after.inactive).toBe(facts(r.state).skillsInactive)
-    expect(after.configured).toBe(countLibrary(rows).configured - 1)
+    expect(after.ready).toBe(countLibrary(rows).ready - 1)
   })
 
   it("adds several by name: strips bullets, skips repeats and names already in the library", () => {
@@ -142,19 +138,16 @@ describe("lab skills library model", () => {
     expect(parseSeveral("  \n\n", []).lines).toEqual([])
   })
 
-  it("keeps a sheet's Category and Tags columns when names are pasted from one (REQ SL-03, SL-04, SL-05)", () => {
+  it("reads only the first cell of a line from a sheet and reports the rest; category and tags come from the fields for all (REQ IM-03, IM-08, IM-13)", () => {
     const text = "Chest tube care\tRespiratory\tPatient safety; Invasive procedures\nWound packing\t\tinfection prevention, Infection prevention\nTracheostomy suctioning"
     const p = parseSeveral(text, rows.map((r) => r.name))
-    expect(p.items).toEqual([
-      { name: "Chest tube care", category: "Respiratory", tags: ["Patient safety", "Invasive procedures"] },
-      { name: "Wound packing", tags: ["infection prevention"] },
-      { name: "Tracheostomy suctioning" },
-    ])
-    // A line's own category wins; tags chosen for all are merged once each (case insensitive).
+    expect(p.items).toEqual([{ name: "Chest tube care" }, { name: "Wound packing" }, { name: "Tracheostomy suctioning" }])
+    expect(p.lines.map((l) => l.extra)).toEqual([["Respiratory", "Patient safety; Invasive procedures"], ["infection prevention, Infection prevention"], undefined])
+    expect(p.lines[0]!.raw).toContain("Respiratory")
     const drafts = severalDrafts(p.items, { category: "Basic care", tags: ["Patient safety", "Year 1"] })
     expect(drafts.map((d) => [d.section, d.tags])).toEqual([
-      ["Respiratory", ["Patient safety", "Year 1", "Invasive procedures"]],
-      ["Basic care", ["Patient safety", "Year 1", "infection prevention"]],
+      ["Basic care", ["Patient safety", "Year 1"]],
+      ["Basic care", ["Patient safety", "Year 1"]],
       ["Basic care", ["Patient safety", "Year 1"]],
     ])
     expect(drafts.every((d) => d.model === null)).toBe(true)
@@ -199,27 +192,21 @@ describe("lab skills library model", () => {
   it("matches the scaled seed shape the design assumes", () => {
     const c = countLibrary(rows)
     expect(c.total).toBe(178)
-    // 16 never configured plus 15 holding a rule never saved for use (decision D-X31).
-    expect(c.notConfigured).toBe(31)
-    expect(rows.filter((r) => r.courses > 0).length).toBeGreaterThan(100)
+    // D-L90: nothing is Not configured on the seeded program; nobody is held back.
+    expect(c.notConfigured).toBe(0)
+    expect(rows.filter((r) => r.courses > 0).length).toBeGreaterThan(90) // 93 since Optional reads as Not mapped (D-L76)
   })
 })
 
-describe("three library statuses, the requirement's own (decision D-X31)", () => {
-  it("has no published status: Not configured, Configured, Inactive", () => {
-    expect(rows.every((r) => ["not-configured", "configured", "inactive"].includes(r.status))).toBe(true)
+describe("two separate fields (D-L88, D-L89)", () => {
+  it("Status is only Active or Inactive; Configuration only Default, Custom or Not configured", () => {
+    expect(rows.every((r) => ["active", "inactive"].includes(r.status))).toBe(true)
+    expect(rows.every((r) => ["default", "edited", "not-configured"].includes(r.configuration))).toBe(true)
   })
-  it("shows a rule held but never saved for use as Not configured with Draft saved", () => {
-    const iv = rows.find((r) => r.id === "sk-iv-cath")!
-    expect(iv.status).toBe("not-configured")
-    expect(iv.draft).toBe(true)
-    expect(rows.filter((r) => r.status === "configured").every((r) => !r.draft)).toBe(true)
-  })
-  it("a saved configuration draft keeps the skill Not configured and marks the row", () => {
-    const id = rows.find((r) => r.status === "not-configured" && !r.draft)!.id
-    const s2 = { ...state, configDrafts: { [id]: { rule: {}, step: "rule", at: "2026-10-27T09:00:00Z" } } }
-    const r = buildLibrary(s2).find((x) => x.id === id)!
-    expect(r.status).toBe("not-configured")
-    expect(r.draft).toBe(true)
+  it("deactivating never changes Configuration (D0 rule 10)", () => {
+    const edited = rows.find((r) => r.status === "active" && r.configuration === "edited")!
+    const r = setSkillsActive(state, [edited.id], false, "u-admin", "2026-10-26T09:00:00Z")
+    if (!r.ok) throw new Error("deactivate")
+    expect(buildLibrary(r.state).find((x) => x.id === edited.id)).toMatchObject({ status: "inactive", configuration: "edited" })
   })
 })

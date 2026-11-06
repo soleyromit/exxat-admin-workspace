@@ -17,22 +17,51 @@ import { VIZ } from "@/components/lab/viz"
 import { usePresent } from "@/components/lab/lab-bar/present"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { Field, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
-import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, countSkills, skillNoun, skillNounPlural, skillListNoun, aNoun } from "@/lib/lab/terms"
 import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
-import { REQUIRED_SET_LABEL } from "@/lib/v2/population"
 import { NEXT_LIMIT, ageLabel, shortDate, studentHref, type CourseExpectation, type NextAction, type SkillRecord, type StudentModel } from "@/lib/lab/student"
 
-/** D-X12: the student's required set is always named. My progress reads mandatory skills on current courses: "Required this term". */
-export const REQUIRED_THIS_TERM = REQUIRED_SET_LABEL.thisTerm
+/** What My progress reads: the list by name when it has one (D-L102). */
+export const onYourList = (m: Pick<StudentModel, "list">): string => (m.list ? m.list.name : `Your ${skillListNoun()}`)
+import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
+import { LINK } from "@/components/lab/link-styles"
 import { FigureLink, LINK_IN_TABLE, NUM_LINK, useSvgFont, Overlay, Parts, RequiredRing, RingLegend, SectionTitle, ShowAsTable, StateLabel, stateWord } from "@/components/lab/student/parts"
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Which list this page reads. Two lists read as two tabs, each with its own figure; they never add up (Aarti, 205da2dd ch 11). No list: a plain message, nothing reads as behind [REQ CM-05].
+
+export function ListTabs({ model, onChange, children }: { model: StudentModel; onChange: (id: string) => void; children: React.ReactNode }) {
+  if (model.lists.length < 2 || !model.list) return <>{children}</>
+  return (
+    <Tabs value={model.list.id} onValueChange={onChange} data-list-tabs>
+      <TabsList variant="line" ariaLabel={capitalize(skillListNoun())}>
+        {model.lists.map((l) => (
+          <TabsTrigger key={l.id} value={l.id} data-list-tab={l.id}>
+            <span className="truncate">{l.name}</span>
+            <span className="ms-1.5 tabular-nums text-muted-foreground">{`${l.achieved} of ${l.total}`}</span>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      <TabsContent value={model.list.id} className="pt-4">{children}</TabsContent>
+    </Tabs>
+  )
+}
+
+export function NoListNotice() {
+  return (
+    <LocalBanner variant="info" title={`No ${skillListNoun()} assigned to you yet`} data-no-list>
+      {`You can still log ${aNoun()} and send it for evaluation. It counts on your record.`}
+    </LocalBanner>
+  )
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Hero: required ring + waiting + returned (the three SH-04 figures) and a one-line pace verdict
 
 export function ProgressHero({ model, studentId, compact = false }: { model: StudentModel; studentId: string; compact?: boolean }) {
   const c = model.counts
-  // D-X12: name the required set. This hero reads "Required this term" (mandatory on the student's current courses), never "Required to graduate".
-  const summary = `${c.achieved} of ${c.required} ${skillNounPlural()} ${REQUIRED_THIS_TERM.toLowerCase()} achieved. ${c.waiting} waiting, ${c.returned} returned.`
+  const summary = `${c.achieved} of ${c.required} ${skillNounPlural()} on ${onYourList(model)} achieved. ${c.waiting} waiting, ${c.returned} returned.`
   return (
     <Card data-region="hero" className="h-full py-0">
       <CardContent className={cn("flex h-full items-center gap-5 py-4", compact ? "gap-4" : "gap-6")}>
@@ -41,7 +70,7 @@ export function ProgressHero({ model, studentId, compact = false }: { model: Stu
         </Link>
         <div className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-col gap-0.5">
-            <h2 className={TYPE.card}>{`${REQUIRED_THIS_TERM}, achieved`}</h2>
+            <h2 className={TYPE.card}>{onYourList(model)}</h2>
             <p className={cn("inline-flex items-center gap-1.5 text-sm", model.behind ? "font-medium" : "text-muted-foreground")} style={model.behind ? { color: VIZ.behindInk } : undefined}>
               {model.behind ? <i className="fa-solid fa-diamond text-xs" aria-hidden="true" /> : null}
               {model.verdict}
@@ -97,7 +126,7 @@ const NEXT_ICON: Record<NextAction["kind"], string> = {
  * submission (who returned it and why: the student must not have to open it to learn the reason); the other details are one tap
  * away on the page the action opens, so the phone viewport stays calm.
  */
-export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next", exclude = [], className }: { model: StudentModel; limit?: number; title?: string; /** Kinds another region already shows (say it once). */ exclude?: NextAction["kind"][]; className?: string }) {
+export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next", exclude = [], className, whenEmpty }: { model: StudentModel; limit?: number; title?: string; /** Kinds another region already shows (say it once). */ exclude?: NextAction["kind"][]; className?: string; /** With nothing required left: where to go instead. */ whenEmpty?: { label: string; href: string } | null }) {
   const [more, setMore] = React.useState(false)
   const { present } = usePresent()
   const params = useSearchParams()
@@ -114,7 +143,10 @@ export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next",
       <CardContent className="flex flex-col gap-1 py-4">
         <SectionTitle count={all.length}>{title}</SectionTitle>
         {list.length === 0 ? (
-          <p className="py-2 text-sm text-muted-foreground">{`Nothing needs you now. Every required ${skillNoun()} is achieved or waiting.`}</p>
+          <div className="flex flex-col gap-2 py-2 text-sm">
+            <p className="text-muted-foreground">{`Nothing needs you now. Every required ${skillNoun()} is achieved or waiting.`}</p>
+            {whenEmpty ? <Link href={whenEmpty.href} className={cn(LINK, "self-start")} data-next-course>{whenEmpty.label}</Link> : null}
+          </div>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {list.map((a) => (
@@ -170,7 +202,7 @@ export function NextActions({ model, limit = NEXT_LIMIT, title = "Do this next",
  * request or send), state word and overlay, rule parts. No per-row buttons: Do this next already carries the actions that are due,
  * so the list does not repeat them (say it once).
  */
-export function SkillRows({ records, studentId, showParts = true }: { records: SkillRecord[]; studentId: string; showParts?: boolean }) {
+export function SkillRows({ records, studentId, showParts = true, ask, markOffList = false }: { records: SkillRecord[]; studentId: string; showParts?: boolean; /** The course view of a student who has a list: a skill mapped here but on none of their lists says so [INFER]. It stays open to send and counts on its own record. */ markOffList?: boolean; /** The row's own way to ask for an evaluation; null when nothing can be asked (achieved, already waiting). */ ask?: (r: SkillRecord) => string | null }) {
   return (
     <ul className="flex flex-col divide-y divide-border">
       {records.map((r) => (
@@ -184,13 +216,14 @@ export function SkillRows({ records, studentId, showParts = true }: { records: S
                 </span>
               </Tip>
             ) : null}
+            {markOffList && r.onLists.length === 0 ? <span className="shrink-0 text-xs text-muted-foreground" data-not-on-list data-viz-label>Not on your list</span> : null}
           </div>
           <div className="flex flex-wrap items-center gap-2 md:col-span-4">
             <StateLabel record={r} />
             <Overlay record={r} />
           </div>
           <div className="md:col-span-3">
-            {showParts && (r.parts.length > 1 || r.state === "dnq") ? <Parts parts={r.parts} /> : null}
+            {ask?.(r) ? <Link href={ask(r)!} className={LINK} data-ask-evaluation={r.id}>Ask for evaluation</Link> : showParts && !(ask && r.state === "achieved") && (r.parts.length > 1 || r.state === "dnq") ? <Parts parts={r.parts} /> : null}
           </div>
         </li>
       ))}
@@ -199,8 +232,8 @@ export function SkillRows({ records, studentId, showParts = true }: { records: S
 }
 
 /**
- * The required list, or one course's expected skills [REQ ST-01]: "Required this term" by default (D-X12), and a course choice that
- * lists every skill that course expects, mandatory first, then recommended and optional, with progress on each.
+ * The list's skills, or one course's expected skills [REQ ST-01]: the list by default (D-L102), and a course choice that
+ * lists every skill that course expects, mandatory first, then recommended, with progress on each.
  */
 export function RequiredList({ model, studentId, title, courseId = null }: { model: StudentModel; studentId: string; title?: string; /** ?course= : the course whose expected skills are listed. */ courseId?: string | null }) {
   const course = model.courses.find((c) => c.id === courseId) ?? null
@@ -208,7 +241,7 @@ export function RequiredList({ model, studentId, title, courseId = null }: { mod
     <Card data-region="list" className="gap-0 py-0" id="required">
       <CardContent className="flex flex-col gap-1 py-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <SectionTitle count={course ? course.skills.length : model.required.length}>{course ? `${course.code} expects` : title ?? REQUIRED_THIS_TERM}</SectionTitle>
+          <SectionTitle count={course ? course.skills.length : model.required.length}>{course ? `${course.code} expects` : title ?? onYourList(model)}</SectionTitle>
           {course ? null : <RingLegend />}
         </div>
         {course ? <CourseSkillList model={model} course={course} studentId={studentId} /> : <SkillRows records={model.required} studentId={studentId} />}
@@ -216,7 +249,7 @@ export function RequiredList({ model, studentId, title, courseId = null }: { mod
             next actions (student budget 4 controls; links in text are not controls). */}
         <nav aria-label="What each course expects" className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-border pt-3 text-sm" data-course-links>
           <span className="text-muted-foreground">By course:</span>
-          {course ? <Link className={NUM_LINK} href={`${studentHref("home", {}, studentId)}#required`}>{REQUIRED_THIS_TERM}</Link> : null}
+          {course ? <Link className={NUM_LINK} href={`${studentHref("home", {}, studentId)}#required`}>{onYourList(model)}</Link> : null}
           {model.courses.filter((c) => c.skills.length > 0).map((c) => (
             <Link key={c.id} className={cn(NUM_LINK, "tabular-nums", c.id === course?.id ? "font-semibold" : "")} aria-current={c.id === course?.id ? "true" : undefined} href={`${studentHref("home", { course: c.id }, studentId)}#required`}>{c.code}</Link>
           ))}
@@ -226,8 +259,8 @@ export function RequiredList({ model, studentId, title, courseId = null }: { mod
   )
 }
 
-/** "Required this term" or one course [REQ ST-01]. Only courses that expect at least one skill are offered. */
-export function CourseSelect({ model, value, onChange, allLabel = REQUIRED_THIS_TERM, id = "progress-course" }: { model: StudentModel; value: string; onChange: (v: string) => void; allLabel?: string; id?: string }) {
+/** The list or one course [REQ ST-01]. Only courses that expect at least one skill are offered. */
+export function CourseSelect({ model, value, onChange, allLabel = onYourList(model), id = "progress-course" }: { model: StudentModel; value: string; onChange: (v: string) => void; allLabel?: string; id?: string }) {
   const courses = model.courses.filter((c) => c.skills.length > 0)
   return (
     <Select value={value} onValueChange={onChange}>
@@ -266,14 +299,14 @@ export function CourseSwitch({ model, value, onChange, id = "course-switch" }: {
 const LEVEL_LIMIT = 5
 
 /**
- * One course's expected skills by level [REQ ST-01]: which are mandatory (the only level "Required this term" reads, D-X12),
- * recommended and optional, each row with its state and rule parts. A level over 8 rows shows the first 5 and "Show all n".
+ * One course's expected skills by level [REQ ST-01]: which are mandatory,
+ * and recommended, each row with its state and rule parts. A level over 8 rows shows the first 5 and "Show all n".
  */
-export function CourseSkillList({ model, course, studentId }: { model: StudentModel; course: CourseExpectation; studentId: string }) {
+export function CourseSkillList({ model, course, studentId, ask, pin }: { model: StudentModel; course: CourseExpectation; studentId: string; ask?: (r: SkillRecord) => string | null; /** A skill carried in by the link opens first in its level. */ pin?: string | null }) {
   const [open, setOpen] = React.useState<Record<string, boolean>>({})
   const rec = new Map(model.all.map((r) => [r.id, r]))
-  const levels = (["mandatory", "recommended", "optional"] as const)
-    .map((level) => ({ level, records: course.skills.filter((x) => x.level === level).map((x) => rec.get(x.id)).filter((r): r is SkillRecord => !!r) }))
+  const levels = (["mandatory", "recommended"] as const)
+    .map((level) => ({ level, records: course.skills.filter((x) => x.level === level).map((x) => rec.get(x.id)).filter((r): r is SkillRecord => !!r).sort((a, b) => Number(b.id === pin) - Number(a.id === pin)) }))
     .filter((g) => g.records.length > 0)
   if (levels.length === 0) return <p className="py-2 text-sm text-muted-foreground">{`${course.code} expects no ${skillNounPlural()} yet.`}</p>
   // One Send per page: the header's Send for evaluation opens on this course with its open mandatory skills chosen [Thursday S2].
@@ -288,7 +321,7 @@ export function CourseSkillList({ model, course, studentId }: { model: StudentMo
               {MAPPING_LEVEL_LABEL[g.level]}
               <span className="text-xs font-normal tabular-nums text-muted-foreground" data-viz-label>{`${achieved} of ${g.records.length} achieved`}</span>
             </h3>
-            <SkillRows records={all ? g.records : g.records.slice(0, LEVEL_LIMIT)} studentId={studentId} />
+            <SkillRows records={all ? g.records : g.records.slice(0, LEVEL_LIMIT)} studentId={studentId} ask={ask} markOffList={model.lists.length > 0} />
             {g.records.length > 8 ? (
               <Button type="button" variant="ghost" size="sm" className="self-start" aria-expanded={all} onClick={() => setOpen((o) => ({ ...o, [g.level]: !all }))}>
                 {all ? "Show fewer" : `Show all ${g.records.length}`}
@@ -439,13 +472,14 @@ export function SectionRadar({ model }: { model: StudentModel }) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Pace (variant C): counted toward required rules by week, against the term clock
+// Pace: counted toward the list over the program, against the program clock
 
 export function PaceChart({ model, height = 220 }: { model: StudentModel; height?: number }) {
   const pts = model.pace
   const W = 640
   const [svgRef, fs] = useSvgFont(W)
-  const step = fs > 20 ? 4 : 2
+  // About four dates along the axis: the chart spans the whole program, and a label per point overlaps.
+  const step = Math.max(fs > 20 ? 4 : 2, Math.ceil(model.pace.length / 4))
   const H = height
   const pad = { l: Math.round(fs * 1.6) + 10, r: 16, t: Math.round(fs) + 4, b: Math.round(fs) + 16 }
   const max = Math.max(1, ...pts.map((p) => Math.max(p.expected, p.counted)), model.row?.needed ?? 0)
@@ -455,8 +489,21 @@ export function PaceChart({ model, height = 220 }: { model: StudentModel; height
   const todayIdx = done.length - 1
   const line = (k: "counted" | "expected", list: typeof pts) => list.map((p, i) => `${i === 0 ? "M" : "L"} ${x(pts.indexOf(p))} ${y(p[k])}`).join(" ")
   const last = done[done.length - 1]
-  const summary = last ? `${last.counted} of ${model.row?.needed ?? 0} required evaluations counted by ${last.label}; the term clock expects ${last.expected}. ${model.verdict}.` : "No pace yet."
+  const summary = last ? `${last.counted} of ${model.row?.needed ?? 0} evaluations counted by ${last.label}; ${last.expected} expected by now. ${model.verdict}.` : "No pace yet."
   const ticks = [0, Math.round(max / 2), max]
+  // The first date starts at the axis and one near the right edge ends at it, so neither is cut off by the chart's edge; a date that
+  // would then run into the one before it is left out.
+  const dateTicks: Array<{ key: string; x: number; anchor: "start" | "middle" | "end"; label: string }> = []
+  let lastEnd = -Infinity
+  pts.forEach((p, i) => {
+    if (i % step !== 0) return
+    const width = p.label.length * fs * 0.54
+    const anchor = i === 0 ? "start" : W - x(i) < width / 2 ? "end" : "middle"
+    const left = anchor === "start" ? x(i) : anchor === "end" ? x(i) - width : x(i) - width / 2
+    if (left < lastEnd + fs * 0.25) return
+    dateTicks.push({ key: p.date, x: x(i), anchor, label: p.label })
+    lastEnd = left + width
+  })
   return (
     <div className="flex flex-col gap-2">
       <svg viewBox={`0 0 ${W} ${H}`} ref={svgRef} className="w-full" role="img" aria-label={summary} data-chart="pace">
@@ -466,7 +513,7 @@ export function PaceChart({ model, height = 220 }: { model: StudentModel; height
             <text x={pad.l - 6} y={y(t)} textAnchor="end" dominantBaseline="middle" className="fill-muted-foreground" style={{ fontSize: fs }}>{t}</text>
           </g>
         ))}
-        {pts.map((p, i) => (i % step === 0 ? <text key={p.date} x={x(i)} y={H - 8} textAnchor="middle" className="fill-muted-foreground" style={{ fontSize: fs }}>{p.label}</text> : null))}
+        {dateTicks.map((d) => <text key={d.key} x={d.x} y={H - 8} textAnchor={d.anchor} className="fill-muted-foreground" style={{ fontSize: fs }}>{d.label}</text>)}
         <path d={line("expected", pts)} fill="none" stroke={VIZ.zero} strokeWidth={1.5} strokeDasharray="5 4" />
         <path d={line("counted", done)} fill="none" stroke="var(--foreground)" strokeWidth={2.5} />
         {todayIdx >= 0 ? (
@@ -483,7 +530,7 @@ export function PaceChart({ model, height = 220 }: { model: StudentModel; height
       </svg>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legend">
         <li className="inline-flex items-center gap-1.5"><span className="block h-0.5 w-4" style={{ background: "var(--foreground)" }} aria-hidden="true" />Counted</li>
-        <li className="inline-flex items-center gap-1.5"><span className="block h-0 w-4 border-t border-dashed" style={{ borderColor: "var(--foreground)" }} aria-hidden="true" />Expected, term clock</li>
+        <li className="inline-flex items-center gap-1.5"><span className="block h-0 w-4 border-t border-dashed" style={{ borderColor: "var(--foreground)" }} aria-hidden="true" />Expected by now</li>
       </ul>
       <ShowAsTable label="Pace by week">
         <Table>
@@ -540,7 +587,7 @@ export function PlacementList({ model, studentId }: { model: StudentModel; stude
 
 /**
  * What each course expects now, one row per course; each row opens the course's skills by level with progress on each [REQ ST-01].
- * "Mandatory achieved" is the course's own mandatory set (the only level "Required this term" reads, D-X12).
+ * "Mandatory achieved" is the course's own mandatory set.
  */
 export function CourseTable({ model, studentId, mandatoryCell, placement = false, compact = false }: { model: StudentModel; studentId: string; /** Draw the mandatory column (variant C: one square per skill). */ mandatoryCell?: (c: CourseExpectation) => React.ReactNode; /** Show when the course's placement ends (variant C merges the placements card here). */ placement?: boolean; /** Narrow column (variant C): course name in the row's tooltip only, no "other achieved" column. */ compact?: boolean }) {
   const [open, setOpen] = React.useState<string | null>(null)
@@ -553,7 +600,7 @@ export function CourseTable({ model, studentId, mandatoryCell, placement = false
           <TableHead>Course</TableHead>
           <TableHead className={cn("whitespace-normal", !mandatoryCell && "text-end")}>Mandatory achieved</TableHead>
           <TableHead className="whitespace-normal text-end">Evaluations now</TableHead>
-          {compact ? null : <TableHead className="hidden text-end md:table-cell">Recommended or optional achieved</TableHead>}
+          {compact ? null : <TableHead className="hidden text-end md:table-cell">Recommended achieved</TableHead>}
           {placement ? <TableHead className="hidden lg:table-cell">Placement ends</TableHead> : null}
         </TableRow>
       </TableHeader>
@@ -584,7 +631,7 @@ export function CourseTable({ model, studentId, mandatoryCell, placement = false
                 </span>
               ) : <span className="text-muted-foreground">None expected</span>}
             </TableCell>
-            {compact ? null : <TableCell className="hidden text-end tabular-nums md:table-cell">{c.optional ? `${c.optionalAchieved} of ${c.optional}` : "None"}</TableCell>}
+            {compact ? null : <TableCell className="hidden text-end tabular-nums md:table-cell">{c.recommended ? `${c.recommendedAchieved} of ${c.recommended}` : "None"}</TableCell>}
             {placement ? <PlacementCell p={placeOf(c.id)} /> : null}
           </TableRow>
           {open === c.id ? (

@@ -173,7 +173,7 @@ function Preview({ m, r, view, chip }: { m: Readiness; r: ReportModel; view: Rep
         </div>
         {file === "pdf" ? (
           <div className="flex flex-col gap-2 rounded-md border border-border p-3 text-sm">
-            <span className="font-semibold text-foreground">{`Graduation readiness, ${viewLabel}`}</span>
+            <span className="font-semibold text-foreground">{`Readiness, ${viewLabel}`}</span>
             <span className="text-xs text-muted-foreground">{filtersLine(m, chip)}</span>
             <span className="tabular-nums text-foreground">{`${m.stage.complete} of ${m.rows.length} complete. ${viewRows(view, r)} rows, as on screen.`}</span>
             <span className="border-t border-border pt-2 text-xs text-muted-foreground">{`Signed ${DIRECTOR_NAME}, ${shortDate(DEMO_TODAY)}`}</span>

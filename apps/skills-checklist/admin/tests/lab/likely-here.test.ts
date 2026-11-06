@@ -32,14 +32,12 @@ const withLevel = (s: V2State, courseId: string, skillId: string, level: Mapping
 describe("Likely here is fed only by Mandatory and Recommended", () => {
   const { place, skill } = setup()
 
-  it("an Optional skill on the placement's course is on the course but never likely here", () => {
+  it("a stored Optional reads as Not mapped: not on the course, never likely here, still pickable (D-L76, REQ CM-05)", () => {
     expect(place).toBeDefined()
     expect(skill).toBeDefined()
     const s = withLevel(seed, place.courseId, skill.id, "optional")
     const m = buildStudent(s)!
-    const r = m.all.find((x) => x.id === skill.id)!
-    expect(r.level).toBe("optional")
-    expect(r.likely).toBe(false)
+    expect(m.courses.find((c) => c.id === place.courseId)?.skills.some((x) => x.id === skill.id) ?? false).toBe(false)
     const pick = pickRows(s, m).find((x) => x.id === skill.id)!
     expect(pick.likely).toBe(false)
     expect(pickerGroups(pickRows(s, m)).find((g) => g.key === "likely")?.rows.some((x) => x.id === skill.id) ?? false).toBe(false)

@@ -16,10 +16,10 @@ import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { PageFrame } from "@/components/skills/page-header"
 import { ChoiceGroup, TOUCH } from "@/components/v2/preceptor/choice-group"
 import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
-import { OUTCOME_WORD } from "@/lib/v2/outcomes"
 import {
-  attestationText, blankPass, criteriaNote, fieldIds, FEEDBACK_MAX, levelsLabel, outcomeChoices, requestAccess, SCORE_MAX, showsLevels, studentContext, submitEvaluation, validatePass,
+  attestationText, blankPass, criteriaNote, fieldIds, FEEDBACK_MAX, levelsLabel, outcomeChoices, requestAccess, scoreMaxOf, showsLevels, studentContext, submitEvaluation, validatePass,
   waitingFor, type Access, type FieldIssue, type PassInput, type PassResult, type SkillResponse,
+  recordedOutcome,
 } from "@/lib/v2/preceptor"
 import { oldestFirst, sentAgo } from "@/lib/v2/queue-viz"
 import { IDS } from "@/lib/v2/seed"
@@ -319,7 +319,7 @@ export function SkillCard({ s, x, skill, r, patch, issueFor, issuesFor }: { s: V
               return (
                 <fieldset key={i} className="flex flex-col gap-1">
                   <legend className="text-sm text-foreground">{q}</legend>
-                  <ChoiceGroup name={`Score for ${q} in ${skill.name}`} idBase={id} firstId={id} columns={3} invalid={!!issueFor(id)} describedBy={issueFor(id) ? `${id}-error` : undefined} options={Array.from({ length: SCORE_MAX }, (_, n) => ({ value: String(n + 1), label: String(n + 1) }))} value={r.scores[i] != null ? String(r.scores[i]) : ""} onChange={(v) => { const a = [...r.scores]; a[i] = Number(v); patch({ scores: a }) }} />
+                  <ChoiceGroup name={`Score for ${q} in ${skill.name}`} idBase={id} firstId={id} columns={3} invalid={!!issueFor(id)} describedBy={issueFor(id) ? `${id}-error` : undefined} options={Array.from({ length: scoreMaxOf(skill) }, (_, n) => ({ value: String(n + 1), label: String(n + 1) }))} value={r.scores[i] != null ? String(r.scores[i]) : ""} onChange={(v) => { const a = [...r.scores]; a[i] = Number(v); patch({ scores: a }) }} />
                   {issueFor(id) ? <FieldError id={`${id}-error`} errors={[{ message: issueFor(id) }]} /> : null}
                 </fieldset>
               )
@@ -335,6 +335,8 @@ export function SkillCard({ s, x, skill, r, patch, issueFor, issuesFor }: { s: V
           </fieldset>
         ) : null}
 
+        {/* The question and scored models have no outcome to choose: the answers or scores decide it (D-L73). */}
+        {skill.model === "question" || skill.model === "scored" ? null : (
         <fieldset className="flex flex-col gap-1">
           <legend className="text-sm font-medium text-foreground">{`Outcome for ${skill.name}`}</legend>
           <ChoiceGroup name={`Outcome for ${skill.name}`} idBase={`out-${skill.id}`} firstId={outId} invalid={!!issueFor(outId)} describedBy={issueFor(outId) ? `${outId}-error` : undefined} options={choices.map((o) => ({ value: o.value, label: o.label }))} value={r.outcome ?? ""} onChange={(v) => patch({ outcome: v as Outcome })} />
@@ -342,6 +344,7 @@ export function SkillCard({ s, x, skill, r, patch, issueFor, issuesFor }: { s: V
           {noteFor ? <p className="text-xs text-foreground" role="status" data-criteria-note>{noteFor}</p> : null}
           {issueFor(outId) ? <FieldError id={`${outId}-error`} errors={[{ message: issueFor(outId) }]} /> : null}
         </fieldset>
+        )}
 
         <Field>
           <FieldLabel htmlFor={fbId}>{required ? `Feedback for ${skill.name} (required)` : `Feedback for ${skill.name} (optional)`}</FieldLabel>
@@ -383,6 +386,7 @@ function Receipt({ s, x, result, handover }: { s: V2State; x: Submission; result
       <ul className="flex flex-col gap-3" aria-label="What was recorded">
         {evals.map((e) => {
           const k = s.skills.find((y) => y.id === e.skillId)
+          const told = recordedOutcome(k, e)
           return (
             <li key={e.id}>
               <Card size="sm" role="article" aria-labelledby={`rc-${e.id}`} data-receipt-item={e.skillId}>
@@ -391,10 +395,10 @@ function Receipt({ s, x, result, handover }: { s: V2State; x: Submission; result
                     <CardTitle asChild className="text-base">
                       <h2 id={`rc-${e.id}`}>{k?.name ?? "A skill"}</h2>
                     </CardTitle>
-                    <StatusPill kind="outcome" value={e.outcome} label={e.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[e.outcome]} />
+                    <StatusPill kind="outcome" value={told.tone} label={told.word} />
                   </div>
                   <CardDescription>
-                    {e.status === "awaiting-approval" ? "Held for program staff to approve. It does not count yet." : e.outcome === "not-yet" ? "Feedback only. Nothing was recorded as passed or failed." : e.outcome === "met" ? `Counts toward ${first(student)}'s record now.` : "Recorded. It does not count toward the rule."}
+                    {e.status === "awaiting-approval" ? "Held for program staff to approve. It does not count yet." : e.outcome === "not-yet" ? "Feedback only. Nothing was recorded as passed or failed." : told.counts ? `Counts toward ${first(student)}'s record now.` : "Recorded. It does not count toward the rule."}
                   </CardDescription>
                 </CardHeader>
               </Card>

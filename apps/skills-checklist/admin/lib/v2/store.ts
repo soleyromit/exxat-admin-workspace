@@ -1,4 +1,5 @@
 import { createSeed as createSeedState, SEED_VERSION } from "./seed"
+import { withCurrentSettingNames, withStoredSettingNames } from "./setting-names"
 import type { AuditEntry, V2State } from "./types"
 
 export const STORAGE_KEY = "skills-checklist:v2:store"
@@ -183,12 +184,22 @@ export function createV2Store(opts: { storage?: Storage | null; key?: string; se
   let failed = false
   const listeners = new Set<() => void>()
   const emit = () => listeners.forEach((l) => l())
+  // `state` holds rows as stored; readers and transitions get the view with current clinical setting names (lib/v2/setting-names.ts).
+  let viewOf: V2State = state
+  let view: V2State = state
+  const current = () => {
+    if (viewOf !== state) {
+      viewOf = state
+      view = withCurrentSettingNames(state)
+    }
+    return view
+  }
   const save = () => {
     failed = storage ? !write(storage, key, serverSeed, state) : false
   }
 
   return {
-    getSnapshot: () => state,
+    getSnapshot: current,
     getServerSnapshot: () => serverSeed,
     subscribe(l) {
       listeners.add(l)
@@ -206,7 +217,7 @@ export function createV2Store(opts: { storage?: Storage | null; key?: string; se
       emit()
     },
     update(fn) {
-      state = fn(state)
+      state = withStoredSettingNames(fn(current()))
       save()
       emit()
     },

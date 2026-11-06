@@ -6,17 +6,15 @@
  * same list. Also the Rename dialog (DS Dialog with one field), shared by both variants.
  */
 import * as React from "react"
-import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
-import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
-import { Input } from "@exxatdesignux/ui/components/ui/input"
+import { NameDialog } from "@/components/lab/admin-a/lists-parts"
 import { useV2Store } from "@/lib/v2/react"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import { addVocab, deleteVocab, renameVocab, setVocabActive, validateVocabName, type VocabKind, type VocabResult } from "@/lib/v2/vocabulary"
 import type { V2State } from "@/lib/v2/types"
-import { plural } from "@/lib/v2/format"
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { addClinicalSetting, deleteClinicalSetting, renameClinicalSetting, setClinicalSettingActive, validateClinicalSetting, type ClinicalSettingResult } from "@/lib/lab/settings"
 
+/** The limit `validateVocabName` holds. */
+const VOCAB_NAME_MAX = 80
 const at = () => `${DEMO_TODAY}T${new Date().toISOString().slice(11)}`
 export const isVocabKind = (t: string): t is VocabKind => t === "categories" || t === "tags"
 
@@ -41,43 +39,50 @@ export function useVocabularyActions() {
   }, [store])
 }
 
-/** Outcome sentence for a rename: what changed, and on how many skills, once. */
-export const renamedText = (from: string, to: string, uses: number) => (uses ? `Renamed "${from}" to "${to}" on ${plural(uses, skillNoun(), skillNounPlural())}.` : `Renamed "${from}" to "${to}".`)
+/** The same for the program's clinical settings [REQ SL-07], held by name in `state.program`. `saved` is false when the browser refused the write. */
+export function useClinicalSettingActions() {
+  const store = useV2Store()
+  return React.useMemo(() => {
+    const run = (fn: (s: V2State) => ClinicalSettingResult): ClinicalSettingResult => {
+      let out: ClinicalSettingResult = { ok: false, error: "Nothing was changed." }
+      store.update((s) => {
+        out = fn(s)
+        return out.ok ? out.state : s
+      })
+      return out
+    }
+    return {
+      add: (name: string) => run((s) => addClinicalSetting(s, name, IDS.ross, at())),
+      rename: (from: string, name: string) => run((s) => renameClinicalSetting(s, from, name, IDS.ross, at())),
+      setActive: (name: string, active: boolean) => run((s) => setClinicalSettingActive(s, name, active, IDS.ross, at())),
+      remove: (name: string) => run((s) => deleteClinicalSetting(s, name, IDS.ross, at())),
+      saved: () => !store.saveFailed(),
+    }
+  }, [store])
+}
 
-const WORD: Record<VocabKind, string> = { categories: "category", tags: "tag" }
+/** Outcome sentence for a rename, map section E rule 10: "{Object} {past verb}." The object is the name the admin chose to change; the row now shows the new one. */
+export const renamedText = (from: string) => `${from} renamed.`
 
-/** Rename one category or tag. The new name replaces the old one on every skill that carries it. */
-export function RenameDialog({ kind, target, state, onClose, onRename }: { kind: VocabKind; target: { id: string; name: string; uses: number } | null; state: V2State; onClose: () => void; onRename: (id: string, name: string) => string | null }) {
-  const [name, setName] = React.useState("")
-  const [error, setError] = React.useState<string | null>(null)
-  React.useEffect(() => {
-    setName(target?.name ?? "")
-    setError(null)
-  }, [target])
-  const submit = () => {
-    if (!target) return
-    const e = validateVocabName(state, kind, name, target.id) ?? onRename(target.id, name)
-    setError(e)
-  }
+type RenameKind = VocabKind | "settings"
+
+/**
+ * Rename one category, tag or clinical setting: the one rename dialog, the same as a skill list's and a student group's (map E rule 14), titled with the object's name. The new name replaces the
+ * old one everywhere it is carried. Every way out asks while the name has changed, browser Back too (E rule 6).
+ */
+export function RenameDialog({ kind, target, state, onClose, onRename, onCloseAutoFocus }: { kind: RenameKind; target: { id: string; name: string; uses: number; usedBy?: string | null } | null; state: V2State; onClose: () => void; onRename: (id: string, name: string) => string | null; /** Where focus goes when the dialog closes: it opened from a menu whose item is gone by then. */ onCloseAutoFocus?: (e: Event) => void }) {
+  const back = React.useMemo(() => ({ onCloseAutoFocus: onCloseAutoFocus ?? (() => undefined) }), [onCloseAutoFocus])
   return (
-    <Dialog open={!!target} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{`Rename ${WORD[kind]}`}</DialogTitle>
-          <DialogDescription>{target && target.uses ? `${plural(target.uses, skillNoun(), skillNounPlural())} will show the new name.` : `Nothing uses this ${WORD[kind]} yet.`}</DialogDescription>
-        </DialogHeader>
-        <form noValidate onSubmit={(e) => { e.preventDefault(); submit() }} className="flex flex-col gap-4" id="vocab-rename-form">
-          <Field data-invalid={!!error || undefined}>
-            <FieldLabel htmlFor="vocab-rename">Name</FieldLabel>
-            <Input id="vocab-rename" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!!error || undefined} aria-describedby={error ? "vocab-rename-error" : undefined} className="h-8" />
-            {error ? <FieldError id="vocab-rename-error">{error}</FieldError> : null}
-          </Field>
-        </form>
-        <DialogFooter>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button type="submit" form="vocab-rename-form" variant="default" size="sm">Rename</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <NameDialog
+      open={!!target}
+      title={`Rename ${target?.name ?? ""}`}
+      id="vocab-rename"
+      initial={target?.name ?? ""}
+      maxLength={VOCAB_NAME_MAX}
+      back={back}
+      validate={(name) => (!target ? null : kind === "settings" ? validateClinicalSetting(state, name, target.name) : validateVocabName(state, kind, name, target.id))}
+      onClose={onClose}
+      onSave={(name) => (target ? onRename(target.id, name) : null)}
+    />
   )
 }

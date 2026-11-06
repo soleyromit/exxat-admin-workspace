@@ -9,7 +9,7 @@ import type { EvalModel, Evaluation, EvaluatorRole, LevelMinimum, Person, Publis
 import { inSentence, skillNoun } from "./terms"
 import { checkOffAllowedFor, checkOffLevelIndex, checkOffOffReason, checkOffScore, tickRecordsLine } from "./checkoff-rules"
 
-/** The Configure setting's name, in "Who signs", Check and save, and "What you changed". */
+/** The Configure setting's name, under Evaluator in "Who does what", in Check and save, and in "What you changed". */
 export const CHECKOFF_LABEL = "Group check-off"
 
 /**
@@ -95,15 +95,15 @@ export const ROLE_LABEL: Record<EvaluatorRole, string> = { preceptor: "Preceptor
 export const ROLES: EvaluatorRole[] = ["preceptor", "faculty", "lab-instructor"]
 export const FIELD_TYPE_LABEL: Record<FieldType, string> = { date: "Date", short: "Short text", long: "Long text", number: "Number", choice: "Choice list" }
 /**
- * Model names in the client's own words [CALL 10-26 A.2]: approved or not approved, questions with a final result, independence
+ * Model names in the client's own words [CALL 10-26 A.2]: approved or not approved, questions, independence
  * level. Scored stays fourth; REQ 4.1 and SC-07 require it, so it carries no Proposed marker. The engine ids are unchanged.
  * The v2 labels (lib/v2/config.ts) are not edited here; the library column still reads them.
  */
 export const LAB_MODEL_LABEL: Record<EvalModel, string> = {
   binary: "Approved or not approved",
-  question: "Questions, then a final result",
+  question: "Questions",
   demonstration: "Independence level",
-  scored: "Scored",
+  scored: "Score on a scale",
 }
 export { LAB_MODEL_LABEL as MODEL_LABEL }
 
@@ -116,7 +116,7 @@ export const PROPOSED_MODELS: ReadonlySet<EvalModel> = new Set<EvalModel>()
 /** One line per model with an example in the client's words. */
 export const MODEL_HELP: Record<EvalModel, string> = {
   binary: "The evaluator gives one result per evaluation.",
-  question: "The evaluator answers each question, then gives one result.",
+  question: "The evaluator answers each question. The result comes from the answers.",
   demonstration: "The evaluator picks the level the student worked at.",
   scored: "The evaluator scores each question on a scale.",
 }
@@ -128,7 +128,7 @@ export const MODEL_HELP: Record<EvalModel, string> = {
 export type LabelPresetId = "metnotmet" | "approval" | "independence" | "performance" | "aacn"
 /** Named starting sets (audit fix 2026-11-02): labels only; never which level counts or how many [REQ SC-02]. Lowest first. */
 export const LABEL_PRESETS: Record<LabelPresetId, { label: string; outcomes?: [string, string]; levels?: string[] }> = {
-  metnotmet: { label: "Met / Not met", outcomes: ["Met", "Not met"] },
+  metnotmet: { label: "Met / Unmet", outcomes: ["Met", "Unmet"] },
   approval: { label: "Approved / Not approved", outcomes: ["Approved", "Not approved"] },
   independence: { label: "Independence", levels: ["Observed", "With assistance", "Independent"] },
   performance: { label: "Performance", levels: ["Observed", "Assisted", "Performed"] },
@@ -153,6 +153,27 @@ export function applyPreset(rule: LabRule, id: LabelPresetId): LabRule {
     return { ...rule, levels, levelMinimums: rule.levelMinimums.filter((m) => m.levelIndex < levels.length), checkOff, carried }
   }
   return rule
+}
+
+/**
+ * What a starting set would overwrite, so the page can ask first; null when nothing the admin chose would be lost. Levels: any named level that differs. Labels: only labels the admin
+ * changed, since the default pair and the starting sets are not theirs. Prism's own Met and Unmet stay prefilled [REQ 4.1].
+ */
+export function presetReplaces(rule: LabRule, id: LabelPresetId): { noun: "level" | "label"; was: string[]; next: string[]; clearsCounts: boolean } | null {
+  const p = LABEL_PRESETS[id]
+  const key = (xs: readonly string[]) => xs.map(norm).join("|")
+  if (rule.model === "demonstration" && p.levels) {
+    const was = rule.levels.map((l) => l.trim()).filter(Boolean)
+    if (!was.length || key(was) === key(p.levels)) return null
+    return { noun: "level", was, next: [...p.levels], clearsCounts: rule.carried.minLevelIndex !== null && applyPreset(rule, id).carried.minLevelIndex === null }
+  }
+  if (rule.model === "binary" && p.outcomes) {
+    const was = rule.outcomeLabels.map((l) => l.trim()).filter(Boolean)
+    const known = [["Met", "Unmet"], ...Object.values(LABEL_PRESETS).flatMap((x) => (x.outcomes ? [x.outcomes] : []))]
+    if (!was.length || known.some((k) => key(k) === key(was))) return null
+    return { noun: "label", was, next: [...p.outcomes], clearsCounts: false }
+  }
+  return null
 }
 
 const isInt = (n: unknown): n is number => typeof n === "number" && Number.isInteger(n)
@@ -194,7 +215,7 @@ export function fromV2(skill: Pick<Skill, "model" | "config">): LabRule {
   const c: SkillConfig | null = skill.config
   if (!c || !skill.model) return emptyRule()
   const a = c.achievement
-  const labels: [string, string] = [c.outcomeLabels[0], c.outcomeLabels[1] === "Not met" ? "Unmet" : c.outcomeLabels[1]]
+  const labels: [string, string] = [c.outcomeLabels[0], !c.ownLabels && c.outcomeLabels[1] === "Not met" ? "Unmet" : c.outcomeLabels[1]]
   return {
     model: skill.model,
     outcomeLabels: labels,
@@ -269,6 +290,17 @@ export function parseQuestionLines(text: string): string[] {
     .filter(Boolean)
 }
 
+/** Pasted lines that are new: a repeat, of another pasted line or of a question already written, is left out, ignoring case. */
+export function newQuestionLines(lines: readonly string[], existing: readonly string[]): string[] {
+  const seen = new Set(existing.map((q) => q.trim().toLowerCase()))
+  return lines.filter((l) => {
+    const k = l.trim().toLowerCase()
+    if (seen.has(k)) return false
+    seen.add(k)
+    return true
+  })
+}
+
 /**
  * Pasted questions go after the ones already written; empty rows are filled first. Existing questions keep their positions, so
  * nothing in a rule that names them moves [REQ AE-07].
@@ -298,19 +330,41 @@ export function setSubsetRange(rule: LabRule, from: number, to: number, on: bool
 
 /**
  * Removing a level drops the minimums that pointed at it and moves later ones down one, so "at least 2 at Independent" never
- * becomes "at least 2 at" whatever level slid into its place [REQ AE-07]. The carried minimum level follows the same way.
+ * becomes "at least 2 at" whatever level slid into its place [REQ AE-07].
  */
 export function removeLevel(rule: LabRule, index: number): LabRule {
   const levels = rule.levels.filter((_, i) => i !== index)
   const levelMinimums = rule.levelMinimums.filter((m) => m.levelIndex !== index).map((m) => (m.levelIndex > index ? { ...m, levelIndex: m.levelIndex - 1 } : m))
   const shift = (x: number | null | undefined): number | null => (x === null || x === undefined || x === index ? null : x > index ? x - 1 : x)
-  const minLevelIndex = shift(rule.carried.minLevelIndex)
+  // The levels above the one removed still count, so the next one up takes its place. Only removing the last level that counted leaves nothing chosen.
+  const from = rule.carried.minLevelIndex
+  const minLevelIndex = from === index ? (index < levels.length ? index : null) : shift(from)
   // What one tick records names a level too: it follows its level, or falls back to the default (highest) when that level goes.
   const checkOff = rule.checkOff ? { ...rule.checkOff, levelIndex: shift(rule.checkOff.levelIndex) } : rule.checkOff
   return { ...rule, levels, levelMinimums, carried: { ...rule.carried, minLevelIndex }, checkOff }
 }
 
-/** Swapping two levels or two questions carries every rule reference with the item it names [REQ AE-07]. */
+/**
+ * Where "counts from" sits after a move (D-L74, D-L95). Each level keeps its Counts box. The boxes are one line across the list, so that holds unless the move crosses the line:
+ * then the level the admin moved keeps its box and the level it passed takes the change, unless that would clear every box (never, D-L95), when the moved level counts too [INFER].
+ */
+function countsFromAfterMove(from: number | null, moved: number, to: number, count: number): number | null {
+  if (from === null) return null
+  const low = Math.min(moved, to)
+  const high = Math.max(moved, to)
+  if (low >= from || high < from) return from
+  if (moved === high) return low
+  return high + 1 < count ? high + 1 : low
+}
+
+/** The one level whose Counts box a move changed, for the row to say so. Null when every level kept its box. */
+export function levelMoveChange(before: Pick<LabRule, "model" | "carried">, after: Pick<LabRule, "model" | "carried">, moved: number, to: number): { index: number; counts: boolean } | null {
+  if (levelTicked(before, moved) !== levelTicked(after, to)) return { index: to, counts: levelTicked(after, to) }
+  if (levelTicked(before, to) !== levelTicked(after, moved)) return { index: moved, counts: levelTicked(after, moved) }
+  return null
+}
+
+/** Swapping two levels or two questions carries every rule reference with the item it names [REQ AE-07]. `i` is the one the admin moved. */
 export function swapItems(rule: LabRule, kind: "levels" | "questions", i: number, j: number): LabRule {
   const list = [...rule[kind]]
   if (i < 0 || j < 0 || i >= list.length || j >= list.length) return rule
@@ -320,16 +374,16 @@ export function swapItems(rule: LabRule, kind: "levels" | "questions", i: number
     const qr = rule.questionRule
     return { ...rule, questions: list, questionRule: qr?.kind === "subset" ? { kind: "subset", indices: qr.indices.map(map) } : qr }
   }
-  const mi = rule.carried.minLevelIndex
   const co = rule.checkOff
   const checkOff = co ? { ...co, levelIndex: co.levelIndex === null || co.levelIndex === undefined ? null : map(co.levelIndex) } : co
-  return { ...rule, levels: list, levelMinimums: rule.levelMinimums.map((m) => ({ ...m, levelIndex: map(m.levelIndex) })), carried: { ...rule.carried, minLevelIndex: mi === null ? null : map(mi) }, checkOff }
+  return { ...rule, levels: list, levelMinimums: rule.levelMinimums.map((m) => ({ ...m, levelIndex: map(m.levelIndex) })), carried: { ...rule.carried, minLevelIndex: countsFromAfterMove(rule.carried.minLevelIndex, i, j, list.length) }, checkOff }
 }
 
 /** Choosing or changing the model rebuilds what depends on it and keeps the rest [REQ SC-09, AE-07]. */
 export function withModel(rule: LabRule, model: EvalModel): LabRule {
   if (rule.model === model) return rule
-  const next: LabRule = { ...rule, model, levelMinimums: [], questionRule: null, scoredRule: null }
+  // Nothing the new model asks arrives chosen [REQ SC-02, SC-03, SC-07]: which label qualifies and the scale top start empty.
+  const next: LabRule = { ...rule, model, levelMinimums: [], questionRule: null, scoredRule: null, qualifyingLabel: null, scaleMax: model === "scored" ? Number.NaN : rule.scaleMax }
   if (model === "question" || model === "scored") {
     if (next.questions.length === 0) next.questions = [""]
   } else next.questions = []
@@ -364,6 +418,9 @@ export interface RuleClauses {
   settings: string[]
 }
 
+/** The questions written so far: a blank row is not a question yet. */
+const questionCount = (rule: Pick<LabRule, "questions">): number => rule.questions.filter((q) => q.trim()).length
+
 function qualifierOf(rule: LabRule): string {
   switch (rule.model) {
     case "binary": {
@@ -372,16 +429,21 @@ function qualifierOf(rule: LabRule): string {
     }
     case "question": {
       const r = rule.questionRule
-      const m = rule.questions.length
-      if (!r) return ""
-      if (r.kind === "all") return "with every question answered Yes"
-      if (r.kind === "atLeast") return `with at least ${r.n} of ${m} questions answered Yes`
+      const m = questionCount(rule)
+      // No questions yet: nothing to count against. ruleSentence says so.
+      if (!r || m === 0) return ""
+      if (r.kind === "all") return m === 1 ? "with 1 question answered Yes" : `with all ${m} questions answered Yes`
+      // A number that cannot be met says nothing rather than read as a rule; the row says what is wrong.
+      if (r.kind === "atLeast") return isInt(r.n) && r.n >= 1 && r.n <= m ? `with at least ${r.n} of ${m} ${plural(m, "question", "questions")} answered Yes` : ""
       const picked = questionNumbers(r.indices)
       return picked.length ? `with ${plural(r.indices.length, "question", "questions")} ${joinAnd(picked)} answered Yes` : ""
     }
     case "scored": {
       const r = rule.scoredRule
-      if (!r) return ""
+      if (!r || questionCount(rule) === 0) return ""
+      // Never "9 or more out of 5": a value off the scale says nothing rather than read as a rule; the row says what is wrong.
+      const top = r.kind === "total" ? rule.scaleMax * Math.max(1, rule.questions.length) : rule.scaleMax
+      if (!(typeof r.value === "number" && r.value >= 1 && r.value <= top)) return ""
       if (r.kind === "average") return `averaging ${r.value} or more out of ${rule.scaleMax}`
       if (r.kind === "minEach") return `scoring at least ${r.value} on every question`
       return `totalling ${r.value} or more`
@@ -402,6 +464,16 @@ export const countsFromIndex = (rule: Pick<LabRule, "model" | "carried">): numbe
 
 /** Set the lowest level that counts. */
 export const withCountsFrom = (rule: LabRule, index: number | null): LabRule => ({ ...rule, carried: { ...rule.carried, minLevelIndex: index } })
+
+/** Whether the checkbox for level i is ticked: that level is at or above the threshold. */
+export function levelTicked(rule: Pick<LabRule, "model" | "carried">, i: number): boolean {
+  const from = countsFromIndex(rule)
+  return from !== null && i >= from
+}
+
+/** Tick a level (it and every level above count; the lowest level ticked means any level) or untick it (it and every level below stop; none left is null, not chosen). */
+export const withLevelTicked = (rule: LabRule, i: number, ticked: boolean): LabRule =>
+  withCountsFrom(rule, ticked ? i : i + 1 < rule.levels.length ? i + 1 : null)
 
 /** The named levels that count, lowest first. Empty until chosen. */
 export function countingLevels(rule: LabRule): string[] {
@@ -424,11 +496,16 @@ export function countingLevelsPhrase(rule: LabRule): string {
   return `rated ${inSentence(named[0]!)} or above`
 }
 
-/** The option label for "count from level i" on the Levels step (a label standing alone, so the level keeps its case). */
+/**
+ * "Count from level i" as a label standing alone, so the level keeps its case. The same reading as the rule sentence (countingLevelsPhrase):
+ * every level is "Any level" (reverses D-L51's "{Lowest} or above", see the ledger's D-L95), the top two name both.
+ */
 export function countsFromOption(levels: readonly string[], i: number): string {
+  if (i === 0 && levels.length > 1) return "Any level"
   const name = levels[i]?.trim() || `Level ${i + 1}`
-  if (i === 0) return "Any level"
   if (i === levels.length - 1) return `${name} only`
+  const top = levels[i + 1]?.trim() || `Level ${i + 2}`
+  if (i === levels.length - 2) return `${name} or ${top}`
   return `${name} or above`
 }
 
@@ -458,11 +535,18 @@ export type Audience = "admin" | "student"
  * The rule in plain language, generated from the current rule at read time [REQ AE-02; strategy 02 section 7.4].
  * "Get 3 evaluations rated Met, at least 2 at Works alone or above, from 2 different evaluators, with 1 in Inpatient."
  */
+/** The rule says what makes an evaluation count. Until it does, a count alone would read like a finished rule, so no sentence shows; the row says what is missing. */
+export const ruleSaysWhatCounts = (rule: LabRule): boolean => qualifierOf(rule) !== ""
+
+/** The rule as the panel and Evaluation settings word it: "Student needs 3 evaluations rated developed." [REQ SC-17, AE-03]. */
+export const studentNeedsSentence = (rule: LabRule): string => ruleSentence(rule).replace(/^Get /, "Student needs ")
+
 export function ruleSentence(rule: LabRule, audience: Audience = "admin"): string {
   if (!rule.model) return `No rule yet. Choose how this ${skillNoun()} is evaluated.`
   if (!hasNeed(rule)) return audience === "student" ? "The program has not set how many times yet." : "Not set yet."
   const c = ruleClauses(rule)
   const parts = [c.qualifier ? `${c.total} ${c.qualifier}` : c.total, ...c.levels]
+  if ((rule.model === "question" || rule.model === "scored") && questionCount(rule) === 0) parts.push("no questions yet")
   if (c.distinct) parts.push(c.distinct)
   if (c.settings.length) parts.push(`with ${joinAnd(c.settings)}`)
   const body = parts.join(", ")
@@ -664,7 +748,7 @@ export function ruleMeaning(rule: LabRule): Meaning {
 /**
  * Four editing sections, then Check (docs/knowledge/design/skill-setup-journey/02 section 4, J4). Setting minimums live in the
  * rule (they are achievement criteria [REQ SC-11, AE-03]); signer roles, student fields, feedback, self-evaluation and approval
- * share "Who signs" (what an evaluation must carry [REQ SC-13..16]).
+ * share "Who does what" (what an evaluation must carry [REQ SC-13..16]).
  */
 export type SectionId = "model" | "outcomes" | "rule" | "signoff"
 
@@ -672,15 +756,18 @@ export type SectionId = "model" | "outcomes" | "rule" | "signoff"
 /** The model step, in the client's words: "Model" is an internal word (UX critique 2026-10-26). The question stays "How is this skill evaluated?". */
 /** One vocabulary on the program page and the per-skill page (Romit 2026-11-02, audit fix): four sections, same names, same order. */
 export const MODEL_STEP_LABEL = "How skills are judged"
+/** On Configure the skill (variant B): one skill, not the program's setting, so the two walkthrough stops do not read as the same page (D-L65). */
+export const MODEL_STEP_LABEL_ONE = "How this skill is judged"
 export const CRITERIA_LABEL = "What counts as achieved"
 export const HOW_MANY_LABEL = "How many evaluations"
+export const WHO_DOES_WHAT_LABEL = "Who does what"
 export type ConfigureStepId = SectionId | "check"
 
 export const SECTIONS: Array<{ id: SectionId; label: string }> = [
   { id: "model", label: MODEL_STEP_LABEL },
   { id: "outcomes", label: CRITERIA_LABEL },
   { id: "rule", label: HOW_MANY_LABEL },
-  { id: "signoff", label: "Who signs" },
+  { id: "signoff", label: WHO_DOES_WHAT_LABEL },
 ]
 
 /** The five wizard steps, three words at most. Section ids stay the engine's; only labels follow the client. */
@@ -719,7 +806,7 @@ export function configureStepHead(id: ConfigureStepId, model: EvalModel | null, 
     case "rule":
       return { title: HOW_MANY_LABEL }
     case "signoff":
-      return { title: "Who signs" }
+      return { title: WHO_DOES_WHAT_LABEL }
     case "check":
       return ready ? { title: "Ready to save?" } : { title: "What is left before saving?" }
   }
@@ -795,18 +882,18 @@ export function validateRule(rule: LabRule): RuleIssue[] {
 
   if (m === "question") {
     const r = rule.questionRule
-    if (!r) add("rule", "cfg-qrule", "missing", "Choose what makes an evaluation qualify.")
-    else if (r.kind === "atLeast" && (!isInt(r.n) || r.n < 1 || r.n > rule.questions.length)) add("rule", "cfg-qrule-n", "range", `Enter a number from 1 to ${rule.questions.length}.`)
-    else if (r.kind === "subset" && r.indices.filter((i) => i < rule.questions.length).length === 0) add("rule", "cfg-qrule-subset", "empty", "Select at least one question that must be Yes.")
+    if (!r) add("outcomes", "cfg-qrule", "missing", "Choose what makes an evaluation qualify.")
+    else if (r.kind === "atLeast" && (!isInt(r.n) || r.n < 1 || r.n > rule.questions.length)) add("outcomes", "cfg-qrule-n", "range", rule.questions.length === 1 ? "Enter 1. There is 1 question." : `Enter a number from 1 to ${rule.questions.length}.`)
+    else if (r.kind === "subset" && r.indices.filter((i) => i < rule.questions.length).length === 0) add("outcomes", "cfg-qrule-subset", "empty", "Select at least one question that must be Yes.")
   }
 
   if (m === "scored") {
     if (!isInt(rule.scaleMax) || rule.scaleMax < 2 || rule.scaleMax > 10) add("outcomes", "cfg-scale", "range", "Enter a scale top from 2 to 10.")
     const r = rule.scoredRule
-    if (!r) add("rule", "cfg-srule", "missing", "Choose how a score qualifies.")
+    if (!r) add("outcomes", "cfg-srule", "missing", "Choose how a score qualifies.")
     else {
       const max = r.kind === "total" ? rule.scaleMax * Math.max(1, rule.questions.length) : rule.scaleMax
-      if (!(typeof r.value === "number" && r.value >= 1 && r.value <= max)) add("rule", "cfg-srule-value", "range", `Enter a pass mark from 1 to ${max}.`)
+      if (!(typeof r.value === "number" && r.value >= 1 && r.value <= max)) add("outcomes", "cfg-srule-value", "range", `Enter a value from 1 to ${max}.`)
     }
   }
 
@@ -817,7 +904,7 @@ export function validateRule(rule: LabRule): RuleIssue[] {
       if (!l.trim()) add("outcomes", `cfg-level-${i}`, "blank", `Level ${i + 1} has no name.`)
       else if (dup.has(i)) add("outcomes", `cfg-level-${i}`, "dup", `Level ${i + 1} repeats another level.`)
     })
-    // Which levels count is the program's choice, never defaulted [REQ SC-02 spirit; Romit 2026-11-02]. A removed level clears it.
+    // Which levels count is the program's choice, never defaulted [REQ SC-02 spirit; Romit 2026-11-02].
     const from = rule.carried.minLevelIndex
     if (rule.levels.length >= 2) {
       if (from === null) add("outcomes", "cfg-counts-from", "missing", "Choose which levels count toward achievement.")
@@ -829,10 +916,10 @@ export function validateRule(rule: LabRule): RuleIssue[] {
   rule.levelMinimums.forEach((lm, i) => {
     if (lm.levelIndex < 0 || lm.levelIndex >= rule.levels.length || !rule.levels[lm.levelIndex]?.trim()) add("rule", `cfg-lmin-level-${i}`, "level", "Choose a level for this minimum.")
     if (!isInt(lm.min) || lm.min < 1) add("rule", `cfg-lmin-${i}`, "min", "Enter a level minimum of 1 or more.")
-    else if (isInt(rule.need) && lm.min > rule.need) add("rule", `cfg-lmin-${i}`, "gt", `${lm.min} at a level is more than the ${rule.need} needed in total.`)
+    else if (hasNeed(rule) && lm.min > rule.need) add("rule", `cfg-lmin-${i}`, "gt", `${lm.min} at a level is more than the ${rule.need} needed in total.`)
   })
   if (!isInt(rule.distinctEvaluators) || rule.distinctEvaluators < 1) add("rule", "cfg-distinct", "min", "Enter 1 or more evaluators.")
-  else if (isInt(rule.need) && rule.distinctEvaluators > rule.need) add("rule", "cfg-distinct", "gt", `${rule.distinctEvaluators} different evaluators cannot sign ${rule.need} ${plural(rule.need, "evaluation", "evaluations")}.`)
+  else if (hasNeed(rule) && rule.distinctEvaluators > rule.need) add("rule", "cfg-distinct", "gt", `${rule.distinctEvaluators} different evaluators cannot sign ${rule.need} ${plural(rule.need, "evaluation", "evaluations")}.`)
 
   const dupSet = dupIndexes(rule.settingMinimums.map((x) => x.setting))
   rule.settingMinimums.forEach((s, i) => {
@@ -841,7 +928,7 @@ export function validateRule(rule: LabRule): RuleIssue[] {
     if (!isInt(s.min) || s.min < 1) add("rule", `cfg-setting-min-${i}`, "min", `Enter a minimum of 1 or more for ${s.setting ? inSentence(s.setting) : `row ${i + 1}`}.`)
   })
   const settingsTotal = rule.settingMinimums.reduce((n, s) => n + (isInt(s.min) ? s.min : 0), 0)
-  if (isInt(rule.need) && settingsTotal > rule.need) add("rule", "cfg-setting-min-0", "sum", `Setting minimums add up to ${settingsTotal}, more than the ${rule.need} needed.`)
+  if (hasNeed(rule) && settingsTotal > rule.need) add("rule", "cfg-setting-min-0", "sum", `Setting minimums add up to ${settingsTotal}, more than the ${rule.need} needed.`)
 
   const fdup = dupIndexes(rule.studentFields.map((f) => f.label))
   rule.studentFields.forEach((f, i) => {
@@ -899,6 +986,7 @@ export function engineRuleOfLab(rule: LabRule): EngineRule {
     model: rule.model,
     questionRule: rule.model === "question" ? rule.questionRule : null,
     scoredRule: rule.model === "scored" ? rule.scoredRule : null,
+    qualifyingLabel: rule.model === "binary" ? rule.qualifyingLabel : null,
     need: rule.need,
     window: rule.carried.window,
     minLevelIndex: rule.carried.minLevelIndex,
@@ -1000,7 +1088,8 @@ export function gapsOf(r: RuleResult): Gap[] {
 // Impact before publish [REQ AE-02; strategy 03 section 9; strategy 05 C17]
 
 /** How existing evidence is treated on publish. PENDING-ROMIT (REQ AE-02 says re-apply; option B versions by cohort): not decided here. */
-export type PublishMode = "reapply" | "new-only"
+/** One way only: a rule change re-applies to evidence held [REQ AE-02]. "Apply to new evidence only" is not offered (D-L78). */
+export type PublishMode = "reapply"
 
 export interface ImpactRow {
   studentId: string
@@ -1050,14 +1139,14 @@ export function studentsOf(s: V2State): Person[] {
 /** Compare two rules on everything that changes who qualifies. Wording, labels, fields, feedback and approval never do [AE-06]. */
 export function engineKey(rule: LabRule): string {
   const { model, qualifyingLabel, questionRule, scoredRule, scaleMax, need, levelMinimums, distinctEvaluators, settingMinimums, carried } = rule
-  return JSON.stringify({ model, q: model === "binary" ? qualifyingLabel !== null : null, questionRule, scoredRule, scaleMax: model === "scored" ? scaleMax : null, need, levelMinimums, distinctEvaluators, settingMinimums, carried })
+  return JSON.stringify({ model, q: model === "binary" ? qualifyingLabel : null, questionRule, scoredRule, scaleMax: model === "scored" ? scaleMax : null, need, levelMinimums, distinctEvaluators, settingMinimums, carried })
 }
 
 /**
  * Re-run `after` over every evaluation already held for `skillId` and diff against `before`, per student. Pure; reads only
  * the evidence index. With mode "new-only" no current state changes (the new rule waits for new evidence).
  */
-export function computeImpact(input: V2State, skillId: string, before: LabRule, after: LabRule, mode: PublishMode | null = "reapply"): Impact {
+export function computeImpact(input: V2State, skillId: string, before: LabRule, after: LabRule, _mode: PublishMode | null = "reapply"): Impact {
   // Read the evidence the way every student screen and figure reads it (held evidence never counts), so the before and after
   // counts are the counts the student screens show.
   const s = heldState(input)
@@ -1072,7 +1161,7 @@ export function computeImpact(input: V2State, skillId: string, before: LabRule, 
   let example: AttemptCount | null = null
   let exampleWeak = true
   let invalid: InvalidRuleResult | null = null
-  const live = mode !== "new-only"
+  const live = true
   const configured = !!before.model
   for (const p of students) {
     const evals = evalsOfStudentSkill(s, p.id, skillId)
@@ -1122,6 +1211,44 @@ export function computeImpact(input: V2State, skillId: string, before: LabRule, 
     example,
     invalid,
   }
+}
+
+/**
+ * The students whose progress reads differently under `after` (D0 rule 9) [REQ AE-02]: the state word, or how many of their evaluations count. A model change can
+ * turn "1 of 1" into "2 of 1" and leave the word Achieved alone, so `computeImpact(...).changed`, which compares words, is too narrow for "No student's progress
+ * changes". A new Times needed alone moves neither unless it moves the word.
+ */
+export function progressMoves(input: V2State, skillId: string, before: LabRule, after: LabRule): Array<{ studentId: string; name: string }> {
+  const s = heldState(input)
+  const read = (r: LabRule, evals: readonly Evaluation[]) => {
+    const run = r.model ? evaluateRule(r, evals) : null
+    return run && !isInvalidResult(run) ? { state: run.state as RecordState, have: run.have } : { state: "no-evidence" as RecordState, have: 0 }
+  }
+  const out: Array<{ studentId: string; name: string }> = []
+  for (const p of studentsOf(s)) {
+    const evals = evalsOfStudentSkill(s, p.id, skillId)
+    if (!evals.length) continue
+    const b = read(before, evals)
+    const a = read(after, evals)
+    if (b.state !== a.state || b.have !== a.have) out.push({ studentId: p.id, name: p.name })
+  }
+  return out
+}
+
+/**
+ * The students a skill stops counting for when it goes Not configured [REQ AE-02, IM-09]: with no rule that can be applied, no held evidence qualifies, so whoever had qualifying
+ * evidence falls to none. A student whose evidence already counted for nothing reads the same before and after, so is not named. `skillProgress` is the same fact on the student's page.
+ */
+export function progressLost(input: V2State, skillId: string, before: LabRule): Array<{ studentId: string; name: string }> {
+  const s = heldState(input)
+  const out: Array<{ studentId: string; name: string }> = []
+  for (const p of studentsOf(s)) {
+    const evals = evalsOfStudentSkill(s, p.id, skillId)
+    if (!evals.length || !before.model) continue
+    const run = evaluateRule(before, evals)
+    if (!isInvalidResult(run) && run.have > 0) out.push({ studentId: p.id, name: p.name })
+  }
+  return out
 }
 
 /** Students who make the same move (for example Achieved to In progress), with what they share said once (J7). */
@@ -1289,6 +1416,7 @@ export function toSkillConfig(prev: SkillConfig | null, rule: LabRule): SkillCon
   return {
     ...base,
     outcomeLabels: m === "binary" ? [rule.outcomeLabels[0], rule.outcomeLabels[1]] : base.outcomeLabels,
+    ...(m === "binary" ? { ownLabels: true } : {}),
     questions: m === "question" || m === "scored" ? [...rule.questions] : [],
     levels: m === "demonstration" ? [...rule.levels] : base.levels,
     achievement,
@@ -1327,9 +1455,58 @@ export function ruleSnapshot(rule: LabRule): PublishedRuleSnapshot {
   }
 }
 
+/**
+ * The package, in the order the settings page shows them (D0 rule 4): changing any one on a skill makes it Edited. Not here, because they are
+ * always per skill and never change the word (D0 rule 5, map D1a rows 2, 6, 10, 13, 14): times needed, level and setting minimums, questions,
+ * the named subset of a question rule, different evaluators.
+ */
+export const PROGRAM_KEYS = [
+  "model",
+  "outcomeLabels",
+  "qualifyingLabel",
+  "levels",
+  "scaleMax",
+  "scoredRule",
+  "questionRule",
+  "studentFields",
+  "selfEvaluation",
+  "feedbackRequired",
+  "approvalRequired",
+  "evaluatorRoles",
+  "checkOff",
+] as const satisfies ReadonlyArray<keyof LabRule>
+
+const sameJson = (a: unknown, b: unknown): boolean => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+
+/** A question rule as far as the package goes: which questions are named is the skill's own [REQ SC-05, SC-06]. */
+const packageValue = (rule: LabRule, key: (typeof PROGRAM_KEYS)[number]): unknown => (key === "questionRule" && rule.questionRule?.kind === "subset" ? { kind: "subset" } : rule[key])
+
+/** Which parts of a skill's rule differ from the program settings (empty when it follows them). */
+export function differsFromProgram(skill: LabRule | null, program: LabRule | null): string[] {
+  if (!skill || !program) return []
+  if (skill.model !== program.model) return ["model"]
+  // Only what this model uses: a saved rule reads back without the rest (a level skill has no labels that count, say).
+  const unused: Partial<Record<NonNullable<LabRule["model"]>, ReadonlyArray<keyof LabRule>>> = {
+    binary: ["levels", "scaleMax", "scoredRule", "questionRule"],
+    question: ["outcomeLabels", "qualifyingLabel", "levels", "scaleMax", "scoredRule"],
+    scored: ["outcomeLabels", "qualifyingLabel", "levels", "questionRule"],
+    demonstration: ["outcomeLabels", "qualifyingLabel", "scaleMax", "scoredRule", "questionRule"],
+  }
+  const skip = new Set<keyof LabRule>(skill.model ? unused[skill.model] ?? [] : [])
+  const out: string[] = PROGRAM_KEYS.filter((k) => !skip.has(k) && !sameJson(packageValue(skill, k), packageValue(program, k)))
+  if (skill.model === "demonstration" && skill.carried.minLevelIndex !== program.carried.minLevelIndex) out.push("minLevelIndex")
+  return out
+}
+
+/** The program's saved rule in a state, or null before its first save. */
+export function programRuleIn(s: V2State): LabRule | null {
+  const p = s.programSettings
+  if (!p || !p.rule || typeof p.rule !== "object") return null
+  return { ...emptyRule(), ...(p.rule as LabRule) }
+}
+
 export type PublishWrite =
   | { ok: true; state: V2State; written: true; version: number }
-  /** New evidence only (PENDING-ROMIT): the engine has no per-evaluation rule version yet, so nothing is written; see D-X27. */
   | { ok: true; state: V2State; written: false; reason: string }
   | { ok: false; error: string; issues: RuleIssue[] }
 
@@ -1340,19 +1517,26 @@ export type PublishWrite =
  * cleared. Refuses an invalid rule (validateRule; an unset frequency is one of the issues, never defaulted) [REQ SC-18]. Pure.
  * The v2 flags `configured` and `published` are both set because the engine still reads the pair; the UI never says "published".
  */
-export function saveLabRule(s: V2State, skillId: string, rule: LabRule, opts: { at: string; byId: string; mode: PublishMode | null }): PublishWrite {
+export function saveLabRule(s: V2State, skillId: string, rule: LabRule, opts: { at: string; byId: string; mode: PublishMode | null; /** Say what Configuration reads after this save: false for a save of Evaluation settings or Use default configuration, true when the edit panel has already decided. Left out, it is worked out from the package. */ edited?: boolean }): PublishWrite {
   const issues = validateRule(rule)
   if (issues.length) return { ok: false, error: issues[0]!.message, issues }
   const skill = skillById(s, skillId)
   if (!skill) return { ok: false, error: `This ${skillNoun()} is no longer in the library.`, issues: [] }
-  if (opts.mode === "new-only") return { ok: true, state: s, written: false, reason: "Applying a rule to new evidence only is not decided yet, so the shared rule is unchanged." }
   const config = toSkillConfig(skill.config, rule)
   const previous = (s.ruleChanges ?? []).filter((r) => r.skillId === skillId)
   // The seed's first published rule is version 1; a skill with a rule and no history is on version 1.
   const current = previous.length ? Math.max(...previous.map((r) => r.version)) : skill.config ? 1 : 0
   const version = current + 1
   const record: RuleChangeRecord = { skillId, at: opts.at, byId: opts.byId, version, published: ruleSnapshot(rule) }
-  const skills = s.skills.map((k) => (k.id === skillId ? { ...k, model: rule.model, configured: true, published: true, config } : k))
+  // Edited (D0 rules 4, 7): a package that differs from the program's detaches the skill; it stays detached until Use default configuration.
+  // Times needed, minimums and questions are the skill's own part and never change the word (D0 rule 5).
+  const program = programRuleIn(s)
+  const edited = opts.edited ?? (!!skill.edited || !program || differsFromProgram(rule, program).length > 0)
+  const skills = s.skills.map((k): Skill => {
+    if (k.id !== skillId) return k
+    const { edited: _dropped, ...rest } = k
+    return { ...rest, model: rule.model, configured: true, published: true, config, ...(edited ? { edited: true } : {}) }
+  })
   const configDrafts = { ...(s.configDrafts ?? {}) }
   delete configDrafts[skillId]
   const next = appendAudit({ ...s, skills, configDrafts, ruleChanges: [...(s.ruleChanges ?? []), record] }, opts.byId, `Saved configuration, rule version ${version}`, skill.name, opts.at)
@@ -1445,11 +1629,11 @@ export function setupSummary(rule: LabRule): SetupGroup[] {
     { id: "model", step: "model", label: MODEL_STEP_LABEL, lines: [m ? LAB_MODEL_LABEL[m] : none] },
     { id: "criteria", step: "outcomes", label: CRITERIA_LABEL, lines: criteria },
     { id: "rule", step: "rule", label: HOW_MANY_LABEL, lines: m ? [ruleSentence(rule), settingNote(rule), ...carriedNotes(rule)].filter(Boolean) : [none] },
-    // Group check-off sits with how many evaluations (one hierarchy, 2026-11-02).
-    { id: "checkoff", step: "rule", label: CHECKOFF_LABEL, lines: [m ? checkOffLine(rule) : none] },
     // Same order as the step's groups (2026-10-28): Student, Evaluator, Approval.
     { id: "student", step: "signoff", label: "What the student adds", lines: [fields.length ? fields.map((f) => `${f.label.trim()}${f.mandatory ? " (required)" : ""}`).join(", ") : "Nothing beyond the evidence"] },
     { id: "signers", step: "signoff", label: "Who signs", lines: [roles.length ? roles.join(", ") : "No role chosen"] },
+    // Group check-off is the evaluator's: under Evaluator on the page, so here too (2026-11-04, D-L52).
+    { id: "checkoff", step: "signoff", label: CHECKOFF_LABEL, lines: [m ? checkOffLine(rule) : none] },
     {
       id: "before",
       step: "signoff",
@@ -1459,15 +1643,14 @@ export function setupSummary(rule: LabRule): SetupGroup[] {
   ]
 }
 
-/** Decisions still open on Check: every rule problem plus, on a rule change with evidence, the unanswered evidence choice. */
-export function openDecisions(issues: RuleIssue[], choiceAsked: boolean, mode: PublishMode | null): number {
-  return issues.length + (choiceAsked && !mode ? 1 : 0)
+/** Decisions still open on Check: every rule problem. */
+export function openDecisions(issues: RuleIssue[]): number {
+  return issues.length
 }
 
 /** The Save button's disabled reason on Check (10 words or fewer), or undefined when it can save. */
-export function saveBlockedReason(issues: RuleIssue[], choiceAsked: boolean, mode: PublishMode | null): string | undefined {
+export function saveBlockedReason(issues: RuleIssue[]): string | undefined {
   if (issues.length > 0) return `Fix ${issues.length} ${plural(issues.length, "thing", "things")} first.`
-  if (choiceAsked && !mode) return "Choose how evidence already held is treated."
   return undefined
 }
 
@@ -1534,7 +1717,6 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
         hasNeed(rule) ? { label: "Rule", value: ruleSentence(rule) } : { label: "Rule", value: "Not set", missing: true },
         ...(settingNote(rule) ? [{ label: "Setting", value: settingNote(rule) }] : []),
         ...carriedNotes(rule).map((n) => ({ label: "Kept", value: n })),
-        { label: CHECKOFF_LABEL, value: m ? checkOffLine(rule) : "Not set" },
       ]
   const fields = rule.studentFields.filter((f) => f.label.trim())
   const roles = rule.evaluatorRoles.map((r) => ROLE_LABEL[r])
@@ -1544,13 +1726,14 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
     { step: "rule", label: HOW_MANY_LABEL, rows: ruleRows },
     {
       step: "signoff",
-      label: "Who signs",
+      label: WHO_DOES_WHAT_LABEL,
       rows: [
         // Student, Evaluator, Approval: the order of the step's groups (2026-10-28).
         { label: "Student adds", value: fields.length ? fields.map((f) => `${f.label.trim()}${f.mandatory ? " (required)" : ""}`).join(", ") : "Nothing beyond the evidence" },
         { label: "Self-evaluation first", value: yesNo(rule.selfEvaluation) },
         roles.length ? { label: "Who signs", value: roles.join(", ") } : { label: "Who signs", value: "Not chosen", missing: true },
         { label: "Feedback required", value: yesNo(rule.feedbackRequired) },
+        { label: CHECKOFF_LABEL, value: m ? checkOffLine(rule) : "Not set" },
         { label: "Approval before it counts", value: yesNo(rule.approvalRequired) },
       ],
     },
@@ -1594,6 +1777,15 @@ export function checkOffLine(rule: LabRule): string {
   if (rule.model === "scored") return `Allowed, scores ${ruleCheckOffScore(rule)}`
   if (rule.model === "question") return "Allowed, every question Yes"
   return "Allowed"
+}
+
+/**
+ * A rule with no saved choice starts with group check-off off (no defaults, REQ SC-02), written into the draft so the switch, the
+ * save and every later reading agree. The engine's model default (CHECKOFF_DEFAULT) stays for seeded skills. Needs a model.
+ */
+export function withCheckOffDecided(rule: LabRule): LabRule {
+  if (!rule.model || rule.checkOff?.enabled != null) return rule
+  return { ...rule, checkOff: { ...(rule.checkOff ?? { enabled: null, levelIndex: null, score: null }), enabled: false } }
 }
 
 /** Why the rule does not allow a check-off, in the same words the course offering page uses. */

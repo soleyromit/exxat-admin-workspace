@@ -84,7 +84,7 @@ describe("Change one skill (Configure A, 2026-11-02): one page, one Save", () =>
     const root = view!.container
     await waitFor(() => expect(root.querySelector("[data-one-skill]")).not.toBeNull())
     const titles = [...root.querySelectorAll("[data-one-skill] h2")].map((h) => h.textContent?.replace(/^\d+/, ""))
-    expect(titles).toEqual(["How skills are judged", "What counts as achieved", "How many evaluations", "Who signs"])
+    expect(titles).toEqual(["How skills are judged", "What counts as achieved", "How many evaluations", "Who does what"])
     const filled = () => [...root.querySelectorAll<HTMLElement>('[data-slot="button"][data-variant="default"]')].map((b) => b.textContent)
     // Nothing to save on arrival, so no Save; never a footer or a back control.
     expect(root.querySelector('[data-region="footer"]')).toBeNull()

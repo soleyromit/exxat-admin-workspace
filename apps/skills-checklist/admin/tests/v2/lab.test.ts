@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { CELL_ORDER, cellKey, labBatchesOf, labBlockReason, labCounts, labSkills, labStudents, nextCell, saveLabBatch, type LabInput } from "@/lib/v2/lab"
 import { heatCell, heatmap, NO_FILTERS, observations } from "@/lib/v2/reports"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed, IDS } from "@/lib/v2/seed"
 import { skillProgress } from "@/lib/v2/student"
 import type { Outcome, V2State } from "@/lib/v2/types"
 

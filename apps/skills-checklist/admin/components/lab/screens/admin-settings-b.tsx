@@ -35,8 +35,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { PageFrame } from "@/components/skills/page-header"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { parseDemoState } from "@/lib/lab/dashboard"
-import { useVocabularyActions, isVocabKind, RenameDialog, renamedText } from "@/components/lab/admin-b/use-vocabulary"
-import { EMPTY_SETTINGS, rememberSeededVocabulary, SCOPE_SECTIONS, SETTINGS_TAB_LABEL, VOCABULARY_TITLE, categoryRows, clinicalSettingRows, instructorRows, scopeSection, sectionLabel, settingId, tagRows, usesOf, validateEntry, type ClinicalSettingRow, type InstructorRow, type SettingUse, type SettingsOverlay, type SettingsRow, type SettingsScope, type SettingsTab } from "@/lib/lab/settings"
+import { useVocabularyActions, useClinicalSettingActions, isVocabKind, RenameDialog, renamedText } from "@/components/lab/admin-b/use-vocabulary"
+import { StudentGroupsCount, StudentGroupsSection } from "@/components/lab/admin-a/student-groups-section"
+import { EMPTY_SETTINGS, inactiveLast, rememberSeededVocabulary, SCOPE_SECTIONS, SETTINGS_TAB_LABEL, VOCABULARY_TITLE, categoryRows, clinicalSettingRows, instructorRows, scopeSection, sectionLabel, settingId, tagRows, usesOf, validateEntry, type ClinicalSettingRow, type InstructorRow, type SettingUse, type SettingsOverlay, type SettingsRow, type SettingsScope, type SettingsTab } from "@/lib/lab/settings"
 import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { useTerms } from "@/components/lab/library/use-terms"
 import { EVALUATOR_FILTERS_OFF, scopeTitle } from "@/components/lab/admin-b/settings-page"
@@ -47,7 +48,7 @@ import { directory } from "@/lib/lab/evaluators"
 const ROW_LINK = "flex min-h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[current]:bg-secondary aria-[current]:font-medium"
 const NOUN: Record<SettingsTab, string> = { categories: "category", tags: "tag", settings: "clinical setting", instructors: "lab instructor" }
 const NOUNS: Record<SettingsTab, string> = { categories: "categories", tags: "tags", settings: "clinical settings", instructors: "lab instructors" }
-const ICON: Record<SettingsTab | "evaluators", string> = { categories: "fa-folder", tags: "fa-tag", settings: "fa-hospital", instructors: "fa-user", evaluators: "fa-user-check" }
+const ICON: Record<SettingsTab | "evaluators" | "student-groups", string> = { categories: "fa-folder", tags: "fa-tag", settings: "fa-hospital", instructors: "fa-user", evaluators: "fa-user-check", "student-groups": "fa-users" }
 const FIRST = 12
 
 export function AdminSettingsB() {
@@ -64,7 +65,7 @@ export function SettingsMasterDetail({ scope }: { scope: SettingsScope }) {
   const listRaw = params?.get("list") ?? params?.get("tab") // ?tab= too: the Settings link names a section for either variant
   const sections = SCOPE_SECTIONS[scope]
   const section = scopeSection(scope, listRaw)
-  const tab: SettingsTab = section === "evaluators" ? "settings" : section
+  const tab: SettingsTab = section === "evaluators" || section === "student-groups" ? "settings" : section
   const terms = useTerms()
   const entryParam = params?.get("entry") ?? null
   const [overlay, setOverlay] = React.useState<SettingsOverlay>(EMPTY_SETTINGS)
@@ -72,6 +73,7 @@ export function SettingsMasterDetail({ scope }: { scope: SettingsScope }) {
   const [deleting, setDeleting] = React.useState<SettingsRow | null>(null)
   const [query, setQuery] = React.useState("")
   const vocab = useVocabularyActions()
+  const clinical = useClinicalSettingActions()
   const [renaming, setRenaming] = React.useState<SettingsRow | null>(null)
 
   const hrefWith = (p: Record<string, string | null>) => {
@@ -102,17 +104,23 @@ export function SettingsMasterDetail({ scope }: { scope: SettingsScope }) {
     )
   }
 
-  const all = demo === "empty" ? [] : lists[tab]
+  const all = demo === "empty" ? [] : inactiveLast(lists[tab])
   const q = query.trim().toLowerCase()
   const rows = q ? all.filter((r) => r.name.toLowerCase().includes(q) || String((r as InstructorRow).email ?? "").toLowerCase().includes(q)) : all
   const selected = all.find((r) => r.id === entryParam) ?? all[0] ?? null
-  // Categories and tags write to the shared store (lib/v2/vocabulary.ts); clinical settings and lab instructors stay lab-local.
+  // Categories and tags write to the shared store (lib/v2/vocabulary.ts), clinical settings to the program; lab instructors stay lab-local.
   const add = (name: string, email?: string) => {
     if (isVocabKind(tab)) {
       const res = vocab.add(tab, name)
       if (!res.ok) return setBanner({ tone: "info", text: res.error })
       setBanner({ tone: "success", text: `Added "${name.trim()}". It is offered in Add ${aNoun()} now.` })
       return setParams({ entry: res.entry?.id ?? null })
+    }
+    if (tab === "settings") {
+      const res = clinical.add(name)
+      if (!res.ok) return setBanner({ tone: "info", text: res.error })
+      setBanner({ tone: "success", text: `Added "${name.trim()}".` })
+      return setParams({ entry: settingId(tab, name) })
     }
     setOverlay((o) => ({ ...o, added: [{ tab, name: name.trim(), email: email?.trim() }, ...o.added] }))
     setBanner({ tone: "success", text: `Added "${name.trim()}".` })
@@ -124,12 +132,23 @@ export function SettingsMasterDetail({ scope }: { scope: SettingsScope }) {
       if (!res.ok) return setBanner({ tone: "info", text: res.error })
       return setBanner({ tone: "info", text: r.active ? `"${r.name}" is inactive. It stays where it is used, marked inactive, and is no longer offered.` : `"${r.name}" is active again.` })
     }
+    if (tab === "settings") {
+      const res = clinical.setActive(r.name, !r.active)
+      if (!res.ok) return setBanner({ tone: "info", text: res.error })
+      return setBanner({ tone: "info", text: r.active ? `"${r.name}" is inactive. It is no longer offered.` : `"${r.name}" is active again.` })
+    }
     setOverlay((o) => (r.active ? { ...o, inactive: [...o.inactive, r.id], reactivated: o.reactivated.filter((x) => x !== r.id) } : { ...o, reactivated: [...o.reactivated, r.id], inactive: o.inactive.filter((x) => x !== r.id) }))
     setBanner({ tone: "info", text: r.active ? `"${r.name}" is inactive. It stays where it is used, marked inactive, and is no longer offered.` : `"${r.name}" is active again.` })
   }
   const remove = (r: SettingsRow) => {
     if (isVocabKind(tab)) {
       const res = vocab.remove(tab, r.id)
+      setBanner(res.ok ? { tone: "success", text: `Deleted "${r.name}".` } : { tone: "info", text: res.error })
+      setDeleting(null)
+      return setParams({ entry: null })
+    }
+    if (tab === "settings") {
+      const res = clinical.remove(r.name)
       setBanner(res.ok ? { tone: "success", text: `Deleted "${r.name}".` } : { tone: "info", text: res.error })
       setDeleting(null)
       return setParams({ entry: null })
@@ -145,7 +164,7 @@ export function SettingsMasterDetail({ scope }: { scope: SettingsScope }) {
       <div className="flex flex-col gap-4" data-settings-lab="B" data-settings-scope={scope} data-page-type="list" data-tab={section}>
         {banner ? <LocalBanner variant={banner.tone} dismissible onDismiss={() => setBanner(null)}>{banner.text}</LocalBanner> : null}
         {demo === "error" ? (
-          <LocalBanner variant="error" title={`${scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"} could not be loaded`} retry={{ label: "Try again", onClick: () => setParams({ state: null }) }}>Nothing was changed.</LocalBanner>
+          <LocalBanner variant="error" title={`${scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"} could not be loaded`} action={{ label: "Try again", onClick: () => setParams({ state: null }) }}>Nothing was changed.</LocalBanner>
         ) : (
           <div className="grid items-start gap-4 lg:grid-cols-[14rem_20rem_minmax(0,1fr)]">
             <nav aria-label={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings lists"} className="flex flex-col gap-1" data-region="lists">
@@ -154,11 +173,15 @@ export function SettingsMasterDetail({ scope }: { scope: SettingsScope }) {
                 <Link key={t} href={hrefWith({ list: t === sections[0] ? null : t, tab: null, entry: null, ...EVALUATOR_FILTERS_OFF })} scroll={false} replace className={ROW_LINK} aria-current={t === section ? "page" : undefined} data-list={t} onClick={() => { setQuery(""); setBanner(null) }}>
                   <i className={`fa-light ${ICON[t]} w-4 text-muted-foreground`} aria-hidden="true" />
                   <span className="flex-1 text-start">{sectionLabel(t)}</span>
-                  <TabsCountBadge count={t === "evaluators" ? evaluatorCount : lists[t].length} />
+                  {t === "student-groups" ? <StudentGroupsCount empty={false} /> : <TabsCountBadge count={t === "evaluators" ? evaluatorCount : lists[t].length} />}
                 </Link>
               ))}
             </nav>
-            {section === "evaluators" ? (
+            {section === "student-groups" ? (
+              <div className="min-w-0 lg:col-span-2">
+                <StudentGroupsSection />
+              </div>
+            ) : section === "evaluators" ? (
               <div className="min-w-0 lg:col-span-2">
                 <EvaluatorsSection layout="sites" />
               </div>
@@ -188,22 +211,24 @@ export function SettingsMasterDetail({ scope }: { scope: SettingsScope }) {
                 </ul>
               )}
             </section>
-            {selected ? <Detail key={selected.id} tab={tab} row={selected} partial={demo === "partial"} onToggle={toggle} onDelete={setDeleting} onRename={isVocabKind(tab) ? setRenaming : undefined} /> : <Card size="sm"><CardContent><EmptyBlock compact title={`Choose a ${NOUN[tab]} to see what uses it`} /></CardContent></Card>}
+            {selected ? <Detail key={selected.id} tab={tab} row={selected} partial={demo === "partial"} onToggle={toggle} onDelete={setDeleting} onRename={tab !== "instructors" ? setRenaming : undefined} /> : <Card size="sm"><CardContent><EmptyBlock compact title={`Choose a ${NOUN[tab]} to see what uses it`} /></CardContent></Card>}
             </>
             )}
           </div>
         )}
       </div>
-      {isVocabKind(tab) ? (
+      {tab !== "instructors" ? (
         <RenameDialog
           kind={tab}
           state={data}
-          target={renaming ? { id: renaming.id, name: renaming.name, uses: renaming.uses } : null}
+          target={renaming ? { id: renaming.id, name: renaming.name, uses: renaming.uses, usedBy: isVocabKind(tab) ? null : renaming.blocked } : null}
           onClose={() => setRenaming(null)}
           onRename={(id, name) => {
-            const res = vocab.rename(tab, id, name)
+            const from = renaming?.name ?? ""
+            const res = isVocabKind(tab) ? vocab.rename(tab, id, name) : clinical.rename(from, name)
             if (!res.ok) return res.error
-            setBanner({ tone: "success", text: renamedText(renaming?.name ?? "", name.trim(), renaming?.uses ?? 0) })
+            if (!isVocabKind(tab)) setParams({ entry: null })
+            setBanner({ tone: "success", text: isVocabKind(tab) ? renamedText(from) : `Renamed "${from}" to "${name.trim()}".` })
             setRenaming(null)
             return null
           }}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { queueItems } from "../../lib/v2/queue"
 import { behindPace, paceRows } from "../../lib/v2/reports"
+// The real seed's spread. IV catheter insertion came into use with D-L90 and now carries evidence (lib/v2/seed.ts withVascularEvidence), so the hand-written students sit where they did.
 import { createSeed, DEMO_TODAY, IDS } from "../../lib/v2/seed"
 import { skillProgress } from "../../lib/v2/student"
 import { verificationsOf } from "../../lib/v2/verification"
@@ -32,9 +33,9 @@ describe("seed spread (charts need an honest cohort)", () => {
     const behind = behindPace(s).filter((r) => heroIds.has(r.studentId))
     expect(behind.length).toBeGreaterThanOrEqual(4)
     expect(behind.length).toBeLessThanOrEqual(5)
-    // Maya sits exactly on pace (7 of 13 collected, 7 expected; population method since 2026-10-26) and Ethan is ahead.
+    // Maya sits exactly on pace (9 of 17 collected, 9 expected; population method since 2026-10-26) and Ethan is ahead.
     const maya = rows.find((r) => r.studentId === IDS.maya)!
-    expect([maya.collected, maya.expected, maya.behindBy]).toEqual([7, 7, 0])
+    expect([maya.collected, maya.expected, maya.behindBy]).toEqual([9, 9, 0])
     expect(rows.find((r) => r.studentId === "stu-12")!.behindBy).toBe(0)
   })
 

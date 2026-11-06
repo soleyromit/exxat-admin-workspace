@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { ToggleGroup, ToggleGroupItem } from "@exxatdesignux/ui/components/ui/toggle-group"
@@ -17,6 +17,7 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { DsUsedList, dsUsedCount } from "@/components/lab/ds-used-panel"
 import { flowsForPersona, mainSteps } from "@/lib/lab/flows"
 import { PERSONA_BY_ID } from "@/lib/lab/personas"
+import { WALKTHROUGH_ENTRY } from "@/lib/lab/walkthrough"
 import type { PersonaId } from "@/lib/lab/screens"
 import { PersonaRadioItems, personaTarget } from "./persona-switcher"
 import { useLabBar, type LabBarModel, type LabBarProps } from "./use-lab-bar"
@@ -46,7 +47,10 @@ export function LabBar(props: LabBarProps) {
   const { present } = usePresent()
   // A walkthrough step (lib/lab/walkthrough.ts) carries its presenter control in the utility bar instead (lab-frame).
   const walkthrough = useWalkthrough()
+  const params = useSearchParams()
   if (walkthrough) return null
+  // A scanned or emailed request opens the evaluator's page alone: no account, no chrome, not even the presenter's row.
+  if (present && props.persona === "evaluator" && params?.get("request")) return null
   return present ? <PresentControls /> : <WorkingBar {...props} />
 }
 
@@ -138,7 +142,8 @@ function ContextCluster({ m }: { m: LabBarModel }) {
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Flows</DropdownMenuLabel>
             <FlowRadioItems m={m} />
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild><Link href="/lab">All screens</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href="/lab">All variants</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild><Link href={WALKTHROUGH_ENTRY}>Admin walkthrough</Link></DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -159,7 +164,8 @@ function ContextCluster({ m }: { m: LabBarModel }) {
             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Flow</DropdownMenuLabel>
             <FlowRadioItems m={m} />
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="min-h-9"><Link href="/lab">All screens</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild className="min-h-9"><Link href="/lab">All variants</Link></DropdownMenuItem>
+            <DropdownMenuItem asChild className="min-h-9"><Link href={WALKTHROUGH_ENTRY}>Admin walkthrough</Link></DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

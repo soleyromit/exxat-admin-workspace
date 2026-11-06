@@ -121,23 +121,25 @@ describe("AE-04: director reports keep the four engine states apart (OD-03 not d
 
 // Romit 2026-10-27 on Reports: "can we improve the UI here?" and "is this placed correctly here?"
 describe("Reports toolbar: one set control beside Filters, order shown by the table's sort", () => {
-  it("the set control is one radiogroup: Required this term | Required to graduate, plus All skills where offered", async () => {
+  it("the set control is one radiogroup: All assigned | Mandatory this term, plus All skills where offered", async () => {
     const { RequiredSetControl } = await import("@/components/lab/admin-b/required-set-switch")
     const onChange = vi.fn()
-    const paramsFor = (k: string) => ({ required: k === "toGraduate" ? "graduate" : null, skills: null, peek: null })
+    const paramsFor = (k: string) => ({ required: k === "assigned" ? "assigned" : null, skills: null, peek: null })
     const { unmount } = render(<RequiredSetControl basis="thisTerm" allSkills={false} paramsFor={paramsFor} onChange={onChange} />)
     const radios = within(screen.getByRole("radiogroup")).getAllByRole("radio")
-    expect(radios.map((r) => r.textContent)).toEqual(["Required this term", "Required to graduate", "All skills"])
-    expect(radios[0].getAttribute("aria-checked")).toBe("true")
+    expect(radios.map((r) => r.textContent)).toEqual(["All assigned", "Mandatory this term", "All skills"])
+    expect(radios[1].getAttribute("aria-checked")).toBe("true")
     fireEvent.click(radios[2])
     expect(onChange).toHaveBeenLastCalledWith({ skills: "all", peek: null })
-    fireEvent.click(radios[1])
-    expect(onChange).toHaveBeenLastCalledWith({ required: "graduate", skills: null, peek: null })
+    fireEvent.click(radios[0])
+    expect(onChange).toHaveBeenLastCalledWith({ required: "assigned", skills: null, peek: null })
     unmount()
-    render(<RequiredSetControl basis="toGraduate" paramsFor={paramsFor} onChange={onChange} />)
+    render(<RequiredSetControl basis="assigned" paramsFor={paramsFor} onChange={onChange} />)
     const two = within(screen.getByRole("radiogroup")).getAllByRole("radio")
     expect(two).toHaveLength(2)
-    expect(two[1].getAttribute("aria-checked")).toBe("true")
+    expect(two.map((r) => r.textContent)).toEqual(["All assigned", "Mandatory this term"])
+    expect(two[0].getAttribute("aria-checked")).toBe("true")
+    expect(two[1].getAttribute("aria-checked")).toBe("false")
   })
   it("admin and director Reports put the set control beside Filters, with no order sentence or Show links", () => {
     const page = src("components/lab/admin-b/attainment-page.tsx")

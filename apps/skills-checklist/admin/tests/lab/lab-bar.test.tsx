@@ -30,7 +30,7 @@ function renderBar(props: React.ComponentProps<typeof LabBar>) {
   )
 }
 
-const FLOW_PROPS = { persona: "admin", flow: "set-up-skills", step: "configure", set: "1", variant: "A" } as const
+const FLOW_PROPS = { persona: "admin", flow: "set-up-skills", step: "configure", set: "1", variant: "B" } as const
 
 beforeEach(() => {
   nav.pathname = "/lab/flow/set-up-skills/configure"
@@ -61,7 +61,7 @@ describe("LabBar", () => {
     expect(prev.getAttribute("href")).toBe("/lab/flow/set-up-skills/add?set=1&term=Fall+2026")
     expect(next.getAttribute("href")).toBe("/lab/flow/set-up-skills/publish?set=1&term=Fall+2026")
     expect(journey.textContent).toContain("Configure")
-    expect(journey.textContent).toContain("3 of 7")
+    expect(journey.textContent).toContain("3 of 6")
   })
 
   it("disables previous on the first step and next on the last", () => {
@@ -91,7 +91,7 @@ describe("LabBar", () => {
   it("carries the variant's question in the info tooltip", async () => {
     const user = userEvent.setup()
     renderBar(FLOW_PROPS)
-    const q = findScreen("admin", "configure-skill")!.variants.find((v) => v.id === "A")!.question
+    const q = findScreen("admin", "configure-skill")!.variants.find((v) => v.id === "B")!.question
     await user.hover(screen.getByRole("button", { name: "What this option tests" }))
     const tips = await screen.findAllByText(q)
     expect(tips.length).toBeGreaterThan(0)
@@ -115,7 +115,7 @@ describe("LabBar", () => {
     window.addEventListener(LAB_EVENTS.reset, onReset)
     renderBar({ ...FLOW_PROPS, step: "configure" })
     await user.click(screen.getByRole("button", { name: "Scenario" }))
-    await user.click(await screen.findByRole("menuitem", { name: "Reset edits" }))
+    await user.click(await screen.findByRole("menuitem", { name: "Reset all edits" }))
     expect(onReset).toHaveBeenCalledTimes(1)
     window.removeEventListener(LAB_EVENTS.reset, onReset)
   })
@@ -135,7 +135,7 @@ describe("LabBar", () => {
     nav.search = "variant=B"
     renderBar({ persona: "admin", screen: "admin/configure-skill", variant: "B" })
     const journey = screen.getByRole("navigation", { name: "Journey" })
-    expect(within(journey).getAllByRole("link", { name: "Next step: Check and save" })[0]!.getAttribute("href")).toBe("/lab/flow/set-up-skills/publish?set=2")
+    expect(within(journey).getAllByRole("link", { name: "Next step: Check and save" })[0]!.getAttribute("href")).toBe("/lab/flow/set-up-skills/publish?set=1")
   })
 
   it("off a flow, hides the journey and switches variants like the old variant bar", () => {
@@ -163,7 +163,8 @@ describe("LabBar", () => {
   })
 
   it("shows no More variants menu when the sets cover every variant", () => {
-    renderBar(FLOW_PROPS)
+    // Add a skill: A, B and C are all in a set. (Configure's variant A left the sets with D-L47, so it has the menu.)
+    renderBar({ ...FLOW_PROPS, step: "add", variant: "A" })
     expect(screen.queryByRole("button", { name: /More variants/ })).toBeNull()
   })
 
@@ -186,10 +187,10 @@ describe("LabBar", () => {
     expect(current).toBeTruthy()
     const dots = within(journey).getByRole("list", { name: "Steps" })
     const links = within(dots).getAllByRole("link")
-    expect(links).toHaveLength(7)
+    expect(links).toHaveLength(6)
     expect(links[2]).toHaveAttribute("aria-current", "step")
     expect(links[0]).toHaveAttribute("href", "/lab/flow/set-up-skills/library?set=1&term=Fall+2026")
-    expect(within(journey).getByText("Step 3 of 7")).toBeInTheDocument()
+    expect(within(journey).getByText("Step 3 of 6")).toBeInTheDocument()
   })
 
   it("names the active set in full and keeps the others as numbers, each with a summary tooltip", async () => {

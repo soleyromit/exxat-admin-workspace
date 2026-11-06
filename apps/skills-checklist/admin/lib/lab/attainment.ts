@@ -3,10 +3,9 @@ import { OUTCOME_LABEL as SHARED_OUTCOME_LABEL, REVIEW_DECISION_LABEL, evaluatio
 import { SETTING_LABEL } from "@/lib/v2/reports"
 import { evalsOfSkill, evalsOfStudent, evalsOfStudentSkill, skillById } from "@/lib/v2/evidence-index"
 import type { Evaluation, Outcome, V2State } from "@/lib/v2/types"
-import { pipelineRecords, populationRows, RECORD_STATES, RECORD_STATE_LABEL, recordStateOf, type PipelineRecord, type Population, type RecordState } from "./dashboard"
-import { graduationStageOf, isReportable, openRequests, REQUIRED_SET_LABEL } from "@/lib/v2/population"
-import { skillProgress } from "@/lib/v2/student"
-import { graduatingCohort, graduationSkillsIn } from "./director"
+import { pipelineRecords, populationRows, RECORD_STATES, RECORD_STATE_LABEL, type PipelineRecord, type Population, type RecordState } from "./dashboard"
+import { graduationStageOf, isReportable, REQUIRED_SET_LABEL } from "@/lib/v2/population"
+import { graduatingCohort } from "./director"
 import { scopeQuery, SCOPE_LABEL, type LabScope, type ScopeKey } from "./scope"
 import { capitalize, skillNoun, skillNounPlural } from "./terms"
 
@@ -75,42 +74,26 @@ export interface AttGroupRow {
 // ---------------------------------------------------------------------------------------------------------------------
 // Basis: which required set the records are read against (decision D-X12). The two sets are never mixed in one model.
 
-export type RequiredSetKey = "thisTerm" | "toGraduate"
-export const REQUIRED_SET_KEYS: RequiredSetKey[] = ["thisTerm", "toGraduate"]
-/** The switch: "Required this term | Required to graduate", labels from lib/v2/population.ts REQUIRED_SET_LABEL. */
+export type RequiredSetKey = "thisTerm" | "assigned"
+export const REQUIRED_SET_KEYS: RequiredSetKey[] = ["assigned", "thisTerm"]
+/** The switch: "All assigned | Mandatory this term", labels from lib/v2/population.ts REQUIRED_SET_LABEL. */
 export const REQUIRED_SET_OPTIONS: Array<{ value: RequiredSetKey; label: string }> = REQUIRED_SET_KEYS.map((value) => ({ value, label: REQUIRED_SET_LABEL[value] }))
 /**
- * URL parameter for the switch (`required=graduate`); absent means the default for the scope. Not `set`: that name is the
+ * URL parameter for the switch (`required=assigned`); absent means the default for the scope. Not `set`: that name is the
  * lab's option set (lib/lab/links.ts), and sharing it sent every attainment link to a wrong design.
  */
 export const REQUIRED_SET_PARAM = "required"
-export const requiredSetQuery = (k: RequiredSetKey): string => (k === "toGraduate" ? "graduate" : "term")
+export const requiredSetQuery = (k: RequiredSetKey): string => (k === "assigned" ? "assigned" : "term")
 export function parseRequiredSet(v: string | null | undefined): RequiredSetKey | null {
-  return v === "graduate" || v === "toGraduate" ? "toGraduate" : v === "term" || v === "thisTerm" ? "thisTerm" : null
+  // "graduate" is the retired name of "assigned": old links keep working.
+  return v === "assigned" || v === "graduate" ? "assigned" : v === "term" || v === "thisTerm" ? "thisTerm" : null
 }
 /**
- * Default basis: "Required to graduate" when the scope is the graduating cohort (the director's question is graduation
- * readiness), otherwise "Required this term" (pace and attainment this term).
+ * Default basis: "All assigned", the skills on the list in force, so a student's figure here is the one on My progress (D-L102). "Mandatory this
+ * term" is the view of where skills are expected now.
  */
-export function defaultRequiredSet(state: V2State, scope: Pick<LabScope, "cohort">, today: string = DEMO_TODAY): RequiredSetKey {
-  return scope.cohort && scope.cohort === graduatingCohort(state, today) ? "toGraduate" : "thisTerm"
-}
-
-/** Records against "Required to graduate": every student in the population x the graduation skills in scope (director readiness). */
-function graduateRecords(state: V2State, pop: Population, scope: LabScope): PipelineRecord[] {
-  const required = graduationSkillsIn(state, scope)
-  const waits = new Map<string, { assignedToId: string; daysWaiting: number }>()
-  for (const x of openRequests(state, pop.ids)) for (const k of x.skillIds) if (!waits.has(`${x.studentId}|${k}`)) waits.set(`${x.studentId}|${k}`, x)
-  const names = new Map(state.people.map((p) => [p.id, p.name]))
-  const out: PipelineRecord[] = []
-  for (const r of pop.rows) {
-    for (const k of required) {
-      const pr = skillProgress(pop.evidenceState, r.id, k.id)
-      const w = waits.get(`${r.id}|${k.id}`)
-      out.push({ key: `${r.id}|${k.id}`, studentId: r.id, student: r.name, cohort: r.cohort, skillId: k.id, skill: k.name, section: k.category ?? "", state: recordStateOf(pr), counted: Math.min(pr?.counted ?? 0, pr?.need ?? 0), need: pr?.need ?? 0, waitingWith: w ? (names.get(w.assignedToId) ?? "Unknown evaluator") : null, waitingDays: w ? w.daysWaiting : null })
-    }
-  }
-  return out
+export function defaultRequiredSet(_state: V2State, _scope: Pick<LabScope, "cohort">, _today: string = DEMO_TODAY): RequiredSetKey {
+  return "assigned"
 }
 
 export interface AttainmentModel {
@@ -151,10 +134,14 @@ function groupRows(by: Map<string, PipelineRecord[]>): AttGroupRow[] {
     .sort((a, b) => a.achievedPct - b.achievedPct || a.label.localeCompare(b.label))
 }
 
-export function buildAttainment(state: V2State, scope: LabScope, today: string = DEMO_TODAY, opts: { basis?: RequiredSetKey } = {}): AttainmentModel {
-  const basis = opts.basis ?? "thisTerm"
-  const pop = populationRows(state, scope, today)
-  const records = basis === "toGraduate" ? graduateRecords(state, pop, scope) : pipelineRecords(state, pop)
+export function buildAttainment(state: V2State, scope: LabScope, today: string = DEMO_TODAY, opts: { basis?: RequiredSetKey; only?: { studentIds: ReadonlySet<string>; skillIds: ReadonlySet<string>; listId?: string } } = {}): AttainmentModel {
+  const basis = opts.basis ?? "assigned"
+  // One skill list's report (Reports never merges lists): that list's students and skills. Absent: each student on their own first list.
+  const only = opts.only
+  const whole = basis === "assigned" ? populationRows(state, only?.listId ? { ...scope, list: only.listId } : scope, today) : populationRows(state, scope, today, { set: "term" })
+  const pop = only ? { ...whole, rows: whole.rows.filter((r) => only.studentIds.has(r.id)), ids: new Set([...whole.ids].filter((id) => only.studentIds.has(id))) } : whole
+  const all = pipelineRecords(state, pop)
+  const records = only ? all.filter((r) => only.skillIds.has(r.skillId)) : all
   const bySection = new Map<string, PipelineRecord[]>()
   const bySkill = new Map<string, PipelineRecord[]>()
   const byStudent = new Map<string, PipelineRecord[]>()
@@ -179,6 +166,7 @@ export function buildAttainment(state: V2State, scope: LabScope, today: string =
   const sections = sectionRows.map((s) => s.key).sort((a, b) => (reach.get(b) ?? 0) - (reach.get(a) ?? 0) || sectionRows.findIndex((x) => x.key === a) - sectionRows.findIndex((x) => x.key === b))
   const rank = new Map(pop.rows.map((r, i) => [r.id, i]))
   const ordered = [...pop.rows].sort((a, b) => a.cohort.localeCompare(b.cohort) || (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0))
+  const graduating = basis === "assigned" && !!scope.cohort && scope.cohort === graduatingCohort(state, today)
   const students: AttStudent[] = ordered.map((row) => {
     const recs = byStudent.get(row.id) ?? []
     const cells: Record<string, AttCell> = {}
@@ -188,14 +176,13 @@ export function buildAttainment(state: V2State, scope: LabScope, today: string =
       if (r.state === "achieved") c.achieved++
     }
     const counts = tally(recs)
-    // Under "Required to graduate" the flag is the director's "far behind" (decision D-X11), never the term pace, so the model
-    // never mixes the two sets.
-    const behind = basis === "toGraduate" ? graduationStageOf(recs.length - counts.achieved) === "far" : row.behind
+    // For the graduating cohort the flag is the director's "far behind" (decision D-X11); anyone else reads the pace on their own clock.
+    const behind = graduating ? graduationStageOf(recs.length - counts.achieved) === "far" : row.behind
     return { id: row.id, name: row.name, cohort: row.cohort, group: row.group, behind, total: recs.length, counts, cells }
   })
-  // Under "Required to graduate" the order inside each cohort is most missing first (far behind at the top), so the director
+  // Under "All assigned" the order inside each cohort is most missing first (far behind at the top), so the director
   // sees who stands between the cohort and graduation before the complete records. Order only; no count changes.
-  if (basis === "toGraduate") {
+  if (graduating) {
     const pos = new Map(students.map((s, i) => [s.id, i]))
     students.sort((a, b) => a.cohort.localeCompare(b.cohort) || (b.total - b.counts.achieved) - (a.total - a.counts.achieved) || (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0))
   }

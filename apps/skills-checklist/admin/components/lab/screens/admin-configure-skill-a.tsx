@@ -3,13 +3,13 @@
 /**
  * Change one skill, variant A (2026-11-02, audit fix after Romit: "I thought I was clear that I don't want so much dense text"). The
  * per-skill page in the same four sections and words as Evaluation settings (How skills are judged, What counts as achieved, How
- * many evaluations, Who signs). Only what a skill may keep for itself is editable: times needed and the minimums [REQ SC-10, SC-11],
+ * many evaluations, Who does what). Only what a skill may keep for itself is editable: times needed and the minimums [REQ SC-10, SC-11],
  * and its own questions under a question or scored model [REQ SC-04]. Everything inherited from the program reads as plain values,
  * with "Change for all skills" to the Evaluation settings page. No preview, no subtext (D-L34, D-L36).
  *
  * A skill not configured yet starts from the program's settings when they exist; with none, the page points to them.
  * Save writes the rule through the same path as before (useConfigure, saveLabRule); when the change moves students who already
- * have evidence, the choice about that evidence is asked first, as a control [D-X27].
+ * have evidence, who it changes is shown before saving [REQ AE-02, D-L78].
  *
  * Regions: header (Evaluation settings, Close, the one Save), sections. No footer and no back control (navigation model A, D-L42).
  * URL: ?skill= · ?state=loading.
@@ -20,10 +20,9 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { FormPage } from "@/components/lab/layout"
-import { CRITERIA_LABEL, HOW_MANY_LABEL, LAB_MODEL_LABEL, MODEL_STEP_LABEL, ROLE_LABEL, checkOffLine, configureStepValue, type PublishMode } from "@/lib/lab/configure"
+import { CRITERIA_LABEL, HOW_MANY_LABEL, LAB_MODEL_LABEL, MODEL_STEP_LABEL, ROLE_LABEL, checkOffLine, configureStepValue, WHO_DOES_WHAT_LABEL } from "@/lib/lab/configure"
 import { programSettingsOf, resolveRule } from "@/lib/lab/program-settings"
 import { OutcomesSection, RuleSection, type SectionProps } from "@/components/lab/configure/fields"
-import { EVIDENCE_CHOICE_MISSING, EvidenceChoice, needsEvidenceChoice, useLiveImpact } from "@/components/lab/configure/impact"
 import { ConfigureLoading, ConfigureNotFound, LeaveButton, SkillTitle } from "@/components/lab/configure/shell"
 import { focusField, useConfigure } from "@/components/lab/configure/use-configure"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
@@ -57,9 +56,6 @@ export function AdminConfigureSkillA() {
   const m = useConfigure()
   const to = useLabHref()
   const program = m.ready ? programSettingsOf(m.state)?.rule ?? null : null
-  const impact = useLiveImpact(m.state, m.skill, m.current, m.rule)
-  const [mode, setMode] = React.useState<PublishMode | null>(null)
-  const [tried, setTried] = React.useState(false)
   const [showErrors, setShowErrors] = React.useState(false)
 
   // A skill not configured yet takes the program's settings as its starting point (nothing is chosen for it otherwise).
@@ -76,7 +72,6 @@ export function AdminConfigureSkillA() {
   const r = m.rule
   const props: SectionProps = { rule: r, setRule: m.setRule, issues: m.issues, showErrors, settings: m.settings, legendHidden: true }
   const allSkillsHref = to("admin/evaluation-settings")
-  const choice = needsEvidenceChoice(m.current, impact)
   const ownQuestions = r.model === "question" || r.model === "scored"
 
   const save = () => {
@@ -85,12 +80,7 @@ export function AdminConfigureSkillA() {
       requestAnimationFrame(() => focusField(m.issues[0]!.field))
       return
     }
-    if (choice && !mode) {
-      setTried(true)
-      requestAnimationFrame(() => focusField("cfg-mode"))
-      return
-    }
-    m.save(choice ? mode : null)
+    m.save(null)
   }
 
   return (
@@ -143,7 +133,7 @@ export function AdminConfigureSkillA() {
                 <Value label="Group check-off" value={checkOffLine(r)} />
               </dl>
             </Section>
-            <Section n={4} title="Who signs">
+            <Section n={4} title={WHO_DOES_WHAT_LABEL}>
               <dl className="flex flex-col gap-2">
                 <Value label="Student adds" value={r.studentFields.map((f) => `${f.label.trim()}${f.mandatory ? "" : " (optional)"}`).filter(Boolean).join(", ") || "Nothing"} />
                 <Value label="Self-rating" value={r.selfEvaluation ? "On" : "Off"} />
@@ -152,7 +142,6 @@ export function AdminConfigureSkillA() {
                 <Value label="Approval" value={r.approvalRequired ? "On" : "Off"} />
               </dl>
             </Section>
-            {choice ? <EvidenceChoice value={mode} onChange={setMode} error={tried && !mode ? EVIDENCE_CHOICE_MISSING : undefined} /> : null}
           </>
         ) : null}
       </div>

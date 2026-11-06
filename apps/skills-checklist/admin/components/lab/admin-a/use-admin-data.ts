@@ -6,14 +6,13 @@
  */
 import * as React from "react"
 import { useReviewer } from "@/components/lab/reviewer/use-reviewer"
-import { applyListsOverlay, diffLists, seedLists, EMPTY_LISTS_OVERLAY, type ListsOverlay, type SkillList } from "@/lib/lab/lists"
-import { EMPTY_MAPPING_OVERLAY, type MappingOverlay } from "@/lib/lab/mapping"
+import { diffLists, programLists, seedLists, type SkillList } from "@/lib/lab/lists"
+import { savedOverlay, type MappingOverlay } from "@/lib/lab/mapping"
+import { useV2State, useV2Store } from "@/lib/v2/react"
 import type { Person, V2State } from "@/lib/v2/types"
-import { createSessionStore, customGroupsStore, sessionSpace } from "./session-store"
+import { createSessionStore, customGroupsStore } from "./session-store"
 import { demoOf, useUrlParams, type DemoState } from "./parts"
 
-export const mappingStore = createSessionStore<MappingOverlay>("lab.admin.mapping.v1", EMPTY_MAPPING_OVERLAY)
-export const listsStore = createSessionStore<ListsOverlay>("lab.admin.lists.v1", EMPTY_LISTS_OVERLAY)
 /** Evaluators added by name and email in this session [REQ SL-08]. */
 export const addedEvaluatorsStore = createSessionStore<Person[]>("lab.admin.evaluators.v1", [])
 export { customGroupsStore }
@@ -26,8 +25,8 @@ export interface AdminData {
   retry: () => void
 }
 
-export function useAdminData(): AdminData {
-  const ctx = useReviewer()
+export function useAdminData(opts: { pageFilters?: boolean } = {}): AdminData {
+  const ctx = useReviewer(opts)
   const query = useUrlParams()
   const demo = demoOf(query.get("state"))
   const added = addedEvaluatorsStore.use()
@@ -35,24 +34,28 @@ export function useAdminData(): AdminData {
   return { ready: !!state && demo !== "loading", state, demo, query, retry: () => query.set({ state: null }) }
 }
 
+/** The saved per-offering levels. They live on the shared state, so student pages, reports and readiness read the same edits. */
 export function useMappingOverlay(): [MappingOverlay, (o: MappingOverlay) => void] {
-  const o = mappingStore.use()
-  return [o, mappingStore.set]
+  const store = useV2Store()
+  const o = savedOverlay(useV2State())
+  const set = React.useCallback((next: MappingOverlay) => store.update((s) => ({ ...s, offeringLevels: next })), [store])
+  return [o, set]
 }
 
-/** The program's lists with this session's edits, and a setter that stores only the difference from the seed. */
+/** The program's lists with their saved edits, and a setter that stores only the difference from the seed. On the shared state, like the levels. */
 export function useLists(state: V2State | null): { lists: SkillList[]; setLists: (next: SkillList[]) => void } {
-  const overlay = listsStore.use()
-  // A new program (Set up skills, D-L44) has no seeded groups of skills, even once it has skills.
-  const seeded = sessionSpace() === ""
-  const base = React.useMemo(() => (state && seeded ? seedLists(state) : []), [state, seeded])
-  const lists = React.useMemo(() => applyListsOverlay(base, overlay), [base, overlay])
+  const store = useV2Store()
+  // `state` can be the reviewer's snapshot, which re-reads only on new evidence. The lists read the store's own edits, so a Save shows at once, not after a reload.
+  const edits = useV2State().listEdits
+  const lists = React.useMemo(() => (state ? programLists(state.listEdits === edits ? state : { ...state, listEdits: edits }) : []), [state, edits])
+  const base = React.useMemo(() => (state && !state.ownListsOnly ? seedLists(state) : []), [state])
   const setLists = React.useCallback(
     (next: SkillList[]) => {
       const baseIds = new Set(base.map((b) => b.id))
-      listsStore.set(diffLists(base, next, next.filter((l) => !baseIds.has(l.id))))
+      const listEdits = diffLists(base, next, next.filter((l) => !baseIds.has(l.id)))
+      store.update((s) => ({ ...s, listEdits }))
     },
-    [base],
+    [store, base],
   )
   return { lists, setLists }
 }

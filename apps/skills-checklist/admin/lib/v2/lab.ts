@@ -1,5 +1,6 @@
 import type { Result } from "./admin-actions"
 import { nextIdFor } from "./outcomes"
+import { outcomeQualifiesOn } from "./rules"
 import { appendAudit } from "./store"
 import type { Evaluation, LabBatch, LabCheckoff, Outcome, Person, Skill, V2State } from "./types"
 
@@ -155,7 +156,7 @@ export function saveLabBatch(s: V2State, input: LabInput, actorId: string, at: s
         versions: [{ version: 1, outcome, at: when, by: actorId, reason: null, detail: { feedback: "" } }],
         source: "evaluator",
       })
-      if (outcome === "met" && input.setting === "lab" && !s.labCheckoffs.some((c) => c.studentId === p.id && c.skillId === skillId) && !checkoffs.some((c) => c.studentId === p.id && c.skillId === skillId)) {
+      if (outcomeQualifiesOn(s.skills.find((k) => k.id === skillId), outcome) && input.setting === "lab" && !s.labCheckoffs.some((c) => c.studentId === p.id && c.skillId === skillId) && !checkoffs.some((c) => c.studentId === p.id && c.skillId === skillId)) {
         const cid = nextIdFor("lc", coIds)
         coIds.push(cid)
         checkoffs.push({ id: cid, studentId: p.id, skillId, byId: actorId, at })

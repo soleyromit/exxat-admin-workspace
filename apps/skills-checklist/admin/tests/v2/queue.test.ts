@@ -4,7 +4,7 @@ import {
   approveBlock, approveItems, blankPaper, canReview, compareEvaluation, findQueueItem, priorAttempts, queueItems, reassignOptions, reassignRequest, recordPaperOutcome, resendSubmission, returnedItems, returnItem, returnNextStep, signerChoices, stalledRequests,
 } from "@/lib/v2/queue"
 import { COUNTER_BY_ID } from "@/lib/v2/selectors"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed, IDS } from "@/lib/v2/seed"
 import { requestWaitText, skillProgress, studentHistory } from "@/lib/v2/student"
 import type { Evaluation, V2State } from "@/lib/v2/types"
 

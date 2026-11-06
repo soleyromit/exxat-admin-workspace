@@ -63,7 +63,7 @@ function judge(link, page) {
   if (link.error) return link.error
   const inPageFlow = pf.steps.filter((s) => s.screen === link.screen)
   if (inPageFlow.length) {
-    // A flow may show one screen in two ways on purpose (the admin walkthrough's Paste several is Add a skill C, Course mapping by
+    // A flow may show one screen in two ways on purpose (Course mapping by
     // skill is mapping B; Proposed 2026-11-02): a link is right when it lands on a variant one of that screen's steps maps the set to.
     const wants = [...new Set(inPageFlow.map((s) => s.variants[page.set]).filter(Boolean))]
     const want = wants[0]

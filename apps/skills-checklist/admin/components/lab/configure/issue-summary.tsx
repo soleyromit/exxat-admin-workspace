@@ -11,7 +11,7 @@ const sectionLabel = (id: RuleIssue["section"]) => SECTIONS.find((s) => s.id ===
  * Error summary across steps (Check, before Save configuration). Each entry names its step and, when pressed, opens that step and focuses the
  * field [REQ SC-18; layout rule L9]. Within one step or one page, use the shared ValidationSummary instead.
  */
-export function IssueSummary({ issues, onGo, id = "cfg-issues", autoFocus = true }: { issues: RuleIssue[]; onGo: (i: RuleIssue) => void; id?: string; /** False where the summary is part of a page the reader scrolls to (Check on one page). */ autoFocus?: boolean }) {
+export function IssueSummary({ issues, onGo, id = "cfg-issues", autoFocus = true, labelOf }: { issues: RuleIssue[]; onGo: (i: RuleIssue) => void; id?: string; /** False where the summary is part of a page the reader scrolls to (Check on one page). */ autoFocus?: boolean; /** The surface's own word for where a problem sits (the edit panel's groups), instead of the page's section. */ labelOf?: (i: RuleIssue) => string }) {
   const ref = React.useRef<HTMLDivElement>(null)
   const key = issues.map((i) => i.id).join("|")
   React.useEffect(() => {
@@ -25,7 +25,7 @@ export function IssueSummary({ issues, onGo, id = "cfg-issues", autoFocus = true
           {issues.map((i) => (
             <li key={i.id}>
               <Button type="button" variant="link" size="xs" className="h-auto whitespace-normal p-0 text-start" onClick={() => onGo(i)}>
-                {`${sectionLabel(i.section)}: ${i.message}`}
+                {`${labelOf ? labelOf(i) : sectionLabel(i.section)}: ${i.message}`}
               </Button>
             </li>
           ))}

@@ -5,7 +5,7 @@
  * heading and the footer, so PageFrame and FormPage drop their own PageHeader inside it: one design per job, no fork.
  *
  * - `actions`: "keep" shows the page's own header actions as a right-aligned row above the body (the library's Add a skill,
- *   New group of skills); "drop" hides them (links that would leave the workflow, or a Save the wizard's Next replaces).
+ *   New skill list); "drop" hides them (links that would leave the workflow, or a Save the wizard's Next replaces).
  * - `registerPrimary`: a page whose header Save is dropped hands its save to the wizard, which runs it from Next.
  */
 import * as React from "react"

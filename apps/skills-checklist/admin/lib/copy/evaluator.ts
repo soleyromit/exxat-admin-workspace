@@ -33,8 +33,8 @@ export const evaluatorCopy = {
   submit: buttons.submitEvaluation,
   submitting: "Submitting",
   footer: "Submitting records your answers. You will not be asked to sign in.",
-  notSubmitted: (n: number) => `Not submitted. ${n} ${n === 1 ? "item needs" : "items need"} your attention.`, // [INFER] not in 09
-  stillNeeded: (n: number, next: string) => `${n} ${n === 1 ? "item" : "items"} still to complete. Next: ${next}.`, // [INFER] not in 09; short so the sticky bar stays small on a phone
+  notSubmitted: (n: number) => `Not submitted. ${n} ${n === 1 ? "answer needs" : "answers need"} your attention.`, // [INFER] not in 09
+  stillNeeded: (n: number, next: string) => `${n} ${n === 1 ? "answer" : "answers"} still to complete. Next: ${next}.`, // [INFER] not in 09; short so the sticky bar stays small on a phone
   needAnswers: (skill: string) => `answers for ${skill}`,
   needComment: (skill: string) => `a comment for ${skill}`,
   submitError: "Your evaluation was not submitted. Your answers are kept. Try again.",

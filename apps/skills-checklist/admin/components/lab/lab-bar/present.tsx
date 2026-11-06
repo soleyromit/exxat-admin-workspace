@@ -6,6 +6,7 @@ import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { PRESENT_PARAM, PRESENT_STORAGE_KEY, isPresent } from "@/lib/lab/present"
+import { WALKTHROUGH_ENTRY, isWalkthrough } from "@/lib/lab/walkthrough"
 
 function readStored(): boolean {
   try { return window.sessionStorage.getItem(PRESENT_STORAGE_KEY) === "1" } catch { return false }
@@ -25,6 +26,9 @@ export function usePresent(): { present: boolean; setPresent: (on: boolean) => v
   const raw = params?.get(PRESENT_PARAM) ?? null
   const present = isPresent(raw)
   React.useEffect(() => {
+    // A walkthrough is always presented (its route adds the param), but that is not a choice to present the lab: leaving it for `/lab`
+    // opens the working index with its variant controls (D-L64). Only the Present switch on the index turns present mode on.
+    if (pathname.startsWith("/lab/flow/") && isWalkthrough(pathname.split("/")[3])) { writeStored(false); return }
     if (raw !== null) { writeStored(present); return }
     if (readStored() && pathname.startsWith("/lab")) {
       const q = new URLSearchParams(params?.toString() ?? "")
@@ -63,6 +67,9 @@ export function PresentControls() {
   }, [])
   const buttons = (
     <>
+      <Button asChild variant="ghost" size="sm">
+        <Link href={WALKTHROUGH_ENTRY} data-present-walkthrough>Walkthrough</Link>
+      </Button>
       <Button asChild variant="ghost" size="sm">
         <Link href={`/lab?${PRESENT_PARAM}=1`}>Screens</Link>
       </Button>

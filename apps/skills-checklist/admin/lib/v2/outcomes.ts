@@ -1,4 +1,5 @@
 import type { Result } from "./admin-actions"
+import { outcomeQualifiesOn } from "./rules"
 import { appendAudit } from "./store"
 import type { Evaluation, EvaluationDetail, EvaluationVersion, Outcome, Person, Remediation, RoleId, V2State } from "./types"
 
@@ -87,7 +88,7 @@ export function openPlanByHand(s: V2State, evaluationId: string, actorId: string
   if (!isStaff(s.people.find((p) => p.id === actorId))) return { ok: false, error: "Only program staff can open a remediation plan." }
   const e = s.evaluations.find((x) => x.id === evaluationId)
   if (!e) return { ok: false, error: "That evaluation does not exist." }
-  if (e.outcome !== "not-met") return { ok: false, error: "A plan opens from an evaluation that did not meet the criteria. This one does not." }
+  if (e.outcome === "not-yet" || outcomeQualifiesOn(s.skills.find((k) => k.id === e.skillId), e.outcome)) return { ok: false, error: "A plan opens from an evaluation that did not meet the criteria. This one does not." }
   const r = openPlan(s, { studentId: e.studentId, skillId: e.skillId, evaluationId: e.id, actorId }, at)
   return { ok: true, state: r.state, remediationId: r.plan.id, created: r.created }
 }
@@ -135,7 +136,7 @@ export function attemptInfo(s: V2State, studentId: string, skillId: string): Att
   const skill = skillOf(s, skillId)
   const f = skill?.config?.failure ?? { attemptLimit: null, minDaysBetween: 0 }
   const mine = s.evaluations.filter((e) => e.studentId === studentId && e.skillId === skillId && e.status !== "returned" && e.outcome !== "not-yet" && e.setting === "clinical")
-  const fails = mine.filter((e) => e.outcome === "not-met").sort((a, b) => (a.date < b.date ? 1 : -1))
+  const fails = mine.filter((e) => !outcomeQualifiesOn(skill, e.outcome)).sort((a, b) => (a.date < b.date ? 1 : -1))
   const lastFailAt = fails[0]?.date ?? null
   let nextFrom: string | null = null
   if (lastFailAt && f.minDaysBetween > 0) {
@@ -210,7 +211,8 @@ export type OutcomeFilter = "latest" | "did-not-meet" | "not-yet" | "reopened"
 
 export function outcomeRows(s: V2State, filter: OutcomeFilter, limit = 12): Evaluation[] {
   const latestAt = (e: Evaluation) => e.versions[e.versions.length - 1]?.at ?? e.date
-  const rows = s.evaluations.filter((e) => (filter === "latest" ? true : filter === "did-not-meet" ? e.outcome === "not-met" : filter === "not-yet" ? e.outcome === "not-yet" : e.status === "reopened"))
+  const skills = new Map(s.skills.map((k) => [k.id, k]))
+  const rows = s.evaluations.filter((e) => (filter === "latest" ? true : filter === "did-not-meet" ? e.outcome !== "not-yet" && !outcomeQualifiesOn(skills.get(e.skillId), e.outcome) : filter === "not-yet" ? e.outcome === "not-yet" : e.status === "reopened"))
   return rows.slice().sort((a, b) => (latestAt(a) < latestAt(b) ? 1 : latestAt(a) > latestAt(b) ? -1 : 0)).slice(0, limit)
 }
 

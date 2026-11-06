@@ -24,7 +24,7 @@ const S = [
   ["admin", "dashboard", "Dashboard", 1, DASH], ["admin", "skills-library", "Skills library", 1, TABLE], ["admin", "add-skill", "Add a skill", 2, FORM],
   ["admin", "import-ai-review", "Import and AI review", 2, TABLE], ["admin", "starter-library", "Starter library", 3, TABLE], ["admin", "configure-skill", "Configure skill", 1, WIZ],
   ["admin", "rule-change-impact", "Rule change impact and publish", 3, DETAIL], ["admin", "retire-deactivate", "Deactivate, retire and new list", 3, DETAIL],
-  ["admin", "course-mapping", "Map skills to courses", 2, TABLE], ["admin", "lists-cohorts", "Groups of skills", 3, TABLE], ["admin", "evaluator-directory", "Evaluator directory", 3, TABLE],
+  ["admin", "course-mapping", "Map skills to courses", 2, TABLE], ["admin", "lists-cohorts", "Skill lists", 3, TABLE], ["admin", "evaluator-directory", "Evaluator directory", 3, TABLE],
   ["admin", "settings", "Settings", 3, FORM], ["admin", "categories-tags", "Categories and tags", 3, FORM],["admin", "attainment", "Attainment", 2, ["PageHeader", "KeyMetrics", "DataTable", "ChartCard"]], ["admin", "export", "Export", 3, DETAIL], ["admin", "approvals", "Approvals", 3, TABLE],
   ["student", "home", "Home", 1, ["PageHeader", "KeyMetrics", "Card", "Button", "Badge"]], ["student", "log-skill", "Log a skill", 3, FORM], ["student", "request-signoff", "Request a sign-off", 3, FORM],
   ["student", "my-requests", "My requests", 3, TABLE], ["student", "fix-returned", "Fix a returned submission", 3, FORM], ["student", "skill-detail", "Skill detail", 3, DETAIL],

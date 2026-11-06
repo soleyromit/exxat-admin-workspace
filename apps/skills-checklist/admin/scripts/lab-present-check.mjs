@@ -37,7 +37,7 @@ const BANNED = [
 const CHROME = "[data-lab-bar], [data-ds-used-panel], [data-lab-question], [data-variant-bar]"
 // The marquee, in order (lib/lab/present.ts MARQUEE; UX critique 2026-10-26).
 // Proposed 2026-11-02 (ledger D-X45): program evaluation settings and the setup summary.
-const MARQUEE_LABELS = ["Skills library", "Add a skill", "Evaluation settings", "Assign to a cohort or group", "Course mapping", "Setup summary", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"]
+const MARQUEE_LABELS = ["Skills library", "Add a skill", "Evaluation settings", "Assign to a cohort or group", "Course mapping", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"]
 const MARQUEE_COUNT = MARQUEE_LABELS.length
 const STUDENT = new Set(["My progress", "Log a skill", "My requests"])
 // Romit 2026-10-27 (LEDGER D-L11): "remove sample data tags from everywhere". No marquee screen carries a Sample data chip.
@@ -137,36 +137,32 @@ for (const l of targets) {
 // The two walkthroughs (lib/lab/walkthrough.ts; Sankalp's Thursday order, docs/knowledge/design/thursday-flows-sankalp.md): one
 // entry URL each, the recommended design of every step, the presenter control as the only lab element. Per step: lands where the
 // presenter's next (or Skip) says, no lab chrome root, no banned label, the breadcrumb and the page heading use the agreed step
-// string (comprehension audit 2026-10-27), still in present mode. Then the product's own buttons: "Save and configure" from the
+// string (comprehension audit 2026-10-27), still in present mode. Then the product's own buttons: "Add skill" from the
 // add sheet and "Map to courses" from the assign footer land on their walkthrough steps.
 const WALKS = [
   {
     entry: "/lab/walkthrough/admin",
     flow: "setup-walkthrough",
     steps: [
-      // Proposed 2026-11-02 (ledger D-X45): Sankalp's six steps, setup summary last.
-      ["library", "Skills"],
-      ["add", "Add a skill"],
-      ["paste", "Paste several"],
-      ["bulk", "Bulk upload"],
-      ["categories", "Categories and tags"],
+      // D-L64, D-L77, D-L106: recommended pages only, four stops.
+      ["library", "Library"],
       ["settings", "Evaluation settings"],
-      ["lists", "Groups of skills"],
-      ["assign", "Assign skills to student groups"],
+      ["lists", "Skill lists"],
       ["map", "Course mapping"],
-      ["map-skill", "Course mapping by skill"],
-      ["result", "Setup summary"],
     ],
   },
   {
     entry: "/lab/walkthrough/student",
     flow: "fulfillment-walkthrough",
     steps: [
+      // D-L67, D-L110: seven stops. Log a skill, Email to the preceptor, My requests, My evaluations and Fix or further attempt are side steps, off the numbered path.
       ["progress", "My progress"],
       ["course", "Skills by course"],
-      ["skills", "Log a skill"],
       ["self", "Self-evaluation"],
       ["send", "Send for evaluation"],
+      ["form", "Evaluation form"],
+      ["result", "Skill progress"],
+      ["faculty", "Faculty check-off"],
     ],
   },
 ]
@@ -174,13 +170,18 @@ const WALKS = [
 // opens on the wizard's first section (its heading is that section's name), so it is not judged; Check and save is judged on the
 // wizard's current step: since 2026-10-27 (Romit, "content hierarchy so the steps are cleaner") the step name lives in the DS rail
 // (its aria-current step label) and the visible h2 is the question the admin answers ("Ready to save?").
-// Paste several and Course mapping by skill are a second way into a page whose H1 is the page (Skills, Evaluation
+// Add several and Course mapping by skill are a second way into a page whose H1 is the page (Skills, Evaluation
 // settings, Course mapping); the step name is the tab or the way in, so they are not judged on the H1 either.
-const HEADING_EXEMPT = new Set(["setup-walkthrough/configure", "setup-walkthrough/paste", "setup-walkthrough/map-skill"])
+const HEADING_EXEMPT = new Set(["setup-walkthrough/configure", "setup-walkthrough/library"])
 // Log a skill keeps one page title across its steps (Romit 2026-10-27); the Self-evaluation step is judged on the stepper.
 const WIZARD_HEADING = { "setup-walkthrough/publish": 'nav[aria-label^="Wizard steps"] li[aria-current="step"] p', "fulfillment-walkthrough/self": 'nav[aria-label^="Wizard steps"] li[aria-current="step"] p' }
-const OPTIONAL = new Set(["setup-walkthrough/lists"])
-const SKILLS_PANEL_STEPS = new Set(["setup-walkthrough/categories", "setup-walkthrough/settings", "setup-walkthrough/lists", "setup-walkthrough/assign", "setup-walkthrough/map", "setup-walkthrough/map-skill", "setup-walkthrough/result"])
+// Stops that are not titled by the step, each by design. Self-evaluation and Send are a focus workflow and the evaluator's form has no app chrome, so none has a breadcrumb (D-L42, REQ EV-01).
+// The form is titled by the student it asks about, Skill progress by the skill, Faculty check-off by the offering.
+const STOP_CRUMBS = { "fulfillment-walkthrough/self": [], "fulfillment-walkthrough/send": [], "fulfillment-walkthrough/form": [], "fulfillment-walkthrough/result": ["My progress", "Skill progress"] }
+const STOP_HEADING = { "fulfillment-walkthrough/form": "Maya Ferreira", "fulfillment-walkthrough/result": "Nasogastric tube care", "fulfillment-walkthrough/faculty": "NURS 350 Clinical Practicum, Fall 2026" }
+// Next on a path's last stop (D-L67): the admin path continues into the student path, whose last stop has no Next.
+const LAST_NEXT = { "setup-walkthrough": "/lab/flow/fulfillment-walkthrough/progress?set=1&present=1", "fulfillment-walkthrough": null }
+const SKILLS_PANEL_STEPS = new Set(["setup-walkthrough/library", "setup-walkthrough/categories", "setup-walkthrough/settings", "setup-walkthrough/lists", "setup-walkthrough/map", "setup-walkthrough/result"])
 if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
   for (const walk of WALKS) {
     await page.evaluate(() => { try { sessionStorage.clear() } catch { /* */ } }).catch(() => {})
@@ -193,15 +194,13 @@ if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
       const u = new URL(page.url())
       check(name, "on the step", u.pathname === `/lab/flow/${walk.flow}/${id}`, u.pathname)
       check(name, "still in present mode (URL)", u.searchParams.get("present") === "1", page.url())
-      if (key === "setup-walkthrough/assign") check(name, "assign mode (view=assign)", u.searchParams.get("view") === "assign" && (await page.locator("[data-lists-mode=assign]").count()) > 0, page.url())
       const chrome = await page.locator(CHROME).count()
       check(name, "no lab chrome roots", chrome === 0, chrome)
       check(name, "no floating present pill", (await page.locator("[data-lab-present]").count()) === 0, "pill")
-      const text = (await domText()).replace(/Step \d+ of \d+(, optional)?/g, "")
+      const text = (await domText()).replace(/\d+ of \d+/g, "")
       for (const [bn, re] of BANNED) check(name, `no ${bn}`, !re.test(text), text.match(re)?.[0])
       const pos = ((await page.locator("[data-walkthrough-position]").textContent().catch(() => "")) ?? "").trim()
-      check(name, "presenter shows step n of N", pos === `Step ${i + 1} of ${n}${OPTIONAL.has(key) ? ", optional" : ""}`, pos)
-      if (OPTIONAL.has(key)) check(name, "optional step offers Skip", (await page.locator("[data-walkthrough-skip]").count()) === 1, "no Skip")
+      check(name, "path bar shows the page and N of M", pos === `${label}${i + 1} of ${n}`, pos)
       const crumbs = await page.$$eval("[data-slot=breadcrumb-item]", (els) => els.map((e) => e.textContent.trim()))
       if (key === "fulfillment-walkthrough/course") {
         // The course view is its own place (Romit 2026-10-27): "My progress > NURS 350", titled by the course.
@@ -210,8 +209,10 @@ if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
         check(name, "page heading is the course", h.startsWith("NURS 350, "), h)
         check(name, "Course select lists courses only, no My progress option", (await page.locator("#course-a-select").count()) === 1, "")
       } else if (SKILLS_PANEL_STEPS.has(key)) {
-        // D-L20: a page in the Skills panel reads "Skills > {step}" (the library itself reads "Skills").
+        // D-L20: a page in the Skills panel reads "Skills > {step}" (the library reads "Skills > Library", D-L64).
         check(name, `breadcrumb is "Skills > ${label}"`, crumbs.length === 2 && crumbs[0] === "Skills" && (crumbs[1] === label || HEADING_EXEMPT.has(key)), crumbs)
+      } else if (STOP_CRUMBS[key]) {
+        check(name, `breadcrumb is ${JSON.stringify(STOP_CRUMBS[key])}`, JSON.stringify(crumbs) === JSON.stringify(STOP_CRUMBS[key]), crumbs)
       } else check(name, `breadcrumb is "${label}"`, crumbs.length === 1 && crumbs[0] === label, crumbs)
       await shot(`${walk.flow === "setup-walkthrough" ? "config" : "fulfil"}-${String(i + 1).padStart(2, "0")}-${id}`)
       if (WIZARD_HEADING[key]) {
@@ -220,8 +221,9 @@ if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
       } else if (!HEADING_EXEMPT.has(key) && key !== "fulfillment-walkthrough/course") {
         const heads = await page.$$eval("main h1, main h2, [role=dialog] h2", (els) => els.filter((e) => e.getClientRects().length).map((e) => e.textContent.trim()))
         // Add a skill is the sheet over the library: its sheet title is the step's heading.
-        const ok = id === "add" ? heads.includes(label) : heads[0] === label
-        check(name, `page heading is "${label}"`, ok, heads.slice(0, 3))
+        const want = STOP_HEADING[key] ?? label
+        const ok = id === "add" ? heads.includes(want) : heads[0] === want
+        check(name, `page heading is "${want}"`, ok, heads.slice(0, 3))
       }
       const next = await page.locator("[data-walkthrough-next]").first().getAttribute("href").catch(() => null)
       if (i < n - 1) {
@@ -229,24 +231,20 @@ if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
         check(name, "presenter next names the following step", !!next && new URL(next, base).pathname === `/lab/flow/${walk.flow}/${walk.steps[i + 1][0]}`, next)
         if (next) await load(next)
       } else {
-        check(name, "Finish returns to the present index", next === "/lab?present=1", next)
+        check(name, "Next on the last stop continues the path, or there is none", next === LAST_NEXT[walk.flow], next)
       }
     }
   }
   // The product's own primary buttons.
-  await load("/lab/flow/setup-walkthrough/assign?set=1&present=1&view=assign")
-  await page.getByRole("link", { name: "Map to courses" }).first().click().catch(() => {})
-  await page.waitForURL((x) => x.pathname.endsWith("/map"), { timeout: 60000 }).catch(() => {})
-  check("Walkthrough buttons", "assign footer Map to courses lands on the map step", new URL(page.url()).pathname === "/lab/flow/setup-walkthrough/map", page.url())
   await load("/lab/flow/setup-walkthrough/add?set=1&present=1")
   try {
     const dialog = page.getByRole("dialog")
     await dialog.getByLabel(/^Name/).first().fill(`Walkthrough skill ${Date.now() % 10000}`)
-    await dialog.getByRole("button", { name: /Save and configure/ }).click()
-    await page.waitForURL((x) => x.pathname.endsWith("/configure"), { timeout: 60000 })
+    await dialog.getByRole("button", { name: /^Add skill$/ }).click()
+    await page.waitForTimeout(800)
   } catch { /* judged below */ }
   const cu = new URL(page.url())
-  check("Walkthrough buttons", "add sheet Save and configure lands on the configure step with the new skill", cu.pathname === "/lab/flow/setup-walkthrough/configure" && !!cu.searchParams.get("skill") && cu.searchParams.get("skill") !== "sk-pressure-injury", page.url())
+  check("Walkthrough buttons", "add sheet Add skill stays on the page, no configure step (map D2)", !cu.pathname.endsWith("/configure") && (await page.getByRole("dialog").count()) === 0, page.url())
 
   // Fulfillment by the product's own buttons only (Sankalp S1 to S2): the course view's Send for evaluation opens Send C on the
   // course's mandatory skills, Continue walks Questions, Self-evaluation and Send, and Send ends on the confirmation. Each page
@@ -264,8 +262,10 @@ if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
   const picked = await page.locator("#fulfil-skills input[type=checkbox]:checked, #fulfil-skills [role=checkbox][data-state=checked]").count()
   check(B, "mandatory skills preselected", picked > 0, picked)
   // No Questions step since 2026-10-27 (Romit): Choose skills, then Evaluate yourself, then Send.
-  const steps = [["self", "Self-evaluation", "Step 4 of 5"], ["send", "Send for evaluation", "Step 5 of 5"]]
-  for (const [sid, label, p] of steps) {
+  // Log a skill is a side step of the course stop (D-L67), so the bar holds still through its own steps; the stepper says where it is.
+  const steps = [["self", "Self-evaluation", "Self-evaluation"], ["send", "Send for evaluation", "Send"]]
+  const p = "Log a skill2 of 7"
+  for (const [sid, label, wiz] of steps) {
     if (sid === "send") {
       // Answer every question and the overall result on each self-evaluation card: the first option of each group (Yes, then Met).
       for (const g of await page.locator("[data-self-card] [aria-labelledby]").all()) await g.locator("button").first().click().catch(() => {})
@@ -276,16 +276,21 @@ if (!NEGATIVE && !process.argv.includes("--no-walkthrough")) {
     check(B, `${label}: presenter says ${p}`, (await pos()) === p, await pos())
     // The flow keeps one title, Log a skill, until its last step, Send for evaluation (Romit 2026-10-27).
     const wantH1 = sid === "send" ? label : "Log a skill"
-    check(B, `${label}: breadcrumb says the step, H1 says ${wantH1}`, (await crumb()) === label && (await h1()) === wantH1, [await crumb(), await h1()])
+    const stepper = ((await page.locator(WIZARD_HEADING["fulfillment-walkthrough/self"]).first().textContent().catch(() => "")) ?? "").trim()
+    check(B, `${label}: the stepper says ${wiz}, H1 says ${wantH1}`, stepper === wiz && (await crumb()) === "" && (await h1()) === wantH1, [stepper, await crumb(), await h1()])
     await shot(`fulfil-buttons-${sid}`)
   }
   // Send: the confirmation. Where defaults from the placement; the student chooses who signs and the date, as a presenter would.
   const sendStep = page.locator("[data-student-lab=request-C][data-step=send]")
   // Who signs off, by its own ids: "How they sign" (a radio group too) comes first on the page since 2026-10-27.
-  await sendStep.locator("[role=radio][id^=who-]").first().click().catch(() => {})
+  // Some cannot sign these skills, and are shown disabled with the reason [REQ SL-08].
+  await sendStep.locator("[role=radio][id^=who-]:not([disabled])").first().click().catch(() => {})
   // The date is a DatePickerField (a button that opens a calendar): open it and pick a day this month.
   await page.locator("#req-detail-date").click().catch(() => {})
   await page.waitForTimeout(500)
+  // Last month: this month's later days are in the future, which Send refuses.
+  await page.getByRole("button", { name: /previous month/i }).first().click().catch(() => {})
+  await page.waitForTimeout(300)
   const day = page.locator("[role=dialog] [role=gridcell] button, [data-slot=popover-content] [role=gridcell] button").filter({ hasText: /^2[0-6]$/ }).first()
   await day.click().catch(() => {})
   await page.waitForTimeout(500)

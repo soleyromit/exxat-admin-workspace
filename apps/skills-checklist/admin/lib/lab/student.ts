@@ -1,13 +1,17 @@
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { heldState } from "@/lib/v2/approvals"
 import { shortDate as formatShortDate } from "@/lib/v2/format"
-import { OUTCOME_LABEL, SENT_FOR_NEW_EVALUATION_WORD, STUDENT_NOT_COUNTED, answeredSentence, sentForNewEvaluationLabel } from "@/lib/v2/labels"
+import { OUTCOME_LABEL, SENT_FOR_NEW_EVALUATION_WORD, STUDENT_NOT_COUNTED, answeredSentence, outcomeWordOn, sentForNewEvaluationLabel } from "@/lib/v2/labels"
 import { PLACEMENT_ENDING_DAYS, daysLeftIn, placementStatus, placementsOf, type PlacementStatus } from "@/lib/v2/placements"
 import { SMALL_NUMBERS } from "@/lib/v2/reports"
 import { evalsOfStudent, evalsOfStudentSkill, personById, skillById, submissionsOfStudent } from "@/lib/v2/evidence-index"
+import { mappingRowsInForce } from "@/lib/v2/mapping-in-force"
+import { outcomeQualifiesOn, qualifyingOutcome } from "@/lib/v2/rules"
 import { ruleSentence, sentElsewhereTo, sentForNewEvaluationTo, skillProgress, type SkillProgress } from "@/lib/v2/student"
 import type { Evaluation, Outcome, Person, Skill, Submission, V2State } from "@/lib/v2/types"
 import { populationRows, resolveTerm, type StudentRow, type TermInfo } from "./dashboard"
+import { programShare } from "@/lib/v2/population"
+import { listsOfStudent, type SkillList } from "./lists"
 import { EMPTY_SCOPE } from "./scope"
 import { aNoun, countSkills, inSentence, skillNoun, skillNounPlural } from "./terms"
 import { attemptLine, evaluateRule, fromV2, isInvalidResult, type LabRule } from "./configure"
@@ -16,9 +20,10 @@ import { loggedNotSent } from "./logged"
 /**
  * Student lab model (My progress, Skill detail, My requests, Fix a submission). A pure function of the v2 state, read only.
  *
- * Consistency invariant [BUILD-PROMPT 8.9]: the required set, achieved count and pace come from the same `populationRows` the staff
- * dashboard uses (cohort offerings in the current term, mandatory, configured, published), so a student sees the counts staff see.
- * Pending never counts: progress reads `skillProgress`, which uses counted evaluations only [REQ AE-01].
+ * Consistency invariant [BUILD-PROMPT 8.9]: what is owed, achieved count and pace come from the same `populationRows` the staff dashboard, Reports
+ * and readiness use: the skills on a list assigned to the student, through a group or by name, one list at a time (D-L102). Course mapping says
+ * where each can be done, never what is owed. A student on no list owes nothing and can still submit [REQ CM-05]. Evidence for any skill counts
+ * on that skill's record [REQ CM-07]. Pending never counts: progress reads `skillProgress`, which uses counted evaluations only [REQ AE-01].
  *
  * Skill record states follow REQ AE-04 with Romit's label for the third (ledger D-L1): No evidence yet, Evidence does not qualify,
  * In progress (n of m), Achieved. Waiting and returned are overlays, never states.
@@ -63,6 +68,17 @@ export function studentHref(screen: StudentScreen, params: Record<string, string
 
 export type SkillState = "none" | "dnq" | "progress" | "achieved"
 export const OUTCOME_WORD: Record<Outcome, string> = OUTCOME_LABEL
+
+/**
+ * The evaluator's answer in the program's own words: a program can rename the two labels and choose the second one as the one that qualifies
+ * [REQ SC-03, AE-06], so "met" is not the same as "it counted" (`outcomeQualifiesOn`).
+ */
+export function answerWord(skill: Pick<Skill, "model" | "config"> | null | undefined, outcome: Outcome): string {
+  return outcomeWordOn(skill, outcome)
+}
+
+/** The label that qualifies on this skill, in the program's words: what the student's sentences about the rule name. */
+export const qualifyingWord = (skill: Pick<Skill, "model" | "config"> | null | undefined): string => outcomeWordOn(skill, qualifyingOutcome({ model: skill?.model ?? null, qualifyingLabel: skill?.config?.qualifyingLabel ?? null }))
 
 export function stateLabel(state: SkillState, counted: number, need: number): string {
   if (state === "achieved") return "Achieved"
@@ -112,9 +128,12 @@ export interface SkillRecord {
   id: string
   name: string
   section: string
-  /** Mandatory this term, recommended (likely here), optional (submittable, never required), or evidence only (not mapped). */
-  level: "mandatory" | "recommended" | "optional" | "evidence"
+  /** Where it is expected this term: mandatory, recommended (likely here), or evidence only (not mapped: it can still be submitted and counts, REQ CM-05). */
+  level: "mandatory" | "recommended" | "evidence"
+  /** On the skill list this page reads: it counts toward that list's total. A course's level says nothing about this. */
   required: boolean
+  /** Every list assigned to the student that holds this skill. Empty: not on their lists; it can be submitted and counts on its own record only [INFER]. */
+  onLists: Array<{ id: string; name: string }>
   state: SkillState
   label: string
   counted: number
@@ -128,6 +147,8 @@ export interface SkillRecord {
   progress: SkillProgress
   /** False once the program deactivated the skill [REQ SL-11]: its evidence stays visible, nothing new can be sent for it. */
   active: boolean
+  /** False while the skill is Not configured [REQ IM-09, AE-02]: its evidence stays visible and counts for nothing, nothing new can be sent for it. */
+  setUp: boolean
   /**
    * Set only when a named setting is still short and the rule already uses lab or simulation evidence: that evidence counts toward
    * the evaluations, never toward the setting [REQ SH-05, SC-12]. Null otherwise, so the screen says it only when it matters.
@@ -149,17 +170,24 @@ export function partsOf(p: SkillProgress): Part[] {
   return out
 }
 
-/** "Met" dropped mid-sentence goes through inSentence (Romit 2026-10-29): "Needs 3 met evaluations". */
-const MET_IN_SENTENCE = inSentence(OUTCOME_LABEL.met)
-
-/** The shortest unmet part as one sentence, for example "Needs 3 met evaluations; you have 0." */
-export function shortfallSentence(p: SkillProgress): string {
+/**
+ * The shortest unmet part as one sentence, for example "Needs 3 evaluations rated pass; you have 0.". The word is the label that qualifies on this skill [REQ SC-03], dropped mid-sentence through inSentence (Romit 2026-10-29), so a label never reads as a
+ * description ("3 pass evaluations"). Without a skill it reads the shared word. A model with no labels has no word to name, so it says what its rule sentence says: "successful".
+ */
+export function shortfallSentence(p: SkillProgress, skill?: Pick<Skill, "model" | "config"> | null): string {
+  const counted = !skill || skill.model === "binary" ? (n: number) => `${plural(n, "evaluation", "evaluations")} rated ${inSentence(qualifyingWord(skill))}` : (n: number) => plural(n, "successful evaluation", "successful evaluations")
   const parts = partsOf(p).filter((x) => !x.met)
   if (parts.length === 0) return "Every part of the rule is met."
   return parts
-    .map((x) => (x.label === "Evaluations" ? `Needs ${plural(x.need, `${MET_IN_SENTENCE} evaluation`, `${MET_IN_SENTENCE} evaluations`)}; you have ${fmt(x.have)}` : x.label === "Different evaluators" ? `Needs ${fmt(x.need)} different evaluators; you have ${fmt(x.have)}` : `Needs ${fmt(x.need)} in ${inSentence(x.label)}; you have ${fmt(x.have)}`))
+    .map((x) => (x.label === "Evaluations" ? `Needs ${counted(x.need)}; you have ${fmt(x.have)}` : x.label === "Different evaluators" ? `Needs ${fmt(x.need)} different evaluators; you have ${fmt(x.have)}` : `Needs ${fmt(x.need)} in ${inSentence(x.label)}; you have ${fmt(x.have)}`))
     .join(". ")
     .concat(".")
+}
+
+/** The rule in the student's words. A skill with labels names the one that qualifies, the way `shortfallSentence` does, so the page says one thing: "You need 3 evaluations rated pass, from any single evaluator." */
+export function studentRuleSentence(skill: Skill): string {
+  const s = ruleSentence(skill)
+  return skill.model === "binary" ? s.replace(/\bsuccessful (evaluations?)/, `$1 rated ${inSentence(qualifyingWord(skill))}`) : s
 }
 
 const OPEN: Submission["status"][] = ["on-device", "with-evaluator", "awaiting-review", "stalled"]
@@ -192,48 +220,54 @@ function returnedFor(s: V2State, studentId: string, skillId: string): ReturnInfo
 }
 
 function failedFor(s: V2State, skill: Skill, p: SkillProgress, evals: readonly Evaluation[]): FailInfo | null {
-  if (p.achieved) return null
+  if (p.achieved || !skill.configured) return null
   const latest = [...evals].filter((e) => e.status === "counted").sort((a, b) => (a.date < b.date ? 1 : -1))[0]
   if (!latest) return null
   const leftOut = p.leftOut[latest.id]
-  if (latest.outcome === "met" && !leftOut) return null
-  const answer = OUTCOME_WORD[latest.outcome]
+  if (outcomeQualifiesOn(skill, latest.outcome) && !leftOut) return null
+  const answer = answerWord(skill, latest.outcome)
   const why = leftOut ? leftOut.replace(/\.$/, "") : answeredSentence(answer).replace(/\.$/, "")
   return {
     evaluationId: latest.id,
     date: latest.date,
     evaluatorName: nameOf(s, latest.evaluatorId),
     answer,
-    rule: `${why}. ${shortfallSentence(p)}`,
+    rule: `${why}. ${shortfallSentence(p, skill)}`,
     next: `Make a further attempt and send it for evaluation. The earlier attempt stays as it is.`,
   }
 }
 
-export function skillRecord(input: V2State, studentId: string, skillId: string, level: SkillRecord["level"], likely: boolean, today: string = DEMO_TODAY): SkillRecord | null {
+/** The student's words for a Not configured skill, the same as the rest of their record. */
+export const NOT_SET_UP = () => `Your program has not set this ${skillNoun()} up yet.`
+
+export function skillRecord(input: V2State, studentId: string, skillId: string, level: SkillRecord["level"], likely: boolean, today: string = DEMO_TODAY, onList: boolean = false): SkillRecord | null {
   const s = heldState(input)
   const skill = skillById(s, skillId)
   const p = skill ? skillProgress(s, studentId, skillId) : null
   if (!skill || !p) return null
   const evals = evalsOfStudentSkill(s, studentId, skillId)
   const state = stateOf(p, evals)
+  const setUp = skill.configured
   return {
     id: skill.id,
     name: skill.name,
     section: skill.category,
     level,
-    required: level === "mandatory",
+    required: onList,
+    onLists: listsOfStudent(s, studentId).filter((l) => l.skillIds.includes(skillId)).map((l) => ({ id: l.id, name: l.name })),
     state,
     label: stateLabel(state, p.counted, p.need),
     counted: p.counted,
     need: p.need,
     parts: partsOf(p),
-    rule: ruleSentence(skill),
+    rule: setUp ? studentRuleSentence(skill) : NOT_SET_UP(),
     waiting: p.achieved ? null : waitingFor(s, studentId, skillId, evals, today),
     returned: returnedFor(s, studentId, skillId),
     failed: failedFor(s, skill, p, evals),
     likely,
     progress: p,
     active: skill.active !== false,
+    setUp,
     settingNote: settingNoteOf(p, evals),
   }
 }
@@ -283,8 +317,8 @@ export interface CourseExpectation {
   name: string
   mandatory: number
   mandatoryAchieved: number
-  optional: number
-  optionalAchieved: number
+  recommended: number
+  recommendedAchieved: number
   /** Evaluations the term clock expects by now on this course's mandatory skills, and those counted. */
   expected: number
   collected: number
@@ -294,7 +328,7 @@ export interface CourseExpectation {
    * Every skill this course expects of the student, with its level on this course [REQ ST-01]: mandatory first, then recommended,
    * then optional, each by name. The record for each is in `StudentModel.all` (same progress everywhere).
    */
-  skills: Array<{ id: string; level: "mandatory" | "recommended" | "optional" }>
+  skills: Array<{ id: string; level: "mandatory" | "recommended" }>
 }
 
 const courseList = (s: V2State) => s.courses ?? [s.course, ...(s.otherCourses ?? [])]
@@ -401,7 +435,7 @@ export function requestGroups(state: V2State, studentId: string, today: string =
       const days = daysBetween(e.date, today)
       g.waiting.push({ id: e.id, status: "waiting", skillIds: [e.skillId], skillNames: names([e.skillId]), statusLabel: `Awaiting approval, ${ageLabel(days)}`, days, date: e.date, link: "Link closed, evaluation complete", href: studentHref("skill-detail", { skill: e.skillId }, studentId), action: "View", revision: 0, reason: null, overdue: false, fix: null })
     } else if (e.status === "counted") {
-      g.done.push({ id: e.id, status: "done", skillIds: [e.skillId], skillNames: names([e.skillId]), statusLabel: `${OUTCOME_WORD[e.outcome]}, ${shortDate(e.date)}`, days: daysBetween(e.date, today), date: e.date, link: "Link closed", href: studentHref("skill-detail", { skill: e.skillId }, studentId), action: "View", revision: 0, reason: null, overdue: false, fix: null })
+      g.done.push({ id: e.id, status: "done", skillIds: [e.skillId], skillNames: names([e.skillId]), statusLabel: `${answerWord(skillById(s, e.skillId), e.outcome)}, ${shortDate(e.date)}`, days: daysBetween(e.date, today), date: e.date, link: "Link closed", href: studentHref("skill-detail", { skill: e.skillId }, studentId), action: "View", revision: 0, reason: null, overdue: false, fix: null })
     }
   }
   const byDate = (a: RequestRow, b: RequestRow) => (a.date < b.date ? 1 : -1)
@@ -440,13 +474,27 @@ export interface SectionShare {
   median: number
 }
 
+/** One assigned list as My progress shows it: read on its own, never added to another (Aarti, 205da2dd ch 11). */
+export interface ListStanding {
+  id: string
+  name: string
+  nounPlural: string
+  total: number
+  achieved: number
+}
+
 export interface StudentModel {
   student: Person
   cohort: string
   term: TermInfo
   row: StudentRow | null
+  /** The lists assigned to the student, each with its own figure. Empty: no list. */
+  lists: ListStanding[]
+  /** The list this page reads, or null with no list. */
+  list: ListStanding | null
+  /** The skills on that list: what is owed. */
   required: SkillRecord[]
-  /** Every skill on the student's list: required, optional on a current course, or with evidence. */
+  /** Those, plus anything mapped on a current course or with evidence. */
   all: SkillRecord[]
   counts: { required: number; achieved: number; waiting: number; returned: number; doesNotQualify: number; oneAway: number }
   next: NextAction[]
@@ -458,61 +506,77 @@ export interface StudentModel {
   /** Peer comparison hidden below SMALL_NUMBERS [brief section 8]. */
   radarSuppressed: boolean
   sync: SyncSummary
-  /** Pace verdict in one line: "On pace for week 9 of 16" or "3 evaluations behind the term clock". */
+  /** Pace verdict in one line: "On pace" or "3 evaluations behind pace". Empty with no list: nothing reads as behind. */
   verdict: string
   behind: boolean
 }
 
-function paceSeries(s: V2State, studentId: string, requiredIds: string[], term: TermInfo, today: string): PacePoint[] {
-  const start = Date.parse(`${term.start}T00:00:00Z`)
-  const end = Date.parse(`${term.end}T00:00:00Z`)
+/** A burn-up over the student's program: the list's evaluations counted at each point, against the same clock the row reads (`programShare`). Eight-week steps. */
+function paceSeries(s: V2State, studentId: string, requiredIds: string[], graduates: string | undefined, today: string): PacePoint[] {
+  const year = Number(graduates)
+  if (!Number.isFinite(year) || requiredIds.length === 0) return []
+  const start = Date.parse(`${year - 2}-01-01T00:00:00Z`)
+  const end = Date.parse(`${year}-12-31T00:00:00Z`)
   const now = Date.parse(`${today}T00:00:00Z`)
   const mine = evalsOfStudent(s, studentId)
   const needed = requiredIds.reduce((n, id) => n + (skillProgress(s, studentId, id)?.need ?? 0), 0)
   const out: PacePoint[] = []
-  for (let t = start; t <= end + DAY; t += 7 * DAY) {
-    const at = Math.min(t, end)
+  const countedAt = (date: string) => {
+    const sub = { ...s, evaluations: mine.filter((e) => e.date.slice(0, 10) <= date) }
+    return requiredIds.reduce((n, id) => {
+      const p = skillProgress(sub, studentId, id)
+      return n + Math.min(p?.counted ?? 0, p?.need ?? 0)
+    }, 0)
+  }
+  const stops = new Set<number>()
+  for (let t = start; t < end; t += 56 * DAY) stops.add(t)
+  stops.add(end)
+  // Today is always a point, so the chart's last counted value is the page's figure.
+  if (now >= start && now <= end) stops.add(now)
+  for (const at of [...stops].sort((a, b) => a - b)) {
     const date = new Date(at).toISOString().slice(0, 10)
-    const share = (at - start) / Math.max(1, end - start)
-    let counted = -1
-    if (at <= now) {
-      const sub = { ...s, evaluations: mine.filter((e) => e.date.slice(0, 10) <= date) }
-      counted = requiredIds.reduce((n, id) => {
-        const p = skillProgress(sub, studentId, id)
-        return n + Math.min(p?.counted ?? 0, p?.need ?? 0)
-      }, 0)
-    }
-    out.push({ date, label: shortDate(date), counted, expected: Math.floor(needed * share) })
-    if (at === end) break
+    out.push({ date, label: shortDate(date), counted: at <= now ? countedAt(date) : -1, expected: Math.floor(needed * programShare(graduates, date)) })
   }
   return out
 }
 
-export function buildStudent(state: V2State, studentId: string = DEFAULT_STUDENT, today: string = DEMO_TODAY): StudentModel | null {
+export function buildStudent(state: V2State, studentId: string = DEFAULT_STUDENT, today: string = DEMO_TODAY, opts: { listId?: string | null } = {}): StudentModel | null {
   const s = heldState(state)
   const student = personById(s, studentId)
   if (!student || student.kind !== "student") return null
   const term = resolveTerm(s, EMPTY_SCOPE, today)
   const cohortName = student.cohort ?? ""
-  const pop = populationRows(s, { ...EMPTY_SCOPE, cohort: cohortName }, today)
+  // One list at a time, the same function every staff figure reads: this student's row for this list, in this cohort.
+  const mine = listsOfStudent(s, studentId)
+  const inForce: SkillList | null = mine.find((l) => l.id === opts.listId) ?? mine[0] ?? null
+  const standing = (l: SkillList): ListStanding => {
+    const r = populationRows(s, { ...EMPTY_SCOPE, cohort: cohortName, list: l.id }, today).rows.find((x) => x.id === studentId)
+    return { id: l.id, name: l.name, nounPlural: l.nounPlural, total: r?.required ?? 0, achieved: r?.achieved ?? 0 }
+  }
+  const lists = mine.map(standing)
+  const pop = populationRows(s, { ...EMPTY_SCOPE, cohort: cohortName, ...(inForce ? { list: inForce.id } : {}) }, today)
   const row = pop.rows.find((r) => r.id === studentId) ?? null
 
   // Courses of the student's cohort in the current term.
   const offered = new Set((s.offerings ?? []).filter((o) => o.termId === term.id && o.cohortId === student.cohortId).map((o) => o.courseId))
-  const levelOf = new Map<string, "mandatory" | "recommended" | "optional">()
+  const levelOf = new Map<string, "mandatory" | "recommended">()
   const coursesOf = new Map<string, string[]>()
-  // "Likely here" reads mandatory and recommended mappings only (CALL 10-26); optional stays submittable but is never suggested.
+  // "Likely here" reads the mapped skills, mandatory and recommended (CALL 10-26). A skill not mapped stays submittable and is not suggested.
   const likelyCoursesOf = new Map<string, string[]>()
-  const rank = { mandatory: 0, recommended: 1, optional: 2 } as const
-  for (const m of s.mappings) {
-    if (!offered.has(m.courseId) || m.level === "not-expected") continue
-    const k = skillById(s, m.skillId)
-    // A deactivated skill is withdrawn from mapping [REQ SL-11]: it is no longer expected on any course; its evidence stays.
-    if (!k?.configured || !k.published || k.active === false) continue
-    const prev = levelOf.get(m.skillId)
-    if (!prev || rank[m.level] < rank[prev]) levelOf.set(m.skillId, m.level)
-    coursesOf.set(m.skillId, [...(coursesOf.get(m.skillId) ?? []), m.courseId])
-    if (m.level !== "optional") likelyCoursesOf.set(m.skillId, [...(likelyCoursesOf.get(m.skillId) ?? []), m.courseId])
+  const rank = { mandatory: 0, recommended: 1 } as const
+  // The levels in force for this student's offerings: the course's rows with the admin's edits to each offering applied.
+  const rowsOfCourse = (courseId: string) => mappingRowsInForce(s, courseId, student.cohortId ?? "", term.id)
+  for (const courseId of offered) {
+    for (const m of rowsOfCourse(courseId)) {
+      if (m.level === "not-expected") continue
+      const k = skillById(s, m.skillId)
+      // A deactivated skill is withdrawn from mapping [REQ SL-11]: it is no longer expected on any course; its evidence stays.
+      if (!k?.configured || !k.published || k.active === false) continue
+      const prev = levelOf.get(m.skillId)
+      if (!prev || rank[m.level] < rank[prev]) levelOf.set(m.skillId, m.level)
+      coursesOf.set(m.skillId, [...(coursesOf.get(m.skillId) ?? []), m.courseId])
+      likelyCoursesOf.set(m.skillId, [...(likelyCoursesOf.get(m.skillId) ?? []), m.courseId])
+    }
   }
   const requiredIds = new Set(row?.requiredIds ?? [])
 
@@ -538,8 +602,7 @@ export function buildStudent(state: V2State, studentId: string = DEFAULT_STUDENT
   const ids = new Set<string>([...levelOf.keys(), ...requiredIds, ...evalsOfStudent(s, studentId).map((e) => e.skillId)])
   const all: SkillRecord[] = []
   for (const id of ids) {
-    const level: SkillRecord["level"] = requiredIds.has(id) ? "mandatory" : levelOf.get(id) === "recommended" ? "recommended" : levelOf.has(id) ? "optional" : "evidence"
-    const r = skillRecord(s, studentId, id, level, likely.has(id), today)
+    const r = skillRecord(s, studentId, id, levelOf.get(id) ?? "evidence", likely.has(id), today, requiredIds.has(id))
     if (r) all.push(r)
   }
   all.sort((a, b) => a.section.localeCompare(b.section) || a.name.localeCompare(b.name))
@@ -568,24 +631,26 @@ export function buildStudent(state: V2State, studentId: string = DEFAULT_STUDENT
   for (const cid of offered) {
     const c = courseList(s).find((x) => x.id === cid)
     if (!c) continue
-    const rows = s.mappings.filter((m) => m.courseId === cid && m.level !== "not-expected" && coursesOf.has(m.skillId))
+    const rows = rowsOfCourse(cid).filter((m) => m.level !== "not-expected" && coursesOf.has(m.skillId))
     if (rows.length === 0) continue
     const mand = [...new Set(rows.filter((m) => m.level === "mandatory").map((m) => m.skillId))]
-    // Non-mandatory on this course (recommended or optional): the "optional" figure keeps its meaning, never required.
-    const opt = [...new Set(rows.filter((m) => m.level !== "mandatory").map((m) => m.skillId))].filter((id) => !mand.includes(id))
+    // Recommended on this course: never required.
+    const recd = [...new Set(rows.filter((m) => m.level === "recommended").map((m) => m.skillId))].filter((id) => !mand.includes(id))
     const rec = (id: string) => all.find((r) => r.id === id)
-    const needed = mand.reduce((n, id) => n + (rec(id)?.need ?? 0), 0)
-    const collected = mand.reduce((n, id) => n + Math.min(rec(id)?.counted ?? 0, rec(id)?.need ?? 0), 0)
+    // The course's clock reads only what the student owes: a mandatory skill not on their list, or a student with no list, is never behind.
+    const owed = mand.filter((id) => requiredIds.has(id))
+    const needed = owed.reduce((n, id) => n + (rec(id)?.need ?? 0), 0)
+    const collected = owed.reduce((n, id) => n + Math.min(rec(id)?.counted ?? 0, rec(id)?.need ?? 0), 0)
     const expected = Math.floor(needed * term.share)
-    const levelRank = { mandatory: 0, recommended: 1, optional: 2 } as const
-    const best = new Map<string, "mandatory" | "recommended" | "optional">()
+    const levelRank = { mandatory: 0, recommended: 1 } as const
+    const best = new Map<string, "mandatory" | "recommended">()
     for (const m of rows) {
       if (m.level === "not-expected" || !rec(m.skillId)) continue
       const prev = best.get(m.skillId)
       if (!prev || levelRank[m.level] < levelRank[prev]) best.set(m.skillId, m.level)
     }
     const skills = [...best.entries()].map(([id, level]) => ({ id, level })).sort((a, b) => levelRank[a.level] - levelRank[b.level] || (rec(a.id)?.name ?? "").localeCompare(rec(b.id)?.name ?? ""))
-    courses.push({ id: cid, code: c.code, name: c.name, mandatory: mand.length, mandatoryAchieved: mand.filter((id) => rec(id)?.state === "achieved").length, optional: opt.length, optionalAchieved: opt.filter((id) => rec(id)?.state === "achieved").length, expected, collected, needed, behind: expected - collected > 1, skills })
+    courses.push({ id: cid, code: c.code, name: c.name, mandatory: mand.length, mandatoryAchieved: mand.filter((id) => rec(id)?.state === "achieved").length, recommended: recd.length, recommendedAchieved: recd.filter((id) => rec(id)?.state === "achieved").length, expected, collected, needed, behind: expected - collected > 1, skills })
   }
   courses.sort((a, b) => b.mandatory - a.mandatory || a.code.localeCompare(b.code))
 
@@ -593,13 +658,16 @@ export function buildStudent(state: V2State, studentId: string = DEFAULT_STUDENT
   const sync: SyncSummary = { queued: syncItems.filter((i) => i.state === "queued").length, synced: syncItems.filter((i) => i.state === "synced").length, conflict: syncItems.filter((i) => i.state === "conflict").length, failed: syncItems.filter((i) => i.state === "failed").length }
 
   const behind = (row?.behindBy ?? 0) > 0
-  const verdict = !row ? "" : behind ? `${plural(row.behindBy, "evaluation", "evaluations")} behind the term clock` : `On pace for week ${term.week} of ${term.weeks}`
+  const verdict = !row ? "" : behind ? `${plural(row.behindBy, "evaluation", "evaluations")} behind pace` : "On pace"
+  const graduates = (s.cohorts ?? []).find((c) => c.id === student.cohortId)?.graduates
 
   const model: StudentModel = {
     student,
     cohort: cohortName,
     term,
     row,
+    lists,
+    list: lists.find((l) => l.id === inForce?.id) ?? null,
     required,
     all,
     counts: {
@@ -613,7 +681,7 @@ export function buildStudent(state: V2State, studentId: string = DEFAULT_STUDENT
     next: [],
     placements,
     courses,
-    pace: row ? paceSeries(s, studentId, row.requiredIds, term, today) : [],
+    pace: row ? paceSeries(s, studentId, row.requiredIds, graduates, today) : [],
     sections,
     cohortSize: pop.rows.length,
     radarSuppressed: pop.rows.length < SMALL_NUMBERS,
@@ -689,10 +757,10 @@ export function waitingBins(rows: WaitingRow[]): Array<{ id: string; label: stri
 }
 
 /** A course's skills by level, each the record from `model.all` (one record per skill, the same everywhere) [REQ ST-01]. */
-export function courseLevels(model: StudentModel, course: CourseExpectation): Record<"mandatory" | "recommended" | "optional", SkillRecord[]> {
+export function courseLevels(model: StudentModel, course: CourseExpectation): Record<"mandatory" | "recommended", SkillRecord[]> {
   const rec = new Map(model.all.map((r) => [r.id, r]))
-  const of = (level: "mandatory" | "recommended" | "optional") => course.skills.filter((x) => x.level === level).map((x) => rec.get(x.id)).filter((r): r is SkillRecord => !!r)
-  return { mandatory: of("mandatory"), recommended: of("recommended"), optional: of("optional") }
+  const of = (level: "mandatory" | "recommended") => course.skills.filter((x) => x.level === level).map((x) => rec.get(x.id)).filter((r): r is SkillRecord => !!r)
+  return { mandatory: of("mandatory"), recommended: of("recommended") }
 }
 
 /** Demo state "all done": every required skill achieved, nothing waiting or returned. Labelled as a demo in the UI. */
@@ -761,7 +829,7 @@ export function attempts(state: V2State, studentId: string, skillId: string, tod
     return { courseId: c.id, courseCode: c.code }
   }
   for (const e of evals) {
-    const base = { key: e.id, n: out.length + 1, date: e.date, answer: OUTCOME_WORD[e.outcome], evaluatorName: nameOf(s, e.evaluatorId), setting: settingText(e), revision: 0, evaluationId: e.id, checkoff: e.source === "checkoff", ...course(e.courseId) }
+    const base = { key: e.id, n: out.length + 1, date: e.date, answer: answerWord(skillById(s, skillId), e.outcome), evaluatorName: nameOf(s, e.evaluatorId), setting: settingText(e), revision: 0, evaluationId: e.id, checkoff: e.source === "checkoff", ...course(e.courseId) }
     const sentTo = sentElsewhereTo(s, e)
     if (e.status === "awaiting-approval") out.push({ ...base, kind: "waiting", why: `Completed and awaiting approval for ${ageLabel(daysBetween(e.date, today))}. It counts once approved.` })
     else if (sentTo) out.push({ ...base, kind: "sent", status: sentForNewEvaluationLabel(sentTo.name), why: `It counts after ${sentTo.name} answers Met.` })
@@ -769,7 +837,7 @@ export function attempts(state: V2State, studentId: string, skillId: string, tod
     // Progress against each named setting is said once, in the record summary (Parts), not repeated per attempt [REQ SH-05].
     else if (used.has(e.id)) out.push({ ...base, kind: "counted", why: "Counts toward the rule." })
     // "Did not count" leads the row; the evaluator's answer is said only here, in the explanation (review 2026-10-30 CP-2).
-    else out.push({ ...base, kind: "not-counted", why: p.leftOut[e.id] ?? answeredSentence(base.answer) })
+    else out.push({ ...base, kind: "not-counted", why: !skillById(s, skillId)?.configured ? `${NOT_SET_UP()} This attempt is kept.` : p.leftOut[e.id] ?? (outcomeQualifiesOn(skillById(s, skillId), e.outcome) ? "Outside the rule's window of recent evaluations." : answeredSentence(base.answer)) })
   }  for (const x of submissionsOfStudent(s, studentId).filter((y) => y.skillIds.includes(skillId) && (OPEN.includes(y.status) || y.status === "returned"))) {
     const days = Math.max(x.daysWaiting, daysBetween(x.createdAt, today))
     const r = x.returns?.[x.returns.length - 1]
@@ -804,7 +872,7 @@ export function questionRuleLine(rule: LabRule): string {
 export function attemptCountLine(state: V2State, studentId: string, skillId: string, opts: { compact?: boolean; /** Empty when every completed attempt counts (the state label already says it, 2026-10-30). */ onlyUnmet?: boolean } = {}): string {
   const s = heldState(state)
   const skill = skillById(s, skillId)
-  if (!skill?.config || !skill.model) return ""
+  if (!skill?.config || !skill.model || !skill.configured) return ""
   const rule = fromV2(skill)
   const r = evaluateRule(rule, evalsOfStudentSkill(s, studentId, skillId))
   if (isInvalidResult(r)) return ""
@@ -914,7 +982,7 @@ export function fixModel(state: V2State, studentId: string, opts: { submissionId
     skillNames: [rec.name],
     evaluatorId: last?.evaluatorId ?? worked[0]?.id ?? "",
     evaluatorName: last ? nameOf(s, last.evaluatorId) : worked[0]?.name ?? "an evaluator",
-    reason: rec.failed?.rule ?? shortfallSentence(rec.progress),
+    reason: rec.failed?.rule ?? shortfallSentence(rec.progress, skillById(s, rec.id)),
     reasonBy: rec.failed?.evaluatorName ?? "",
     reasonAt: rec.failed?.date ?? last?.date ?? today,
     changes: [`Read the feedback from ${rec.failed?.evaluatorName ?? "your evaluator"}`, `Perform the ${skillNoun()} again${last && last.setting !== "clinical" ? "" : " in a clinical setting"}`, rec.progress.distinct.need > 1 ? `Ask a different evaluator if you need ${fmt(rec.progress.distinct.need)} different evaluators` : "Send it to the evaluator who watched you"],

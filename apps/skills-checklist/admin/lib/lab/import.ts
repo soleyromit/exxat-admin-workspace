@@ -405,6 +405,8 @@ export const IMPORT_GROUPING = { category: "Category", categories: "categories",
  * variants over their 30-word budget, so the title carries this badge instead.
  */
 export const LATER_LABEL = "Later"
+/** Reading a file is Later: this page previews sample lines, and nothing it shows is added to the library. */
+export const UPLOAD_LATER = "Later. Nothing is added from a file yet."
 
 export const EXCEPTION_LABEL: Record<ExceptionKind, string> = {
   unread: "Could not read",
@@ -911,7 +913,7 @@ export function confirmSentence(plan: ImportPlan, target: string, noun = { one: 
 /**
  * Pasted text as checklist text the reader understands [REQ IM-03: any layout]. Text that already has indented lines is a
  * checklist and is read as it is. A flat list becomes one skill per line; a short line ending in ":" starts a category;
- * `category` (from add a skill, paste several) heads the whole list.
+ * `category` (from add several) heads the whole list.
  */
 export function pasteToText(text: string, category?: string): string {
   const lines = text.split(/\r?\n/)
@@ -930,7 +932,7 @@ export function pasteToText(text: string, category?: string): string {
   return out.join("\n")
 }
 
-/** The sessionStorage key add a skill (paste several) writes and the import reads with ?source=paste (03 section 7). */
+/** The sessionStorage key add several writes and the import reads with ?source=paste (03 section 7). */
 export const PASTE_KEY = "lab:import:paste"
 export type PastePayload = { text: string; category?: string }
 
@@ -968,6 +970,15 @@ export const NEW_LIBRARY = "new"
  * under the dropzone (skill-setup-journey 02, J1); repeats are still checked against whichever list is chosen [REQ IM-06].
  */
 export const DEFAULT_LIST = "bsn-med-surg"
+/** A spreadsheet export or a plain list as lines: the first column, without a heading row. Everything else about it is reviewed like any other list [REQ IM-03, IM-05]. */
+export function plainLinesOf(text: string, fileName: string): string {
+  const csv = /\.csv$/i.test(fileName)
+  const lines = text.split(/\r?\n/).map((l) => (csv ? (l.split(",")[0] ?? "").replace(/^"|"$/g, "") : l)).filter((l) => l.trim())
+  return (csv && /^(name|skill|skills|title)$/i.test(lines[0]?.trim() ?? "") ? lines.slice(1) : lines).join("\n")
+}
+
+/** Bulk upload adds to the Library unless a list is chosen: a list is built from the Library, so this is where a file belongs. */
+export const LIBRARY_TARGET = "library"
 
 export function importTargets(skills: Array<{ specialty: string }>): Array<ImportTarget & { count: number }> {
   const counts = new Map<string, number>()

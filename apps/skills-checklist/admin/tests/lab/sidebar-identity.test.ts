@@ -33,7 +33,7 @@ import { PERSONAS } from "@/lib/lab/personas"
 import { SCREENS, screenKey, screensFor, type PersonaId } from "@/lib/lab/screens"
 import { FLOWS, findFlow, flowsForPersona, mainSteps, resolveStep } from "@/lib/lab/flows"
 import { variantCounts } from "@/lib/lab/links"
-import { ADD_SKILL_SCREEN, SETUP_RESULT_SCREEN, SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
+import { ADD_SKILL_SCREEN, SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 
 afterEach(() => {
   cleanup()
@@ -84,8 +84,7 @@ function screenOfPath(path: string): string {
   return screen ? `${screen[1]}/${screen[2]}` : `unknown ${path}`
 }
 
-// The setup summary sits under Set up (Proposed 2026-11-02), so it is a panel page too.
-const PANEL_SCREENS = new Set([...SKILLS_PANEL.map((i) => i.screen), SETUP_RESULT_SCREEN, ADD_SKILL_SCREEN])
+const PANEL_SCREENS = new Set([...SKILLS_PANEL.map((i) => i.screen), ADD_SKILL_SCREEN])
 
 /** LabFrame with children passed as the createElement argument (the lint rule forbids a children prop). */
 const Frame = LabFrame as React.ComponentType<Omit<React.ComponentProps<typeof LabFrame>, "children"> & { children?: React.ReactNode }>
@@ -103,7 +102,7 @@ function sidebarOf(p: Page): string[] {
     // D-L20: on a Skills panel page the Skills row points at the page itself (the DS lights it by path and a click reopens the
     // panel); on a Settings page the Settings row does. Either way it is that row, on its own page.
     const own = p.frame.page.screen ?? ""
-    if (title === "Skills" && screen === own && PANEL_SCREENS.has(own)) screen = "admin/skills-library"
+    if (title === "Skills" && screen === own && (PANEL_SCREENS.has(own) || skillsPanelItemFor(own, null, p.frame.page.variant))) screen = "admin/skills-library"
     if (title === "Settings" && screen === own && own === "admin/settings") screen = "admin/settings"
     return `${title} -> ${screen}`
   })
@@ -165,6 +164,10 @@ describe("admin IA: Categories and tags under Skills, Settings on its own sectio
   it.each(["A", "B", "C"])("Add a skill (%s) is a Library page: Skills row lit, panel open on Library (D-L41)", (variant) => {
     const params = new URLSearchParams(`variant=${variant}`)
     expect(skillsPanelItemFor("admin/add-skill", params)?.key).toBe("library")
+    // Configure the skill, variant B only (D-L47): under Library, or under Evaluation settings when opened from there.
+    expect(skillsPanelItemFor("admin/configure-skill", params, "B")?.key).toBe("library")
+    expect(skillsPanelItemFor("admin/configure-skill", new URLSearchParams("from=settings"), "B")?.key).toBe("settings")
+    expect(skillsPanelItemFor("admin/configure-skill", params, "A")).toBeUndefined()
   })
 
   it.each(["A", "B"])("on Categories and tags (%s) the Skills row and panel item are lit; Settings is not", (variant) => {

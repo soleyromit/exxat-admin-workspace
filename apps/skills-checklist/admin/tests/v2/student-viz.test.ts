@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed, IDS } from "@/lib/v2/seed"
 import { mandatoryWaffle, paceSeries, skillDots } from "@/lib/v2/student-viz"
 import { mandatoryProgressForCourse } from "@/lib/v2/verification"
 import { skillProgress } from "@/lib/v2/student"

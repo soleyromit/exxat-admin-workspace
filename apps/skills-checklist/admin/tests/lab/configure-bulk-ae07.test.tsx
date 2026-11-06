@@ -2,7 +2,7 @@ import * as React from "react"
 import { describe, expect, it } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { createV2Store } from "@/lib/v2/store"
-import { createSeed } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed } from "@/lib/v2/seed"
 import { skillById } from "@/lib/v2/evidence-index"
 import { isConfigured } from "@/lib/v2/population"
 import { V2StoreProvider } from "@/lib/v2/react"
@@ -37,7 +37,7 @@ describe("IM-14: saveLabRuleToMany, the one path for apply to several and config
   it("writes each of 3 skills with its own rule version, and the write survives a reload", () => {
     const ids = notConfigured(3)
     const storage = memoryStorage()
-    const a = createV2Store({ storage, key: "bulk" })
+    const a = createV2Store({ storage, key: "bulk", seed: createSeed })
     a.hydrate()
     let written: string[] = []
     a.update((s) => {
@@ -46,7 +46,7 @@ describe("IM-14: saveLabRuleToMany, the one path for apply to several and config
       return r.state
     })
     expect(written).toEqual(ids)
-    const b = createV2Store({ storage, key: "bulk" })
+    const b = createV2Store({ storage, key: "bulk", seed: createSeed })
     b.hydrate()
     const s = b.getSnapshot()
     for (const id of ids) {
@@ -63,12 +63,6 @@ describe("IM-14: saveLabRuleToMany, the one path for apply to several and config
     expect(r.written).toEqual([])
     expect(r.skipped).toHaveLength(3)
     expect(r.state).toBe(seed)
-  })
-
-  it("new evidence only (undecided) writes nothing and says so per skill", () => {
-    const r = saveLabRuleToMany(seed, notConfigured(2), binaryRule(), { at: AT, byId: BY, mode: "new-only" })
-    expect(r.written).toEqual([])
-    expect(r.skipped).toHaveLength(2)
   })
 
   it("an unknown skill is skipped and named; the others still save", () => {
@@ -93,7 +87,7 @@ describe("IM-14: saveLabRuleToMany, the one path for apply to several and config
 
 describe("IM-14 + IM-10: the Apply to other skills sheet (A, B and C use the same one) writes, then reports what is left", () => {
   it("ticking 3 skills and Apply saves all 3 to the shared store and the note carries the left count", () => {
-    const store = createV2Store({ storage: memoryStorage(), key: "sheet" })
+    const store = createV2Store({ storage: memoryStorage(), key: "sheet", seed: createSeed })
     store.hydrate()
     const state = store.getSnapshot()
     const ids = notConfigured(4)
@@ -115,7 +109,7 @@ describe("IM-14 + IM-10: the Apply to other skills sheet (A, B and C use the sam
   })
 
   it("a blocked rule cannot be applied", () => {
-    const store = createV2Store({ storage: memoryStorage(), key: "sheet2" })
+    const store = createV2Store({ storage: memoryStorage(), key: "sheet2", seed: createSeed })
     store.hydrate()
     const ids = notConfigured(2)
     render(
@@ -158,8 +152,11 @@ describe("AE-07: removing a middle level or question never moves a reference ont
     expect(named(r)).toEqual(["Observed:1", "Assisted:2"])
   })
 
-  it("removing the carried minimum's level clears it", () => {
-    expect(removeLevel(demo(), 2).carried.minLevelIndex).toBeNull()
+  it("removing the lowest level that counts passes the threshold to the next one up, whose level then starts it (D-L95)", () => {
+    const d = demo()
+    const r = removeLevel(d, 2)
+    expect(r.carried.minLevelIndex).toBe(2)
+    expect(r.levels[2]).toBe(d.levels[3])
   })
 
   it("moving levels carries the tick with its level", () => {

@@ -5,6 +5,7 @@
  * Spec: docs/knowledge/design/skill-setup-journey/02 section 3. DS components only; the dropzone is composed (the DS has none).
  * Copy: sentence case, verb plus object, one helper line per region, no "items", figures come from the engine.
  */
+import { LaterNotice } from "@/components/lab/import/sample-badge"
 import * as React from "react"
 import { CategoryPicker, TagsPicker, useVocabOptions } from "@/components/lab/library/category-tag-pickers"
 import { mergeTags, normName } from "@/lib/lab/library"
@@ -61,7 +62,7 @@ import {
   type FixGroup,
   type ParsedRow,
 } from "@/lib/lab/import"
-import { aNoun, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { FROM_PARAM, returnHref } from "@/lib/lab/return-to"
 import { useSearchParams } from "next/navigation"
 import type { ImportSession } from "./use-import-session"
@@ -85,7 +86,7 @@ const plural = (count: number, one: string, many: string) => `${count.toLocaleSt
  *   icon, "Drop a file or" and the button, one muted line under it; about 96 px tall and still a drop target.
  * - default (B): the centred block, sized to its content.
  */
-export function Dropzone({ onFiles, multiple = false, title, hint, compact = false, className }: { onFiles: (files: File[]) => void; multiple?: boolean; title?: string; hint?: string; compact?: boolean; className?: string }) {
+export function Dropzone({ onFiles, multiple = false, title, hint, compact = false, className, art }: { art?: React.ReactNode; onFiles: (files: File[]) => void; multiple?: boolean; title?: string; hint?: string; compact?: boolean; className?: string }) {
   const input = React.useRef<HTMLInputElement>(null)
   const [over, setOver] = React.useState(false)
   const id = React.useId()
@@ -116,7 +117,7 @@ export function Dropzone({ onFiles, multiple = false, title, hint, compact = fal
         className,
       )}
     >
-      <i className={cn("fa-light fa-file-arrow-up text-muted-foreground", compact ? "text-xl" : "text-2xl")} aria-hidden="true" />
+      {art ?? <i className={cn("fa-light fa-file-arrow-up text-muted-foreground", compact ? "text-xl" : "text-2xl")} aria-hidden="true" />}
       {compact ? (
         <div className="flex min-w-0 flex-col gap-1">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -166,12 +167,11 @@ export function ImportSection({ n, title, id, first = false, className, children
   )
 }
 
-/** Sankalp's word for a list in UI copy: "group of skills" (Thursday flow A4), following the program's noun. */
-export const groupNoun = () => `group of ${skillNounPlural()}`
+export const groupNoun = skillListNoun
 
 /**
  * The destination, asked first and in plain view (Romit 2026-10-27: "where it's going to be added is in the wrong position
- * and can't be seen"): a Select of the groups of skills with their size, and "A new group of skills", which opens its name
+ * and can't be seen"): a Select of the skill lists with their size, and "A new skill list", which opens its name
  * field inline. Repeats are checked against the chosen group (J1). `labelledBy` names it by a section title instead of its
  * own "Add to" label.
  */
@@ -225,6 +225,9 @@ export function FileStatus({ session, className }: { session: ImportSession; cla
   const detail =
     session.phase === "reading" ? "Reading the file" : session.phase === "failed" ? "Could not be read" : session.summary ? `${plural(session.summary.read, skillNoun(), skillNounPlural())} read` : ""
   return (
+    <>
+    {/* Reading a file is Later: what the review shows is sample lines, so the page says so while the rest of the flow is previewed. */}
+    <LaterNotice>Later. This preview shows sample lines, not your file. Nothing is added to the library.</LaterNotice>
     <Attachment state={state} size="default" orientation="horizontal" className={cn("w-full", className)} data-file-status>
       <AttachmentMedia variant="icon"><i className={`fa-light ${FILE_ICON(session.fileName)}`} aria-hidden="true" /></AttachmentMedia>
       <AttachmentContent>
@@ -237,6 +240,7 @@ export function FileStatus({ session, className }: { session: ImportSession; cla
         </AttachmentActions>
       ) : null}
     </Attachment>
+    </>
   )
 }
 
@@ -771,34 +775,40 @@ export function NewListField({ session }: { session: ImportSession }) {
   )
 }
 
-/** "Not created: 3 left out, 2 joined to the line above", with the lines behind it [REQ IM-08]. */
+/** The lines that will not become skills, grouped by why, each with its line in the file so it can be found [REQ IM-08]. Closed at first: the count says whether it is worth opening. */
 export function NotCreatedList({ session }: { session: ImportSession }) {
   const nc = React.useMemo(() => notCreated(session.resolved), [session.resolved])
+  const [open, setOpen] = React.useState(false)
   const total = nc.leftOut.length + nc.merged.length + nc.joined.length
   if (total === 0) return null
-  const parts = [
-    nc.leftOut.length ? `${nc.leftOut.length} left out` : null,
-    nc.merged.length ? `${nc.merged.length} merged` : null,
-    nc.joined.length ? `${nc.joined.length} joined to the line above` : null,
-  ].filter(Boolean)
+  const groups = [
+    { title: "Left out", rows: nc.leftOut, each: true },
+    { title: `Merged into another ${skillNoun()}`, rows: nc.merged, each: false },
+    { title: "Joined to the line above", rows: nc.joined, each: false },
+  ].filter((g) => g.rows.length)
   return (
-    <Collapsible className="flex flex-col gap-2">
+    <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col gap-2" data-not-created>
       <CollapsibleTrigger asChild>
         <Button type="button" variant="ghost" size="sm" className="-ms-2 w-fit gap-2 px-2">
-          <i className="fa-light fa-chevron-right text-xs" aria-hidden="true" />
-          {`Not created: ${parts.join(", ")}`}
+          <i className={cn("fa-light text-xs", open ? "fa-chevron-down" : "fa-chevron-right")} aria-hidden="true" />
+          {open ? "Hide these lines" : "Show these lines"}
         </Button>
       </CollapsibleTrigger>
-      <CollapsibleContent>
-        <ul className="flex flex-col divide-y divide-border">
-          {[...nc.leftOut, ...nc.merged, ...nc.joined].map((r) => (
-            <li key={r.row.id} className="grid min-h-10 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 py-1.5">
-              <span className="font-mono text-xs tabular-nums text-muted-foreground">{r.row.line}</span>
-              <LineText row={r.row} className="truncate" />
-              <span className="text-xs text-muted-foreground">{r.outcome}</span>
-            </li>
-          ))}
-        </ul>
+      <CollapsibleContent className="flex flex-col gap-4">
+        {groups.map((g) => (
+          <section key={g.title} aria-label={g.title} className="flex flex-col gap-1">
+            <h4 className={cn(TYPE.label, "flex items-baseline gap-2")}>{g.title}<span className="text-sm font-normal tabular-nums text-muted-foreground">{g.rows.length}</span></h4>
+            <ul className="flex flex-col rounded-[var(--radius)] border border-border px-3">
+              {g.rows.map((r) => (
+                <li key={r.row.id} className="grid min-h-10 grid-cols-[4rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-1.5 text-sm last:border-b-0">
+                  <span className="tabular-nums text-muted-foreground">{`Line ${r.row.line}`}</span>
+                  <LineText row={r.row} className="truncate" />
+                  {g.each && r.outcome !== g.title ? <span className="text-muted-foreground">{r.outcome}</span> : <span />}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </CollapsibleContent>
     </Collapsible>
   )
@@ -822,13 +832,13 @@ export function ConfirmPanel({ session }: { session: ImportSession }) {
 }
 
 /** After Create: the success banner takes focus and names the next step (configure). */
-export function DoneBanner({ session }: { session: ImportSession }) {
+export function DoneBanner({ session, count }: { session: ImportSession; /** What was created: once they are in the library, the plan reads them as repeats. */ count?: number }) {
   const ref = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
     ref.current?.focus()
     ref.current?.scrollIntoView({ block: "nearest" })
   }, [])
-  const total = session.plan.create + session.plan.replace
+  const total = count ?? session.plan.create + session.plan.replace
   return (
     <div ref={ref} tabIndex={-1} role="status" className="outline-none" data-import-done>
       <LocalBanner variant="success" title={`${countSkills(total)} added to ${session.targetLabel}`} action={{ label: "Configure them", href: NOT_CONFIGURED_HREF }}>

@@ -10,6 +10,7 @@ import { AdminEvaluationSettingsE } from "./admin-evaluation-settings-e"
 import { AdminEvaluationSettingsF } from "./admin-evaluation-settings-f"
 import { AdminSetupResultA } from "./admin-setup-result-a"
 import { AdminSetupSkillsA } from "./admin-setup-skills-a"
+import { AdminSetupSkillsD } from "./admin-setup-skills-d"
 import { AdminSetupResultB } from "./admin-setup-result-b"
 import { AdminSkillsLibraryA } from "./admin-skills-library-a"
 import { AdminSkillsLibraryB } from "./admin-skills-library-b"
@@ -111,6 +112,7 @@ export const VARIANT_COMPONENTS: Record<string, React.ComponentType> = {
   "admin/evaluation-settings/F": AdminEvaluationSettingsF,
   "admin/setup-result/A": AdminSetupResultA,
   "admin/setup-result/C": AdminSetupSkillsA,
+  "admin/setup-result/D": AdminSetupSkillsD,
   "admin/setup-result/B": AdminSetupResultB,
   "admin/course-mapping/A": AdminCourseMappingA,
   "admin/course-mapping/B": AdminCourseMappingB,

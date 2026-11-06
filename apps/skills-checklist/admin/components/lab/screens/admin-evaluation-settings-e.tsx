@@ -26,7 +26,6 @@ import {
   EvaluatorSketch,
   failsOn,
   LockedShape,
-  MODEL_ICON,
   NEED_FIELDS,
   NotSet,
   previewRule,
@@ -156,7 +155,7 @@ function ModelChoice({ p }: { p: ContextPage }) {
   return (
     <div className="flex flex-col gap-2">
       <h3 className={TYPE.label}>{MODEL_STEP_LABEL}</h3>
-      <RadioGroup id="cfg-model" tabIndex={-1} value={p.m.rule.model ?? ""} onValueChange={onValue} aria-label={MODEL_STEP_LABEL} aria-invalid={err ? true : undefined} aria-describedby={err ? "cfg-model-error" : undefined} className="grid gap-x-6 gap-y-2 outline-none sm:grid-cols-2">
+      <RadioGroup id="cfg-model" value={p.m.rule.model ?? ""} onValueChange={onValue} aria-label={MODEL_STEP_LABEL} aria-invalid={err ? true : undefined} aria-describedby={err ? "cfg-model-error" : undefined} className="grid gap-x-6 gap-y-2 outline-none sm:grid-cols-2">
         {LAB_MODELS.map((x) => (
           <div key={x} className="flex items-center gap-2">
             <RadioGroupItem id={`e-model-${x}`} value={x} />
@@ -194,7 +193,7 @@ function StagePanel({ stage, p }: { stage: StageId; p: ContextPage }) {
         {m.rule.model ? <OutcomesSection {...props} /> : null}
         <SignersField {...props} />
         <FeedbackToggle rule={m.rule} setRule={m.setRule} />
-        {m.rule.model ? <GroupCheckOffSection rule={m.rule} setRule={m.setRule} bare /> : null}
+        {m.rule.model ? <GroupCheckOffSection rule={m.rule} setRule={m.setRule} /> : null}
       </>
     )
     drawing = <EvaluatorSketch rule={rule} skillName={name} />

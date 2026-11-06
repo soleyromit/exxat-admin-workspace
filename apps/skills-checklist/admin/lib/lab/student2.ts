@@ -1,12 +1,13 @@
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { EVALUATION_STATUS_LABEL, OVERLAY_LABEL, SENT_FOR_NEW_EVALUATION_WORD, STUDENT_NOT_COUNTED, answeredSentence, sentForNewEvaluationLabel } from "@/lib/v2/labels"
 import { evalsOfStudent, personById, skillById, submissionsOfStudent } from "@/lib/v2/evidence-index"
-import { evaluatorChoices, openToLog, ratingKind, ratingOptions, ruleSentence as ruleSentenceOf, sentElsewhereTo, skillProgress, whereOptions, type WhereOption } from "@/lib/v2/student"
+import { evaluatorChoices, openToLog, ratingKind, ratingOptions, sentElsewhereTo, skillProgress, whereOptions, type WhereOption } from "@/lib/v2/student"
+import { outcomeQualifiesOn } from "@/lib/v2/rules"
 import { verificationStatus } from "@/lib/v2/verification"
 import { heldState } from "@/lib/v2/approvals"
 import type { Evaluation, Person, Setting, SignoffMethod, Skill, Submission, SyncConflict, SyncState, V2State } from "@/lib/v2/types"
-import { DEFAULT_STUDENT, OUTCOME_WORD, STUDENT_BASE, attemptCountLine, shortDate, shortfallSentence, submissionWhere, type SkillState, type StudentModel } from "./student"
-import { capitalize, countSkills, inSentence, skillNoun, skillNounPlural } from "./terms"
+import { DEFAULT_STUDENT, NOT_SET_UP, STUDENT_BASE, answerWord, attemptCountLine, qualifyingWord, shortDate, shortfallSentence, studentRuleSentence, submissionWhere, type SkillState, type StudentModel } from "./student"
+import { aNoun, capitalize, countSkills, inSentence, skillNoun, skillNounPlural } from "./terms"
 import type { LoggedSitting } from "./logged"
 import { recordNamedEvaluator } from "./new-evaluators"
 
@@ -159,13 +160,13 @@ export interface EvaluationPreview {
 export function evaluationPreview(skill: Skill): EvaluationPreview {
   const c = skill.config
   const kind = ratingKind(skill)
-  const items = !c ? [] : kind === "questions" ? c.questions.filter((q) => q.trim()) : kind === "levels" ? c.levels.filter((l) => l.trim()) : c.outcomeLabels.filter((l) => l.trim())
+  const items = !c || kind === "scores" ? [] : kind === "questions" ? c.questions.filter((q) => q.trim()) : kind === "levels" ? c.levels.filter((l) => l.trim()) : c.outcomeLabels.filter((l) => l.trim())
   const [first, second] = items
-  const answer = kind === "questions" ? "Yes or No to each question" : kind === "levels" ? "One level" : items.length === 2 ? `${first} or ${second}` : "An outcome"
+  const answer = kind === "questions" ? "Yes or No to each question" : kind === "levels" ? "One level" : kind === "scores" ? "A score on each question" : items.length === 2 ? `${first} or ${second}` : "An outcome"
   const notes: string[] = []
   if (c?.feedbackRequired) notes.push("Written feedback is required.")
   if (c?.approvalRequired) notes.push("A reviewer approves it before it counts.")
-  return { skillId: skill.id, name: skill.name, answer, items, rule: c ? ruleSentenceOf(skill) : "", notes }
+  return { skillId: skill.id, name: skill.name, answer, items, rule: c ? studentRuleSentence(skill) : "", notes }
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -237,10 +238,10 @@ export interface WhereChoice extends WhereOption {
 /** Lab and simulation evidence is sent to a lab instructor or faculty [REQ ST-05, EV-02]; it still counts as a practice trial. */
 const NON_CLINICAL_DESCRIPTION = "Signed off by a lab instructor or faculty."
 
-export function whereChoices(s: V2State, studentId: string): WhereChoice[] {
+export function whereChoices(s: V2State, studentId: string, courseId?: string | null): WhereChoice[] {
   // One choice per place: placements repeat across terms with the same location and setting.
   const seen = new Set<string>()
-  return whereOptions(s, studentId)
+  return whereOptions(s, studentId, courseId ?? undefined)
     .filter((w) => {
       const k = `${w.setting}|${w.clinicalSetting ?? ""}|${w.location ?? w.label}`
       if (seen.has(k)) return false
@@ -444,7 +445,7 @@ export function noAccountLine(signsByLink: boolean, name: string): string {
 /**
  * The single "what happens next" sentence after Send [REQ ST-13, EV-07]. Said once, on the result. When it counts is not here: each
  * skill's own rule says it beside the skill (countsWhen), so a skill that needs 3 Met evaluations is never told "it counts when
- * they answer met".
+ * the evaluation meets the rule".
  */
 /**
  * `signsByLink`: a preceptor or a student-typed new name (no Prism account); only then does the line say "no account needed"
@@ -460,14 +461,16 @@ export function nextSentence(opts: { method: SignoffMethod; who: string; approva
 
 /**
  * When this request counts for one skill, from the skill's own rule and the student's counted evidence [REQ AE-02, SH-03, EV-07]:
- * "Met adds 1 of the 3 Met evaluations needed (1 so far)." Unmet parts beyond the count (different evaluators, a setting minimum)
+ * "Pass adds 1 of the 3 evaluations needed (1 so far)." Unmet parts beyond the count (different evaluators, a setting minimum)
  * and approval are named. Pending never counts, so "so far" reads counted evidence only [REQ AE-01].
  */
-export function countsWhen(r: { counted: number; need: number; achieved: boolean; parts: Array<{ label: string; have: number; need: number; met: boolean }> }, approval: boolean): string {
+export function countsWhen(r: { counted: number; need: number; achieved: boolean; parts: Array<{ label: string; have: number; need: number; met: boolean }> }, approval: boolean, skill?: Pick<Skill, "model" | "config"> | null): string {
   const after = approval ? ", after a reviewer approves it" : ""
-  if (r.achieved) return `Already achieved. A Met answer is added to My evaluations${after}.`
+  // The label that qualifies on this skill, in the program's words [REQ SC-03].
+  const word = qualifyingWord(skill)
+  if (r.achieved) return `Already achieved. ${capitalize(aNoun(inSentence(word)))} answer is added to My evaluations${after}.`
   const extra = r.parts.filter((p) => !p.met && p.label !== "Evaluations").map((p) => (p.label === "Different evaluators" ? `from ${p.need} different evaluators` : `${p.need} in ${inSentence(p.label)}`))
-  const base = r.need <= 1 ? "Met achieves it" : `Met adds 1 of the ${r.need} met evaluations needed (${Math.min(r.counted, r.need)} so far)`
+  const base = r.need <= 1 ? `${word} achieves it` : `${word} adds 1 of the ${r.need} evaluations needed (${Math.min(r.counted, r.need)} so far)`
   return `${base}${extra.length ? `; also needs ${extra.join(" and ")}` : ""}${after}.`
 }
 
@@ -569,18 +572,22 @@ export function recordRows(input: V2State, m: StudentModel): RecordRow[] {
       } else if (sentTo) {
         // Assigned to another evaluator by a reviewer: a handoff, not a return (lib/v2/labels.ts).
         result = "sent"
-        why = `${sentForNewEvaluationLabel(sentTo.name)}. It counts after they answer met.`
+        why = `${sentForNewEvaluationLabel(sentTo.name)}. It counts once the evaluation meets the rule.`
       } else if (e.status === "returned" || e.status === "reopened") {
         result = "returned"
         why = e.review?.note ? `Returned: ${e.review.note}` : "Returned for correction. It does not count until corrected."
       } else if (used.has(e.id)) {
         result = "counted"
         why = e.setting === "clinical" && e.clinicalSetting && p.settings.some((x) => x.setting === e.clinicalSetting) ? `Counts toward the rule and toward ${inSentence(e.clinicalSetting)}.` : "Counts toward the rule."
+      } else if (!skill.configured) {
+        // Not configured: the rule, not the attempt, is what is missing, so there is no shortfall to state [REQ AE-02, IM-09].
+        result = "not-counted"
+        why = `${NOT_SET_UP()} This attempt is kept.`
       } else {
         result = "not-counted"
-        const base = p.leftOut[e.id] ?? (e.outcome === "met" ? "Outside the rule's window of recent evaluations." : answeredSentence(OUTCOME_WORD[e.outcome]))
+        const base = p.leftOut[e.id] ?? (outcomeQualifiesOn(skillById(s, e.skillId), e.outcome) ? "Outside the rule's window of recent evaluations." : answeredSentence(answerWord(skillById(s, e.skillId), e.outcome)))
         why = base
-        rule = p.achieved ? undefined : shortfallSentence(p)
+        rule = p.achieved ? undefined : shortfallSentence(p, skillById(s, e.skillId))
       }
       // One unit per submission [REQ SH-04]: an outstanding evaluation belongs to its open request, a returned one to its returned
       // request; anything else (an older return on a request sent again, evidence with no request) is its own unit.
@@ -601,7 +608,7 @@ export function recordRows(input: V2State, m: StudentModel): RecordRow[] {
         courseId,
         courseCode: courses.find((c) => c.id === courseId)?.code ?? "",
         result,
-        answer: OUTCOME_WORD[e.outcome],
+        answer: answerWord(skillById(s, e.skillId), e.outcome),
         why,
         rule,
         skillState: rec.get(skillId)?.state ?? null,
@@ -641,8 +648,8 @@ export function recordRows(input: V2State, m: StudentModel): RecordRow[] {
       answer: open ? "Not answered yet" : OVERLAY_LABEL.returned,
       why: open
         ? x.status === "on-device"
-          ? "Saved on this device, not sent yet. It counts after the evaluator answers Met."
-          : `Waiting for ${person?.name ?? "the evaluator"}, ${days === 1 ? "1 day" : `${days} days`}. It counts after they answer met.`
+          ? "Saved on this device, not sent yet. It counts once the evaluation meets the rule."
+          : `Waiting for ${person?.name ?? "the evaluator"}, ${days === 1 ? "1 day" : `${days} days`}. It counts once the evaluation meets the rule.`
         : `Returned: ${r?.reason ?? "correction needed"}`,
       skillState: rec.get(skillId)?.state ?? null,
       skillLabel: rec.get(skillId)?.label ?? null,

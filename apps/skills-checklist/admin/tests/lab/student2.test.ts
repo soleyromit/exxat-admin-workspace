@@ -101,15 +101,19 @@ describe("Send for evaluation", () => {
 
   it("states the skill's real rule: 3 Met evaluations needed is never 'it counts when they answer Met' [REQ AE-02, SH-03]", () => {
     const parts = (have: number, need: number) => [{ label: "Evaluations", have, need, met: have >= need }]
-    expect(countsWhen({ counted: 1, need: 3, achieved: false, parts: parts(1, 3) }, false)).toBe("Met adds 1 of the 3 met evaluations needed (1 so far).")
+    expect(countsWhen({ counted: 1, need: 3, achieved: false, parts: parts(1, 3) }, false)).toBe("Met adds 1 of the 3 evaluations needed (1 so far).")
     expect(countsWhen({ counted: 0, need: 1, achieved: false, parts: parts(0, 1) }, true)).toBe("Met achieves it, after a reviewer approves it.")
+    // Under renamed labels it names the one that qualifies [REQ SC-03].
+    const renamed = { model: "binary", config: { outcomeLabels: ["Needs work", "Satisfactory"], qualifyingLabel: 1 } } as unknown as Parameters<typeof countsWhen>[2]
+    expect(countsWhen({ counted: 1, need: 3, achieved: false, parts: parts(1, 3) }, false, renamed)).toBe("Satisfactory adds 1 of the 3 evaluations needed (1 so far).")
+    expect(countsWhen({ counted: 3, need: 3, achieved: true, parts: parts(3, 3) }, false, renamed)).toMatch(/^Already achieved\. A satisfactory answer/)
     const distinct = [...parts(1, 2), { label: "Different evaluators", have: 1, need: 2, met: false }]
     expect(countsWhen({ counted: 1, need: 2, achieved: false, parts: distinct }, false)).toMatch(/also needs from 2 different evaluators/)
     expect(countsWhen({ counted: 3, need: 3, achieved: true, parts: parts(3, 3) }, false)).toMatch(/^Already achieved/)
     // Maya's Sterile dressing change needs 3 Met evaluations: the confirmation says so from her own record.
     const r = maya.all.find((x) => x.id === "sk-sterile-dressing")!
     expect(r.need).toBe(3)
-    expect(countsWhen({ counted: r.counted, need: r.need, achieved: r.state === "achieved", parts: r.parts }, false)).toMatch(/of the 3 met evaluations needed/)
+    expect(countsWhen({ counted: r.counted, need: r.need, achieved: r.state === "achieved", parts: r.parts }, false)).toMatch(/of the 3 evaluations needed/)
   })
 
   it("starts on Email a link, one link per request [LEDGER D-L2]; QR, hand over and photo stay choices [D-X5]", () => {

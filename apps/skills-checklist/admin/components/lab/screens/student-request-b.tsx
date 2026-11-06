@@ -53,7 +53,7 @@ function SituationFirst({ ctx }: { ctx: Student2Ctx }) {
     d.setMethod(v === "with-me" ? "qr" : v === "not-here" ? "link" : "photo")
   }
   const m = methodById(d.method)
-  const counts = d.method === "photo" ? "It counts after review." : needsApproval(d.s, d.skills) ? "It counts after approval." : "It counts when they answer met."
+  const counts = d.method === "photo" ? "It counts after review." : needsApproval(d.s, d.skills) ? "It counts after approval." : "It counts once the evaluation meets the rule."
   return (
     <form className="flex flex-col gap-5" noValidate onSubmit={(e) => { e.preventDefault(); d.send() }} data-student-lab="request-B">
       <SendIssues d={d} />

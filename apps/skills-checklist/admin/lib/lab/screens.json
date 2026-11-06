@@ -151,6 +151,17 @@
           "id": "B",
           "question": "Category tree with a peek panel: do the program's own categories with roll-ups make setup progress easier to work through?",
           "file": "components/lab/screens/admin-skills-library-b.tsx",
+          "requiredDsComponents": [
+            "PageHeader",
+            "Tabs",
+            "LocalBanner",
+            "StatusBadge",
+            "Button",
+            "DropdownMenu",
+            "FloatingSheetPanel",
+            "AlertDialog",
+            "Skeleton"
+          ],
           "pageType": "list"
         },
         {
@@ -195,7 +206,7 @@
         },
         {
           "group": "Data",
-          "label": "Reset edits",
+          "label": "Reset all edits",
           "event": "lab:reset"
         }
       ]
@@ -205,18 +216,28 @@
       "slug": "evaluation-settings",
       "title": "Evaluation settings",
       "tier": 1,
-      "recommended": "D",
+      "recommended": "B",
       "variants": [
         {
           "id": "A",
-          "question": "Sections with a side index: do the four sections (How skills are judged, What counts as achieved, How many evaluations, Who signs) as titled sections, with an index to jump between them, read clearer than numbered steps? (Proposed)",
+          "question": "Sections with a side index: do the four sections (How skills are judged, What counts as achieved, How many evaluations, Who does what) as titled sections, with an index to jump between them, read clearer than numbered steps? (Proposed)",
           "file": "components/lab/screens/admin-evaluation-settings-a.tsx",
           "pageType": "form"
         },
         {
           "id": "B",
-          "question": "Settings beside a live summary: does seeing the resulting settings as label and value pairs while editing the four sections make the page easiest to understand? (Proposed)",
+          "question": "Settings beside a live summary: does seeing the resulting settings as label and value pairs while editing the four sections make the page easiest to understand? (Chosen as the default by Romit 2026-11-04, D-L50)",
           "file": "components/lab/screens/admin-evaluation-settings-b.tsx",
+          "requiredDsComponents": [
+            "PageHeader",
+            "Button",
+            "Input",
+            "Dialog",
+            "RadioGroup",
+            "Checkbox",
+            "ToggleSwitch",
+            "FieldLabel"
+          ],
           "pageType": "form"
         },
         {
@@ -227,7 +248,7 @@
         },
         {
           "id": "D",
-          "question": "One sentence: is the rule as one sentence of inline pickers, with the evaluator form and student request redrawn live below, the clearest way to set it? Recommended. (Chosen 2026-11-03)",
+          "question": "One sentence: is the rule as one sentence of inline pickers, with the evaluator form and student request redrawn live below, the clearest way to set it? (Chosen 2026-11-03; no longer the default: B is, Romit 2026-11-04, D-L50)",
           "file": "components/lab/screens/admin-evaluation-settings-d.tsx",
           "pageType": "form"
         },
@@ -273,26 +294,35 @@
     {
       "persona": "admin",
       "slug": "setup-result",
-      "title": "Setup summary",
-      "tier": 3,
+      "title": "Set up skills",
+      "tier": 1,
       "recommended": "A",
       "variants": [
         {
           "id": "A",
           "question": "End state as a table: does one row per student group (skills to complete, expected in a course, no course yet) with a drill to each skill's courses and levels show what the setup adds up to? (Proposed)",
           "file": "components/lab/screens/admin-setup-result-a.tsx",
-          "pageType": "list"
+          "pageType": "list",
+          "requiredDsComponents": []
         },
         {
           "id": "B",
-          "question": "End state as a chain: does each student group drawn as groups of skills, student group, courses, left to do, make the connection clearer than a table? (Proposed)",
+          "question": "End state as a chain: does each student group drawn as skill lists, student group, courses, left to do, make the connection clearer than a table? (Proposed)",
           "file": "components/lab/screens/admin-setup-result-b.tsx",
-          "pageType": "list"
+          "pageType": "list",
+          "requiredDsComponents": []
         },
         {
           "id": "C",
           "question": "Set up skills as one focus workflow: does a route of its own with a six-step rail (Skills, Categories and tags, Evaluation settings, Groups and assignment, Course mapping, Review), Next gated where a later step depends on it and Skip only on optional steps, ending on this summary as its Review step, tell the admin what comes next better than the hub pages? (Proposed, D-L44)",
           "file": "components/lab/screens/admin-setup-skills-a.tsx",
+          "pageType": "wizard",
+          "frame": "focus"
+        },
+        {
+          "id": "D",
+          "question": "The same Set up skills workflow, with step 1 as the list itself: does one add row (type a name and press Enter, or paste a list and confirm one check line) above an editable list (rename, category, tags, remove with Undo, possible duplicates flagged) build and fix the list faster than ways to add plus a read-only result? (Proposed, D-L46)",
+          "file": "components/lab/screens/admin-setup-skills-d.tsx",
           "pageType": "wizard",
           "frame": "focus"
         }
@@ -334,13 +364,13 @@
       "variants": [
         {
           "id": "A",
-          "question": "Short side sheet: do name, category, tags and required to graduate, with configure as the next step, get a skill in without losing the library?",
+          "question": "Short side sheet: do name, category and tags, with configure as the next step, get a skill in without losing the library?",
           "file": "components/lab/screens/admin-add-skill-a.tsx",
           "pageType": "split"
         },
         {
           "id": "B",
-          "question": "Inline row in a category: when adding several skills by hand, is type, Enter, repeat (category and tags kept for the next name) worth deferring required to graduate?",
+          "question": "Inline row in a category: when adding several skills by hand, is type, Enter, repeat (category and tags kept for the next name) worth a shorter row?",
           "file": "components/lab/screens/admin-add-skill-b.tsx",
           "pageType": "form"
         },
@@ -384,7 +414,7 @@
         },
         {
           "group": "Data",
-          "label": "Reset edits",
+          "label": "Reset all edits",
           "event": "lab:reset"
         }
       ],
@@ -403,8 +433,7 @@
           "id": "A",
           "question": "Four steps, one job each: does Upload, Review, Fix, Confirm with the drop as the hero and only the lines that need a decision get a 154-line import created safely?",
           "file": "components/lab/screens/admin-import-a.tsx",
-          "pageType": "wizard",
-          "frame": "focus"
+          "pageType": "wizard"
         },
         {
           "id": "B",
@@ -475,7 +504,7 @@
         },
         {
           "group": "Data",
-          "label": "Reset edits",
+          "label": "Reset all edits",
           "event": "lab:reset"
         }
       ]
@@ -523,21 +552,24 @@
     {
       "persona": "admin",
       "slug": "configure-skill",
-      "title": "Change one skill",
+      "title": "Configure the skill",
       "tier": 1,
-      "recommended": "A",
+      "recommended": "B",
       "variants": [
         {
           "id": "A",
-          "question": "Change one skill: does a page in the same four sections as Evaluation settings, with only times needed, minimums and its own questions editable and everything inherited shown as plain values, make one-off changes clear? (Proposed 2026-11-02)",
+          "question": "Change one skill: does a page in the same four sections as Evaluation settings, with only times needed, minimums and its own questions editable and everything inherited shown as plain values, make one-off changes clear? (Proposed 2026-11-02) (No longer recommended: B is the default, Romit 2026-11-04, D-L47)",
           "file": "components/lab/screens/admin-configure-skill-a.tsx",
           "pageType": "form"
         },
         {
           "id": "B",
-          "question": "One page of sections with anchors: is it faster for an expert re-configuring a skill than steps?",
+          "question": "One page of sections with anchors: is it faster for an expert re-configuring a skill than steps? (Chosen as the default by Romit 2026-11-04, D-L47)",
           "file": "components/lab/screens/admin-configure-skill-b.tsx",
-          "pageType": "form"
+          "pageType": "form",
+          "accepts": [
+            "skills"
+          ]
         },
         {
           "id": "C",
@@ -557,9 +589,7 @@
         "ToggleSwitch",
         "LocalBanner",
         "Dialog",
-        "Table",
-        "StatusBadge",
-        "Collapsible"
+        "StatusBadge"
       ],
       "scenarios": [
         {
@@ -600,7 +630,7 @@
         },
         {
           "group": "Data",
-          "label": "Reset edits",
+          "label": "Reset all edits",
           "event": "lab:reset"
         }
       ],
@@ -617,7 +647,7 @@
       "variants": [
         {
           "id": "A",
-          "question": "Counts first: do before and after counts, students grouped by move with the shared reason said once, and the open evidence choice make a rule change safe to save?",
+          "question": "Counts first: do before and after counts, students grouped by move with the shared reason said once make a rule change safe to save?",
           "file": "components/lab/screens/admin-rule-impact-a.tsx",
           "pageType": "detail"
         },
@@ -634,7 +664,6 @@
         "Table",
         "StatusBadge",
         "LocalBanner",
-        "RadioGroup",
         "Collapsible"
       ],
       "scenarios": [
@@ -661,7 +690,7 @@
         },
         {
           "group": "Data",
-          "label": "Reset edits",
+          "label": "Reset all edits",
           "event": "lab:reset"
         }
       ],
@@ -759,31 +788,31 @@
     {
       "persona": "admin",
       "slug": "lists-cohorts",
-      "title": "Groups of skills",
+      "title": "Skill lists",
       "tier": 1,
       "recommended": "C",
       "variants": [
         {
           "id": "A",
-          "question": "One list at a time: in the set-up flow, does a page that asks only \"Which students use this list?\", with the list as context and one panel saying what the assignment does (its cohorts' clinical courses offer the skills), make assignment clear; standalone, does the lists table above the same checklist manage several lists?",
+          "question": "Retired 2026-11-05 by the one-page design. Opens the same page as C.",
           "file": "components/lab/screens/admin-lists-cohorts-a.tsx",
           "pageType": "list"
         },
         {
           "id": "B",
-          "question": "All at once: does a student groups by lists grid, with the next new cohort as a row, make which group uses which list clearer than opening each list?",
+          "question": "Retired 2026-11-05 by the one-page design. Opens the same page as C.",
           "file": "components/lab/screens/admin-lists-cohorts-b.tsx",
           "pageType": "list"
         },
         {
           "id": "C",
-          "question": "Row actions: with Assign, Make default, Duplicate, Completion rule and Delete on each row, a Students count that opens Reports and no footer, does the page read as the place to manage groups of skills? Recommended. (Chosen 2026-11-03)",
+          "question": "One page, one table, one panel: a list is like a shared document, you make it, choose who it applies to, and one is what new student groups get. Does it read as simple? Recommended. (Chosen 2026-11-05)",
           "file": "components/lab/screens/admin-lists-cohorts-c.tsx",
           "pageType": "list"
         },
         {
           "id": "D",
-          "question": "Row actions and outcome: does C plus on track and behind this term per group of skills, each count opening Reports, answer whether a group of skills is working without leaving setup?",
+          "question": "Retired 2026-11-05 by the one-page design. Opens the same page as C.",
           "file": "components/lab/screens/admin-lists-cohorts-d.tsx",
           "pageType": "list"
         }
@@ -794,7 +823,9 @@
         "Checkbox",
         "Dialog",
         "Button",
-        "Badge"
+        "StatusBadge",
+        "FloatingSheetPanel",
+        "ToggleSwitch"
       ]
     },
     {
@@ -1721,7 +1752,7 @@
         },
         {
           "group": "Data",
-          "label": "Reset edits",
+          "label": "Reset all edits",
           "event": "lab:reset"
         }
       ],
@@ -2129,7 +2160,7 @@
         },
         {
           "id": "B",
-          "question": "Blockers first: does ranking the required skills that block graduation, with students per blocker and waiting requests, show what to chase?",
+          "question": "Blockers first: does ranking the required skills that block readiness, with students per blocker and waiting requests, show what to chase?",
           "file": "components/lab/screens/director-dashboard-b.tsx",
           "pageType": "dashboard"
         },

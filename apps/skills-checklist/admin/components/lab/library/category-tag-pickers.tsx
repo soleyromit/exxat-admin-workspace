@@ -59,16 +59,26 @@ export interface CategoryPickerProps {
   onChange: (v: string) => void
   size?: "sm" | "default"
   className?: string
+  /** What no value means here: "None" on one skill, "Keep current" on several. */
+  emptyLabel?: string
 }
 
-export function CategoryPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", className }: CategoryPickerProps) {
+export function CategoryPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", className, emptyLabel = "None" }: CategoryPickerProps) {
   const valueInactive = !!value && inactive.some((x) => normName(x) === normName(value))
   const [open, setOpen] = React.useState(false)
   const [q, setQ] = React.useState("")
   const typed = clean(q)
   const all = value && !options.some((o) => normName(o) === normName(value)) ? [value, ...options] : [...options]
   const known = [...all, ...inactive].some((o) => normName(o) === normName(typed))
+  // Typing a deactivated category's name says so, as Tags does, instead of finding nothing or creating it again (SL-06). One already on the skill is in the list, marked.
+  const typedInactive = !!typed && inactive.some((x) => normName(x) === normName(typed)) && !all.some((o) => normName(o) === normName(typed))
   const pick = (v: string) => { onChange(v); setOpen(false); setQ("") }
+  // A name typed and then left (a press on Add skill, Tab, a click elsewhere) is kept, not lost: the same as Create. Escape still cancels. A deactivated name is never re-created (SL-06).
+  const keepTyped = () => {
+    if (!typed || inactive.some((x) => normName(x) === normName(typed))) return
+    const found = all.find((o) => normName(o) === normName(typed)) ?? typed
+    if (found !== value) onChange(found)
+  }
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQ("") }}>
       <PopoverTrigger asChild>
@@ -82,13 +92,13 @@ export function CategoryPicker({ id, labelId, value, options, inactive = [], onC
           data-category-picker
         >
           <span id={`${id}-value`} className={`flex min-w-0 items-center gap-2 ${value ? "" : "text-muted-foreground"}`}>
-            <span className="truncate">{value || "None"}</span>
+            <span className="truncate">{value || emptyLabel}</span>
             {valueInactive ? <InactiveMark /> : null}
           </span>
           <i className="fa-light fa-chevron-down text-xs text-muted-foreground" aria-hidden="true" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="z-[90] w-72 p-0">
+      <PopoverContent align="start" className="z-[90] w-72 p-0" onInteractOutside={keepTyped}>
         <Command>
           <CommandInput
             value={q}
@@ -97,10 +107,10 @@ export function CategoryPicker({ id, labelId, value, options, inactive = [], onC
             aria-label="Find or create a category"
           />
           <CommandList className="max-h-64">
-            {typed && !known ? null : <CommandEmpty>{typed ? "No category matches." : "No categories yet. Type one to create it."}</CommandEmpty>}
+            {(typed && !known) || typedInactive ? null : <CommandEmpty>{typed ? "No category matches." : "No categories yet. Type one to create it."}</CommandEmpty>}
             {value || all.length ? (
               <CommandGroup>
-                {value ? <CommandItem value="__none" keywords={["none"]} onSelect={() => pick("")}><CheckMark on={false} />None</CommandItem> : null}
+                {value ? <CommandItem value="__none" keywords={["none"]} onSelect={() => pick("")}><CheckMark on={false} />{emptyLabel}</CommandItem> : null}
                 {all.map((o) => (
                   <CommandItem key={o} value={o} onSelect={() => pick(o)}>
                     <CheckMark on={o === value} />
@@ -108,6 +118,13 @@ export function CategoryPicker({ id, labelId, value, options, inactive = [], onC
                     {o === value && valueInactive ? <InactiveMark /> : null}
                   </CommandItem>
                 ))}
+              </CommandGroup>
+            ) : null}
+            {typedInactive ? (
+              <CommandGroup forceMount>
+                <CommandItem forceMount disabled value={`__inactive ${typed}`} data-category-inactive-row>
+                  <span className="flex min-w-0 items-center gap-2 text-muted-foreground"><span className="truncate">{typed}</span><span className="sr-only">, </span><InactiveMark /></span>
+                </CommandItem>
               </CommandGroup>
             ) : null}
             {typed && !known ? (
@@ -139,6 +156,8 @@ export interface TagsPickerProps {
   onChange: (tags: string[]) => void
   size?: "sm" | "default"
   describedBy?: string
+  /** Text is in the box and not yet a chip: the form holding the picker counts it as a change. */
+  onTyping?: (typing: boolean) => void
 }
 
 const MAX_SUGGESTIONS = 8
@@ -147,18 +166,22 @@ const MAX_SUGGESTIONS = 8
  * Tag input (decision D-X28, Romit 2026-10-27: "a combination of auto fill dropdown with chip and cross button ... in a text
  * box"). One DS InputGroup that holds the chosen tags as Badges, each with its own remove button, and a text box after the
  * last chip. Typing shows suggestions under the box (the program's tags that match, then Create "{typed}" last). Enter or
- * comma commits the highlighted suggestion or the typed text; Backspace in an empty box removes the last chip; Escape closes
+ * comma commits the highlighted suggestion or the typed text and closes the list; leaving the box (a press on Add skill or Save, Tab) commits the typed text, so it is never lost; Backspace in an empty box removes the last chip; Escape closes
  * the suggestions. No chevron and no dropdown trigger: Category is the select, Tags is the text box.
  * ARIA: the text box is a combobox (aria-expanded, aria-controls, aria-activedescendant) over a listbox of options.
  */
-export function TagsPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", describedBy }: TagsPickerProps) {
+export function TagsPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", describedBy, onTyping }: TagsPickerProps) {
   const isInactive = (t: string) => inactive.some((x) => normName(x) === normName(t))
   const [text, setText] = React.useState("")
   const [open, setOpen] = React.useState(false)
   const [active, setActive] = React.useState(0)
+  /** The admin moved to a row with the arrows or the pointer. Otherwise Enter means what was typed. */
+  const [moved, setMoved] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const listId = `${id}-suggestions`
   const typed = clean(text)
+  // Text typed and not yet a chip is a change the form holds: leaving the box adds it. The form's Save must already be live for the press that leaves it (map D1a).
+  React.useEffect(() => { onTyping?.(!!typed) }, [typed, onTyping])
   const has = (t: string) => value.some((x) => normName(x) === normName(t))
   const matches = mergeTags([], options)
     .filter((o) => !has(o) && (!typed || normName(o).includes(normName(typed))))
@@ -173,7 +196,9 @@ export function TagsPicker({ id, labelId, value, options, inactive = [], onChang
     ...(typedInactive ? [{ kind: "inactive" as const, label: typed }] : []),
   ]
   const shown = open && rows.length > 0
-  const at = Math.min(active, Math.max(rows.length - 1, 0))
+  // Typed and not moved: the row that is exactly what was typed, else Create it. A suggestion that only starts the same ("Pa", Patient safety) is taken by moving to it.
+  const typedRow = typed ? rows.findIndex((r) => normName(r.label) === normName(typed)) : -1
+  const at = !moved && typedRow >= 0 ? typedRow : Math.min(active, Math.max(rows.length - 1, 0))
 
   const commit = (t: string) => {
     const tag = clean(t)
@@ -181,7 +206,17 @@ export function TagsPicker({ id, labelId, value, options, inactive = [], onChang
     if (tag && !has(tag)) onChange(mergeTags(value, [tag]))
     setText("")
     setActive(0)
+    setMoved(false)
+    // The list closes with the tag. Its popover, while open, is a focus scope above the sheet's and pauses the sheet's trap, so Tab walked off a modal sheet onto the page behind.
+    setOpen(false)
     inputRef.current?.focus()
+  }
+  // Leaving the box, which every press on a submit button does first. Focus goes where the admin sent it. A deactivated tag's name stays in the box, refused (SL-06).
+  const commitOnLeave = () => {
+    if (!typed || typedInactive) return
+    if (!has(typed)) onChange(mergeTags(value, [options.find((o) => normName(o) === normName(typed)) ?? typed]))
+    setText("")
+    setActive(0)
   }
   const remove = (t: string) => {
     onChange(value.filter((x) => x !== t))
@@ -191,13 +226,15 @@ export function TagsPicker({ id, labelId, value, options, inactive = [], onChang
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault()
-      if (!open) { setOpen(true); setActive(0); return }
-      setActive((i) => (rows.length ? (i + 1) % rows.length : 0))
+      if (!open) { setOpen(true); setActive(0); setMoved(true); return }
+      setMoved(true)
+      setActive(() => (rows.length ? (at + 1) % rows.length : 0))
     } else if (e.key === "ArrowUp") {
       e.preventDefault()
-      setActive((i) => (rows.length ? (i - 1 + rows.length) % rows.length : 0))
+      setMoved(true)
+      setActive(() => (rows.length ? (at - 1 + rows.length) % rows.length : 0))
     } else if (e.key === "Enter" || e.key === ",") {
-      const row = shown ? rows[at] : undefined
+      const row = shown && (moved || typedRow >= 0) ? rows[at] : undefined
       if (row || typed) {
         e.preventDefault()
         commit(row ? row.label : typed)
@@ -262,9 +299,10 @@ export function TagsPicker({ id, labelId, value, options, inactive = [], onChang
               } else setText(v)
               setOpen(true)
               setActive(0)
+              setMoved(false)
             }}
             onKeyDown={onKeyDown}
-            onBlur={() => setOpen(false)}
+            onBlur={() => { setOpen(false); commitOnLeave() }}
             className={`h-7 min-w-[8rem] flex-1 px-1 ${size === "sm" ? "text-sm" : ""}`}
           />
         </InputGroup>
@@ -287,7 +325,7 @@ export function TagsPicker({ id, labelId, value, options, inactive = [], onChang
               data-create-tag={r.kind === "create" || undefined}
               className={`flex cursor-default items-center rounded-sm px-2 py-1.5 text-sm text-foreground ${i === at ? "bg-accent text-accent-foreground" : ""}`}
               onMouseDown={(e) => e.preventDefault()}
-              onMouseEnter={() => setActive(i)}
+              onMouseMove={() => { if (i !== at || !moved) { setActive(i); setMoved(true) } }}
               onClick={() => commit(r.label)}
             >
               {r.kind === "inactive" ? (

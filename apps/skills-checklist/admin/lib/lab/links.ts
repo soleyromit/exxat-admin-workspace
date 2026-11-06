@@ -20,8 +20,11 @@ export type ParamValue = string | number | null | undefined
 export type LinkParams = Record<string, ParamValue>
 type ParamSource = { get(name: string): string | null } | null | undefined
 
-/** Scope params every in-page link carries from the page URL. Record params (skill, stu, ...) are passed explicitly. */
-export const SCOPE_CARRY = ["term", "cohort", "group", "course", "basis", "present"] as const
+/**
+ * Scope params every in-page link carries from the page URL. Record params (skill, stu, ...) are passed explicitly. `program`:
+ * inside the setup flow (`?program=new`, D-L46) every page stays on the new program; without it, the seeded program.
+ */
+export const SCOPE_CARRY = ["term", "cohort", "group", "course", "basis", "present", "program"] as const
 
 export interface LinkContext {
   /** Flow of the page, when the page is a flow step or a screen URL that maps to one. */

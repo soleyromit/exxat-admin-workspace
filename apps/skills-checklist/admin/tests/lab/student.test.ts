@@ -37,7 +37,9 @@ describe("student model at scale (123 students, Maya Ferreira hero path)", () =>
       expect(r.failed?.rule).toMatch(/\d/)
       expect(r.failed?.next).toMatch(/further attempt/)
     }
-    expect(shortfallSentence(dnq[0].progress)).toMatch(/^Needs \d+ met evaluations?; you have \d+\./)
+    expect(shortfallSentence(dnq[0].progress)).toMatch(/^Needs \d+ evaluations? rated met; you have \d+\./)
+    // Under renamed labels it names the one that qualifies [REQ SC-03].
+    expect(shortfallSentence(dnq[0].progress, { model: "binary", config: { outcomeLabels: ["Needs work", "Satisfactory"], qualifyingLabel: 1 } } as unknown as Parameters<typeof shortfallSentence>[1])).toMatch(/^Needs \d+ evaluations? rated satisfactory; you have \d+\./)
   })
 
   it("ranks next actions returned, did not count, then one away, with numbers and a link", () => {
@@ -106,8 +108,8 @@ describe("student model at scale (123 students, Maya Ferreira hero path)", () =>
 
 describe("how attempts are counted (Oct 26 call)", () => {
   it("says 'n attempts, k did not qualify: m count' from the published rule through the engine; only completed evaluations are attempts", () => {
-    // Maya's sterile dressing: two completed attempts, neither qualifies on its outcome (no question rule is published by the seed).
-    expect(attemptCountLine(seed, DEFAULT_STUDENT, "sk-sterile-dressing")).toBe("2 attempts, 2 not valid: 0 count")
+    // Maya's sterile dressing: two completed attempts, neither qualifies under the seeded rule (every question Yes).
+    expect(attemptCountLine(seed, DEFAULT_STUDENT, "sk-sterile-dressing")).toMatch(/^2 attempts, 2 not valid: 0 count/)
     // A skill with no evaluations has no line.
     const none = seed.skills.find((k) => k.config && !seed.evaluations.some((e) => e.studentId === DEFAULT_STUDENT && e.skillId === k.id))!
     expect(attemptCountLine(seed, DEFAULT_STUDENT, none.id)).toBe("")
@@ -118,7 +120,7 @@ describe("how attempts are counted (Oct 26 call)", () => {
       const n = rows.filter((x) => x.kind === "counted").length
       const line = attemptCountLine(seed, DEFAULT_STUDENT, r.id)
       if (total === 0) expect(line).toBe("")
-      else expect(line).toMatch(new RegExp(`^${total} attempts?, .*${n} counts?$`))
+      else expect(line).toMatch(new RegExp(`^${total} attempts?, .*${n} counts?(\\.|$)`))
     }
   })
 })

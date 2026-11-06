@@ -1,5 +1,5 @@
-import { ASSISTED_LEVEL, defaultConfig, SAMPLE_QUESTIONS } from "./config"
-import { generate } from "./generate"
+import { ASSISTED_LEVEL, defaultConfig, SAMPLE_LEVELS, SAMPLE_QUESTIONS } from "./config"
+import { feedbackText, generate } from "./generate"
 import { daysBefore, DEMO_TODAY, HERO_APPROVAL, IDS, prng } from "./seed-core"
 import type {
   AuditEntry,
@@ -22,7 +22,7 @@ import type {
 } from "./types"
 
 /** Bump when the generator changes on purpose: saved deltas made against another seed are then discarded. */
-export const SEED_VERSION = "2026-10-30.1-setting-minimum"
+export const SEED_VERSION = "2026-11-05.3-list-baseline"
 
 export { DEMO_TODAY, IDS }
 
@@ -76,6 +76,11 @@ const PEOPLE: Person[] = [
 function configFor(model: Skill["model"]): SkillConfig {
   const c = defaultConfig(model)
   if (model === "question" || model === "scored") c.questions = [...SAMPLE_QUESTIONS]
+  // Every configured question or scored skill says what makes one evaluation count (SEED_VERSION 2026-11-04.1-qualifying-rules, so
+  // bulk configure need not tolerate a rule that fails validation). Figures are unchanged: seeded evaluations with every answer Yes
+  // are exactly the Met ones, and seeded scored evaluations carry no scores, so they fall back to their outcome.
+  if (model === "question") c.questionRule = { kind: "all" }
+  if (model === "scored") c.scoredRule = { kind: "average", value: 3 }
   return c
 }
 
@@ -177,7 +182,270 @@ const SECOND_COURSE: Course = { id: "crs-nurs352", code: "NURS 352", name: "Skil
  * questions, self-evaluation, send) shows the self-evaluation step. Presentation only: the engine never reads the flag, so no
  * figure in facts.ts moves.
  */
-const SELF_EVALUATION = new Set(["sk-sterile-dressing"])
+// Nasogastric tube care: the sample skill of the student and evaluator walkthrough, where the self-evaluation is seen (D-L67).
+const SELF_EVALUATION = new Set(["sk-sterile-dressing", "sk-ng-tube"])
+
+/**
+ * The demo program's saved Evaluation settings (D-L72, D0): Prism ships no default, this is the sample program's own save, so the
+ * Evaluation settings stop no longer starts empty while the Library shows configured skills. The values are what most of the seeded
+ * library already uses. A LabRule by shape; tests/lab/seed-program-settings.test.ts holds it
+ * to lib/lab/program-settings.ts.
+ */
+export const SEED_PROGRAM_RULE = {
+  model: "demonstration",
+  outcomeLabels: ["Met", "Unmet"],
+  qualifyingLabel: 0,
+  questions: [],
+  questionRule: null,
+  scaleMax: 5,
+  scoredRule: null,
+  levels: [...SAMPLE_LEVELS],
+  need: 1,
+  levelMinimums: [],
+  distinctEvaluators: 1,
+  settingMinimums: [],
+  studentFields: [{ label: "Date performed", type: "date", mandatory: true }],
+  feedbackRequired: false,
+  selfEvaluation: true,
+  approvalRequired: false,
+  evaluatorRoles: ["preceptor", "faculty"],
+  checkOff: { enabled: null, levelIndex: null, score: null },
+  carried: { window: null, minLevelIndex: 0, simulationCapPercent: null, simulationExcluded: false },
+} as const
+
+/**
+ * The sample skills that start Edited (D-L94: about 12, so the exception looks like an exception). Each is here for a reason the rest of the
+ * prototype reads:
+ * - Approval before it counts: the eight skills behind the Approvals queue's "Approval required" reason [REQ SC-15, AR-01].
+ * - Nasogastric tube care: the student and evaluator walkthrough's skill, questions with self-evaluation (D-L67, D-L68).
+ * - Sterile dressing change: the question skill of the demo student's answered evaluations.
+ * - Hangs Large Vol. and Changes Primary IV Tubing: "levels that count" starts one level up, as the generator wrote them.
+ *
+ * Straight cath, one of the eight, is also task E15's fixture (`SEED_RESET_FIXTURE`): an Edited skill whose reset changes who has achieved it.
+ */
+export const SEED_EDITED: ReadonlySet<string> = new Set([
+  "sk-med-admin",
+  "sk-blood-glucose",
+  "hgtc-safety-16",
+  "hgtc-nutrition-08",
+  "hgtc-elimination-07",
+  "hgtc-elimination-10",
+  "hgtc-elimination-12",
+  "hgtc-elimination-15",
+  "sk-ng-tube",
+  "sk-sterile-dressing",
+  "hgtc-nutrition-11",
+  "hgtc-nutrition-12",
+])
+
+/**
+ * An Edited skill whose edit changes who has achieved it (map F, E15): "levels that count" starts one level up, and one student's evaluations on it are
+ * at the lowest level, so that student has not achieved it until the skill goes back to the default. One record moves against the generated data.
+ */
+export const SEED_RESET_FIXTURE = "hgtc-elimination-07"
+
+function withResetFixture(s: V2State): V2State {
+  const first = s.evaluations.find((e) => e.skillId === SEED_RESET_FIXTURE && e.status === "counted" && e.outcome === "met")
+  if (!first) return s
+  return {
+    ...s,
+    skills: s.skills.map((k) => (k.id === SEED_RESET_FIXTURE && k.config ? { ...k, config: { ...k.config, achievement: { ...k.config.achievement, minLevelIndex: 1 } } } : k)),
+    evaluations: s.evaluations.map((e) => (e.skillId === SEED_RESET_FIXTURE && e.studentId === first.studentId ? { ...e, levelIndex: 0 } : e)),
+  }
+}
+
+/**
+ * One seeded skill on the program's settings (map D0 rules 3, 4, 5). The package comes from the program; what stays per skill stays: times
+ * needed, setting and level minimums, different evaluators, and the limits carried from the earlier rule. Written by hand because this file
+ * cannot import lib/lab/configure (it imports the store, which imports this file); tests/lab/seed-program-settings.test.ts holds the result to
+ * `differsFromProgram`. Evidence is untouched: the engine reads an evaluation with no level or answers on its recorded outcome.
+ */
+function onProgramPackage(k: Skill): Skill {
+  const c = k.config ?? defaultConfig("demonstration")
+  const a = c.achievement
+  const { selfEvaluation: _s, questionRule: _q, scoredRule: _r, qualifyingLabel: _l, checkOff: _o, scaleMax: _m, studentFields: _f, ...rest } = c
+  return {
+    ...k,
+    model: "demonstration",
+    configured: true,
+    published: true,
+    config: {
+      ...rest,
+      outcomeLabels: ["Met", "Not met"],
+      questions: [],
+      levels: [...SAMPLE_LEVELS],
+      // No number of its own yet: the program's (D0 rule 6).
+      achievement: { ...a, need: k.config ? a.need : SEED_PROGRAM_RULE.need, minLevelIndex: null },
+      evaluatorRoles: [...SEED_PROGRAM_RULE.evaluatorRoles],
+      feedbackRequired: false,
+      approvalRequired: false,
+    },
+  }
+}
+
+/**
+ * Configuration for the seed (D-L89, D-L90, D-L94, map D0). Runs after generation, so the evidence is what it was. A dozen skills are Edited;
+ * every other skill is on the default configuration, with no standing exception [D-L90]. Moving them can change report figures: the before and
+ * after are pinned in tests/lab/seed-program-settings.test.ts.
+ */
+function withProgramSettings(s: V2State): V2State {
+  const skills = s.skills.map((k): Skill => (SEED_EDITED.has(k.id) ? { ...k, published: true, edited: true } : onProgramPackage(k)))
+  return withResetFixture({ ...s, skills, programSettings: { rule: structuredClone(SEED_PROGRAM_RULE), at: `${DEMO_TODAY}T08:00:00Z` } })
+}
+
+const NURS350 = "crs-nurs350"
+const NUR120 = "crs-nur120"
+const VASCULAR_FEEDBACK = ["Good landmarking and a clean first pass.", "Secured the site well. Keep narrating the steps to the patient.", "Safe technique, explained each step.", "Confident and independent throughout."]
+
+/**
+ * Evidence for the two vascular skills the generator leaves out (`SKIP` in generate.ts), which came into use with D-L90. IV catheter insertion is mandatory on NURS 350, so with no evidence it lowered
+ * every student on that course by one required skill. Each NURS 350 student now holds evaluations in step with how far along they already are on that course's other mandatory skills: about 4 of every
+ * 13 evaluations they hold, all 4 from 10 up. Two or more come from Inpatient with two evaluators, so the rule (4 of the last 5, 2 evaluators, 2 in Inpatient) can be met. Central line dressing change,
+ * recommended on NUR 120, gets a spread among that course's students. Before and after: tests/v2/seed-spread.test.ts, tests/lab/seed-program-settings.test.ts.
+ */
+function withVascularEvidence(s: V2State): V2State {
+  const clinical = ["pre-delgado", "pre-okonkwo", "pre-castillo"].filter((id) => s.people.some((p) => p.id === id))
+  const added: Evaluation[] = []
+  const write = (studentId: string, skillId: string, courseId: string, n: number, salt: number) => {
+    const place = s.placements.find((x) => x.studentId === studentId && x.courseId === courseId && x.termId === "trm-fa26")
+    const location = place?.setting === "Inpatient" ? place.location : "Harbor General, 4 West"
+    for (let k = 0; k < n; k++) {
+      const evaluatorId = clinical[(salt + k) % clinical.length]!
+      const at = daysBefore(9 + ((salt * 3 + k * 11) % 40))
+      // The earliest attempt was with some help; the rest alone.
+      const levelIndex = k === 0 ? 1 : 2
+      added.push({
+        ...mkEval(`ev-${skillId.slice(3)}-${studentId.slice(4)}-${k + 1}`, studentId, [skillId, "met", "clinical", 0, evaluatorId]),
+        date: at,
+        location,
+        courseId,
+        levelIndex,
+        versions: [{ version: 1, outcome: "met", at, by: evaluatorId, reason: null, detail: { feedback: VASCULAR_FEEDBACK[(salt + k) % VASCULAR_FEEDBACK.length]!, levelIndex } }],
+      })
+    }
+  }
+  const needOf = new Map(s.skills.map((k) => [k.id, k.config?.achievement.need ?? 0]))
+  const mandatory = s.mappings.filter((m) => m.courseId === NURS350 && m.level === "mandatory" && m.skillId !== IDS.ivCath).map((m) => m.skillId)
+  const inCohort = (cohort: string) => s.people.filter((p) => p.kind === "student" && p.cohortId === cohort)
+  inCohort("coh-2027").forEach((p, i) => {
+    const held = mandatory.reduce((sum, id) => sum + Math.min(needOf.get(id) ?? 0, s.evaluations.filter((e) => e.studentId === p.id && e.skillId === id && e.status === "counted" && e.outcome === "met").length), 0)
+    write(p.id, IDS.ivCath, NURS350, held >= 10 ? 4 : Math.round((held * 4) / 13), i)
+  })
+  const CENTRAL_SPREAD = [3, 2, 1, 3, 0, 1, 2, 3, 0, 2]
+  inCohort("coh-2028").slice(0, 30).forEach((p, i) => write(p.id, "sk-central-line", NUR120, CENTRAL_SPREAD[i % CENTRAL_SPREAD.length]!, i))
+  return { ...s, evaluations: [...s.evaluations, ...added] }
+}
+
+/** The share of the skill list each generated cohort holds by now, before each student's own standing: the same clock lib/v2/population.ts programShare reads. Written here to keep this file free of it. */
+const LIST_CLOCK: Record<string, number> = { "coh-2027": 0.62, "coh-2028": 0.28 }
+/** How far a student's standing moves them against that share: the weakest and the strongest in the cohort. About a quarter fall behind. */
+const LIST_STANDING: Record<string, [low: number, high: number]> = { "coh-2027": [0.72, 1.3], "coh-2028": [0.4, 1.5] }
+/** Skills left rare on purpose, the least evidenced of the checklist: a real program has procedures few students ever get to perform. */
+const LIST_RARE = 26
+/** Skills that also carry one attempt that did not count, per student, so all four record states show on a list of 150. */
+const LIST_UNMET = 3
+
+/**
+ * Evidence for the skills a cohort has done in earlier terms (SEED_VERSION 2026-11-05.3, D-L102). My progress now reads the skill list, 152 skills over three calendar
+ * years, so a student in their second or third year must hold more than this term's. Runs last, so nothing before it moves; touches BSN 2027 and BSN 2028 only (the
+ * graduating cohort keeps its story) and never a skill mandatory for the cohort this term, a Custom skill or an inactive one, so every "Mandatory this term" figure and every
+ * pinned approval stay as they were. Each student keeps their rank in the cohort. Maya sits on the clock. Evidence is dated inside the student's earlier rotations.
+ */
+function withListBaseline(s: V2State): V2State {
+  const rand = prng(2611)
+  const pool = new Map<string, number>()
+  for (const e of s.evaluations) pool.set(e.evaluatorId, (pool.get(e.evaluatorId) ?? 0) + 1)
+  // Evaluators already in regular use: the long tail of rarely used evaluators stays a long tail, and names not adopted yet stay out.
+  const sites = s.sites ?? []
+  const siteOf = new Map(sites.map((x) => [x.id, x]))
+  const siteAt = new Map(sites.map((x) => [x.location, x]))
+  const regular = s.people.filter((p) => (pool.get(p.id) ?? 0) >= 12 && p.verified !== false && p.homeSiteId)
+  const preceptors = regular.filter((p) => p.kind === "preceptor" && siteOf.get(p.homeSiteId!)?.clinicalSetting)
+  const atSite = new Map<string, Person[]>()
+  for (const p of preceptors) atSite.set(p.homeSiteId!, [...(atSite.get(p.homeSiteId!) ?? []), p])
+  const inpatient = preceptors.filter((p) => siteOf.get(p.homeSiteId!)?.clinicalSetting === "Inpatient")
+  const labs = regular.filter((p) => p.kind === "lab-instructor")
+  const checklist = s.skills.filter((k) => k.hgtc && k.active !== false && k.configured && k.published)
+  // Offered to a student only if none of the stories below read it: approvals (Custom skills) and the nine students behind in IV therapy.
+  const offered = checklist.filter((k) => !SEED_EDITED.has(k.id) && k.hgtc?.group !== "IV Therapy")
+  const evidence = new Map<string, number>()
+  for (const e of s.evaluations) evidence.set(e.skillId, (evidence.get(e.skillId) ?? 0) + 1)
+  const rare = new Set([...offered].sort((a, b) => (evidence.get(a.id) ?? 0) - (evidence.get(b.id) ?? 0) || a.id.localeCompare(b.id)).slice(0, LIST_RARE).map((k) => k.id))
+  // This file cannot import the engine (it imports this file): met counted evaluations against the need is near enough to place a student on the clock.
+  const met = new Map<string, number>()
+  for (const e of s.evaluations) if (e.status === "counted" && e.outcome === "met") met.set(`${e.studentId}|${e.skillId}`, (met.get(`${e.studentId}|${e.skillId}`) ?? 0) + 1)
+  const holds = (p: Person, k: Skill) => (met.get(`${p.id}|${k.id}`) ?? 0) >= k.config!.achievement.need
+  const added: Evaluation[] = []
+  const addedPlacements: Placement[] = []
+  let comments = 0
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rand() * xs.length)]!
+  const courseKind = new Map((s.courses ?? []).map((c) => [c.id, c.kind]))
+  const earlierTerms = (s.terms ?? []).filter((x) => x.end < "2026-08-24")
+  const dayIn = (a: string, b: string) => {
+    const from = Date.parse(`${a}T12:00:00Z`)
+    return `${new Date(from + Math.floor(rand() * Math.max(1, (Date.parse(`${b}T12:00:00Z`) - from) / 86_400_000)) * 86_400_000).toISOString().slice(0, 10)}T09:00:00.000Z`
+  }
+  const add = (p: Person, k: Skill, n: number, outcome: Outcome, spots: readonly Placement[]) => {
+    const a = k.config!.achievement
+    const used = new Set<string>()
+    const clinicalOnly = a.settingMinimums.length > 0 || !k.config!.simulation.allowed
+    for (let i = 0; i < n; i++) {
+      const spot = pick(spots)
+      const lab = !clinicalOnly && labs.length > 0 && rand() < 0.25
+      const needsInpatient = a.settingMinimums.some((m) => m.setting === "Inpatient")
+      const here = atSite.get(siteAt.get(spot.location)?.id ?? "") ?? []
+      const fits = !needsInpatient || siteAt.get(spot.location)?.clinicalSetting === "Inpatient"
+      const from = lab ? labs : fits && here.length ? here : needsInpatient ? inpatient : preceptors
+      let who = pick(from)
+      for (let t = 0; t < 20 && used.has(who.id) && a.distinctEvaluators > 1; t++) who = pick(a.distinctEvaluators > 1 && !lab ? preceptors : from)
+      used.add(who.id)
+      const site = siteOf.get(who.homeSiteId!)!
+      const at = dayIn(spot.startDate, spot.endDate)
+      const levelIndex = k.config!.levels.length > 2 ? 2 : undefined
+      const feedback = rand() < 0.3 ? feedbackText(comments++, outcome) : undefined
+      added.push({
+        ...mkEval(`ev-l-${p.id.replace(/^stu-/, "")}-${added.length + 1}`, p.id, [k.id, outcome, lab ? "lab" : "clinical", 0, who.id]),
+        date: at,
+        location: site.location,
+        siteId: site.id,
+        courseId: spot.courseId,
+        ...(lab ? {} : { clinicalSetting: site.clinicalSetting ?? "Inpatient" }),
+        ...(levelIndex !== undefined ? { levelIndex } : {}),
+        versions: [{ version: 1, outcome, at, by: who.id, reason: null, ...(feedback ? { detail: { feedback, ...(levelIndex !== undefined ? { levelIndex } : {}) } } : {}) }],
+      })
+    }
+  }
+  for (const [cohortId, clock] of Object.entries(LIST_CLOCK)) {
+    const [low, high] = LIST_STANDING[cohortId]!
+    const offerings = (s.offerings ?? []).filter((o) => o.cohortId === cohortId && (courseKind.get(o.courseId) ?? "clinical") === "clinical")
+    const thisTerm = new Set((s.offerings ?? []).filter((o) => o.cohortId === cohortId && o.termId === "trm-fa26").map((o) => o.courseId))
+    const mandatory = new Set(s.mappings.filter((m) => thisTerm.has(m.courseId) && m.level === "mandatory").map((m) => m.skillId))
+    const open = offered.filter((k) => !rare.has(k.id) && !mandatory.has(k.id))
+    const onList = (p: Person) => checklist.reduce((n, k) => n + (holds(p, k) ? 1 : 0), 0)
+    const students = s.people.filter((p) => p.kind === "student" && p.cohortId === cohortId).map((p) => ({ p, have: onList(p) })).sort((a, b) => a.have - b.have || a.p.id.localeCompare(b.p.id))
+    students.forEach(({ p, have }, rank) => {
+      const standing = p.id === IDS.maya ? 1 : low + ((high - low) * rank) / Math.max(1, students.length - 1)
+      const want = Math.round(checklist.length * clock * standing)
+      // The commonest procedures come first, with each student's own order among them.
+      const order = open.filter((k) => !holds(p, k)).map((k) => ({ k, at: rand() - (evidence.get(k.id) ?? 0) / 200 })).sort((a, b) => a.at - b.at).map((x) => x.k)
+      const take = order.slice(0, Math.max(0, want - have))
+      // Earlier rotations: the ones on record, or, for a hand-written student, one per earlier term at a site their cohort uses.
+      let spots = s.placements.filter((x) => x.studentId === p.id && earlierTerms.some((y) => y.id === x.termId))
+      if (!spots.length) {
+        spots = earlierTerms.flatMap((term) => {
+          const o = offerings.find((y) => y.termId === term.id && y.courseId !== s.course.id)
+          const site = pick(inpatient).homeSiteId ? siteOf.get(pick(inpatient).homeSiteId!) : undefined
+          return o && site ? [{ id: `pl-l-${p.id.replace(/^stu-/, "")}-${term.id}`, studentId: p.id, courseId: o.courseId, offeringId: o.id, location: site.location, siteId: site.id, setting: site.clinicalSetting ?? "Inpatient", termId: term.id, startDate: term.start, endDate: term.end } as Placement] : []
+        })
+        addedPlacements.push(...spots)
+      }
+      if (!spots.length) return
+      for (const k of take) add(p, k, k.config!.achievement.need, "met", spots)
+      for (const k of order.slice(take.length, take.length + LIST_UNMET)) add(p, k, 1, "not-yet", spots)
+    })
+  }
+  return { ...s, evaluations: [...s.evaluations, ...added], placements: [...s.placements, ...addedPlacements] }
+}
 
 function buildSkills(): Skill[] {
   const out: Skill[] = []
@@ -557,5 +825,13 @@ export function buildHero(): V2State {
 
 /** A fresh deep copy of the demo data: the hero layer plus the deterministic generated cohort. Every call returns a new object graph. */
 export function createSeed(): V2State {
+  return withListBaseline(withProgramSettings(withVascularEvidence(generate(buildHero()))))
+}
+
+/**
+ * The data as generated, before the sample program's save: skills with no model, unpublished skills, no Evaluation settings. Never read by a page. Test
+ * fixtures of the engine use it for a skill in those states, which the seeded program no longer has (D-L90).
+ */
+export function createGeneratedSeed(): V2State {
   return generate(buildHero())
 }

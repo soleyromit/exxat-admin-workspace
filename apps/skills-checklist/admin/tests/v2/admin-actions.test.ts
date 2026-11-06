@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { chooseModel, copyConfigFrom, copyStarterSkills, createImportedSkills, draftFor, publishSkill, saveStep, setDraft, setMapping, updateSkillMeta } from "@/lib/v2/admin-actions"
 import { COUNTER_BY_ID } from "@/lib/v2/selectors"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed, IDS } from "@/lib/v2/seed"
 import { STARTER_BY_SPECIALTY } from "@/lib/v2/starter-libraries"
 import type { V2State } from "@/lib/v2/types"
 

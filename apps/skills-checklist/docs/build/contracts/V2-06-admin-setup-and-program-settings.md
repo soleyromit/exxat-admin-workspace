@@ -14,7 +14,7 @@ Receiver-side cue: what the admin sets reaches students through the assigned gro
 - IM-14 "it must be possible to copy the configuration of one skill to another or apply a configuration to several selected skills at once." Program settings are that, for all.
 - SC-01, SC-02 ("The model must be chosen explicitly; no default is assumed"): the program chooses; nothing is preselected; the times-needed number is typed.
 - SC-03 to SC-10, SC-17, SC-18, SC-19: the reused configure sections and validation.
-- SC-14, SC-15, SC-16 (per skill): met by the per-skill override ("Change for this skill"), off the main path.
+- SC-14, SC-15, SC-16 (per skill): met by the per-skill override ("Change for this skill"), off the main path. (Lab, 2026-11-05: that button is replaced by editing in the panel, D-L91.)
 - CM-03, CM-06: course mapping A and B, unchanged.
 
 ## Surfaces

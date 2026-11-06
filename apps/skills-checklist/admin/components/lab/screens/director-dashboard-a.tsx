@@ -53,7 +53,7 @@ function NotCompleteCard({ m, scope }: { m: Readiness; scope: LabScope }) {
           </Button>
         </div>
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{`Every student in scope has achieved every required ${skillNoun()}.`}</p>
+          <p className="text-sm text-muted-foreground">{`Every student in scope has achieved every assigned ${skillNoun()}.`}</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {rows.slice(0, SHOWN + 1).map((r) => (

@@ -19,7 +19,7 @@ import { hasScopeInUrl, parseScope, scopeQuery, URL_KEYS, type LabScope } from "
 
 const STORE_KEY = "lab.dashboard.scope.v1"
 /** Params that belong to the page, not the scope; kept when the scope changes. */
-const PAGE_KEYS = ["variant", "state", "split", "q", "skills", "list", "cond", "skill", "siteId", "from", "tab", "peek"]
+const PAGE_KEYS = ["variant", "state", "split", "q", "skills", "list", "view", "who", "focus", "new", "cond", "skill", "siteId", "from", "tab", "peek", "by", "offering", "oq", "show", "ay", "year", "incl", "terms", "program"]
 
 function readSaved(): string | null {
   try {
@@ -49,7 +49,8 @@ export interface DashboardUrl {
   hrefWith: (p: Record<string, string | null>) => string
 }
 
-export function useDashboardUrl(): DashboardUrl {
+/** `pageFilters`: the page's filters are its own and live only in its URL, so the remembered scope neither fills them nor remembers them (Course mapping). */
+export function useDashboardUrl({ pageFilters = false }: { pageFilters?: boolean } = {}): DashboardUrl {
   const params = useSearchParams()
   const router = useRouter()
   const pathname = usePathname() ?? ""
@@ -106,7 +107,7 @@ export function useDashboardUrl(): DashboardUrl {
   // Remembered scope (S5): restore once when the URL carries none, then remember every scope the page shows.
   const restored = React.useRef(false)
   React.useEffect(() => {
-    if (restored.current) return
+    if (restored.current || pageFilters) return
     restored.current = true
     if (hasScopeInUrl(params)) return
     const saved = readSaved()
@@ -118,7 +119,7 @@ export function useDashboardUrl(): DashboardUrl {
       }
       go(q)
     }
-  }, [go, params])
+  }, [go, params, pageFilters])
   React.useEffect(() => {
     if (!restored.current) return
     const q = new URLSearchParams()

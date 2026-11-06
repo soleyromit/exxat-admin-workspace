@@ -53,7 +53,7 @@ const DAY = 86_400_000
 
 /** The phrase that names the basis in the hero sentence. */
 export function basisPhrase(basis: Basis): string {
-  return basis === "expected" ? "behind the term clock" : basis === "median" ? "below the scope median" : `short of all required ${skillNounPlural()}`
+  return basis === "expected" ? "behind the program clock" : basis === "median" ? "below the scope median" : `short of all required ${skillNounPlural()}`
 }
 /** Short condition label for a chip ("Behind the term clock"). */
 export const conditionLabel = (basis: Basis): string => basisPhrase(basis).replace(/^./, (c) => c.toUpperCase())
@@ -278,7 +278,7 @@ export function sectionMatrix(pop: Population, split: Split): SectionMatrix {
   const laneRows = new Map(ls.map((l) => [l.id, l.rows]))
   const sections = [...new Set(pop.rows.flatMap((r) => Object.keys(r.bySection)))].sort()
   const tally = (rows: StudentRow[], sec: string) => rows.reduce((t, r) => { const x = r.bySection[sec]; if (x) { t.needed += x.needed; t.collected += x.collected; t.n += 1; t.total = Math.max(t.total, x.total) } return t }, { needed: 0, collected: 0, n: 0, total: 0 })
-  const expectedPts = Math.round(pop.term.share * 100)
+  const expectedPts = Math.round(pop.expectedShare * 100)
   const rows: SectionRow[] = sections.map((sec) => {
     const scopeT = tally(pop.rows, sec)
     const scopePct = scopeT.needed ? pctOf(scopeT.collected, scopeT.needed) : null
@@ -542,6 +542,8 @@ export interface DashboardModel {
   /** Caption shown while pace is a prototype assumption. */
   basisCaption: string
   pop: Population
+  /** The share of required evaluations the clock expects by now, across the rows. */
+  expectedShare: number
   inScope: number
   total: number
   kind: "behind" | "clear" | "empty" | "impossible"
@@ -568,7 +570,7 @@ export interface DashboardModel {
 }
 
 /** Columns the dashboard export carries, one row per student in scope (the DS ExportDrawer's "Visible columns only" count). */
-export const DASHBOARD_EXPORT_COLUMNS = ["Student", "Cohort", "Group", "Required this term", "Achieved", "In progress", "Missing", "Waiting with an evaluator"] as const
+export const DASHBOARD_EXPORT_COLUMNS = ["Student", "Cohort", "Group", "All assigned", "Achieved", "In progress", "Missing", "Waiting with an evaluator"] as const
 /** Columns the operations export carries, one row per waiting evaluation request. */
 export const opsExportColumns = (): string[] => ["Student", skillNoun().charAt(0).toUpperCase() + skillNoun().slice(1), "Evaluator", "Site", "Sent", "Days waiting"]
 
@@ -638,7 +640,7 @@ export function buildDashboard(state: V2State, scope: LabScope, today: string = 
       ? `${fmt(behind.length)} of ${plural(n, "student", "students")} ${behind.length === 1 ? "is" : "are"} ${phrase}`
       : kind === "clear"
         ? basis === "expected"
-          ? `Nobody is behind the term clock. ${plural(n, "student", "students")}, all on pace.`
+          ? `Nobody is behind the program clock. ${plural(n, "student", "students")}, all on pace.`
           : basis === "median"
             ? pop.medianSuppressed
               ? `Too few students in this scope to compare (${n}).`
@@ -652,7 +654,7 @@ export function buildDashboard(state: V2State, scope: LabScope, today: string = 
     kind === "behind"
       ? top ? `${fmt(top.students)} of them ${top.students === 1 ? "is" : "are"} short in ${top.section}.` : lowestText
       : kind === "clear"
-        ? basis === "expected" ? `Every student has counted what the term clock expects by week ${term.week}.` : basis === "median" ? `Scope median: ${pop.median}% of required evaluations counted.` : "Nothing required is left in this scope."
+        ? basis === "expected" ? "Every student has counted what the program clock expects by now." : basis === "median" ? `Scope median: ${pop.median}% of required evaluations counted.` : "Nothing required is left in this scope."
         : explained ? explained.text : `Nobody in this scope takes a course in ${term.name}.`
   const heroHref = drillHref(scope, { list: "students", cond: "behind", from: "hero" })
 
@@ -681,6 +683,7 @@ export function buildDashboard(state: V2State, scope: LabScope, today: string = 
 
   return {
     asOfDate: today,
+    expectedShare: pop.expectedShare,
     scope,
     term,
     basis,
@@ -730,8 +733,8 @@ export function withClearState(m: DashboardModel): DashboardModel {
     behind: [],
     blockers: [],
     heroValue: 0,
-    heroSentence: m.basis === "expected" ? `Nobody is behind the term clock. ${plural(n, "student", "students")}, all on pace.` : m.basis === "median" ? `Nobody is far below the scope median. ${plural(n, "student", "students")} in scope.` : `Every student has achieved every required ${skillNoun()}. ${plural(n, "student", "students")}.`,
-    heroDetail: m.basis === "expected" ? `Every student has counted what the term clock expects by week ${m.term.week}.` : "Nothing in this scope needs attention.",
+    heroSentence: m.basis === "expected" ? `Nobody is behind the program clock. ${plural(n, "student", "students")}, all on pace.` : m.basis === "median" ? `Nobody is far below the scope median. ${plural(n, "student", "students")} in scope.` : `Every student has achieved every required ${skillNoun()}. ${plural(n, "student", "students")}.`,
+    heroDetail: m.basis === "expected" ? "Every student has counted what the program clock expects by now." : "Nothing in this scope needs attention.",
     announce: "Nobody is behind",
   }
 }
@@ -851,7 +854,7 @@ export function buildDrill(state: V2State, scope: LabScope, p: DrillParams, toda
 }
 
 function buildDashboardCaption(pop: Population): string {
-  return pop.basis === "expected" ? `Expected now is the share of the term gone: ${Math.round(pop.term.share * 100)}% in week ${pop.term.week} of ${pop.term.weeks}.` : pop.basis === "median" ? `Behind means ${MEDIAN_MARGIN} or more points under the scope median (${pop.median}%).` : `Behind means at least one required ${skillNoun()} not yet achieved.`
+  return pop.basis === "expected" ? `Expected now is the share of each cohort's program gone: ${Math.round(pop.expectedShare * 100)}% across these students.` : pop.basis === "median" ? `Behind means ${MEDIAN_MARGIN} or more points under the scope median (${pop.median}%).` : `Behind means at least one required ${skillNoun()} not yet achieved.`
 }
 
 // =====================================================================================================================
@@ -975,7 +978,7 @@ export function pipelineModel(state: V2State, scope: LabScope, today: string = D
   for (const x of records) bySection.set(x.section, [...(bySection.get(x.section) ?? []), x])
   const sections = [...bySection].map(([sec, recs]) => tallySection(sec, recs)).sort((a, b) => a.section.localeCompare(b.section))
   const tick =
-    records.length === 0 ? null : pop.basis === "expected" ? { pct: Math.round(pop.term.share * 100), label: "Expected now" } : pop.basis === "median" ? { pct: median(sections.map((x) => x.achievedPct)), label: "Section median" } : null
+    records.length === 0 ? null : pop.basis === "expected" ? { pct: Math.round(pop.expectedShare * 100), label: "Expected now" } : pop.basis === "median" ? { pct: median(sections.map((x) => x.achievedPct)), label: "Section median" } : null
   for (const x of [all, ...sections]) {
     const gap = tick ? tick.pct - x.achievedPct : 0
     x.short = gap >= CELL_MARGIN ? gap : 0

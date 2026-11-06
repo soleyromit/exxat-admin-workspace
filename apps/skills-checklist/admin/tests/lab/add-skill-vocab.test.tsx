@@ -73,12 +73,13 @@ describe("A1 to A3: a skill added by hand is in the shared store, Not configured
     const s = addSkillsToStore(seed, [added], "u", AT)
     const k = skillById(s, "lab-skill-x")!
     expect(k).toBeTruthy()
-    expect(k.model).toBeNull()
-    expect(isConfigured(k)).toBe(false)
+    // D-L72: once the program has saved its settings a new skill is Program default at once.
+    expect(k.model).toBe("demonstration")
+    expect(isConfigured(k)).toBe(true)
     expect(k).toMatchObject({ description: "Set up and monitor a chest drain.", category: "Respiratory care", tags: ["Thoracic"] })
     const row = buildLibrary(s).find((r) => r.id === "lab-skill-x")!
-    expect(row.status).toBe("not-configured")
-    expect(facts(s).skillsNotConfigured).toBe(facts(seed).skillsNotConfigured + 1)
+    expect(row.configuration).toBe("default")
+    expect(facts(s).skillsNotConfigured).toBe(facts(seed).skillsNotConfigured)
   })
 
   it("a blank category is stored as No category (category is optional)", () => {

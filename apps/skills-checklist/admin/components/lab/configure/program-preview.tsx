@@ -21,6 +21,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@exxatdesignux/ui/components/ui/command"
 import { FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@exxatdesignux/ui/components/ui/toggle-group"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
 import { TYPE } from "@/components/lab/type-scale"
@@ -36,7 +37,7 @@ import { useV2State } from "@/lib/v2/react"
 import type { EvalModel } from "@/lib/v2/types"
 import { skillNoun } from "@/lib/lab/terms"
 
-interface Example {
+export interface Example {
   id: string
   name: string
   rule: LabRule | null
@@ -63,7 +64,7 @@ function useExamples(model: EvalModel | null): Example[] {
 }
 
 /** "Example: <skill>": a searchable list of real library skills (more than 7, so type-to-search). */
-function ExamplePicker({ options, value, onChange }: { options: Example[]; value: Example | null; onChange: (id: string) => void }) {
+export function ExamplePicker({ options, value, onChange }: { options: Example[]; value: Example | null; onChange: (id: string) => void }) {
   const [open, setOpen] = React.useState(false)
   if (!value) return null
   return (
@@ -99,10 +100,10 @@ function ExamplePicker({ options, value, onChange }: { options: Example[]; value
  * A phone-width screen, flat: the page's own header strip, the skill name, its content, its button. One frame, no card inside.
  * A picture (inert, hidden from assistive tech).
  */
-function Screen({ header, title, children, footer }: { header: React.ReactNode; title: string; children: React.ReactNode; footer: React.ReactNode }) {
+function Screen({ header, title, children, footer }: { header?: React.ReactNode; title: string; children: React.ReactNode; footer: React.ReactNode }) {
   return (
     <div className="w-full overflow-hidden rounded-[var(--radius)] border border-border bg-background" aria-hidden="true" inert data-artifact-preview>
-      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2.5">{header}</div>
+      {header ? <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-4 py-2.5">{header}</div> : null}
       <div className="flex flex-col gap-4 p-4">
         <p className={TYPE.card}>{title}</p>
         {children}
@@ -113,9 +114,9 @@ function Screen({ header, title, children, footer }: { header: React.ReactNode; 
 }
 
 /**
- * The evaluator form's answers for one skill, in the order and with the controls of the form itself (`SkillFields`: outcome tiles,
- * then the level or the questions, then feedback; an independence-level skill asks the level only), all unanswered, so nothing
- * reads as preselected [REQ SC-02]. Levels or questions not named yet are left out.
+ * The evaluator form's answers for one skill, in the order and with the controls of the form itself (`SkillFields`: the outcome on the
+ * binary model only, the level, or the questions, then feedback), all unanswered, so nothing reads as preselected [REQ SC-02]. The question and
+ * scored models have no final result: the result comes from the answers (D-L73; Sankalp 11-04). Levels or questions not named yet are left out.
  */
 function EvaluatorAnswers({ rule, id }: { rule: LabRule; id: string }) {
   const model = rule.model
@@ -126,7 +127,7 @@ function EvaluatorAnswers({ rule, id }: { rule: LabRule; id: string }) {
   const none = () => {}
   return (
     <div className="flex flex-col gap-4">
-      {model && model !== "demonstration" ? (
+      {model === "binary" ? (
         <div className="flex flex-col gap-2">
           <Label id={`${id}-out`} className="text-sm font-medium">Outcome</Label>
           <ChoiceTiles id={`${id}-out-0`} labelId={`${id}-out`} options={outcomes.map((l, i) => ({ value: String(i), label: l }))} value={null} onChange={none} />
@@ -144,13 +145,14 @@ function EvaluatorAnswers({ rule, id }: { rule: LabRule; id: string }) {
           {questions.map((q, i) => (
             <div key={i} className="flex flex-col gap-2">
               <p id={`${id}-q-${i}`} className="text-sm text-foreground">{q}</p>
+              {rule.selfEvaluation ? <p className="text-xs text-muted-foreground">{model === "scored" ? "Student's own score shows here" : "Student's own answer shows here"}</p> : null}
               <ChoiceTiles
                 id={`${id}-q-${i}-0`}
                 labelId={`${id}-q-${i}`}
                 options={model === "scored" ? Array.from({ length: top }, (_, n) => ({ value: String(n + 1), label: String(n + 1) })) : [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
                 value={null}
                 onChange={none}
-                cols={model === "scored" ? 5 : 2}
+                cols={model === "scored" ? "scale" : 2}
               />
             </div>
           ))}
@@ -166,8 +168,20 @@ function EvaluatorAnswers({ rule, id }: { rule: LabRule; id: string }) {
   )
 }
 
-function whoLine(roles: LabRule["evaluatorRoles"]): string {
-  if (!roles.length) return "Who signs is not set"
+/** The text equivalents of the two screens (the screens themselves are pictures, hidden from assistive tech). */
+/** The same answer the form gives after submit: on Approved or not approved, which label counts is the program's [REQ SC-03]. */
+function toldAfterSubmit(rule: LabRule): string {
+  if (rule.approvalRequired) return "Told after submit: waits for program approval before it counts."
+  const q = rule.model === "binary" && rule.qualifyingLabel !== null ? rule.outcomeLabels[rule.qualifyingLabel]?.trim() : ""
+  return q ? `Told after submit: ${q} counts now. The other label does not count.` : "Told after submit: it counts now."
+}
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+export const evaluatorScreenText = (rule: LabRule, roles: LabRule["evaluatorRoles"], name: string): string => `${whoLine(roles)}. ${name}: sees what the student supplied, answers as set, feedback ${rule.feedbackRequired ? "required" : "optional"}. ${capitalize(toldAfterSubmit(rule).replace("Told after submit: ", ""))}`
+export const studentScreenText = (rule: LabRule, name: string): string => `Student asks for sign-off on ${name}${rule.studentFields.length ? `, adding ${rule.studentFields.map((f) => f.label.trim()).filter(Boolean).join(", ")}` : ""}${rule.selfEvaluation ? ", after rating themselves" : ""}, choosing where and who, with an optional note.`
+
+export function whoLine(roles: LabRule["evaluatorRoles"]): string {
+  if (!roles.length) return "Who can sign off is not chosen"
   const parts: string[] = []
   if (roles.includes("preceptor")) parts.push("Preceptor by emailed link")
   const inPrism = roles.filter((r) => r !== "preceptor").map((r) => ROLE_LABEL[r])
@@ -175,7 +189,21 @@ function whoLine(roles: LabRule["evaluatorRoles"]): string {
   return parts.join(" · ")
 }
 
-function EvaluatorScreen({ rule, example, program }: { rule: LabRule; example: Example; program: string }) {
+/** What the student supplied, as the evaluator sees it above their own answers [REQ EV-04]: a picture, so the values are named, not invented. */
+function FromStudent({ rule }: { rule: LabRule }) {
+  const fields = rule.studentFields.map((f) => f.label.trim()).filter(Boolean)
+  const levelOrOutcome = rule.model === "demonstration" || rule.model === "binary"
+  return (
+    <div className="flex flex-col gap-0.5 rounded-md bg-muted/60 px-3 py-2 text-sm" data-preview-from-student>
+      <p className="text-muted-foreground">From the student</p>
+      <p className="text-foreground">{["Course", "where it was done", ...fields].join(" · ")}</p>
+      <p className="text-muted-foreground">Their note, if they wrote one</p>
+      {rule.selfEvaluation && levelOrOutcome ? <p className="text-foreground">Their self-evaluation</p> : null}
+    </div>
+  )
+}
+
+export function EvaluatorScreen({ rule, example, program }: { rule: LabRule; example: Example; program: string }) {
   const link = rule.evaluatorRoles.includes("preceptor")
   return (
     <Screen
@@ -191,33 +219,85 @@ function EvaluatorScreen({ rule, example, program }: { rule: LabRule; example: E
         </>
       }
       title={example.name}
-      footer={<Button type="button" variant="outline" size="default" className="w-full" tabIndex={-1}>{`Submit 1 ${skillNoun()}`}</Button>}
+      footer={
+        <div className="flex flex-col gap-2">
+          <Button type="button" variant="outline" size="default" className="w-full" tabIndex={-1}>{`Submit 1 ${skillNoun()}`}</Button>
+          <p className="text-sm text-muted-foreground" data-preview-approval>{toldAfterSubmit(rule)}</p>
+        </div>
+      }
     >
+      <FromStudent rule={rule} />
       <EvaluatorAnswers rule={rule} id={`pv-ev-${example.id}`} />
     </Screen>
   )
 }
 
-function StudentScreen({ rule, example }: { rule: LabRule; example: Example }) {
+/** A closed select, drawn: the student's choice of where and who depends on the student, so the picture names the choice rather than a person. */
+function PictureSelect({ label, value }: { label: string; value: string }) {
+  const id = `pv-${label.toLowerCase().replace(/\s+/g, "-")}`
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={id} className="text-sm font-medium">{label}</Label>
+      <Select>
+        <SelectTrigger id={id} className="w-full"><SelectValue placeholder={value} /></SelectTrigger>
+        <SelectContent><SelectItem value="sample">{value}</SelectItem></SelectContent>
+      </Select>
+    </div>
+  )
+}
+
+export function StudentScreen({ rule, example, condensed }: { rule: LabRule; example: Example; /** The panel beside the form (map D1c): a count stands for the questions, whatever their length or the scale, and the button alone names the form. The Preview dialog and the Evaluator tab show it all. */ condensed?: boolean }) {
   const fields: DetailField[] = rule.studentFields
     .filter((f) => f.label.trim())
     .map((f, i) => ({ id: `f${i}`, label: f.label.trim(), type: f.type, required: f.mandatory, options: f.choices }))
-  const scale = rule.model === "demonstration" ? rule.levels.filter((l) => l.trim()) : rule.model ? rule.outcomeLabels.map((l) => l.trim()).filter(Boolean) : []
+  // The same form the evaluator gets [REQ ST-11]: one choice for a level or a label, an answer per question otherwise, never a final result.
+  const scale = rule.model === "demonstration" ? rule.levels.filter((l) => l.trim()) : rule.model === "binary" ? rule.outcomeLabels.map((l) => l.trim()).filter(Boolean) : []
+  const questions = rule.model === "question" || rule.model === "scored" ? rule.questions.map((q) => q.trim()).filter(Boolean) : []
+  const top = Number.isInteger(rule.scaleMax) && rule.scaleMax >= 2 ? rule.scaleMax : 5
+  const answers = rule.model === "scored" ? Array.from({ length: top }, (_, n) => String(n + 1)) : ["Yes", "No"]
   return (
     <Screen
-      header={<span className="truncate text-sm font-semibold text-foreground">Ask for sign-off</span>}
+      header={condensed ? undefined : <span className="truncate text-sm font-semibold text-foreground">Send for evaluation</span>}
       title={example.name}
-      footer={<Button type="button" variant="outline" size="default" className="w-full" tabIndex={-1}>Ask for sign-off</Button>}
+      footer={<Button type="button" variant="outline" size="default" className="w-full" tabIndex={-1}>Send for evaluation</Button>}
     >
+      <PictureSelect label="Where" value={rule.evaluatorRoles.includes("lab-instructor") ? (rule.evaluatorRoles.length > 1 ? "Clinical setting, lab or simulation" : "Lab or simulation") : "Clinical setting, lab or simulation"} />
       {fields.length ? <DetailsFields values={{}} onChange={() => {}} errors={{}} showErrors={false} idPrefix="pv-student" columns={false} fields={fields} /> : null}
       {rule.selfEvaluation && scale.length ? (
         <FieldSet>
           <FieldLegend variant="label">Self-evaluation</FieldLegend>
           <ToggleGroup type="single" variant="outline" spacing={2} className="flex w-full flex-wrap justify-start">
-            {scale.map((o) => <ToggleGroupItem key={o} value={o} size="sm" className="px-2.5">{o}</ToggleGroupItem>)}
+            {/* By position: two levels can share a name until the form says so, and a long name wraps inside the panel. */}
+            {scale.map((o, i) => <ToggleGroupItem key={i} value={String(i)} size="sm" className="h-auto min-h-8 max-w-full whitespace-normal break-words px-2.5 py-1 text-start">{o}</ToggleGroupItem>)}
           </ToggleGroup>
         </FieldSet>
       ) : null}
+      {rule.selfEvaluation && questions.length && condensed ? (
+        <FieldSet>
+          <FieldLegend variant="label">Self-evaluation</FieldLegend>
+          <p className="text-sm text-muted-foreground" data-question-count>{`${questions.length} ${questions.length === 1 ? "question" : "questions"}, ${rule.model === "scored" ? `score 1 to ${top}` : "Yes or No"}`}</p>
+        </FieldSet>
+      ) : null}
+      {rule.selfEvaluation && questions.length && !condensed ? (
+        <FieldSet>
+          <FieldLegend variant="label">Self-evaluation</FieldLegend>
+          <div className="flex flex-col gap-3">
+            {questions.map((q, i) => (
+              <div key={i} className="flex flex-col gap-1">
+                <p className="text-sm text-foreground">{q}</p>
+                <ToggleGroup type="single" variant="outline" spacing={2} className="flex w-full flex-wrap justify-start">
+                  {answers.map((o) => <ToggleGroupItem key={o} value={o} size="sm" className="px-2.5">{o}</ToggleGroupItem>)}
+                </ToggleGroup>
+              </div>
+            ))}
+          </div>
+        </FieldSet>
+      ) : null}
+      <PictureSelect label="Who signs off" value={rule.evaluatorRoles.length ? rule.evaluatorRoles.map((r) => ROLE_LABEL[r]).join(" or ") : "Who signs is not set"} />
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="pv-student-note" className="text-sm font-medium">Note <span className="font-normal text-muted-foreground">(optional)</span></Label>
+        <Textarea id="pv-student-note" rows={2} className="min-h-16" readOnly />
+      </div>
     </Screen>
   )
 }
@@ -238,8 +318,6 @@ export function ProgramPreview({ draft }: { draft: LabRule }) {
   const rule = React.useMemo(() => (example ? resolveRule(draft, example.rule) : draft), [draft, example])
   const program = `${state.program.school} ${state.program.name}`
   if (!example) return null
-  const evaluatorText = `${whoLine(draft.evaluatorRoles)}. ${example.name}: answers as set, feedback ${rule.feedbackRequired ? "required" : "optional"}.`
-  const studentText = `Student asks for sign-off on ${example.name}${rule.studentFields.length ? `, adding ${rule.studentFields.map((f) => f.label.trim()).filter(Boolean).join(", ")}` : ""}${rule.selfEvaluation ? ", after rating themselves" : ""}.`
   return (
     <section className="flex flex-col gap-4" aria-labelledby="d-preview-title" data-preview>
       <h2 id="d-preview-title" className="sr-only">Preview</h2>
@@ -247,7 +325,7 @@ export function ProgramPreview({ draft }: { draft: LabRule }) {
         <ViewSegmentedControl<Who> aria-label="Preview for" value={who} onValueChange={setWho} options={WHO_OPTIONS} />
         <ExamplePicker options={examples} value={example} onChange={setPick} />
       </div>
-      <p className="sr-only">{who === "evaluator" ? evaluatorText : studentText}</p>
+      <p className="sr-only">{who === "evaluator" ? evaluatorScreenText(rule, draft.evaluatorRoles, example.name) : studentScreenText(rule, example.name)}</p>
       {who === "evaluator" ? <EvaluatorScreen rule={rule} example={example} program={program} /> : <StudentScreen rule={rule} example={example} />}
     </section>
   )

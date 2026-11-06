@@ -77,8 +77,8 @@ export function StudentMatrix({ model, peekHref, behindLabel, activePeek, legend
     for (const s of model.students) m.set(s.cohort, (m.get(s.cohort) ?? 0) + 1)
     return m
   }, [model])
-  // Students per missing band (complete / one short / short / far, D-X11) over every row, not just this page: under "Required to
-  // graduate" these equal the director's readiness figures (checked by tests/lab/consistency.mjs).
+  // Students per missing band (complete / one short / short / far, D-X11) over every row, not just this page: under "All
+  // assigned" these equal the director's readiness figures (checked by tests/lab/consistency.mjs).
   const bands = React.useMemo(() => {
     const c = { complete: 0, "one-short": 0, short: 0, far: 0 }
     for (const s of model.students) c[graduationStageOf(s.total - s.counts.achieved)]++

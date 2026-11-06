@@ -22,7 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { PageFrame } from "@/components/skills/page-header"
 import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { CheckCell, Legend, NothingToCheck, RecordBar, RecordedBanner, SelfEvalNote, SessionControls, SkillHead } from "@/components/lab/checkoff/checkoff-parts"
+import { CheckCell, Legend, NothingToCheck, RecordBar, RecordedBanner, SelfEvalNote, SessionControls, SkillHead, sharedLevel } from "@/components/lab/checkoff/checkoff-parts"
 import { shortReason } from "@/lib/lab/course-checkoff"
 import { useCheckoff, type CheckoffModel } from "@/components/lab/checkoff/use-checkoff"
 
@@ -48,6 +48,7 @@ function Grid({ m }: { m: CheckoffModel }) {
   // unavailable drops it from the grid; the picker still lists it, greyed, with the reason.
   const columnIds = (chosen ?? m.eligible.slice(0, DEFAULT_COLUMNS).map((k) => k.skill.id)).filter((id) => m.eligible.some((k) => k.skill.id === id))
   const columns = columnIds.map((id) => m.eligible.find((k) => k.skill.id === id)).filter((k): k is NonNullable<typeof k> => !!k)
+  const shared = sharedLevel(columns)
   const toggleColumn = (id: string) => setChosen(columnIds.includes(id) ? columnIds.filter((x) => x !== id) : [...columnIds, id])
   const page = m.rows.slice(0, m.shown)
   // Phone: one skill column at a time, picked in the grid's toolbar, so the grid fits 375 px with no cut column (anatomy A10,
@@ -79,7 +80,10 @@ function Grid({ m }: { m: CheckoffModel }) {
                 </SelectContent>
               </Select>
             ) : null}
-            <div className="sm:ms-auto"><Legend /></div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:ms-auto">
+              {shared ? <p className="text-xs text-muted-foreground" data-shared-level>{`${shared} on this course`}</p> : null}
+              <Legend />
+            </div>
           </CardContent>
           <Table scrollLabel={`Students by ${skillNounPlural()}`} containerClassName="max-h-[min(62dvh,640px)] overflow-auto">
             <TableHeader className="sticky top-0 z-10 bg-card">
@@ -87,7 +91,7 @@ function Grid({ m }: { m: CheckoffModel }) {
                 <TableHead scope="col" className="sticky left-0 z-10 min-w-32 bg-card ps-3 sm:min-w-48">{`Student (${m.rows.length})`}</TableHead>
                 {columns.map((k) => (
                   <TableHead key={k.skill.id} scope="col" className={cn("min-w-36 align-bottom whitespace-normal", phoneOnly(k.skill.id))} data-column-state={k.reason ? "unavailable" : "available"}>
-                    <SkillHead k={k} />
+                    <SkillHead k={k} shared={shared} />
                   </TableHead>
                 ))}
               </TableRow>

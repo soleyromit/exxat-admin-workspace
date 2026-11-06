@@ -68,7 +68,7 @@ describe("concept C, journey pipeline (four engine states over required skill re
 
   it("puts the expected-now tick on the basis and flags sections 8 or more points under it", () => {
     expect(m.tick?.label).toBe("Expected now")
-    expect(m.tick?.pct).toBe(buildDashboard(seed, EMPTY_SCOPE).term.share * 100 > 0 ? Math.round(buildDashboard(seed, EMPTY_SCOPE).term.share * 100) : 0)
+    expect(m.tick?.pct).toBe(Math.round(buildDashboard(seed, EMPTY_SCOPE).pop.expectedShare * 100))
     for (const sec of m.sections) expect(sec.short > 0).toBe(m.tick!.pct - sec.achievedPct >= 8)
     expect(pipelineModel(seed, withBasis(EMPTY_SCOPE, "all")).tick).toBeNull()
     expect(pipelineModel(seed, withBasis(EMPTY_SCOPE, "median")).tick?.label).toBe("Section median")

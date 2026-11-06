@@ -31,7 +31,7 @@ import {
   termShare,
   type ReportFilters,
 } from "@/lib/v2/reports"
-import { createSeed, IDS } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed, IDS } from "@/lib/v2/seed"
 import type { Evaluation, V2State } from "@/lib/v2/types"
 
 const AT = "2026-10-20T10:00:00.000Z"

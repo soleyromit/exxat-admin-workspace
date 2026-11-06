@@ -4,12 +4,14 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@exxatdesignux/ui/components/ui/tooltip"
 import { withNoun } from "@/lib/lab/terms"
 import { PRESENT_PARAM, isPresent } from "@/lib/lab/present"
-import { WALKTHROUGH_EXIT, isWalkthrough, walkthroughPosition } from "@/lib/lab/walkthrough"
+import { WALKTHROUGH_EXIT, isWalkthrough, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
 import { useLabPage } from "./page-context"
 import { usePresent } from "./present"
+import { startAgain } from "./reset"
 
 /**
  * True on a walkthrough step in present mode. Reads only the route and the URL (no router), so lab labels such as the Sample data
@@ -32,52 +34,73 @@ export function useWalkthrough() {
   return React.useMemo(() => (present ? walkthroughPosition(page.flow, page.step, params) : undefined), [present, page.flow, page.step, params])
 }
 
+const chevron = (dir: "left" | "right") => <i className={`fa-light fa-chevron-${dir}`} aria-hidden="true" />
+
 /**
- * The presenter control of a walkthrough: previous, "Step 3 of 5", next (Finish on the last step), Exit. It sits at the end of the
- * utility bar, so it never covers a page's sticky footer or the sidebar, and it is the only lab element on the page. No variant,
- * set, tier, build status, scenario, components drawer or sample label: the step count and the step's own product words only.
+ * The path bar of a walkthrough (D-L64): "Admin walkthrough", Back, the page's name, "N of M", Next, Exit. Nothing else: no persona, flow,
+ * variant, score or scenario. It sits at the end of the utility bar, so it reads as tooling around the product rather than a step rail on
+ * the page (D-L42). The page's own buttons still lead on. Next is a link, so Assign's unsaved-changes guard catches it.
  */
 export function WalkthroughControls() {
   const w = useWalkthrough()
   if (!w) return null
-  // Lab tooling only (the product pages carry no Next, navigation model A, D-L42): names the next step.
-  const nextLabel = w.next ? `Next: ${withNoun(w.next.step.label)}` : "Finish the walkthrough"
+  // The configure pages hang off the Library: the bar reads the stop the admin is on, not a word from the old path (W4).
+  const stop = w.step.screen === "admin/configure-skill" && w.step.after ? w.flow.steps.find((s) => s.id === w.step.after) ?? w.step : w.step
+  const name = withNoun(stop.label)
   return (
-    <div role="group" aria-label="Walkthrough" data-lab-chrome data-lab-walkthrough className="ms-auto flex shrink-0 items-center gap-1">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {w.prev ? (
-            <Button asChild variant="ghost" size="icon-sm" aria-label={`Previous: ${withNoun(w.prev.step.label)}`}>
-              <Link href={w.prev.href} data-walkthrough-prev><i className="fa-light fa-chevron-left" aria-hidden="true" /></Link>
+    <div role="group" aria-label={w.flow.title} data-lab-chrome data-lab-walkthrough className="ms-auto flex min-w-0 shrink-0 items-center gap-1">
+      <span className="hidden whitespace-nowrap px-1 text-sm text-muted-foreground min-[75rem]:inline" data-walkthrough-title>{w.flow.title}</span>
+      {w.prev ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild variant="ghost" size="icon-sm" aria-label={`Back: ${withNoun(w.prev.step.label)}`}>
+              <Link href={w.prev.href} data-walkthrough-prev>{chevron("left")}</Link>
             </Button>
-          ) : (
-            <Button type="button" variant="ghost" size="icon-sm" aria-label="Previous" disabled data-walkthrough-prev>
-              <i className="fa-light fa-chevron-left" aria-hidden="true" />
-            </Button>
-          )}
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{w.prev ? withNoun(w.prev.step.label) : "First step"}</TooltipContent>
-      </Tooltip>
-      <span className="px-1 text-sm tabular-nums text-muted-foreground" aria-current="step" data-walkthrough-position>{`Step ${w.index} of ${w.total}${w.optional ? ", optional" : ""}`}</span>
-      {w.optional && w.next ? (
-        // An optional step (Sankalp: groups of skills are "non mandatory"): Skip, in words, goes to the next step.
-        <Button asChild variant="ghost" size="sm">
-          <Link href={w.next.href} aria-label={`Skip to ${withNoun(w.next.step.label)}`} data-walkthrough-next data-walkthrough-skip>Skip</Link>
-        </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{withNoun(w.prev.step.label)}</TooltipContent>
+        </Tooltip>
       ) : (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button asChild variant="ghost" size="icon-sm" aria-label={nextLabel}>
-            <Link href={w.next ? w.next.href : WALKTHROUGH_EXIT} data-walkthrough-next><i className={w.next ? "fa-light fa-chevron-right" : "fa-light fa-check"} aria-hidden="true" /></Link>
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">{w.next ? withNoun(w.next.step.label) : "Finish"}</TooltipContent>
-      </Tooltip>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label="Back" disabled data-walkthrough-prev>{chevron("left")}</Button>
+      )}
+      <span className="flex items-baseline gap-2 px-1 text-sm" aria-current="step" data-walkthrough-position>
+        <span className="hidden max-w-64 truncate font-medium text-foreground lg:inline" data-walkthrough-name>{name}</span>
+        <span className="whitespace-nowrap tabular-nums text-muted-foreground">{`${w.index} of ${w.total}`}</span>
+      </span>
+      {w.next ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button asChild variant="ghost" size="icon-sm" aria-label={`Next: ${withNoun(w.next.step.label)}`}>
+              <Link href={w.next.href} data-walkthrough-next>{chevron("right")}</Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{withNoun(w.next.step.label)}</TooltipContent>
+        </Tooltip>
+      ) : (
+        <Button type="button" variant="ghost" size="icon-sm" aria-label="Next" disabled data-walkthrough-next>{chevron("right")}</Button>
       )}
       <span aria-hidden="true" className="mx-1 h-5 w-px bg-border" />
-      <Button asChild variant="ghost" size="sm">
-        <Link href={WALKTHROUGH_EXIT} data-walkthrough-exit>Exit</Link>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" variant="ghost" size="sm" className="gap-1.5" data-walkthrough-exit>
+            Exit
+            <i className="fa-light fa-chevron-down text-xs text-muted-foreground" aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={8} data-lab-chrome>
+          {walkthroughPaths().filter((p) => p.id !== w.flow.id).map((p) => (
+            <DropdownMenuItem key={p.id} asChild><Link href={p.href} data-walkthrough-path={p.id}>{p.title}</Link></DropdownMenuItem>
+          ))}
+          <DropdownMenuItem asChild><Link href={WALKTHROUGH_EXIT} data-walkthrough-variants>All variants</Link></DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => startAgain(walkthroughStart(w.flow.id) ?? "/")} data-walkthrough-restart>Start again</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
+}
+
+/** The same path bar on a page whose frame has no utility bar to hold it: a focus workflow (Log a skill), the evaluator's light frame. */
+export function WalkthroughRow() {
+  const w = useWalkthrough()
+  if (!w) return null
+  return <div className="flex h-11 items-center justify-end px-3" data-walkthrough-row><WalkthroughControls /></div>
 }

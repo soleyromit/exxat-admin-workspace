@@ -17,7 +17,8 @@ import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { buildInvitation, EVALUATOR_ID, SEED_REQUEST_ID } from "@/lib/lab/evaluator"
 import { EvLabControls } from "@/components/lab/evaluator/lab-controls"
-import { useLabParams } from "@/components/lab/evaluator/use-evaluator"
+import { useLabParams, useLinkedRequest } from "@/components/lab/evaluator/use-evaluator"
+import { requestLinkQuery } from "@/lib/lab/story-request"
 
 const STATES = [
   { id: "all", label: "All open requests" },
@@ -28,8 +29,11 @@ export function EvaluatorInvitationEmailA() {
   const s = useV2State()
   const hydrated = useV2Hydrated()
   const { get } = useLabParams()
+  // Opened from a student's Send, the email is that one request, to the person it was sent to (one link per request, D-L2).
+  const linked = useLinkedRequest()
+  const sent = linked.id && !linked.pending ? linked.state.submissions.find((x) => x.id === linked.id) ?? null : null
   const single = get("state") === "single"
-  const mail = React.useMemo(() => buildInvitation(s, EVALUATOR_ID, single ? SEED_REQUEST_ID : undefined), [s, single])
+  const mail = React.useMemo(() => (sent ? buildInvitation(linked.state, sent.assignedToId, sent.id) : linked.pending ? null : buildInvitation(s, EVALUATOR_ID, single ? SEED_REQUEST_ID : undefined)), [s, linked.state, single, sent, linked.pending])
   return (
     <>
       <EvLabControls states={STATES} defaultState="all" showSample={false} options={[]} />
@@ -66,8 +70,8 @@ export function EvaluatorInvitationEmailA() {
                             <li key={k}>{k}</li>
                           ))}
                         </ul>
-                        <Button asChild variant="outline" size="default" className="w-full min-h-(--control-height-touch) sm:w-fit">
-                          <Link href="/lab/evaluator/evaluation-form">{`Open ${r.student.split(" ")[0]}'s request`}</Link>
+                        <Button asChild variant={sent ? "default" : "outline"} size="default" className="w-full min-h-(--control-height-touch) sm:w-fit">
+                          <Link href={sent ? `/lab/evaluator/evaluation-form?${requestLinkQuery(sent.id, { student: sent.studentId, skills: sent.skillIds, to: sent.assignedToId })}` : "/lab/evaluator/evaluation-form"}>{`Open ${r.student.split(" ")[0]}'s request`}</Link>
                         </Button>
                       </li>
                     ))}

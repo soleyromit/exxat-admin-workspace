@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
-import { createSeed } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed } from "@/lib/v2/seed"
 import { ROLES, roleForPath } from "@/lib/v2/roles"
 import { STEPS, stepForRoute } from "@/lib/v2/scenario"
 import { COUNTER_BY_ID } from "@/lib/v2/selectors"

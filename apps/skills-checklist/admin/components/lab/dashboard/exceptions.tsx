@@ -7,12 +7,14 @@
  * (FloatingSheetPanel). Bulk selection only where rows are alike (awaiting approval). No hero, no charts of the population.
  */
 import { TYPE } from "@/components/lab/type-scale"
+import { BulkCount } from "@/components/lab/shared/bulk-count"
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
-import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
+import { FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
+import { FloatingSheetPanel } from "@/components/lab/shared/sheet"
 import { DataTablePaginated } from "@exxatdesignux/ui/components/data-table/pagination"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { VIZ } from "@/components/lab/viz"
@@ -308,9 +310,12 @@ export function ExceptionsView({ data, model, scope, lists, tab, onTab, peek, on
               selectable={k === "approval"}
               getRowSelectionLabel={(r: ExceptionRequest) => `${r.student}, ${r.skills}`}
               {...(k === "approval" ? { bulkActionsSlot: (selected: Set<string | number>) => (
-                <Button asChild variant="default" size="sm">
-                  <Link href={withScope("/lab/reviewer/approvals", scope, { keys: [...selected].map(String).join(",") })}>{`Review ${selected.size} in Approvals`}</Link>
-                </Button>
+                <>
+                  <BulkCount n={selected.size} />
+                  <Button asChild variant="default" size="sm">
+                    <Link href={withScope("/lab/reviewer/approvals", scope, { keys: [...selected].map(String).join(",") })}>{`Review ${selected.size} in Approvals`}</Link>
+                  </Button>
+                </>
               ) } : {})}
               emptyState={empty(k === "old" ? "No request has waited 15 days or more" : k === "approval" ? "No submissions await approval in this scope" : "No submissions returned in this scope")}
             />

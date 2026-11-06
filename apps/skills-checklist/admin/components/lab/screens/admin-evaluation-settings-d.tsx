@@ -193,6 +193,7 @@ function RuleSentence({ p, slot, setSlot }: { p: ContextPage; slot: Slot | null;
               id="cfg-counts-from"
               label="Which levels count"
               value={r.carried.minLevelIndex !== null && r.carried.minLevelIndex < levels.length ? String(r.carried.minLevelIndex) : ""}
+              display={r.carried.minLevelIndex !== null && r.carried.minLevelIndex < levels.length ? countsFromOption(r.levels, r.carried.minLevelIndex) : undefined}
               placeholder="choose which levels"
               warn={failsOn(m, ["cfg-counts-from"])}
               onChange={(v) => m.setRule((x) => ({ ...x, carried: { ...x.carried, minLevelIndex: Number(v) } }))}
@@ -331,7 +332,7 @@ function SettingsSurface({ p }: { p: ContextPage }) {
         <SettingsSection id="d-sec-evaluator" title="Evaluator">
           <OutcomesSection {...props} />
           <FeedbackToggle rule={r} setRule={m.setRule} />
-          <GroupCheckOffSection rule={r} setRule={m.setRule} bare />
+          <GroupCheckOffSection rule={r} setRule={m.setRule} />
         </SettingsSection>
         <Separator />
         <SettingsSection id="d-sec-student" title="Student">

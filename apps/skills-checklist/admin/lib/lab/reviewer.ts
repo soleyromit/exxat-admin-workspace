@@ -12,6 +12,7 @@
  * (lib/v2/preceptor.ts:240), so a held evaluation with no other cause is read as "Approval required for {skill}" [INFER: the seed skill configs
  * do not carry the flag].
  */
+import { outcomeQualifiesOn } from "@/lib/v2/rules"
 import type { Evaluation, Person, Skill, Submission, V2State } from "@/lib/v2/types"
 import { appendAudit } from "@/lib/v2/store"
 import { approveItems, compareEvaluation, queueItems, returnItem, ROLE_LABEL, type Agreement, type Comparison, type QueueItem } from "@/lib/v2/queue"
@@ -21,7 +22,7 @@ import { evaluatorChoices, sentElsewhereTo, skillProgress, studentHistory, type 
 import { evalsOfStudent, personById, skillById } from "@/lib/v2/evidence-index"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { populationRows } from "@/lib/v2/population"
-import { SENT_FOR_NEW_EVALUATION_WORD, outcomeWord, sentForNewEvaluationLabel } from "@/lib/v2/labels"
+import { SENT_FOR_NEW_EVALUATION_WORD, outcomeWord, outcomeWordOn, sentForNewEvaluationLabel } from "@/lib/v2/labels"
 import { withScope, type LabScope } from "./scope"
 import { aNoun, capitalize, skillNoun, skillNounPlural } from "./terms"
 
@@ -245,6 +246,8 @@ export interface ReviewRowData {
   because: Array<{ reason: HoldReason; text: string }>
   agreement: Agreement | "none"
   outcome: string
+  /** What that outcome means on its skill, whatever the program calls it [REQ SC-03]; null when the row holds no one outcome. */
+  outcomeRead: "qualifies" | "does-not" | null
   revision: number
   /** Why it cannot be approved now, or null. */
   block: string | null
@@ -293,12 +296,18 @@ function settingText(e: Evaluation | undefined): string {
   return e.setting === "lab" ? "Lab" : "Simulation"
 }
 
-function outcomeOf(evals: Evaluation[], state: QueueItem["state"]): string {
+function outcomeOf(s: V2State, evals: Evaluation[], state: QueueItem["state"]): string {
   if (state === "needs-outcome") return "To enter"
   const set = new Set(evals.map((e) => e.outcome))
   if (set.size > 1) return "Mixed"
   const o = evals[0]?.outcome
-  return o === "met" ? "Met" : o === "not-met" ? "Unmet" : "Not yet"
+  return o ? outcomeWordOn(skillById(s, evals[0].skillId), o) : "Not yet"
+}
+
+/** What the row's one outcome means on its skill, whatever the program calls it [REQ SC-03]; null when it holds no one outcome. */
+function outcomeReadOf(s: V2State, evals: Evaluation[], state: QueueItem["state"]): ReviewRow["outcomeRead"] {
+  if (state === "needs-outcome" || !evals.length || new Set(evals.map((e) => e.outcome)).size > 1 || evals[0].outcome === "not-yet") return null
+  return evals.every((e) => outcomeQualifiesOn(skillById(s, e.skillId), e.outcome)) ? "qualifies" : "does-not"
 }
 
 function agreementOf(cmp: Comparison[]): Agreement | "none" {
@@ -345,7 +354,8 @@ function baseRow(s: V2State, item: QueueItem, evaluations: Evaluation[], days: n
     days,
     aging: days >= AGING_DAYS,
     agreement: agreementOf(cmp),
-    outcome: outcomeOf(evaluations, item.state),
+    outcome: outcomeOf(s, evaluations, item.state),
+    outcomeRead: outcomeReadOf(s, evaluations, item.state),
     revision: item.revision,
     block: item.state === "needs-outcome" ? "Enter the outcome from the paper form first." : null,
     evaluationIds: evaluations.map((e) => e.id),
@@ -386,7 +396,7 @@ function rowOf(s: V2State, e: ApprovalEntry): ReviewRow {
   const b = baseRow(s, merged, e.evaluations, e.days)
   const cmp = e.evaluations.map((x) => compareEvaluation(s, x))
   const row: ReviewRow = { ...b, key: e.key, kind: e.kind, reason: e.cause, reasons: e.causes, why: reasonText(e.cause, b), because: e.causes.map((c) => ({ reason: c, text: reasonExplain(c, b, cmp) })), likeKey: null }
-  if (e.kind === "submission") row.likeKey = !row.block && e.cause === "rule" && row.outcome === "Met" ? "rule-met" : null
+  if (e.kind === "submission") row.likeKey = !row.block && e.cause === "rule" && row.outcomeRead === "qualifies" ? "rule-met" : null
   return row
 }
 
@@ -640,7 +650,7 @@ export function story(state: V2State, d: ItemDetail): StoryStep[] {
         id: `${e.id}-v${v.version}`,
         at: v.at,
         title: v.version === 1 ? `${r.evaluator} ${isCheckoff(r) ? "recorded in a group check-off:" : "signed"} ${skillById(state, e.skillId)?.name ?? `the ${skillNoun()}`}` : `Version ${v.version} recorded`,
-        detail: `${v.outcome === "met" ? "Met" : v.outcome === "not-met" ? "Unmet" : "Not yet"}${v.reason ? `. ${v.reason}` : ""}`,
+        detail: `${outcomeWordOn(skillById(state, e.skillId), v.outcome)}${v.reason ? `. ${v.reason}` : ""}`,
         icon: v.version === 1 ? "fa-signature" : "fa-code-branch",
       })
     }
@@ -706,11 +716,11 @@ export function studentRecord(state: V2State, rows: ReviewRow[], studentId: stri
             ? SENT_FOR_NEW_EVALUATION_WORD
             : e.status === "returned" || e.status === "reopened"
             ? "Returned"
-            : e.outcome === "met"
+            : outcomeQualifiesOn(skillById(state, e.skillId), e.outcome)
               ? "Counted"
-              : e.outcome === "not-met"
-                ? "Unmet"
-                : "Not yet"
+              : e.outcome === "not-yet"
+                ? "Not yet"
+                : "Unmet"
       return { id: e.id, skillId: e.skillId, skill: skillById(state, e.skillId)?.name ?? capitalize(aNoun()), date: e.date, evaluator: ev?.name ?? "An evaluator", evaluatorUnverified: ev?.verified === false, setting: settingText(e), status, queueKey: queueKeyOf.get(e.id) ?? null, version: e.currentVersion }
     })
   const hist = studentHistory(state, studentId)

@@ -7,6 +7,9 @@
  */
 import * as React from "react"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
+import { useLabHref } from "@/components/lab/lab-bar/page-context"
+import { originFor } from "@/lib/lab/configure-origin"
+import { SCOPE_CARRY } from "@/lib/lab/links"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { usePathname, useSearchParams } from "next/navigation"
 import {
@@ -28,8 +31,9 @@ import { PAGE_TITLE_TYPE_CLASS } from "@exxatdesignux/ui/components/ui/page-head
 import { PageFrame } from "@/components/skills/page-header"
 import { evalsOfSkill } from "@/lib/v2/evidence-index"
 import { isConfigured } from "@/lib/v2/population"
+import { configurationOf } from "@/lib/lab/program-settings"
 import { shortDate } from "@/lib/v2/format"
-import { notConfiguredBlock, STATUS_META } from "@/lib/lab/library"
+import { notConfiguredBlock, CONFIGURATION_META } from "@/lib/lab/library"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import type { Skill, V2State } from "@/lib/v2/types"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -39,6 +43,34 @@ export const LIBRARY_HREF = "/lab/admin/skills-library"
 export const libraryReturnHref = (skillId: string, what: "saved" | "draft", base: string = LIBRARY_HREF) => `${base}?skill=${encodeURIComponent(skillId)}&${what}=1`
 export const configureSkillHref = (skillId: string) => `/lab/admin/configure-skill?skill=${encodeURIComponent(skillId)}`
 export const mappingHref = (skillId: string) => `/lab/admin/course-mapping?skill=${encodeURIComponent(skillId)}`
+
+/**
+ * The way back from a configure page (map D1c, D4). Where the admin came from, as it was written; with no record of that (a link opened directly), the Library, staying in the walkthrough the page is on and keeping the page's scope.
+ * `key`: the skill, or the bulk page's `skills` list.
+ */
+export function useWayBack(key: string) {
+  const to = useLabHref()
+  const pathname = usePathname() ?? ""
+  const params = useSearchParams()
+  const origin = originFor(key)
+  const library = React.useCallback((given: Record<string, string> = {}): string => {
+    const extra = Object.fromEntries(Object.entries(given).filter(([, v]) => v))
+    if (pathname.startsWith("/lab/flow/")) return to(LIBRARY_HREF, extra)
+    const q = new URLSearchParams(extra)
+    for (const k of SCOPE_CARRY) { const v = params?.get(k); if (v && !q.has(k)) q.set(k, v) }
+    const s = q.toString()
+    return s ? `${LIBRARY_HREF}?${s}` : LIBRARY_HREF
+  }, [pathname, to, params])
+  const add = (href: string, extra: Record<string, string>) => {
+    const u = new URL(href, window.location.origin)
+    for (const [k, v] of Object.entries(extra)) { if (v) u.searchParams.set(k, v); else u.searchParams.delete(k) }
+    return `${u.pathname}${u.search}`
+  }
+  /** Where a save lands: always the Library (map D1c, D4), with the filters the admin left it on. */
+  const fromLibrary = !!origin && /skills-library|\/lab\/flow\/[^/?]+\/library|^\/(\?|$)/.test(origin.href)
+  const landHref = (extra: Record<string, string>) => (fromLibrary ? add(origin!.href, extra) : library(extra))
+  return { origin, fromLibrary, landHref, cancelHref: (extra: Record<string, string> = {}) => (origin ? add(origin.href, extra) : library(extra)) }
+}
 
 /** Build a URL on the current page with some params changed (null removes one). */
 export function useHref() {
@@ -70,7 +102,7 @@ export const studentsWithEvidence = (state: V2State, skillId: string) => new Set
  */
 export function SkillTitle({ state, skill }: { state: V2State; skill: Skill }) {
   const configured = isConfigured(skill)
-  const spec = STATUS_META[configured ? "configured" : "not-configured"]
+  const spec = CONFIGURATION_META[configurationOf(state, skill)]
   const draft = state.configDrafts?.[skill.id]
   const category = skill.category?.trim()
   // One line (Romit 2026-10-27, "Needs to be in one line"): h1, status chip, then the category as a quiet neutral badge that
@@ -111,10 +143,12 @@ export function SkillTitle({ state, skill }: { state: V2State; skill: Skill }) {
 export function LeaveButton({ dirty, onSaveDraft, skillId, href = LIBRARY_HREF }: { dirty: boolean; onSaveDraft: () => void; skillId: string; href?: string }) {
   const router = useLabRouter()
   const [open, setOpen] = React.useState(false)
+  // Back to the Library with this skill's panel open (map D1a). Another page that opened this one is returned to as it was.
+  const back = href === LIBRARY_HREF ? `${LIBRARY_HREF}?skill=${encodeURIComponent(skillId)}` : href
   if (!dirty) {
     return (
       <Button asChild variant="outline" size="sm">
-        <Link href={href}>Close</Link>
+        <Link href={back}>Close</Link>
       </Button>
     )
   }
@@ -130,7 +164,7 @@ export function LeaveButton({ dirty, onSaveDraft, skillId, href = LIBRARY_HREF }
           onSaveDraft()
           router.push(libraryReturnHref(skillId, "draft", href))
         }}
-        onDiscard={() => router.push(href)}
+        onDiscard={() => router.push(back)}
       />
     </>
   )
@@ -141,7 +175,7 @@ export function LeaveDialog({ open, onOpenChange, onSaveDraft, onDiscard }: { op
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent data-leave-dialog>
         <AlertDialogHeader>
-          <AlertDialogTitle>Leave with unsaved changes?</AlertDialogTitle>
+          <AlertDialogTitle>Discard your changes?</AlertDialogTitle>
           <AlertDialogDescription>{`Save them as a draft to finish later. The ${skillNoun()} keeps its current status until you save the configuration.`}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -149,10 +183,10 @@ export function LeaveDialog({ open, onOpenChange, onSaveDraft, onDiscard }: { op
             Keep editing
           </AlertDialogCancel>
           <AlertDialogAction variant="outline" size="default" onClick={onDiscard}>
-            Discard changes
+            Discard
           </AlertDialogAction>
           <AlertDialogAction variant="default" size="default" onClick={onSaveDraft}>
-            Save draft and leave
+            Save
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -161,20 +195,20 @@ export function LeaveDialog({ open, onOpenChange, onSaveDraft, onDiscard }: { op
 }
 
 /** Cancel with a discard check, for the rule impact pages (no draft to save there). */
-export function CancelButton({ dirty, href = LIBRARY_HREF }: { dirty: boolean; href?: string }) {
+export function CancelButton({ dirty, href = LIBRARY_HREF, label = "Cancel" }: { dirty: boolean; href?: string; label?: string }) {
   const router = useLabRouter()
   const [open, setOpen] = React.useState(false)
   if (!dirty) {
     return (
       <Button asChild variant="outline" size="sm">
-        <Link href={href}>Cancel</Link>
+        <Link href={href}>{label}</Link>
       </Button>
     )
   }
   return (
     <>
       <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
-        Cancel
+        {label}
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>

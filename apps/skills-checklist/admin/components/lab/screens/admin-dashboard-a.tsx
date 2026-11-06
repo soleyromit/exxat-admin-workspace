@@ -6,7 +6,7 @@
  * plain titles, cover what the dashboard should answer):
  *   1. Students at risk: behind by cohort (Compare with sits on this tile, the figure it changes), skills holding students
  *      back, sections furthest behind. The only charts in the first viewport (D-X21: 3; 2026-10-30).
- *   1b. Progress this term: placements ending soon, required this term and to graduate, evaluations per week (moved out of
+ *   1b. Progress this term: placements ending soon, required this term and all assigned, evaluations per week (moved out of
  *      group 1 on 2026-10-30 to meet the 3-chart budget; nothing dropped).
  *   2. Work queues: oldest requests by site, days awaiting approval, returned and long-waiting requests, evaluators not yet
  *      verified.
@@ -16,6 +16,7 @@
  * lib/lab/attainment.ts). Demo states: ?state=loading|empty|clear|error|partial|stale.
  */
 import * as React from "react"
+import { populationRows } from "@/lib/v2/population"
 import { NEW_EVALUATORS_HREF } from "@/lib/lab/admin-ia"
 import { DashboardPage, type DashboardContext } from "@/components/lab/dashboard/frame"
 import { CardError, NeedsYou, SetupHero, setupOnly } from "@/components/lab/dashboard/cards"
@@ -70,8 +71,8 @@ function Board({ ctx }: { ctx: DashboardContext }) {
     return placementsEnding(data, model.pop.ids).map((p) => ({ id: p.id, studentId: p.studentId, student: data.people.find((x) => x.id === p.studentId)?.name ?? p.studentId, location: p.location, daysLeft: daysLeftIn(p), behind: behind.has(p.studentId) }))
   }, [data, model.pop.ids, model.behind])
   const thisTerm = React.useMemo(() => buildAttainment(data, scope), [data, scope])
-  const toGraduate = React.useMemo(() => buildAttainment(data, scope, DEMO_TODAY, { basis: "toGraduate" }), [data, scope])
-  const termSet = { achieved: model.pop.rows.reduce((t, r) => t + r.achieved, 0), total: model.pop.rows.reduce((t, r) => t + r.required, 0) }
+  const allAssigned = React.useMemo(() => buildAttainment(data, scope, DEMO_TODAY, { basis: "assigned" }), [data, scope])
+  const termSet = React.useMemo(() => { const rows = populationRows(data, scope, DEMO_TODAY, { set: "term" }).rows; return { achieved: rows.reduce((t, r) => t + r.achieved, 0), total: rows.reduce((t, r) => t + r.required, 0) } }, [data, scope])
   const stud = (id: string) => studentHref(scope, id)
   // Compare with sits on the tile whose figure it changes (Romit 2026-10-27); the basis itself stays an open seam (D-X10).
   const compare = { label: "Compare with", value: model.basis, options: BASES.map((b) => ({ value: b, label: BASIS_LABEL[b] })), onChange: (v: string) => setScope(withBasis(scope, v as Basis)) }
@@ -88,7 +89,7 @@ function Board({ ctx }: { ctx: DashboardContext }) {
           pace rather than who is at risk now. Nothing dropped; they open the same lists. */}
       <Group id="group-progress" title="Progress this term">
         <PlacementsEndingTile rows={ending} days={PLACEMENT_ENDING_DAYS} scope={scope} studentHref={stud} />
-        <RequiredSetsTile term={termSet} graduate={{ achieved: toGraduate.totals.achieved, total: toGraduate.total }} termHref={attainmentHref(scope, { required: "term" })} graduateHref={attainmentHref(scope, { required: "graduate" })} />
+        <RequiredSetsTile term={termSet} assigned={{ achieved: allAssigned.totals.achieved, total: allAssigned.total }} termHref={attainmentHref(scope, { required: "term" })} assignedHref={attainmentHref(scope, { required: "assigned" })} />
         <FlowTile scope={scope} weeks={weeks} />
       </Group>
       <Group id="group-queues" title="Work queues" cols={4}>

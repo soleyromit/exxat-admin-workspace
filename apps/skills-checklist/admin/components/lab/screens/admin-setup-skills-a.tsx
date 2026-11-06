@@ -5,6 +5,7 @@
  * exxat-wizard.mdc). Romit 2026-11-03: "I am not understanding the flows... when there is a step based flow, a user knows what
  * to expect next, here it's unclear."
  *
+ * - Variant D (admin-setup-skills-d.tsx, D-L46) is this workflow with the list as step 1 and the vertical rail on the left.
  * - Own route, no sidebar, no breadcrumbs (components/lab/focus-frame.tsx). One h1 (DS PageHeader) with Save and exit; a
  *   horizontal DS WizardNav across the top (Romit 2026-11-04: "Why are we showing the wizard beside the skills table directly?"),
  *   so every step body has the full width. Done, current, not yet; only done steps are clickable. The DS horizontal rail draws no
@@ -50,21 +51,19 @@ import {
   type SetupProgress,
   type SetupStepId,
 } from "@/lib/lab/setup-wizard"
-import { LabPageProvider, useLabHref, useLabPage } from "@/components/lab/lab-bar/page-context"
+import { useLabHref } from "@/components/lab/lab-bar/page-context"
 import { EmbeddedStepProvider, type EmbeddedStep } from "@/components/lab/layout/embedded"
 import { TYPE } from "@/components/lab/type-scale"
 import { useSetupResult } from "@/components/lab/admin-a/result-parts"
-import { ListsFrame, type ListsContext } from "@/components/lab/admin-a/lists-frame"
-import { V2StoreProvider } from "@/lib/v2/react"
-import { createV2Store } from "@/lib/v2/store"
-import { NEW_PROGRAM_SPACE, NEW_PROGRAM_STORE_KEY, newProgramSeed } from "@/lib/lab/new-program"
-import { listsStore, mappingStore, addedEvaluatorsStore } from "@/components/lab/admin-a/use-admin-data"
-import { setSessionSpace } from "@/components/lab/admin-a/session-store"
+import { ListsFrame } from "@/components/lab/admin-a/lists-frame"
+import { GroupsActionTable } from "@/components/lab/admin-a/lists-groups-table"
+import { useV2Store } from "@/lib/v2/react"
 import { useLabEvent } from "@/components/lab/lab-bar/use-lab-event"
 import { SkillsAddStep } from "@/components/lab/setup/skills-add-step"
+import { SkillsListStep, type GateCue } from "@/components/lab/setup/skills-list-step"
+import { NEW_PROGRAM, NewProgramScope, PROGRAM_PARAM, resetNewProgram } from "@/components/lab/setup/new-program-scope"
 import { AdminCategoriesTagsA } from "@/components/lab/screens/admin-categories-tags-a"
-import { AdminEvaluationSettingsD } from "@/components/lab/screens/admin-evaluation-settings-d"
-import { AssignOne } from "@/components/lab/screens/admin-lists-cohorts-a"
+import { AdminEvaluationSettingsB } from "@/components/lab/screens/admin-evaluation-settings-b"
 import { AdminCourseMappingB } from "@/components/lab/screens/admin-course-mapping-b"
 
 const WARN_TEXT = "text-[var(--status-badge-warning-fg)]"
@@ -73,7 +72,7 @@ const WARN_TEXT = "text-[var(--status-badge-warning-fg)]"
 function gateMessage(id: SetupStepId): string {
   const nounPl = skillNounPlural()
   if (id === "skills") return `No ${nounPl} yet. Add at least one.`
-  if (id === "settings") return "Evaluation settings are not saved. Complete the sentence."
+  if (id === "settings") return "Evaluation settings are not saved. Complete them and save."
   return `No student group has ${nounPl}. Assign at least one.`
 }
 
@@ -109,35 +108,28 @@ function useSetupFacts(): { facts: SetupFacts & { settingsAt: string | null }; r
 }
 
 /**
- * The new program's own data: a store with its own key and seed, and the session space its lists and mapping edits live in. The
- * space is set before the workflow renders and handed back when it leaves.
+ * Step 1 comes in two designs on one wizard: "add" (variant C, D-L44: ways to add, then the skills added) and "list" (variant D,
+ * D-L46, Proposed: the list is the page, add row on top, edit and remove in place). Everything else is shared, so the two compare
+ * on step 1 alone. Both run on the new program (components/lab/setup/new-program-scope.tsx).
  */
-export function AdminSetupSkillsA() {
-  const [store] = React.useState(() => createV2Store({ key: NEW_PROGRAM_STORE_KEY, seed: newProgramSeed }))
-  const [ready, setReady] = React.useState(false)
-  React.useLayoutEffect(() => {
-    setSessionSpace(NEW_PROGRAM_SPACE)
-    setReady(true)
-    return () => setSessionSpace("")
-  }, [])
-  // Lab bar "Start over": the new program goes back to empty and the workflow to step 1.
-  useLabEvent("lab:reset", () => {
-    store.reset()
-    listsStore.reset()
-    mappingStore.reset()
-    addedEvaluatorsStore.reset()
-    try { window.localStorage.removeItem(SETUP_STORAGE_KEY) } catch { /* blocked storage */ }
-    window.location.assign(`${window.location.pathname}?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), step: "skills" }).toString()}`)
-  })
-  if (!ready) return null
+export type SkillsStepDesign = "add" | "list"
+
+export function AdminSetupSkillsA({ skillsStep = "add" }: { skillsStep?: SkillsStepDesign }) {
   return (
-    <V2StoreProvider store={store}>
-      <SetupWorkflow />
-    </V2StoreProvider>
+    <NewProgramScope>
+      <SetupWorkflow skillsStep={skillsStep} />
+    </NewProgramScope>
   )
 }
 
-function SetupWorkflow() {
+function SetupWorkflow({ skillsStep }: { skillsStep: SkillsStepDesign }) {
+  const store = useV2Store()
+  // Lab bar "Start over": the new program goes back to empty and the workflow to step 1.
+  useLabEvent("lab:reset", () => {
+    resetNewProgram(store)
+    window.location.assign(`${window.location.pathname}?${new URLSearchParams({ ...Object.fromEntries(new URLSearchParams(window.location.search)), step: "skills" }).toString()}`)
+  })
+  const variantId = skillsStep === "list" ? "D" : "C"
   const params = useSearchParams()
   const pathname = usePathname() ?? ""
   const router = useRouter()
@@ -176,8 +168,8 @@ function SetupWorkflow() {
   }, [params, pathname, router])
 
   const progress: SetupProgress = { current, skipped }
-  // Every move is saved, so leaving by any route resumes here.
-  React.useEffect(() => { if (ready) writeStored({ current, skipped }) }, [ready, current, skipped])
+  // Every move is saved, so leaving by any route resumes here, in the same design.
+  React.useEffect(() => { if (ready) writeStored({ current, skipped, variant: variantId }) }, [ready, current, skipped, variantId])
 
   const advance = React.useCallback(() => {
     const n = nextStep({ current, skipped }, facts)
@@ -189,7 +181,10 @@ function SetupWorkflow() {
 
   // A gate message goes once the gate is met (a skill added, a group assigned).
   React.useEffect(() => { if (failed && gateMet(failed, facts)) setFailed(null) }, [failed, facts])
+  // The list design (D) says a failed Next under its add row and moves focus there; the nonce re-fires it on every press.
+  const [gateCue, setGateCue] = React.useState<GateCue>(null)
   const moveOn = () => {
+    if (skillsStep === "list" && step.id === "skills" && !gateMet("skills", facts)) { setGateCue({ at: Date.now() }); return }
     if (fromReview && step.id !== "review" && gateMet(step.id, facts) && canOpen(stepIndex("review"), facts)) { setFromReview(false); go(stepIndex("review")); return }
     if (gateMet(step.id, facts)) { advance(); return }
     setFailed(step.id)
@@ -218,9 +213,11 @@ function SetupWorkflow() {
     go(n.current)
   }
   const onBack = () => go(backStep(progress).current)
-  const library = () => to("admin/skills-library")
-  const saveAndExit = () => { writeStored({ current, skipped }); router.push(library()) }
-  const finish = () => { writeStored({ current, skipped, finished: true }); router.push(library()) }
+  // Exit lands on the Library opened on the new program (?program=new), so the admin sees their own skills and the resume cue,
+  // not the seeded program's (bug fix 2026-11-04).
+  const library = () => to("admin/skills-library", { [PROGRAM_PARAM]: NEW_PROGRAM })
+  const saveAndExit = () => { writeStored({ current, skipped, variant: variantId }); router.push(library()) }
+  const finish = () => { writeStored({ current, skipped, finished: true, variant: variantId }); router.push(library()) }
   const openFromReview = (id: SetupStepId, extra?: Record<string, string>) => {
     const i = stepIndex(id)
     if (!canOpen(i, facts)) return
@@ -228,11 +225,15 @@ function SetupWorkflow() {
     go(i, extra)
   }
 
-  // The DS horizontal rail draws the label only, so the state word rides in it: which steps can be passed, and which were.
-  const steps: WizardStep[] = SETUP_STEPS.map((s) => ({
-    id: s.id,
-    label: skipped.includes(s.id) ? `${stepLabel(s.id, s.label)} (skipped)` : s.optional ? `${stepLabel(s.id, s.label)} (optional)` : stepLabel(s.id, s.label),
-  }))
+  // Variant D (Romit 2026-11-04): the vertical rail, which draws a step description, so the state word goes there. Variant C keeps
+  // the horizontal rail, which draws the label only, so the state word rides in the label.
+  const vertical = skillsStep === "list"
+  const steps: WizardStep[] = SETUP_STEPS.map((s) => {
+    const state = skipped.includes(s.id) ? "skipped" : s.optional ? "optional" : null
+    const label = stepLabel(s.id, s.label)
+    if (vertical) return { id: s.id, label, ...(state ? { description: capitalize(state) } : {}) }
+    return { id: s.id, label: state ? `${label} (${state})` : label }
+  })
 
   // Kept header actions (the library's Add a skill) sit on the step heading row; links that would leave the workflow (Map to
   // courses, Setup summary) and Evaluation settings' Save (run by Next) are dropped.
@@ -245,19 +246,22 @@ function SetupWorkflow() {
 
   const isLast = current === SETUP_STEPS.length - 1
   const primaryLabel = isLast ? "Finish" : step.id === "settings" ? (fromReview ? "Save and review" : "Save and continue") : fromReview ? "Return to review" : "Next"
-  const heading = stepLabel(step.id, step.label)
+  // The list design counts on the heading ("Skills (150)"): the one figure on the step.
+  const heading = skillsStep === "list" && step.id === "skills" ? `${stepLabel(step.id, step.label)} (${facts.skills.toLocaleString("en-US")})` : stepLabel(step.id, step.label)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col" data-page-type="wizard" data-admin-lab="setup-skills-A" data-setup-step={step.id}>
+    <div className="flex min-h-0 flex-1 flex-col" data-page-type="wizard" data-admin-lab={skillsStep === "list" ? "setup-skills-D" : "setup-skills-A"} data-setup-step={step.id}>
       <PageHeader
         title={`Set up ${skillNounPlural()}`}
         actions={<Button type="button" variant="outline" size="sm" onClick={saveAndExit}>Save and exit</Button>}
         className="px-4 pt-5 pb-0 md:px-6"
       />
-      <Wizard steps={steps} current={current} orientation="horizontal" variant="numbered" linear onStepClick={(i) => go(i)} className="min-h-0 flex-1 gap-0">
-        <div className="flex min-h-0 flex-1 flex-col gap-6 px-4 pt-4 pb-6 md:px-6">
-          <div className="min-w-0 border-b border-border pb-4" data-region="rail">
-            <WizardNav />
+      {/* The footer stays under both columns, so the DS row layout for a vertical rail moves to the inner row. */}
+      <Wizard steps={steps} current={current} orientation={vertical ? "vertical" : "horizontal"} variant="numbered" linear onStepClick={(i) => go(i)} className="min-h-0 flex-1 gap-0 lg:flex-col lg:items-stretch lg:gap-0">
+        <div className={cn("flex min-h-0 flex-1 flex-col gap-6 px-4 pt-4 pb-6 md:px-6", vertical && "lg:flex-row lg:items-start lg:gap-8")}>
+          <div className={cn("min-w-0 border-b border-border pb-4", vertical && "lg:sticky lg:top-14 lg:w-60 lg:shrink-0 lg:border-b-0 lg:pb-0")} data-region="rail">
+            {/* The DS caps a rail of more than 5 steps at 24rem and scrolls it, which cut Review off; six steps fit as they are. */}
+            <WizardNav className={vertical ? "max-h-none overflow-visible" : undefined} />
           </div>
           <WizardContent className="min-w-0">
             <section aria-labelledby={`wizard-step-heading-${step.id}`} className="flex min-w-0 flex-col gap-4 [&_[class*=dvh-5]]:min-h-0" data-region="step">
@@ -266,7 +270,7 @@ function SetupWorkflow() {
                 <div ref={setActionsTarget} className="flex flex-wrap items-center gap-2 empty:hidden" data-step-actions />
               </div>
               <EmbeddedStepProvider value={embedded}>
-                <StepBody id={step.id} skipped={skipped} onOpen={openFromReview} />
+                <StepBody id={step.id} skipped={skipped} onOpen={openFromReview} skillsStep={skillsStep} gateCue={gateCue} />
               </EmbeddedStepProvider>
             </section>
           </WizardContent>
@@ -289,41 +293,18 @@ function SetupWorkflow() {
   )
 }
 
-function StepBody({ id, skipped, onOpen }: { id: SetupStepId; skipped: SetupStepId[]; onOpen: (id: SetupStepId, extra?: Record<string, string>) => void }) {
-  if (id === "skills") return <SkillsAddStep />
+function StepBody({ id, skipped, onOpen, skillsStep, gateCue }: { id: SetupStepId; skipped: SetupStepId[]; onOpen: (id: SetupStepId, extra?: Record<string, string>) => void; skillsStep: SkillsStepDesign; gateCue: GateCue }) {
+  if (id === "skills") return skillsStep === "list" ? <SkillsListStep gateCue={gateCue} /> : <SkillsAddStep />
   if (id === "categories") return <AdminCategoriesTagsA />
-  if (id === "settings") return <AdminEvaluationSettingsD />
+  if (id === "settings") return <AdminEvaluationSettingsB />
   if (id === "assign") return <AssignStep />
   if (id === "mapping") return <AdminCourseMappingB />
   return <ReviewStep skipped={skipped} onOpen={onOpen} />
 }
 
-/**
- * Groups and assignment: the assign step's own body (which students track which skills, by a group of skills or individual
- * skills) and New group of skills. The Groups of skills table (size, assigned to, students linking to Reports, status, the row
- * menu with Make default, Duplicate, Completion rule and Delete) is hub management and stays on the hub page. The page context
- * says "assign" so the lists frame draws its assign mode.
- */
+/** Skill lists: the same page, table and panel as the hub, so Add students is the same dialog here (designer 2026-11-05, D-L106). The wizard's Next has nothing to save: everything acts at once. */
 function AssignStep() {
-  const page = useLabPage()
-  const assignPage = React.useMemo(() => ({ ...page, step: "assign" }), [page])
-  return (
-    <LabPageProvider page={assignPage}>
-      <ListsFrame variant="setup">{(c) => <AssignBody c={c} />}</ListsFrame>
-    </LabPageProvider>
-  )
-}
-
-function AssignBody({ c }: { c: ListsContext }) {
-  const nounPl = skillNounPlural()
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <Button type="button" variant="outline" size="sm" onClick={() => c.actions.openNew(null)} data-new-group>{`New group of ${nounPl}`}</Button>
-      </div>
-      <AssignOne c={c} />
-    </div>
-  )
+  return <ListsFrame variant="setup">{(c) => <GroupsActionTable c={c} />}</ListsFrame>
 }
 
 type ReviewState = "done" | "attention" | "skipped" | "optional"
@@ -335,7 +316,7 @@ const STATE_BADGE: Record<ReviewState, { label: string; tone: "neutral" | "warni
 }
 
 /**
- * Review: one row per wizard step, in the rail's words (the Setup summary recap's figures regrouped by step: Groups of skills and
+ * Review: one row per wizard step, in the rail's words (the Setup summary recap's figures regrouped by step: Skill lists and
  * Assign are one step here). Only a required step can need attention; an optional step reads Skipped, Optional (with what is
  * left as a plain count) or Done. Every name and figure reopens its step inside this workflow, whose primary then returns here.
  */
@@ -366,7 +347,7 @@ function ReviewStep({ skipped, onOpen }: { skipped: SetupStepId[]; onOpen: (id: 
     {
       key: "step",
       label: "Step",
-      width: 220,
+      width: 170,
       cell: (r) => (
         <Button type="button" variant="link" size="sm" className="h-auto p-0 font-medium" onClick={() => onOpen(r.def.id, r.params)} data-review-row={r.def.id}>
           {stepLabel(r.def.id, r.def.label)}
@@ -376,14 +357,14 @@ function ReviewStep({ skipped, onOpen }: { skipped: SetupStepId[]; onOpen: (id: 
     {
       key: "state",
       label: "State",
-      width: 180,
+      width: 140,
       cell: (r) => {
         const b = STATE_BADGE[r.state]
         return <StatusBadge label={b.label} tone={b.tone} icon={b.icon} size="sm" surface="table" />
       },
     },
-    { key: "fixes", label: "To do", width: 300, cell: (r) => figures(r.def.id, r.fixes) },
-    { key: "inPlace", label: "In place", cell: (r) => figures(r.def.id, r.inPlace) },
+    { key: "fixes", label: "To do", width: 280, cell: (r) => figures(r.def.id, r.fixes) },
+    { key: "inPlace", label: "In place", width: 340, cell: (r) => figures(r.def.id, r.inPlace) },
   ]
   return (
     <div data-region="recap">

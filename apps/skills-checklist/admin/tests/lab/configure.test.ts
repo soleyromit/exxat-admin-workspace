@@ -170,9 +170,6 @@ describe("configure: impact over the real dataset (123 students)", () => {
     expect(im.changed[0].before).toBe("achieved")
     expect(im.changed[0].left.length).toBeGreaterThan(0)
   })
-  it("new evidence only changes nobody now", () => {
-    expect(computeImpact(s, MED, before, after, "new-only").changed).toHaveLength(0)
-  })
   it("renaming labels changes nobody [AE-06]", () => {
     expect(computeImpact(s, MED, before, { ...before, outcomeLabels: ["Pass", "Fail"] }).changed).toHaveLength(0)
   })
@@ -192,7 +189,7 @@ describe("configure: impact over the real dataset (123 students)", () => {
 describe("configure: five steps and where each check lives", () => {
   it("has five short steps named the way the client says them, Check last", () => {
     // One vocabulary with Evaluation settings (2026-11-02).
-    expect(CONFIGURE_STEPS.map((x) => x.label)).toEqual(["How skills are judged", "What counts as achieved", "How many evaluations", "Who signs", "Check and save"])
+    expect(CONFIGURE_STEPS.map((x) => x.label)).toEqual(["How skills are judged", "What counts as achieved", "How many evaluations", "Who does what", "Check and save"])
     expect(CONFIGURE_STEPS.map((x) => x.id)).toEqual(["model", "outcomes", "rule", "signoff", "check"])
     expect(CONFIGURE_STEPS.every((x) => x.label.split(" ").length <= 4)).toBe(true)
     // The step keeps one name for every model; what it holds is named inside it.
@@ -253,7 +250,7 @@ describe("configure: ties are said once (J7)", () => {
 
 describe("configure: Oct 26 call updates", () => {
   it("offers the three criteria types in the client's words first, Scored fourth and Proposed, nothing preselected", () => {
-    expect(LAB_MODELS.map((m) => MODEL_LABEL[m])).toEqual(["Approved or not approved", "Questions, then a final result", "Independence level", "Scored"])
+    expect(LAB_MODELS.map((m) => MODEL_LABEL[m])).toEqual(["Approved or not approved", "Questions", "Independence level", "Score on a scale"])
     expect([...PROPOSED_MODELS]).toEqual([])
     expect(emptyRule().model).toBeNull()
   })

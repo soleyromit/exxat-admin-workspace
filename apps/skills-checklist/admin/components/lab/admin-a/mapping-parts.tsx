@@ -1,32 +1,32 @@
 "use client"
 
 /**
- * Course mapping building blocks: the offerings list, one offering's skills with a level per skill, the required-skills coverage
- * matrix, and the skill-centric list and panel. DS DataTable throughout; the level is a DS Select; the state is glyph + word.
- * Unconfigured skills show "Not configured" in the level cell, a link to configure them [REQ IM-09] (the line above the table that repeated it was cut, 2026-10-27).
+ * Course mapping building blocks (rebuilt 2026-11-05, the designer asked for this page to be better): two panes, a light list on the left and
+ * one table on the right. The offerings table groups by course and cohort with the DS table's own group rows, so each offering stays its own
+ * row [REQ CM-08] and the course name is not repeated. The level is a DS Select. Skills not configured are out of both views, with one note
+ * [REQ IM-09]. Coverage is a table by student group [D-L77].
  */
 import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
+import { ScrollRegion } from "@exxatdesignux/ui/components/ui/scroll-region"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
-import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
+import { useTableState } from "@exxatdesignux/ui/components/data-table/use-table-state"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
-import { configureHref, notConfiguredBlock } from "@/lib/lab/library"
+import { cn } from "@exxatdesignux/ui/lib/utils"
 import {
+  LEVELS,
   LEVEL_LABEL,
-  LEVEL_SOURCE_LABEL,
-  type LevelSource,
+  changeKey,
+  levelRank,
   mappingLink,
   offeringById,
   filterSkillOfferings,
   offeringsForSkill,
-  setLevel,
+  setLevelAcross,
   setLevels,
   skillRowsFor,
-  type Coverage,
-  type CoverageRow,
   type MapLevel,
   type MappingOverlay,
   type OfferingRow,
@@ -35,520 +35,481 @@ import {
   type SkillReachRow,
 } from "@/lib/lab/mapping"
 import { listsForCohort, listsHref, type SkillList } from "@/lib/lab/lists"
-import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, skillListsNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { V2State } from "@/lib/v2/types"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { ScrollLabel } from "@/components/lab/layout/scroll-label"
-import { AmberMark, FilterSelect, LINK, LevelGlyph, LevelLegend, LevelSelect, LiveNote, PaneHeading, SearchField, fmt, plural, type FilterField } from "./parts"
+import { useEmbeddedStep } from "@/components/lab/layout/embedded"
+import { MappingSaveBar } from "./mapping-frame"
+import { AppliedFilterChips, BulkLevelBar, ChangedDot, FilterSelect, FiltersControl, LINK, LevelLegend, LevelSelect, PaneHeading, SearchField, type FilterField } from "./parts"
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Offerings list (left pane of variant A)
+// The two panes
 
-export function OfferingsTable({ rows, selectedId, hrefFor, onSelect, note }: { rows: OfferingRow[]; selectedId: string; hrefFor: (id: string) => string; onSelect: (id: string) => void; note?: React.ReactNode }) {
-  const columns = React.useMemo<ColumnDef<OfferingRow>[]>(
-    () => [
-      {
-        key: "code",
-        label: "Offering",
-        width: 236,
-        sortable: true,
-        cell: (r) => (
-          <span className="flex min-w-0 flex-col py-0.5">
-            <span className="flex min-w-0 items-baseline gap-1.5">
-              <Link className={`${LINK} shrink-0`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined}>
-                {r.code}
-              </Link>
-              <span className="truncate text-xs text-muted-foreground" title={`${r.cohort} · Year ${r.professionalYear}`}>{`${r.cohort} · Year ${r.professionalYear}`}</span>
-            </span>
-            <span className="truncate text-xs text-muted-foreground" title={r.name}>{r.name}</span>
-          </span>
-        ),
-      },
-      { key: "mapped", label: "Mapped", width: 84, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.mapped)}</span> },
-      { key: "mandatory", label: "Mandatory", width: 100, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.mandatory)}</span> },
-    ],
-    [hrefFor, selectedId],
-  )
+/** A row's link moves within the page: unsaved levels stay, and inside Set up skills the workflow stays. A modified click still opens a new tab. */
+export function inPlace(e: React.MouseEvent, select: () => void) {
+  e.stopPropagation()
+  if (e.metaKey || e.ctrlKey || e.shiftKey) return
+  e.preventDefault()
+  select()
+}
+
+/** About 300 px on the left, the rest on the right. Below lg one pane shows at a time: the list, then the detail it leads to. */
+export function TwoPane({ left, right, showDetail }: { left: React.ReactNode; right: React.ReactNode; showDetail: boolean }) {
+  // One pane at a time shares one scroller, so a row picked far down the list would open its detail just as far down. The detail opens at the top; the way back returns to the row.
+  const listTop = React.useRef(0)
+  React.useLayoutEffect(() => {
+    if (window.matchMedia("(min-width: 64rem)").matches) return
+    const page = document.querySelector<HTMLElement>("[data-page-scroll]")
+    if (page) page.scrollTop = showDetail ? 0 : listTop.current
+  }, [showDetail])
   return (
-    <div data-region="offerings" className="flex min-w-0 flex-col gap-2">
-      {note}
-      <ScrollLabel label="Offerings">
-      <DataTable<OfferingRow>
-        data={rows}
-        columns={columns}
-        getRowId={(r) => r.id}
-        openRowId={selectedId || null}
-        onRowClick={(r) => onSelect(r.id)}
-        searchable={false}
-        showQueryControls={false}
-        edgeInset={false}
-        emptyState={<EmptyBlock compact title="No offerings match these filters" body="Clear a filter to see more." />}
-      />
-      </ScrollLabel>
+    <div
+      className="grid min-w-0 gap-6 lg:grid-cols-[18.75rem_minmax(0,1fr)]"
+      data-two-pane
+      onClickCapture={() => {
+        if (showDetail) return
+        listTop.current = document.querySelector<HTMLElement>("[data-page-scroll]")?.scrollTop ?? 0
+      }}
+    >
+      {/* The DS's pinned group row is a window with a fixed bottom border, so the group row arriving beneath it passes behind that line, text included. The line moves onto the pinned bar, which leaves with its group. The window is portalled to the body, hence a mark on the page rather than a selector under the table. No DS prop reaches it. */}
+      <style>{`body:has([data-two-pane]) [aria-hidden="true"]:has(> [data-dt-group-bar]){border-bottom-width:0}body:has([data-two-pane]) [aria-hidden="true"] > [data-dt-group-bar]{box-shadow:inset 0 -1px 0 var(--border)}`}</style>
+      <div className={cn("min-w-0 flex-col gap-2 lg:sticky lg:top-4 lg:flex lg:h-[calc(100dvh-13rem)] lg:min-h-96 lg:self-start lg:border-e lg:border-border lg:pe-2", showDetail ? "hidden" : "flex")} data-pane="list">
+        {left}
+      </div>
+      <div className={cn("min-w-0 lg:block", showDetail ? "block" : "hidden")} data-pane="detail">
+        {right}
+      </div>
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// One offering's skills (right pane of variant A)
+export interface PickRow {
+  id: string
+  name: string
+  meta: string
+  /** The plain figure on the right; none reads as a muted dash. */
+  count: number
+  /** The word after the figure, in its tooltip and accessible name: courses on By skill, so "2" is not read against 4 offerings. */
+  countLabel: string
+  /** The same when the figure is none. */
+  noneLabel: string
+  href: string
+}
 
-type Show = "" | "mapped" | "mandatory" | "recommended" | "optional" | "required"
-const SHOW_OPTS = [
-  { value: "mapped", label: "Mapped" },
-  { value: "mandatory", label: LEVEL_LABEL.mandatory },
-  { value: "recommended", label: LEVEL_LABEL.recommended },
-  { value: "optional", label: LEVEL_LABEL.optional },
-  { value: "required", label: "Required to graduate" },
-]
+/** Past about this many characters a name no longer fits the 300 px pane, so the row carries a tooltip with all of it. */
+const NAME_FITS = 28
 
-/** A quiet "Set by list" beside a level inherited from a list assigned to the cohort (lib/lab/mapping.ts resolvedLevels), with why. */
-export const SET_BY_LIST_TIP = "This level comes from the list assigned to the cohort. Change it here for this course only."
-export function FromListTag({ source }: { source: LevelSource | null }) {
-  if (source !== "list") return null
+/** A name cut off by its cell, in a DS Tip that opens on hover and on keyboard focus, only while it is cut off. The child must take a ref and be focusable. */
+function FullName({ name, children }: { name: string; children: React.ReactElement<{ ref?: React.Ref<HTMLElement> }> }) {
+  const [cut, setCut] = React.useState(false)
+  const ref = React.useRef<HTMLElement | null>(null)
+  React.useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const read = () => setCut(el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight)
+    read()
+    const seen = new ResizeObserver(read)
+    seen.observe(el)
+    return () => seen.disconnect()
+  }, [])
+  return <Tip label={name} disabled={!cut}>{React.cloneElement(children, { ref })}</Tip>
+}
+
+/** The level's own place in a row: the unsaved dot's space is always held, so the select does not move or narrow when the dot appears. */
+function DotSlot({ on }: { on: boolean }) {
+  return <span className="inline-flex size-4 shrink-0" data-dot-slot>{on ? <ChangedDot /> : null}</span>
+}
+
+/** The left pane's list: rows of even height, name truncated with a tooltip, category beneath, a plain count on the right. It scrolls on its own. */
+export function PickList({ label, rows, selectedId, onSelect, empty }: { label: string; rows: PickRow[]; selectedId: string; onSelect: (id: string) => void; empty: React.ReactNode }) {
+  // The list keeps its order; the selected row is brought into view inside the list, and the page does not scroll.
+  const listRef = React.useRef<HTMLUListElement>(null)
+  const hasRows = rows.length > 0
+  React.useLayoutEffect(() => {
+    const row = selectedId ? listRef.current?.querySelector<HTMLElement>(`[data-pick-row="${CSS.escape(selectedId)}"]`) : null
+    let box = row?.parentElement ?? null
+    while (box && box.scrollHeight <= box.clientHeight) box = box.parentElement
+    if (!row || !box || !box.closest("[data-pick-list]")) return
+    const r = row.getBoundingClientRect()
+    const b = box.getBoundingClientRect()
+    if (r.top < b.top) box.scrollTop -= b.top - r.top
+    else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom
+  }, [selectedId, hasRows])
+  // One Tab stop for the whole list, arrows inside it: 150 rows must not stand between the keyboard and the table beside them.
+  const tabStop = rows.some((r) => r.id === selectedId) ? selectedId : rows[0]?.id
+  const onKeyDown = (e: React.KeyboardEvent<HTMLUListElement>) => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) return
+    const links = [...e.currentTarget.querySelectorAll<HTMLElement>("[data-pick-row]")]
+    const at = links.indexOf(document.activeElement as HTMLElement)
+    const next = e.key === "Home" ? 0 : e.key === "End" ? links.length - 1 : at + (e.key === "ArrowDown" ? 1 : -1)
+    const to = links[Math.max(0, Math.min(links.length - 1, next))]
+    if (!to) return
+    e.preventDefault()
+    to.focus()
+  }
   return (
-    <Tip label={SET_BY_LIST_TIP}>
-      <span tabIndex={0} className="cursor-default whitespace-nowrap rounded-sm text-xs text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring" data-level-source="list">
-        {LEVEL_SOURCE_LABEL.list}
-      </span>
-    </Tip>
+    // `relative` makes the scroller the containing block of its rows' absolutely positioned .sr-only words. Without it they hang off the sticky pane above it, outside this clip, and stretch the page's scroller to the length of the whole list.
+    <ScrollRegion label={label} className="relative min-h-0 flex-1 lg:overflow-y-auto" data-pick-list>
+      {rows.length === 0 ? empty : (
+        <ul ref={listRef} className="flex flex-col gap-px" onKeyDown={onKeyDown}>
+          {rows.map((r) => {
+            const on = r.id === selectedId
+            const row = (
+              <Link
+                href={r.href}
+                scroll={false}
+                data-keeps-draft
+                data-pick-row={r.id}
+                tabIndex={r.id === tabStop ? 0 : -1}
+                aria-current={on ? "true" : undefined}
+                onClick={(e) => inPlace(e, () => onSelect(r.id))}
+                className={cn("grid min-h-12 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 rounded-md px-2 py-1 text-sm lg:h-12 lg:py-0 text-foreground no-underline outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", on && "bg-muted font-medium")}
+              >
+                <span className="flex min-w-0 flex-col">
+                  <span className="[overflow-wrap:anywhere] lg:truncate">{r.name}</span>
+                  <span className="truncate text-xs font-normal text-muted-foreground">{r.meta}</span>
+                </span>
+                {r.count ? (
+                  <span className="text-sm font-normal tabular-nums" title={`${r.count.toLocaleString("en-US")} ${r.countLabel}`}>{r.count.toLocaleString("en-US")}<span className="sr-only">{` ${r.countLabel}`}</span></span>
+                ) : (
+                  <span className="text-sm font-normal text-muted-foreground" title={r.noneLabel}><span aria-hidden="true">–</span><span className="sr-only">{r.noneLabel}</span></span>
+                )}
+              </Link>
+            )
+            return <li key={r.id}>{r.name.length > NAME_FITS ? <Tip label={r.name} side="right" triggerClassName="block">{row}</Tip> : row}</li>
+          })}
+        </ul>
+      )}
+    </ScrollRegion>
   )
 }
 
+/** Below lg, the way back from the detail to the list. */
+export function BackToList({ label, onBack }: { label: string; onBack: () => void }) {
+  return <Button type="button" variant="ghost" size="sm" className="self-start lg:hidden" onClick={onBack} data-back-to-list>{label}</Button>
+}
+
+const fieldApplied = (f: FilterField) => f.value !== (f.defaultValue ?? "")
+
 /**
- * Assignment comes first, course settings second [CALL 10-26]: the lists attached to a cohort already apply to its offerings, and
- * the per-course level is an override. One line, at the top of the pane it governs.
+ * Search and the filters on one line beside the table they filter [REQ CM-02]. On a phone the same fields sit behind one Filters button with
+ * chips, because five selects would push the table off the first screen.
  */
-export function CohortAppliesLine({ lists, cohort }: { lists: SkillList[]; cohort?: string }) {
-  const applied = cohort ? listsForCohort(lists, cohort) : []
-  if (cohort && applied.length === 0)
-    return (
-      <p className="text-sm text-muted-foreground" data-cohort-applies>
-        {`No ${skillNounPlural()} are assigned to ${cohort} yet. `}
-        <Link className={LINK} href={listsHref({ view: "assign" })}>Assign them</Link>
-      </p>
-    )
+export function FilterLine({ search, fields, label }: { search: (className: string) => React.ReactNode; fields: FilterField[]; label: string }) {
+  const applied = fields.filter(fieldApplied)
+  return (
+    <>
+      <div className="hidden flex-wrap items-center gap-2 sm:flex" role="search" aria-label={label} data-offering-filters>
+        {search("min-w-32 max-w-sm flex-1")}
+        {fields.map((f) => <FilterSelect key={f.id} value={f.value} onChange={f.onChange} label={f.label} allLabel={f.allLabel} options={f.options} className="w-auto" resting={f.id === "term" ? f.allLabel : f.label} />)}
+        {applied.length ? <Button type="button" variant="ghost" size="sm" onClick={() => applied.forEach((f) => f.onChange(f.defaultValue ?? ""))}>Clear filters</Button> : null}
+      </div>
+      <div className="flex flex-col gap-2 sm:hidden" data-offering-filters-phone>
+        <div className="flex items-center gap-2">
+          {search("min-w-0 flex-1")}
+          <FiltersControl fields={fields} compact align="end" />
+        </div>
+        <AppliedFilterChips fields={fields} />
+      </div>
+    </>
+  )
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// One offering's skills (By course, right pane)
+
+export type Show = "" | "mapped" | "mandatory" | "recommended" | "none"
+const SHOW_OPTS = [
+  { value: "mapped", label: "Mapped only" },
+  { value: "mandatory", label: LEVEL_LABEL.mandatory },
+  { value: "recommended", label: LEVEL_LABEL.recommended },
+  { value: "none", label: LEVEL_LABEL.none },
+]
+
+/** "BSN 2026 · Fall 2026 · Year 4": an offering on the left pane, where the course name is above it; its heading adds the academic year. */
+export const offeringShortLine = (r: Pick<OfferingRow, "cohort" | "term" | "professionalYear">): string => `${r.cohort} · ${r.term} · Year ${r.professionalYear}`
+/** "BSN 2026 · Fall 2026 · 2026-27 · Year 4": what identifies an offering after its course [REQ CM-01]. */
+export const offeringLine = (r: Pick<OfferingRow, "cohort" | "term" | "academicYear" | "professionalYear">): string => `${r.cohort} · ${r.term} · ${r.academicYear} · Year ${r.professionalYear}`
+
+/** A cohort with no list assigned: the one thing this pane needs to say about lists, because it is an action. */
+export function CohortAppliesLine({ cohort }: { cohort: string }) {
   return (
     <p className="text-sm text-muted-foreground" data-cohort-applies>
-      {cohort ? (
-        <>
-          {`${cohort} gets these ${skillNounPlural()} from `}
-          {applied.map((l, i) => (
-            <React.Fragment key={l.id}>
-              {i ? " and " : ""}
-              <Link className={LINK} href={listsHref({ list: l.id })}>{l.name}</Link>
-            </React.Fragment>
-          ))}
-          {". Levels set here apply to this course only."}
-        </>
-      ) : (
-        <>
-          {`Each cohort gets the ${skillNounPlural()} assigned to it in `}
-          <Link className={LINK} href={listsHref({ view: "assign" })}>{`Assign ${skillNounPlural()} to student groups`}</Link>
-          {". Levels set here apply to that course only."}
-        </>
-      )}
+      {`No ${skillNounPlural()} are assigned to ${cohort} yet. `}
+      <Link className={LINK} href={listsHref()}>{`Open ${capitalize(skillListsNoun())}`}</Link>
     </p>
   )
 }
 
-/**
- * Clinical, or clinical and didactic, as one filter in the toolbar (Romit 2026-10-28: "too many text"): the course-kind open
- * decision stays a control, not a sentence. The table's own count says how many offerings show.
- */
-/** Course kind as a Filters field: clinical courses by default (CALL 10-26), didactic one choice away. */
+/** Course kind as a filter field: clinical courses by default (CALL 10-26), didactic one choice away. */
 export function courseKindField(didactic: boolean, onChange: (on: boolean) => void): FilterField {
   return { id: "courses", label: "Courses", value: didactic ? "didactic" : "", allLabel: "Clinical", options: [{ value: "didactic", label: "Clinical and didactic" }], onChange: (v) => onChange(v === "didactic") }
 }
 
-export function CourseKindSelect({ didactic, onChange }: { didactic: boolean; onChange: (on: boolean) => void }) {
-  return (
-    <span data-course-kind={didactic ? "all" : "clinical"}>
-      <FilterSelect value={didactic ? "didactic" : ""} onChange={(v) => onChange(v === "didactic")} label="Course kind" allLabel="Clinical" options={[{ value: "didactic", label: "Clinical and didactic" }]} className="w-48" />
-    </span>
-  )
+/** Group the DS table by one synthetic field from the first paint: the DS has the group rows, but no prop for a starting group. */
+function useGrouped<T extends Record<string, unknown>>(rows: T[], columns: ColumnDef<T>[], field: string) {
+  const ts = useTableState<T>(rows, columns)
+  const { setGroupBy } = ts
+  React.useLayoutEffect(() => setGroupBy(field), [setGroupBy, field])
+  return ts
 }
 
-export function OfferingPanel({ state, overlay, setOverlay, offering, lists, focusQuery = "" }: { state: V2State; overlay: MappingOverlay; setOverlay: (o: MappingOverlay) => void; offering: OfferingRow; lists: SkillList[]; focusQuery?: string }) {
-  const off = offeringById(state, offering.id)!
-  const rows = React.useMemo(() => skillRowsFor(state, overlay, off, lists), [state, overlay, off, lists])
-  const [q, setQ] = React.useState(focusQuery)
-  React.useEffect(() => setQ(focusQuery), [focusQuery, offering.id])
-  const [show, setShow] = React.useState<Show>("")
-  const [note, setNote] = React.useState("")
-  const [bulkNote, setBulkNote] = React.useState<{ changed: number; skipped: number; level: MapLevel } | null>(null)
+/** The select, the dot's slot and the cell's padding. */
+const LEVEL_WIDTH = 240
+/** The widest the text column gets, so a level stays near its name on a wide screen [M18]; past it the Level column takes the rest. */
+const TEXT_MAX = 576
 
-  const visible = React.useMemo(() => {
-    const t = q.trim().toLowerCase()
-    return rows.filter((r) => (!t || r.haystack.includes(t)) && (show === "" || (show === "mapped" ? r.level !== "none" : show === "required" ? r.required : r.level === show)))
-  }, [rows, q, show])
-
-  const change = React.useCallback(
-    (r: SkillMapRow, level: MapLevel) => {
-      const res = setLevel(state, overlay, offering.id, r.id, level)
-      if (!res.ok) return setNote(res.reason)
-      setOverlay(res.overlay)
-      setNote(`${r.name}: ${LEVEL_LABEL[level].toLowerCase()} in ${offering.code}, ${offering.term}.`)
-    },
-    [state, overlay, offering, setOverlay],
-  )
-
-  const columns = React.useMemo<ColumnDef<SkillMapRow>[]>(
-    () => [
-      { key: "select", label: "Select", width: 44, resizable: false },
-      {
-        key: "name",
-        label: capitalize(skillNoun()),
-        width: 220,
-        sortable: true,
-        cell: (r) => (
-          <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ by: "course", term: offering.termId, skill: r.id })} title={r.name}>{r.name}</Link>
-            <span className="truncate text-xs text-muted-foreground" title={r.section}>{r.section}</span>
-          </span>
-        ),
-      },
-      // Two meanings of "required", named apart (D-X12; 2026-10-30 review): the program's "Required to graduate" is a quiet,
-      // read-only fact with a cap glyph under its own header; the course's level (Mandatory, Recommended, Optional) is the
-      // control in the next column, headed with the course code. No pill, so it never reads as a second level.
-      {
-        key: "required",
-        label: "To graduate",
-        width: 128,
-        cell: (r) =>
-          r.required ? (
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground" title="Required to graduate">
-              <i className="fa-light fa-graduation-cap" aria-hidden="true" />
-              Required
-            </span>
-          ) : null,
-      },
-      {
-        key: "level",
-        label: `Level in ${offering.code}`,
-        width: 200,
-        cell: (r) =>
-          r.configured ? (
-            <span className="flex items-center gap-2">
-              <LevelSelect value={r.level} onChange={(l) => change(r, l)} label={`${r.name} in ${offering.code}`} />
-              <FromListTag source={r.source} />
-            </span>
-          ) : (
-            <Link className={`${LINK} text-sm text-muted-foreground`} href={configureHref(r.id)}>Not configured</Link>
-          ),
-      },
-    ],
-    [offering, change],
-  )
-
-  const bulk = (selected: Set<string | number>) => {
-    const ids = [...selected].map(String)
-    const apply = (level: MapLevel) => {
-      const r = setLevels(state, overlay, offering.id, ids, level)
-      setOverlay(r.overlay)
-      setBulkNote({ changed: r.changed, skipped: r.skipped, level })
+/**
+ * The DS table stretches every column in proportion when it is narrower than its container, which pulled the select column off its group row's checkbox and the level far from its name.
+ * The DS has no prop for one fill column, so the widths are written to the table's own state, to fill the container exactly: the body and the stuck header (a copy portalled to the body,
+ * which no selector under this table can reach) read one set of widths, so they cannot disagree.
+ */
+function useFillColumn(setColWidths: React.Dispatch<React.SetStateAction<Record<string, number>>>, textKey: string, narrow: boolean) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const select = narrow ? 40 : 44
+  const level = narrow ? 190 : LEVEL_WIDTH
+  const textMin = narrow ? 110 : 240
+  React.useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const read = () => {
+      // Hidden while the other pane shows on a phone. Less the table's two side borders.
+      if (!el.clientWidth) return
+      const inner = Math.floor(el.getBoundingClientRect().width) - 2
+      const text = Math.max(textMin, Math.min(TEXT_MAX, inner - select - level))
+      const rest = Math.max(level, inner - select - text)
+      setColWidths((w) => (w[textKey] === text && w.level === rest ? w : { ...w, [textKey]: text, level: rest }))
     }
-    return (
-      <span className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">Set to</span>
-        <Button type="button" variant="outline" size="sm" onClick={() => apply("mandatory")}>{LEVEL_LABEL.mandatory}</Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => apply("recommended")}>{LEVEL_LABEL.recommended}</Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => apply("optional")}>{LEVEL_LABEL.optional}</Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => apply("none")}>{LEVEL_LABEL.none}</Button>
-      </span>
-    )
-  }
+    read()
+    const seen = new ResizeObserver(read)
+    seen.observe(el)
+    return () => seen.disconnect()
+  }, [setColWidths, textKey, select, level, textMin])
+  return ref
+}
+
+/** The column's own words for its values, so whatever shows a level as text reads Mandatory, Recommended or Not mapped, never the stored value. */
+const LEVEL_FILTER = { type: "select" as const, options: LEVELS.map((l) => ({ value: l, label: LEVEL_LABEL[l] })) }
+
+/**
+ * The DS has no prop to turn a column's menu off or to leave items out of it, except this: a column locked to the right has no menu. Pins only take effect when the table overflows, and these columns fill it.
+ * Every item in the menu is something this page does not ask for (Search, Pin, Wrap Text, Group by this Column, Add Conditional Rule, and that last one opens nothing here), and locking also stops a column being dragged out of order.
+ */
+const NO_MENU = { lockPin: true, defaultPin: "right" as const }
+
+type CategoryRow = SkillMapRow & { group: string }
+
+export function OfferingPanel({ state, overlay, held, setOverlay, offering, figures, lists, narrow = false, pending, q, onSearch, show, onShow, onOpenSkill, onBack }: { state: V2State; overlay: MappingOverlay; /** The levels the Show filter reads: a draft must not move a row out from under the cursor. */ held: MappingOverlay; setOverlay: (o: MappingOverlay) => void; offering: OfferingRow; /** The offering as saved: its figures move at Save, with the left list's [REQ CM-04]. */ figures: Pick<OfferingRow, "mapped" | "mandatory" | "recommended">; narrow?: boolean; lists: SkillList[]; pending: ReadonlySet<string>; /** This view's own search, in the URL like its filters. */ q: string; onSearch: (q: string) => void; show: Show; onShow: (show: Show) => void; onOpenSkill: (id: string) => void; onBack: () => void }) {
+  const embedded = useEmbeddedStep() !== null
+  const where = `${offering.code}, ${offering.term}`
+  // Configured skills only: a skill not configured cannot be mapped [REQ IM-09], and a checkbox that can only fail is no control.
+  const rows = React.useMemo(() => skillRowsFor(state, overlay, offeringById(state, offering.id)!, lists).filter((r) => r.configured), [state, overlay, lists, offering.id])
+  // Mapped skills first within a category, and categories that hold one first [INFER], so the first screen shows what is mapped. Fixed when the view opens: a level change must not
+  // move the row under the cursor. The DS sorts groups by name, and a leading space sorts first and does not show (the Library's Just added group does the same).
+  const [order, setOrder] = React.useState<{ rank: Map<string, number>; first: Set<string> } | null>(null)
+  const heldLevels = React.useMemo(() => new Map(skillRowsFor(state, held, offeringById(state, offering.id)!, lists).map((r) => [r.id, r.level])), [state, held, lists, offering.id])
+  React.useEffect(() => {
+    if (order || !rows.length) return
+    // Saved levels: reopening an offering with a draft open must not reorder it either.
+    const lv = (r: SkillMapRow) => heldLevels.get(r.id) ?? r.level
+    setOrder({ rank: new Map([...rows].sort((a, b) => levelRank(lv(a)) - levelRank(lv(b))).map((r, i) => [r.id, i])), first: new Set(rows.filter((r) => lv(r) !== "none").map((r) => r.section)) })
+  }, [order, rows, heldLevels])
+
+  const visible = React.useMemo<CategoryRow[]>(() => {
+    const t = q.trim().toLowerCase()
+    const hits = rows.filter((r) => {
+      const level = heldLevels.get(r.id) ?? r.level
+      return (!t || r.haystack.includes(t)) && (show === "" || (show === "mapped" ? level !== "none" : level === show))
+    })
+    return (order ? [...hits].sort((a, b) => (order.rank.get(a.id) ?? 0) - (order.rank.get(b.id) ?? 0)) : hits).map((r) => ({ ...r, group: order?.first.has(r.section) ? ` ${r.section}` : r.section }))
+  }, [rows, q, show, order, heldLevels])
+
+  const change = (r: SkillMapRow, level: MapLevel) => setOverlay(setLevels(state, overlay, offering.id, [r.id], level).overlay)
+
+  // The same group row as By skill: the DS table shows an option's node.
+  const categoryOptions = React.useMemo(() => [...new Set(visible.map((r) => r.group))].map((value) => ({ value, label: value, node: <span className={cn("text-sm font-medium text-foreground", narrow ? "whitespace-normal [overflow-wrap:anywhere]" : "truncate")}>{value.trim()}</span> })), [visible, narrow])
+  const columns: ColumnDef<CategoryRow>[] = [
+    { key: "group", label: "Category", filterOnly: true, filter: { type: "select", options: categoryOptions } },
+    { key: "select", label: "Select", width: narrow ? 40 : 44, resizable: false },
+    {
+      key: "name",
+      label: capitalize(skillNoun()),
+      width: narrow ? 110 : 340,
+      ...NO_MENU,
+      sortable: true,
+      cell: (r) => (narrow && pending.has(changeKey(offering.id, r.id)) ? <span className="flex min-w-0 items-center"><span className="line-clamp-2 whitespace-normal">{r.name}</span><ChangedDot /></span> : embedded ? <FullName name={r.name}><span tabIndex={narrow ? undefined : 0} className={narrow ? "line-clamp-2 whitespace-normal" : "block truncate rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"}>{r.name}</span></FullName> : <FullName name={r.name}><Link className={cn(LINK, narrow ? "line-clamp-2 whitespace-normal" : "block truncate")} href={mappingLink({ by: "skill", skill: r.id })} data-keeps-draft onClick={(e) => inPlace(e, () => onOpenSkill(r.id))}>{r.name}</Link></FullName>),
+    },
+    {
+      key: "level",
+      label: "Level",
+      width: narrow ? 190 : LEVEL_WIDTH,
+      ...NO_MENU,
+      filter: LEVEL_FILTER,
+      cell: (r) => (
+        <span className="flex items-center gap-1.5">
+          <LevelSelect value={r.level} className="w-[10.5rem] shrink-0 sm:w-44" onChange={(l) => change(r, l)} label={`${r.name} in ${where}`} />
+          {narrow ? null : <DotSlot on={pending.has(changeKey(offering.id, r.id))} />}
+        </span>
+      ),
+    },
+  ]
+  const ts = useGrouped(visible, columns, "group")
+  const fillRef = useFillColumn(ts.setColWidths, "name", narrow)
+
+  const bulk = (selected: Set<string | number>) => (
+    <BulkLevelBar n={selected.size} label={`Level for the selected ${skillNounPlural()}`} onApply={(level) => setOverlay(setLevels(state, overlay, offering.id, [...selected].map(String), level).overlay)} />
+  )
 
   return (
     <section aria-labelledby="offering-heading" className="flex min-w-0 flex-col gap-3" data-region="offering" data-cohort={offering.cohort}>
-      {/* Romit 2026-10-28 ("too many text, too crowded"): term, year and cohort already show in the filters and the selected row,
-          so the header is the name; the counts and the level key are one row; the "gets these from" line is gone (each row says
-          "Set by list") unless the cohort has no list, which is an action. Group check-off belongs to course faculty (Romit
-          2026-10-28), not to the admin's mapping. */}
-      <PaneHeading title={<span id="offering-heading">{`${offering.code} ${offering.name}`}</span>} />
-      <LevelLegend counts={{ mapped: offering.mapped, mandatory: offering.mandatory, recommended: offering.recommended, optional: offering.optional }} />
-      {listsForCohort(lists, offering.cohort).length === 0 ? <CohortAppliesLine lists={lists} cohort={offering.cohort} /> : null}
+      <BackToList label="All offerings" onBack={onBack} />
+      {/* Group check-off belongs to course faculty (Romit 2026-10-28), not to the admin's mapping. */}
+      <PaneHeading title={<span id="offering-heading">{`${offering.code} ${offering.name}`}</span>} meta={offeringLine(offering)} />
+      <LevelLegend counts={{ mapped: figures.mapped, mandatory: figures.mandatory, recommended: figures.recommended }} />
+      {listsForCohort(lists, offering.cohort).length === 0 ? <CohortAppliesLine cohort={offering.cohort} /> : null}
       <div className="flex flex-wrap items-center gap-2">
-        <SearchField value={q} onChange={setQ} label={`Search ${skillNounPlural()} in ${offering.code}`} placeholder={`Search ${skillNounPlural()}`} className="w-56" />
-        <FilterSelect value={show} onChange={(v) => setShow(v as Show)} label="Show" allLabel={`All ${skillNounPlural()}`} options={SHOW_OPTS} className="w-52" />
+        <SearchField value={q} onChange={onSearch} label={`Search ${skillNounPlural()} in ${offering.code}`} placeholder={`Search ${skillNounPlural()}`} className="w-56 max-sm:min-w-0 max-sm:flex-1" />
+        <FilterSelect value={show} onChange={(v) => onShow(v as Show)} label="Show" allLabel={`All ${skillNounPlural()}`} options={SHOW_OPTS} className="w-36" />
       </div>
-      {bulkNote ? (
-        <LocalBanner variant={bulkNote.skipped ? "warning" : "promo"} title={`${plural(bulkNote.changed, skillNoun(), skillNounPlural())} set to ${LEVEL_LABEL[bulkNote.level].toLowerCase()}`} dismissible onDismiss={() => setBulkNote(null)}>
-          {bulkNote.skipped ? `${plural(bulkNote.skipped, "was", "were")} skipped because ${bulkNote.skipped === 1 ? "it is" : "they are"} not configured.` : `Applies to ${offering.code}, ${offering.term} only.`}
-        </LocalBanner>
-      ) : null}
-      <LiveNote text={note} />
+      <div ref={fillRef} className="min-w-0">
       <ScrollLabel label={capitalize(skillNounPlural())}>
-      <DataTable<SkillMapRow>
-        key={offering.id}
-        data={visible}
-        columns={columns}
-        getRowId={(r) => r.id}
-        getRowSelectionLabel={(r) => `Select ${r.name}`}
-        selectable
-        searchable={false}
-        showQueryControls={false}
-        edgeInset={false}
-        bulkActionsSlot={(sel) => bulk(sel)}
-        lazyLoading={{ enabled: visible.length > 60, threshold: 60, chunkSize: 40, loadingLabel: "Loading more" }}
-        emptyState={<EmptyBlock compact title={`No ${skillNounPlural()} match these filters`} body="Clear the search or the filter." />}
-      />
+        <DataTable<CategoryRow>
+          key={offering.id}
+          state={ts}
+          data={visible}
+          columns={columns}
+          getRowId={(r) => r.id}
+          getRowSelectionLabel={(r) => `Select ${r.name}`}
+          selectable
+          searchable={false}
+          showQueryControls={false}
+          edgeInset={false}
+          bulkActionsSlot={(sel) => bulk(sel)}
+          stickyFooter={<MappingSaveBar />}
+          lazyLoading={{ enabled: visible.length > 60, threshold: 60, chunkSize: 40, loadingLabel: "Loading more" }}
+          emptyState={q.trim() ? <EmptyBlock compact title={`No ${skillNounPlural()} match this search`} action={{ label: "Clear search" }} onAction={() => onSearch("")} /> : <EmptyBlock compact title={`No ${skillNounPlural()} match this filter`} action={{ label: "Clear filter" }} onAction={() => onShow("")} />}
+        />
       </ScrollLabel>
+      </div>
     </section>
   )
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Coverage matrix: required skills by the term's offerings
+// One skill's offerings (By skill, right pane)
 
-export function CoverageMatrix({ coverage, termName, termId }: { coverage: Coverage; termName: string; termId: string }) {
-  const columns = React.useMemo<ColumnDef<CoverageRow>[]>(() => {
-    const base: ColumnDef<CoverageRow>[] = [
-      {
-        key: "name",
-        label: `Required ${skillNoun()}`,
-        width: 220,
-        defaultPin: "left",
-        lockPin: true,
-        sortable: true,
-        cell: (r) => (
-          <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ by: "course", term: termId, skill: r.id })} title={r.name}>{r.name}</Link>
-            <span className="truncate text-xs text-muted-foreground" title={r.section}>{r.section}</span>
-          </span>
-        ),
-      },
-      {
-        key: "carriers",
-        label: "Courses",
-        width: 128,
-        defaultPin: "left",
-        sortable: true,
-        cell: (r) => (r.carriers === 0 ? <AmberMark label="In no course" /> : <span className="text-sm tabular-nums">{`${r.carriers}${r.mandatoryCarriers ? `, ${r.mandatoryCarriers} mandatory` : ""}`}</span>),
-      },
-    ]
-    for (const c of coverage.columns) {
-      base.push({
-        key: `c:${c.offeringId}`,
-        label: c.code,
-        width: 84,
-        resizable: false,
-        header: () => (
-          <span className="flex flex-col whitespace-nowrap leading-tight">
-            <span className="text-xs font-medium">{c.code}</span>
-            <span className="text-xs font-normal text-muted-foreground">{c.cohort}</span>
-          </span>
-        ),
-        cell: (r) => {
-          const lv = r.cells[c.offeringId] ?? "none"
-          return (
-            <Link
-              href={mappingLink({ term: termId, offering: c.offeringId, q: r.name })}
-              className="flex h-8 w-10 items-center justify-center rounded-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={`${r.name} in ${c.code}, ${c.cohort}: ${LEVEL_LABEL[lv]}. Open the offering`}
-            >
-              <LevelGlyph level={lv} />
-            </Link>
-          )
-        },
-      })
-    }
-    return base
-  }, [coverage, termId])
-  const covered = coverage.rows.length - coverage.gaps.length
-  return (
-    <section aria-labelledby="coverage-heading" className="flex min-w-0 flex-col gap-3" data-region="coverage">
-      <PaneHeading
-        title={<span id="coverage-heading">{`Required ${skillNounPlural()} by ${termName} course`}</span>}
-        meta={`${fmt(coverage.required)} required to graduate · ${fmt(covered)} in at least one course`}
-        end={<LevelLegend />}
-      />
-      <ScrollLabel label="Coverage">
-      <DataTable<CoverageRow>
-        data={coverage.rows}
-        columns={columns}
-        getRowId={(r) => r.id}
-        searchable={false}
-        showQueryControls={false}
-        edgeInset={false}
-        emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} to graduate yet`} />}
-      />
-      </ScrollLabel>
-    </section>
-  )
+export interface OfferingFilterValue {
+  q: string
+  cohort: string
+  term: string
+  academicYear: string
+  year: string
+  upcoming: boolean
+  /** A student group arriving from Coverage: offerings of its cohorts only. */
+  cohorts?: ReadonlySet<string> | null
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// Skill-centric (variant B)
+type OfferingGroupRow = SkillOfferingRow & { group: string }
 
-export function SkillReachTable({ rows, selectedId, termName, hrefFor, onSelect, note }: { rows: SkillReachRow[]; selectedId: string; termName: string; hrefFor: (id: string) => string; onSelect: (id: string) => void; note?: React.ReactNode }) {
-  const columns = React.useMemo<ColumnDef<SkillReachRow>[]>(
-    () => [
-      {
-        key: "name",
-        label: capitalize(skillNoun()),
-        width: termName ? 250 : 120,
-        sortable: true,
-        cell: (r) => (
-          <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} whitespace-normal`} href={hrefFor(r.id)} scroll={false} onClick={(e) => e.stopPropagation()} aria-current={r.id === selectedId ? "true" : undefined}>{r.name}</Link>
-            <span className="truncate text-xs text-muted-foreground" title={r.required ? `${r.section} · Required` : r.section}>{r.required ? `${r.section} · Required` : r.section}</span>
-          </span>
-        ),
-      },
-      {
-        key: "carriers",
-        // No term: the count is across every term's offerings (variant B, CALL 11-02).
-        label: termName ? `${termName} courses` : "Offerings",
-        width: termName ? 168 : 118,
-        sortable: true,
-        cell: (r) =>
-          !r.configured ? (
-            <span className="text-sm text-muted-foreground">Not configured</span>
-          ) : r.carriers === 0 ? (
-            r.required ? <AmberMark label="In no course" /> : <span className="text-sm text-muted-foreground">None</span>
-          ) : (
-            <span className="text-sm tabular-nums">{`${r.carriers}${r.mandatoryCarriers ? `, ${r.mandatoryCarriers} mandatory` : ""}`}</span>
-          ),
-      },
-    ],
-    [hrefFor, selectedId, termName],
-  )
-  return (
-    <div data-region="skills" className="flex min-w-0 flex-col gap-2">
-      {note}
-      <ScrollLabel label={capitalize(skillNounPlural())}>
-      <DataTable<SkillReachRow>
-        data={rows}
-        columns={columns}
-        getRowId={(r) => r.id}
-        openRowId={selectedId || null}
-        onRowClick={(r) => onSelect(r.id)}
-        searchable={false}
-        showQueryControls={false}
-        edgeInset={false}
-        lazyLoading={{ enabled: rows.length > 60, threshold: 60, chunkSize: 40, loadingLabel: "Loading more" }}
-        emptyState={<EmptyBlock compact title={`No ${skillNounPlural()} match these filters`} body="Clear a filter to see more." />}
-      />
-      </ScrollLabel>
-    </div>
-  )
-}
+/**
+ * One skill's level per offering, no term columns: a group row names the course and cohort once, and under it each offering is one row whose level
+ * sets that offering only [REQ CM-01, CM-03, CM-06, CM-08]. Groups stay in course order whatever is mapped, so a row does not move between loads. The offering's own mapped and mandatory
+ * counts are on By course and in each row's select name [REQ CM-04].
+ */
+export function SkillPanel({ state, overlay, setOverlay, skill, figures, narrow = false, didactic = false, filter, fields, pending, onSearch, onShowAllTerms, onOpenOffering, onBack }: { state: V2State; overlay: MappingOverlay; setOverlay: (o: MappingOverlay) => void; skill: SkillReachRow; /** The offerings as saved: what each select's name says it holds, moved at Save [REQ CM-04]. */ figures: ReadonlyMap<string, Pick<OfferingRow, "mapped" | "mandatory">>; /** A phone: columns that keep Level on screen. The parent keys the panel on it, because the DS table reads widths once. */ narrow?: boolean; didactic?: boolean; filter: OfferingFilterValue; fields: FilterField[]; pending: ReadonlySet<string>; onSearch: (q: string) => void; onShowAllTerms: () => void; onOpenOffering: (id: string) => void; onBack: () => void }) {
+  const inWorkflow = useEmbeddedStep() !== null
+  const all = React.useMemo(() => offeringsForSkill(state, overlay, skill.id, "", didactic), [state, overlay, skill.id, didactic])
+  const groupOf = (r: Pick<SkillOfferingRow, "code" | "cohort">) => `${r.code}|${r.cohort}`
+  const visible = React.useMemo<OfferingGroupRow[]>(() => filterSkillOfferings(all, filter).map((r) => ({ ...r, group: groupOf(r) })), [all, filter])
+  const narrowed = !!(filter.q || filter.cohort || filter.term || filter.year || filter.academicYear)
 
-/** Offering filters in variant B's pane [REQ CM-02]: search (course, term, academic year, cohort, year), cohort, professional year. */
-export interface OfferingFilterProps {
-  value: { q: string; cohort: string; year: string }
-  onChange: (next: Partial<{ q: string; cohort: string; year: string }>) => void
-  cohortOpts: { value: string; label: string }[]
-  yearOpts: { value: string; label: string }[]
-}
+  const apply = (ids: string[], level: MapLevel) => {
+    const res = setLevelAcross(state, overlay, ids, skill.id, level)
+    if (res.changed) setOverlay(res.overlay)
+  }
 
-/** The offering's identity line in B's pane: academic year, cohort, professional year (term is the toolbar's) [REQ CM-01]. */
-function offeringMeta(r: SkillOfferingRow): string {
-  return `${r.academicYear} · ${r.cohort} · Year ${r.professionalYear}${r.kind === "didactic" ? " · Didactic" : ""}`
-}
+  // The DS table sorts group rows by their value and shows the option's label, so the value carries the order and the option carries the words.
+  const groupOptions = React.useMemo(() => {
+    // A phone has no hover, so a long course name wraps there; on a wide screen it cuts off with the full name on hover.
+    const fit = narrow ? "whitespace-normal [overflow-wrap:anywhere]" : "truncate"
+    const seen = new Map<string, OfferingGroupRow>()
+    for (const r of visible) if (!seen.has(r.group)) seen.set(r.group, r)
+    return [...seen.entries()].map(([value, r]) => {
+      const label = `${r.code} ${r.name} · ${r.cohort}`
+      return {
+        value,
+        label,
+        node: inWorkflow
+          ? <FullName name={label}><span tabIndex={0} className={cn("text-sm font-medium text-foreground rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", fit)}>{label}</span></FullName>
+          : <FullName name={label}><Link className={cn(LINK, "text-sm font-medium", fit)} href={mappingLink({ by: "course", offering: r.id })} data-keeps-draft onClick={(e) => inPlace(e, () => onOpenOffering(r.id))}>{label}</Link></FullName>,
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, inWorkflow, narrow])
 
-export function SkillPanel({ state, overlay, setOverlay, skill, termId, termName, lists = [], didactic = false, filter }: { state: V2State; overlay: MappingOverlay; setOverlay: (o: MappingOverlay) => void; skill: SkillReachRow; termId: string; termName: string; lists?: SkillList[]; didactic?: boolean; filter?: OfferingFilterProps }) {
-  const all = React.useMemo(() => offeringsForSkill(state, overlay, skill.id, termId, didactic, lists.length ? lists : undefined), [state, overlay, skill.id, termId, didactic, lists])
-  const f = filter?.value
-  const rows = React.useMemo(() => (f ? filterSkillOfferings(all, f) : all), [all, f])
-  const narrowed = !!(f && (f.q || f.cohort || f.year))
-  const [note, setNote] = React.useState("")
-  // The heading counts stay on the term's offerings (the skill's reach); the filters only narrow the table below.
-  const carriers = all.filter((r) => r.level !== "none")
-  const mandatory = all.filter((r) => r.level === "mandatory").length
-  // When every shown offering takes its level from a list, "Set by list" is said once in the column header, not on each row
-  // (anatomy A12, 2026-10-30: nine rows each read "Set by list").
-  const allFromList = rows.length > 1 && rows.every((r) => r.source === "list")
+  const columns: ColumnDef<OfferingGroupRow>[] = [
+    { key: "group", label: "Course", filterOnly: true, filter: { type: "select", options: groupOptions } },
+    { key: "select", label: "Select", width: narrow ? 40 : 44, resizable: false },
+    {
+      key: "term",
+      label: "Offering",
+      width: narrow ? 110 : 300,
+      ...NO_MENU,
+      cell: (r) => <span className="flex min-w-0 flex-col sm:block" data-offering-cell><span className="flex items-center whitespace-nowrap sm:inline">{r.term}{narrow && pending.has(changeKey(r.id, skill.id)) ? <ChangedDot /> : null}</span><span className="whitespace-nowrap text-xs text-muted-foreground sm:text-sm sm:text-foreground"><span className="hidden sm:inline">{" · "}</span>{`${r.academicYear} · ${narrow ? "Yr" : "Year"} ${r.professionalYear}`}</span></span>,
+    },
+    {
+      key: "level",
+      label: "Level",
+      width: narrow ? 190 : LEVEL_WIDTH,
+      ...NO_MENU,
+      filter: LEVEL_FILTER,
+      cell: (r) => (
+        <span className="flex items-center gap-1.5" data-offering-row={r.id}>
+          <LevelSelect value={r.level} className="w-[10.5rem] shrink-0 sm:w-44" label={`${skill.name} in ${r.code}, ${r.term}, ${r.cohort}: ${figures.get(r.id)?.mapped ?? r.mapped} mapped, ${figures.get(r.id)?.mandatory ?? r.mandatory} mandatory`} onChange={(l) => apply([r.id], l)} />
+          {narrow ? null : <DotSlot on={pending.has(changeKey(r.id, skill.id))} />}
+        </span>
+      ),
+    },
+  ]
+  const ts = useGrouped(visible, columns, "group")
+  const fillRef = useFillColumn(ts.setColWidths, "term", narrow)
 
-  const columns = React.useMemo<ColumnDef<SkillOfferingRow>[]>(
-    () => [
-      {
-        key: "code",
-        label: "Offering",
-        width: 230,
-        sortable: true,
-        cell: (r) => (
-          <span className="flex min-w-0 flex-col py-0.5">
-            <Link className={`${LINK} whitespace-normal`} href={mappingLink({ term: termId, offering: r.id, q: skill.name })} title={`${r.code} ${r.name}`}>{`${r.code} ${r.name}`}</Link>
-            <span className="truncate text-xs text-muted-foreground" title={offeringMeta(r)}>{offeringMeta(r)}</span>
-          </span>
-        ),
-      },
-      {
-        key: "level",
-        label: "Level",
-        ...(allFromList ? { header: () => <span className="inline-flex items-center gap-2">Level <FromListTag source="list" /></span> } : {}),
-        // Wide enough for the select and "Set by list" beside it (anatomy A10, 2026-10-30).
-        width: 230,
-        cell: (r) => (
-          <span className="flex items-center gap-2">
-            <LevelSelect
-              value={r.level}
-              label={`${skill.name} in ${r.code}`}
-              onChange={(l) => {
-                const res = setLevel(state, overlay, r.id, skill.id, l)
-                if (!res.ok) return setNote(res.reason)
-                setOverlay(res.overlay)
-                setNote(`${skill.name}: ${LEVEL_LABEL[l].toLowerCase()} in ${r.code}.`)
-              }}
-            />
-            {allFromList ? null : <FromListTag source={r.source} />}
-          </span>
-        ),
-      },
-      // The offering's own totals (all skills), so each offering's mapped and mandatory counts read here too [REQ CM-04].
-      { key: "mapped", label: "Mapped", width: 84, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.mapped)}</span> },
-      { key: "mandatory", label: "Mandatory", width: 100, sortable: true, cell: (r) => <span className="tabular-nums">{fmt(r.mandatory)}</span> },
-    ],
-    [state, overlay, setOverlay, skill, termId, allFromList],
-  )
+  const bulk = (selected: Set<string | number>) => <BulkLevelBar n={selected.size} label="Level for the selected offerings" onApply={(level) => apply([...selected].map(String), level)} />
+  // Counted across every term; the table opens on current and upcoming. Said only when it would otherwise look like a wrong count.
+  const inView = new Set(visible.map((r) => r.id))
+  const pastMatches = visible.length === 0 && !filter.term && !filter.academicYear ? filterSkillOfferings(all, { ...filter, upcoming: false }).length : 0
+  const pastOnly = !narrowed && !visible.some((r) => r.level !== "none") ? all.filter((r) => r.level !== "none" && !inView.has(r.id) && (!filter.cohorts || filter.cohorts.has(r.cohort))).length : 0
 
   return (
     <section aria-labelledby="skill-heading" className="flex min-w-0 flex-col gap-3" data-region="skill">
-      <PaneHeading
-        title={<span id="skill-heading">{skill.name}</span>}
-        end={
-          skill.configured ? (
-            <span className="text-sm" aria-label={`${carriers.length} of ${all.length} ${termName} courses, ${mandatory} mandatory`}>
-              <span className="font-semibold tabular-nums">{fmt(carriers.length)}</span> <span className="text-muted-foreground">{`of ${fmt(all.length)} courses`}</span>
-              <span className="ms-4 font-semibold tabular-nums">{fmt(mandatory)}</span> <span className="text-muted-foreground">mandatory</span>
-            </span>
-          ) : null
-        }
-      />
-      {!skill.configured ? (
-        <Card size="sm" className="self-start">
-          <CardContent className="flex flex-col items-start gap-2 py-1">
-            <p className="text-sm">{notConfiguredBlock(true)}</p>
-            <Button asChild variant="outline" size="sm">
-              <Link href={configureHref(skill.id)}>{`Configure ${skill.name}`}</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          {filter ? (
-            <div role="search" aria-label="Find an offering" className="flex flex-wrap items-center gap-2" data-offering-filters>
-              <SearchField value={filter.value.q} onChange={(v) => filter.onChange({ q: v })} label="Search offerings by course, term, cohort or year" placeholder="Search offerings" className="w-56" />
-              <FilterSelect value={filter.value.cohort} onChange={(v) => filter.onChange({ cohort: v })} label="Cohort" allLabel="All cohorts" options={filter.cohortOpts} className="w-36" />
-              <FilterSelect value={filter.value.year} onChange={(v) => filter.onChange({ year: v })} label="Professional year" allLabel="All years" options={filter.yearOpts} className="w-32" />
-            </div>
-          ) : null}
-          <LiveNote text={note} />
-          <ScrollLabel label="Offerings">
-          <DataTable<SkillOfferingRow>
-            key={skill.id}
-            data={rows}
-            columns={columns}
-            getRowId={(r) => r.id}
-            searchable={false}
-            showQueryControls={false}
-            edgeInset={false}
-            emptyState={narrowed ? <EmptyBlock compact title="No offerings match these filters" body="Clear a filter to see more." /> : <EmptyBlock compact title={`No courses in ${termName} yet`} />}
-          />
-          </ScrollLabel>
-        </>
-      )}
+      <BackToList label={`All ${skillNounPlural()}`} onBack={onBack} />
+      <PaneHeading title={<span id="skill-heading">{skill.name}</span>} />
+      <FilterLine label="Find an offering" fields={fields} search={(className) => <SearchField value={filter.q} onChange={onSearch} label="Search offerings by course, term, cohort or year" placeholder="Search" className={className} />} />
+      {pastOnly ? (
+        <p className="text-sm text-muted-foreground" data-past-only>
+          {`Mapped only on past offerings (${pastOnly}). `}
+          <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={onShowAllTerms}>Show all terms</Button>
+        </p>
+      ) : null}
+      <div ref={fillRef} className="min-w-0">
+      <ScrollLabel label="Offerings">
+        <DataTable<OfferingGroupRow>
+          state={ts}
+          data={visible}
+          columns={columns}
+          getRowId={(r) => r.id}
+          getRowSelectionLabel={(r) => `Select ${r.code}, ${r.term}, ${r.cohort}`}
+          selectable
+          searchable={false}
+          showQueryControls={false}
+          edgeInset={false}
+          bulkActionsSlot={(sel) => bulk(sel)}
+          stickyFooter={<MappingSaveBar />}
+          emptyState={pastMatches ? <EmptyBlock compact title={filter.q ? `Only past offerings match this search (${pastMatches})` : `Only past offerings match these filters (${pastMatches})`} action={{ label: "Show all terms" }} onAction={onShowAllTerms} /> : filter.q ? <EmptyBlock compact title="No offerings match this search" action={{ label: "Clear search" }} onAction={() => onSearch("")} /> : narrowed ? <EmptyBlock compact title="No offerings match these filters" body="Clear a filter to see more." /> : <EmptyBlock compact title="No current or upcoming offerings" body="Choose All terms to see past ones." />}
+        />
+      </ScrollLabel>
+      </div>
     </section>
   )
 }

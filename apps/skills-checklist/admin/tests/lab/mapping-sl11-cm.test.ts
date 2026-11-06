@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { createSeed } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed } from "@/lib/v2/seed"
 import { labState } from "@/lib/lab/reviewer"
-import { coverage, currentTermId, filterSkillOfferings, offeringRows, offeringsForSkill, resolvedLevels, setLevel, skillReach, skillRowsFor, EMPTY_MAPPING_OVERLAY } from "@/lib/lab/mapping"
+import { currentTermId, filterSkillOfferings, offeringRows, offeringsForSkill, resolvedLevels, setLevel, skillReach, skillRowsFor, EMPTY_MAPPING_OVERLAY } from "@/lib/lab/mapping"
 import { facts } from "@/lib/v2/facts"
 
 const s = labState(createSeed())
@@ -25,17 +25,13 @@ describe("SL-11: deactivated skills are withdrawn from course mapping, evidence 
       for (const k of inactive) expect(ids.has(k.id)).toBe(false)
     }
   })
-  it("the skill-first list (variant B) and the coverage matrix leave them out", () => {
+  it("the skill-first list (variant B) leaves them out", () => {
     const reach = new Set(skillReach(s, EMPTY_MAPPING_OVERLAY, term).map((r) => r.id))
-    const cov = new Set(coverage(s, EMPTY_MAPPING_OVERLAY, term).rows.map((r) => r.id))
-    for (const k of inactive) {
-      expect(reach.has(k.id)).toBe(false)
-      expect(cov.has(k.id)).toBe(false)
-    }
+    for (const k of inactive) expect(reach.has(k.id)).toBe(false)
   })
   it("setting a level on one is refused with the reason, and a stale overlay edit is ignored", () => {
     const k = inactive[0]
-    const r = setLevel(s, EMPTY_MAPPING_OVERLAY, offs[0].id, k.id, "optional")
+    const r = setLevel(s, EMPTY_MAPPING_OVERLAY, offs[0].id, k.id, "recommended")
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.reason).toMatch(/inactive/i)
     expect(resolvedLevels(s, { [offs[0].id]: { [k.id]: "mandatory" } }, offs[0]).has(k.id)).toBe(false)
@@ -44,9 +40,9 @@ describe("SL-11: deactivated skills are withdrawn from course mapping, evidence 
     for (const k of inactive) expect(s.skills.some((x) => x.id === k.id)).toBe(true)
     expect(s.mappings.filter((m) => inactive.some((k) => k.id === m.skillId)).length).toBeGreaterThan(0)
   })
-  it("offering counts drop by exactly the deactivated skills they carried (NUR 101: 138 mapped, 25 mandatory)", () => {
+  it("offering counts drop by exactly the deactivated skills they carried (NUR 101: 42 mapped, 25 mandatory; 138 before Optional read as Not mapped, D-L76)", () => {
     const nur101 = offeringRows(s).find((r) => r.termId === term && r.code === "NUR 101")!
-    expect(nur101.mapped).toBe(138)
+    expect(nur101.mapped).toBe(42)
     expect(nur101.mandatory).toBe(25)
   })
   it("shared facts are unchanged by the mapping filter", () => {

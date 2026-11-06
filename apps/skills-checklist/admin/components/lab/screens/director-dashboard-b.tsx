@@ -1,8 +1,8 @@
 "use client"
 
 /**
- * Director Dashboard, variant B: blockers first. Which required skill stands between students and graduation?
- * Regions: header, scope bar, four figures (the graduation bands: complete, one skill short, short, far behind), the blocker ranking (skills grouped by the
+ * Director Dashboard, variant B: blockers first. Which assigned skill stands between students and readiness?
+ * Regions: header, scope bar, four figures (the readiness bands: complete, one skill short, short, far behind), the blocker ranking (skills grouped by the
  * exact students they block, so a tie reads as one line, strategy/07 Von Restorff), and the requests already waiting on a
  * blocking skill. The ranking is a dot plot on a 0 to cohort-size track, never a progress bar; every count links to its list.
  */
@@ -25,7 +25,7 @@ const AGING = 8
 const SHOWN = 6
 
 function Figures({ m, scope }: { m: Readiness; scope: LabScope }) {
-  // The four graduation bands (D-X11), each linked to the list with the same predicate, so figure and list are equal.
+  // The four readiness bands (D-X11), each linked to the list with the same predicate, so figure and list are equal.
   const metrics: MetricItem[] = GRADUATION_STAGES.map((st) => ({
     id: st,
     label: GRADUATION_STAGE_LABEL[st],
@@ -36,7 +36,7 @@ function Figures({ m, scope }: { m: Readiness; scope: LabScope }) {
     href: listHref(scope, { list: GRADUATION_LIST[st] }),
   }))
   return (
-    <section aria-label="Graduating students by readiness" data-figure="kpis" data-region="figures">
+    <section aria-label="Students by readiness" data-figure="kpis" data-region="figures">
       <KeyMetrics variant="flat" size="sm" showHeader={false} metrics={metrics} metricsSingleRow className="px-0 lg:px-0" />
     </section>
   )
@@ -59,9 +59,9 @@ function Blockers({ m, scope }: { m: Readiness; scope: LabScope }) {
   return (
     <Card className="self-start py-0 xl:col-span-7" data-region="blockers">
       <CardContent className="flex flex-col gap-3 py-4">
-        <h2 className={TYPE.card}>What blocks graduation</h2>
+        <h2 className={TYPE.card}>What blocks readiness</h2>
         {shown.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{`No required ${skillNoun()} blocks anyone in this scope.`}</p>
+          <p className="text-sm text-muted-foreground">{`No assigned ${skillNoun()} blocks anyone in this scope.`}</p>
         ) : (
           <div data-chart aria-label={`Required ${skillNounPlural()} not achieved, grouped by the students they block. Top: ${shown[0].skills.map((k) => k.name).join(", ")}, ${plural(shown[0].students.length, "student", "students")}.`}>
             <Table>
@@ -150,11 +150,11 @@ function Waiting({ m, scope, failed }: { m: Readiness; scope: LabScope; failed: 
 
 export function DirectorDashboardB() {
   return (
-    <DirectorPage title="Dashboard" variant="B" pageType="dashboard" announce={(m) => (m.blockers[0] ? `${m.blockers[0].skills[0].name} blocks ${m.blockers[0].students.length} students` : `No required ${skillNoun()} blocks anyone`)}>
+    <DirectorPage title="Dashboard" variant="B" pageType="dashboard" announce={(m) => (m.blockers[0] ? `${m.blockers[0].skills[0].name} blocks ${m.blockers[0].students.length} students` : `No assigned ${skillNoun()} blocks anyone`)}>
       {({ model: m, scope, demo, setParams }) => (
         <div className="flex flex-col gap-4">
           <Figures m={m} scope={scope} />
-          {demo === "clear" ? <p className="text-sm text-foreground">{`No required ${skillNoun()} blocks anyone in scope.`}</p> : null}
+          {demo === "clear" ? <p className="text-sm text-foreground">{`No assigned ${skillNoun()} blocks anyone in scope.`}</p> : null}
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
             {demo === "error" ? (
               <div className="xl:col-span-7">

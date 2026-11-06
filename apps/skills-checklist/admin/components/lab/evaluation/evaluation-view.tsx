@@ -15,7 +15,8 @@
  */
 import { TYPE } from "@/components/lab/type-scale"
 import * as React from "react"
-import { FloatingSheetPanel, FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
+import { FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
+import { FloatingSheetPanel } from "@/components/lab/shared/sheet"
 import type { EvaluationView } from "@/lib/lab/evaluation-view"
 import { CompareTable, Feedback } from "@/components/lab/reviewer/review-parts"
 import { FactList } from "@/components/lab/reviewer/parts"

@@ -22,11 +22,13 @@ for (const s of registry.screens) {
     const key = `${s.persona}/${s.slug}/${v.id}`
     const file = path.join(root, v.file)
     if (!fs.existsSync(file)) { console.log(`FAIL ${key}: file ${v.file} does not exist`); failed = true; continue }
-    const r = checkVariant(file, root, s.requiredDsComponents)
+    // A variant whose design has no table or tabs (Evaluation settings B, map D3 "Not on the page") names its own list.
+    const required = v.requiredDsComponents ?? s.requiredDsComponents
+    const r = checkVariant(file, root, required)
     const ok = r.missing.length === 0 && r.violations.length === 0
     if (!ok) failed = true
     console.log(`${ok ? "PASS" : "FAIL"} ${key}  (${v.file})`)
-    console.log(`  required: ${s.requiredDsComponents.join(", ")}`)
+    console.log(`  required: ${required.join(", ")}`)
     console.log(`  used (${r.used.length}): ${r.used.join(", ")}`)
     if (r.missing.length) console.log(`  MISSING: ${r.missing.join(", ")}`)
     for (const x of r.violations) console.log(`  VIOLATION ${x.rule} ${x.file}:${x.line} ${x.message}`)

@@ -32,10 +32,10 @@ const navRow = (persona: "admin" | "student", key: string) => PERSONA_BY_ID[pers
 const fakeApi = { hydrated: true, demo: "loading", rows: [], counts: { all: 0, notConfigured: 0, configured: 0, published: 0, inactive: 0 }, banner: null, setBanner: () => {} } as unknown as LibraryApi
 
 describe("Settings sections and the program's noun", () => {
-  it("Settings has Clinical settings and Evaluators, no Naming; Categories and tags is its own page (D-L21, D-L24, D-L25)", () => {
-    expect(SETTINGS_SECTIONS).toEqual(["categories", "tags", "settings", "instructors", "evaluators"])
+  it("Settings has Clinical settings, Evaluators and Student groups, no Naming; Categories and tags is its own page (D-L21, D-L24, D-L25)", () => {
+    expect(SETTINGS_SECTIONS).toEqual(["categories", "tags", "settings", "instructors", "evaluators", "student-groups"])
     // D-L24: Evaluators (every person who signs, lab instructors included) replaces the Lab instructors list.
-    expect(SCOPE_SECTIONS.program).toEqual(["settings", "evaluators"])
+    expect(SCOPE_SECTIONS.program).toEqual(["settings", "evaluators", "student-groups"])
     expect(scopeSection("program", "instructors")).toBe("evaluators")
     expect(sectionLabel("evaluators")).toBe("Evaluators")
     expect(SCOPE_SECTIONS.vocabulary).toEqual(["categories", "tags"])

@@ -8,17 +8,12 @@
  * - Locked sections show their greyed shape and the name of the section that unlocks them, instead of a sentence.
  * - Drawn samples of the evaluator form and the student request (decorative pictures built from a real library skill of that
  *   model, and from the program's own labels once chosen). Romit 2026-11-03: drawn mini forms are acceptable as visuals.
- * - The first-save confirm asks the scope (not configured only, or all) with nothing preselected [REQ SC-02 spirit, IM-13], and
- *   shows the change / match / keep own / need questions counts from `planProgramApply` (behaviour unchanged).
+ * - The confirm is the one ApplyDialog: who changes, who keeps their own, whose progress changes (map D3).
  */
 import * as React from "react"
 import Link from "next/link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
-import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
-import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
-import { FieldError } from "@exxatdesignux/ui/components/ui/field"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import {
   AlertDialog,
@@ -31,20 +26,21 @@ import {
   AlertDialogTitle,
 } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { cn } from "@exxatdesignux/ui/lib/utils"
+import { UnsavedChangesGuard } from "@/components/lab/shared/unsaved-guard"
 import { PageFrame } from "@/components/skills/page-header"
 import { TYPE } from "@/components/lab/type-scale"
 import { NUM_LINK } from "@/components/lab/link-styles"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
 import { useV2State } from "@/lib/v2/react"
-import { buildLibrary } from "@/lib/lab/library"
+import { buildLibrary, isUsableRow } from "@/lib/lab/library"
 import { skillRuleOf } from "@/lib/lab/program-settings"
-import { countingLevels, emptyRule, hasNeed, LAB_MODEL_LABEL, LAB_MODELS, withModel, type LabRule, type RuleIssue } from "@/lib/lab/configure"
+import { countingLevels, countsFromOption, emptyRule, hasNeed, LAB_MODEL_LABEL, LAB_MODELS, withModel, type LabRule, type RuleIssue } from "@/lib/lab/configure"
 import type { EvalModel } from "@/lib/v2/types"
-import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { countSkills, skillNoun } from "@/lib/lab/terms"
 import { focusField } from "./use-configure"
 import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { EVALUATION_SETTINGS_TITLE } from "./program-layout"
-import { exceptionCount, ProgramBanners, TimesNeededTable, timesInvalid, useProgramSettings, type ProgramModel, type ProgramSaved, type TimesEdits } from "@/components/lab/configure/program-parts"
+import { ApplyDialog, exceptionCount, ProgramBanners, TimesNeededTable, timesInvalid, useProgramSettings, type ProgramModel, type ProgramSaved, type TimesEdits } from "@/components/lab/configure/program-parts"
 
 export const MODEL_ICON: Record<EvalModel, string> = { binary: "fa-circle-half-stroke", question: "fa-list-check", scored: "fa-star-half-stroke", demonstration: "fa-stairs" }
 
@@ -71,7 +67,7 @@ export function useScopeFacts(m: ProgramModel): ScopeFacts {
     const sample: ScopeFacts["sample"] = { binary: null, question: null, demonstration: null, scored: null }
     const skills = new Map(state.skills.map((k) => [k.id, k]))
     for (const row of library) {
-      if (!active.has(row.id) || row.status !== "configured" || !row.model) continue
+      if (!active.has(row.id) || !isUsableRow(row) || !row.model) continue
       byModel[row.model] += 1
       if (!sample[row.model]) {
         const k = skills.get(row.id)
@@ -94,7 +90,7 @@ export function ScopeLine({ facts }: { facts: ScopeFacts }) {
       {facts.notConfigured ? (
         <>
           {sep}
-          <Link href={to("admin/skills-library", { status: "not-configured" })} className={NUM_LINK}>{`${facts.notConfigured} not configured`}</Link>
+          <Link href={to("admin/skills-library", { config: "not-configured" })} className={NUM_LINK}>{`${facts.notConfigured} not configured`}</Link>
         </>
       ) : null}
     </p>
@@ -224,12 +220,6 @@ export function EvaluatorSketch({ rule, skillName, size = "md", className }: { r
               )}
             </span>
           ))}
-          {model === "question" ? (
-            <span className="flex items-center justify-between gap-2 border-t border-border pt-1.5">
-              <span className="text-xs font-medium text-foreground">Result</span>
-              <Pills labels={outcomes} on={qualifying} nowrap />
-            </span>
-          ) : null}
         </span>
       ) : null}
       {size === "md" && model ? (
@@ -303,89 +293,9 @@ export function useModelChoice(m: ProgramModel, onChosen?: (x: EvalModel) => voi
 // ---------------------------------------------------------------------------------------------------------------------
 // First-save confirm: which skills, then the counts
 
-type Scope = "new" | "all"
-
+/** One dialog on every variant (map D3): the scope question is gone, because who changes follows from D0. */
 export function ScopeApplyDialog({ m, open, onOpenChange, onSaved }: { m: ProgramModel; open: boolean; onOpenChange: (o: boolean) => void; onSaved?: (r: ProgramSaved | null) => void }) {
-  const [scope, setScope] = React.useState<Scope | null>(null)
-  const [includeOwn, setIncludeOwn] = React.useState(false)
-  const [tried, setTried] = React.useState(false)
-  React.useEffect(() => {
-    if (open) {
-      setScope(null)
-      setIncludeOwn(false)
-      setTried(false)
-    }
-  }, [open])
-  const only = scope === "new" ? m.notConfigured : m.ids
-  const plan = React.useMemo(() => (open && scope ? m.plan(includeOwn, only) : null), [open, scope, m, includeOwn, only])
-  const ownChoice = React.useMemo(() => (open && scope ? m.plan(false, only).own.length : 0), [open, scope, m, only])
-  const outside = scope === "new" ? m.ids.length - m.notConfigured.length : 0
-  const rows: Array<{ label: string; n: number | null }> = [
-    { label: "Change", n: plan ? plan.change.length : null },
-    { label: "Already match", n: plan ? plan.unchanged.length : null },
-    { label: "Keep their own", n: plan ? plan.own.length + outside : null },
-    { label: "Need their own questions", n: plan ? plan.blocked.length : null },
-  ]
-  const n = plan?.change.length ?? 0
-  const err = tried && !scope ? `Choose which ${skillNounPlural()}.` : undefined
-  const option = (value: Scope, label: string, count: number) => (
-    <Label
-      htmlFor={`scope-${value}`}
-      className="flex cursor-pointer items-center gap-3 rounded-[var(--radius)] border border-border bg-background p-3 font-normal has-[[data-state=checked]]:border-[var(--brand-color)] has-[[data-state=checked]]:bg-[var(--brand-tint)]"
-    >
-      <RadioGroupItem id={`scope-${value}`} value={value} />
-      <span className="flex-1 text-sm text-foreground">{label}</span>
-      <span className="text-sm font-semibold tabular-nums text-foreground">{count}</span>
-    </Label>
-  )
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg" data-scope-dialog>
-        <DialogHeader>
-          <DialogTitle>{`Apply to which ${skillNounPlural()}?`}</DialogTitle>
-          <DialogDescription className="sr-only">{`Choose which ${skillNounPlural()} take these evaluation settings, then review the counts.`}</DialogDescription>
-        </DialogHeader>
-        <RadioGroup id="scope-choice" value={scope ?? ""} onValueChange={(v) => setScope(v === "all" ? "all" : "new")} aria-label={`Which ${skillNounPlural()}`} aria-invalid={err ? true : undefined} aria-describedby={err ? "scope-choice-error" : undefined} className="grid gap-2">
-          {option("new", "Not configured only", m.notConfigured.length)}
-          {option("all", `All ${skillNounPlural()}`, m.ids.length)}
-        </RadioGroup>
-        {err ? <FieldError id="scope-choice-error">{err}</FieldError> : null}
-        <dl className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-6 gap-y-2 border-t border-border pt-3" data-apply-counts>
-          {rows.map((r) => (
-            <React.Fragment key={r.label}>
-              <dt className={cn(TYPE.body, r.n === null && "text-muted-foreground")}>{r.label}</dt>
-              <dd className={cn("text-end text-sm font-semibold tabular-nums", r.n === null ? "text-muted-foreground" : "text-foreground")}>{r.n === null ? "–" : r.n}</dd>
-            </React.Fragment>
-          ))}
-        </dl>
-        {ownChoice ? (
-          <div className="flex items-start gap-2">
-            <Checkbox id="scope-include-own" checked={includeOwn} onCheckedChange={(c) => setIncludeOwn(c === true)} />
-            <Label htmlFor="scope-include-own" className="font-normal">{`Also apply to ${countSkills(ownChoice)} with their own settings`}</Label>
-          </div>
-        ) : null}
-        <DialogFooter>
-          <Button type="button" variant="outline" size="default" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button
-            type="button"
-            variant="default"
-            size="default"
-            onClick={() => {
-              if (!scope) {
-                setTried(true)
-                return
-              }
-              const r = m.save(includeOwn, only)
-              onSaved?.(r)
-              onOpenChange(false)
-            }}
-          >
-            {scope && n ? `Apply to ${countSkills(n)}` : "Apply"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
+  return <ApplyDialog m={m} open={open} onOpenChange={onOpenChange} onSaved={onSaved} />
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -461,6 +371,7 @@ export function ContextSettingsFrame({ children, onIssue, aside }: { children: (
       </PageFrame>
       {aside?.(page)}
       <ScopeApplyDialog m={m} open={open} onOpenChange={setOpen} onSaved={() => writeTimes()} />
+      {embedded ? null : <UnsavedChangesGuard dirty={!!m.saved && m.dirty} onDiscard={m.discard} />}
     </div>
   )
 }
@@ -499,17 +410,10 @@ export function criterionValue(rule: LabRule): string | null {
   if (m === "binary") return rule.qualifyingLabel === null ? null : rule.outcomeLabels[rule.qualifyingLabel].trim() || null
   if (m === "demonstration") {
     const from = rule.carried.minLevelIndex
-    return from !== null && from < rule.levels.length && rule.levels[from]?.trim() ? countsFromOptionText(rule.levels, from) : null
+    return from !== null && from < rule.levels.length && rule.levels[from]?.trim() ? countsFromOption(rule.levels, from) : null
   }
   const n = rule.questions.filter((q) => q.trim()).length
   return n ? `${n} ${n === 1 ? "question" : "questions"}` : null
-}
-
-function countsFromOptionText(levels: readonly string[], i: number): string {
-  const name = levels[i]?.trim() || `Level ${i + 1}`
-  if (i === 0) return "Any level"
-  if (i === levels.length - 1) return `${name} only`
-  return `${name} or above`
 }
 
 /** "a preceptor", "a preceptor or clinical faculty": the signers inside a sentence (lowercase mid-sentence), or null. */
@@ -541,7 +445,7 @@ export function TimesNeededButton({ p, className, variant = "link", label, foote
           </div>
           <DialogFooter className={footer ? "sm:justify-between" : undefined}>
             {footer}
-            <Button type="button" variant="outline" size="default" onClick={() => setOpen(false)}>Done</Button>
+            <Button type="button" variant="outline" size="default" onClick={() => setOpen(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

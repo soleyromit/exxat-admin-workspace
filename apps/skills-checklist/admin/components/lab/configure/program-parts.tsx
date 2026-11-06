@@ -7,16 +7,15 @@
  * subject (D-L26). The conditions (setting and level minimums) stay with each skill.
  *
  * Saving asks first, with the counts: how many skills take the settings, how many become usable, how many already match, how many
- * have settings of their own (kept unless included) and how many cannot take them yet and why [REQ IM-13, SC-18].
+ * are Edited (kept) and how many cannot take them yet and why [REQ IM-13, SC-18].
  */
 import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
-import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
+import { ResultBanner } from "@/components/lab/shared/result-banner"
 import { StatusBadge } from "@exxatdesignux/ui"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
@@ -26,17 +25,22 @@ import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxat
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
-import { buildLibrary } from "@/lib/lab/library"
-import { CHECKOFF_LABEL, CRITERIA_LABEL, HOW_MANY_LABEL, MODEL_STEP_LABEL, configureStepHead, configureStepValue, LAB_MODEL_LABEL, ROLE_LABEL, ruleAllowsCheckOff, validateRule, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
+import { buildLibrary, CONFIGURATION_META } from "@/lib/lab/library"
+import { CHECKOFF_LABEL, CRITERIA_LABEL, HOW_MANY_LABEL, WHO_DOES_WHAT_LABEL, MODEL_STEP_LABEL, configureStepHead, configureStepValue, LAB_MODEL_LABEL, ROLE_LABEL, ruleAllowsCheckOff, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import {
+  blockedGroups,
   notConfiguredIds,
   planProgramApply,
+  programIssues,
+  programSaveEffects,
   programSettingsOf,
+  programImpact,
   programStartRule,
   saveProgramSettings,
   setTimesNeeded,
   timesRows,
   type ProgramApplyPlan,
+  type ProgramImpact,
   type TimesRow,
 } from "@/lib/lab/program-settings"
 import { capitalize, inSentence, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -46,6 +50,8 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
 import { ApprovalToggle, FeedbackToggle, GroupCheckOffSection, ModelSection, OutcomesSection, RuleSection, SelfRatingToggle, SignersField, SignOffSection, StudentFieldsField, type SectionProps } from "./fields"
 import { ConfigSection } from "./section"
+import { useFocusBack } from "./settings-dialogs"
+import { holdSecondPress } from "@/components/lab/shared/focus"
 
 const now = () => `${DEMO_TODAY}T${new Date().toISOString().slice(11, 19)}Z`
 
@@ -68,16 +74,25 @@ export interface ProgramModel {
   showErrors: boolean
   setShowErrors: (v: boolean) => void
   dirty: boolean
-  /** Active library skills in the shared store. */
+  /** Library skills in the shared store, Active and Inactive: both count like any other (map D3) [INFER]. */
   ids: string[]
   notConfigured: string[]
-  plan: (includeOwn: boolean, only?: readonly string[]) => ProgramApplyPlan
-  save: (includeOwn: boolean, only?: readonly string[]) => ProgramSaved | null
+  plan: (only?: readonly string[]) => ProgramApplyPlan
+  /** Who the save reaches, before it applies [REQ AE-02]. */
+  impactOf: (plan: ProgramApplyPlan) => ProgramImpact
+  save: (only?: readonly string[]) => ProgramSaved | null
   result: ProgramSaved | null
   clearResult: () => void
+  /** Back to what is saved: Discard on "Discard your changes?". */
+  discard: () => void
+  /** Skills whose number differs from the program's: the same set as the Library's Different number filter. */
+  differentNumber: number
   times: TimesRow[]
   saveTimes: (edits: Record<string, number>) => { written: number; failed: Array<{ id: string; error: string }> }
 }
+
+/** What dirty compares: group check-off as it reads, since a saved rule with no choice and a choice of the same thing are the same settings. */
+const dirtyKey = (r: LabRule): string => JSON.stringify(r.model ? { ...r, checkOff: { ...r.checkOff, enabled: ruleAllowsCheckOff(r) } } : r)
 
 export function useProgramSettings(): ProgramModel {
   const state = useV2State()
@@ -85,7 +100,7 @@ export function useProgramSettings(): ProgramModel {
   const hydrated = useV2Hydrated()
   const params = useSearchParams()
   const library = React.useMemo(() => buildLibrary(state), [state])
-  const ids = React.useMemo(() => library.filter((r) => r.status !== "inactive" && state.skills.some((k) => k.id === r.id)).map((r) => r.id), [library, state])
+  const ids = React.useMemo(() => library.filter((r) => state.skills.some((k) => k.id === r.id)).map((r) => r.id), [library, state])
   const savedRec = hydrated ? programSettingsOf(state) : null
   const savedKey = JSON.stringify(savedRec?.rule ?? null)
   const [rule, setRuleState] = React.useState<LabRule>(() => programStartRule(state))
@@ -95,28 +110,32 @@ export function useProgramSettings(): ProgramModel {
     seeded.current = savedKey
     setRuleState(programStartRule(state))
   }, [hydrated, savedKey, state])
-  const setRule = React.useCallback<SectionProps["setRule"]>((next) => setRuleState((r) => (typeof next === "function" ? next(r) : next)), [])
+  const [result, setResult] = React.useState<ProgramSaved | null>(null)
+  // One banner at a time (map E10): the next edit ends what the last save said.
+  const setRule = React.useCallback<SectionProps["setRule"]>((next) => { setResult(null); setRuleState((r) => (typeof next === "function" ? next(r) : next)) }, [])
   React.useEffect(() => {
     const onReset = () => setRuleState(programStartRule(state))
     window.addEventListener("lab:reset", onReset)
     return () => window.removeEventListener("lab:reset", onReset)
   }, [state])
-  const [showErrors, setShowErrors] = React.useState(false)
-  const [result, setResult] = React.useState<ProgramSaved | null>(null)
-  const issues = React.useMemo(() => validateRule(rule), [rule])
-  const dirty = JSON.stringify(rule) !== JSON.stringify(programStartRule(state))
+  const [showErrors, setShowErrorsState] = React.useState(false)
+  const setShowErrors = React.useCallback((v: boolean) => { if (v) setResult(null); setShowErrorsState(v) }, [])
+  const issues = React.useMemo(() => programIssues(rule), [rule])
+  const dirty = dirtyKey(rule) !== dirtyKey(programStartRule(state))
   const notConfigured = React.useMemo(() => notConfiguredIds(state, ids), [state, ids])
-  const plan = React.useCallback((includeOwn: boolean, only?: readonly string[]) => planProgramApply(state, rule, { includeOwn, only: only ?? ids }), [state, rule, ids])
+  const plan = React.useCallback((only?: readonly string[]) => planProgramApply(state, rule, { only: only ?? ids }), [state, rule, ids])
+  const impactOf = React.useCallback((p: ProgramApplyPlan) => programImpact(state, rule, p), [state, rule])
   const save = React.useCallback(
-    (includeOwn: boolean, only?: readonly string[]) => {
+    (only?: readonly string[]) => {
       let out: ProgramSaved | null = null
       store.update((s) => {
-        const r = saveProgramSettings(s, rule, { at: now(), byId: IDS.ross, includeOwn, only: only ?? ids })
+        const r = saveProgramSettings(s, rule, { at: now(), byId: IDS.ross, only: only ?? ids })
         if (!r.ok) return s
-        out = { written: r.result.written.length, newlyConfigured: r.result.plan.newlyConfigured, kept: r.result.plan.own.length, blocked: r.result.plan.blocked.length }
+        out = { written: r.result.written.length, newlyConfigured: r.result.plan.newlyConfigured, kept: r.result.plan.edited.length, blocked: r.result.plan.blocked.length }
         return r.result.state
       })
       setResult(out)
+      if (out) setShowErrorsState(false)
       return out
     },
     [store, rule, ids],
@@ -157,7 +176,10 @@ export function useProgramSettings(): ProgramModel {
     plan,
     save,
     result,
+    impactOf,
     clearResult: () => setResult(null),
+    discard: () => { setRuleState(programStartRule(state)); setShowErrorsState(false) },
+    differentNumber: library.filter((r) => r.timesDiffer).length,
     times,
     saveTimes,
   }
@@ -167,7 +189,7 @@ export function useProgramSettings(): ProgramModel {
 export function programHead(id: SectionId, model: LabRule["model"]): string {
   if (id === "model") return `How are ${skillNounPlural()} judged?`
   if (id === "rule") return "How many evaluations?"
-  if (id === "signoff") return "Who signs?"
+  if (id === "signoff") return `${WHO_DOES_WHAT_LABEL}?`
   return configureStepHead(id, model).title
 }
 
@@ -201,45 +223,86 @@ export function ProgramSections({ m, idPrefix = "prog-sec" }: { m: ProgramModel;
 }
 
 /**
- * The confirmation before settings reach any skill [REQ IM-13]: the title carries the count; the skills that cannot take them
- * and the choice about skills with settings of their own show only when there are any.
+ * The confirmation before settings reach any skill [REQ IM-13, AE-02; map D3, D0 rules 2, 6, 7, 8, 9]: who changes, who stays Edited, and
+ * the students whose progress changes, by name. A rename changes nobody's progress, so it has no students line [REQ AE-06].
  */
 export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: ProgramModel; open: boolean; onOpenChange: (o: boolean) => void; only?: readonly string[]; onSaved?: (r: ProgramSaved | null) => void }) {
-  const [includeOwn, setIncludeOwn] = React.useState(false)
-  React.useEffect(() => { if (open) setIncludeOwn(false) }, [open])
-  const plan = React.useMemo(() => (open ? m.plan(includeOwn, only) : null), [open, m, includeOwn, only])
-  const ownCount = React.useMemo(() => (open ? m.plan(false, only).own.length : 0), [open, m, only])
-  if (!plan) return null
+  const plan = React.useMemo(() => (open ? m.plan(only) : null), [open, m, only])
+  const impact = React.useMemo(() => (plan ? m.impactOf(plan) : null), [plan, m])
+  const [names, setNames] = React.useState(false)
+  React.useEffect(() => { if (open) setNames(false) }, [open])
+  const focus = useFocusBack()
+  if (!plan || !impact) return null
   const n = plan.change.length
+  const gone = plan.blocked.length
+  const effects = programSaveEffects(m.saved, m.rule)
+  const usesQuestions = m.rule.model === "question" || m.rule.model === "scored"
+  // Only fields this page shows, in its words: minimums are per skill (they have their own row above), the rest fold into the row that holds them.
+  const pageCleared = effects.cleared.flatMap((w) => (w === "Minimum at each level" || w === "Levels that count" || w === "Named questions" ? [] : w === "Checked-off students get" ? [m.saved?.model === "scored" ? "Score students get" : "Level students get"] : [w]))
+  const rows: Array<{ label: string; value: string }> = [
+    // A rename is said as a rename [REQ AE-06]: nothing about those skills changes but the words.
+    ...(n ? [{ label: CONFIGURATION_META.default.label, value: effects.namesOnly ? `${n} show the new names` : `${n} will change` }] : []),
+    ...(usesQuestions && plan.programQuestions ? [{ label: "Questions on this page", value: `${plan.programQuestions} use them` }] : []),
+    ...(usesQuestions && plan.ownQuestions ? [{ label: "Own questions", value: `${plan.ownQuestions} keep their own` }] : []),
+    // Only those no other row names: a skill unchanged because it keeps its own number or its own questions is said once, there.
+    ...(plan.alreadyOnSettings ? [{ label: "Already on these settings", value: `${plan.alreadyOnSettings} already match` }] : []),
+    ...(plan.edited.length ? [{ label: CONFIGURATION_META.edited.label, value: `${plan.edited.length} keep their settings and number` }] : []),
+    ...(plan.staysNotConfigured.length ? [{ label: "Not configured", value: `${plan.staysNotConfigured.length} stay not configured` }] : []),
+    // The page's link counts Custom skills too, so this row says whose number it counts; the Custom row above says those keep theirs.
+    ...(plan.ownNumber ? [{ label: `${CONFIGURATION_META.default.label} with their own number`, value: `${plan.ownNumber} keep their number` }] : []),
+    ...blockedGroups(plan).map((g) => ({ label: g.words, value: `${g.count} become not configured` })),
+    ...(plan.minimumsCleared ? [{ label: "Level minimums", value: `Cleared on ${plan.minimumsCleared}` }] : []),
+    ...(effects.checkOff ? [{ label: "Faculty can check off a group", value: effects.checkOff === "off" ? "Turns off" : "Turns on" }] : []),
+    ...(pageCleared.length ? [{ label: "Cleared", value: pageCleared.join(", ") }] : []),
+  ]
+  // A switch every skill follows into Not configured must say so in its title: "Apply to 0" would hide it.
+  const title = !n && gone ? `${countSkills(gone)} become not configured. Apply?` : n ? `Apply to ${countSkills(n)}?` : "Apply these settings?"
+  const students = impact.ruleChanged && impact.students.length > 0
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg" data-apply-dialog {...focus}>
         <DialogHeader>
-          <DialogTitle>{n ? `Apply to ${countSkills(n)}?` : "Save evaluation settings?"}</DialogTitle>
-          <DialogDescription className="sr-only">{`Saving applies these settings to the listed ${skillNounPlural()}.`}</DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          {/* Nothing to count (a program with no skills yet): the one plain line, and no rows. */}
+          {rows.length || students ? <DialogDescription className="sr-only">Saving applies these settings to the program.</DialogDescription> : <DialogDescription>{`New ${skillNounPlural()} take these settings when they are added.`}</DialogDescription>}
         </DialogHeader>
-        {plan.blocked.length ? (
-          <p className={TYPE.body} data-apply-plan>{`${countSkills(plan.blocked.length)} need their own questions first.`}</p>
-        ) : null}
-        {ownCount ? (
-          <div className="flex items-start gap-2">
-            <Checkbox id="prog-include-own" checked={includeOwn} onCheckedChange={(c) => setIncludeOwn(c === true)} />
-            <Label htmlFor="prog-include-own" className="font-normal">{`Also apply to ${countSkills(ownCount)} with their own settings`}</Label>
-          </div>
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 empty:hidden" data-apply-plan>
+          {rows.map((r) => (
+            <React.Fragment key={r.label}>
+              <dt className={TYPE.body}>{r.label}</dt>
+              <dd className="text-end text-sm font-medium tabular-nums text-foreground">{r.value}</dd>
+            </React.Fragment>
+          ))}
+          {students ? (
+            <>
+              <dt className={TYPE.body}>Students whose progress changes</dt>
+              <dd className="text-end text-sm font-medium tabular-nums text-foreground">
+                {impact.students.length}
+                <Button type="button" variant="link" size="sm" className="ms-2 h-auto p-0" aria-expanded={names} onClick={() => setNames((x) => !x)}>{names ? "Hide names" : "Show names"}</Button>
+              </dd>
+            </>
+          ) : null}
+        </dl>
+        {names ? (
+          <ul className="max-h-40 overflow-y-auto rounded-[var(--radius)] border border-border p-2 text-sm text-foreground" data-apply-names>
+            {impact.students.map((x) => <li key={x.id}>{x.name}</li>)}
+          </ul>
         ) : null}
         <DialogFooter>
-          <Button type="button" variant="outline" size="default" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="button" variant="outline" size="default" onClick={(e) => { holdSecondPress(e); onOpenChange(false) }}>Cancel</Button>
           <Button
             type="button"
             variant="default"
             size="default"
-            onClick={() => {
-              const r = m.save(includeOwn, only)
+            onClick={(e) => {
+              // The banner pushes the page down under the pointer: the second press of a double click must not land on what moved there.
+              holdSecondPress(e)
+              const r = m.save(only)
               onSaved?.(r)
               onOpenChange(false)
             }}
           >
-            {n ? `Apply to ${countSkills(n)}` : "Save"}
+            {n ? `Apply to ${countSkills(n)}` : "Apply settings"}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -247,13 +310,13 @@ export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: Progr
   )
 }
 
-/** What the save did, once (title only); and skills added since, with the way to apply the settings to them. */
-export function ProgramBanners({ m, onApplyNew }: { m: ProgramModel; onApplyNew: () => void }) {
+/** What the save did, once, with the next job (map D3). New skills inherit at once (D0 rule 3), so there is nothing to apply to them. */
+export function ProgramBanners({ m }: { m: ProgramModel; onApplyNew?: () => void }) {
+  const libraryHref = useLabHref()("admin/skills-library")
   if (m.result) {
-    return <LocalBanner variant="success" dismissible onDismiss={m.clearResult}>{`Saved for ${countSkills(m.result.written)}`}</LocalBanner>
-  }
-  if (m.saved && m.notConfigured.length) {
-    return <LocalBanner variant="warning" action={{ label: "Apply the settings", onClick: onApplyNew }}>{`${countSkills(m.notConfigured.length)} not configured`}</LocalBanner>
+    const said = m.result.written ? `Saved for ${countSkills(m.result.written)}.` : m.result.blocked ? "Saved." : "Settings saved."
+    const gone = m.result.blocked ? ` ${countSkills(m.result.blocked)} now not configured.` : ""
+    return <ResultBanner banner={{ variant: "success", title: `${said}${gone}`, action: { label: "Open the library", href: libraryHref } }} onDismiss={m.clearResult} />
   }
   return null
 }
@@ -269,7 +332,7 @@ export const PROGRAM_GROUPS: Array<{ id: ProgramGroupId; label: string }> = [
   { id: "judged", label: MODEL_STEP_LABEL },
   { id: "achieved", label: CRITERIA_LABEL },
   { id: "howmany", label: HOW_MANY_LABEL },
-  { id: "signs", label: "Who signs" },
+  { id: "signs", label: WHO_DOES_WHAT_LABEL },
 ]
 
 /** The section a validation issue belongs to, so a page can open or scroll to it. */
@@ -282,8 +345,8 @@ export function groupOfIssue(i: RuleIssue): ProgramGroupId {
 
 /**
  * One section's fields. What counts as achieved: the levels (or outcomes, questions) and which count. How many evaluations: the
- * program's number, the skills whose number differs, group check-off. Who signs: student fields, self-rating, signers, feedback,
- * approval.
+ * program's number, the skills whose number differs. Who does what: student fields, self-rating, signers, feedback, group
+ * check-off, approval.
  */
 export function ProgramGroupBody({ id, m, edits, setEdits }: { id: ProgramGroupId; m: ProgramModel; edits: TimesEdits; setEdits: React.Dispatch<React.SetStateAction<TimesEdits>> }) {
   const props: SectionProps = { rule: m.rule, setRule: m.setRule, issues: m.issues, showErrors: m.showErrors, settings: [], legendHidden: true }
@@ -297,7 +360,6 @@ export function ProgramGroupBody({ id, m, edits, setEdits }: { id: ProgramGroupI
       <div className="flex flex-col gap-6">
         <RuleSection {...props} conditions={false} />
         <TimesNeededTable m={m} edits={edits} setEdits={setEdits} programNeed={Number.isFinite(m.rule.need) ? m.rule.need : null} />
-        <GroupCheckOffSection rule={m.rule} setRule={m.setRule} bare />
       </div>
     )
   }
@@ -307,6 +369,7 @@ export function ProgramGroupBody({ id, m, edits, setEdits }: { id: ProgramGroupI
       <SelfRatingToggle rule={m.rule} setRule={m.setRule} />
       <SignersField {...props} />
       <FeedbackToggle rule={m.rule} setRule={m.setRule} />
+      {m.rule.model ? <GroupCheckOffSection rule={m.rule} setRule={m.setRule} /> : null}
       <ApprovalToggle rule={m.rule} setRule={m.setRule} />
     </div>
   )
@@ -318,7 +381,7 @@ export function exceptionCount(m: ProgramModel, edits: TimesEdits): number {
   // A skill with no number of its own follows the program (the library column reads it the same way; `timesCellOf`).
   return m.times.filter((r) => {
     const v = edits[r.id] !== undefined ? edits[r.id] : r.need
-    return need !== null && v !== null && v !== need
+    return need !== null && v !== null && (v !== need || (r.own && edits[r.id] === undefined))
   }).length
 }
 
@@ -339,8 +402,8 @@ export function programSummaryRows(m: ProgramModel, edits: TimesEdits): Array<{ 
     { group: "signs", label: "Self-rating", value: on(r.selfEvaluation) },
     { group: "signs", label: "Signs", value: r.evaluatorRoles.map((x) => ROLE_LABEL[x]).join(", ") || none },
     { group: "signs", label: "Feedback", value: r.feedbackRequired ? "Required" : "Optional" },
+    { group: "signs", label: CHECKOFF_LABEL, value: !r.model ? none : allowed ? (level ? `On, marks ${inSentence(level)}` : "On") : "Off" },
     { group: "signs", label: "Approval", value: on(r.approvalRequired) },
-    { group: "howmany", label: CHECKOFF_LABEL, value: !r.model ? none : allowed ? (level ? `On, marks ${inSentence(level)}` : "On") : "Off" },
   ]
 }
 
@@ -355,7 +418,7 @@ export const timesInvalid = (edits: TimesEdits): boolean => Object.values(edits)
 
 /**
  * Every active skill with its times needed, grouped by category, editable in place. Controlled: the page's own Save writes the
- * edits. "Own settings" opens that skill's Configure page (off the main path).
+ * edits. "Custom" opens that skill's full page (map D1c).
  */
 export function TimesNeededTable({ m, edits, setEdits, programNeed }: { m: ProgramModel; edits: TimesEdits; setEdits: React.Dispatch<React.SetStateAction<TimesEdits>>; programNeed?: number | null }) {
   const to = useLabHref()
@@ -364,7 +427,7 @@ export function TimesNeededTable({ m, edits, setEdits, programNeed }: { m: Progr
   const filterable = programNeed !== undefined && programNeed !== null
   const differs = (r: TimesRow) => {
     const v = edits[r.id] !== undefined ? edits[r.id] : r.need
-    return v !== null && v !== programNeed
+    return v !== null && (v !== programNeed || (r.own && edits[r.id] === undefined))
   }
   const diffCount = filterable ? m.times.filter(differs).length : 0
   const [show, setShow] = React.useState<"different" | "all">("different")
@@ -411,14 +474,14 @@ export function TimesNeededTable({ m, edits, setEdits, programNeed }: { m: Progr
       },
     },
     {
-      key: "status",
-      label: "Status",
+      key: "configuration",
+      label: "Configuration",
       width: 192,
       cell: (r) =>
         !r.configured ? (
           <StatusBadge label="Not configured" tone="warning" icon="fa-triangle-exclamation" size="sm" surface="table" />
-        ) : r.ownSettings ? (
-          <Link href={to("admin/configure-skill", { skill: r.id })} className={cn(LINK_IN_TABLE, TYPE.body)}>Own settings</Link>
+        ) : r.edited ? (
+          <Link href={to("admin/configure-skill", { skill: r.id })} className={cn(LINK_IN_TABLE, TYPE.body)}>{CONFIGURATION_META.edited.label}</Link>
         ) : null,
     },
   ]

@@ -144,9 +144,32 @@ export const GOES_TO_REVIEW = "Check-offs go to review"
  * something other than a plain Met (a level, every question Yes, a score), and its line names the subject ("A tick marks the
  * student as independent"). Unavailable skills are not columns any more; the picker lists them with the reason.
  */
-export function SkillHead({ k }: { k: SessionSkill }) {
+/** The level most of the shown columns share: stated once above the table, so a column only names a level that differs (D-L71). */
+export function sharedLevel(skills: Array<Pick<SessionSkill, "levelLabel">>): string | null {
+  const n = new Map<string, number>()
+  for (const k of skills) n.set(k.levelLabel, (n.get(k.levelLabel) ?? 0) + 1)
+  return [...n.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+}
+
+export function SkillHead({ k, shared }: { k: SessionSkill; /** The level said once above the table: this column shows a level only when it differs, and what a tick records on its name, with no icon. */ shared?: string | null }) {
   const tip = k.reason ?? `${k.records}.`
   const showTip = !!k.reason || k.skill.model !== "binary"
+  if (shared !== undefined && !k.reason) {
+    return (
+      <div className="flex flex-col gap-1 py-1.5">
+        {showTip ? (
+          <Tip label={tip}>
+            <span tabIndex={0} className="line-clamp-2 rounded-sm text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring" data-column-tip>
+              {k.skill.name}
+              <span className="sr-only">{`: ${tip}`}</span>
+            </span>
+          </Tip>
+        ) : <span className="line-clamp-2 text-sm font-medium text-foreground">{k.skill.name}</span>}
+        {k.levelLabel !== shared ? <span><Badge variant="outline">{k.levelLabel}</Badge></span> : null}
+        {k.approval ? <span className="text-xs font-normal text-muted-foreground" data-needs-approval>{GOES_TO_REVIEW}</span> : null}
+      </div>
+    )
+  }
   return (
     <div className="flex flex-col gap-1 py-1.5">
       <span className={cn("line-clamp-2 text-sm font-medium", k.reason ? "text-muted-foreground" : "text-foreground")}>{k.skill.name}</span>

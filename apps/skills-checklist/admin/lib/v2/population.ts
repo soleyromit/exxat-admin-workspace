@@ -1,6 +1,8 @@
 import { heldState } from "./approvals"
 import { evalsOfStudentSkill, skillById } from "./evidence-index"
 import { ALL, NO_FILTERS, PACE_MARGIN, SMALL_NUMBERS, cohortOf, currentTerm, findTerm, scoped, studentsIn, type ReportFilters } from "./filters"
+import { courseSkillIdsInForce, mappingRowsInForce } from "./mapping-in-force"
+import { listInForce, listsByStudent } from "@/lib/lab/list-core"
 import { DEMO_TODAY } from "./seed-core"
 import { skillProgress } from "./student"
 import type { Evaluation, Person, Setting, Skill, Submission, V2State } from "./types"
@@ -8,15 +10,17 @@ import type { Evaluation, Person, Setting, Skill, Submission, V2State } from "./
 /**
  * The population calculation: the single source for "required", "achieved" and "behind" on every screen.
  *
- * Population (strategy/06 S2): students of the chosen cohort and group who take at least one course offering in the scope term
- * (and the scope course, when one is chosen). A student's required skills are the MANDATORY, configured, published skills of
- * their own cohort's offerings in that term, narrowed by category and tag. Location and setting recount evidence first (RP-08).
+ * Population: students of the chosen cohort and group who are on a skill list (and, when a term or course is chosen, take an offering in it).
+ * What a student owes is the skills on the list in force (lib/lab/lists.ts listInForce), never a merge of two lists; configured, published and
+ * active, narrowed by category and tag, and to what the chosen course maps. Course mapping says where a skill can be done, not what is owed
+ * (designer 2026-11-05, D-L102; Aarti 205da2dd ch 9, 11; Sankalp e72ea925 ch 9). A student on no list has no row and is listed in `unassigned`.
+ * Location and setting recount evidence first (RP-08).
  * Pending never counts: progress reads counted evaluations only, on `heldState`, so evidence held for approval (including
  * evidence from an evaluator name not adopted yet) is excluded everywhere.
  *
  * Basis (06 section 3.2): every "behind" is measured against one standard.
- * - expected (default, "Expected now"): behind when counted evaluations are more than PACE_MARGIN short of
- *   (required evaluations x share of the term gone). Pace is a prototype assumption (PENDING-ROMIT).
+ * - expected (default, "Expected now"): behind when counted evaluations are more than a margin short of
+ *   (required evaluations x share of the student's program gone, `programShare`). Pace is a prototype assumption (PENDING-ROMIT).
  * - median: behind when the share counted is MEDIAN_MARGIN points or more under the scope median. Needs n >= SMALL_NUMBERS.
  * - all: behind means not every required skill is achieved yet.
  *
@@ -43,6 +47,8 @@ export interface PopulationScope {
    * "didactic" includes didactic courses too. A course chosen by id is honoured whatever its type.
    */
   incl?: "didactic"
+  /** One skill list by id. Absent: each student reads their own first list (the default when they are on it). Lists never merge. */
+  list?: string
 }
 
 /** True when the scope reads clinical courses only (the default). */
@@ -106,6 +112,20 @@ export function resolveTerm(s: V2State, scope: Pick<PopulationScope, "term">, to
 }
 
 /**
+ * [INFER] The clock a list is read against: clinical skills run over the last three calendar years of a cohort, from January two years before it
+ * graduates to that December, so a share of the list is expected by now. It reads the cohort's graduation year, nothing else. No rule asks for
+ * pace: it is a prototype assumption (PENDING-ROMIT), never a gate.
+ */
+export function programShare(graduates: string | number | undefined, today: string = DEMO_TODAY): number {
+  const year = Number(graduates)
+  if (!Number.isFinite(year)) return 0
+  return termShareOf(`${year - 2}-01-01`, `${year}-12-31`, today)
+}
+
+/** Evaluations a student may be short of the program clock before reading as behind: 5 percent of what the list asks for [INFER]. */
+export const listPaceMargin = (needed: number): number => Math.max(PACE_MARGIN, Math.round(needed * 0.05))
+
+/**
  * Offerings of the term (and course), keyed by cohort id: course ids each cohort takes. `clinical` keeps clinical courses only
  * (the default scope); a course chosen by id is kept whatever its type.
  */
@@ -145,26 +165,29 @@ export const isConfigured = (k: Pick<Skill, "configured" | "published">): boolea
 export const isReportable = (k: Pick<Skill, "configured" | "published" | "active">): boolean => isConfigured(k) && k.active !== false
 
 /**
- * The two required sets (decision D-X12). They answer different questions and are never mixed in one figure.
- * - REQUIRED THIS TERM ("Required this term"): the mandatory skills of the student's own cohort's offerings in the term. Drives
- *   pace, "behind", "required achieved" on the dashboard, attainment, student progress and the v2 reports. `requiredSkillsFor`.
- * - REQUIRED TO GRADUATE ("Required to graduate"): the program list's required-before-graduation flag. Drives graduation
- *   readiness, one short, far behind (4 or more missing, decision D-X11) and verification. `requiredToComplete`.
+ * Two sets, never mixed in one figure (decision D-X12, second set replaced by D-L54, first set made a lens by D-L102).
+ * - ALL ASSIGNED ("All assigned"): every active skill on the list in force. What is owed: My progress, the dashboard, Reports by default, readiness,
+ *   one short, far behind (4 or more missing, decision D-X11) and verification.
+ * - MANDATORY THIS TERM ("Mandatory this term"): the mandatory skills of the student's own cohort's offerings in the term. A view of where skills are
+ *   expected now, not of what is owed: the Reports switch and the older v2 screens read it, with `{ set: "term" }`. `requiredSkillsFor`.
  */
-export const REQUIRED_SET_LABEL = { thisTerm: "Required this term", toGraduate: "Required to graduate" } as const
+export const REQUIRED_SET_LABEL = { thisTerm: "Mandatory this term", assigned: "All assigned" } as const
 
-/** Required to graduate: reportable skills the program list flags as required before graduation, by name. */
-export function requiredToComplete(s: V2State): Skill[] {
-  return s.skills.filter((k) => isReportable(k) && !!k.hgtc?.required).sort((a, b) => a.name.localeCompare(b.name))
+/**
+ * Every active, configured skill, by name: the pool the readiness figures read (Proposed, D-L54, which removed the required-before-
+ * graduation set). lib/lab narrows it to what is assigned to each student (lib/lab/lists.ts assignedSkillIdsByStudent).
+ */
+export function skillsToComplete(s: V2State): Skill[] {
+  return s.skills.filter((k) => isReportable(k)).sort((a, b) => a.name.localeCompare(b.name))
 }
 
-/** Missing-to-graduate thresholds (decision D-X11): exactly 1 is "one short", 2 to 3 "short", FAR_BEHIND_MISSING or more "far behind". */
+/** Missing-skill thresholds (decision D-X11): exactly 1 is "one short", 2 to 3 "short", FAR_BEHIND_MISSING or more "far behind". */
 export const FAR_BEHIND_MISSING = 4
 export type GraduationStage = "complete" | "one-short" | "short" | "far"
 export const graduationStageOf = (missing: number): GraduationStage => (missing === 0 ? "complete" : missing === 1 ? "one-short" : missing >= FAR_BEHIND_MISSING ? "far" : "short")
 
 /**
- * Required (mandatory; with includeOptional also recommended and optional) skills per cohort id, for the offerings of a term and
+ * Required (mandatory; with includeOptional also recommended) skills per cohort id, for the offerings of a term and
  * course. Clinical courses only unless the scope includes didactic: today no didactic course carries a mandatory skill, so the
  * mandatory sets (every "Required this term" figure) are the same either way (tests/v2/consistency-bases.test.ts pins it).
  */
@@ -173,22 +196,24 @@ export function requiredSets(s: V2State, scope: Pick<PopulationScope, "course" |
   const out = new Map<string, RequiredSkill[]>()
   for (const [cohortId, courseIds] of byCohort) {
     const seen = new Map<string, RequiredSkill>()
-    for (const m of s.mappings) {
-      if (!courseIds.includes(m.courseId)) continue
-      if (m.level === "not-expected" || (m.level !== "mandatory" && !includeOptional)) continue
-      const skill = skillById(s, m.skillId)
-      if (!skill || !isReportable(skill)) continue
-      if (scope.cat && skill.category !== scope.cat) continue
-      if (scope.tag && !(skill.tags ?? []).includes(scope.tag)) continue
-      const prev = seen.get(skill.id)
-      if (!prev || LEVEL_RANK[m.level] < LEVEL_RANK[prev.level]) seen.set(skill.id, { skill, level: m.level })
+    for (const courseId of courseIds) {
+      // The admin's edit to this one offering replaces the course's row (lib/v2/mapping-in-force.ts).
+      for (const m of mappingRowsInForce(s, courseId, cohortId, termId)) {
+        if (m.level === "not-expected" || (m.level !== "mandatory" && !includeOptional)) continue
+        const skill = skillById(s, m.skillId)
+        if (!skill || !isReportable(skill)) continue
+        if (scope.cat && skill.category !== scope.cat) continue
+        if (scope.tag && !(skill.tags ?? []).includes(scope.tag)) continue
+        const prev = seen.get(skill.id)
+        if (!prev || LEVEL_RANK[m.level] < LEVEL_RANK[prev.level]) seen.set(skill.id, { skill, level: m.level })
+      }
     }
     out.set(cohortId, [...seen.values()].sort((a, b) => a.skill.name.localeCompare(b.skill.name)))
   }
   return out
 }
 
-/** Required this term: one student's mandatory skills (own cohort's offerings in the term). Empty when the cohort takes nothing. */
+/** Mandatory this term: one student's mandatory skills (own cohort's offerings in the term). Empty when the cohort takes nothing. */
 export function requiredSkillsFor(s: V2State, studentId: string, termKey: string = ""): Skill[] {
   const p = s.people.find((x) => x.id === studentId)
   if (!p?.cohortId) return []
@@ -235,18 +260,22 @@ export interface StudentRow {
   /** Successful evaluations counted toward the required rules (never above what a rule needs), of what they ask for. */
   collected: number
   needed: number
-  /** Evaluations the term clock expects by now. */
+  /** Evaluations the clock expects by now (the program clock on a list, the term clock on Mandatory this term). */
   expected: number
   /** Share of required evaluations counted, 0 to 100. */
   pct: number
   /** Points against the basis: pct minus expected share, minus the scope median, or pct itself under All required. */
   gap: number
   behind: boolean
-  /** Evaluations short of the term clock, or 0 (the same under every basis). */
+  /** Evaluations short of the clock, or 0 (the same under every basis). */
   behindBy: number
   open: OpenSkill[]
   /** Every required skill in scope for this student. */
   requiredIds: string[]
+  /** The skill list this row reads; null on Mandatory this term. */
+  listId: string | null
+  /** The clock this row reads, 0 to 1. */
+  share: number
   bySection: Record<string, SectionTally>
 }
 
@@ -256,6 +285,10 @@ export interface Population {
   rows: StudentRow[]
   /** Students the cohort and group filters leave in, before the term and course (for the empty-scope explanation). */
   candidates: number
+  /** Students those filters leave in who are on no skill list: no row, shown as unassigned. Empty on Mandatory this term. */
+  unassigned: Person[]
+  /** The share of required evaluations the clock expects by now, across the rows, 0 to 1. */
+  expectedShare: number
   median: number
   /** Peer median suppressed because the scope holds fewer than SMALL_NUMBERS students. */
   medianSuppressed: boolean
@@ -266,11 +299,32 @@ export interface Population {
 }
 
 const popCache = new WeakMap<V2State, Map<string, Population>>()
-const scopeKey = (scope: PopulationScope, includeOptional: boolean) => JSON.stringify([scope.cohort, scope.group, scope.term, scope.course, scope.cat ?? "", scope.tag ?? "", scope.loc ?? "", scope.setting ?? "", scope.basis ?? "", clinicalOnly(scope), includeOptional])
+const scopeKey = (scope: PopulationScope, includeOptional: boolean, set: RequiredSetName) => JSON.stringify([scope.cohort, scope.group, scope.term, scope.course, scope.cat ?? "", scope.tag ?? "", scope.loc ?? "", scope.setting ?? "", scope.basis ?? "", clinicalOnly(scope), includeOptional, scope.list ?? "", set])
+
+/** "list": what is owed, the skills on the list in force. "term": where skills are expected now, the mandatory skills of the student's offerings. */
+export type RequiredSetName = "list" | "term"
+
+/** What one student owes in this scope: the skills on their list in force, narrowed by the scope. Null when no list reaches them. */
+function listRequired(s: V2State, p: Person, scope: PopulationScope): { listId: string; req: RequiredSkill[] } | null {
+  const list = listInForce(s, p.id, scope.list)
+  if (!list) return null
+  const mapped = scope.course ? courseSkillIdsInForce(s, scope.course) : null
+  const req: RequiredSkill[] = []
+  for (const id of list.skillIds) {
+    const skill = skillById(s, id)
+    if (!skill || !isReportable(skill)) continue
+    if (scope.cat && skill.category !== scope.cat) continue
+    if (scope.tag && !(skill.tags ?? []).includes(scope.tag)) continue
+    if (mapped && !mapped.has(id)) continue
+    req.push({ skill, level: "mandatory" })
+  }
+  return { listId: list.id, req: req.sort((a, b) => a.skill.name.localeCompare(b.skill.name)) }
+}
 
 /** The population for one scope. Cached per state and scope on the demo day; treat the result as read-only. */
-export function populationRows(state: V2State, scope: PopulationScope = DEFAULT_SCOPE, today: string = DEMO_TODAY, opts: { includeOptional?: boolean } = {}): Population {
-  const key = scopeKey(scope, !!opts.includeOptional)
+export function populationRows(state: V2State, scope: PopulationScope = DEFAULT_SCOPE, today: string = DEMO_TODAY, opts: { includeOptional?: boolean; set?: RequiredSetName } = {}): Population {
+  const set: RequiredSetName = opts.set ?? "list"
+  const key = scopeKey(scope, !!opts.includeOptional, set)
   if (today === DEMO_TODAY) {
     const hit = popCache.get(state)?.get(key)
     if (hit) return hit
@@ -280,20 +334,39 @@ export function populationRows(state: V2State, scope: PopulationScope = DEFAULT_
   const basis = basisOfScope(scope)
   const filters: ReportFilters = { ...NO_FILTERS, location: scope.loc || ALL, setting: (scope.setting as Setting | undefined) || ALL }
   const ev = scoped(s, filters)
-  const sets = requiredSets(s, scope, term.id, !!opts.includeOptional)
   const candidates = studentsIn(s, scopeFilters(scope))
   const rows: StudentRow[] = []
-  for (const p of candidates) {
-    const req = sets.get(p.cohortId ?? "")
-    if (!req || req.length === 0) continue
-    rows.push(rowFor(ev, s, p, req, term.share))
+  const unassigned: Person[] = []
+  if (set === "term") {
+    const sets = requiredSets(s, scope, term.id, !!opts.includeOptional)
+    for (const p of candidates) {
+      const req = sets.get(p.cohortId ?? "")
+      if (!req || req.length === 0) continue
+      rows.push(rowFor(ev, s, p, req, term.share, PACE_MARGIN, null))
+    }
+  } else {
+    // A chosen term or course still asks who takes an offering in it; with neither, being on a list is enough.
+    const taking = scope.term || scope.course ? offeringsByCohort(s, term.id, scope.course, clinicalOnly(scope)) : null
+    const graduates = new Map((s.cohorts ?? []).map((c) => [c.id, c.graduates]))
+    const on = listsByStudent(s)
+    for (const p of candidates) {
+      if (!on.has(p.id)) {
+        unassigned.push(p)
+        continue
+      }
+      if (taking && !taking.has(p.cohortId ?? "")) continue
+      const mine = listRequired(s, p, scope)
+      if (!mine || mine.req.length === 0) continue
+      const share = programShare(graduates.get(p.cohortId ?? ""), today)
+      const needed = mine.req.reduce((n, x) => n + (skillProgress(ev, p.id, x.skill.id)?.need ?? 0), 0)
+      rows.push(rowFor(ev, s, p, mine.req, share, listPaceMargin(needed), mine.listId))
+    }
   }
   const med = median(rows.map((r) => r.pct))
   const medianSuppressed = basis === "median" && rows.length < SMALL_NUMBERS
-  const expectedPts = Math.round(term.share * 100)
   for (const r of rows) {
     if (basis === "expected") {
-      r.gap = r.pct - expectedPts
+      r.gap = r.pct - Math.round(r.share * 100)
       r.behind = r.behindBy > 0
     } else if (basis === "median") {
       r.gap = r.pct - med
@@ -304,7 +377,9 @@ export function populationRows(state: V2State, scope: PopulationScope = DEFAULT_
     }
   }
   rows.sort((a, b) => a.gap - b.gap || a.name.localeCompare(b.name))
-  const out: Population = { term, basis, rows, candidates: candidates.length, median: med, medianSuppressed, ids: new Set(rows.map((r) => r.id)), evidenceState: ev }
+  const totalNeeded = rows.reduce((n, r) => n + r.needed, 0)
+  const expectedShare = totalNeeded ? rows.reduce((n, r) => n + r.share * r.needed, 0) / totalNeeded : set === "term" ? term.share : 0
+  const out: Population = { term, basis, rows, candidates: candidates.length, unassigned, expectedShare, median: med, medianSuppressed, ids: new Set(rows.map((r) => r.id)), evidenceState: ev }
   if (today === DEMO_TODAY) {
     const m = popCache.get(state) ?? new Map<string, Population>()
     m.set(key, out)
@@ -313,7 +388,7 @@ export function populationRows(state: V2State, scope: PopulationScope = DEFAULT_
   return out
 }
 
-function rowFor(ev: V2State, s: V2State, p: Person, req: RequiredSkill[], share: number): StudentRow {
+function rowFor(ev: V2State, s: V2State, p: Person, req: RequiredSkill[], share: number, margin: number, listId: string | null): StudentRow {
   let collected = 0
   let needed = 0
   let achieved = 0
@@ -349,10 +424,12 @@ function rowFor(ev: V2State, s: V2State, p: Person, req: RequiredSkill[], share:
     pct: pctOf(collected, needed),
     gap: 0,
     behind: false,
-    behindBy: short > PACE_MARGIN ? short : 0,
+    behindBy: short > margin ? short : 0,
     open,
     requiredIds: req.map((x) => x.skill.id),
     bySection,
+    listId,
+    share,
   }
 }
 

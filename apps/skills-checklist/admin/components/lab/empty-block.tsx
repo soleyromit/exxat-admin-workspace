@@ -10,7 +10,7 @@ import * as React from "react"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 
-export function EmptyBlock({ title, body, action, onAction, compact = false }: { title: string; body?: string; action?: { label: string; href?: string }; onAction?: () => void; compact?: boolean }) {
+export function EmptyBlock({ title, body, action, onAction, compact = false, primary = false, actionData }: { title: string; body?: string; action?: { label: string; href?: string }; onAction?: () => void; compact?: boolean; /** The page's one filled button sits here (rule E5). */ primary?: boolean; /** Data attributes for the action, for code that looks the button up. */ actionData?: Record<string, string> }) {
   return (
     <div className={compact ? "flex flex-col items-start gap-2 p-4" : "flex flex-col items-start gap-2 rounded-lg border border-dashed border-border p-6"} data-region={compact ? undefined : "empty"}>
       <h2 className={TYPE.card}>{title}</h2>
@@ -20,7 +20,7 @@ export function EmptyBlock({ title, body, action, onAction, compact = false }: {
           <Link href={action.href}>{action.label}</Link>
         </Button>
       ) : action ? (
-        <Button type="button" variant="outline" size="sm" className="mt-1" onClick={onAction}>
+        <Button type="button" variant={primary ? "default" : "outline"} size="sm" className="mt-1" onClick={onAction} {...actionData}>
           {action.label}
         </Button>
       ) : null}

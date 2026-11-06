@@ -113,7 +113,7 @@ function studentCols(rows: StudentReportRow[], scope: LabScope, peek: PeekHrefFn
 }
 
 function skillCols(rows: SkillReportRow[], course: string, peek: PeekHrefFn): ColumnDef<SkillReportRow>[] {
-  // RP-03: scoped to a course, each skill names its level there (Mandatory, Recommended, Optional), from the mapping.
+  // RP-03: scoped to a course, each skill names its level there (Mandatory, Recommended), from the mapping.
   const level: ColumnDef<SkillReportRow>[] = course
     ? [{ key: "level", label: "In this course", width: 140, sortable: true, cell: (r) => <span className={`text-sm ${r.level === "mandatory" ? "font-medium text-foreground" : "text-muted-foreground"}`} data-course-level={r.level ?? "none"}>{r.level ? MAPPING_LEVEL_LABEL[r.level] : MAPPING_LEVEL_LABEL["not-expected"]}</span> }]
     : []
@@ -171,11 +171,11 @@ export function ReportTable({ view, r, scope, variant, peek }: { view: ReportVie
       {view === "tag" ? <TagOverlapLine r={r} /> : null}
       <ZeroStatesLine rows={rows} />
       {view === "tag" ? (
-        <DataTable<TagReportRow> key="tag" data={r.tags} columns={t} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} carry a tag`} />} />
+        <DataTable<TagReportRow> key="tag" data={r.tags} columns={t} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title={`No assigned ${skillNounPlural()} carry a tag`} />} />
       ) : view === "student" ? (
         <DataTable<StudentReportRow> key="student" data={r.students} columns={s} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No students match these filters" />} />
       ) : view === "skill" ? (
-        <DataTable<SkillReportRow> key="skill" data={r.skills} columns={k} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title={`No required ${skillNounPlural()} match these filters`} />} />
+        <DataTable<SkillReportRow> key="skill" data={r.skills} columns={k} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title={`No assigned ${skillNounPlural()} match these filters`} />} />
       ) : (
         <DataTable<SectionReportRow> key="section" data={r.sections} columns={c} getRowId={(x) => x.id} {...common} emptyState={<EmptyBlock compact title="No sections match these filters" />} />
       )}

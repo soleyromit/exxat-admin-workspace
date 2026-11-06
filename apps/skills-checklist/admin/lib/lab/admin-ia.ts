@@ -9,19 +9,23 @@
  *
  * One source for the sidebar (components/lab/lab-frame.tsx), the panel, the breadcrumb and the tests. Slugs never change.
  */
-import { capitalize, skillNounPlural } from "./terms"
+import { capitalize, skillListsNoun, skillNounPlural } from "./terms"
 import { isVocabularySection, scopeSection, sectionLabel, type SettingsSection } from "./settings"
 import { labHref, navHref, type LinkContext } from "./links"
 
 export const SKILLS_PANEL_ID = "lab-skills"
 
-/** The end state of setup, reached from the checklist, Assign and Course mapping (Proposed 2026-11-02). */
-export const SETUP_RESULT_SCREEN = "admin/setup-result"
-
 /** Add a skill: every variant renders the library with the add surface open. */
 export const ADD_SKILL_SCREEN = "admin/add-skill"
 
-export type SkillsPanelKey = "library" | "groups" | "categories" | "settings" | "mapping" | "summary"
+/** Configure the skill. Variant B (the default, D-L47) is a Skills panel page, below Library or below Evaluation settings. */
+export const CONFIGURE_SKILL_SCREEN = "admin/configure-skill"
+const CONFIGURE_PANEL_VARIANT = "B"
+/** `?from=settings` on Configure the skill: opened from Evaluation settings, so that row and crumb hold, and Close returns there. */
+export const FROM_EVALUATION_SETTINGS = "settings"
+export const EVALUATION_SETTINGS_HREF = "/lab/admin/evaluation-settings"
+
+export type SkillsPanelKey = "library" | "groups" | "categories" | "settings" | "mapping"
 
 export interface SkillsPanelItem {
   key: SkillsPanelKey
@@ -37,13 +41,11 @@ export interface SkillsPanelItem {
  * (program level, times needed included) sits after Categories and tags. No checklist page (Romit 2026-11-02).
  */
 export const SKILLS_PANEL: SkillsPanelItem[] = [
+  { key: "groups", label: () => capitalize(skillListsNoun()), screen: "admin/lists-cohorts", icon: "fa-layer-group" },
   { key: "library", label: () => "Library", screen: "admin/skills-library", icon: "fa-book" },
   { key: "categories", label: () => "Categories and tags", screen: "admin/categories-tags", icon: "fa-tags" },
   { key: "settings", label: () => "Evaluation settings", screen: "admin/evaluation-settings", icon: "fa-sliders" },
-  { key: "groups", label: () => `Groups of ${skillNounPlural()}`, screen: "admin/lists-cohorts", icon: "fa-layer-group" },
   { key: "mapping", label: () => "Course mapping", screen: "admin/course-mapping", icon: "fa-sitemap" },
-  // Navigation model A (D-L42): the summary is one click from every setup page, so it is a panel row, not a footer or a back link.
-  { key: "summary", label: () => "Setup summary", screen: SETUP_RESULT_SCREEN, icon: "fa-list-check" },
 ]
 
 /** The panel's title and the Skills crumb: the program's noun ("Skills", "Competencies"). */
@@ -57,20 +59,23 @@ export function settingsSectionOf(params: Params | null | undefined): SettingsSe
 }
 
 /** The Skills panel item the page is on, if any. Settings is never one (D-L21). */
-export function skillsPanelItemFor(screen: string | undefined, _params?: Params | null): SkillsPanelItem | undefined {
+export function skillsPanelItemFor(screen: string | undefined, params?: Params | null, variant?: string): SkillsPanelItem | undefined {
   if (!screen) return undefined
+  if (screen === CONFIGURE_SKILL_SCREEN) {
+    if (variant !== CONFIGURE_PANEL_VARIANT) return undefined
+    const key: SkillsPanelKey = params?.get("from") === FROM_EVALUATION_SETTINGS ? "settings" : "library"
+    return SKILLS_PANEL.find((i) => i.key === key)
+  }
   // Add a skill is the library with its add sheet (or inline row) open, so it is a Library page: Skills row lit, panel open,
   // Library selected, crumb "Skills" (D-X33 extended 2026-11-03, D-L41), the same sidebar as the steps around it.
-  if (screen === ADD_SKILL_SCREEN) return SKILLS_PANEL.find((i) => i.key === "library")
+  // Starting points and Bulk upload are ways to add to the Library too, reached from its Add menu.
+  if (screen === ADD_SKILL_SCREEN || screen === "admin/starter-library" || screen === "admin/import-ai-review") return SKILLS_PANEL.find((i) => i.key === "library")
   return SKILLS_PANEL.find((i) => i.screen === screen)
 }
 
-/**
- * The panel row to select. The setup summary has its own row (D-L42), so it is selected there; lighting Course mapping on the
- * summary was wrong (Romit 2026-11-03).
- */
-export function selectedSkillsPanelKey(screen: string | undefined, params?: Params | null): SkillsPanelKey | undefined {
-  return skillsPanelItemFor(screen, params)?.key
+/** The panel row to select. */
+export function selectedSkillsPanelKey(screen: string | undefined, params?: Params | null, variant?: string): SkillsPanelKey | undefined {
+  return skillsPanelItemFor(screen, params, variant)?.key
 }
 
 /** Pages under the Settings link: Settings (clinical settings, evaluators). */

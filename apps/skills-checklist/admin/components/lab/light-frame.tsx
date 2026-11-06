@@ -9,6 +9,7 @@ import * as React from "react"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { PersonaSwitcher } from "@/components/lab/lab-bar/persona-switcher"
 import { usePresent } from "@/components/lab/lab-bar/present"
+import { WalkthroughRow } from "@/components/lab/lab-bar/walkthrough-controls"
 
 export function LightFrame({ bar, children }: { bar?: React.ReactNode; children: React.ReactNode }) {
   // Evaluators and lab instructors have no account, so no app chrome: only the lab bar (lab only). Each evaluator screen
@@ -16,7 +17,8 @@ export function LightFrame({ bar, children }: { bar?: React.ReactNode; children:
   // extra region on every evaluator page.
   return (
     <div className="flex min-h-dvh min-w-0 flex-col bg-background">
-      {bar ? <div className="sticky top-0 z-20">{bar}</div> : null}
+      {/* The path bar on a walkthrough stop is tooling around the page, marked as lab chrome; the evaluator's page still has no app chrome. */}
+      {bar ? <div className="sticky top-0 z-20 bg-background">{bar}<WalkthroughRow /></div> : null}
       <main id="main" className="mx-auto flex w-full min-w-0 max-w-3xl flex-1 flex-col">{children}</main>
     </div>
   )

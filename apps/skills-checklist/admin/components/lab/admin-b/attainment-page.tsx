@@ -4,7 +4,7 @@
  * Attainment: a destination, not the landing (OD-29 open; the Dashboard stays the admin landing [LEDGER D-L4]).
  *
  * Regions (strategy/07 list budget, 4): page header (title, one Export action) · one toolbar row (Romit 2026-10-27, "can we
- * improve the UI here?"): the set control "Required this term | Required to graduate | All skills" (D-X12, D-X16; "All skills"
+ * improve the UI here?"): the set control "Required this term | All assigned | All skills" (D-X12, D-X16; "All skills"
  * on the Skills view only) then the shared scope bar's Filters button and applied chips, wrapping at 375 · view tabs with their counts (Students, Skills, Sections and tags; RP-02 to
  * RP-04; sections and tags share a tab with a "Group by" switch inside it) · the view. No headline figures: the tab counts are
  * the counts. Cohort is a filter in the scope bar, never lanes. The comparison basis is the dashboard's (it travels in the
@@ -35,7 +35,7 @@ import { asOfLabel, useSnapshot } from "@/components/lab/dashboard/use-dashboard
 import { BASIS_LABEL, chipValue, conditionLabel, recountText, resolveTerm, scopeOptions } from "@/lib/lab/dashboard"
 import { buildAttainment, isSkillsScope, peekRecords, scopeLines, unrequiredSkills, type AttView, type SkillsScope } from "@/lib/lab/attainment"
 import { SCOPE_LABEL, basisOf, clearFilters, removeScope, scopeIsEmpty, type ScopeKey } from "@/lib/lab/scope"
-import { capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, capitalize, skillNounPlural } from "@/lib/lab/terms"
 import { useAttainmentUrl } from "@/components/lab/admin-b/use-att-url"
 import { StudentMatrix } from "@/components/lab/admin-b/student-matrix"
 import { GroupTable, SkillsTable, StudentsTable } from "@/components/lab/admin-b/attainment-tables"
@@ -43,7 +43,10 @@ import { EvidencePeek } from "@/components/lab/admin-b/evidence-peek"
 import { ExportPanel } from "@/components/lab/admin-b/export-panel"
 import { StateLegend } from "@/components/lab/admin-b/state-viz"
 import { RequiredSetControl, useRequiredSet } from "@/components/lab/admin-b/required-set-switch"
+import { ReportListSelect, useReportList } from "@/components/lab/admin-b/report-list"
+import { NoListNotice } from "@/components/lab/admin-b/no-list-notice"
 import { GRADUATION_STAGE_LABEL } from "@/lib/v2/labels"
+import { skillListNoun } from "@/lib/lab/terms"
 import { TYPE } from "@/components/lab/type-scale"
 
 
@@ -54,9 +57,10 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
   const snap = useSnapshot()
   const [exportOpen, setExportOpen] = React.useState(exportOpenByDefault)
   const demo = url.demo
-  // Required set (D-X12): "Required this term" or "Required to graduate", from the URL (`set`) or the scope's default.
+  // Required set (D-X12): "Required this term" or "All assigned", from the URL (`set`) or the scope's default.
   const reqSet = useRequiredSet(snap.state, url.scope, url.param, url.hrefWith)
-  const model = React.useMemo(() => (snap.state ? buildAttainment(snap.state, url.scope, undefined, { basis: reqSet.basis }) : null), [snap.state, url.scope, reqSet.basis])
+  const reportList = useReportList(snap.state, url.scope, url.scope.list ?? null)
+  const model = React.useMemo(() => (snap.state ? buildAttainment(snap.state, url.scope, undefined, { basis: reqSet.basis, only: reportList.only }) : null), [snap.state, url.scope, reqSet.basis, reportList.only])
   const peek = React.useMemo(() => (model && snap.state && url.peek ? peekRecords(model, snap.state, url.peek) : null), [model, snap.state, url.peek])
   // Skills tab scope (LEDGER D-X16): required this term by default; "all" adds the published skills nobody needs this term.
   const skillsRaw = url.param("skills")
@@ -79,11 +83,11 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
   const term = resolveTerm(state, url.scope)
   const basis = basisOf(url.scope)
   const label = (k: ScopeKey, v: string) => chipValue(state, k, v)
-  const lines = [...scopeLines(url.scope, term.name, BASIS_LABEL[basis], asOfLabel(snap.at), label), `Required set: ${model.basisLabel}`]
-  // Under "Required to graduate" the flag is the director's far behind (D-X11), never the term pace.
-  const toGraduate = model.basis === "toGraduate"
-  const behindLabel = toGraduate ? GRADUATION_STAGE_LABEL.far : "Behind"
-  const notRequiredLabel = toGraduate ? "Not required to graduate" : "Not required this term"
+  const lines = [...scopeLines(url.scope, term.name, BASIS_LABEL[basis], asOfLabel(snap.at), label), `Required set: ${model.basisLabel}`, ...(reportList.selected ? [`${capitalize(skillListNoun())}: ${reportList.selected.name}`] : [])]
+  // Under "All assigned" the flag is the director's far behind (D-X11), never the term pace.
+  const allAssigned = model.basis === "assigned"
+  const behindLabel = allAssigned ? GRADUATION_STAGE_LABEL.far : "Behind"
+  const notRequiredLabel = allAssigned ? "Not assigned" : "Not required this term"
   const empty = demo === "empty" || model.students.length === 0
   const applied = (["cohort", "group", "course", "cat", "tag", "loc", "setting"] as ScopeKey[]).filter((k) => !!url.scope[k])
   const recount = recountText(url.scope)
@@ -121,9 +125,11 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
             header (Romit 2026-10-30, the dashboard treatment); the required set leads this one row, applied chips beside it
             only when something is applied (RP-01). The matrix legend moved under the table, so the tabs follow directly. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2" data-region="toolbar">
+          <ReportListSelect reaching={reportList.reaching} selected={reportList.selected} onChange={(id) => url.setParams({ skillList: id })} />
           <RequiredSetControl basis={model.basis} allSkills={url.view === "skills" ? skillsScope === "all" : undefined} paramsFor={reqSet.paramsFor} onChange={url.setParams} />
           <ScopeAppliedLine {...scopeProps} />
         </div>
+        <NoListNotice students={reportList.unassigned} />
         {recount && !impossible ? <p className={TYPE.helper} data-recount>{recount}</p> : null}
         {demo === "partial" ? (
           <LocalBanner variant="info" title="Recalculating after a rule change">Some figures may move. They update when it finishes.</LocalBanner>
@@ -134,10 +140,10 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
           </LocalBanner>
         ) : impossible ? (
           <ImpossibleScopeBanner state={state} scope={url.scope} onChange={url.setScope} />
-        ) : empty ? (
+        ) : empty && reportList.unassigned.length ? null /* The notice above already says who and why. */ : empty ? (
           <LocalBanner variant="info" title="No students in this scope">
             <span className="flex flex-col gap-2">
-              <span>{applied.length ? `Nobody in this scope has a required ${skillNoun()} this term. Remove a filter to widen it.` : `Nobody takes a course with required ${skillNounPlural()} in ${term.name}.`}</span>
+              <span>{applied.length ? `Nobody in this scope has ${aNoun()} on a list. Remove a filter to widen it.` : `Nobody takes a course with ${skillNounPlural()} on a list in ${term.name}.`}</span>
               {applied.length ? (
                 <span className="flex flex-wrap gap-2">
                   {applied.map((k) => (
@@ -184,7 +190,7 @@ export function AttainmentPage({ variant, defaultView, studentsAs, exportOpenByD
             <TabsContent value={tabValue} className="mt-0">
             {url.view === "students" ? (
               studentsAs === "matrix" ? (
-                <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} legend={toGraduate ? behindLabel : conditionLabel(basis)} />
+                <StudentMatrix model={model} peekHref={url.peekHref} behindLabel={behindLabel} activePeek={url.peek} legend={allAssigned ? behindLabel : conditionLabel(basis)} />
               ) : (
                 <StudentsTable rows={model.students} peekHref={url.peekHref} behindLabel={behindLabel} search={search} />
               )

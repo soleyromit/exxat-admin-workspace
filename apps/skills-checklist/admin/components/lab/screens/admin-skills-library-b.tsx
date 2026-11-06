@@ -21,7 +21,7 @@ import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { buildTree, countLibrary, filterLibrary, rollupLabel, rowsForTab, type LibraryCounts, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
+import { buildTree, isUsableRow, countLibrary, filterLibrary, rollupLabel, rowsForTab, type LibraryCounts, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
 import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
@@ -29,8 +29,7 @@ import { LINK, LibraryFrame, LibraryStatusBadge, LibraryTabs, useOpenSkill, useS
 import { tagLineText } from "@/components/lab/library/category-tag-pickers"
 import { InlineAddRow, InlineAddTrigger } from "@/components/lab/library/inline-add-row"
 import { RowActions, useLifecycle, useStableHandlers, type RowActionHandlers } from "@/components/lab/library/row-actions"
-import { SkillPanel } from "@/components/lab/library/skill-panel"
-import { SkillSheet } from "@/components/lab/library/skill-sheet"
+import { SkillPanel, usePanelGuard } from "@/components/lab/library/skill-panel"
 import { AddSeveralSheet } from "@/components/lab/library/add-several-sheet"
 import { useLibrary } from "@/components/lab/library/use-library"
 import { LibraryFilterMenu, useLibraryFilter } from "@/components/lab/library/library-filter"
@@ -68,9 +67,9 @@ function SkillRow({ r, handlers, indent, onOpen, selected }: { r: LibraryRow; ha
         </span>
         {r.tags.length ? <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground" data-row-tags><i className="fa-light fa-tag shrink-0" aria-hidden="true" /><span className="sr-only">Tags: </span><span className="truncate">{tagLineText(r.tags, r.inactiveTags)}</span></span> : null}
       </TableCell>
-      <TableCell><LibraryStatusBadge status={r.status} draft={r.draft} /></TableCell>
+      <TableCell><LibraryStatusBadge status={r.status} /></TableCell>
       <TableCell className="hidden xl:table-cell">{r.modelLabel || <span className="text-muted-foreground">Not chosen</span>}</TableCell>
-      <TableCell className="tabular-nums">{r.status === "not-configured" || r.status === "inactive" ? <span className="text-muted-foreground">None</span> : r.courses ? plural(r.courses, "course", "courses") : <span className="text-muted-foreground">Not mapped</span>}</TableCell>
+      <TableCell className="tabular-nums">{!isUsableRow(r) ? <span className="text-muted-foreground">None</span> : r.courses ? plural(r.courses, "course", "courses") : <span className="text-muted-foreground">Not mapped</span>}</TableCell>
       <TableCell className="hidden tabular-nums xl:table-cell">{r.evidence ? r.evidence.toLocaleString("en-US") : <span className="text-muted-foreground">None</span>}</TableCell>
       <TableCell className="text-end"><RowActions row={r} handlers={handlers} /></TableCell>
     </TableRow>
@@ -89,8 +88,6 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
   const [sort, setSort] = React.useState<Sort>("library")
   const [addingIn, setAddingIn] = React.useState<string | null>(null)
   const [addingSeveral, setAddingSeveral] = React.useState(false)
-  const [editing, setEditing] = React.useState<LibraryRow | null>(null)
-  const handlers = useStableHandlers(api, life, setEditing)
 
   const [filter, setFilter] = useLibraryFilter()
   const query = q.trim().toLowerCase()
@@ -125,14 +122,20 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
   const addIn = (s: { key: string; name: string }) => { setOpenId(null); setOpen((o) => (o.includes(s.key) ? o : [...o, s.key])); setAddingIn(s.name) }
   const flat = React.useMemo(() => tree.flatMap((s) => (open.includes(s.key) ? [...s.rows, ...s.groups.flatMap((g) => g.rows)] : [])), [tree, open])
   const openRow = openId ? api.byId.get(openId) ?? null : null
-  const openSkill = React.useCallback((id: string) => { setAddingIn(null); setOpenId(id) }, [setOpenId])
+  // A skill that is gone (deleted, or a bad link) leaves nothing in the URL and nothing half open.
+  React.useEffect(() => { if (api.hydrated && !api.demo && openId && !openRow) setOpenId(null) }, [api.hydrated, api.demo, openId, openRow, setOpenId])
+  const [panelDirty, setPanelDirty] = React.useState(false)
+  const guard = usePanelGuard(panelDirty, () => setPanelDirty(false))
+  const { attempt } = guard
+  const openSkill = React.useCallback((id: string) => attempt(() => { setAddingIn(null); setOpenId(id) }), [attempt, setOpenId])
+  const handlers = useStableHandlers(api, life, (r) => openSkill(r.id), attempt)
 
   const overlays = (
     <>
       {/* The phase 1 bulk add opens in place, so "Add several by name" never routes into the phase 2 import. */}
-      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addMany(items, d)} />
-      <SkillSheet open={!!editing} onOpenChange={(o) => !o && setEditing(null)} rows={api.rows} mode="edit" editing={editing} onSave={(d) => editing && api.edit(editing.id, d)} />
-      <SkillPanel row={addingSeveral || editing ? null : openRow} rows={flat} handlers={handlers} onOpen={openSkill} onClose={() => setOpenId(null)} />
+      <AddSeveralSheet open={addingSeveral} onOpenChange={setAddingSeveral} rows={api.rows} onAdd={(items, d) => api.addSeveral(items, d)} />
+      <SkillPanel row={addingSeveral ? null : openRow} rows={flat} allRows={api.rows} handlers={handlers} api={api} onOpen={openSkill} onClose={() => guard.attempt(() => setOpenId(null))} dirty={panelDirty} onDirty={setPanelDirty} attempt={attempt} discards={guard.discards} />
+      {guard.dialog}
       {life.dialogs}
     </>
   )
@@ -172,7 +175,7 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
       pageType={addingSeveral || openRow ? "split" : "list"}
     >
       <div data-library-lab="B">
-        <LibraryTabs counts={scopedCounts} value={tab} onChange={setTab} toolbar={toolbar}>
+        <LibraryTabs counts={scopedCounts} value={tab} onChange={(t) => attempt(() => { if (panelDirty) setOpenId(null); setTab(t) })}toolbar={toolbar}>
           {tree.length === 0 ? (
             <EmptyBlock title={`No ${skillNounPlural()} match this search`} action={{ label: "Clear search and filters" }} onAction={() => { setQ(""); setTab("all"); setFilter({ cat: null, tag: null }) }} />
           ) : (
@@ -191,7 +194,7 @@ export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: b
                 <TableBody>
                   {tree.map((s) => {
                     const isOpen = open.includes(s.key)
-                    const toConfigure = [...s.rows, ...s.groups.flatMap((g) => g.rows)].filter((r) => r.status === "not-configured")
+                    const toConfigure = [...s.rows, ...s.groups.flatMap((g) => g.rows)].filter((r) => r.status === "active" && r.configuration === "not-configured")
                     return (
                       <React.Fragment key={s.key}>
                         <TableRow className="bg-muted/40 hover:bg-muted/40">

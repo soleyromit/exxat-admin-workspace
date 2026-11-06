@@ -14,7 +14,8 @@ import { useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import { skillById } from "@/lib/v2/evidence-index"
-import { computeImpact, configDraftOf, discardConfigDraft, emptyRule, fromV2, sampleChange, saveConfigDraft, saveLabRule, validateRule, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { computeImpact, configDraftOf, discardConfigDraft, emptyRule, fromV2, sampleChange, saveConfigDraft, saveLabRule, validateRule, withCheckOffDecided, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
+import { programSettingsOf, resolveRule } from "@/lib/lab/program-settings"
 import { buildLibrary, nextToConfigure, type LibraryRow } from "@/lib/lab/library"
 import { isConfigured } from "@/lib/v2/population"
 import type { Skill, V2State } from "@/lib/v2/types"
@@ -61,7 +62,7 @@ export interface ConfigureModel {
   settings: string[]
 }
 
-export function useConfigure(opts: { defaultSample?: boolean; skillId?: string } = {}): ConfigureModel {
+export function useConfigure(opts: { defaultSample?: boolean; skillId?: string; /** A skill not configured opens with the program's saved settings (Configure B, REQ IM-13); Save still decides. */ startFromProgram?: boolean } = {}): ConfigureModel {
   const params = useSearchParams()
   const state = useV2State()
   const store = useV2Store()
@@ -76,14 +77,16 @@ export function useConfigure(opts: { defaultSample?: boolean; skillId?: string }
   const [override, setOverride] = React.useState<LabRule | null>(null)
   const current = React.useMemo(() => override ?? (skill && isConfigured(skill) && skill.config && skill.model ? fromV2(skill) : null), [skill, override])
   const savedDraft = React.useMemo(() => (hydrated ? configDraftOf(state, skillId) : null), [hydrated, state, skillId])
+  const programRule = React.useMemo(() => (opts.startFromProgram && hydrated ? programSettingsOf(state)?.rule ?? null : null), [opts.startFromProgram, hydrated, state])
   const initial = React.useCallback((): LabRule => {
     if (savedDraft) return savedDraft.rule
+    if (programRule && skill && !isConfigured(skill)) return withCheckOffDecided(resolveRule(programRule, null))
     // A skill that is not configured has no earlier rule, so nothing is carried from one (Romit 2026-10-27: "Limits from the
     // earlier rule" showed on a Not configured skill).
     const v2 = skill ? fromV2(skill) : fromV2({ model: null, config: null })
     const base = skill && isConfigured(skill) ? v2 : { ...v2, carried: emptyRule().carried }
     return wantSample && skill && isConfigured(skill) && skill.config ? sampleChange(base, settings) : base
-  }, [skill, wantSample, settings, savedDraft])
+  }, [skill, wantSample, settings, savedDraft, programRule])
 
   const [rule, setRuleState] = React.useState<LabRule>(() => fromV2({ model: null, config: null }))
   const [published, setPublished] = React.useState<SavedResult | null>(null)
@@ -148,9 +151,8 @@ export function useConfigure(opts: { defaultSample?: boolean; skillId?: string }
         return r.state
       })
       setPublished({ mode, impact: im, rule, written, version })
-      // The saved rule becomes the baseline, so the panel reads "no change" afterwards. With new-only the existing states are
-      // kept, so the old rule stays the baseline for display.
-      if (mode !== "new-only") setOverride(rule)
+      // The saved rule becomes the baseline, so the panel reads "no change" afterwards.
+      setOverride(rule)
     },
     [skill, state, store, current, rule],
   )
@@ -186,5 +188,7 @@ export function focusField(id: string): void {
   const el = (document.getElementById(id) ?? document.querySelector<HTMLElement>(`[id^="${id}-"]`)) as HTMLElement | null
   if (!el) return
   el.scrollIntoView({ block: "center" })
+  // scrollIntoView also moves overflow-hidden ancestors, which pulls the shell's bars out of view; only the scrollport should move.
+  for (let a = el.parentElement; a; a = a.parentElement) if (a.scrollTop && getComputedStyle(a).overflowY === "hidden") a.scrollTop = 0
   el.focus({ preventScroll: true })
 }

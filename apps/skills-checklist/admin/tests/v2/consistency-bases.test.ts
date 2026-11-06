@@ -19,7 +19,7 @@ const gradScope: LabScope = { ...DEFAULT_SCOPE, cohort: grad }
 describe("director graduation bands (D-X11)", () => {
   const r = buildReadiness(s, gradScope)
 
-  it("one short = 1 missing, short = 2 to 3, far behind = 4 or more; the story reads 31 / 4 / 0 / 3", () => {
+  it("one short = 1 missing, short = 2 to 3, far behind = 4 or more; the graduating cohort reads 31 / 4 / 0 / 3 against its assigned list (D-L54, D-L62)", () => {
     expect([graduationStageOf(0), graduationStageOf(1), graduationStageOf(2), graduationStageOf(3), graduationStageOf(FAR_BEHIND_MISSING)]).toEqual(["complete", "one-short", "short", "short", "far"])
     expect(r.graduation).toEqual({ complete: 31, "one-short": 4, short: 0, far: 3 })
     expect(r.stage).toEqual({ complete: 31, short: 4, far: 3 })
@@ -32,23 +32,23 @@ describe("director graduation bands (D-X11)", () => {
   })
 })
 
-describe("Attainment basis: Required this term | Required to graduate", () => {
+describe("Attainment basis: Required this term | All assigned", () => {
   it("the switch is labelled from REQUIRED_SET_LABEL and parses from the URL", () => {
-    expect(REQUIRED_SET_OPTIONS.map((o) => o.label)).toEqual([REQUIRED_SET_LABEL.thisTerm, REQUIRED_SET_LABEL.toGraduate])
-    expect([parseRequiredSet("graduate"), parseRequiredSet("term"), parseRequiredSet(null)]).toEqual(["toGraduate", "thisTerm", null])
+    expect(REQUIRED_SET_OPTIONS.map((o) => o.label)).toEqual([REQUIRED_SET_LABEL.assigned, REQUIRED_SET_LABEL.thisTerm])
+    expect([parseRequiredSet("assigned"), parseRequiredSet("graduate"), parseRequiredSet("term"), parseRequiredSet(null)]).toEqual(["assigned", "assigned", "thisTerm", null])
   })
 
-  it("the graduating cohort defaults to Required to graduate; other scopes to Required this term", () => {
-    expect(defaultRequiredSet(s, gradScope)).toBe("toGraduate")
-    expect(defaultRequiredSet(s, DEFAULT_SCOPE)).toBe("thisTerm")
+  it("every scope defaults to All assigned, the figure My progress reads (D-L102)", () => {
+    expect(defaultRequiredSet(s, gradScope)).toBe("assigned")
+    expect(defaultRequiredSet(s, DEFAULT_SCOPE)).toBe("assigned")
   })
 
-  it("under Required to graduate the matrix totals equal director readiness (31 / 4 / 3)", () => {
+  it("under All assigned the matrix totals equal director readiness", () => {
     const r = buildReadiness(s, gradScope)
-    const m = buildAttainment(s, gradScope, undefined, { basis: "toGraduate" })
-    expect(m.basisLabel).toBe(REQUIRED_SET_LABEL.toGraduate)
+    const m = buildAttainment(s, gradScope, undefined, { basis: "assigned" })
+    expect(m.basisLabel).toBe(REQUIRED_SET_LABEL.assigned)
     expect(m.students).toHaveLength(r.rows.length)
-    expect(m.total).toBe(r.rows.length * r.required.length)
+    expect(m.total).toBe(r.rows.reduce((t, x) => t + x.required, 0))
     expect(m.totals.achieved).toBe(r.rows.reduce((t, x) => t + x.achieved, 0))
     const missing = (x: { total: number; counts: { achieved: number } }) => x.total - x.counts.achieved
     const bands = { complete: 0, "one-short": 0, short: 0, far: 0 }
@@ -59,9 +59,9 @@ describe("Attainment basis: Required this term | Required to graduate", () => {
     for (const st of m.students) expect(st.counts.achieved, st.id).toBe(byId.get(st.id)!.achieved)
   })
 
-  it("under Required this term the same cohort reads the term set, and the two never mix", () => {
-    const term = buildAttainment(s, gradScope)
-    const g = buildAttainment(s, gradScope, undefined, { basis: "toGraduate" })
+  it("under Mandatory this term the same cohort reads the term set, and the two never mix", () => {
+    const term = buildAttainment(s, gradScope, undefined, { basis: "thisTerm" })
+    const g = buildAttainment(s, gradScope, undefined, { basis: "assigned" })
     expect(term.basis).toBe("thisTerm")
     expect(term.total).toBeLessThan(g.total)
     const termIds = new Set(term.records.map((x) => x.skillId))

@@ -199,7 +199,7 @@ function ReturnDialog({ row, initialNote, state, rows, onClose, onDone }: { row:
   const [error, setError] = React.useState<string | null>(null)
   React.useEffect(() => {
     if (row) {
-      setPath(row.outcome === "Unmet" ? "new-attempt" : "correct-same")
+      setPath(row.outcomeRead === "does-not" ? "new-attempt" : "correct-same")
       setToId("")
       setNote(initialNote)
       setError(null)

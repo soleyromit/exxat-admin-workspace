@@ -26,9 +26,8 @@ export const MARQUEE: MarqueeItem[] = [
   { label: "Skills library", who: "Program", flow: "set-up-skills", step: "library" },
   { label: "Add a skill", who: "Program", flow: "set-up-skills", step: "add" },
   { label: "Evaluation settings", who: "Program", flow: "setup-walkthrough", step: "settings" },
-  { label: "Assign to a cohort or group", who: "Program", flow: "set-up-skills", step: "assign" },
+  { label: "Skill lists", who: "Program", flow: "setup-walkthrough", step: "lists" },
   { label: "Course mapping", who: "Program", flow: "set-up-skills", step: "map" },
-  { label: "Setup summary", who: "Program", flow: "setup-walkthrough", step: "result" },
   { label: "My progress", who: "Student", flow: "my-progress", step: "home" },
   { label: "Log a skill", who: "Student", flow: "ask-for-evaluation", step: "send" },
   { label: "My requests", who: "Student", flow: "ask-for-evaluation", step: "requests" },
@@ -43,7 +42,7 @@ export const MARQUEE: MarqueeItem[] = [
  */
 export const PRESENT_WALKTHROUGHS: Array<{ label: string; who: string; href: string }> = [
   { label: "Admin, start to finish", who: "Program", href: "/lab/walkthrough/admin" },
-  { label: "Student, start to finish", who: "Student", href: "/lab/walkthrough/student" },
+  { label: "Student and evaluator, start to finish", who: "Student", href: "/lab/walkthrough/student" },
 ]
 
 /** Shown, not linked: reporting is not ready for the client yet. */

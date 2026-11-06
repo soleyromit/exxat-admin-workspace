@@ -14,6 +14,7 @@
 import type { Person, V2State } from "@/lib/v2/types"
 import { LAB_ADMIN } from "./library"
 import { sentElsewhereTo } from "@/lib/v2/student"
+import { outcomeQualifiesOn } from "@/lib/v2/rules"
 
 export type EvaluatorRoleKey = "preceptor" | "faculty" | "lab-instructor"
 export const ROLE_LABEL: Record<EvaluatorRoleKey, string> = { preceptor: "Preceptor", faculty: "Clinical faculty", "lab-instructor": "Lab instructor" }
@@ -82,7 +83,7 @@ export function directory(s: V2State): { rows: EvaluatorRow[]; summary: Director
     // A reviewer's "Assign to someone else" marks the held evidence returned, but it is a reassignment, not a return of this
     // evaluator's judgement, so it never feeds the outlier rate. The evaluator's own answer (Unmet, Not yet) still does.
     const assignedAway = sentElsewhereTo(s, e) !== null
-    if (e.outcome !== "met" || (!assignedAway && (e.status === "returned" || e.review?.decision === "returned"))) t.events++
+    if (!outcomeQualifiesOn(s.skills.find((k) => k.id === e.skillId), e.outcome) || (!assignedAway && (e.status === "returned" || e.review?.decision === "returned"))) t.events++
     tally.set(e.evaluatorId, t)
   }
   const open = new Map<string, { n: number; oldest: number }>()

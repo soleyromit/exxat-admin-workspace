@@ -4,6 +4,7 @@ import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { isLabelPreset } from "@/lib/lab/configure"
+import { qualifyingOutcome } from "@/lib/v2/rules"
 import { choicesFor, labCellKey, labFeedbackMessage, labFeedbackMissing, labSavedLine, labSavedResults, labSessionSkills, labTally, roster, rosterGroups, shortDate, LAB_INSTRUCTOR_ID, type LabMark, type LabSavedResult, type LabSkillRow, type RosterRow } from "@/lib/lab/evaluator"
 import { DEMO_TODAY } from "@/lib/v2/seed"
 
@@ -40,18 +41,21 @@ export function useLabGrid() {
   const labels = (skillId: string) => {
     const k = s.skills.find((x) => x.id === skillId)
     const c = k ? choicesFor(k, false, preset) : [{ value: "met", label: "Met" }, { value: "not-met", label: "Unmet" }]
-    return { met: c[0].label, notMet: c[1].label }
+    // What "mark the rest" records and what its button says: the label that qualifies on this skill [REQ SC-03].
+    const value = qualifyingOutcome({ model: k?.model, qualifyingLabel: k?.config?.qualifyingLabel })
+    return { met: c[0].label, notMet: c[1].label, qualifying: value === "met" ? c[0].label : c[1].label, qualifyingValue: value }
   }
   const mark = (studentId: string, skillId: string) => cells[`${studentId}|${skillId}`] ?? null
   const isAbsent = (studentId: string) => cells[`${studentId}|*`] === "absent"
   const setMark = (studentId: string, skillId: string, v: LabMark) => { setSaved(null); setCells((p) => ({ ...p, [`${studentId}|${skillId}`]: v })) }
   const setAbsent = (studentId: string, absent: boolean) => { setSaved(null); setCells((p) => ({ ...p, [`${studentId}|*`]: absent ? "absent" : null })) }
-  /** Sets the first outcome on every visible, present student with no mark yet for this skill. Never overwrites. */
+  /** Sets the label that qualifies on every visible, present student with no mark yet for this skill. Never overwrites. */
   const fillColumn = (skillId: string, rowsIn: RosterRow[] = rows) => {
     setSaved(null)
+    const { qualifyingValue } = labels(skillId)
     setCells((p) => {
       const n = { ...p }
-      for (const r of rowsIn) if (n[`${r.id}|*`] !== "absent" && !n[`${r.id}|${skillId}`]) n[`${r.id}|${skillId}`] = "met"
+      for (const r of rowsIn) if (n[`${r.id}|*`] !== "absent" && !n[`${r.id}|${skillId}`]) n[`${r.id}|${skillId}`] = qualifyingValue
       return n
     })
   }

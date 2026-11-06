@@ -6,13 +6,13 @@
  * course's placement ends) help a student plan the rest of the term better than a to-do dashboard or a map?
  * Regions (dashboard budget 5): header · Am I on pace (large burn-up) · How long have requests waited (four age bins, 15+ outlined
  * amber) · Do this next (3 shown, under the bins) · courses, under the pace line (one row per course: one square per mandatory skill,
- * evaluations against the clock, placement end; each row opens the skills that course expects, by level: REQ ST-01). Charts 2. D-X12: "Required this term".
+ * evaluations against the clock, placement end; each row opens the skills that course expects, by level: REQ ST-01). Charts 2. What is owed reads the skill list (D-L102).
  */
 import { aNoun } from "@/lib/lab/terms"
 import * as React from "react"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { StudentFrame } from "@/components/lab/student/frame"
-import { CourseTable, NextActions } from "@/components/lab/student/progress"
+import { CourseTable, ListTabs, NextActions, NoListNotice } from "@/components/lab/student/progress"
 import { SectionTitle } from "@/components/lab/student/parts"
 import { AgingCard, PaceCard, Unit } from "@/components/lab/student/dashboard"
 import { courseLevels, studentHref, waitingRows } from "@/lib/lab/student"
@@ -20,12 +20,14 @@ import { courseLevels, studentHref, waitingRows } from "@/lib/lab/student"
 export function StudentProgressC() {
   return (
     <StudentFrame title="My progress" primary={(c) => ({ label: `Log ${aNoun()}`, href: studentHref("request-signoff", {}, c.studentId) })}>
-      {({ model, studentId, state }) => {
+      {({ model, studentId, state, setParams }) => {
         const rows = waitingRows(state, studentId)
         return (
+          <ListTabs model={model} onChange={(id) => setParams({ list: id })}>
           <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12" data-student-lab="progress-C">
+            {model.list ? null : <div className="lg:col-span-12"><NoListNotice /></div>}
             <div className="flex flex-col gap-6 lg:col-span-8">
-              <PaceCard model={model} height={260} />
+              {model.list ? <PaceCard model={model} studentId={studentId} height={260} /> : null}
               <Card data-region="courses" className="gap-0 py-0">
                 <CardContent className="flex flex-col gap-3 py-4">
                   <SectionTitle count={model.courses.length}>What each course expects now</SectionTitle>
@@ -49,6 +51,7 @@ export function StudentProgressC() {
               <NextActions model={model} limit={3} exclude={["waiting", "placement"]} />
             </div>
           </div>
+          </ListTabs>
         )
       }}
     </StudentFrame>

@@ -96,8 +96,8 @@ export interface ReviewerContext {
   chip: (k: ScopeKey, v: string) => string
 }
 
-export function useReviewer(): ReviewerContext {
-  const url = useDashboardUrl()
+export function useReviewer(opts: { pageFilters?: boolean } = {}): ReviewerContext {
+  const url = useDashboardUrl(opts)
   const snap = useSnapshot()
   const list = useDecisions()
   const demoRaw = url.param("state")

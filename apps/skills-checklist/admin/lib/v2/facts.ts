@@ -1,14 +1,14 @@
 import { approvalTotals, approvalsInScope } from "./approvals"
 import { students } from "./filters"
 import { placementsEnding, PLACEMENT_ENDING_DAYS } from "./placements"
-import { DEFAULT_SCOPE, isConfigured, openRequestsIn, populationRows, populationTotals, requiredToComplete, type PopulationScope } from "./population"
+import { DEFAULT_SCOPE, isConfigured, openRequestsIn, populationRows, populationTotals, skillsToComplete, type PopulationScope } from "./population"
 import { DEMO_TODAY } from "./seed-core"
 import type { Person, V2State } from "./types"
 
 /**
  * The number registry: every headline fact, defined once, built only from the single sources (population, approvals,
  * placements). Precisely: no screen calls facts() directly. Screens compute their figures from the same source functions
- * facts() wraps (populationRows / populationTotals, approvalsInScope / approvalTotals, placementsEnding, requiredToComplete,
+ * facts() wraps (populationRows / populationTotals, approvalsInScope / approvalTotals, placementsEnding, skillsToComplete,
  * openRequests), and the consistency gates enforce agreement: tests/v2/consistency*.test.ts compare every screen model with
  * facts() in several scopes, and tests/lab/consistency.mjs compares the numbers the lab screens render. So agreement is a
  * tested property, not a structural guarantee: a screen that re-derived a figure another way would only be caught by a gate.
@@ -24,18 +24,17 @@ export const EVALUATOR_KINDS: ReadonlyArray<Person["kind"]> = ["preceptor", "lab
 export interface Facts {
   /** Every student in the program (program-wide). */
   studentsTotal: number
-  /** Students in scope: cohort and group filters, taking at least one offering in the scope term (population rows). */
+  /** Students in scope: cohort and group filters, on a skill list (population rows). */
   studentsInScope: number
   /**
-   * "Required this term" records in scope: each student x the mandatory skills of their own cohort's offerings in the term
-   * (decision D-X12). Drives pace and behind. Never mixed with requiredToGraduate.
+   * "All assigned" records in scope: each student x the skills on the skill list in force for them (D-L102). Drives pace and behind. Lists never merge.
    */
-  mandatoryRecords: number
+  listRecords: number
   /** Of those records, achieved (counted evidence only; held evidence never counts). */
-  mandatoryAchieved: number
-  /** mandatoryAchieved / mandatoryRecords, rounded percent. */
+  listAchieved: number
+  /** listAchieved / listRecords, rounded percent. */
   achievedPct: number
-  /** Students behind under the scope basis (default: Expected now, more than PACE_MARGIN short of the term clock). */
+  /** Students behind under the scope basis (default: Expected now, more than a margin short of the program clock). */
   behind: number
   /** Requests sent to an evaluator and not yet answered (with evaluator or stalled), students in scope. */
   waitingRequests: number
@@ -54,9 +53,8 @@ export interface Facts {
   skillsNotConfigured: number
   /** Deactivated skills (SL-11): kept with their evidence, excluded from every figure (decision D-X14). */
   skillsInactive: number
-  /** "Required to graduate": skills the program list flags as required before graduation (reportable only). Readiness and
-   *  verification read this set; it is never mixed with the required-this-term records. */
-  requiredToGraduate: number
+  /** Every active, configured skill: the pool a list's skills are read from. */
+  assignedSkills: number
   /** Evaluators (preceptors, lab instructors, clinical faculty), program-wide. */
   evaluators: number
   /** Sites the program places at (program-wide). */
@@ -69,8 +67,8 @@ export interface Facts {
 export const FACT_SOURCE: Record<keyof Facts, string> = {
   studentsTotal: "filters.students",
   studentsInScope: "population.populationRows(...).rows.length",
-  mandatoryRecords: "population.populationTotals().records",
-  mandatoryAchieved: "population.populationTotals().achieved",
+  listRecords: "population.populationTotals().records",
+  listAchieved: "population.populationTotals().achieved",
   achievedPct: "population.populationTotals().achievedPct",
   behind: "population.populationTotals().behind",
   waitingRequests: "population.openRequestsIn(state, pop.ids, scope).length",
@@ -83,7 +81,7 @@ export const FACT_SOURCE: Record<keyof Facts, string> = {
   skillsConfigured: "state.skills.filter(isConfigured).length",
   skillsNotConfigured: "state.skills.filter(!isConfigured).length",
   skillsInactive: "state.skills.filter(active === false).length",
-  requiredToGraduate: "population.requiredToComplete(state).length",
+  assignedSkills: "population.skillsToComplete(state).length",
   evaluators: "people with an evaluator kind",
   sites: "state.sites.length",
   placementsEnding: "placements.placementsEnding(state, pop.ids).length",
@@ -104,8 +102,8 @@ export function facts(state: V2State, scope: PopulationScope = DEFAULT_SCOPE, to
   const out: Facts = {
     studentsTotal: students(state).length,
     studentsInScope: tot.students,
-    mandatoryRecords: tot.records,
-    mandatoryAchieved: tot.achieved,
+    listRecords: tot.records,
+    listAchieved: tot.achieved,
     achievedPct: tot.achievedPct,
     behind: tot.behind,
     waitingRequests: openRequestsIn(state, pop.ids, scope).length,
@@ -118,7 +116,7 @@ export function facts(state: V2State, scope: PopulationScope = DEFAULT_SCOPE, to
     skillsConfigured: configured,
     skillsNotConfigured: state.skills.length - configured,
     skillsInactive: state.skills.filter((k) => k.active === false).length,
-    requiredToGraduate: requiredToComplete(state).length,
+    assignedSkills: skillsToComplete(state).length,
     evaluators: evaluators.length,
     sites: (state.sites ?? []).length,
     placementsEnding: placementsEnding(state, pop.ids, today, PLACEMENT_ENDING_DAYS).length,

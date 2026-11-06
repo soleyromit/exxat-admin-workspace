@@ -6,6 +6,7 @@
  * compactly; Dashboard C shows every row with selection and the bulk "Open for verification" for like rows.
  */
 import * as React from "react"
+import { BulkCount } from "@/components/lab/shared/bulk-count"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -81,7 +82,7 @@ export function WorklistTable({ rows, scope, compact = false, selectable = false
       searchable={false}
       showQueryControls={false}
       edgeInset={false}
-      bulkActionsSlot={selectable ? (selected) => <BulkOpen rows={rows} selected={selected} scope={scope} /> : undefined}
+      bulkActionsSlot={selectable ? (selected) => <><BulkCount n={selected.size} /><BulkOpen rows={rows} selected={selected} scope={scope} /></> : undefined}
       emptyState={<p className="p-4 text-sm text-muted-foreground">{empty}</p>}
     />
   )

@@ -1,12 +1,11 @@
 /**
- * Director (Dr. K. Brennan) screens: graduation readiness, verification worklist, verification detail and reports.
+ * Director (Dr. K. Brennan) screens: readiness, verification worklist, verification detail and reports.
  *
  * One calculation for every director screen, so a student shows the same counts everywhere [BUILD-PROMPT 8.9]:
  * - the population (who is in scope, which evidence counts under location and setting filters) is `populationRows` from
  *   lib/lab/dashboard.ts, the shared behind calculation;
- * - "required for graduation" is the program's own flag on each skill (the checklist asterisk, "must be validated before
- *   graduation", kept on `skill.hgtc.required`), not the term's course mappings: a graduating cohort's mapped mandatory set
- *   covers only its current courses, while readiness asks about the whole program [INFER, dataset-spec arc 2];
+ * - readiness reads every active skill assigned to the student (Proposed, D-L54; lib/lab/lists.ts assignedSkillIdsByStudent), not
+ *   the term's course mappings: a cohort's mapped mandatory set covers only its current courses, while readiness asks about all;
  * - each skill's state is `skillProgress` on the population's evidence (the same engine call `populationRows` makes), read
  *   through `recordStateOf`, so the four engine states stay the only states [REQ AE-04].
  *
@@ -18,12 +17,14 @@
 import type { Skill, Submission, V2State, Verification } from "@/lib/v2/types"
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { STORY } from "@/lib/v2/generate"
-import { FAR_BEHIND_MISSING, graduationStageOf, requiredToComplete, type GraduationStage } from "@/lib/v2/population"
+import { FAR_BEHIND_MISSING, graduationStageOf, skillsToComplete, type GraduationStage } from "@/lib/v2/population"
+import { courseLevelsInForce, courseSkillIdsInForce } from "@/lib/v2/mapping-in-force"
+
 import { GRADUATION_STAGE_LABEL, OUTCOME_LABEL, RECORD_STATE_META, UNMET_LABEL } from "@/lib/v2/labels"
 import { fmt, plural as fmtPlural, shortDate as fmtShortDate } from "@/lib/v2/format"
 import { evalsOfStudent, evaluationById, personById, submissionsOfStudent } from "@/lib/v2/evidence-index"
 import { skillProgress } from "@/lib/v2/student"
-import { strengthHint } from "@/lib/v2/rules"
+import { outcomeQualifiesOn, strengthHint } from "@/lib/v2/rules"
 import { populationRows, recordStateOf, scopeOptions, type Population, type RecordState, type ScopeOptions } from "@/lib/lab/dashboard"
 import { parseScope, scopeQuery, type LabScope } from "@/lib/lab/scope"
 import { aNoun, capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -114,8 +115,8 @@ export interface RuleChange {
 const OPEN: Array<Submission["status"]> = ["on-device", "with-evaluator", "awaiting-review", "stalled", "returned"]
 const isOpen = (x: Submission) => OPEN.includes(x.status)
 
-/** Required to graduate: the program checklist's "required before graduation" flag (lib/v2/population.ts requiredToComplete). */
-const requiredSkills = (s: V2State): Skill[] => requiredToComplete(s)
+/** The pool the readiness figures read: every active, configured skill (lib/v2/population.ts skillsToComplete, Proposed D-L54). */
+const requiredSkills = (s: V2State): Skill[] => skillsToComplete(s)
 
 const cache = new WeakMap<V2State, { state: V2State; ruleChanges: RuleChange[] }>()
 
@@ -228,7 +229,10 @@ export interface BlockerGroup {
 export interface Readiness {
   scope: LabScope
   population: Population
+  /** Every skill assigned to at least one student in scope. */
   required: Skill[]
+  /** The skills each student in scope reads. */
+  requiredOf: Map<string, Skill[]>
   rows: ReadinessRow[]
   stage: Record<Stage, number>
   /** Students per graduation band (D-X11), all four bands. */
@@ -274,7 +278,7 @@ export function skillLines(ev: V2State, required: Skill[], studentId: string, op
       need: p?.need ?? 0,
       left: p && !p.achieved ? p.left.join("; ") : "",
       evaluations: mine.length,
-      unmet: mine.filter((e) => e.outcome !== "met").length,
+      unmet: mine.filter((e) => !outcomeQualifiesOn(k, e.outcome)).length,
       lastDate: last,
       request: open.find((o) => o.skillIds.includes(k.id)) ?? null,
     }
@@ -309,12 +313,12 @@ function changesSince(s: V2State, v: Verification, ruleChanges: RuleChange[], li
 }
 
 /**
- * "Required to graduate" narrowed by the scope's category, tag and course (a course keeps the graduation skills mapped to it).
- * Director readiness and the Attainment graduate basis both read this, so their totals agree (tests/v2/consistency.test.ts).
+ * Every active skill narrowed by the scope's category, tag and course (a course keeps the skills mapped to it); each student then
+ * reads the part assigned to them. Director readiness and the "All assigned" basis both read this (tests/v2/consistency.test.ts).
  */
-export function graduationSkillsIn(s: V2State, scope: Pick<LabScope, "cat" | "tag" | "course">): Skill[] {
+export function assignedSkillsIn(s: V2State, scope: Pick<LabScope, "cat" | "tag" | "course">): Skill[] {
   const course = scope.course
-  const mappedToCourse = course ? new Set(s.mappings.filter((m) => m.courseId === course && m.level !== "not-expected").map((m) => m.skillId)) : null
+  const mappedToCourse = course ? courseSkillIdsInForce(s, course) : null
   return requiredSkills(s).filter((k) => (!scope.cat || k.category === scope.cat) && (!scope.tag || (k.tags ?? []).includes(scope.tag)) && (!mappedToCourse || mappedToCourse.has(k.id)))
 }
 
@@ -322,19 +326,24 @@ export function buildReadiness(store: V2State, scope: LabScope, today: string = 
   const { state: s, ruleChanges } = directorFixture(store)
   const population = populationRows(s, scope, today)
   const ev = population.evidenceState
-  const required = graduationSkillsIn(s, scope)
+  const pool = assignedSkillsIn(s, scope)
+  const inPool = new Set<string>()
   const names = new Map(s.skills.map((k) => [k.id, k.name]))
   const verifs = s.verifications ?? []
 
   const rows: ReadinessRow[] = population.rows.map((r) => {
     const open = openRequests(s, r.id, names, today)
-    const lines = skillLines(ev, required, r.id, open)
+    // The list this row reads, the same one on My progress: lists never merge, and a student on no list has no row.
+    const mine = new Set(r.requiredIds)
+    const own = pool.filter((k) => mine.has(k.id))
+    for (const k of own) inPool.add(k.id)
+    const lines = skillLines(ev, own, r.id, open)
     const gaps = lines.filter((l) => l.state !== "achieved")
     const flux = fluxReasons(s, r.id, open)
     const latest = verifs.filter((v) => v.studentId === r.id).at(-1) ?? null
     const changes = latest ? changesSince(s, latest, ruleChanges, lines) : []
     const status: VerifyStatus = flux.length ? "blocked" : latest ? (changes.length ? "changed" : "verified") : "ready"
-    const gapWord = gaps.length === 1 ? `${gaps[0].name} not achieved` : `${fmt(gaps.length)} required ${skillNounPlural()} not achieved`
+    const gapWord = gaps.length === 1 ? `${gaps[0].name} not achieved` : `${fmt(gaps.length)} assigned ${skillNounPlural()} not achieved`
     const next =
       status === "blocked"
         ? `${flux[0]}${flux.length > 1 ? `, and ${fmt(flux.length - 1)} more` : ""}`
@@ -350,8 +359,8 @@ export function buildReadiness(store: V2State, scope: LabScope, today: string = 
       name: r.name,
       cohort: r.cohort,
       group: r.group,
-      required: required.length,
-      achieved: required.length - gaps.length,
+      required: own.length,
+      achieved: own.length - gaps.length,
       gaps,
       graduationStage: graduationStageOf(gaps.length),
       stage: stageOf(gaps.length),
@@ -365,6 +374,8 @@ export function buildReadiness(store: V2State, scope: LabScope, today: string = 
     }
   })
   rows.sort((a, b) => b.gaps.length - a.gaps.length || a.name.localeCompare(b.name))
+  const required = pool.filter((k) => inPool.has(k.id))
+  const requiredOf = new Map(population.rows.map((r) => { const mine = new Set(r.requiredIds); return [r.id, pool.filter((k) => mine.has(k.id))] }))
 
   const stage: Record<Stage, number> = { complete: 0, short: 0, far: 0 }
   const graduation: Record<GraduationStage, number> = { complete: 0, "one-short": 0, short: 0, far: 0 }
@@ -379,7 +390,7 @@ export function buildReadiness(store: V2State, scope: LabScope, today: string = 
     status[r.status] += 1
   }
 
-  // Blockers: required skills not achieved, grouped by the exact set of students they block (ties stated as one group).
+  // Blockers: assigned skills not achieved, grouped by the exact set of students they block (ties stated as one group).
   const bySkill = new Map<string, { skill: SkillLine; students: string[] }>()
   for (const r of rows) for (const g of r.gaps) {
     const e = bySkill.get(g.skillId) ?? { skill: g, students: [] }
@@ -410,6 +421,7 @@ export function buildReadiness(store: V2State, scope: LabScope, today: string = 
     scope,
     population,
     required,
+    requiredOf,
     rows,
     stage,
     graduation,
@@ -496,13 +508,13 @@ export interface DetailModel {
 export function detailModel(store: V2State, m: Readiness, studentId: string | null): DetailModel | null {
   const row = (studentId ? m.rows.find((r) => r.id === studentId) : null) ?? m.rows.find((r) => r.status !== "blocked" && r.gaps.length > 0) ?? m.rows[0]
   if (!row) return null
-  const lines = skillLines(m.population.evidenceState, m.required, row.id, row.open)
+  const lines = skillLines(m.population.evidenceState, m.requiredOf.get(row.id) ?? m.required, row.id, row.open)
   const bySection = new Map<string, SkillLine[]>()
   for (const l of lines) bySection.set(l.section, [...(bySection.get(l.section) ?? []), l])
   const sections = [...bySection.entries()]
     .map(([section, ls]) => ({ section, lines: ls, achieved: ls.filter((l) => l.state === "achieved").length }))
     .sort((a, b) => a.achieved - a.lines.length - (b.achieved - b.lines.length) || a.section.localeCompare(b.section))
-  const statement = `${fmt(row.achieved)} of ${fmt(row.required)} required ${skillNounPlural()} achieved.${row.gaps.length ? ` Not achieved: ${row.gaps.map((g) => g.name).join(", ")}.` : ""}`
+  const statement = `${fmt(row.achieved)} of ${fmt(row.required)} assigned ${skillNounPlural()} achieved.${row.gaps.length ? ` Not achieved: ${row.gaps.map((g) => g.name).join(", ")}.` : ""}`
   void store
   return { row, lines, sections, statement }
 }
@@ -540,7 +552,7 @@ export interface SkillReportRow extends Record<string, unknown> {
   /** The skill's level in the scope's course [REQ RP-03, CM-03], strongest mapping first; absent when no course is chosen. */
   level?: CourseLevel
 }
-export type CourseLevel = "mandatory" | "recommended" | "optional"
+export type CourseLevel = "mandatory" | "recommended"
 /** One row per tag over the required skills [REQ RP-04]. A skill with several tags counts under each, so rows overlap. */
 export interface TagReportRow extends Record<string, unknown> {
   id: string
@@ -599,7 +611,7 @@ const OUTCOME_WORD: Record<string, string> = OUTCOME_LABEL
 export function reportModel(m: Readiness): ReportModel {
   const ev = m.population.evidenceState
   const lineBy = new Map<string, SkillLine[]>()
-  for (const r of m.rows) lineBy.set(r.id, skillLines(ev, m.required, r.id, r.open))
+  for (const r of m.rows) lineBy.set(r.id, skillLines(ev, m.requiredOf.get(r.id) ?? m.required, r.id, r.open))
   const students: StudentReportRow[] = m.rows.map((r) => {
     const ls = lineBy.get(r.id)!
     const achieved = ls.filter((l) => l.state === "achieved").length
@@ -608,30 +620,25 @@ export function reportModel(m: Readiness): ReportModel {
     const noEvidence = ls.length - achieved - progress - unqualified
     return { id: r.id, name: r.name, achieved, progress, notMet: noEvidence + unqualified, noEvidence, unqualified, required: ls.length, pct: pct(achieved, ls.length) }
   })
-  // RP-03: under a course scope each skill names its level in that course, from the same mapping rows graduationSkillsIn reads.
+  // RP-03: under a course scope each skill names its level in that course, with the admin's saved levels applied (D-L76).
   const course = m.scope.course
-  const RANK: Record<CourseLevel, number> = { mandatory: 0, recommended: 1, optional: 2 }
-  const levelBy = new Map<string, CourseLevel>()
-  if (course) {
-    for (const x of ev.mappings ?? []) {
-      if (x.courseId !== course || x.level === "not-expected") continue
-      const prev = levelBy.get(x.skillId)
-      if (!prev || RANK[x.level] < RANK[prev]) levelBy.set(x.skillId, x.level)
-    }
-  }
+  const levelBy = course ? courseLevelsInForce(ev, course) : new Map<string, CourseLevel>()
   const skills: SkillReportRow[] = m.required.map((k) => {
     let achieved = 0
     let progress = 0
     let unqualified = 0
+    let assignedTo = 0
     for (const r of m.rows) {
-      const st = lineBy.get(r.id)!.find((l) => l.skillId === k.id)!.state
+      const st = lineBy.get(r.id)!.find((l) => l.skillId === k.id)?.state
+      if (!st) continue
+      assignedTo += 1
       if (st === "achieved") achieved += 1
       else if (st === "progress") progress += 1
       else if (st === "unqualified") unqualified += 1
     }
-    const noEvidence = m.rows.length - achieved - progress - unqualified
+    const noEvidence = assignedTo - achieved - progress - unqualified
     const level = course ? levelBy.get(k.id) : undefined
-    return { id: k.id, name: k.name, section: k.category, achieved, progress, notMet: noEvidence + unqualified, noEvidence, unqualified, students: m.rows.length, ...(level ? { level } : {}) }
+    return { id: k.id, name: k.name, section: k.category, achieved, progress, notMet: noEvidence + unqualified, noEvidence, unqualified, students: assignedTo, ...(level ? { level } : {}) }
   })
   const secMap = new Map<string, SectionReportRow>()
   for (const k of skills) {

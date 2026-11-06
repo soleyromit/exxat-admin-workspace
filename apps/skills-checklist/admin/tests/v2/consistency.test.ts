@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest"
 import { createSeed, IDS } from "@/lib/v2/seed"
 import { facts, type Facts } from "@/lib/v2/facts"
 import { approvalsBadgeCount, approvalsInScope, heldState } from "@/lib/v2/approvals"
-import { DEFAULT_SCOPE, populationRows, REQUIRED_SET_LABEL, requiredSkillsFor, requiredToComplete, type PopulationScope } from "@/lib/v2/population"
+import { assignedSkillIdsByStudent } from "@/lib/lab/lists"
+import { DEFAULT_SCOPE, populationRows, populationTotals, REQUIRED_SET_LABEL, requiredSkillsFor, skillsToComplete, type PopulationScope } from "@/lib/v2/population"
 import { placementsEnding } from "@/lib/v2/placements"
 import { approvalsBadge, COUNTER_BY_ID } from "@/lib/v2/selectors"
 import { homeKpis } from "@/lib/v2/home"
@@ -57,7 +58,7 @@ describe.each(SCOPES)("one value per fact, scope: $name", ({ scope }) => {
   it("the facts are sane at scale", () => {
     expect(f.studentsTotal).toBe(123)
     expect(f.studentsInScope).toBeGreaterThan(0)
-    expect(f.mandatoryRecords).toBeGreaterThan(f.studentsInScope)
+    expect(f.listRecords).toBeGreaterThan(f.studentsInScope)
     expect(f.awaitingApprovalStatusRows + f.awaitingApprovalUnverifiedRows).toBeLessThanOrEqual(f.awaitingApprovalEvaluations)
   })
 
@@ -67,7 +68,7 @@ describe.each(SCOPES)("one value per fact, scope: $name", ({ scope }) => {
     expect(d.heroValue).toBe(f.behind)
     const k = Object.fromEntries(d.kpis.map((x) => [x.id, x]))
     expect(k.achieved.value).toBe(pctText(f))
-    expect(k.achieved.description).toBe(`${f.mandatoryAchieved.toLocaleString("en-US")} of ${f.mandatoryRecords.toLocaleString("en-US")}`)
+    expect(k.achieved.description).toBe(`${f.listAchieved.toLocaleString("en-US")} of ${f.listRecords.toLocaleString("en-US")}`)
     expect(k.waiting.value).toBe(f.waitingRequests)
     expect(k.approval.value).toBe(f.awaitingApproval)
     expect(k.setup.value).toBe(f.skillsConfigured)
@@ -83,8 +84,8 @@ describe.each(SCOPES)("one value per fact, scope: $name", ({ scope }) => {
     expect(buildDrill(s, scope, { list: "requests", cond: "waiting" }).count).toBe(f.waitingRequests)
     expect(buildDrill(s, scope, { list: "requests", cond: "approval" }).count).toBe(f.awaitingApproval)
     const skills = buildDrill(s, scope, { list: "skills" }).skills!
-    expect(skills.reduce((t, x) => t + x.students, 0)).toBe(f.mandatoryRecords)
-    expect(skills.reduce((t, x) => t + x.achieved, 0)).toBe(f.mandatoryAchieved)
+    expect(skills.reduce((t, x) => t + x.students, 0)).toBe(f.listRecords)
+    expect(skills.reduce((t, x) => t + x.achieved, 0)).toBe(f.listAchieved)
   })
 
   it("dashboard B (exceptions): tab counts", () => {
@@ -96,8 +97,8 @@ describe.each(SCOPES)("one value per fact, scope: $name", ({ scope }) => {
   it("dashboard C (pipeline) and E (operations)", () => {
     const p = pipelineModel(s, scope)
     expect(p.students).toBe(f.studentsInScope)
-    expect(p.total).toBe(f.mandatoryRecords)
-    expect(p.stages.find((x) => x.state === "achieved")!.count).toBe(f.mandatoryAchieved)
+    expect(p.total).toBe(f.listRecords)
+    expect(p.stages.find((x) => x.state === "achieved")!.count).toBe(f.listAchieved)
     const o = opsModel(s, scope)
     expect(o.students).toBe(f.studentsInScope)
     expect(o.waiting).toBe(f.waitingRequests)
@@ -122,34 +123,36 @@ describe.each(SCOPES)("one value per fact, scope: $name", ({ scope }) => {
 
 describe("default scope: v2 selectors and the student's own view", () => {
   const f = facts(s)
+  // The older v2 screens read Mandatory this term; only the lab screens read the list (D-L102).
+  const ft = populationTotals(populationRows(s, DEFAULT_SCOPE, undefined, { set: "term" }))
 
   it("v2 reports, home and counters read the same facts", () => {
     const sum = reportSummary(s, NO_FILTERS)
-    expect(sum.students).toBe(f.studentsInScope)
-    expect(sum.behind).toBe(f.behind)
-    expect(sum.mandatoryAchievedPct).toBe(f.achievedPct)
-    expect(behindPace(s)).toHaveLength(f.behind)
-    expect(paceRows(s).reduce((t, r) => t + r.total, 0)).toBe(f.mandatoryRecords)
+    expect(sum.students).toBe(ft.students)
+    expect(sum.behind).toBe(ft.behind)
+    expect(sum.mandatoryAchievedPct).toBe(ft.achievedPct)
+    expect(behindPace(s)).toHaveLength(ft.behind)
+    expect(paceRows(s).reduce((t, r) => t + r.total, 0)).toBe(ft.records)
     const k = homeKpis(s)
-    expect(k.behind).toBe(f.behind)
+    expect(k.behind).toBe(ft.behind)
     expect(k.waiting).toBe(f.awaitingApproval)
     expect(k.students).toBe(f.studentsTotal)
     expect(approvalsBadge(s)).toBe(f.awaitingApproval)
-    expect(COUNTER_BY_ID.mandatory.value(s)).toBe(f.mandatoryRecords)
-    expect(COUNTER_BY_ID.behind.value(s)).toBe(f.behind)
+    expect(COUNTER_BY_ID.mandatory.value(s)).toBe(ft.records)
+    expect(COUNTER_BY_ID.behind.value(s)).toBe(ft.behind)
     expect(COUNTER_BY_ID.unconfigured.value(s)).toBe(f.skillsNotConfigured)
   })
 
   it("v2 verification rows sum to the mandatory facts", () => {
     const v = verificationRows(s)
-    expect(v.reduce((t, r) => t + r.mandatoryTotal, 0)).toBe(f.mandatoryRecords)
-    expect(v.reduce((t, r) => t + r.mandatoryAchieved, 0)).toBe(f.mandatoryAchieved)
+    expect(v.reduce((t, r) => t + r.mandatoryTotal, 0)).toBe(ft.records)
+    expect(v.reduce((t, r) => t + r.mandatoryAchieved, 0)).toBe(ft.achieved)
   })
 
   it("v2 report with a cohort filter equals the cohort facts", () => {
-    const fc = facts(s, { ...DEFAULT_SCOPE, cohort: "BSN 2027" })
+    const fc = populationTotals(populationRows(s, { ...DEFAULT_SCOPE, cohort: "BSN 2027" }, undefined, { set: "term" }))
     const sum = reportSummary(s, { ...NO_FILTERS, cohort: "BSN 2027" })
-    expect([sum.students, sum.behind, sum.mandatoryAchievedPct]).toEqual([fc.studentsInScope, fc.behind, fc.achievedPct])
+    expect([sum.students, sum.behind, sum.mandatoryAchievedPct]).toEqual([fc.students, fc.behind, fc.achievedPct])
   })
 
   it("Maya's student home equals her row on the dashboard drill, under every scope that includes her", () => {
@@ -163,8 +166,8 @@ describe("default scope: v2 selectors and the student's own view", () => {
       expect(m.counts.achieved).toBe(row!.achieved)
       expect(m.behind).toBe(row!.behind)
     }
-    expect(mandatoryProgress(s, IDS.maya)).toHaveLength(m.counts.required)
-    expect(mandatoryProgress(s, IDS.maya).filter((x) => x.achieved)).toHaveLength(m.counts.achieved)
+    // Mandatory this term stays a view of where: it is the mandatory skills of her courses, whatever her list holds.
+    expect(mandatoryProgress(s, IDS.maya)).toHaveLength(requiredSkillsFor(s, IDS.maya).length)
   })
 
   it("Maya's waiting count equals the open rows on My requests", () => {
@@ -188,17 +191,18 @@ describe("default scope: v2 selectors and the student's own view", () => {
   })
 
   it("two required sets, named apart, never mixed in one figure (decision D-X12)", () => {
-    const pop = populationRows(s)
+    const pop = populationRows(s, DEFAULT_SCOPE, undefined, { set: "term" })
     for (const r of pop.rows) expect(r.required, r.id).toBe(requiredSkillsFor(s, r.id).length)
-    const grad = requiredToComplete(s)
-    expect(f.requiredToGraduate).toBe(grad.length)
+    const grad = skillsToComplete(s)
+    expect(f.assignedSkills).toBe(grad.length)
     const readiness = buildReadiness(s, { ...DEFAULT_SCOPE, cohort: "BSN 2026" })
-    expect(readiness.required.map((k) => k.id)).toEqual(grad.map((k) => k.id))
-    for (const r of readiness.rows) expect(r.required, r.id).toBe(grad.length)
-    // The sets really differ, so a mix would show: the graduating cohort's term set is far smaller than the graduation list.
+    const assigned = assignedSkillIdsByStudent(s)
+    const ids = new Set(grad.map((k) => k.id))
+    for (const r of readiness.rows) expect(r.required, r.id).toBe([...assigned.get(r.id)!].filter((id) => ids.has(id)).length)
+    // The sets really differ, so a mix would show: the graduating cohort's term set is far smaller than what is assigned.
     const g26 = pop.rows.find((r) => r.cohort === "BSN 2026")!
-    expect(g26.required).toBeLessThan(grad.length)
-    expect(REQUIRED_SET_LABEL).toEqual({ thisTerm: "Required this term", toGraduate: "Required to graduate" })
+    expect(g26.required).toBeLessThan(readiness.rows.find((r) => r.id === g26.id)!.required)
+    expect(REQUIRED_SET_LABEL).toEqual({ thisTerm: "Mandatory this term", assigned: "All assigned" })
   })
 
   it("deactivated skills count in no figure (SL-11, decision D-X14)", () => {
@@ -206,7 +210,7 @@ describe("default scope: v2 selectors and the student's own view", () => {
     expect(inactive.size).toBe(f.skillsInactive)
     expect(f.skillsInactive).toBeGreaterThan(0)
     for (const r of populationRows(s).rows) for (const id of r.requiredIds) expect(inactive.has(id), id).toBe(false)
-    for (const k of requiredToComplete(s)) expect(inactive.has(k.id)).toBe(false)
+    for (const k of skillsToComplete(s)) expect(inactive.has(k.id)).toBe(false)
     for (const x of buildDrill(s, DEFAULT_SCOPE, { list: "skills" }).skills!) expect(inactive.has(x.skillId)).toBe(false)
   })
 
@@ -230,7 +234,7 @@ describe("default scope: v2 selectors and the student's own view", () => {
   })
 
   it("the student population row is the one every per-student view reads", () => {
-    const pop = populationRows(s)
+    const pop = populationRows(s, DEFAULT_SCOPE, undefined, { set: "term" })
     const pace = new Map(paceRows(s).map((r) => [r.studentId, r]))
     for (const r of pop.rows) {
       expect(pace.get(r.id)!.achieved).toBe(r.achieved)

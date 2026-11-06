@@ -15,7 +15,8 @@ import { bulkImpact, copySources, fromV2, leftToConfigure, ruleSentence, saveLab
 import { useV2Store } from "@/lib/v2/react"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
 import { isConfigured } from "@/lib/v2/population"
-import { STATUS_META } from "@/lib/lab/library"
+import { configurationOf } from "@/lib/lab/program-settings"
+import { CONFIGURATION_META } from "@/lib/lab/library"
 import type { V2State } from "@/lib/v2/types"
 import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
@@ -99,7 +100,7 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, block
           </div>
           <ul className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border" aria-label={capitalize(skillNounPlural())}>
             {shown.map((k) => {
-              const spec = STATUS_META[isConfigured(k) ? "configured" : "not-configured"]
+              const spec = CONFIGURATION_META[configurationOf(state, k)]
               const id = `cfg-bulk-${k.id}`
               return (
                 <li key={k.id} className="flex items-center gap-3 border-b border-border px-3 py-2 last:border-b-0">
@@ -108,7 +109,7 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, block
                     <span className="block truncate">{k.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">{k.category}</span>
                   </Label>
-                  <StatusBadge label={spec.short} tone={spec.tone === "warning" ? "warning" : "neutral"} icon={spec.icon} size="sm" />
+                  <StatusBadge label={spec.label} tone={spec.tone} icon={spec.icon} size="sm" />
                 </li>
               )
             })}
@@ -154,7 +155,7 @@ export function BulkApplySheet({ open, onOpenChange, state, skillId, rule, block
               onOpenChange(false)
             }}
           >
-            {picked.length ? `Apply to ${countSkills(picked.length)}` : "Apply"}
+            {`Apply to ${countSkills(picked.length)}`}
           </Button>
         </SheetFooter>
       </SheetContent>

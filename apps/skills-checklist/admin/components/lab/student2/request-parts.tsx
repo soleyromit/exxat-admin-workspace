@@ -25,11 +25,15 @@ import { ValidationSummary, type ValidationIssue } from "@/components/lab/layout
 import type { Student2Ctx } from "@/components/lab/student2/frame"
 import type { Setting, SignoffMethod, Submission, V2State } from "@/lib/v2/types"
 import { skillById } from "@/lib/v2/evidence-index"
-import { skillRecord } from "@/lib/lab/student"
+import { qualifyingWord, skillRecord } from "@/lib/lab/student"
 import { labNow, loggedSitting, markLoggedSent, saveLogged, sendNew, type LoggedInput } from "@/lib/lab/logged"
 import { updateActiveV2Store } from "@/lib/v2/react"
 import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { TYPE } from "@/components/lab/type-scale"
+import { useInWalkthrough } from "@/components/lab/lab-bar/walkthrough-controls"
+import { findFlow } from "@/lib/lab/flows"
+import { requestLinkQuery } from "@/lib/lab/story-request"
+import { FULFILLMENT_WALKTHROUGH_ID, walkthroughStepHref } from "@/lib/lab/walkthrough"
 import {
   DEFAULT_METHOD,
   PRACTICE_LINE,
@@ -78,14 +82,33 @@ export interface RequestResultInfo {
   submission: Submission
 }
 
+/** The result of a request already in the store, read back from what was sent [REQ ST-13]. */
+function sentResult(s: V2State, m: Student2Ctx["model"], studentId: string, id: string): RequestResultInfo | null {
+  const x = s.submissions.find((r) => r.id === id && r.studentId === studentId)
+  if (!x) return null
+  const person = s.people.find((p) => p.id === x.assignedToId)
+  const who = person?.name ?? "your evaluator"
+  const entry = s.logEntries.find((e) => (x.entryIds ?? []).includes(e.id))
+  const place = entry ? { setting: entry.setting, clinicalSetting: entry.clinicalSetting } : null
+  const role = evaluatorsFor(s, x.skillIds, entry?.location ?? null, entry?.setting ?? "clinical").find((o) => o.id === x.assignedToId)?.role ?? ""
+  const lines = confirmationLines({ skillNames: x.skillIds.map((k) => skillById(s, k)?.name ?? skillNoun()), who, role, setting: settingWords(place), location: entry?.location ?? null, date: entry?.sitting?.date ?? "", note: x.studentNote ?? "" })
+  const counts = x.skillIds.map((k) => {
+    const r = m.all.find((y) => y.id === k) ?? skillRecord(s, studentId, k, "evidence", false)
+    const approval = skillById(s, k)?.config?.approvalRequired === true
+    return { id: k, name: r?.name ?? skillNoun(), text: r ? countsWhen({ counted: r.counted, need: r.need, achieved: r.state === "achieved", parts: r.parts }, approval, skillById(s, k)) : `${qualifyingWord(skillById(s, k))} counts toward it.` }
+  })
+  return { id, method: x.method, who, skillIds: x.skillIds, queued: false, lines, counts, submission: x, sentence: nextSentence({ method: x.method, who, approval: needsApproval(s, x.skillIds), offline: false, newName: false, signsByLink: true }) }
+}
+
 const unitOf = (location: string | null | undefined) => (location && location.includes(",") ? location.split(",").slice(1).join(",").trim() : "")
 
-export function useRequestDraft(ctx: Student2Ctx) {
+export function useRequestDraft(ctx: Student2Ctx, opts: { onSent?: (id: string) => void; restore?: string | null; defaultDate?: string } = {}) {
   const { state: s, model: m, studentId, param, offline } = ctx
   // Every configured, active skill [REQ ST-02, SL-11]: a deactivated skill is never offered (pickRows reads openToLog).
   const picks = React.useMemo(() => pickRows(s, m), [s, m])
   // Every place [REQ ST-05, ST-06, ST-07]: placements (or the program's settings when none is recorded), then lab and simulation.
-  const where = React.useMemo(() => whereChoices(s, studentId), [s, studentId])
+  const courseParam = param("course")
+  const where = React.useMemo(() => whereChoices(s, studentId, courseParam), [s, studentId, courseParam])
   const initialSkills = React.useMemo(() => {
     const asked = (param("skills") ?? param("skill") ?? "").split(",").filter((id) => picks.some((p) => p.id === id))
     return asked.length ? asked : picks.filter((p) => p.likely && !p.waiting).slice(0, 2).map((p) => p.id)
@@ -98,7 +121,7 @@ export function useRequestDraft(ctx: Student2Ctx) {
   const chosen = where.find((w) => w.value === whereVal) ?? null
   const [location, setLocation] = React.useState(() => param("loc") ?? "")
   // Details the program requires [REQ ST-10]: handed over from Log when the student logged first, otherwise asked for here.
-  const [details, setDetails] = React.useState<DetailValues>(() => ({ date: param("date") ?? "", unit: param("unit") ?? unitOf(chosen?.location), case: param("case") ?? "" }))
+  const [details, setDetails] = React.useState<DetailValues>(() => ({ date: param("date") ?? opts.defaultDate ?? "", unit: param("unit") ?? unitOf(chosen?.location), case: param("case") ?? "" }))
   const [note, setNote] = React.useState(() => (param("note") ?? "").slice(0, STUDENT_NOTE_MAX))
   const loc = locationFor(chosen, location)
   const setting: Setting = chosen?.setting ?? "clinical"
@@ -116,7 +139,7 @@ export function useRequestDraft(ctx: Student2Ctx) {
   const [method, setMethod] = React.useState<SignoffMethod>(() => (draft?.method as SignoffMethod | undefined) ?? DEFAULT_METHOD)
   const [ratings, setRatings] = React.useState<Record<string, string>>(() => draft?.ratings ?? {})
   const [answers, setAnswers] = React.useState<SelfAnswers>(() => draft?.answers ?? {})
-  const setAnswer = (id: string, i: number, v: "yes" | "no") => setAnswers((a) => {
+  const setAnswer = (id: string, i: number, v: "yes" | "no" | number) => setAnswers((a) => {
     const n = selfShape(skillById(s, id)!).questions.length
     const row = Array.from({ length: n }, (_, k) => a[id]?.[k] ?? null)
     row[i] = v
@@ -127,7 +150,8 @@ export function useRequestDraft(ctx: Student2Ctx) {
   const selfIssues = selfEvalIssues(s, selfIds, ratings, answers)
   const [photo, setPhoto] = React.useState<{ name: string; sizeKb: number } | null>(null)
   const [tried, setTried] = React.useState(false)
-  const [result, setResult] = React.useState<RequestResultInfo | null>(null)
+  // A walkthrough stop opened again (Back from the evaluator) shows the request as it was sent, not an empty form to send twice.
+  const [result, setResult] = React.useState<RequestResultInfo | null>(() => (opts.restore ? sentResult(s, m, studentId, opts.restore) : null))
 
   const setWhere = (v: string) => {
     setWhereVal(v)
@@ -219,7 +243,7 @@ export function useRequestDraft(ctx: Student2Ctx) {
       const r = m.all.find((x) => x.id === k) ?? skillRecord(s, studentId, k, "evidence", false)
       const name = r?.name ?? picks.find((p) => p.id === k)?.name ?? skillNoun()
       const approval = skillById(s, k)?.config?.approvalRequired === true
-      return { id: k, name, text: r ? countsWhen({ counted: r.counted, need: r.need, achieved: r.state === "achieved", parts: r.parts }, approval) : approval ? "Met counts after a reviewer approves it." : "Met counts toward it." }
+      return { id: k, name, text: r ? countsWhen({ counted: r.counted, need: r.need, achieved: r.state === "achieved", parts: r.parts }, approval, skillById(s, k)) : `${qualifyingWord(skillById(s, k))} ${approval ? "counts after a reviewer approves it" : "counts toward it"}.` }
     })
     // Sent: the request is written to the shared store and waits in My requests. From a draft, the draft becomes that request and
     // leaves Drafts. Offline it is kept as a draft (My requests, Drafts) until it can go (LEDGER D-L10).
@@ -244,6 +268,7 @@ export function useRequestDraft(ctx: Student2Ctx) {
       })
     }
     setResult({ id, method, who: whoName, skillIds: skills, queued, lines, counts, submission, sentence: nextSentence({ method, who: whoName, approval: needsApproval(s, skills), offline, newName: who?.kind === "new", signsByLink: whoSignsByLink }) })
+    opts.onSent?.(id)
     return true
   }
   const toggle = (id: string) => setSkills((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]))
@@ -321,11 +346,11 @@ export function WherePick({ d }: { d: RequestDraft }) {
 }
 
 /** The program's details and the one note, required ones enforced before Send [REQ ST-10, ST-12]. */
-export function DetailsAndNote({ d, columns = true }: { d: RequestDraft; columns?: boolean }) {
+export function DetailsAndNote({ d, columns = true, noteHelper }: { d: RequestDraft; columns?: boolean; /** null drops the note's helper line (D-L34). */ noteHelper?: null }) {
   return (
     <div className="flex flex-col gap-4" data-region-part="details">
       <DetailsFields idPrefix="req-detail" fields={d.fields} values={d.details} onChange={(id, v) => d.setDetails((x) => ({ ...x, [id]: v }))} errors={d.detailErrs} showErrors={d.tried} columns={columns} />
-      <NoteField id="req-note" value={d.note} onChange={d.setNote} error={d.tried ? d.errors.note : null} />
+      <NoteField id="req-note" value={d.note} onChange={d.setNote} error={d.tried ? d.errors.note : null} {...(noteHelper === null ? { helper: null } : {})} />
     </div>
   )
 }
@@ -381,14 +406,33 @@ export function PhotoField({ d }: { d: RequestDraft }) {
   )
 }
 
-export const evaluatorLink = (id: string) => (typeof window === "undefined" ? `/lab/evaluator/evaluation-form?request=${id}` : `${window.location.origin}/lab/evaluator/evaluation-form?request=${id}`)
+/** The link the email and the QR code carry. It names the student and skills, so a device that has not seen the request can open it. */
+export const evaluatorLink = (id: string, sub?: Submission, course?: string | null) => {
+  const query = sub ? requestLinkQuery(id, { student: sub.studentId, skills: sub.skillIds, to: sub.assignedToId || null, course }) : `request=${id}`
+  return typeof window === "undefined" ? `/lab/evaluator/evaluation-form?${query}` : `${window.location.origin}/lab/evaluator/evaluation-form?${query}&present=1`
+}
+
+/** Walkthrough only: the one way on from the result, so the presenter opens what the evaluator gets. */
+function WalkthroughNext({ r }: { r: RequestResultInfo }) {
+  const flow = findFlow(FULFILLMENT_WALKTHROUGH_ID)
+  if (!flow || r.queued) return null
+  const carry = new URLSearchParams({ request: r.id })
+  const first = r.who.split(",")[0]!.trim()
+  const to = r.method === "link" ? walkthroughStepHref(flow, "email", carry) : walkthroughStepHref(flow, "form", carry)
+  return (
+    <Button asChild variant="default" size="default" className="max-sm:h-11">
+      <Link href={to} data-walkthrough-evaluator>{r.method === "link" ? `See the email ${first} gets` : `Open the form as ${first}`}</Link>
+    </Button>
+  )
+}
 
 /**
  * After Send: the one thing to do now (scan, hand over, nothing for a link, nothing for a photo), the "what happens next"
  * sentence said once, then My requests. A sent request has no QR or link controls left anywhere else [AUDIT T2 RV-05 UI].
  */
 export function RequestResult({ d, r, wide = false }: { d: RequestDraft; r: RequestResultInfo; /** Full-width page (Send C): what was sent beside what happens next, so the card fills the width. */ wide?: boolean }) {
-  const link = evaluatorLink(r.id)
+  const link = evaluatorLink(r.id, r.submission, d.s.logEntries.find((e) => e.requestId === r.id)?.sitting?.course)
+  const inWalkthrough = useInWalkthrough()
   const [copied, setCopied] = React.useState(false)
   const title = r.queued ? "Kept on this device" : r.method === "qr" ? `Ready for ${r.who} to scan` : r.method === "handover" ? `Hand your device to ${r.who}` : r.method === "photo" ? "Sent for review" : "Sent"
   const [first, ...rest] = r.counts
@@ -446,10 +490,11 @@ export function RequestResult({ d, r, wide = false }: { d: RequestDraft; r: Requ
         ) : null}
         <LocalBanner variant={r.queued ? "info" : "success"}>{r.sentence}</LocalBanner>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button asChild variant="default" size="default" className="max-sm:h-11">
+          {inWalkthrough ? <WalkthroughNext r={r} /> : null}
+          <Button asChild variant={inWalkthrough ? "outline" : "default"} size="default" className="max-sm:h-11">
             <Link href={student2Href("my-requests", {}, d.studentId)}>Go to My requests</Link>
           </Button>
-          <Button type="button" variant="ghost" size="default" className="max-sm:h-11" onClick={d.reset}>Send another</Button>
+          {inWalkthrough ? null : <Button type="button" variant="ghost" size="default" className="max-sm:h-11" onClick={d.reset}>Send another</Button>}
         </div>
         </div>
       </CardContent>

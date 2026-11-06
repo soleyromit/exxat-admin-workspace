@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event"
 import { createSeed } from "@/lib/v2/seed"
 import { getVocabulary, setVocabActive } from "@/lib/v2/vocabulary"
 import { buildLibrary, draftToSkill, EMPTY_DRAFT, parseSeveral, severalDrafts, vocabPickerOptions } from "@/lib/lab/library"
+import { studentsAssigned } from "@/lib/lab/lists"
 import { CategoryName, TagBadges, tagLineText } from "@/components/lab/library/category-tag-pickers"
 
 /**
@@ -79,55 +80,54 @@ describe("SL-02: description in every add path", () => {
     expect(draftToSkill({ ...EMPTY_DRAFT, name: "No text" }, "x2").description).toBeUndefined()
   })
 
-  it("add several C: a sheet's Description cell and a typed one both reach the draft", () => {
+  it("add several: a sheet's other cells are not read as a description; a typed one reaches the draft [REQ IM-03]", () => {
     const p = parseSeveral("Chest tube care\tRespiratory\t\tDrainage checks\nSuction", seed.skills.map((k) => k.name))
     const drafts = severalDrafts(p.items.map((it) => (it.name === "Suction" ? { ...it, description: "Oral and tracheal" } : it)), { category: "", tags: [] })
-    expect(drafts.map((d) => d.description)).toEqual(["Drainage checks", "Oral and tracheal"])
+    expect(drafts.map((d) => d.description)).toEqual(["", "Oral and tracheal"])
   })
 })
 
 describe("SL-02: the skill panel shows the description and edits it in place", () => {
-  it("saves a new description through onSaveDescription", async () => {
+  // Map D1a: the one edit panel replaced the inline description. Saving goes through the panel's own form to the shared store.
+  it("edits the description in the panel and writes it to the shared store", async () => {
     const { SkillPanel } = await import("@/components/lab/library/skill-panel")
+    const { useLibrary } = await import("@/components/lab/library/use-library")
+    const { V2StoreProvider, useV2State } = await import("@/lib/v2/react")
     const row = buildLibrary(seed)[0]!
-    const onSave = vi.fn()
-    const handlers = { onEdit: vi.fn(), onDeactivate: vi.fn(), onReactivate: vi.fn(), onDelete: vi.fn(), onSaveDescription: onSave }
-    render(<SkillPanel row={{ ...row, description: "" }} rows={[row]} handlers={handlers} onOpen={vi.fn()} onClose={vi.fn()} />)
-    await userEvent.click(screen.getByRole("button", { name: /Add a description/ }))
-    await userEvent.type(screen.getByLabelText(`Description of ${row.name}`), "Done at the bedside")
-    await userEvent.click(screen.getByRole("button", { name: "Save" }))
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ id: row.id }), "Done at the bedside")
+    const handlers = { onEdit: vi.fn(), onDeactivate: vi.fn(), onReactivate: vi.fn(), onDelete: vi.fn() }
+    const Shown = () => {
+      const state = useV2State()
+      return <p data-testid="stored">{state.skills.find((k) => k.id === row.id)?.description ?? ""}</p>
+    }
+    const Host = () => {
+      const api = useLibrary()
+      const r = api.byId.get(row.id)
+      return r ? <SkillPanel row={r} rows={[r]} allRows={[r]} handlers={handlers} api={api} onOpen={vi.fn()} onClose={vi.fn()} dirty={false} onDirty={vi.fn()} attempt={(a) => a()} discards={0} /> : null
+    }
+    render(<V2StoreProvider><Host /><Shown /></V2StoreProvider>)
+    const field = await screen.findByRole("textbox", { name: "Description" })
+    await userEvent.clear(field)
+    await userEvent.type(field, "Done at the bedside")
+    await userEvent.click(screen.getByRole("button", { name: /^Save changes/ }))
+    expect(screen.getByTestId("stored")).toHaveTextContent("Done at the bedside")
   }, 20000)
-})
 
-describe("SL-11: row actions split Deactivate from Replace, and Delete explains a block", () => {
   const handlers = () => ({ onEdit: vi.fn(), onDeactivate: vi.fn(), onReactivate: vi.fn(), onDelete: vi.fn() })
 
-  it("an active row offers Deactivate and Replace with a new version; a blocked Delete is disabled with its reason described", async () => {
+  it("an active row offers Deactivate and no Replace with a new version (D-L105); a blocked Delete is disabled with its reason described", async () => {
     const { RowActions } = await import("@/components/lab/library/row-actions")
-    const row = { ...buildLibrary(seed)[0]!, status: "configured" as const, evidence: 3, canDelete: false }
+    const row = { ...buildLibrary(seed)[0]!, configuration: "default" as const, evidence: 3, canDelete: false }
     const h = handlers()
     render(<RowActions row={row} handlers={h} />)
     await userEvent.click(screen.getByRole("button", { name: `Actions for ${row.name}` }))
     expect(screen.queryByRole("menuitem", { name: /Deactivate or replace/ })).toBeNull()
-    // Without an in-place handler, Replace links to the library's replace flow carrying the skill (not a generic lists page).
-    expect(screen.getByRole("menuitem", { name: "Replace with a new version" })).toHaveAttribute("href", expect.stringContaining(`replace=${encodeURIComponent(row.id)}`))
+    expect(screen.queryByRole("menuitem", { name: "Replace with a new version" })).toBeNull()
     const del = screen.getByRole("menuitem", { name: "Delete" })
     expect(del).toHaveAttribute("data-disabled")
     expect(del).toHaveAttribute("data-variant", "destructive")
     expect(del).toHaveAccessibleDescription("Has 3 evaluations, so it cannot be deleted")
     await userEvent.click(screen.getByRole("menuitem", { name: "Deactivate" }))
     expect(h.onDeactivate).toHaveBeenCalledWith([row])
-  }, 20000)
-
-  it("Replace opens in place with the row when the page handles it", async () => {
-    const { RowActions } = await import("@/components/lab/library/row-actions")
-    const row = { ...buildLibrary(seed)[0]!, status: "configured" as const }
-    const h = { ...handlers(), onReplace: vi.fn() }
-    render(<RowActions row={row} handlers={h} />)
-    await userEvent.click(screen.getByRole("button", { name: `Actions for ${row.name}` }))
-    await userEvent.click(screen.getByRole("menuitem", { name: "Replace with a new version" }))
-    expect(h.onReplace).toHaveBeenCalledWith(row)
   }, 20000)
 
   it("an inactive row offers Reactivate and no Replace", async () => {
@@ -142,7 +142,7 @@ describe("SL-11: row actions split Deactivate from Replace, and Delete explains 
 
   it("choosing from the menu does not reach the row's click handler (no skill panel behind the dialog)", async () => {
     const { RowActions } = await import("@/components/lab/library/row-actions")
-    const row = { ...buildLibrary(seed)[0]!, status: "configured" as const }
+    const row = { ...buildLibrary(seed)[0]!, configuration: "default" as const }
     const onRowClick = vi.fn()
     const h = handlers()
     render(<div onClick={onRowClick}><RowActions row={row} handlers={h} /></div>)
@@ -155,10 +155,12 @@ describe("SL-11: row actions split Deactivate from Replace, and Delete explains 
   it("the Deactivate dialog shows what it withdraws before confirm (SL-11)", async () => {
     const { DeactivateDialog } = await import("@/components/lab/library/row-actions")
     const { retireImpact } = await import("@/lib/lab/retire")
-    const row = buildLibrary(seed).find((r) => r.status === "configured" && r.courses > 0)!
-    render(<DeactivateDialog rows={[row]} impactOf={(id) => retireImpact(seed, id)} onOpenChange={vi.fn()} onConfirm={vi.fn()} />)
+    const row = buildLibrary(seed).find((r) => (r.status === "active" && r.configuration === "default") && r.courses > 0)!
+    const assignedTo = studentsAssigned(seed, row.id)
+    render(<DeactivateDialog rows={[row]} impactOf={([id]) => ({ ...retireImpact(seed, id!)!, assignedTo: studentsAssigned(seed, id!) })} onOpenChange={vi.fn()} onConfirm={vi.fn()} />)
     const i = retireImpact(seed, row.id)!
     expect(screen.getByText("Leaves courses").nextSibling).toHaveTextContent(String(i.courses))
+    expect(screen.getByText("Students who have it").nextSibling).toHaveTextContent(assignedTo.toLocaleString("en-US"))
     expect(screen.getByText("Evaluations kept").nextSibling).toHaveTextContent(i.evidence.toLocaleString("en-US"))
   }, 20000)
 

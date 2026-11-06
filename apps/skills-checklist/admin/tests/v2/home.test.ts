@@ -6,7 +6,7 @@ import { approvalsInScope } from "@/lib/v2/approvals"
 /** The approval queue as every screen reads it (default scope: current term). */
 const queueItems = (s: V2State) => approvalsInScope(s).entries
 import { behindPace } from "@/lib/v2/reports"
-import { createSeed } from "@/lib/v2/seed"
+import { createGeneratedSeed as createSeed } from "@/lib/v2/seed"
 import type { V2State } from "@/lib/v2/types"
 import { verificationRows } from "@/lib/v2/verification"
 

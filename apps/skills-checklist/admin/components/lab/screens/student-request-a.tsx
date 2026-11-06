@@ -79,7 +79,7 @@ function RequestForm({ ctx }: { ctx: Student2Ctx }) {
               <dt className="text-muted-foreground">How</dt>
               <dd className="text-foreground">{m.label}</dd>
               <dt className="text-muted-foreground">Counts</dt>
-              <dd className="text-foreground">{d.method === "photo" ? "After review" : approval ? "After approval" : "When they answer met"}</dd>
+              <dd className="text-foreground">{d.method === "photo" ? "After review" : approval ? "After approval" : "When the evaluation meets the rule"}</dd>
             </dl>
             {/* One paragraph: how this signer signs, only when it is through a link (a preceptor or a new name: no account, REQ
                 EV-01; faculty and lab instructors sign in to Prism), then what they see. */}

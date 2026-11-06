@@ -1,6 +1,6 @@
 /**
  * A new program (D-L44): the seeded program's people, cohorts, tracks, courses, terms, offerings and placements, with no skills
- * data at all, so Set up skills reads as a first-time setup. No skills, categories or tags, groups of skills, course mapping,
+ * data at all, so Set up skills reads as a first-time setup. No skills, categories or tags, skill lists, course mapping,
  * evaluation settings or evidence. Only Set up skills reads it (its own store key); every hub page keeps the seeded program.
  */
 import { createSeed } from "@/lib/v2/seed"
@@ -33,5 +33,6 @@ export function newProgramSeed(): V2State {
     ruleChanges: [],
     labBatches: [],
     vocabulary: { categories: [], tags: [] },
+    ownListsOnly: true,
   }
 }

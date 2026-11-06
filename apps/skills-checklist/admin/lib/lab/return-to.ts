@@ -3,7 +3,7 @@
  * menu to another page, it doesn't feel connected"). The origin rides in the URL as `?from=<key>`, so the breadcrumb shows the
  * way back and Cancel returns where the user came from rather than to a fixed route. Product words only; never a lab label.
  */
-import { capitalize, skillNounPlural } from "./terms"
+import { capitalize, skillListsNoun, skillNounPlural } from "./terms"
 
 export const FROM_PARAM = "from"
 
@@ -20,7 +20,7 @@ export const RETURN_TARGETS: Record<string, ReturnTarget> = {
 /** The page's own title for its leaf crumb, so the breadcrumb and the H1 say one thing ("Skills > Bulk upload"). */
 export const LEAF_TITLE: Record<string, () => string> = {
   "admin/import-ai-review": () => "Bulk upload",
-  "admin/lists-cohorts": () => `Groups of ${skillNounPlural()}`,
+  "admin/lists-cohorts": () => capitalize(skillListsNoun()),
   "admin/starter-library": () => "Starting points",
 }
 

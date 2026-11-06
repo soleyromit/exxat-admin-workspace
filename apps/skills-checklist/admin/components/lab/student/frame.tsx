@@ -15,7 +15,7 @@ import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { PageFrame, type PageFrameWidth } from "@/components/skills/page-header"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
-import { aNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, skillListNoun, skillNounPlural } from "@/lib/lab/terms"
 import { studentHref, type StudentModel } from "@/lib/lab/student"
 import { useStudentPage, type StudentPageCtx } from "@/components/lab/student/use-student"
 import { usePresent } from "@/components/lab/lab-bar/present"
@@ -117,7 +117,7 @@ export function StudentFrame({
             Nothing you logged is lost. Entries on this device are kept.
           </LocalBanner>
         ) : demo === "empty" || model.required.length + model.all.length === 0 ? (
-          <EmptyState studentId={studentId} />
+          <EmptyState studentId={studentId} noList={demo !== "empty" && model.lists.length === 0} />
         ) : (
           children({ ...ctx, model })
         )}
@@ -126,11 +126,11 @@ export function StudentFrame({
   )
 }
 
-/** Nothing mapped yet: the shared lab empty state (consistency audit item 3). */
-export function EmptyState({ studentId }: { studentId: string }) {
+/** Nothing on a list and nothing mapped yet: the shared lab empty state (consistency audit item 3). */
+export function EmptyState({ studentId, noList = false }: { studentId: string; noList?: boolean }) {
   return (
     <EmptyBlock
-      title={`No ${skillNounPlural()} mapped to your courses yet`}
+      title={noList ? `No ${skillListNoun()} assigned to you yet` : `No ${skillNounPlural()} mapped to your courses yet`}
       body={`You can still log ${aNoun()} and send it for evaluation.`}
       action={{ label: `Log ${aNoun()}`, href: studentHref("request-signoff", {}, studentId) }}
     />
