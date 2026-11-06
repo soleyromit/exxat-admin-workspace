@@ -34,7 +34,7 @@ import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/t
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { keepFocus, pageTitle, returnFocus, rowLink } from "@/components/lab/shared/focus"
-import { ConfigurationBadge, LINK, LibraryStatusBadge, useUrlParam, writeUrlParam } from "./library-chrome"
+import { ConfigurationBadge, LINK, LibraryStatusBadge, useUrlParam } from "./library-chrome"
 import { CategoryName, TagBadges, tagLineText } from "./category-tag-pickers"
 import { RowActions, type RowActionHandlers } from "./row-actions"
 import { anyFilterOn, LibraryFilterChips, LibraryFilterMenu, NO_FILTER, useLibraryFilter } from "./library-filter"

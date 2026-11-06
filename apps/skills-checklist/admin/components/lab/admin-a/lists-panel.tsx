@@ -32,7 +32,7 @@ import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/uns
 import { ALL_STUDENTS_GROUP, listCanEdit, setListSkills, skillLists, type SkillList } from "@/lib/lab/lists"
 import { CONFIGURATION_META } from "@/lib/lab/library"
 import { isConfigured } from "@/lib/v2/population"
-import { countSkills, capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { countSkills, capitalize, skillNounPlural } from "@/lib/lab/terms"
 import type { Skill } from "@/lib/v2/types"
 import { AppliedFilterChips, FiltersControl, LINK, fmt, plural, useTextCut, type FilterField } from "./parts"
 import { LaterBadge } from "@/components/lab/import/sample-badge"

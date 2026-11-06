@@ -280,7 +280,6 @@ export function ConfigureManyPage({ ids }: { ids: string[] }) {
   const mixed = merged.mixed
   const dirty = touched.size > 0
   const setRule: SectionProps["setRule"] = (fn) => setRuleState(fn)
-  const props: SectionProps = { rule, setRule, issues, showErrors, settings: state.program.clinicalSettings, legendHidden: true }
   const err = (f: string) => (showErrors ? issues.find((i) => i.field === f)?.message : undefined)
   const openField = (f: BulkField) => {
     setOpened((s) => new Set(s).add(f))

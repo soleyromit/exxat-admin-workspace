@@ -19,7 +19,6 @@ import { useUrlParam } from "@/components/lab/library/library-chrome"
 import {
   addToList,
   assign,
-  createList,
   ALL_STUDENTS_GROUP,
   customGroup,
   defaultForNewGroup,
@@ -44,14 +43,13 @@ import {
   nameTooLong,
   validateCustomGroup,
   validateListName,
-  validateNewList,
   type GroupRule,
   type SkillList,
   type StudentGroup,
 } from "@/lib/lab/lists"
 import type { V2State } from "@/lib/v2/types"
 import { parseCustomGroup, type CustomGroup } from "@/lib/v2/filters"
-import { FilterSelect, fmt, plural } from "./parts"
+import { fmt, plural } from "./parts"
 import { customGroupsStore, useLists } from "./use-admin-data"
 import { ListPanel, type PanelView } from "@/components/lab/admin-a/lists-panel"
 import { AssignWizard, type AddedStudents } from "@/components/lab/admin-a/lists-add-students"
@@ -147,7 +145,6 @@ export function useListActions(model: ListsModel) {
   // New skill list goes on in this panel: step 2, then step 3 (D-L122).
   const [setup, setSetup] = React.useState<{ listId: string; step: 2 | 3 } | null>(null)
   const levelDirty = React.useRef(false)
-  const createdThenPanel = React.useRef(false)
   // A double click on New version: the second press makes nothing.
   const versioning = React.useRef(false)
 

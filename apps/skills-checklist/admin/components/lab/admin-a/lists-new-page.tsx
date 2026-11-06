@@ -53,7 +53,6 @@ export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; on
   const rows = React.useMemo(() => model.state.skills.filter((k) => k.active !== false).sort((a, b) => a.name.localeCompare(b.name)), [model.state])
   const onList = rows.filter((k) => picked.has(k.id))
   const others = skillLists(model.lists).filter((l) => l.skillIds.length > 0)
-  const none = React.useMemo(() => new Set<string>(), [])
   const dirty = !!name.trim() || picked.size > 0 || !!typed.trim()
   const leave = useLeaveGuard(dirty)
   const unsaved = "This list has not been saved."
