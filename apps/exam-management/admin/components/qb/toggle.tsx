@@ -42,7 +42,7 @@ export function QBToggle({
         padding: 2,
         backgroundColor: checked
           ? 'var(--brand-color)'
-          : 'oklch(0.78 0 0)',
+          : 'var(--qb-toggle-off)',
         opacity: disabled ? 0.5 : 1,
         transition: 'background-color 150ms ease',
         outline: 'none',
@@ -58,7 +58,7 @@ export function QBToggle({
         width: 16,
         height: 16,
         borderRadius: '50%',
-        backgroundColor: 'oklch(1 0 0)',
+        backgroundColor: 'var(--qb-toggle-thumb)',
         boxShadow: '0 1px 2px oklch(0 0 0 / 0.2)',
         transform: checked ? 'translateX(16px)' : 'translateX(0)',
         transition: 'transform 150ms ease',

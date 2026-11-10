@@ -123,6 +123,17 @@
 
   /* Bulk-action floating bar shadow */
   --qb-bulk-bar-shadow: 0 8px 32px oklch(0 0 0 / 0.14), 0 2px 8px oklch(0 0 0 / 0.08);
+
+  /* QB toggle component */
+  --qb-toggle-off:      oklch(0.78 0 0);
+  --qb-toggle-thumb:    oklch(1 0 0);
+  --qb-toggle-shadow:   0 1px 2px oklch(0 0 0 / 0.2);
+
+  /* QB elevation / overlay */
+  --qb-overlay-bg:         oklch(0 0 0 / 0.25);
+  --qb-sidebar-shadow:     4px 0 16px oklch(0 0 0 / 0.12);
+  --qb-shadow-dropdown:    0 4px 12px oklch(0 0 0 / 0.12);
+  --qb-shadow-sm:          0 1px 4px oklch(0 0 0 / 0.12);
 }
 
 /* Courses table row tints */

@@ -1341,7 +1341,7 @@ export function QBSidebar() {
           onClick={() => setSidebarOpen(false)}
           style={{
             position: 'absolute', inset: 0, zIndex: 40,
-            backgroundColor: 'oklch(0 0 0 / 0.25)',
+            backgroundColor: 'var(--qb-overlay-bg)',
           }}
         />
       )}
