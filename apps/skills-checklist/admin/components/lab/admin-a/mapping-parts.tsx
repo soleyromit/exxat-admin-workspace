@@ -41,7 +41,7 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { ScrollLabel } from "@/components/lab/layout/scroll-label"
 import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { MappingSaveBar } from "./mapping-frame"
-import { AppliedFilterChips, BulkLevelBar, ChangedDot, FilterSelect, FiltersControl, LINK, LevelLegend, LevelSelect, PaneHeading, SearchField, type FilterField } from "./parts"
+import { AppliedFilterChips, BulkLevelBar, ChangedDot, FiltersControl, LINK, LevelLegend, LevelSelect, PaneHeading, SearchField, type FilterField } from "./parts"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // The two panes
@@ -190,24 +190,17 @@ export function BackToList({ label, onBack }: { label: string; onBack: () => voi
   return <Button type="button" variant="ghost" size="sm" className="self-start lg:hidden" onClick={onBack} data-back-to-list>{label}</Button>
 }
 
-const fieldApplied = (f: FilterField) => f.value !== (f.defaultValue ?? "")
 
 /**
- * Search and the filters on one line beside the table they filter [REQ CM-02]. On a phone the same fields sit behind one Filters button with
- * chips, because five selects would push the table off the first screen.
+ * Search and the filters beside the table they filter [REQ CM-02]: the search, one Filters icon, and what is applied as removable chips,
+ * at every width (Romit 2026-11-09: no row of dropdowns over a table; the same control as the list pane beside it).
  */
 export function FilterLine({ search, fields, label }: { search: (className: string) => React.ReactNode; fields: FilterField[]; label: string }) {
-  const applied = fields.filter(fieldApplied)
   return (
     <>
-      <div className="hidden flex-wrap items-center gap-2 sm:flex" role="search" aria-label={label} data-offering-filters>
-        {search("min-w-32 max-w-sm flex-1")}
-        {fields.map((f) => <FilterSelect key={f.id} value={f.value} onChange={f.onChange} label={f.label} allLabel={f.allLabel} options={f.options} className="w-auto" resting={f.id === "term" ? f.allLabel : f.label} />)}
-        {applied.length ? <Button type="button" variant="ghost" size="sm" onClick={() => applied.forEach((f) => f.onChange(f.defaultValue ?? ""))}>Clear filters</Button> : null}
-      </div>
-      <div className="flex flex-col gap-2 sm:hidden" data-offering-filters-phone>
+      <div className="flex flex-col gap-2" role="search" aria-label={label} data-offering-filters>
         <div className="flex items-center gap-2">
-          {search("min-w-0 flex-1")}
+          {search("min-w-0 max-w-sm flex-1")}
           <FiltersControl fields={fields} compact align="end" />
         </div>
         <AppliedFilterChips fields={fields} />
@@ -301,6 +294,7 @@ const NO_MENU = { lockPin: true, defaultPin: "right" as const }
 type CategoryRow = SkillMapRow & { group: string }
 
 export function OfferingPanel({ state, overlay, held, setOverlay, offering, figures, lists, narrow = false, pending, q, onSearch, show, onShow, onOpenSkill, onBack }: { state: V2State; overlay: MappingOverlay; /** The levels the Show filter reads: a draft must not move a row out from under the cursor. */ held: MappingOverlay; setOverlay: (o: MappingOverlay) => void; offering: OfferingRow; /** The offering as saved: its figures move at Save, with the left list's [REQ CM-04]. */ figures: Pick<OfferingRow, "mapped" | "mandatory" | "recommended">; narrow?: boolean; lists: SkillList[]; pending: ReadonlySet<string>; /** This view's own search, in the URL like its filters. */ q: string; onSearch: (q: string) => void; show: Show; onShow: (show: Show) => void; onOpenSkill: (id: string) => void; onBack: () => void }) {
+  const showFields: FilterField[] = [{ id: "show", label: "Show", value: show, allLabel: `All ${skillNounPlural()}`, options: SHOW_OPTS, onChange: (v) => onShow(v as Show) }]
   const embedded = useEmbeddedStep() !== null
   const where = `${offering.code}, ${offering.term}`
   // Configured skills only: a skill not configured cannot be mapped [REQ IM-09], and a checkbox that can only fail is no control.
@@ -368,9 +362,12 @@ export function OfferingPanel({ state, overlay, held, setOverlay, offering, figu
       <PaneHeading title={<span id="offering-heading">{`${offering.code} ${offering.name}`}</span>} meta={offeringLine(offering)} />
       <LevelLegend counts={{ mapped: figures.mapped, mandatory: figures.mandatory, recommended: figures.recommended }} />
       {listsForCohort(lists, offering.cohort).length === 0 ? <CohortAppliesLine cohort={offering.cohort} /> : null}
-      <div className="flex flex-wrap items-center gap-2">
-        <SearchField value={q} onChange={onSearch} label={`Search ${skillNounPlural()} in ${offering.code}`} placeholder={`Search ${skillNounPlural()}`} className="w-56 max-sm:min-w-0 max-sm:flex-1" />
-        <FilterSelect value={show} onChange={(v) => onShow(v as Show)} label="Show" allLabel={`All ${skillNounPlural()}`} options={SHOW_OPTS} className="w-36" />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <SearchField value={q} onChange={onSearch} label={`Search ${skillNounPlural()} in ${offering.code}`} placeholder={`Search ${skillNounPlural()}`} className="min-w-0 max-w-sm flex-1" />
+          <FiltersControl fields={showFields} compact align="end" />
+        </div>
+        <AppliedFilterChips fields={showFields} />
       </div>
       <div ref={fillRef} className="min-w-0">
       <ScrollLabel label={capitalize(skillNounPlural())}>

@@ -20,24 +20,23 @@ import { takeReturnSearch } from "@/lib/lab/configure-origin"
 import { configureSkillHref } from "@/components/lab/configure/shell"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Input } from "@exxatdesignux/ui/components/ui/input"
-import { Label } from "@exxatdesignux/ui/components/ui/label"
-import { FieldError } from "@exxatdesignux/ui/components/ui/field"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import { useTableState } from "@exxatdesignux/ui/components/data-table/use-table-state"
-import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
-import { CONFIGURATION_META, NO_CATEGORY, SAVED_VIEWS, countLibrary, filterLibrary, isUsableRow, type LibraryCounts, type LibraryFilter, type LibraryRow, type LibraryTab, type SavedView } from "@/lib/lab/library"
-import { capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import type { ColumnDef, ConditionalRule } from "@exxatdesignux/ui/components/data-table/types"
+import { TablePropertiesDrawerButton } from "@exxatdesignux/ui/components/table-properties"
+import { columnsToFieldDefinitions, columnsToFilterFields } from "@exxatdesignux/ui/components/data-views"
+import { DEFAULT_DATA_LIST_DISPLAY_OPTIONS } from "@exxatdesignux/ui/lib/data-list-display-options"
+import type { ActiveFilter, FilterOperator } from "@exxatdesignux/ui/lib/table-properties-types"
+import { CONFIGURATION_META, CONFIGURATION_ORDER, NO_CATEGORY, SAVED_VIEWS, countLibrary, filterOptions, isConfiguration, isUsableRow, type LibraryCounts, type LibraryFilter, type LibraryRow, type LibraryTab } from "@/lib/lab/library"
+import { capitalize, countSkills, skillListsNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { keepFocus, pageTitle, returnFocus, rowLink } from "@/components/lab/shared/focus"
-import { ConfigurationBadge, LINK, LibraryStatusBadge, useUrlParam } from "./library-chrome"
+import { ConfigurationBadge, LINK, LibraryStatusBadge, LibraryToolbarActionsSlot, useUrlParam } from "./library-chrome"
 import { CategoryName, TagBadges, tagLineText } from "./category-tag-pickers"
 import { RowActions, type RowActionHandlers } from "./row-actions"
-import { anyFilterOn, LibraryFilterChips, LibraryFilterMenu, NO_FILTER, useLibraryFilter } from "./library-filter"
+import { anyFilterOn, LibraryFilterChips, NO_FILTER, useLibraryFilter } from "./library-filter"
 import { TimesNeededCell } from "./times-needed"
 import { BulkEditSheet } from "./bulk-edit-sheet"
 import { BulkCount } from "@/components/lab/shared/bulk-count"
@@ -86,7 +85,19 @@ function SkipToBar() {
   )
 }
 
-export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string) => void, configureHrefOf: (id: string) => string): ColumnDef<LibraryRow>[] {
+/** What the DS filter menu offers for the columns whose values are a fixed set (categories, sources and the rest come from the rows). */
+export interface LibraryFilterChoices { categories: string[]; sources: string[]; models: string[] }
+
+const IS: FilterOperator[] = ["is", "is_not"]
+const pick = (values: readonly string[]) => values.map((v) => ({ value: v, label: v }))
+
+/** Filter-only fields: what the DS filter menu offers beyond the columns (map D1, REQ SL-10). Their values are set on each row (`withFilterFields`). */
+const FILTER_ONLY: ColumnDef<LibraryRow>[] = [
+  { key: "fTimes", label: "Times needed setting", filterOnly: true, filter: { type: "select", icon: "fa-hashtag", operators: IS, options: [{ value: "program", label: "Program number" }, { value: "different", label: "Different number" }] } },
+  { key: "fList", label: capitalize(skillListsNoun()), filterOnly: true, filter: { type: "select", icon: "fa-list-check", operators: IS, options: [{ value: "some", label: "On a list" }, { value: "none", label: "On no list" }] } },
+]
+
+export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string) => void, configureHrefOf: (id: string) => string, choices: LibraryFilterChoices = { categories: [], sources: [], models: [] }): ColumnDef<LibraryRow>[] {
   return [
     // The DS select column (the DS convention, as in the DS starter's library table): without it `selectable` draws a
     // group checkbox but no row checkboxes, and the group checkbox has no column slot to sit in, so it lands on the
@@ -134,19 +145,19 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
     },
     // Times needed [CALL 11-02]: the program's number on every row, edited in place; one source with Evaluation settings.
     // Beside the name so the row being edited stays in view at 1024 (the name column is not pinned).
-    { key: "times", label: "Times needed", width: 120, sortable: true, sortKey: "times", cell: (r) => <TimesNeededCell id={r.id} name={r.name} /> },
-    // No column filter: the tabs filter by status, search finds a name and the one Filter control (category, tag; REQ SL-10)
-    // sits on the tab row, so a DS filter bar would be another way to narrow the same list (list toolbar budget, rule L3).
-    { key: "section", label: "Category", width: 200, sortable: true, sortKey: "section", cell: (r) => <CategoryName name={r.categoryName ?? r.section} inactive={r.categoryInactive} /> },
+    { key: "times", label: "Times needed", width: 120, sortable: true, sortKey: "times", filter: { type: "range", icon: "fa-hashtag", dataBounds: true, rangeStep: 1 }, cell: (r) => <TimesNeededCell id={r.id} name={r.name} /> },
+    // The DS toolbar's filters (Romit 2026-11-09: the DS table controls on every table); status stays the tabs.
+    { key: "section", label: "Category", width: 200, sortable: true, sortKey: "section", filter: { type: "select", icon: "fa-layer-group", operators: IS, options: pick(choices.categories) }, cell: (r) => <CategoryName name={r.categoryName ?? r.section} inactive={r.categoryInactive} /> },
     // Plain Default, a badge only for the exceptions (D-L97). The word opens the panel on Evaluation, where the word is decided; the rest of the row opens it on Details.
-    { key: "configuration", label: "Configuration", width: 150, sortable: true, sortKey: "configuration", cell: (r) => <ConfigurationCell row={r} hrefOf={configureHrefOf} /> },
-    { key: "status", label: "Status", width: 120, sortable: true, sortKey: "status", cell: (r) => <LibraryStatusBadge status={r.status} /> },
-    { key: "modelLabel", label: "How it's judged", width: 180, sortable: true, cell: (r) => (r.modelLabel ? <span className="block whitespace-normal" data-model-label>{r.modelLabel}</span> : <span className="text-muted-foreground">Not chosen</span>) },
+    { key: "configuration", label: "Configuration", width: 150, sortable: true, sortKey: "configuration", filter: { type: "select", icon: "fa-sliders", operators: IS, options: CONFIGURATION_ORDER.map((c) => ({ value: c, label: CONFIGURATION_META[c].label })) }, cell: (r) => <ConfigurationCell row={r} hrefOf={configureHrefOf} /> },
+    { key: "status", label: "Status", width: 120, sortable: true, sortKey: "status", filter: { type: "select", icon: "fa-circle-check", operators: IS, options: [{ value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }] }, cell: (r) => <LibraryStatusBadge status={r.status} /> },
+    { key: "modelLabel", label: "How it's judged", width: 180, sortable: true, filter: { type: "select", icon: "fa-scale-balanced", operators: IS, options: pick(choices.models) }, cell: (r) => (r.modelLabel ? <span className="block whitespace-normal" data-model-label>{r.modelLabel}</span> : <span className="text-muted-foreground">Not chosen</span>) },
     {
       key: "courses",
       label: "Courses",
       width: 110,
       sortable: true,
+      filter: { type: "range", icon: "fa-book", dataBounds: true, rangeStep: 1 },
       cell: (r) =>
         !isUsableRow(r) ? <span className="text-muted-foreground">None</span>
           : r.courses === 0 ? <span className="text-muted-foreground">Not mapped</span>
@@ -158,36 +169,81 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
       key: "tags",
       label: "Tags",
       width: 200,
+      // A text match on the row's tags: the DS select filter compares one value, and a skill carries several tags.
+      filter: { type: "text", icon: "fa-tag" },
       cell: (r) => (r.tags.length ? <TagBadges tags={r.tags} inactive={r.inactiveTags} /> : <span className="text-muted-foreground">None</span>),
     },
-    { key: "source", label: "Came from", width: 160, sortable: true },
+    { key: "source", label: "Came from", width: 160, sortable: true, filter: { type: "select", icon: "fa-inbox-in", operators: IS, options: pick(choices.sources) } },
     { key: "actions", label: "Actions", width: 64, resizable: false, defaultPin: "right", lockPin: true, header: () => <span className="sr-only">Actions</span>, cell: (r) => <RowActions row={r} handlers={handlers} /> },
+    ...FILTER_ONLY,
   ]
 }
 
-const VIEWS_KEY = "lab-skills-library:views:v2"
+/** The values the filter-only fields read. */
+function withFilterFields<T extends LibraryRow>(r: T): T & { fTimes: string; fList: string } {
+  return { ...r, fTimes: r.timesDiffer ? "different" : "program", fList: r.onLists ? "some" : "none" }
+}
+
+/** The same test the DS applies to the rows, for the tab counts, which cover every tab rather than the rows the table holds. */
+function matchesFilters(r: Record<string, unknown>, filters: readonly ActiveFilter[], cols: readonly ColumnDef<LibraryRow>[]): boolean {
+  return filters.every((f) => {
+    const type = cols.find((c) => c.key === f.fieldKey)?.filter?.type ?? "text"
+    const raw = r[f.fieldKey]
+    if (type === "select") {
+      if (!f.values.length) return true
+      const hit = f.values.includes(String(raw ?? ""))
+      return f.operator === "is_not" ? !hit : hit
+    }
+    if (type === "range") {
+      if (f.values.length < 2) return true
+      const n = Number(raw)
+      const lo = f.values[0] === "" ? -Infinity : Number(f.values[0])
+      const hi = f.values[1] === "" ? Infinity : Number(f.values[1])
+      return Number.isFinite(n) && n >= Math.min(lo, hi) && n <= Math.max(lo, hi)
+    }
+    const needle = (f.values[0] ?? "").trim().toLowerCase()
+    if (!needle) return true
+    const hit = String(raw ?? "").toLowerCase().includes(needle)
+    return f.operator === "not_contains" ? !hit : hit
+  })
+}
+
+/** The URL's filter (banners and shared links set it) as DS filters, and back: one value per field, as links carry. */
+const URL_FIELDS: Array<{ key: keyof LibraryFilter; field: string; op: FilterOperator; to: (f: LibraryFilter) => string | null; from: (s: string) => Partial<LibraryFilter> }> = [
+  { key: "cat", field: "section", op: "is", to: (f) => f.cat ?? null, from: (s) => ({ cat: s }) },
+  { key: "tag", field: "tags", op: "contains", to: (f) => f.tag ?? null, from: (s) => ({ tag: s }) },
+  { key: "config", field: "configuration", op: "is", to: (f) => f.config ?? null, from: (s) => ({ config: isConfiguration(s) ? s : null }) },
+  { key: "from", field: "source", op: "is", to: (f) => f.from ?? null, from: (s) => ({ from: s }) },
+  { key: "different", field: "fTimes", op: "is", to: (f) => (f.different ? "different" : null), from: (s) => ({ different: s === "different" }) },
+  { key: "noList", field: "fList", op: "is", to: (f) => (f.noList ? "none" : null), from: (s) => ({ noList: s === "none" }) },
+]
+const urlFiltersOf = (f: LibraryFilter): ActiveFilter[] =>
+  URL_FIELDS.flatMap((u) => { const v = u.to(f); return v ? [{ id: `url-${u.field}`, fieldKey: u.field, operator: u.op, values: [v] }] : [] })
+const urlSignature = (f: Partial<LibraryFilter>) => URL_FIELDS.map((u) => u.to({ ...NO_FILTER, ...f }) ?? "").join("|")
+function urlFilterOf(filters: readonly ActiveFilter[]): Partial<LibraryFilter> {
+  const out: Partial<LibraryFilter> = { cat: null, tag: null, config: null, from: null, different: false, noList: false }
+  for (const u of URL_FIELDS) {
+    const f = filters.find((x) => x.fieldKey === u.field && x.operator === u.op && x.values[0])
+    if (f) Object.assign(out, u.from(f.values[0]!))
+  }
+  return out
+}
+
 /** The view chosen and the columns set, for the next visit (map D1). */
 const CHOICE_KEY = "lab-skills-library:view-choice"
 
-function loadChoice(): { viewId?: string; hidden?: string[] } {
-  try { return JSON.parse(window.localStorage.getItem(CHOICE_KEY) ?? "{}") as { viewId?: string; hidden?: string[] } } catch { return {} }
+function loadChoice(): { groupBy?: string | null; hidden?: string[] } {
+  try { return JSON.parse(window.localStorage.getItem(CHOICE_KEY) ?? "{}") as { groupBy?: string | null; hidden?: string[] } } catch { return {} }
 }
-function saveChoice(viewId: string, hidden: readonly string[]) {
-  try { window.localStorage.setItem(CHOICE_KEY, JSON.stringify({ viewId, hidden })) } catch { /* private window: the choice lasts this page */ }
+function saveChoice(groupBy: string | null, hidden: readonly string[]) {
+  try { window.localStorage.setItem(CHOICE_KEY, JSON.stringify({ groupBy, hidden })) } catch { /* private window: the choice lasts this page */ }
 }
+const NOOP = () => {}
 
 /** The columns the admin can turn on and off (map D1). The name, the select box and the row menu stay; How it's judged and Courses are not library columns (map D1, D-L65). */
 /** A layer above the table that Esc belongs to (see `escIsForLayer`). */
 const LAYER_OVER_TABLE = ['[role=dialog]', '[role=alertdialog]', '[role=menu]', '[role=listbox]'].map((r) => `${r}:not([data-state=closed])`).join(", ")
 
-const COLUMN_CHOICES: Array<{ key: string; label: string }> = [
-  { key: "times", label: "Times needed" },
-  { key: "section", label: "Category" },
-  { key: "configuration", label: "Configuration" },
-  { key: "status", label: "Status" },
-  { key: "tags", label: "Tags" },
-  { key: "source", label: "Came from" },
-]
 
 /**
  * The group a row just added sits in, until the next add or a reload. The DS sorts groups by name, and a leading space sorts first and does not
@@ -196,14 +252,6 @@ const COLUMN_CHOICES: Array<{ key: string; label: string }> = [
 const JUST_ADDED_GROUP = " Just added"
 const JUST_UPDATED_GROUP = " Just updated"
 
-function loadCustomViews(): SavedView[] {
-  try {
-    const raw = window.localStorage.getItem(VIEWS_KEY)
-    return raw ? (JSON.parse(raw) as SavedView[]) : []
-  } catch {
-    return []
-  }
-}
 
 export interface LibraryTableProps {
   /** All library rows (for filter options). */
@@ -330,14 +378,19 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
   const linkContext = React.useRef(useLabLinkContext())
   linkContext.current = useLabLinkContext()
   const configureHrefOf = React.useCallback((id: string) => rewriteLabUrl(configureSkillHref(id), linkContext.current), [])
-  const columns = React.useMemo(() => libraryColumns(handlers, onOpen, configureHrefOf), [handlers, onOpen, configureHrefOf])
+  // The filter menu's choices come from the whole library, so a value never vanishes from the menu when a tab hides its rows.
+  const choices = React.useMemo<LibraryFilterChoices>(() => {
+    const o = filterOptions(rows)
+    return { categories: o.categories.map((c) => c.name), sources: o.sources.map((x) => x.name), models: [...new Set(rows.map((r) => r.modelLabel).filter(Boolean))].sort() }
+  }, [rows])
+  const columns = React.useMemo(() => libraryColumns(handlers, onOpen, configureHrefOf, choices), [handlers, onOpen, configureHrefOf, choices])
   const v2 = useV2State()
   // Each row carries its times needed so the column sorts like the others (null sorts as "Not set"). What was just added comes first in a plain list too; grouped, its group sorts first.
   const decorate = React.useMemo(() => {
     const just = new Set(justAdded ?? [])
     const updated = new Set(justReplaced ?? [])
     return (list: readonly LibraryRow[]) => {
-      const out = list.map((r) => ({
+      const out = list.map((r) => withFilterFields({
         ...r,
         times: timesCellOf(v2, r.id).value,
         ...(updated.has(r.id) ? { isNew: false, justUpdated: true, categoryName: r.section, section: JUST_UPDATED_GROUP } : just.has(r.id) ? { categoryName: r.section, section: JUST_ADDED_GROUP } : {}),
@@ -345,13 +398,13 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
       return just.size ? [...out.filter((r) => just.has(r.id)), ...out.filter((r) => !just.has(r.id))] : out
     }
   }, [v2, justAdded, justReplaced])
-  // Show them: everything that add touched, what it replaced too (the batch holds both). The other filters read the row.
+  // Show them: everything that add touched, what it replaced too (the batch holds both). Every other filter is the DS table's own.
   const filtered = React.useCallback((list: readonly LibraryRow[]) => {
     const batch = filter.added ? v2.batches.find((b) => b.id === filter.added) : null
-    if (!batch) return filterLibrary(list, filter)
+    if (!batch) return [...list]
     const held = new Set(batch.skillIds)
-    return filterLibrary(list, { ...filter, added: null }).filter((r) => held.has(r.id))
-  }, [v2.batches, filter])
+    return list.filter((r) => held.has(r.id))
+  }, [v2.batches, filter.added])
   const data = React.useMemo(() => decorate(filtered(visible)), [decorate, visible, filtered])
   const ts = useTableState<LibraryRow>(data, columns)
   // Back from a configure page: the search the admin left (map D1c).
@@ -359,35 +412,42 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
   React.useEffect(() => { const s = takeReturnSearch(); if (s) setTableSearch(s) }, [setTableSearch])
   // The tabs follow the search as they follow the filters (map D1 Find): "No skills match" never sits beside All 178. The same words the table's own search looks in: every value of the row.
   const searched = React.useDeferredValue(ts.search)
+  const activeFilters = React.useDeferredValue(ts.activeFilters)
   const counts = React.useMemo(() => {
     const needle = searched.trim().toLowerCase()
-    const all = decorate(filtered(rows))
+    const all = decorate(filtered(rows)).filter((r) => matchesFilters(r, activeFilters, columns))
     return countLibrary(needle ? all.filter((r) => Object.values(r).some((v) => v != null && String(v).toLowerCase().includes(needle))) : all)
-  }, [decorate, rows, filtered, searched])
-  const [viewId, setViewId] = React.useState(SAVED_VIEWS[0]!.id)
-  const [custom, setCustom] = React.useState<SavedView[]>([])
-  const [naming, setNaming] = React.useState(false)
-  const [viewName, setViewName] = React.useState("")
-  const [nameTried, setNameTried] = React.useState(false)
-  React.useEffect(() => setCustom(loadCustomViews()), [])
-  const views = [...SAVED_VIEWS, ...custom]
+  }, [decorate, rows, filtered, searched, activeFilters, columns])
 
-  const applyView = React.useCallback((v: SavedView) => {
-    ts.setGroupBy(v.groupBy)
-    ts.setHiddenCols(new Set(v.hiddenColumns))
-    setViewId(v.id)
-  }, [ts])
+  // The URL carries the filter so a banner can set it and a link can share it (map D1): the URL sets the DS filters, and the DS filters write the URL back.
+  const { setActiveFilters, setFilterBarVisible } = ts
+  const urlSig = urlSignature(filter)
+  React.useEffect(() => {
+    if (urlSignature(urlFilterOf(ts.activeFilters)) === urlSig) return
+    const next = urlFiltersOf(filter)
+    setActiveFilters(next)
+    if (next.length) setFilterBarVisible(true)
+  }, [urlSig]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Not on the first render: the table starts with no filters, and writing that back would wipe the URL a reload or a link arrived with.
+  const filtersSeen = React.useRef<readonly ActiveFilter[] | null>(null)
+  React.useEffect(() => {
+    if (filtersSeen.current === null) { filtersSeen.current = ts.activeFilters; return }
+    if (filtersSeen.current === ts.activeFilters) return
+    filtersSeen.current = ts.activeFilters
+    const from = urlFilterOf(ts.activeFilters)
+    if (urlSignature(from) !== urlSig) setFilter(from)
+  }, [ts.activeFilters]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // First paint: the view chosen last time, or grouped by category with the quiet columns hidden.
+  // Grouped by category with the quiet columns hidden, unless the admin chose otherwise in Properties last time (map D1).
   const applied = React.useRef(false)
   React.useEffect(() => {
     if (applied.current) return
     applied.current = true
     const saved = loadChoice()
-    const view = [...SAVED_VIEWS, ...loadCustomViews()].find((v) => v.id === saved.viewId) ?? SAVED_VIEWS[0]!
-    applyView(view)
-    if (saved.hidden) ts.setHiddenCols(new Set(saved.hidden))
-  }, [applyView]) // eslint-disable-line react-hooks/exhaustive-deps
+    const view = SAVED_VIEWS[0]!
+    ts.setGroupBy(saved.groupBy !== undefined ? saved.groupBy : view.groupBy)
+    ts.setHiddenCols(new Set(saved.hidden ?? view.hiddenColumns))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // A program with no categories anywhere: a plain list, with no group row and no Category column (map D1, B16).
   const noCategories = rows.length > 0 && rows.every((r) => r.section === NO_CATEGORY)
@@ -399,7 +459,7 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
       ts.setHiddenCols((now) => new Set([...now, "section"]))
     } else if (!noCategories && categoryOff.current) {
       categoryOff.current = false
-      const view = views.find((v) => v.id === viewId) ?? SAVED_VIEWS[0]!
+      const view = SAVED_VIEWS[0]!
       ts.setGroupBy(view.groupBy)
       ts.setHiddenCols((now) => { const next = new Set(now); if (!view.hiddenColumns.includes("section")) next.delete("section"); return next })
     }
@@ -454,6 +514,7 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
     if (!first) return
     if (ts.search) ts.setSearch("")
     if (anyFilterOn(filter)) setFilter(NO_FILTER)
+    if (ts.activeFilters.length) ts.setActiveFilters([])
     if (tab !== "all") window.setTimeout(onClearTab, 0)
     let tries = 0
     const timer = window.setInterval(() => {
@@ -464,28 +525,6 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
     }, 50)
     return () => window.clearInterval(timer)
   }, [justAdded]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const nameProblem = (() => {
-    const label = viewName.trim()
-    if (!label) return "Enter a name for this view."
-    if (views.some((v) => v.label.toLowerCase() === label.toLowerCase())) return "A view with this name already exists."
-    return null
-  })()
-  const nameError = nameTried ? nameProblem : null
-
-  const saveView = () => {
-    setNameTried(true)
-    if (nameProblem) return
-    const label = viewName.trim()
-    const v: SavedView = { id: `custom-${Date.now().toString(36)}`, label, status: [], groupBy: ts.groupBy, hiddenColumns: [...ts.hiddenCols].filter((k) => !(k === "section" && categoryAside.current)) }
-    const next = [...custom, v]
-    setCustom(next)
-    try { window.localStorage.setItem(VIEWS_KEY, JSON.stringify(next)) } catch { /* private window: keep in memory */ }
-    setViewId(v.id)
-    setNaming(false)
-    setViewName("")
-    setNameTried(false)
-  }
 
   const configureMany = useConfigureMany()
   const [editing, setEditing] = React.useState<LibraryRow[] | null>(null)
@@ -544,73 +583,40 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
     toggleAll: (ids: Array<string | number>) => ts.setRowsSelected(ids, !ids.every((id) => selectedNow.has(id))),
   }
 
-  const chooseView = (id: string) => {
-    const v = views.find((x) => x.id === id)
-    if (!v) return
-    applyView(v)
-    saveChoice(v.id, v.hiddenColumns)
-  }
-  const toggleColumn = (key: string) => {
-    const next = new Set([...ts.hiddenCols].filter((k) => !(k === "section" && (categoryAside.current || categoryOff.current))))
-    if (next.has(key)) next.delete(key)
-    else next.add(key)
-    ts.setHiddenCols((now) => { const out = new Set(now); if (out.has(key)) out.delete(key); else out.add(key); return out })
-    saveChoice(viewId, [...next])
-  }
-  const columnsMenu = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" data-library-columns>
-          Columns
-          <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        {COLUMN_CHOICES.filter((c) => c.key !== "section" || !noCategories).map((c) => (
-          <DropdownMenuCheckboxItem
-            key={c.key}
-            // Beside the panel the Category column has stepped aside for now, which is not the admin's choice to change.
-            disabled={c.key === "section" && categoryAside.current}
-            checked={!ts.hiddenCols.has(c.key) || (c.key === "section" && categoryAside.current)}
-            onSelect={(e) => e.preventDefault()}
-            onCheckedChange={() => toggleColumn(c.key)}
-          >
-            {c.label}
-          </DropdownMenuCheckboxItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
+  // Columns and grouping set in Properties are kept for the next visit (map D1); the Category column that stepped aside for the panel is not the admin's choice.
+  const hiddenNow = ts.hiddenCols
+  const groupNow = ts.groupBy
+  React.useEffect(() => {
+    if (!applied.current || categoryOff.current) return
+    saveChoice(groupNow, [...hiddenNow].filter((k) => !(k === "section" && categoryAside.current)))
+  }, [hiddenNow, groupNow])
 
-  const current = views.find((v) => v.id === viewId)
-  const viewMenu = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" aria-label={`View: ${current?.label ?? "By category"}`}>
-          {current?.label ?? "View"}
-          <i className="fa-light fa-chevron-down text-xs" aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Views</DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={viewId} onValueChange={chooseView}>
-          {views.map((v) => <DropdownMenuRadioItem key={v.id} value={v.id}>{v.label}</DropdownMenuRadioItem>)}
-        </DropdownMenuRadioGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onSelect={() => setNaming(true)}>Save this view</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-
-  const toolbar = (
-    <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap" data-library-toolbar>
-      <Input type="search" value={ts.search} onChange={(e) => ts.setSearch(e.target.value)} placeholder={`Search ${skillNounPlural()}`} aria-label={`Search ${skillNoun()} names`} className="h-8 w-full sm:w-56" />
-      <LibraryFilterMenu rows={rows} value={filter} onChange={setFilter} />
-      {columnsMenu}
-      {/* With no categories there is one way to read the list, so there is nothing to choose (map D1, B16). A view the admin saved still comes from the menu once a category exists. */}
-      {noCategories ? null : viewMenu}
-    </div>
-  )
+  // The DS table toolbar (Romit 2026-11-09): search, filter and Properties, then the page's actions. One function for the life of the page.
+  const fieldDefinitions = React.useMemo(() => columnsToFieldDefinitions(columns.filter((c) => !c.filterOnly)), [columns])
+  const filterFields = React.useMemo(() => columnsToFilterFields(columns), [columns])
+  // Conditional rules from Properties colour the cells for this visit.
+  const [rules, setRules] = React.useState<ConditionalRule[]>([])
+  const addRule = React.useCallback((r: Omit<ConditionalRule, "id">) => setRules((now) => [...now, { ...r, id: `rule-${Date.now().toString(36)}` }]), [])
+  const removeRule = React.useCallback((id: string) => setRules((now) => now.filter((r) => r.id !== id)), [])
+  const updateRule = React.useCallback((id: string, patch: Partial<ConditionalRule>) => setRules((now) => now.map((r) => (r.id === id ? { ...r, ...patch } : r))), [])
+  const toolbarSlot = React.useCallback((state: typeof ts) => (
+    <>
+      <TablePropertiesDrawerButton
+        state={state}
+        totalRows={state.rows.length}
+        filterFields={filterFields}
+        fieldDefinitions={fieldDefinitions}
+        displayOptions={DEFAULT_DATA_LIST_DISPLAY_OPTIONS}
+        onDisplayOptionsChange={NOOP}
+        conditionalRules={rules}
+        onAddConditionalRule={addRule}
+        onRemoveConditionalRule={removeRule}
+        onUpdateConditionalRule={updateRule}
+        lifecycleTabLabel={`${capitalize(skillNounPlural())} library`}
+      />
+      <LibraryToolbarActionsSlot />
+    </>
+  ), [filterFields, fieldDefinitions, rules, addRule, removeRule, updateRule])
 
   const filtersOn = ts.search.trim() !== "" || ts.activeFilters.some((f) => f.values.length > 0) || anyFilterOn(filter)
   const table = (
@@ -624,9 +630,11 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
         getRowId={(r) => r.id}
         getRowSelectionLabel={(r) => `Select ${r.name}`}
         selectable
-        searchable={false}
+        searchable
         groupable
-        showQueryControls={false}
+        showQueryControls
+        toolbarSlot={toolbarSlot}
+        conditionalRules={rules}
         edgeInset={false}
         onRowClick={(r) => onOpen(r.id)}
         // A constant: "rows open a rail". Which row is open is set on the DOM (`useOpenRow`), so the table does not render for it.
@@ -646,24 +654,8 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
 
   return (
     <>
-      {renderFrame(toolbar, <div className="flex flex-col gap-3"><LibraryFilterChips value={filter} onChange={setFilter} />{table}</div>, counts)}
+      {renderFrame(null, <div className="flex flex-col gap-3"><LibraryFilterChips value={{ ...NO_FILTER, added: filter.added }} onChange={setFilter} />{table}</div>, counts)}
       <BulkEditSheet rows={editing} onClose={() => { setEditing(null); focusAfterBulkPanel() }} onApply={(ids, edit) => { onBulkEdit(ids, edit); ts.setSelected(new Set()); setEditing(null); focusAfterBulkPanel() }} />
-      <Dialog open={naming} onOpenChange={(open) => { setNaming(open); if (!open) setNameTried(false) }}>
-        <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Save this view</DialogTitle>
-          </DialogHeader>
-          <form className="flex flex-col gap-2" onSubmit={(e) => { e.preventDefault(); saveView() }}>
-            <Label htmlFor="view-name">Name</Label>
-            <Input id="view-name" autoFocus value={viewName} onChange={(e) => setViewName(e.target.value)} maxLength={40} aria-invalid={nameError ? true : undefined} aria-describedby={nameError ? "view-name-error" : undefined} />
-            {nameError ? <FieldError id="view-name-error">{nameError}</FieldError> : null}
-          </form>
-          <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={() => setNaming(false)}>Cancel</Button>
-            <Button type="button" variant="default" size="sm" onClick={saveView}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   )
 })

@@ -100,9 +100,9 @@ function checkOffWord(r: LabRule): string {
   if (!ruleAllowsCheckOff(r)) return "Off"
   if (r.model === "demonstration") {
     const level = r.levels[checkOffLevelIndex(r.levels, r.checkOff?.levelIndex)]?.trim()
-    return level ? `On, students get ${inSentence(level)}` : "On"
+    return level ? `On, each student at ${inSentence(level)}` : "On"
   }
-  return r.model === "scored" ? `On, students get ${ruleCheckOffScore(r)}` : "On"
+  return r.model === "scored" ? `On, each student at ${ruleCheckOffScore(r)}` : "On"
 }
 
 /** The program's package under Default, read aloud: only the rows that apply to the model (map D1c). */
@@ -423,7 +423,7 @@ export function ConfigureSections({ rule, setRule, issues, showErrors, settings,
               {put("checkOff", (
                 <div data-section="checkoff">
                   <SwitchRow id="cfg-checkoff" label="Faculty can check off a group" checked={ruleAllowsCheckOff(rule)} onChange={(v) => setRule((r) => withCheckOffPatch(r, { enabled: v }))} />
-                  {grant ? <Row label={rule.model === "scored" ? "Score students get" : "Level students get"} htmlFor={grant.id} className="ms-1 mb-3 border-s-2 border-border py-1 ps-4">{grant.control}</Row> : null}
+                  {grant ? <Row label={rule.model === "scored" ? "Score for each student checked off" : "Level for each student checked off"} htmlFor={grant.id} className="ms-1 mb-3 border-s-2 border-border py-1 ps-4">{grant.control}</Row> : null}
                 </div>
               ))}
               {put("approval", <SwitchRow id="cfg-approval" label="Approval before it counts" checked={rule.approvalRequired} onChange={(v) => setRule((r) => ({ ...r, approvalRequired: v }))} />)}

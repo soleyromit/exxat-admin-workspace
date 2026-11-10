@@ -139,11 +139,25 @@ export function LibraryActions({ onAdd, onAddSeveral, primaryElsewhere = false }
 }
 
 /**
- * Export, the header's one occasional action (Romit 2026-11-06, D-L120: a More menu hid it beside a duplicate link to Categories and tags, which is in the Skills panel).
- * It hands over the whole library as a CSV, whatever the filters. Ghost, so the split button stays the one filled action (rule E5).
+ * Export (D-L120), after Add a skill in the table's toolbar, as the DS table's secondary action: outline, with its glyph (Romit 2026-11-09: "the export button cannot
+ * come before add skills"). It hands over the whole library as a CSV, whatever the filters. The DS ExportDrawer only pretends to export, so the CSV stays ours.
  */
 export function LibraryExport({ onExport, canExport }: { onExport: () => void; canExport: boolean }) {
-  return <Button type="button" variant="ghost" size="sm" disabled={!canExport} onClick={onExport} data-library-export>Export</Button>
+  return (
+    <Button type="button" variant="outline" size="sm" disabled={!canExport} onClick={onExport} data-library-export>
+      <i className="fa-light fa-arrow-down-to-line" aria-hidden="true" />
+      Export
+    </Button>
+  )
+}
+
+/** The page's actions, handed from the frame to the table's toolbar (the DS places a table's commands after its search, filter and Properties). */
+const LibraryToolbarActions = React.createContext<React.ReactNode>(null)
+/** Reads them where they render, so a change to the actions renders this slot and not the table's rows. */
+export function LibraryToolbarActionsSlot() {
+  const actions = React.useContext(LibraryToolbarActions)
+  if (!actions) return null
+  return <><div className="h-4 w-px bg-border/70" aria-hidden="true" />{actions}</>
 }
 
 const onUrlChange = (cb: () => void) => {
@@ -371,7 +385,7 @@ export function LibraryError() {
  * Page frame plus the demo states. `children` render only when there is data; `overlays` (sheets, dialogs) always.
  * Every option set uses this frame, so the title, the action placement and the banner slot are identical across sets.
  */
-export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, overlays, children, pageType = "list" }: {
+export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, overlays, children, pageType = "list", actionsInTable = false }: {
   api: LibraryApi
   tab?: LibraryTab
   onAdd: () => void
@@ -380,17 +394,22 @@ export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, 
   overlays?: React.ReactNode
   children: React.ReactNode
   pageType?: "list" | "split"
+  /** The table's toolbar holds Add a skill and Export (the DS table pattern); the header keeps only the title. */
+  actionsInTable?: boolean
 }) {
   // "Skills library" under the crumb "Skills > Library" (D-L64). It follows the program's noun; the hook re-renders the frame when it changes.
   const terms = useTerms()
   const title = `${capitalize(terms.skillNounPlural)} library`
   // Navigation model A (D-L42): the header holds the page's actions, one filled; there is no flow footer.
+  // Add a skill first, then Export (Romit 2026-11-09).
   const actions = (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <LibraryExport onExport={() => api.exportCsv()} canExport={api.rows.length > 0} />
       <LibraryActions onAdd={onAdd} onAddSeveral={onAddSeveral} primaryElsewhere={primaryElsewhere} />
+      <LibraryExport onExport={() => api.exportCsv()} canExport={api.rows.length > 0} />
     </div>
   )
+  // In the table only while the table is on screen; loading, error and empty keep their own ways in.
+  const inTable = actionsInTable && api.hydrated && !api.demo && api.rows.length > 0
   let body: React.ReactNode = children
   if (!api.hydrated || api.demo === "loading") body = <LibraryLoading />
   else if (api.demo === "error") body = <LibraryError />
@@ -398,9 +417,9 @@ export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, 
   else if (api.rows.length === 0) body = <LibraryEmpty onAdd={onAdd} onAddSeveral={onAddSeveral} />
   return (
     <div data-page-type={pageType} className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
-      <PageFrame title={title} actions={actions} className="flex-1">
+      <PageFrame title={title} actions={inTable ? undefined : actions} className="flex-1">
         <LibraryBanner api={api} tab={tab} />
-        {body}
+        <LibraryToolbarActions.Provider value={inTable ? actions : null}>{body}</LibraryToolbarActions.Provider>
         {overlays}
       </PageFrame>
     </div>

@@ -49,8 +49,8 @@ export function DirectorReportsPage({ variant }: { variant: ReportsVariant }) {
   const setTab = React.useCallback(
     (v: string) => {
       const q = new URLSearchParams(params?.toString() ?? "")
-      if (v === "attainment") q.delete("tab")
-      else q.set("tab", v)
+      // Keep an explicit choice: a flow route may default an absent tab to Readiness.
+      q.set("tab", v)
       q.delete("peek")
       const s = q.toString()
       router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false })

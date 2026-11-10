@@ -12,6 +12,7 @@ import { Tip } from "@exxatdesignux/ui/components/ui/tip"
 import { useIsMobile } from "@exxatdesignux/ui/hooks/use-mobile"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
+import { useDsTableToolbar } from "@/components/lab/shared/ds-table-toolbar"
 import { RowMenu, type RowMenuEntry } from "@/components/lab/shared/row-menu"
 import { assignedToText, listCanEdit, listHasAssignment, listSizeParts, skillLists, type SkillList } from "@/lib/lab/lists"
 import { capitalize, skillListsNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -79,7 +80,7 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
   const { model, actions } = c
   const nounPl = skillNounPlural()
   const isMobile = useIsMobile()
-  const rows: Row[] = skillLists(model.lists).map((l) => ({ id: l.id, list: l, name: l.name, size: l.skillIds.length, assigned: assignedToText(l, model.groups) }))
+  const rows: Row[] = skillLists(model.lists).map((l) => ({ id: l.id, list: l, name: l.name, size: l.skillIds.length, assigned: assignedToText(l, model.groups), fAssigned: listHasAssignment(l) ? "yes" : "no" }))
   const columns = React.useMemo<ColumnDef<Row>[]>(() => {
     const name: ColumnDef<Row> = {
       key: "name",
@@ -102,6 +103,7 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
       label: capitalize(nounPl),
       width: isMobile ? 76 : 120,
       sortable: true,
+      filter: { type: "range", icon: "fa-hashtag", dataBounds: true, rangeStep: 1 },
       cell: (r) => {
         const { inactive } = listSizeParts(model.state, r.list)
         return inactive ? (
@@ -126,10 +128,13 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
         </div>
       ),
     }
-    if (isMobile) return [name, size, menu]
-    return [name, size, { key: "assigned", label: "Assigned to", width: 430, sortable: true, cell: (r) => <AssignedTo list={r.list} groups={model.groups} /> }, menu]
+    // Filter-only: whether the list reaches anyone, the one question the Assigned to text cannot answer as a pick.
+    const reach: ColumnDef<Row> = { key: "fAssigned", label: "Assignment", filterOnly: true, filter: { type: "select", icon: "fa-users", operators: ["is", "is_not"], options: [{ value: "yes", label: "Assigned" }, { value: "no", label: "Not assigned" }] } }
+    if (isMobile) return [name, size, menu, reach]
+    return [name, size, { key: "assigned", label: "Assigned to", width: 430, sortable: true, filter: { type: "text", icon: "fa-users" }, cell: (r) => <AssignedTo list={r.list} groups={model.groups} /> }, menu, reach]
   }, [nounPl, model.groups, model.state, actions, isMobile])
 
+  const { toolbarSlot, conditionalRules } = useDsTableToolbar<Row>(columns, capitalize(skillListsNoun()))
   return (
     <div data-region="lists">
       <DataTable<Row>
@@ -139,10 +144,12 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
         getRowId={(r) => r.id}
         onRowClick={(r) => actions.openList(r.id)}
         openRowId={actions.openId}
-        searchable={false}
+        searchable
+        showQueryControls
+        toolbarSlot={toolbarSlot}
+        conditionalRules={conditionalRules}
         // No bulk action on this page: selection would only offer the table's default bar, and a row menu press landing on the row would raise it.
         selectable={false}
-        showQueryControls={false}
         edgeInset={false}
         emptyState={<p className="p-4 text-sm text-muted-foreground">{`No ${skillListsNoun()} yet.`}</p>}
       />

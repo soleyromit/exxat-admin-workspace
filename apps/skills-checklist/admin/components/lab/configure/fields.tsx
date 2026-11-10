@@ -1115,7 +1115,7 @@ export function GroupCheckOffSection({ rule, setRule, title = "Allow group check
       {switchOnly ? <ToggleSwitch id="cfg-checkoff" aria-labelledby={switchOnly} checked={allowed} onChange={onChange} /> : <ToggleRow id="cfg-checkoff" title={title} checked={allowed} onChange={onChange} />}
       {select ? (
         <Field className="max-w-64">
-          <FieldLabel htmlFor={select.id}>Checked-off students get</FieldLabel>
+          <FieldLabel htmlFor={select.id}>{rule.model === "scored" ? "Score for each student checked off" : "Level for each student checked off"}</FieldLabel>
           {select.control}
         </Field>
       ) : null}

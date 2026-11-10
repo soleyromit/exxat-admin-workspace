@@ -3310,7 +3310,7 @@ test("CFG19", "CFG", "Opened directly on the walkthrough: Save and Cancel stay o
 test("CFG20", "CFG", "Copy: no signers says it plainly; a level mid-sentence goes through inSentence", async (t) => {
   const page = await cfgOpen(t)
   const check = await page.locator('[data-readout="Group check-off"]').innerText()
-  if (check !== "On, students get works alone") fail(`read-out: "${check}"`)
+  if (check !== "On, each student at works alone") fail(`read-out: "${check}"`)
   await t.chooseCustom(page)
   await t.openGroup(page, "Who evaluates")
   for (const r of await page.getByRole("group", { name: /^Who can sign off/ }).getByRole("checkbox").all()) if (await r.isChecked()) await r.click()

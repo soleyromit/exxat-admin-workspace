@@ -25,7 +25,8 @@ import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxat
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
 import { DEMO_TODAY, IDS } from "@/lib/v2/seed-core"
-import { buildLibrary, CONFIGURATION_META } from "@/lib/lab/library"
+import { buildLibrary, CONFIGURATION_META, CONFIGURATION_ORDER } from "@/lib/lab/library"
+import { useDsTableToolbar } from "@/components/lab/shared/ds-table-toolbar"
 import { CHECKOFF_LABEL, CRITERIA_LABEL, HOW_MANY_LABEL, WHO_DOES_WHAT_LABEL, MODEL_STEP_LABEL, configureStepHead, configureStepValue, LAB_MODEL_LABEL, ROLE_LABEL, ruleAllowsCheckOff, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import {
   blockedGroups,
@@ -238,7 +239,7 @@ export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: Progr
   const effects = programSaveEffects(m.saved, m.rule)
   const usesQuestions = m.rule.model === "question" || m.rule.model === "scored"
   // Only fields this page shows, in its words: minimums are per skill (they have their own row above), the rest fold into the row that holds them.
-  const pageCleared = effects.cleared.flatMap((w) => (w === "Minimum at each level" || w === "Levels that count" || w === "Named questions" ? [] : w === "Checked-off students get" ? [m.saved?.model === "scored" ? "Score students get" : "Level students get"] : [w]))
+  const pageCleared = effects.cleared.flatMap((w) => (w === "Minimum at each level" || w === "Levels that count" || w === "Named questions" ? [] : w === "Checked-off students get" ? [m.saved?.model === "scored" ? "Score for each student checked off" : "Level for each student checked off"] : [w]))
   const rows: Array<{ label: string; value: string }> = [
     // A rename is said as a rename [REQ AE-06]: nothing about those skills changes but the words.
     ...(n ? [{ label: CONFIGURATION_META.default.label, value: effects.namesOnly ? `${n} show the new names` : `${n} will change` }] : []),
@@ -446,6 +447,7 @@ export function TimesNeededTable({ m, edits, setEdits, programNeed }: { m: Progr
       key: "need",
       label: "Times needed",
       width: 160,
+      filter: { type: "range", icon: "fa-hashtag", dataBounds: true, rangeStep: 1 },
       cell: (r) => {
         const v = edits[r.id]
         const bad = v !== undefined && (!Number.isInteger(v) || v < 1)
@@ -477,6 +479,7 @@ export function TimesNeededTable({ m, edits, setEdits, programNeed }: { m: Progr
       key: "configuration",
       label: "Configuration",
       width: 192,
+      filter: { type: "select", icon: "fa-sliders", operators: ["is", "is_not"], options: CONFIGURATION_ORDER.map((c) => ({ value: c, label: CONFIGURATION_META[c].label })) },
       cell: (r) =>
         !r.configured ? (
           <StatusBadge label="Not configured" tone="warning" icon="fa-triangle-exclamation" size="sm" surface="table" />
@@ -485,9 +488,15 @@ export function TimesNeededTable({ m, edits, setEdits, programNeed }: { m: Progr
         ) : null,
     },
   ]
-  const ts = useTableState<TimesTableRow>(data, columns)
+  // The configuration word on each row, for the DS filter.
+  const rows = React.useMemo(() => data.map((r) => ({ ...r, configuration: !r.configured ? "not-configured" : r.edited ? "edited" : "default" })), [data])
+  const ts = useTableState<TimesTableRow>(rows, columns)
   const setGroupBy = ts.setGroupBy
   React.useEffect(() => { setGroupBy("group") }, [setGroupBy])
+  // The DS table's search is this view's search, so the count tabs and the empty message read it.
+  const tableSearch = ts.search
+  React.useEffect(() => { setQ(tableSearch) }, [tableSearch, setQ])
+  const { toolbarSlot, conditionalRules } = useDsTableToolbar<TimesTableRow>(columns, "Times needed")
   return (
     <div className="flex flex-col gap-3" data-times-needed>
       {filterable ? (
@@ -499,16 +508,17 @@ export function TimesNeededTable({ m, edits, setEdits, programNeed }: { m: Progr
           <TabsContent value={view} className="hidden" />
         </Tabs>
       ) : null}
-      <Input type="search" className="w-72 max-w-full" aria-label={`Search ${skillNounPlural()}`} placeholder={`Search ${skillNounPlural()}`} value={q} onChange={(e) => setQ(e.target.value)} />
       <div role="region" aria-label="Times needed" data-times-table>
         <DataTable<TimesTableRow>
-          data={data}
+          data={rows}
           columns={columns}
           state={ts}
           getRowId={(r) => r.id}
           selectable={false}
-          searchable={false}
-          showQueryControls={false}
+          searchable
+          showQueryControls
+          toolbarSlot={toolbarSlot}
+          conditionalRules={conditionalRules}
           edgeInset={false}
           lazyLoading={{ enabled: true, threshold: 80, chunkSize: 40, loadingLabel: "Loading more" }}
           emptyState={<EmptyBlock compact title={q.trim() ? `No ${skillNounPlural()} match "${q}"` : "None"} />}

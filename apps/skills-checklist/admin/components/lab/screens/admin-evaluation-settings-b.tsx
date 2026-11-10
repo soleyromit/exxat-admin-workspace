@@ -188,7 +188,7 @@ function SettingsList({ page }: { page: ProgramPage }) {
             <SwitchRow id="cfg-feedback" label="Feedback is required" hint="The evaluator must write feedback to submit." checked={rule.feedbackRequired} onChange={(v) => setRule((r) => ({ ...r, feedbackRequired: v }))} />
             <div data-section="checkoff">
               <SwitchRow id="cfg-checkoff" label="Faculty can check off a group" hint="Faculty can mark several students at once." checked={ruleAllowsCheckOff(rule)} onChange={(v) => setRule((r) => withCheckOffPatch(r, { enabled: v }))} />
-              {grant ? <Row label={rule.model === "scored" ? "Score students get" : "Level students get"} htmlFor={grant.id} className="ms-1 mb-3 border-s-2 border-border py-1 ps-4">{grant.control}</Row> : null}
+              {grant ? <Row label={rule.model === "scored" ? "Score for each student checked off" : "Level for each student checked off"} hint={`Every student checked off in a group is recorded at this ${rule.model === "scored" ? "score" : "level"}.`} htmlFor={grant.id} className="ms-1 mb-3 border-s-2 border-border py-1 ps-4">{grant.control}</Row> : null}
             </div>
             <SwitchRow id="cfg-approval" label="Approval before it counts" hint="An admin approves each evaluation before it counts." checked={rule.approvalRequired} onChange={(v) => setRule((r) => ({ ...r, approvalRequired: v }))} />
           </Section>

@@ -32,12 +32,13 @@ import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
 import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { Tip } from "@exxatdesignux/ui/components/ui/tip"
-import { FilterBar } from "@exxatdesignux/ui/components/ui/filter-bar"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { NUM_LINK } from "@/components/lab/link-styles"
 import { fmt, plural } from "@/lib/v2/format"
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
+import { useTableState } from "@exxatdesignux/ui/components/data-table/use-table-state"
+import { useDsTableToolbar } from "@/components/lab/shared/ds-table-toolbar"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
@@ -334,11 +335,7 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
         ) : (
           <>
             {demo === "partial" ? <LocalBanner variant="info" title="Usage counts are still loading">Delete stays off until they finish.</LocalBanner> : null}
-            <FilterBar aria-label={`Find ${NOUNS[tab]}`} className="gap-2" data-region="toolbar">
-              <Label htmlFor="settings-search" className="sr-only">{`Search ${NOUNS[tab]}`}</Label>
-              <Input id="settings-search" type="search" value={query} onChange={(e) => { setCreateError(null); setQuery(e.target.value) }} placeholder={`Search ${NOUNS[tab]}`} className="h-8 w-64 max-w-full" />
-            </FilterBar>
-            <SettingsTable tab={tab} rows={marked} filtered={!!qq} onClear={() => setQuery("")} partial={demo === "partial"} onToggle={toggle} onDelete={askDelete} onUses={openUses} onRename={tab === "instructors" ? undefined : askRename} />
+            <SettingsTable query={query} onQuery={(v) => { setCreateError(null); setQuery(v) }} tab={tab} rows={marked} filtered={!!qq} onClear={() => setQuery("")} partial={demo === "partial"} onToggle={toggle} onDelete={askDelete} onUses={openUses} onRename={tab === "instructors" ? undefined : askRename} />
           </>
         )}
           </TabsContent>
@@ -507,7 +504,7 @@ function RowName({ name, active, narrow }: { name: string; active: boolean; narr
 /** The words beside a count when it moves under the name on a phone. */
 const FACT_WORDS: Record<string, [string, string]> = { categories: ["category", "categories"], sites: ["site", "sites"], courses: ["course", "courses"], evidence: ["evaluation", "evaluations"] }
 
-function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDelete, onUses, onRename }: { tab: SettingsTab; rows: SettingsRow[]; filtered: boolean; onClear: () => void; partial: boolean; onToggle: (r: SettingsRow) => void; onDelete: (r: SettingsRow) => void; onUses: (r: SettingsRow, what?: SettingUse) => void; onRename?: (r: SettingsRow) => void }) {
+function SettingsTable({ query, onQuery, tab, rows, filtered, onClear, partial, onToggle, onDelete, onUses, onRename }: { query: string; onQuery: (v: string) => void; tab: SettingsTab; rows: SettingsRow[]; filtered: boolean; onClear: () => void; partial: boolean; onToggle: (r: SettingsRow) => void; onDelete: (r: SettingsRow) => void; onUses: (r: SettingsRow, what?: SettingUse) => void; onRename?: (r: SettingsRow) => void }) {
   const narrow = useIsMobile()
   // A skill count is a link to the Library filtered to this entry, a list of the same length (map D5, F C2).
   const libraryCount = (r: SettingsRow, n: number) =>
@@ -583,8 +580,10 @@ function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDele
   }
   // At once, with no dialog [REQ SL-06, this review 2026-11-05]; the switch and its word are the feedback, the page announces it.
   const statusCol: ColumnDef<SettingsRow> = {
-    key: "status",
+    key: "active",
     label: "Status",
+    sortable: true,
+    filter: { type: "select", icon: "fa-circle-check", operators: ["is", "is_not"], options: [{ value: "true", label: "Active" }, { value: "false", label: "Inactive" }] },
     width: 116,
     resizable: false,
     defaultPin: "right",
@@ -628,6 +627,11 @@ function SettingsTable({ tab, rows, filtered, onClear, partial, onToggle, onDele
   ) : (
     <EmptyBlock compact title={`No ${NOUNS[tab]} yet`} body={tab === "instructors" ? "Add the first one above; a name and an email are enough." : tab === "categories" ? `Categories are optional. They group ${skillNounPlural()} in the library.` : `Add the first one above, or while editing ${aNoun()}.`} />
   )
-  // The page owns the one search above; the table's own query controls stay off (no second filter system).
-  return <DataTable<SettingsRow> key={`${tab}-${narrow ? "narrow" : "wide"}`} data={rows} columns={columns} getRowId={(r) => r.id} selectable={false} searchable={false} showQueryControls={false} edgeInset={false} emptyState={empty} />
+  // The DS table toolbar (search, filter, Properties); its search is the page's, so ?q= and adding a name that the search hides still work.
+  const ts = useTableState<SettingsRow>(rows, columns)
+  const { search, setSearch } = ts
+  React.useEffect(() => { if (search !== query) setSearch(query) }, [query]) // eslint-disable-line react-hooks/exhaustive-deps
+  React.useEffect(() => { if (search !== query) onQuery(search) }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
+  const { toolbarSlot, conditionalRules } = useDsTableToolbar<SettingsRow>(columns, sectionLabel(tab))
+  return <DataTable<SettingsRow> key={`${tab}-${narrow ? "narrow" : "wide"}`} data={rows} columns={columns} state={ts} getRowId={(r) => r.id} selectable={false} searchable showQueryControls toolbarSlot={toolbarSlot} conditionalRules={conditionalRules} edgeInset={false} emptyState={empty} />
 }
