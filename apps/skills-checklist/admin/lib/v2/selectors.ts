@@ -1,4 +1,7 @@
 import type { V2State } from "./types"
+import { waitingFor } from "./preceptor"
+import { queueItems } from "./queue"
+import { unsentEntries } from "./student"
 import { verificationRows } from "./verification"
 
 export interface CounterDef {
@@ -33,7 +36,6 @@ export const COUNTERS: CounterDef[] = [
   { id: "remediations", label: "Open remediation plans", value: (s) => s.remediations.filter((r) => r.status !== "closed").length },
   { id: "verified", label: "Student records verified", value: (s) => verificationRows(s).filter((r) => r.status === "verified").length },
   { id: "audit", label: "Audit log entries", value: (s) => s.audit.length },
-  { id: "reviewed", label: "Scenario steps reviewed", value: (s) => Object.keys(s.stepsReviewed).length },
 ]
 
 export const COUNTER_BY_ID: Record<string, CounterDef> = Object.fromEntries(COUNTERS.map((c) => [c.id, c]))
@@ -44,4 +46,19 @@ export function personName(s: V2State, id: string): string {
 
 export function skillName(s: V2State, id: string): string {
   return s.skills.find((k) => k.id === id)?.name ?? "Unknown skill"
+}
+
+/** Nav badge: items awaiting approval (Review and approve). */
+export function approvalsBadge(s: V2State): number {
+  return queueItems(s).length
+}
+
+/** Nav badge: requests waiting for this evaluator (preceptor Requests). */
+export function evaluatorRequestsBadge(s: V2State, actorId: string): number {
+  return waitingFor(s, actorId).length
+}
+
+/** Nav badge: the student's entries that are ready to send (student Requests). */
+export function unsentRequestsBadge(s: V2State): number {
+  return unsentEntries(s).length
 }

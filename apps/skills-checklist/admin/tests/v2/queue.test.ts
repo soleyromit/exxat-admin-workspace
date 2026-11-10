@@ -29,7 +29,7 @@ describe("the queue (AR-01)", () => {
     expect(keys).not.toContain("sub-03")
     expect(keys).not.toContain("sub-06")
     expect(keys).not.toContain("sub-maya-1")
-    expect(items).toHaveLength(4)
+    expect(items).toHaveLength(9)
   })
 
   it("separates a photo that still needs its outcome from an evaluation that is ready", () => {
@@ -92,24 +92,13 @@ describe("approve (AR-05, AR-06)", () => {
     expect(COUNTER_BY_ID.queueWaiting.value(r.state)).toBe(COUNTER_BY_ID.queueWaiting.value(s) - 1)
   })
 
-  it("an approved not-met opens a plan only when the skill says so and none is open", () => {
+  it("an approved not-met never opens a plan on its own (remediation is out of scope, REQ section 14)", () => {
     const s = createSeed()
-    const sd = s.skills.find((k) => k.id === "sk-sterile-dressing")!
-    sd.config!.failure.autoRemediation = true
     const e: Evaluation = { ...s.evaluations.find((x) => x.id === "ev-maya-7")!, id: "ev-t-nm", skillId: "sk-sterile-dressing", outcome: "not-met", versions: [{ version: 1, outcome: "not-met", at: AT, by: IDS.delgado, reason: null }] }
     const withIt: V2State = { ...s, evaluations: [...s.evaluations, e] }
     const r = must(approveItems(withIt, ["ev-t-nm"], ROSS, AT))
-    expect(r.plansOpened).toBe(1)
-    expect(r.state.remediations.filter((p) => p.studentId === IDS.maya)).toHaveLength(1)
-    // Approving a second not-met for the same open plan adds nothing.
-    const again: Evaluation = { ...e, id: "ev-t-nm2" }
-    const r2 = must(approveItems({ ...r.state, evaluations: [...r.state.evaluations, again] }, ["ev-t-nm2"], ROSS, AT))
-    expect(r2.plansOpened).toBe(0)
-    expect(r2.state.remediations.filter((p) => p.studentId === IDS.maya)).toHaveLength(1)
-    // A skill that does not ask for a plan opens none.
-    sd.config!.failure.autoRemediation = false
-    const r3 = must(approveItems({ ...s, evaluations: [...s.evaluations, { ...e, id: "ev-t-nm3" }] }, ["ev-t-nm3"], ROSS, AT))
-    expect(r3.plansOpened).toBe(0)
+    expect(r.plansOpened).toBe(0)
+    expect(r.state.remediations).toHaveLength(s.remediations.length)
   })
 
   it("bulk approve: the blocked item stays and is named with its reason, the others go through (partial failure)", () => {

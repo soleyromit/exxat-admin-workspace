@@ -15,7 +15,7 @@ import type { PlaceholderMeta } from "@/lib/skills-routes"
  */
 export function PlaceholderPage({ meta }: { meta: PlaceholderMeta }) {
   return (
-    <PageFrame title={meta.title} subtitle={meta.subtitle}>
+    <PageFrame gutter="fixed" title={meta.title} subtitle={meta.subtitle}>
       <PlaceholderBody meta={meta} />
     </PageFrame>
   )

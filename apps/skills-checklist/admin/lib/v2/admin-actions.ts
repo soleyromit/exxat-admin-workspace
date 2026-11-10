@@ -70,13 +70,13 @@ export function updateSkillMeta(s: V2State, skillId: string, meta: NewSkill, act
   return { ok: true, state: appendAudit({ ...s, skills }, actorId, "Edited skill", name, at) }
 }
 
-/** The draft the wizard starts from: the saved draft, else the skill's saved configuration, else defaults with binary pre-selected. */
+/** The draft the wizard starts from: the saved draft, else the skill's saved configuration, else defaults with NO model chosen (SC-02: the admin chooses explicitly). */
 export function draftFor(s: V2State, skillId: string): SkillDraft {
   const saved = s.drafts[skillId]
   if (saved) return saved
   const skill = s.skills.find((k) => k.id === skillId)
   if (skill?.config && skill.model) return { model: skill.model, config: structuredClone(skill.config), step: 1 }
-  return { model: "binary", config: defaultConfig("binary"), step: 1 }
+  return { model: null, config: defaultConfig(), step: 1 }
 }
 
 /** Live draft edits are saved without an audit entry (a draft is not a decision). Saving a step and publishing are audited. */
@@ -102,7 +102,7 @@ export function copyConfigFrom(s: V2State, skillId: string, sourceId: string, ac
 export function saveStep(s: V2State, skillId: string, step: number, actorId: string, at: string): V2State {
   const skill = s.skills.find((k) => k.id === skillId)
   const d = draftFor(s, skillId)
-  return appendAudit(setDraft(s, skillId, { ...d, step }), actorId, `Saved configuration draft, step ${Math.min(step, 8)}`, skill?.name ?? skillId, at)
+  return appendAudit(setDraft(s, skillId, { ...d, step }), actorId, `Saved configuration draft, step ${Math.min(step, 7)}`, skill?.name ?? skillId, at)
 }
 
 /** Puts a skill in use with its drafted rules (SC-19). Refuses while any issue remains. Completed evaluations are not touched. */

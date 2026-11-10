@@ -96,3 +96,7 @@ DS findings from Stage 5 (candidates for the DS team): `ToggleSwitch` stretches 
 ## Registered hand-rolls
 
 Stage 0: none. Stage 1: the file chooser (existing v1 file, item 18). Stage 3, 4 and 5: none beyond the PDF writer and hash (`lib/v2/pdf.ts`, logic not UI). Stage 2: the QR matrix generator (`lib/v2/qr.ts`, item 23) and a native file input behind a DS Button for the photo (item 18 again). Everything else above is composition of DS primitives.
+
+## Semantic table exceptions (V2-CONSISTENCY section 12 test 11)
+
+`preceptor/lab-grid-page.tsx` uses the DS `Table` because it is a purpose-built students by skills entry grid (a semantic table with per-cell controls, like `viz/heat-grid.tsx`), which `DataTable` cannot express.

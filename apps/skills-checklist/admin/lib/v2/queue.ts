@@ -1,6 +1,6 @@
 import type { Result } from "./admin-actions"
 import { needsLevels } from "./config"
-import { nextIdFor, openPlan, opensPlanAutomatically, OUTCOME_WORD } from "./outcomes"
+import { nextIdFor, OUTCOME_WORD } from "./outcomes"
 import { blankResponse, studentContext, validatePass, type SkillResponse } from "./preceptor"
 import type { RuleIssue } from "./rules"
 import { appendAudit } from "./store"
@@ -179,7 +179,7 @@ export interface ApproveResult {
 
 function approveOne(s: V2State, item: QueueItem, actorId: string, at: string, note: string): { state: V2State; plans: number } {
   let state = s
-  let plans = 0
+  const plans = 0
   const ids = new Set(item.evaluations.map((e) => e.id))
   state = {
     ...state,
@@ -188,12 +188,6 @@ function approveOne(s: V2State, item: QueueItem, actorId: string, at: string, no
   for (const e of item.evaluations) {
     const skill = skillOf(state, e.skillId)
     state = appendAudit(state, actorId, "Approved an evaluation, it now counts", `${skill?.name ?? "A skill"} for ${nameOf(state, e.studentId)}: ${OUTCOME_WORD[e.outcome]}${note ? `. Note: ${clip(note, 80)}` : ""}`, at)
-    const planExists = state.remediations.some((r) => r.evaluationId === e.id || (r.studentId === e.studentId && r.skillId === e.skillId && r.status !== "closed"))
-    if (e.outcome === "not-met" && opensPlanAutomatically(skill) && !planExists) {
-      const r = openPlan(state, { studentId: e.studentId, skillId: e.skillId, evaluationId: e.id, actorId }, at)
-      state = r.state
-      if (r.created) plans++
-    }
   }
   if (item.submission) {
     state = { ...state, submissions: state.submissions.map((x) => (x.id === item.submission?.id ? { ...x, status: "done" as const, completedAt: x.completedAt ?? at, completedById: x.completedById ?? item.evaluatorId ?? actorId, daysWaiting: 0 } : x)) }

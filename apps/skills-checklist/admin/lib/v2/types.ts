@@ -24,6 +24,9 @@ export interface Person {
   credentials?: string[]
   yearsPractice?: number
   training?: string[]
+  /** Students: the cohort and the group inside it (RP-01). Sample data. Absent on state saved before the filters existed. */
+  cohort?: string
+  group?: string
 }
 
 export interface Program {
@@ -35,6 +38,17 @@ export interface Program {
   clinicalSettings: string[]
   /** Simulation settings the program can allow-list. */
   simulationSettings: string[]
+  /** Program-defined places where evidence is gathered, with what each offers (RP-01, RP-09). Sample data. */
+  locations?: ProgramLocation[]
+  /** Program-defined groups inside each cohort (RP-01). Sample data. */
+  groups?: Record<string, string[]>
+}
+
+export interface ProgramLocation {
+  name: string
+  setting: Setting
+  /** The named clinical setting a clinical location offers (SC-11). Absent for lab and simulation. */
+  clinicalSetting?: string
 }
 
 export interface Course {
@@ -80,11 +94,10 @@ export interface SkillConfig {
   prerequisites: { skillIds: string[]; labCheckoff: boolean; practiceTrials: number }
   evaluatorRoles: EvaluatorRole[]
   qualification: { credentials: string[]; minYears: number; training: string[] }
-  failure: { attemptLimit: number | null; minDaysBetween: number; retakeScoreCap: number | null; autoRemediation: boolean }
-  revalidation: { onEvents: string[]; calendarExpiry: { enabled: boolean; months: number } }
-  /** SC-14: the evaluator cannot submit without narrative feedback. Absent means feedback is optional. The wizard has no control for it yet. */
+  failure: { attemptLimit: number | null; minDaysBetween: number; retakeScoreCap: number | null }
+  /** SC-14: the evaluator cannot submit without narrative feedback. Absent means feedback is optional. */
   feedbackRequired?: boolean
-  /** SC-15: evidence is held for administrator approval before it counts. Absent means it counts at once. The wizard has no control for it yet. */
+  /** SC-15: evidence is held for administrator approval before it counts. Absent means it counts at once. */
   approvalRequired?: boolean
 }
 
@@ -92,7 +105,7 @@ export interface SkillConfig {
 export interface SkillDraft {
   model: EvalModel | null
   config: SkillConfig
-  /** Wizard step, 1 to 8. */
+  /** Wizard step, 1 to 7. */
   step: number
   copiedFromSkillId?: string
 }
@@ -117,6 +130,8 @@ export interface Skill {
   published: boolean
   config: SkillConfig | null
   description?: string
+  /** Program-defined tags (SL-07). A skill may carry several. Sample data: no tag ships with the product. */
+  tags?: string[]
   /** Which import or copy created the skill (IM-11). Absent for the original seed. */
   batchId?: string
 }
@@ -168,6 +183,10 @@ export interface Evaluation {
   versions: EvaluationVersion[]
   /** Named clinical setting (SC-11) for clinical evaluations. Lab and simulation never carry one, so they can never satisfy it. */
   clinicalSetting?: string
+  /** Where the evidence was gathered (RP-08). Absent on evidence saved before locations existed. */
+  location?: string
+  /** The course the evidence was gathered in (RP-01). Absent means the report's own course. */
+  courseId?: string
   /** Index into the skill's levels when the evaluation recorded a level. Absent means the level is not recorded. */
   levelIndex?: number
   /** Stage 3: the request this evaluation completed. */
@@ -379,6 +398,8 @@ export interface V2State {
   people: Person[]
   skills: Skill[]
   mappings: MappingRow[]
+  /** Other clinical courses the program runs, so the course filter has more than one value. Optional so older state loads. */
+  otherCourses?: Course[]
   evaluations: Evaluation[]
   submissions: Submission[]
   syncQueue: SyncItem[]
@@ -388,7 +409,7 @@ export interface V2State {
   batches: ImportBatch[]
   /** Skill id -> wizard draft. */
   drafts: Record<string, SkillDraft>
-  /** Scenario step id -> ISO time the presenter marked it reviewed. */
+  /** Walkthrough step id -> ISO time the presenter marked it reviewed. */
   stepsReviewed: Record<string, string>
   /** Stage 2: student placements, log entries, lab check-offs, the phone's state and the log flow draft. */
   placements: Placement[]

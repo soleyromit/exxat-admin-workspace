@@ -24,6 +24,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 
+import { mutateStored } from './_lib.mjs'
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const OUT = path.resolve(HERE, '..', 'screenshots')
 const TOOLS = path.resolve(HERE, '../../../../../tools/visual-check')
@@ -74,10 +75,10 @@ const btn = (page, name) => page.getByRole('button', { name })
 // (Scenario menu, Phone is offline, twice) and then `mutate` edits the saved state through a function body that receives it as `s`.
 /** Waits until React has hydrated every button on the page. The server HTML shows the page before it responds, so an early click can do nothing and a state that needs a click then times out. */
 const hydrated = (p) => p.waitForFunction(() => { const bs = [...document.querySelectorAll('button')]; return bs.length > 0 && bs.every((b) => Object.keys(b).some((k) => k.startsWith('__reactProps$'))) }, null, { timeout: 20000 }).catch(() => {})
-const SCENARIO = (p) => p.getByRole('button', { name: 'Scenario' })
+const SCENARIO = (p) => p.getByRole('button', { name: 'Demo', exact: true })
 async function demoToggle(p, label) { await SCENARIO(p).click(); await p.getByRole('menuitemcheckbox', { name: label }).click(); await p.waitForTimeout(250) }
 async function persist(p) { await demoToggle(p, 'Phone is offline'); await demoToggle(p, 'Phone is offline') }
-async function mutate(p, body) { await p.evaluate(([k, src]) => { const env = JSON.parse(localStorage.getItem(k)); new Function('s', src)(env.state); localStorage.setItem(k, JSON.stringify(env)) }, ['skills-checklist:v2:store', body]); await p.reload({ waitUntil: 'load' }); await p.waitForSelector('h1'); await hydrated(p); await p.waitForTimeout(900) }
+async function mutate(p, body) { const raw = await p.evaluate((k) => localStorage.getItem(k), 'skills-checklist:v2:store'); await p.evaluate(([k, v]) => localStorage.setItem(k, v), ['skills-checklist:v2:store', await mutateStored(raw, body)]); await p.reload({ waitUntil: 'load' }); await p.waitForSelector('h1'); await hydrated(p); await p.waitForTimeout(900) }
 const publishIv = (p) => mutate(p, "s.skills.find(k => k.id === 'sk-iv-cath').published = true")
 const lockIv = (p) => mutate(p, "const k = s.skills.find(k => k.id === 'sk-iv-cath'); k.published = true; k.config.prerequisites.practiceTrials = 5")
 const goto = async (p, route) => { await p.goto(new URL(route, p.url()).toString(), { waitUntil: 'load' }); await p.waitForSelector('h1'); await hydrated(p); await p.waitForTimeout(800) }
@@ -111,7 +112,7 @@ const RETURNED_MAYA = "s.submissions.push({id:'sub-maya-9',studentId:'stu-maya',
 const VERIFIED_MAYA = "s.verifications=[{id:'vf-1',studentId:'stu-maya',version:1,byId:'dir-brennan',at:new Date().toISOString(),note:'',evidence:s.evaluations.filter(e=>e.studentId==='stu-maya'&&e.status==='counted').map(e=>({evaluationId:e.id,skillId:e.skillId,version:e.currentVersion})),skills:[]}]"
 const CHANGED_MAYA = VERIFIED_MAYA + "; s.evaluations.find(e=>e.studentId==='stu-maya'&&e.status==='counted').currentVersion = 2"
 const ALL_APPROVED = "s.evaluations.forEach(e=>{if(e.status==='awaiting-approval')e.status='counted'}); s.submissions.forEach(x=>{if(x.status==='awaiting-review')x.status='done'})"
-const pickRow = (p, label) => p.getByRole('checkbox', { name: new RegExp(`^Select ${label}`) }).check()
+const pickRow = (p, label) => p.getByRole('checkbox', { name: new RegExp(`^Select row, ${label}`) }).check()
 const bulkOpen = async (p) => { await pickRow(p, 'Maya Ferreira, Point-of-care blood glucose'); await pickRow(p, 'Jordan Okafor'); await pickRow(p, 'Tomas Alvarez'); await btn(p, 'Approve 3 submissions').click(); await p.locator('[data-bulk-dialog]').waitFor() }
 const tab = (p, name) => p.getByRole('tab', { name }).click()
 const reassignOpen = async (p) => { await tab(p, /^Stalled/); await p.locator('[data-reassign="sub-03"]').click(); await p.locator('[data-reassign-dialog]').waitFor() }
@@ -123,7 +124,8 @@ const paperFill = async (p) => {
 }
 
 // ---- Stage 5 helpers. Reports: Radix selects, downloads and the document checker. Record: Maya verified with one skill achieved. Lab grid: pressing cells.
-const pickOption = async (p, label, option) => { await p.getByRole('combobox', { name: label, exact: true }).click(); await p.getByRole('option', { name: option, exact: true }).click(); await p.waitForTimeout(200) }
+/** Add a filter in the V2FilterBar: Add filter, the field, then the option. */
+const addFilter = async (p, field, option) => { await p.getByRole('button', { name: /^Add filter/ }).click(); await p.getByRole('group', { name: 'Filter by' }).getByRole('button', { name: field, exact: true }).click(); await p.getByRole('group', { name: field }).getByRole('button', { name: option, exact: true }).click(); await p.waitForTimeout(200) }
 const VERIFIED_RECORD = "s.verifications=[{id:'vf-1',studentId:'stu-maya',version:1,byId:'dir-brennan',at:'2026-10-20T10:00:00.000Z',note:'',evidence:s.evaluations.filter(e=>e.studentId==='stu-maya'&&e.status==='counted').map(e=>({evaluationId:e.id,skillId:e.skillId,version:e.currentVersion})),skills:[{skillId:'sk-vitals',achieved:true},{skillId:'sk-urinary-cath',achieved:false},{skillId:'sk-med-admin',achieved:false},{skillId:'sk-sterile-dressing',achieved:false}]}]"
 const CHANGED_RECORD = VERIFIED_RECORD + "; s.evaluations.find(e=>e.studentId==='stu-maya'&&e.skillId==='sk-vitals'&&e.status==='counted').currentVersion = 2"
 const TMP = path.join(os.tmpdir(), 'sc-v2-stage5-shoot'); fs.mkdirSync(TMP, { recursive: true })
@@ -228,8 +230,7 @@ const STATES = {
     { name: 'step3-simulation', setup: async (p) => { await btn(p, 'Next: Achievement rules').click(); await btn(p, 'Next: Simulation').click(); await p.getByText('Simulation share').first().waitFor() }, expect: ['Back', 'Next: Prerequisites'] },
     { name: 'step4-prerequisites', setup: async (p) => { for (const n of ['Achievement rules', 'Simulation', 'Prerequisites']) await btn(p, `Next: ${n}`).click() }, expect: ['Back', 'Next: Qualified evaluators'] },
     { name: 'step5-evaluators', setup: async (p) => { for (const n of ['Achievement rules', 'Simulation', 'Prerequisites', 'Qualified evaluators']) await btn(p, `Next: ${n}`).click() }, expect: ['Back', 'Next: If a student does not pass'] },
-    { name: 'step6-failure', setup: async (p) => { for (const n of ['Achievement rules', 'Simulation', 'Prerequisites', 'Qualified evaluators', 'If a student does not pass']) await btn(p, `Next: ${n}`).click() }, expect: ['Back', 'Next: Re-validation'] },
-    { name: 'step7-revalidation', setup: async (p) => { for (const n of ['Achievement rules', 'Simulation', 'Prerequisites', 'Qualified evaluators', 'If a student does not pass', 'Re-validation']) await btn(p, `Next: ${n}`).click() }, expect: ['Back', 'Review and publish'] },
+    { name: 'step6-failure', setup: async (p) => { for (const n of ['Achievement rules', 'Simulation', 'Prerequisites', 'Qualified evaluators', 'If a student does not pass']) await btn(p, `Next: ${n}`).click() }, expect: ['Back', 'Review and publish'] },
     { name: 'copy-menu-open', menu: true, setup: async (p) => { await p.locator('#wiz-copy-from').click(); await p.getByRole('listbox').waitFor() }, expect: ['Oral medication administration'] },
     { name: 'review-blocked', setup: async (p) => { await p.locator('#wiz-level-1').fill(''); await btn(p, /^Review and publish$/).first().click(); await p.getByText(/problem to fix before you can publish/).waitFor() }, expect: ['Level 2 has no name'] },
     { name: 'publish-dialog', setup: async (p) => { await btn(p, /^Review and publish$/).first().click(); await btn(p, 'Publish IV catheter insertion').click(); await p.getByRole('dialog').waitFor() }, expect: ['Keep editing', 'Publish IV catheter insertion'] },
@@ -248,7 +249,7 @@ const STATES = {
   '/v2/reviewer/review-queue': [
     { name: 'stalled-tab', setup: async (p) => { await tab(p, /^Stalled/); await p.locator('[data-reassign="sub-03"]').waitFor() }, expect: ['Reassign request'] },
     { name: 'returned-tab-empty', setup: async (p) => { await tab(p, /^Returned/); await p.locator('[data-empty="returned"]').waitFor() }, expect: [] },
-    { name: 'two-selected', setup: async (p) => { await pickRow(p, 'Jordan Okafor'); await pickRow(p, 'Tomas Alvarez'); await p.getByText('2 selected').waitFor() }, expect: ['Approve 2 submissions', 'Clear selection'] },
+    { name: 'two-selected', setup: async (p) => { await pickRow(p, 'Jordan Okafor'); await pickRow(p, 'Tomas Alvarez'); await btn(p, 'Approve 2 submissions').waitFor() }, expect: ['Approve 2 submissions', 'Clear selection'] },
     { name: 'bulk-confirm-blocked', setup: async (p) => { await bulkOpen(p) }, expect: ['Approve 2 of 3 submissions', 'Keep in queue'] },
     { name: 'bulk-partial-result', setup: async (p) => { await bulkOpen(p); await p.getByRole('dialog').getByRole('button', { name: 'Approve 2 of 3 submissions' }).click(); await p.locator('[data-queue-message]').waitFor() }, expect: [] },
     { name: 'reassign-dialog', setup: async (p) => { await reassignOpen(p) }, expect: ['Keep with J. Delgado, RN'] },
@@ -273,8 +274,8 @@ const STATES = {
     { name: 'verified', setup: async (p) => { await p.locator('#verify-confirm').click(); await btn(p, /^Verify Amara Nwosu's record as version 1$/).click(); await p.locator('[data-verify-message]').waitFor() }, expect: [] },
   ],
   '/v2/admin/reports': [
-    { name: 'filters-conflict', setup: async (p) => { await pickOption(p, 'Setting', 'Lab'); await pickOption(p, 'Clinical setting', 'Inpatient'); await p.locator('[data-filter-conflict]').waitFor() }, expect: ['Clear the clinical setting filter'] },
-    { name: 'filters-chips', setup: async (p) => { await pickOption(p, 'Category', 'Assessment'); await p.locator('#flt-mandatory').click(); await p.locator('[data-applied-filters] [data-remove-filter]').first().waitFor() }, expect: ['Remove filter Category: Assessment', 'Remove filter Mandatory skills only'] },
+    { name: 'filters-conflict', setup: async (p) => { await addFilter(p, 'Setting', 'Lab'); await addFilter(p, 'Clinical setting', 'Inpatient'); await p.locator('[data-filter-conflict]').waitFor() }, expect: ['Clear the clinical setting filter'] },
+    { name: 'filters-chips', setup: async (p) => { await addFilter(p, 'Category', 'Assessment'); await addFilter(p, 'Mandatory skills only', 'Yes'); await p.locator('[data-filter-chip]').first().waitFor() }, expect: ['Remove filter Category: Assessment', 'Remove filter Mandatory skills only'] },
     { name: 'tab-behind-pace', setup: async (p) => { await viewTab(p, /^Behind pace/); await p.locator('[data-pace-basis]').waitFor() }, expect: [] },
     { name: 'tab-skills-and-raters', setup: async (p) => { await viewTab(p, 'Skills and raters'); await p.getByText('One evaluator', { exact: true }).first().waitFor() }, expect: [] },
     { name: 'tab-rater-comparison', setup: async (p) => { await viewTab(p, 'Rater comparison'); await p.locator('[data-rater-note]').waitFor() }, expect: [] },

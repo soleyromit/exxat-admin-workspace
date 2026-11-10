@@ -9,20 +9,21 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
+import { StatusPill } from "@/components/v2/status-pill"
+import type { PageHeaderActionItem } from "@exxatdesignux/ui/components/ui/page-header"
+import { useAltKeyLabel, useModKeyLabel } from "@exxatdesignux/ui/hooks/use-mod-key-label"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { PageFrame } from "@/components/skills/page-header"
 import { fmtDay } from "@/components/v2/outcomes/version-timeline"
 import { useStaff } from "@/components/v2/outcomes/staff"
+import { SegmentedDots } from "@/components/v2/viz"
 import { StudentPage } from "@/components/v2/student/student-frame"
 import { BTN } from "@/components/v2/student/use-student"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { attemptInfo, closePlan, PLAN_STATUS_LABEL, planFor, setStepDone } from "@/lib/v2/outcomes"
 import { ruleSentence, STUDENT_ID } from "@/lib/v2/student"
 import type { Remediation, RoleId, V2State } from "@/lib/v2/types"
-
-const TONE = { open: "info", "in-progress": "info", closed: "neutral" } as const
-const ICON = { open: "fa-circle", "in-progress": "fa-hourglass-half", closed: "fa-lock" } as const
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 
 function Attempts({ s, plan }: { s: V2State; plan: Remediation }) {
   const a = attemptInfo(s, plan.studentId, plan.skillId)
@@ -80,9 +81,9 @@ export function RemediationPage({ role, id }: { role: RoleId; id: string }) {
   const hydrated = useV2Hydrated()
   const plan = planFor(s, id)
   const isStudent = role === "student"
-  const wrap = (title: string, body: React.ReactNode) => (isStudent ? <StudentPage title={title}>{body}</StudentPage> : <PageFrame title={title}>{body}</PageFrame>)
+  const wrap = (title: string, body: React.ReactNode) => (isStudent ? <StudentPage title={title}>{body}</StudentPage> : <PageFrame title={title} width="reading">{body}</PageFrame>)
   if (!plan) {
-    if (!hydrated) return wrap("Opening the plan", <p role="status" className="text-sm text-muted-foreground">Opening the plan</p>)
+    if (!hydrated) return wrap("Opening the plan", <LoadingBlocks label="Opening the plan" rows={4} />)
     return wrap("Plan not found", <LocalBanner variant="warning" title="This remediation plan does not exist.">Go back and choose a plan from the list.</LocalBanner>)
   }
   if (isStudent && plan.studentId !== STUDENT_ID) return wrap("Plan not found", <LocalBanner variant="warning" title="This plan belongs to another student.">You can only open your own plan.</LocalBanner>)
@@ -98,7 +99,7 @@ function PlanHead({ s, plan, staff }: { s: V2State; plan: Remediation; staff: bo
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="font-medium text-foreground">{skill?.name}{staff && student ? `, ${student}` : ""}</span>
           <span data-plan-status={plan.status}>
-            <StatusBadge label={PLAN_STATUS_LABEL[plan.status]} tone={TONE[plan.status]} icon={ICON[plan.status]} size="sm" />
+            <StatusPill kind="plan" value={plan.status} label={PLAN_STATUS_LABEL[plan.status]} />
           </span>
         </div>
         <p className="text-muted-foreground">{plan.openedAt ? `Opened ${fmtDay(plan.openedAt)}${plan.evaluationId ? " after an attempt that did not meet the criteria." : "."}` : "Opened by your program."}</p>
@@ -122,19 +123,19 @@ function StudentPlan({ s, plan }: { s: V2State; plan: Remediation }) {
   const skill = s.skills.find((k) => k.id === plan.skillId)
   const done = plan.steps.filter((x) => x.done).length
   return (
-    <StudentPage title={`Remediation plan: ${skill?.name ?? "Skill"}`} subtitle="The steps your program set after an attempt did not meet the criteria.">
+    <StudentPage title={`Remediation plan: ${skill?.name ?? "Skill"}`}>
       <PlanHead s={s} plan={plan} staff={false} />
       <section aria-labelledby="steps-h" className="flex flex-col gap-3">
         <h2 id="steps-h" className="text-base font-semibold">{`Steps (${done} of ${plan.steps.length} done)`}</h2>
         <StepList plan={plan} staff={false} s={s} onToggle={() => {}} />
-        <p className="text-sm text-muted-foreground">Your coordinator confirms each step. You cannot change the plan.</p>
+        <p className="text-sm text-muted-foreground">Your coordinator confirms each step.</p>
       </section>
       <Attempts s={s} plan={plan} />
       <Button asChild variant="default" size="lg" className={`${BTN} w-full`}>
         <Link href="/v2/student/pick-and-rate">Log a new attempt</Link>
       </Button>
       <Button asChild variant="outline" size="lg" className={`${BTN} w-full`}>
-        <Link href="/v2/student/history">Back to your record</Link>
+        <Link href="/v2/student/history">Back to Record</Link>
       </Button>
     </StudentPage>
   )
@@ -147,19 +148,12 @@ function StaffPlan({ s, plan, role }: { s: V2State; plan: Remediation; role: Rol
   const skill = s.skills.find((k) => k.id === plan.skillId)
   const done = plan.steps.filter((x) => x.done).length
   const back = role === "admin" ? "/v2/admin/outcomes" : "/v2/reviewer/outcome-remediation"
+  const mod = useModKeyLabel()
+  const alt = useAltKeyLabel()
+  const actionItems: PageHeaderActionItem[] = plan.status !== "closed" ? [{ id: "close", label: "Close plan", icon: "fa-lock", variant: "default", shortcut: `${mod}${alt}L`, onSelect: () => { setMsg(null); setClosing(true) } }] : []
   return (
-    <PageFrame
-      title={`Remediation plan: ${skill?.name ?? "Skill"}`}
-      subtitle="Steps, status and closing the plan. The student sees the same plan and cannot change it."
-    >
-      <div className="flex max-w-3xl flex-col gap-4" data-plan-page>
-        <div>
-        plan.status !== "closed" ? (
-          <Button type="button" variant="default" size="lg" onClick={() => { setMsg(null); setClosing(true) }}>
-            Close plan
-          </Button>
-        ) : null
-        </div>
+    <PageFrame title={`Remediation plan: ${skill?.name ?? "Skill"}`} width="reading" actionItems={actionItems}>
+      <div className="flex flex-col gap-4" data-plan-page>
         <div role="status" aria-live="polite">
           {msg ? (
             <LocalBanner variant={msg.kind === "success" ? "success" : "error"} title={msg.kind === "success" ? "Saved" : "Not saved"} retry={msg.kind === "error" && msg.retry ? { label: msg.retry.label, onClick: msg.retry.run } : undefined} data-staff-message>
@@ -170,6 +164,7 @@ function StaffPlan({ s, plan, role }: { s: V2State; plan: Remediation; role: Rol
         <PlanHead s={s} plan={plan} staff />
         <section aria-labelledby="steps-h" className="flex flex-col gap-3">
           <h2 id="steps-h" className="text-base font-semibold">{`Steps (${done} of ${plan.steps.length} done)`}</h2>
+          <SegmentedDots label="Plan steps" size={16} items={plan.steps.map((st, n) => ({ id: `${plan.id}-${n}`, label: st.label, state: st.done ? "met" : "none" }))} />
           <StepList plan={plan} staff s={s} onToggle={function toggle(i: number, d: boolean) { const r = run((st, a, at) => setStepDone(st, plan.id, i, d, a, at)); setMsg(r.ok ? { kind: "success", text: d ? "Step marked done." : "Step marked not done." } : { kind: "error", text: r.error, retry: { label: "Save the step again", run: () => toggle(i, d) } }) }} />
         </section>
         <Attempts s={s} plan={plan} />
@@ -197,7 +192,7 @@ function CloseDialog({ open, onClose, complete, onSave }: { open: boolean; onClo
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Close this plan?</DialogTitle>
-          <DialogDescription>{complete ? "Every step is done. A closed plan can no longer change. Closing does not change any evaluation." : "Some steps are not done. Say why you are closing early. The reason stays on the plan."}</DialogDescription>
+          <DialogDescription>{complete ? "Every step is done. A closed plan cannot change." : "Some steps are not done. The reason stays on the plan."}</DialogDescription>
         </DialogHeader>
         <form noValidate className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); setError(onSave(note)) }}>
           <Field>

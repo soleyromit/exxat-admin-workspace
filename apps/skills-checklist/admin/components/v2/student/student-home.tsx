@@ -1,5 +1,6 @@
 "use client"
 
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 import * as React from "react"
 import Link from "next/link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -9,19 +10,35 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Block, StudentPage } from "@/components/v2/student/student-frame"
 import { SkillCard } from "@/components/v2/student/skill-card"
 import { TOUCH, BTN } from "@/components/v2/student/use-student"
-import { useV2State } from "@/lib/v2/react"
+import { contextLine } from "@/lib/v2/page-context"
+import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { courseWork, STUDENT_ID } from "@/lib/v2/student"
+import { mandatoryWaffle } from "@/lib/v2/student-viz"
+import { Waffle } from "@/components/v2/viz"
+import { ChartCard } from "@/components/chart-card"
 import { plansOf, PLAN_STATUS_LABEL } from "@/lib/v2/outcomes"
 
 /** Student role home: what is left in the course, per-skill progress against the published rule, and the best next action. */
 export function StudentHome() {
   const s = useV2State()
+  const hydrated = useV2Hydrated()
   const w = courseWork(s)
   const [open, setOpen] = React.useState(false)
+  if (!hydrated) return <StudentPage title="Your course"><LoadingBlocks label="Opening your course" rows={4} /></StudentPage>
   const sum = w.summary
-  const left = sum.mandatory - sum.achieved
+  const wf = mandatoryWaffle(s)
+  const skillRuns = (sq: { label: string }[]) => {
+    const runs: number[] = []
+    let last = ""
+    for (const q of sq) {
+      const key = q.label.replace(/, evaluation \d+$/, "")
+      if (key === last) runs[runs.length - 1] += 1
+      else { runs.push(1); last = key }
+    }
+    return runs
+  }
   return (
-    <StudentPage title={`What's left in ${s.course.code}`} subtitle={`${s.course.name}, ${s.course.term}. Evidence from any course counts toward your record.`}>
+    <StudentPage title={`What's left in ${s.course.code}`} subtitle={contextLine(s)}>
       <Card data-next-action={w.next.kind}>
         <CardHeader>
           <CardDescription>Do this next</CardDescription>
@@ -54,30 +71,17 @@ export function StudentHome() {
         </Card>
       ))}
 
-      <Card size="sm">
-        <CardContent>
-          <dl className="grid grid-cols-3 gap-3 text-sm" aria-label="Mandatory skills summary">
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-muted-foreground">Mandatory left</dt>
-              <dd className="text-2xl font-semibold tabular-nums" data-summary="left">
-                {left}
-              </dd>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-muted-foreground">Achieved</dt>
-              <dd className="text-2xl font-semibold tabular-nums" data-summary="achieved">
-                {`${sum.achieved} of ${sum.mandatory}`}
-              </dd>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <dt className="text-muted-foreground">Waiting</dt>
-              <dd className="text-2xl font-semibold tabular-nums" data-summary="waiting">
-                {sum.waiting}
-              </dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
+      <div data-mandatory-progress>
+        <ChartCard title="Mandatory skills" description="What is counted, waiting and left." className="h-auto">
+          <Waffle
+            unit="evaluation"
+            size={20}
+            squares={wf.squares}
+            groups={skillRuns(wf.squares)}
+            countLabel={`${wf.line} ${wf.waiting > 0 ? `${wf.waiting} waiting for review. ` : ""}${sum.achieved} of ${sum.mandatory} ${sum.mandatory === 1 ? "skill" : "skills"} achieved.`}
+          />
+        </ChartCard>
+      </div>
 
       {w.notOpen.length > 0 ? (
         <LocalBanner variant="info" title={`${w.notOpen.length} ${w.notOpen.length === 1 ? "skill is" : "skills are"} not open yet`} data-not-open>
@@ -89,7 +93,7 @@ export function StudentHome() {
         </LocalBanner>
       ) : null}
 
-      <Block id="mandatory" title={`Mandatory (${w.mandatory.length})`} description="What NURS 350 expects of every student.">
+      <Block id="mandatory" title={`Mandatory (${w.mandatory.length})`}>
         {w.mandatory.length === 0 ? <p className="text-sm text-muted-foreground">{`${s.course.code} has no mandatory skills open to you yet.`}</p> : null}
         <ul className="flex flex-col gap-3">
           {w.mandatory.map((i) => (
@@ -100,7 +104,7 @@ export function StudentHome() {
         </ul>
       </Block>
 
-      <Block id="optional" title={`Optional (${w.optional.length})`} description="Not required. More evidence still counts toward your record.">
+      <Block id="optional" title={`Optional (${w.optional.length})`}>
         {w.optional.length === 0 ? <p className="text-sm text-muted-foreground" data-optional-empty>{`${s.course.code} has no optional skills for you yet.`}</p> : null}
         <ul className="flex flex-col gap-3">
           {w.optional.map((i) => (

@@ -86,3 +86,12 @@ Risks / unknowns:     (1) Eight steps exceed the DS recommendation of six. (2) T
 Vault notes consulted:Not consulted in this run (no Obsidian vault access). Source docs read: requirements.extracted.txt
                       section 4, S-09-skill-configure.md, V2-00-foundation.md, docs/v2/*.
 ```
+
+## Change 2026-10-25: feedback and approval controls (decisions D13)
+
+Requirements: SC-14, SC-15 (approval half only; student self-evaluation is not configured here). Step 5 "Qualified evaluators"
+gains an "At sign-off" group of two DS ToggleSwitch rows: "Require written feedback" (feedbackRequired) and "Require
+administrator approval" (approvalRequired). Both default off, persist in the draft config, publish writes them to
+SkillConfig, copy-from carries them, and an existing skill reloads them. The review step lists both under "Qualified
+evaluators". No new step (D8). Each row has a visible Label bound to the switch id, so it is keyboard operable and named.
+Acceptance: tests/v2/admin-actions.test.ts "writes feedbackRequired and approvalRequired".

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
+import { StatusPill } from "@/components/v2/status-pill"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Field, FieldDescription, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
@@ -10,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radi
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
 import { CheckGroup, FieldErrors, ListEditor, NumberField, TextField } from "@/components/v2/admin/wizard-fields"
-import { MODEL_BLURB, MODEL_LABEL, MODELS, needsLevels, needsQuestions, SUGGESTED_EVENTS } from "@/lib/v2/config"
+import { MODEL_BLURB, MODEL_LABEL, MODELS, needsLevels, needsQuestions } from "@/lib/v2/config"
 import { credentialOptions, qualifiedEvaluators, simulationShare, strengthHint, trainingOptions, evaluatorPool } from "@/lib/v2/rules"
 import type { EvalModel, EvaluatorRole, Skill, SkillConfig, SkillDraft, V2State } from "@/lib/v2/types"
 
@@ -48,12 +49,14 @@ function Row({ label, hint, checked, onChange, id }: { label: string; hint?: str
   return (
     <div className="flex items-start justify-between gap-4">
       <div className="flex flex-col gap-0.5">
-        <Label htmlFor={id} className="text-sm font-medium">
+        <Label id={`${id}-label`} htmlFor={id} className="text-sm font-medium">
           {label}
         </Label>
         {hint ? <p className="text-sm text-muted-foreground">{hint}</p> : null}
       </div>
-      <ToggleSwitch id={id} checked={checked} onChange={onChange} />
+      <div className="shrink-0">
+        <ToggleSwitch id={id} checked={checked} onChange={onChange} aria-labelledby={`${id}-label`} />
+      </div>
     </div>
   )
 }
@@ -100,9 +103,6 @@ export function StepModel({ ctx }: { ctx: WizardCtx }) {
 
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-medium text-foreground">How is this skill evaluated?</legend>
-        {skill.model === null && draft.model === "binary" && !state.drafts[skill.id] ? (
-          <p className="text-sm text-muted-foreground">Overall outcome is selected as a starting point. Change it if this skill needs another model.</p>
-        ) : null}
         <RadioGroup id="wiz-model" tabIndex={-1} aria-label="Evaluation model" value={model ?? ""} onValueChange={(v) => v && setModel(v as EvalModel)} className="grid gap-3 sm:grid-cols-2">
           {MODELS.map((m) => (
             <label
@@ -365,6 +365,11 @@ export function StepEvaluators({ ctx }: { ctx: WizardCtx }) {
         <CheckGroup id="wiz-credentials" legend="Credential held" hint="An evaluator needs at least one of the ticked credentials. Tick none to accept any credential." options={credentialOptions(state).map((v) => ({ value: v, label: v }))} value={q.credentials} onChange={(v) => setQ({ credentials: v })} />
         <NumberField id="wiz-minyears" label="Years of practice, at least" hint="Whole number from 0 to 50." min={0} max={50} value={q.minYears} errors={err("wiz-minyears")} onChange={(v) => setQ({ minYears: v as number })} />
         <CheckGroup id="wiz-training" legend="Training on record" hint="An evaluator needs every ticked training." options={trainingOptions(state).map((v) => ({ value: v, label: v }))} value={q.training} onChange={(v) => setQ({ training: v })} />
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-sm font-medium text-foreground">At sign-off</legend>
+          <Row id="wiz-feedback-required" label="Require written feedback" hint="The evaluator cannot submit without a narrative comment. Turn off to make feedback optional." checked={c.feedbackRequired ?? false} onChange={(v) => patch((cfg) => ({ ...cfg, feedbackRequired: v }))} />
+          <Row id="wiz-approval-required" label="Require administrator approval" hint="A completed evaluation waits for an administrator to approve it before it counts toward the student's progress." checked={c.approvalRequired ?? false} onChange={(v) => patch((cfg) => ({ ...cfg, approvalRequired: v }))} />
+        </fieldset>
       </div>
       <aside aria-label="Qualified evaluators" className="lg:sticky lg:top-4 lg:self-start">
         <Hint title="Who qualifies now" badge={`${ok.length} of ${pool.length}`} live>
@@ -376,7 +381,7 @@ export function StepEvaluators({ ctx }: { ctx: WizardCtx }) {
             {pool.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-2">
                 <span>{p.name}</span>
-                <Badge variant={okIds.has(p.id) ? "secondary" : "outline"}>{okIds.has(p.id) ? "Qualifies" : "Does not qualify"}</Badge>
+                <StatusPill kind="eligibility" value={okIds.has(p.id) ? "qualifies" : "does-not-qualify"} />
               </li>
             ))}
           </ul>
@@ -402,34 +407,6 @@ export function StepFailure({ ctx }: { ctx: WizardCtx }) {
       ) : (
         <p className="text-sm text-muted-foreground">A retake score cap applies to scored skills only, so it is not shown for this model.</p>
       )}
-      <Row id="wiz-remediation" label="Create a remediation plan automatically after a fail" hint="The coordinator then sees the plan and the student sees the steps." checked={f.autoRemediation} onChange={(v) => setF({ autoRemediation: v })} />
-    </div>
-  )
-}
-
-/* ---------------------------------------------------------------- step 7 */
-
-export function StepRevalidation({ ctx }: { ctx: WizardCtx }) {
-  const { draft, patch, err } = ctx
-  const r = draft.config.revalidation
-  const setR = (x: Partial<SkillConfig["revalidation"]>) => patch((c) => ({ ...c, revalidation: { ...c.revalidation, ...x } }))
-  const suggestions = SUGGESTED_EVENTS.filter((e) => !r.onEvents.includes(e))
-  return (
-    <div className="flex max-w-2xl flex-col gap-5">
-      <p className="text-sm text-muted-foreground">A student who has achieved the skill may need to show it again. Re-validation here starts from events, not from the calendar.</p>
-      <ListEditor idPrefix="wiz-event" addId="wiz-add-event" legend="Events that require re-validation" noun="Event" items={r.onEvents} errorsFor={err} addLabel="Add event" onChange={(items) => setR({ onEvents: items })} />
-      {suggestions.length ? (
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Suggested events">
-          <span className="text-sm text-muted-foreground">Suggested:</span>
-          {suggestions.map((e) => (
-            <Button key={e} type="button" variant="outline" size="sm" onClick={() => setR({ onEvents: [...r.onEvents, e] })}>
-              {`Add ${e.toLowerCase()}`}
-            </Button>
-          ))}
-        </div>
-      ) : null}
-      <Row id="wiz-expiry" label="Also expire evidence on a calendar date" hint="Off by default. Evidence then lasts until one of the events above happens." checked={r.calendarExpiry.enabled} onChange={(v) => setR({ calendarExpiry: { ...r.calendarExpiry, enabled: v } })} />
-      {r.calendarExpiry.enabled ? <NumberField id="wiz-months" label="Evidence expires after, months" min={1} max={120} value={r.calendarExpiry.months} errors={err("wiz-months")} onChange={(v) => setR({ calendarExpiry: { ...r.calendarExpiry, months: v as number } })} /> : null}
     </div>
   )
 }

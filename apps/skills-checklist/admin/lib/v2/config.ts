@@ -8,7 +8,7 @@ export const MODEL_LABEL: Record<EvalModel, string> = {
 }
 
 export const MODEL_BLURB: Record<EvalModel, string> = {
-  binary: "One outcome for the whole skill, using two labels you name. This is the simplest start.",
+  binary: "One outcome for the whole skill, using two labels you name.",
   question: "A Yes or No against each question you write.",
   scored: "A score for each question on a scale you set.",
   demonstration: "A level of supervision for each demonstration, on levels you name and order.",
@@ -19,13 +19,10 @@ export const MODELS: EvalModel[] = ["binary", "question", "scored", "demonstrati
 /** Suggested level names for a brand-new list. The program renames, reorders and removes them freely. */
 export const SAMPLE_LEVELS = ["Needs coaching", "Works with prompts", "Works alone"]
 
-/** Events a program commonly re-validates on. The program can add its own. */
-export const SUGGESTED_EVENTS = ["After a leave of absence", "After an extended time away from practice", "After a policy or equipment change"]
-
 export const SAMPLE_QUESTIONS = ["Performed hand hygiene before and after", "Kept the field clean throughout", "Explained each step to the patient"]
 
-/** A fresh configuration. Binary is the pre-selected starting point only when a skill has no model yet. */
-export function defaultConfig(_model: EvalModel | null = "binary"): SkillConfig {
+/** A fresh configuration. It implies no evaluation model: the admin always chooses one explicitly (SC-02). The argument is ignored. */
+export function defaultConfig(_model?: EvalModel | null): SkillConfig {
   return {
     outcomeLabels: ["Met", "Not met"],
     questions: [],
@@ -36,8 +33,9 @@ export function defaultConfig(_model: EvalModel | null = "binary"): SkillConfig 
     prerequisites: { skillIds: [], labCheckoff: false, practiceTrials: 0 },
     evaluatorRoles: ["preceptor", "faculty"],
     qualification: { credentials: [], minYears: 0, training: [] },
-    failure: { attemptLimit: null, minDaysBetween: 0, retakeScoreCap: null, autoRemediation: false },
-    revalidation: { onEvents: [], calendarExpiry: { enabled: false, months: 24 } },
+    failure: { attemptLimit: null, minDaysBetween: 0, retakeScoreCap: null },
+    feedbackRequired: false,
+    approvalRequired: false,
   }
 }
 

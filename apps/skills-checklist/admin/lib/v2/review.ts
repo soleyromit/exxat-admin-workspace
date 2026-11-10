@@ -38,8 +38,6 @@ export function reviewSections(model: EvalModel | null, c: SkillConfig, s: V2Sta
   const fail: string[] = [f.attemptLimit === null ? "No limit on attempts." : `At most ${f.attemptLimit} ${f.attemptLimit === 1 ? "attempt" : "attempts"}.`]
   fail.push(f.minDaysBetween > 0 ? `At least ${f.minDaysBetween} ${f.minDaysBetween === 1 ? "day" : "days"} between attempts.` : "Attempts can follow one another straight away.")
   if (model === "scored") fail.push(f.retakeScoreCap === null ? "A retake can earn any score." : `A retake can earn at most ${f.retakeScoreCap} percent.`)
-  fail.push(f.autoRemediation ? "A remediation plan is created automatically after a fail." : "No remediation plan is created automatically.")
-  const r = c.revalidation
   return [
     {
       step: 1,
@@ -61,16 +59,10 @@ export function reviewSections(model: EvalModel | null, c: SkillConfig, s: V2Sta
         `May sign off: ${list(c.evaluatorRoles.map((x) => ROLE_NAME[x]))}.`,
         `Required: ${c.qualification.credentials.length ? `credential ${list(c.qualification.credentials)}` : "any credential"}, ${c.qualification.minYears > 0 ? `${c.qualification.minYears}+ years of practice` : "no minimum years"}${c.qualification.training.length ? `, trained in ${list(c.qualification.training)}` : ""}.`,
         `${people.length} on record qualify: ${list(people.map((p) => p.name))}. Students can only pick from these.`,
+        c.feedbackRequired ? "Written feedback is required to submit an evaluation." : "Written feedback is optional.",
+        c.approvalRequired ? "An administrator must approve an evaluation before it counts." : "An evaluation counts as soon as it is submitted.",
       ],
     },
     { step: 6, title: "If a student does not pass", lines: fail },
-    {
-      step: 7,
-      title: "Re-validation",
-      lines: [
-        r.onEvents.length ? `A student must re-validate after: ${list(r.onEvents.filter((e) => e.trim()))}.` : "No event triggers re-validation.",
-        r.calendarExpiry.enabled ? `Evidence also expires after ${r.calendarExpiry.months} months.` : "Evidence does not expire on a calendar date.",
-      ],
-    },
   ]
 }

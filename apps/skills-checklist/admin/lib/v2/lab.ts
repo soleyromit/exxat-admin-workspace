@@ -31,7 +31,7 @@ export const labBatchesOf = (s: V2State): LabBatch[] => s.labBatches ?? []
 export function labBlockReason(p: Person | undefined): string | null {
   if (!p) return "That person is not on record."
   if (isLabInstructor(p)) return null
-  return `Lab sessions are recorded by a lab instructor. ${p.name} is ${p.kind === "preceptor" ? "a preceptor" : p.kind === "student" ? "a student" : "not a lab instructor"}, and signs off clinical practice. Open this page as R. Whitmore to record a session.`
+  return `Lab sessions are recorded by a lab instructor. ${p.name} is ${p.kind === "preceptor" ? "a preceptor" : p.kind === "student" ? "a student" : "not a lab instructor"}, and signs off clinical practice.`
 }
 
 /** Why a person is not qualified to sign off this skill in the lab, or null. Role is not checked: a lab instructor signs lab evidence. */

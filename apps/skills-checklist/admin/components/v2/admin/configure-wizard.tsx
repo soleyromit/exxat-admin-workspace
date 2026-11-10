@@ -3,17 +3,19 @@
 import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { Wizard, WizardContent, WizardNav, WizardPanel, WizardStepHeading } from "@exxatdesignux/ui/components/ui/wizard"
 import { PageFrame } from "@/components/skills/page-header"
+import { LoadingBlocks } from "@/components/v2/shared-loading"
+import { StatusPill } from "@/components/v2/status-pill"
+import { skillPillValue } from "@/lib/v2/status-pill"
 import { ADMIN_ID, LiveStatus, useAdminRun } from "@/components/v2/admin/use-admin"
-import { StepAchievement, StepEvaluators, StepFailure, StepModel, StepPrerequisites, StepRevalidation, StepSimulation, type WizardCtx } from "@/components/v2/admin/wizard-steps"
+import { StepAchievement, StepEvaluators, StepFailure, StepModel, StepPrerequisites, StepSimulation, type WizardCtx } from "@/components/v2/admin/wizard-steps"
 import { chooseModel, copyConfigFrom, draftFor, publishSkill, saveStep, setDraft } from "@/lib/v2/admin-actions"
-import { useV2State, useV2Store } from "@/lib/v2/react"
+import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
 import { reviewSections } from "@/lib/v2/review"
 import { validateDraft, WIZARD_STEPS, type RuleIssue } from "@/lib/v2/rules"
 import { IDS } from "@/lib/v2/seed"
@@ -22,18 +24,20 @@ import type { SkillConfig } from "@/lib/v2/types"
 const LAST = WIZARD_STEPS.length
 
 /**
- * Scenario steps 2 and 3. The wizard edits a draft that lives in the shared store, so it survives navigation and reload.
+ * Walkthrough step 2 and 3. The wizard edits a draft that lives in the shared store, so it survives navigation and reload.
  * `startStep` opens the same wizard on the review step (route validate-publish).
  */
 export function ConfigureWizardPage({ startStep }: { startStep?: number }) {
   const params = useSearchParams()
   const skillId = params?.get("skill") ?? IDS.ivCath
   const state = useV2State()
+  const hydrated = useV2Hydrated()
   const store = useV2Store()
   const run = useAdminRun()
   const skill = state.skills.find((k) => k.id === skillId)
   const draft = React.useMemo(() => draftFor(state, skillId), [state, skillId])
-  const step = Math.min(Math.max(draft.step, 1), LAST)
+  // Without a model nothing after step 1 can be shown or reached (SC-02: the admin chooses explicitly).
+  const step = draft.model ? Math.min(Math.max(draft.step, 1), LAST) : 1
 
   const [seen, setSeen] = React.useState<Set<number>>(() => new Set())
   const [banner, setBanner] = React.useState<{ variant: "success" | "error" | "info"; text: string; published?: boolean } | null>(null)
@@ -67,6 +71,8 @@ export function ConfigureWizardPage({ startStep }: { startStep?: number }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusReq])
 
+  if (!skill && !hydrated) return <PageFrame title="Configure skill"><LoadingBlocks label="Opening the skill" rows={4} /></PageFrame>
+
   if (!skill) {
     return (
       <PageFrame title="Skill not found" subtitle="The skill you opened is no longer in the library.">
@@ -82,13 +88,22 @@ export function ConfigureWizardPage({ startStep }: { startStep?: number }) {
     )
   }
 
+  const blockedByModel = (n: number) => {
+    if (draft.model || n <= 1) return false
+    setSeen((p) => new Set(p).add(1))
+    setFocusReq((p) => ({ field: "wiz-model", n: (p?.n ?? 0) + 1 }))
+    setStatus("Choose an evaluation model before moving on.")
+    return true
+  }
   const goTo = (n: number, field: string | null = null) => {
+    if (blockedByModel(n)) return
     setSeen((p) => new Set(p).add(step))
     store.update((s) => setDraft(s, skillId, { ...draftFor(s, skillId), step: n }))
     setFocusReq((p) => ({ field, n: (p?.n ?? 0) + 1 }))
     setStatus(`Step ${n} of ${LAST}: ${WIZARD_STEPS[n - 1].label}`)
   }
   const next = () => {
+    if (blockedByModel(step + 1)) return
     setSeen((p) => new Set(p).add(step))
     store.update((s) => saveStep(s, skillId, step + 1, ADMIN_ID, new Date().toISOString()))
     setFocusReq((p) => ({ field: null, n: (p?.n ?? 0) + 1 }))
@@ -131,17 +146,15 @@ export function ConfigureWizardPage({ startStep }: { startStep?: number }) {
     4: <StepPrerequisites ctx={ctx} />,
     5: <StepEvaluators ctx={ctx} />,
     6: <StepFailure ctx={ctx} />,
-    7: <StepRevalidation ctx={ctx} />,
   }
   const sections = reviewSections(draft.model, draft.config, state)
   const nextLabel = step === LAST - 1 ? "Review and publish" : `Next: ${WIZARD_STEPS[step]?.label ?? ""}`
 
   return (
-    <PageFrame
-      title={`Configure ${skill.name}`}
-      subtitle={`${state.program.school} ${state.program.name}. Set what this skill asks of students and evaluators, then publish it.`}
-      actions={<Badge variant={skill.published ? "secondary" : "outline"}>{skill.published ? "In use" : skill.configured ? "Configured, not in use" : "Not configured"}</Badge>}
-    >
+    <PageFrame title={`Configure ${skill.name}`}>
+      <div>
+        <StatusPill kind="skill" value={skillPillValue(skill)} />
+      </div>
       <LiveStatus message={status} />
       {banner ? (
         <LocalBanner

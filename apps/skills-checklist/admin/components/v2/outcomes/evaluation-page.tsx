@@ -7,11 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@exxa
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
+import { useAltKeyLabel, useModKeyLabel } from "@exxatdesignux/ui/hooks/use-mod-key-label"
+import { StatusPill } from "@/components/v2/status-pill"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { PageFrame, PageSection } from "@/components/skills/page-header"
+import type { PageHeaderActionItem } from "@exxatdesignux/ui/components/ui/page-header"
 import { ChoiceGroup } from "@/components/v2/preceptor/choice-group"
-import { OUTCOME_TONE, VersionTimeline, fmtDay } from "@/components/v2/outcomes/version-timeline"
+import { VersionTimeline, fmtDay } from "@/components/v2/outcomes/version-timeline"
 import { useStaff } from "@/components/v2/outcomes/staff"
 import { StudentPage } from "@/components/v2/student/student-frame"
 import { BTN } from "@/components/v2/student/use-student"
@@ -20,6 +22,7 @@ import { canReopen, concernsFor, confirmVersion, evaluationById, openPlanByHand,
 import { STUDENT_ID } from "@/lib/v2/student"
 import { verifiedAt } from "@/lib/v2/verification"
 import type { Evaluation, Outcome, RoleId, V2State } from "@/lib/v2/types"
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 
 const STATUS_TEXT: Record<Evaluation["status"], string> = {
   counted: "Counts toward the record",
@@ -37,7 +40,6 @@ const OUT_OPTIONS: Array<{ value: Outcome; label: string }> = [
 function Facts({ s, e, staff }: { s: V2State; e: Evaluation; staff: boolean }) {
   const name = (id: string) => s.people.find((p) => p.id === id)?.name ?? "Unknown person"
   const skill = s.skills.find((k) => k.id === e.skillId)
-  const t = OUTCOME_TONE[e.outcome]
   return (
     <Card size="sm">
       <CardContent>
@@ -70,7 +72,7 @@ function Facts({ s, e, staff }: { s: V2State; e: Evaluation; staff: boolean }) {
           ) : null}
           <dt className="text-muted-foreground">Outcome</dt>
           <dd data-current-outcome>
-            <StatusBadge label={e.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[e.outcome]} tone={t.tone} icon={t.icon} size="sm" />
+            <StatusPill kind="outcome" value={e.outcome} label={e.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[e.outcome]} />
           </dd>
           <dt className="text-muted-foreground">Status</dt>
           <dd data-current-status>{STATUS_TEXT[e.status]}</dd>
@@ -86,7 +88,7 @@ export function EvaluationPage({ role, id }: { role: RoleId; id: string }) {
   const hydrated = useV2Hydrated()
   const e = evaluationById(s, id)
   const isStudent = role === "student"
-  if (!hydrated && !e) return isStudent ? <StudentPage title="Opening the evaluation"><p role="status" className="text-sm text-muted-foreground">Opening the evaluation</p></StudentPage> : <PageFrame title="Opening the evaluation" />
+  if (!hydrated && !e) return isStudent ? <StudentPage title="Opening the evaluation"><LoadingBlocks label="Opening the evaluation" rows={4} /></StudentPage> : <PageFrame title="Opening the evaluation"><LoadingBlocks label="Opening the evaluation" rows={4} /></PageFrame>
   if (!e) return <Missing role={role} text="This evaluation does not exist." />
   if (isStudent && e.studentId !== STUDENT_ID) return <Missing role={role} text="This evaluation belongs to another student." />
   return isStudent ? <StudentView s={s} e={e} /> : <StaffView s={s} e={e} role={role} />
@@ -97,7 +99,7 @@ function Missing({ role, text }: { role: RoleId; text: string }) {
   const body = (
     <LocalBanner variant="warning" title={text}>
       <Button asChild variant="outline" size="lg" className={`${BTN} mt-2`}>
-        <Link href={back}>{role === "student" ? "Back to your record" : "Back to outcomes"}</Link>
+        <Link href={back}>{role === "student" ? "Back to Record" : "Back to outcomes"}</Link>
       </Button>
     </LocalBanner>
   )
@@ -108,7 +110,7 @@ function StudentView({ s, e }: { s: V2State; e: Evaluation }) {
   const skill = s.skills.find((k) => k.id === e.skillId)
   const plan = planOfEvaluation(s, e.id) ?? s.remediations.find((r) => r.studentId === e.studentId && r.skillId === e.skillId && r.status !== "closed")
   return (
-    <StudentPage title={skill?.name ?? "Evaluation"} subtitle="The completed evaluation and every version of it.">
+    <StudentPage title={skill?.name ?? "Evaluation"}>
       <Facts s={s} e={e} staff={false} />
       {e.status === "reopened" ? <LocalBanner variant="info" title="Your program reopened this evaluation">Version {e.currentVersion} is waiting to be confirmed. Until then it does not count. Earlier versions are kept as they were.</LocalBanner> : null}
       {plan ? (
@@ -125,9 +127,9 @@ function StudentView({ s, e }: { s: V2State; e: Evaluation }) {
         <h2 id="ver-h" className="text-base font-semibold">{`Versions (${e.versions.length})`}</h2>
         <VersionTimeline s={s} e={e} />
       </section>
-      <p className="text-xs text-muted-foreground">A completed evaluation is never edited. A correction adds a version and keeps the earlier ones.</p>
+      <p className="text-xs text-muted-foreground">A correction adds a version. Earlier ones stay.</p>
       <Button asChild variant="outline" size="lg" className={BTN}>
-        <Link href="/v2/student/history">Back to your record</Link>
+        <Link href="/v2/student/history">Back to Record</Link>
       </Button>
     </StudentPage>
   )
@@ -144,24 +146,20 @@ function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) 
   const reopened = e.status === "reopened"
   const verified = verifiedAt(s, e)
   const back = role === "admin" ? "/v2/admin/outcomes" : "/v2/reviewer/outcome-remediation"
+  const mod = useModKeyLabel()
+  const alt = useAltKeyLabel()
+  const confirmIt = () => {
+    const r = run((st, a, at) => confirmVersion(st, e.id, a, at))
+    setMsg(r.ok ? { kind: "success", text: `Version ${e.currentVersion} confirmed as final.${r.planOpened ? " A remediation plan was opened." : ""}` } : { kind: "error", text: r.error, retry: { label: "Confirm the version again", run: confirmIt } })
+  }
+  // One filled primary only: Confirm while the evaluation waits for it, otherwise Reopen.
+  const actionItems: PageHeaderActionItem[] = [
+    ...(reopened ? [{ id: "confirm", label: `Confirm version ${e.currentVersion} as final`, icon: "fa-circle-check", variant: "default" as const, shortcut: `${mod}${alt}F`, onSelect: confirmIt }] : []),
+    ...(canReopen(e) ? [{ id: "reopen", label: "Reopen to edit", icon: "fa-pen", variant: reopened ? ("outline" as const) : ("default" as const), ...(reopened ? {} : { shortcut: `${mod}${alt}E` }), onSelect: () => { setMsg(null); setOpen(true) } }] : []),
+  ]
   return (
-    <PageFrame
-      title={`${skill?.name ?? "Evaluation"}, ${student}`}
-      subtitle="Every version, who made it and why. An earlier version is never changed."
-    >
-      <div className="flex max-w-3xl flex-col gap-4" data-evaluation-page>
-        <div className="flex flex-wrap gap-2">
-          {reopened ? (
-            <Button type="button" variant="default" size="lg" onClick={function confirmIt() { const r = run((st, a, at) => confirmVersion(st, e.id, a, at)); setMsg(r.ok ? { kind: "success", text: `Version ${e.currentVersion} confirmed as final.${r.planOpened ? " A remediation plan was opened." : ""}` } : { kind: "error", text: r.error, retry: { label: "Confirm the version again", run: confirmIt } }) }}>
-              {`Confirm version ${e.currentVersion} as final`}
-            </Button>
-          ) : null}
-          {canReopen(e) ? (
-            <Button type="button" variant={reopened ? "outline" : "default"} size="lg" onClick={() => { setMsg(null); setOpen(true) }}>
-              Reopen to edit
-            </Button>
-          ) : null}
-        </div>
+    <PageFrame title={`${skill?.name ?? "Evaluation"}, ${student}`} width="reading" actionItems={actionItems}>
+      <div className="flex flex-col gap-4" data-evaluation-page>
         <div role="status" aria-live="polite">
           {msg ? (
             <LocalBanner variant={msg.kind === "success" ? "success" : "error"} title={msg.kind === "success" ? "Done" : "Not saved"} retry={msg.kind === "error" && msg.retry ? { label: msg.retry.label, onClick: msg.retry.run } : undefined} data-staff-message>
@@ -172,17 +170,17 @@ function StaffView({ s, e, role }: { s: V2State; e: Evaluation; role: RoleId }) 
         <Facts s={s} e={e} staff />
         {verified ? (
           <LocalBanner variant="info" title={`Part of a verified record (version ${verified.version})`} data-verified-banner>
-            {`${student}'s record was verified by ${s.people.find((p) => p.id === verified.byId)?.name ?? "the program director"} on ${fmtDay(verified.at)}. Reopening adds a version here and leaves that verification as it is. The record then reads Changed since verified until the director verifies again.`}
+            {`Verified by ${s.people.find((p) => p.id === verified.byId)?.name ?? "the program director"} on ${fmtDay(verified.at)}. Reopening marks the record Changed since verified until it is verified again.`}
           </LocalBanner>
         ) : null}
         {reopened ? (
           <LocalBanner variant="info" title={`Version ${e.currentVersion} is waiting to be confirmed`}>
-            This evaluation does not count while it is reopened. Confirm the newest version to make it count again.
+            Does not count until you confirm it.
           </LocalBanner>
         ) : null}
 
         {concerns.length > 0 ? (
-          <PageSection title="Confidential concern" id="concern" description="Program staff only. The student and the preceptor roles never see this.">
+          <PageSection title="Confidential concern (staff only)" id="concern">
             <ul className="flex flex-col gap-2">
               {concerns.map((c) => (
                 <li key={c.id}>
@@ -252,7 +250,7 @@ function ReopenDialog({ open, onClose, s, e, onSave }: { open: boolean; onClose:
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Reopen this evaluation?</DialogTitle>
-          <DialogDescription>{`This adds version ${next}. Version ${e.currentVersion} and every earlier version stay as they are. The evaluation does not count until you confirm the new version.`}</DialogDescription>
+          <DialogDescription>{`Adds version ${next}. Earlier versions stay as they are. It does not count until you confirm.`}</DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-4" noValidate onSubmit={(ev) => { ev.preventDefault(); setError(onSave({ outcome, feedback: hasDetail || feedback.trim() ? feedback : "", reason })) }}>
           <fieldset className="flex flex-col gap-1">

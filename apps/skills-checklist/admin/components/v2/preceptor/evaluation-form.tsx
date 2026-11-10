@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { LoadingBlocks } from "@/components/v2/shared-loading"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
@@ -11,17 +11,17 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesig
 import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
+import { StatusPill } from "@/components/v2/status-pill"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { PageFrame, PageSection } from "@/components/skills/page-header"
 import { ChoiceGroup, TOUCH } from "@/components/v2/preceptor/choice-group"
 import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
 import { OUTCOME_WORD } from "@/lib/v2/outcomes"
 import {
-  attestationText, blankPass, criteriaNote, evaluatorChoicesForDemo, fieldIds, FEEDBACK_MAX, levelsLabel, outcomeChoices, requestAccess, SCORE_MAX, showsLevels, studentContext, submitEvaluation, validatePass,
+  attestationText, blankPass, criteriaNote, fieldIds, FEEDBACK_MAX, levelsLabel, outcomeChoices, requestAccess, SCORE_MAX, showsLevels, studentContext, submitEvaluation, validatePass,
   waitingFor, type Access, type FieldIssue, type PassInput, type PassResult, type SkillResponse,
 } from "@/lib/v2/preceptor"
+import { oldestFirst, sentAgo } from "@/lib/v2/queue-viz"
 import { IDS } from "@/lib/v2/seed"
 import type { Outcome, Skill, Submission, V2State } from "@/lib/v2/types"
 
@@ -29,13 +29,7 @@ export const BTN = `${TOUCH} py-2`
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })
 const first = (name: string) => name.split(/\s+/)[0] ?? name
 
-const OUTCOME_TONE: Record<Outcome, { tone: "success" | "warning" | "neutral"; icon: string }> = {
-  met: { tone: "success", icon: "fa-circle-check" },
-  "not-met": { tone: "warning", icon: "fa-circle-minus" },
-  "not-yet": { tone: "neutral", icon: "fa-comment" },
-}
-
-/** Scenario step 8. The page a preceptor reaches from a QR code, a link or a handed-over phone. No account, no sign-in. */
+/** Walkthrough step 8. The page a preceptor reaches from a QR code, a link or a handed-over phone. No account, no sign-in. */
 export function PreceptorEvaluation() {
   const params = useSearchParams()
   const s = useV2State()
@@ -48,24 +42,23 @@ export function PreceptorEvaluation() {
   const [done, setDone] = React.useState<{ requestId: string; result: PassResult } | null>(null)
 
   if (!hydrated && requestId) return <Frame title="Opening the request"><LoadingBlocks label="Opening the request" /></Frame>
-  if (!requestId) return <Frame title="Requests waiting for you" subtitle="Each one opens from the link or QR code the student sends. You do not need an account."><Waiting personId={person?.id ?? IDS.delgado} s={s} asId={asId} /></Frame>
+  if (!requestId) return <Frame title="Requests" subtitle="No account needed."><Waiting personId={person?.id ?? IDS.delgado} s={s} asId={asId} /></Frame>
 
   const access = requestAccess(s, requestId, asId)
   const student = access.submission ? s.people.find((p) => p.id === access.submission?.studentId)?.name ?? "the student" : ""
   return (
-    <Frame title={access.kind === "form" ? `Evaluate ${student}` : access.kind === "completed" ? "Evaluation completed" : "This request cannot be completed here"} subtitle={access.kind === "form" ? `You opened this link as ${access.person?.name}. No account is needed.` : undefined}>
+    <Frame title={access.kind === "form" ? `Evaluate ${student}` : access.kind === "completed" ? "Evaluation completed" : "This request cannot be completed here"} subtitle={access.kind === "form" ? `Opened as ${access.person?.name}` : undefined}>
       {access.kind === "form" && access.submission && access.person ? <FormBody key={`${access.submission.id}-${access.person.id}`} s={s} x={access.submission} evaluatorId={access.person.id} handover={handover} onSubmitted={(result) => setDone({ requestId: access.submission?.id ?? "", result })} /> : null}
       {access.kind === "completed" && access.submission ? <Receipt s={s} x={access.submission} result={done && done.requestId === access.submission.id ? done.result : null} handover={handover} /> : null}
       {access.kind !== "form" && access.kind !== "completed" ? <Blocked access={access} /> : null}
-      <DemoControls s={s} requestId={requestId} asId={asId ?? access.person?.id ?? null} />
     </Frame>
   )
 }
 
 function Frame({ title, subtitle, children }: { title: string; subtitle?: string; children?: React.ReactNode }) {
   return (
-    <PageFrame title={title} subtitle={subtitle}>
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-4" data-preceptor-page>
+    <PageFrame title={title} subtitle={subtitle} width="reading">
+      <div className="flex w-full flex-col gap-4" data-preceptor-page>
         {children}
       </div>
     </PageFrame>
@@ -73,15 +66,15 @@ function Frame({ title, subtitle, children }: { title: string; subtitle?: string
 }
 
 function Waiting({ s, personId, asId }: { s: V2State; personId: string; asId: string | null }) {
-  const list = waitingFor(s, personId)
+  const list = oldestFirst(waitingFor(s, personId))
   const name = s.people.find((p) => p.id === personId)?.name
   return (
     <>
       {list.length === 0 ? (
         <Card size="sm">
           <CardContent className="text-sm">
-            <p className="font-medium text-foreground">{`Nothing is waiting for ${name ?? "you"}`}</p>
-            <p className="text-muted-foreground">A request appears here when a student sends one that names you. Students send it by QR code, link or by handing you their phone.</p>
+            <p className="font-medium text-foreground">{`Nothing waiting for ${name ?? "you"}`}</p>
+            <p className="text-muted-foreground">Requests appear when a student names you.</p>
           </CardContent>
         </Card>
       ) : (
@@ -93,7 +86,7 @@ function Waiting({ s, personId, asId }: { s: V2State; personId: string; asId: st
                   <CardTitle asChild className="text-base">
                     <h2 id={`wait-${x.id}`}>{`${s.people.find((p) => p.id === x.studentId)?.name ?? "A student"}, ${x.skillIds.length} ${x.skillIds.length === 1 ? "skill" : "skills"}`}</h2>
                   </CardTitle>
-                  <CardDescription>{x.skillIds.map((id) => s.skills.find((k) => k.id === id)?.name).join(", ")}</CardDescription>
+                  <CardDescription>{`${x.skillIds.map((id) => s.skills.find((k) => k.id === id)?.name).join(", ")}. ${sentAgo(x.createdAt)}`}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Button asChild variant="default" size="lg" className={BTN}>
@@ -105,7 +98,6 @@ function Waiting({ s, personId, asId }: { s: V2State; personId: string; asId: st
           ))}
         </ul>
       )}
-      <DemoControls s={s} requestId={null} asId={asId ?? personId} />
     </>
   )
 }
@@ -122,37 +114,6 @@ function Blocked({ access }: { access: Access }) {
       ) : null}
       <p className="mt-1">{access.fix}</p>
     </LocalBanner>
-  )
-}
-
-/** A control for the presenter only: open the same link as another person on record to see the qualified-evaluator block. */
-function DemoControls({ s, requestId, asId }: { s: V2State; requestId: string | null; asId: string | null }) {
-  const router = useRouter()
-  const people = evaluatorChoicesForDemo(s)
-  return (
-    <Card size="sm" data-demo-controls>
-      <CardHeader>
-        <CardTitle asChild className="text-base">
-          <h2>Demo controls (not part of the product)</h2>
-        </CardTitle>
-        <CardDescription>A real link identifies the evaluator it was sent to. Here you can open it as someone else on record to see what they would get.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Field>
-          <FieldLabel htmlFor="open-as">Open this link as</FieldLabel>
-          <Select value={asId ?? IDS.delgado} onValueChange={(v) => router.replace(requestId ? `/v2/preceptor/preceptor-evaluation?request=${requestId}&as=${v}` : `/v2/preceptor/preceptor-evaluation?as=${v}`)}>
-            <SelectTrigger id="open-as" className={TOUCH}>
-              <SelectValue placeholder="Choose a person" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              {people.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{`${p.name}, ${p.title}`}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      </CardContent>
-    </Card>
   )
 }
 
@@ -217,10 +178,6 @@ function FormBody({ s, x, evaluatorId, handover, onSubmitted }: { s: V2State; x:
 
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-4" aria-label={`Evaluation of ${student}`} data-eval-form>
-      <LocalBanner variant="info" title="What you are asked to do">
-        {`Record an outcome for each of the ${skills.length === 1 ? "skill" : `${skills.length} skills`} ${first(student)} asked about. The program set the questions and levels. You cannot change them.`}
-      </LocalBanner>
-
       {error ? (
         <div ref={summaryRef} tabIndex={-1} role="alert" className="outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-lg" data-error-summary>
           <LocalBanner variant="error" title={error}>
@@ -258,7 +215,7 @@ function FormBody({ s, x, evaluatorId, handover, onSubmitted }: { s: V2State; x:
               <Checkbox id="concern-flag" checked={input.concern.raised} className="mt-0.5" aria-describedby="concern-help" onCheckedChange={(v) => { setIssues((c) => c.filter((i) => i.field !== fieldIds.concern)); setInput({ ...input, concern: { ...input.concern, raised: v === true } }) }} />
               <Label htmlFor="concern-flag" className="flex flex-1 flex-col items-start gap-0.5 text-start font-normal">
                 <span className="text-sm font-medium text-foreground">Flag a confidential concern</span>
-                <span id="concern-help" className="text-xs text-muted-foreground">{`Only program staff see this. ${first(student)} never does, and it does not change any outcome above.`}</span>
+                <span id="concern-help" className="text-xs text-muted-foreground">Staff only. The student never sees it.</span>
               </Label>
             </div>
             {input.concern.raised ? (
@@ -373,7 +330,6 @@ export function SkillCard({ s, x, skill, r, patch, issueFor, issuesFor }: { s: V
         {showsLevels(skill) ? (
           <fieldset className="flex flex-col gap-1">
             <legend className="text-sm font-medium text-foreground">{levelsLabel(skill)}</legend>
-            <p className="text-xs text-muted-foreground">Lowest to highest, as the program names them.</p>
             <ChoiceGroup name={`${levelsLabel(skill)} for ${skill.name}`} idBase={`lvl-${skill.id}`} firstId={fieldIds.level(skill.id)} invalid={!!issueFor(fieldIds.level(skill.id))} describedBy={issueFor(fieldIds.level(skill.id)) ? `${fieldIds.level(skill.id)}-error` : undefined} options={levels.map((l, i) => ({ value: String(i), label: l }))} value={r.levelIndex === null ? "" : String(r.levelIndex)} onChange={(v) => patch({ levelIndex: Number(v) })} />
             {issueFor(fieldIds.level(skill.id)) ? <FieldError id={`${fieldIds.level(skill.id)}-error`} errors={[{ message: issueFor(fieldIds.level(skill.id)) }]} /> : null}
           </fieldset>
@@ -382,7 +338,7 @@ export function SkillCard({ s, x, skill, r, patch, issueFor, issuesFor }: { s: V
         <fieldset className="flex flex-col gap-1">
           <legend className="text-sm font-medium text-foreground">{`Outcome for ${skill.name}`}</legend>
           <ChoiceGroup name={`Outcome for ${skill.name}`} idBase={`out-${skill.id}`} firstId={outId} invalid={!!issueFor(outId)} describedBy={issueFor(outId) ? `${outId}-error` : undefined} options={choices.map((o) => ({ value: o.value, label: o.label }))} value={r.outcome ?? ""} onChange={(v) => patch({ outcome: v as Outcome })} />
-          {r.outcome === "not-yet" ? <p className="text-xs text-muted-foreground">Your feedback is saved. No pass or fail is recorded, and no remediation plan opens.</p> : null}
+          {r.outcome === "not-yet" ? <p className="text-xs text-muted-foreground">Feedback only. No pass or fail is recorded.</p> : null}
           {noteFor ? <p className="text-xs text-foreground" role="status" data-criteria-note>{noteFor}</p> : null}
           {issueFor(outId) ? <FieldError id={`${outId}-error`} errors={[{ message: issueFor(outId) }]} /> : null}
         </fieldset>
@@ -421,13 +377,12 @@ function Receipt({ s, x, result, handover }: { s: V2State; x: Submission; result
   return (
     <div className="flex flex-col gap-4" data-receipt>
       <LocalBanner variant="success" title={result ? `Submitted. ${first(student)}'s evaluation is recorded.` : `Completed by ${by}${x.completedAt ? ` on ${fmt(x.completedAt)}` : ""}.`}>
-        A completed evaluation is a record. It cannot be changed from this page. You can close it now.
+        It cannot be changed from this page.
       </LocalBanner>
       {evals.length === 0 ? <p className="text-sm text-muted-foreground">No outcome details are held for this request.</p> : null}
       <ul className="flex flex-col gap-3" aria-label="What was recorded">
         {evals.map((e) => {
           const k = s.skills.find((y) => y.id === e.skillId)
-          const t = OUTCOME_TONE[e.outcome]
           return (
             <li key={e.id}>
               <Card size="sm" role="article" aria-labelledby={`rc-${e.id}`} data-receipt-item={e.skillId}>
@@ -436,7 +391,7 @@ function Receipt({ s, x, result, handover }: { s: V2State; x: Submission; result
                     <CardTitle asChild className="text-base">
                       <h2 id={`rc-${e.id}`}>{k?.name ?? "A skill"}</h2>
                     </CardTitle>
-                    <StatusBadge label={e.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[e.outcome]} tone={t.tone} icon={t.icon} size="sm" />
+                    <StatusPill kind="outcome" value={e.outcome} label={e.outcome === "not-met" ? "Did not meet the criteria" : OUTCOME_WORD[e.outcome]} />
                   </div>
                   <CardDescription>
                     {e.status === "awaiting-approval" ? "Held for program staff to approve. It does not count yet." : e.outcome === "not-yet" ? "Feedback only. Nothing was recorded as passed or failed." : e.outcome === "met" ? `Counts toward ${first(student)}'s record now.` : "Recorded. It does not count toward the rule."}

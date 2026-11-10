@@ -89,7 +89,7 @@ describe("reopenEvaluation", () => {
     expect(c.state.evaluations.find((x) => x.id === e.id)!.versions).toHaveLength(2)
   })
 
-  it("confirming a fail opens a plan only for a skill whose failure path does", () => {
+  it("confirming a fail never opens a plan on its own (remediation is out of scope)", () => {
     const s0 = createSeed()
     const iv: Evaluation = { id: "ev-t-iv", studentId: IDS.maya, skillId: IDS.ivCath, evaluatorId: IDS.delgado, setting: "clinical", date: "2026-10-18T09:00:00Z", status: "counted", outcome: "met", currentVersion: 1, versions: [{ version: 1, outcome: "met", at: "2026-10-18T09:00:00Z", by: IDS.delgado, reason: null }] }
     const s = { ...s0, evaluations: [...s0.evaluations, iv] }
@@ -99,8 +99,8 @@ describe("reopenEvaluation", () => {
     const c = confirmVersion(r.state, iv.id, ROSS, AT)
     expect(c.ok).toBe(true)
     if (!c.ok) return
-    expect(c.planOpened).toBe(true)
-    expect(c.state.remediations.at(-1)).toMatchObject({ studentId: IDS.maya, skillId: IDS.ivCath, evaluationId: iv.id })
+    expect(c.planOpened).toBe(false)
+    expect(c.state.remediations).toHaveLength(s.remediations.length)
   })
 
   it("refuses to confirm what is not reopened", () => {

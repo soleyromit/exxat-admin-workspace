@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
+import { StatusPill } from "@/components/v2/status-pill"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
@@ -16,7 +16,8 @@ import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { StudentPage } from "@/components/v2/student/student-frame"
 import { SyncChip } from "@/components/v2/student/sync-chip"
 import { Announce, BANNER_TOUCH, TOUCH, useStudentRun, useStudentUpdate, BTN } from "@/components/v2/student/use-student"
-import { useV2State } from "@/lib/v2/react"
+import { LoadingBlocks } from "@/components/v2/shared-loading"
+import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { courseWork, logSkills, STUDENT_ID, openToLog, prerequisiteStatus, ratingKind, ratingOptions, saveLogDraft, STATUS_LABEL, whereOptions, type CourseItem } from "@/lib/v2/student"
 import { syncStateOf } from "@/lib/v2/sync"
 import type { LogDraft, Skill, V2State } from "@/lib/v2/types"
@@ -52,9 +53,10 @@ function pickerRows(s: V2State): Row[] {
   return rows
 }
 
-/** Scenario step 5: log skills in four short steps. The draft is saved in the store on every edit. */
+/** Walkthrough step 5: log skills in four short steps. The draft is saved in the store on every edit. */
 export function LogFlow() {
   const s = useV2State()
+  const hydrated = useV2Hydrated()
   const params = useSearchParams()
   const update = useStudentUpdate()
   const run = useStudentRun()
@@ -147,10 +149,12 @@ export function LogFlow() {
     setStatus(`${r.entryIds.length} ${r.entryIds.length === 1 ? "entry" : "entries"} saved on this phone.`)
   }
 
+  if (!hydrated) return <StudentPage title="Log skills"><LoadingBlocks label="Opening the log" rows={4} /></StudentPage>
+
   if (saved) return <Saved ids={saved} status={status} onAgain={() => setSaved(null)} headingRef={headingRef} />
 
   return (
-    <StudentPage title="Log skills" subtitle="Saved on this phone as you go, so nothing is lost if the signal drops.">
+    <StudentPage title="Log skills">
       <Announce message={`Step ${draft.step} of 4, ${STEP_NAME[draft.step - 1]}`} />
       <p className="text-sm text-muted-foreground" data-step={draft.step}>{`Step ${draft.step} of 4`}</p>
       <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
@@ -169,7 +173,7 @@ export function LogFlow() {
       {draft.step === 2 && where ? (
         <fieldset className="flex flex-col gap-3">
           <legend className="sr-only">Where did you do it?</legend>
-          <p className="text-sm text-muted-foreground">{options.some((o) => o.value.startsWith("placement:")) ? `From your ${options.filter((o) => o.value.startsWith("placement:")).length} ${options.filter((o) => o.value.startsWith("placement:")).length === 1 ? "placement" : "placements"} for ${s.course.code}. Change it if this was somewhere else.` : "No placement is on record, so every setting in the program is offered."}</p>
+          <p className="text-sm text-muted-foreground">{options.some((o) => o.value.startsWith("placement:")) ? `From your ${options.filter((o) => o.value.startsWith("placement:")).length === 1 ? "placement" : "placements"} for ${s.course.code}.` : "No placement on record, so every setting is listed."}</p>
           <RadioGroup aria-label="Where you did it" value={where.value} onValueChange={(v) => { setErrors({}); patch({ where: v }) }} className="flex flex-col gap-2">
             {options.map((o) => (
               <Label key={o.value} htmlFor={`where-${o.value}`} className={`${TOUCH} flex items-start gap-3 rounded-lg border border-border bg-card p-3 font-normal`}>
@@ -218,7 +222,7 @@ export function LogFlow() {
 
       {draft.step === 3 ? (
         <div className="flex flex-col gap-3">
-          <p className="text-sm text-muted-foreground">Rate yourself on each skill. The evaluator sees this as context for their own assessment.</p>
+          <p className="text-sm text-muted-foreground">The evaluator sees your rating.</p>
           {picked.map((k) => (
             <RateCard key={k.id} skill={k} draft={draft} errors={errors} patch={patch} />
           ))}
@@ -257,7 +261,7 @@ export function LogFlow() {
               )
             })}
           </ul>
-          <p className="text-sm text-muted-foreground">It is saved on this phone first and sends when you are online and signed in.</p>
+          <p className="text-sm text-muted-foreground">Saves on this phone, sends when you are online.</p>
           <Nav back={() => go(3)} next={save} nextLabel={`Save ${picked.length} ${picked.length === 1 ? "entry" : "entries"}`} />
         </div>
       ) : null}
@@ -284,11 +288,7 @@ function StepPick({ rows, draft, error, onToggle, onNext }: { rows: Row[]; draft
   const groups: Array<Row["group"]> = ["Mandatory", "Optional", "Other skills"]
   return (
     <div className="flex flex-col gap-4">
-      {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground" data-pick-empty>No skills are open to log yet. Skills appear here once your program publishes them.</p>
-      ) : (
-        <p className="text-sm text-muted-foreground">Pick one or more skills you performed. You can log several together.</p>
-      )}
+      {rows.length === 0 ? <p className="text-sm text-muted-foreground" data-pick-empty>No skills are open to log yet.</p> : null}
       {groups.map((g) => {
         const list = rows.filter((r) => r.group === g)
         if (!list.length) return null
@@ -306,7 +306,7 @@ function StepPick({ rows, draft, error, onToggle, onNext }: { rows: Row[]; draft
                     <span id={`${id}-d`} className="text-xs text-muted-foreground">
                       {r.disabled ?? r.line}
                     </span>
-                    {r.clinicalLocked ? <Badge variant="outline">Locked for clinical, practice is open</Badge> : null}
+                    {r.clinicalLocked ? <StatusPill kind="practice" value="clinical-locked" /> : null}
                   </span>
                 </Label>
               )
@@ -384,7 +384,7 @@ function Saved({ ids, status, onAgain, headingRef }: { ids: string[]; status: st
   const entries = ids.map((id) => s.logEntries.find((e) => e.id === id)).filter((e): e is NonNullable<typeof e> => !!e)
   const clinicalIds = entries.filter((e) => e.setting === "clinical").map((e) => e.id)
   return (
-    <StudentPage title="Log skills" subtitle="Saved on this phone first.">
+    <StudentPage title="Log skills">
       <Announce message={status} />
       <LocalBanner variant="success" title="Saved on this phone" data-saved-banner>
         {status}

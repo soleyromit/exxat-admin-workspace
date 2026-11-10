@@ -49,7 +49,7 @@ export function EmailPreview() {
 
   if (!mounted) return null
   return (
-    <PageFrame title="Evaluation request email" subtitle="Preview of the S-18 template for a sample link. Nothing is sent. Sample data only.">
+    <PageFrame gutter="fixed" title="Evaluation request email" subtitle="Preview of the S-18 template for a sample link. Nothing is sent. Sample data only.">
       <div className="flex max-w-md flex-col gap-1.5">
         <Label htmlFor="email-link">Sample request</Label>
         <Select value={chosen?.token ?? ""} onValueChange={setToken}>

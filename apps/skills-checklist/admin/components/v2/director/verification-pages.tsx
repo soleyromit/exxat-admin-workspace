@@ -4,84 +4,82 @@ import * as React from "react"
 import Link from "next/link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
+import { KeyMetrics, type MetricItem } from "@exxatdesignux/ui/components/ui/key-metrics"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
+import type { ActiveFilter } from "@exxatdesignux/ui/lib/table-properties-types"
+import { StatusPill } from "@/components/v2/status-pill"
+import { V2FilterBar, filterValue, v2SelectField } from "@/components/v2/v2-filter-bar"
+import { contextLine } from "@/lib/v2/page-context"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { PageFrame, PageSection } from "@/components/skills/page-header"
 import { useStaff } from "@/components/v2/outcomes/staff"
 import { fmtDay } from "@/components/v2/outcomes/version-timeline"
 import { BTN } from "@/components/v2/preceptor/evaluation-form"
-import { V2Grid, v2col } from "@/components/v2/v2-grid"
+import { BulletMeter } from "@/components/v2/viz"
+import { recordGroups } from "@/lib/v2/queue-viz"
 import { OUTCOME_WORD } from "@/lib/v2/outcomes"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import type { RoleId, V2State, Verification } from "@/lib/v2/types"
 import { gaps, isDirector, mandatoryProgress, NOTE_MAX, pendingReasons, STATUS_LABEL, verificationRows, verificationsOf, verificationStatus, verifyBlockers, verifyRecord, type VerificationRow, type VerifyStatus } from "@/lib/v2/verification"
-
-export const STATUS_TONE: Record<VerifyStatus, { tone: "success" | "warning" | "neutral"; icon: string }> = {
-  verified: { tone: "success", icon: "fa-badge-check" },
-  changed: { tone: "warning", icon: "fa-triangle-exclamation" },
-  "not-verified": { tone: "neutral", icon: "fa-circle" },
-}
+import { LoadingBlocks } from "@/components/v2/shared-loading"
 
 export const statusLabel = (st: VerifyStatus, version: number | null) => (st === "verified" && version ? `Verified, version ${version}` : STATUS_LABEL[st])
 
 const name = (s: V2State, id: string) => s.people.find((p) => p.id === id)?.name ?? "Unknown person"
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many)
 
-/** Scenario step 11 for the director (and a read-only list for staff): every student and the state of their verification. */
+/** The director (and a read-only list for staff): every student and the state of their verification. */
 export function VerificationListPage({ role }: { role: RoleId }) {
   const s = useV2State()
   const hydrated = useV2Hydrated()
-  const rows = verificationRows(s)
+  const allRows = verificationRows(s)
+  const [filters, setFilters] = React.useState<ActiveFilter[]>([])
+  const needsAction = filterValue(filters, "needs-action") === "yes"
+  const rows = allRows
   const verified = rows.filter((r) => r.status === "verified").length
   const changed = rows.filter((r) => r.status === "changed").length
   const director = role === "director"
-  const summary: Array<[string, number, string]> = [
-    ["Records verified", verified, "verified"],
-    ["Changed since verified", changed, "changed"],
-    ["Not verified yet", rows.length - verified - changed, "not-verified"],
-    ["Students in the cohort", rows.length, "students"],
+  const groups = recordGroups(needsAction ? rows.filter((r) => r.status === "changed" || r.pending > 0) : rows)
+  const shownCount = groups.reduce((n, g) => n + g.rows.length, 0)
+  const metrics: MetricItem[] = [
+    { id: "verified", label: "Records verified", value: verified, delta: "", trend: "neutral" },
+    { id: "changed", label: "Changed since verified", value: changed, delta: "", trend: "neutral" },
+    { id: "not-verified", label: "Not verified yet", value: rows.length - verified - changed, delta: "", trend: "neutral" },
+    { id: "students", label: "Students in the cohort", value: rows.length, delta: "", trend: "neutral" },
   ]
-  if (!hydrated && rows.length === 0) return <PageFrame title="Verify the program record"><p role="status" className="text-sm text-muted-foreground">Opening the list</p></PageFrame>
+  const base = `/v2/${role}/${director ? "director-verification" : "verification"}`
+  if (!hydrated && rows.length === 0) return <PageFrame title="Records"><LoadingBlocks label="Opening the list" rows={5} /></PageFrame>
   return (
-    <PageFrame title="Verify the program record" subtitle={`${s.course.code}, ${s.course.term}. ${director ? "Check a student's record and verify it before it is shared outside the program." : "The director verifies records. You can read the status and the evidence."}`}>
+    <PageFrame title="Records" subtitle={contextLine(s)}>
       <div className="flex flex-col gap-6" data-verification-list>
-        <Card>
-          <CardContent>
-            <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4" aria-label="Verification summary">
-              {summary.map(([label, n, key]) => (
-                <div key={key} className="flex flex-col gap-0.5">
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="text-2xl font-semibold tabular-nums text-foreground" data-summary={key}>{n}</dd>
-                </div>
+        <section aria-label="Records summary">
+          <KeyMetrics variant="cards" size="sm" showHeader={false} metrics={metrics} metricsSingleRow className="px-0 lg:px-0" />
+        </section>
+        {rows.length > 0 ? (
+          <V2FilterBar fields={[v2SelectField("needs-action", "Needs action", [{ value: "yes", label: "Changed since verified or items to resolve" }], "fa-bolt")]} filters={filters} onChange={setFilters} resultCount={shownCount} resultNoun="students" emptyMessage="No student needs action." />
+        ) : null}
+        {rows.length === 0 ? <p className="text-sm text-muted-foreground">No students are enrolled in this course.</p> : null}
+        {groups.map((g) => (
+          <PageSection key={g.id} title={`${g.title} (${g.rows.length})`} id={`records-${g.id}`}>
+            <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-card" aria-label={g.title} data-record-group={g.id}>
+              {g.rows.map((r) => (
+                <li key={r.studentId} className="grid grid-cols-1 items-center gap-2 p-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:gap-4" data-record-row={r.studentId}>
+                  <BulletMeter label={r.name} value={r.mandatoryAchieved} required={Math.max(r.mandatoryTotal, 1)} valueText={`${r.mandatoryAchieved} of ${r.mandatoryTotal} mandatory`} />
+                  <div className="flex flex-col items-start gap-1 md:w-52">
+                    <StatusPill kind="verify" value={r.status} label={statusLabel(r.status, r.version)} />
+                    <span className="text-xs text-muted-foreground">{r.verifiedAt ? `${r.verifiedBy}, ${fmtDay(r.verifiedAt)}` : r.pending > 0 ? `${r.pending} ${plural(r.pending, "item", "items")} to resolve` : `${r.counted} counted`}</span>
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`${base}/${r.studentId}`} aria-label={`${director ? "Review the record of" : "Read the record of"} ${r.name}`}>{director ? "Review record" : "Read record"}</Link>
+                  </Button>
+                </li>
               ))}
-            </dl>
-          </CardContent>
-        </Card>
-        <PageSection title="Students" id="students" description="Open a name to read the record. A verification names the director, the date and the exact evaluations it rests on. It is never edited; a later change adds a new version.">
-          <V2Grid<VerificationRow>
-            caption="Students and their verification status"
-            rows={rows}
-            id={(r) => r.studentId}
-            selectable={false}
-            emptyText="No students are enrolled in this course."
-            columns={[
-              v2col<VerificationRow>("student", "Student", 180, (r) => (
-                <Link href={`/v2/${role}/verification/${r.studentId}`} aria-label={`${director ? "Review the record of" : "Read the record of"} ${r.name}`} className="rounded-sm font-medium text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  {r.name}
-                </Link>
-              )),
-              v2col<VerificationRow>("mandatory", "Mandatory skills achieved", 190, (r) => `${r.mandatoryAchieved} of ${r.mandatoryTotal}`),
-              v2col<VerificationRow>("counted", "Evaluations that count", 170, (r) => String(r.counted)),
-              v2col<VerificationRow>("pending", "Still to resolve", 140, (r) => (r.pending === 0 ? "Nothing" : `${r.pending} ${plural(r.pending, "item", "items")}`)),
-              v2col<VerificationRow>("status", "Status", 220, (r) => <StatusBadge label={statusLabel(r.status, r.version)} tone={STATUS_TONE[r.status].tone} icon={STATUS_TONE[r.status].icon} size="sm" />),
-              v2col<VerificationRow>("by", "Verified by", 200, (r) => (r.verifiedAt ? `${r.verifiedBy}, ${fmtDay(r.verifiedAt)}` : "Not yet")),
-            ]}
-          />
-        </PageSection>
+            </ul>
+          </PageSection>
+        ))}
       </div>
     </PageFrame>
   )
@@ -99,7 +97,7 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
   const [done, setDone] = React.useState<string | null>(null)
   const list = `/v2/${role}/${role === "director" ? "director-verification" : "verification"}`
   if (!student) {
-    if (!hydrated) return <PageFrame title="Opening the record"><p role="status" className="text-sm text-muted-foreground">Opening the record</p></PageFrame>
+    if (!hydrated) return <PageFrame title="Opening the record"><LoadingBlocks label="Opening the record" rows={5} /></PageFrame>
     return (
       <PageFrame title="Student not found">
         <LocalBanner variant="warning" title="This student is not in the course.">
@@ -118,7 +116,6 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
   const versions = verificationsOf(s).filter((v) => v.studentId === studentId).slice().reverse()
   const canAct = isDirector(s.people.find((p) => p.id === actorId))
   const nextVersion = (st.latest?.version ?? 0) + 1
-  const tone = STATUS_TONE[st.status]
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -136,11 +133,11 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
     }
     setNote("")
     setConfirmed(false)
-    setDone(`${student.name}'s record is verified, version ${r.verification.version}. The student sees it on their record, and report data now carries it.`)
+    setDone(`${student.name}'s record is verified, version ${r.verification.version}.`)
   }
 
   return (
-    <PageFrame title={`${student.name}, program record`} subtitle={`${s.course.code}, ${s.course.term}. The evidence a verification rests on, and everything that has to be settled first.`}>
+    <PageFrame title={`${student.name}, program record`} subtitle={contextLine(s)}>
       <div className="flex max-w-4xl flex-col gap-6" data-verification-record={studentId}>
         <div role="status" aria-live="polite" className="flex flex-col gap-2">
           {done ? (
@@ -155,7 +152,7 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
             <div className="flex flex-col gap-1">
               <span className="text-muted-foreground">Status</span>
               <span data-verify-status={st.status}>
-                <StatusBadge label={statusLabel(st.status, st.latest?.version ?? null)} tone={tone.tone} icon={tone.icon} size="sm" />
+                <StatusPill kind="verify" value={st.status} label={statusLabel(st.status, st.latest?.version ?? null)} />
               </span>
             </div>
             <p className="text-foreground">
@@ -176,11 +173,11 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
         ) : null}
         {st.newer > 0 && st.status !== "not-verified" ? (
           <LocalBanner variant="info" title={`${st.newer} ${plural(st.newer, "evaluation is", "evaluations are")} not part of version ${st.latest?.version}`} data-newer-banner>
-            They count toward the record. A new version would include them.
+            A new version would include them.
           </LocalBanner>
         ) : null}
 
-        <PageSection title="Mandatory skills" id="skills" description="Each skill, against its own rule. Open an evaluation to read it in full.">
+        <PageSection title="Mandatory skills" id="skills">
           {mandatory.length === 0 ? (
             <p className="text-sm text-muted-foreground">No mandatory skills are open for this course yet.</p>
           ) : (
@@ -191,7 +188,7 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
                     <CardContent className="flex flex-col gap-2 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span id={`vs-${m.skill.id}`} className="font-medium text-foreground">{m.skill.name}</span>
-                        <StatusBadge label={m.achieved ? "Achieved" : "Not achieved yet"} tone={m.achieved ? "success" : "warning"} icon={m.achieved ? "fa-circle-check" : "fa-circle-minus"} size="sm" />
+                        <StatusPill kind="skill-progress" value={m.achieved ? "achieved" : "in-progress"} label={m.achieved ? "Achieved" : "Not achieved yet"} />
                       </div>
                       <p className="text-muted-foreground">{`${m.counted} of ${m.need} successful ${m.need === 1 ? "evaluation" : "evaluations"} counted.`}</p>
                       {m.evaluations.length > 0 ? (
@@ -216,7 +213,7 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
           )}
         </PageSection>
 
-        <PageSection title="Verify this record" id="verify" description={canAct ? "You verify what counts today. Anything still waiting must be settled first." : "Only the program director can verify a record."}>
+        <PageSection title="Verify this record" id="verify" description={canAct ? undefined : "Only the program director can verify a record."}>
           {pending.length > 0 ? (
             <LocalBanner variant="warning" title="Settle these first" data-blockers>
               <ul className="mt-1 flex list-disc flex-col gap-1 ps-5">
@@ -244,13 +241,13 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
                       <li key={m.skill.id}>{`${m.skill.name}: ${m.counted} of ${m.need}`}</li>
                     ))}
                   </ul>
-                  <p className="mt-1">The verification states these gaps. It does not say the program is complete.</p>
+                  <p className="mt-1">The verification lists these gaps.</p>
                 </LocalBanner>
               ) : null}
               <Field>
                 <FieldLabel htmlFor="verify-note">Note for the record (optional)</FieldLabel>
                 <Textarea id="verify-note" rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
-                <FieldDescription>{`${note.trim().length} of ${NOTE_MAX} characters. Kept with this version.`}</FieldDescription>
+                <FieldDescription>{`${note.trim().length} of ${NOTE_MAX} characters. A verification is never edited. A later change adds a version.`}</FieldDescription>
               </Field>
               <div className="flex flex-col gap-1">
                 <Card size="sm">
@@ -272,7 +269,7 @@ export function VerificationRecordPage({ role, studentId }: { role: RoleId; stud
           ) : null}
         </PageSection>
 
-        <PageSection title={`Verification history (${versions.length})`} id="history" description="Newest first. Each version is read-only.">
+        <PageSection title={`Verification history (${versions.length})`} id="history">
           {versions.length === 0 ? (
             <p className="text-sm text-muted-foreground" data-history-empty>Not verified yet.</p>
           ) : (

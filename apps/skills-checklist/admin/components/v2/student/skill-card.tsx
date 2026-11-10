@@ -2,16 +2,16 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
-import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
+import { StatusPill } from "@/components/v2/status-pill"
 import { requestWaitText, STATUS_LABEL, type CourseItem } from "@/lib/v2/student"
 import { useV2State } from "@/lib/v2/react"
 import { TOUCH, BTN } from "@/components/v2/student/use-student"
+import { SegmentedDots } from "@/components/v2/viz"
+import { skillDots } from "@/lib/v2/student-viz"
+import type { SkillProgress } from "@/lib/v2/student"
 
-const STATUS_TONE = { achieved: "success", "in-progress": "info", "not-started": "neutral" } as const
-const STATUS_ICON = { achieved: "fa-circle-check", "in-progress": "fa-hourglass-half", "not-started": "fa-circle" } as const
 
 /** Progress dots: one per successful evaluation needed. Hidden from assistive tech because the same facts are in the text. */
 export function Pips({ have, need }: { have: number; need: number }) {
@@ -25,11 +25,38 @@ export function Pips({ have, need }: { have: number; need: number }) {
   )
 }
 
+const LAB_NOTE = "Lab and simulation do not count toward a clinical setting."
+
+/** V14: one dot per evaluation the rule needs, then one text line per required clinical setting (lab never fills a setting). One viz per card. */
+export function SkillProgressViz({ progress: p, name }: { progress: SkillProgress; name: string }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <SegmentedDots label={name} items={skillDots(p)} />
+      {p.settings.length > 0 ? (
+        <div className="flex flex-col gap-0.5 text-sm text-foreground" data-setting-lines>
+          {p.settings.map((x) => (
+            <p key={x.setting}>{`${x.setting}: ${x.have} of ${x.min}`}</p>
+          ))}
+          <p className="text-xs text-muted-foreground">Lab and simulation do not count here.</p>
+        </div>
+      ) : null}
+      {p.notMet > 0 ? (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground" data-not-met>
+          <i className="fa-solid fa-triangle-exclamation" style={{ color: "var(--status-badge-warning-fg)" }} aria-hidden="true" />
+          {`${p.notMet} ${p.notMet === 1 ? "attempt" : "attempts"} did not meet the criteria and ${p.notMet === 1 ? "does" : "do"} not count`}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
 /** Mobile skill card: one skill, its status in words, what is left and one primary action. Replaces a table on a phone. */
 export function SkillCard({ item }: { item: CourseItem }) {
   const s = useV2State()
   const p = item.progress
   const locked = item.prereq.required && !item.prereq.met
+  // Per-setting shortfalls ("N more in Inpatient") are already the setting lines in SkillProgressViz; only the rest is "also needed".
+  const extra = p.left.filter((x) => !/^\d+ more successful/.test(x) && !/^\d+ more in /.test(x))
   const firstTodo = item.prereq.items.find((i) => !i.met)
   return (
     <Card size="sm" role="article" aria-labelledby={`sk-${item.skill.id}`} data-skill-card={item.skill.id}>
@@ -38,18 +65,16 @@ export function SkillCard({ item }: { item: CourseItem }) {
             <CardTitle asChild className="text-base">
               <h3 id={`sk-${item.skill.id}`}>{item.skill.name}</h3>
             </CardTitle>
-            <StatusBadge label={STATUS_LABEL[item.status]} tone={STATUS_TONE[item.status]} icon={STATUS_ICON[item.status]} size="sm" />
+            <StatusPill kind="skill-progress" value={item.status} label={STATUS_LABEL[item.status]} />
           </div>
           <p className="text-xs text-muted-foreground">{item.skill.category}</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-2 text-sm">
-          <div className="flex items-center gap-2">
-            <Pips have={p.counted} need={p.need} />
-            <span data-progress>{p.summary}</span>
-          </div>
-          {item.status !== "achieved" ? <p className="text-foreground">{p.left.length ? `Left: ${p.left.join(", ")}.` : p.rule}</p> : <p className="text-muted-foreground">Rule met. More evidence still counts toward your record.</p>}
-          {item.status !== "achieved" ? <p className="text-xs text-muted-foreground" data-rule>{p.rule}</p> : null}
-          {p.notes.map((n) => (
+          <SkillProgressViz progress={p} name={item.skill.name} />
+          <p data-progress className="text-muted-foreground">{p.summary}</p>
+          {item.status !== "achieved" && extra.length > 0 ? <p className="text-foreground">{`Also needed: ${extra.join(", ")}.`}</p> : null}
+          {item.status !== "achieved" && (p.window || p.distinct.need > 1 || p.settings.length > 0) ? <p className="text-xs text-muted-foreground" data-rule>{p.rule}</p> : null}
+          {p.notes.filter((n) => n !== LAB_NOTE).map((n) => (
             <p key={n} className="text-xs text-muted-foreground">
               {n}
             </p>
@@ -82,7 +107,7 @@ export function SkillCard({ item }: { item: CourseItem }) {
               <Link href={`/v2/student/pick-and-rate?skill=${item.skill.id}`}>{locked ? `Log a practice trial of ${item.skill.name}` : item.status === "achieved" ? `Log ${item.skill.name} again` : `Log ${item.skill.name}`}</Link>
             </Button>
             {item.unsent > 0 ? (
-              <Badge variant="secondary">{`${item.unsent} logged, not sent`}</Badge>
+              <StatusPill kind="sync" value="queued" label={`${item.unsent} logged, not sent`} />
             ) : null}
           </div>
         </CardContent>

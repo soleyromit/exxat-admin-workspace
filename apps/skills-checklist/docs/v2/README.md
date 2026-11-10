@@ -59,7 +59,7 @@ Stage numbers are my build plan `[INFER]`, not a commitment.
 ## Stage 1: what exists
 
 - **Add skills** (`/v2/admin/starter-library`): copy a specialty starter library through a review sheet, or upload a PDF or text checklist and review proposed skills beside the source lines they came from. Nothing is created until one confirm. New skills are unconfigured. The library table shows where each skill came from, its status, Edit and Configure.
-- **Configure wizard** (`/v2/admin/configure-skill`, `/v2/admin/validate-publish`): 8 steps (model, achievement, simulation, prerequisites, qualified evaluators, failure path, re-validation, review and publish). The draft is in the store. Publishing is blocked until every issue is fixed, and each issue links to its field. Add `?skill=<id>` to configure another skill.
+- **Configure wizard** (`/v2/admin/configure-skill`, `/v2/admin/validate-publish`): 7 steps (model, achievement, simulation, prerequisites, qualified evaluators, failure path, review and publish). No model is preselected (SC-02). Calendar expiry, re-validation and auto-remediation are out of scope (REQ section 14) and were removed. The draft is in the store. Publishing is blocked until every issue is fixed, and each issue links to its field. Add `?skill=<id>` to configure another skill.
 - **Mapping** (`/v2/admin/map-courses`): mandatory, optional, not expected or not mapped per skill, with coverage warnings. Unconfigured skills are blocked with a reason.
 - **Tests:** `admin/tests/v2/{rules,coverage,import,admin-actions}.test.ts` plus the Stage 0 files.
 - **Flow script:** `docs/v2/verify/stage1.e2e.mjs` drives import, confirm, configure, a blocked and fixed publish, mapping, reload and Reset demo.
@@ -111,6 +111,7 @@ node ../docs/v2/verify/stage1.e2e.mjs # the Stage 1 flow, needs the dev server o
 node ../docs/v2/verify/stage3.e2e.mjs # the Stage 3 flow, needs the dev server on 3007
 node ../docs/v2/verify/stage4.e2e.mjs # the Stage 4 flow, needs the dev server on 3007
 node ../docs/v2/verify/stage5.e2e.mjs # the Stage 5 flow (needs pdftotext from poppler for the independent PDF read)
+node ../docs/v2/verify/alignment.e2e.mjs # consistency checks 15 and 16: h1 left/top identical across pages at 1440 px, student column at most 768 px, no sideways scroll at 390 px
 ```
 
 `docs/v2/verify/shoot.mjs [routes...]` takes screenshots at 1440x900 and 390x844 into `docs/v2/screenshots/<route-slug>-{desktop,phone}.png`, runs axe-core (WCAG 2.0 and 2.1, A and AA) through `@axe-core/playwright`, walks the page with the Tab key until focus completes a full cycle to check for a visible focus indicator and keyboard traps, repeats everything for named interaction states (sheet, dialog, menu, wizard step), records uncaught page errors, and writes `docs/v2/screenshots/report.json`. It freezes transitions before axe. Playwright is loaded from `tools/visual-check`, not installed in the app.

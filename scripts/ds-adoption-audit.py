@@ -135,6 +135,8 @@ ALLOWED_ORGANISM_PATHS = {
 # Files explicitly documented as intentional hand-rolls in the registry.
 # Keep in sync with docs/governance/ds-adoption.md "Documented hand-rolls".
 DOCUMENTED_HAND_ROLLS = {
+    "components/v2/reports/export-sheet.tsx",
+    "components/v2/viz/heat-grid.tsx",
     "components/pce/trend-sparkline.tsx",
     "components/pce/response-gauge.tsx",
     "components/pce/ai-insight-card.tsx",

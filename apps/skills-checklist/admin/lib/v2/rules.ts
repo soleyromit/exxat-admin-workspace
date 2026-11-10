@@ -1,7 +1,7 @@
 import { needsLevels, needsQuestions } from "./config"
 import type { EvalModel, EvaluatorRole, Person, SkillConfig, V2State } from "./types"
 
-/** Wizard steps, in order. Step 8 is the review and publish step. */
+/** Wizard steps, in order. Step 7 is the review and publish step. */
 export const WIZARD_STEPS = [
   { n: 1, id: "model", label: "Evaluation model" },
   { n: 2, id: "achievement", label: "Achievement rules" },
@@ -9,14 +9,13 @@ export const WIZARD_STEPS = [
   { n: 4, id: "prerequisites", label: "Prerequisites" },
   { n: 5, id: "evaluators", label: "Qualified evaluators" },
   { n: 6, id: "failure", label: "If a student does not pass" },
-  { n: 7, id: "revalidation", label: "Re-validation" },
-  { n: 8, id: "review", label: "Review and publish" },
+  { n: 7, id: "review", label: "Review and publish" },
 ] as const
 
 export interface RuleIssue {
   /** Stable id: the field id plus a short code. */
   id: string
-  /** Wizard step that owns the field (1 to 7). */
+  /** Wizard step that owns the field (1 to 6). */
   step: number
   /** DOM id of the control to focus. */
   field: string
@@ -161,14 +160,6 @@ export function validateDraft(draft: { model: EvalModel | null; config: SkillCon
   if (f.attemptLimit !== null && (!isInt(f.attemptLimit) || f.attemptLimit < 1 || f.attemptLimit > 20)) add(6, "wiz-attempts", "range", "Enter an attempt limit from 1 to 20, or leave it empty for no limit.")
   if (!isInt(f.minDaysBetween) || f.minDaysBetween < 0 || f.minDaysBetween > 365) add(6, "wiz-days", "range", "Enter days between attempts from 0 to 365.")
   if (model === "scored" && f.retakeScoreCap !== null && (!isInt(f.retakeScoreCap) || f.retakeScoreCap < 1 || f.retakeScoreCap > 100)) add(6, "wiz-cap", "range", "Enter a retake score cap from 1 to 100 percent, or leave it empty.")
-
-  const r = c.revalidation
-  const evDup = duplicates(r.onEvents)
-  r.onEvents.forEach((e, i) => {
-    if (!e.trim()) add(7, `wiz-event-${i}`, "blank", `Event ${i + 1} has no name. Name it, or remove it.`)
-    else if (evDup.has(i)) add(7, `wiz-event-${i}`, "dup", `Event ${i + 1} repeats another event. Remove one.`)
-  })
-  if (r.calendarExpiry.enabled && (!isInt(r.calendarExpiry.months) || r.calendarExpiry.months < 1 || r.calendarExpiry.months > 120)) add(7, "wiz-months", "range", "Enter months from 1 to 120.")
 
   return out
 }

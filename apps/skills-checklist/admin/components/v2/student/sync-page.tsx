@@ -8,7 +8,6 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { Block, StudentPage } from "@/components/v2/student/student-frame"
-import { DemoControls } from "@/components/v2/student/demo-controls"
 import { SyncChip } from "@/components/v2/student/sync-chip"
 import { Announce, BANNER_TOUCH, fmtDate, TOUCH, useStudentRun, BTN } from "@/components/v2/student/use-student"
 import { useV2State } from "@/lib/v2/react"
@@ -27,7 +26,7 @@ function flushMessage(f: FlushResult): Msg {
   return { retry: f.failed > 0, variant: f.failed ? "error" : f.conflicts ? "warning" : "success", title: f.failed ? "Some changes did not send" : f.conflicts ? "Sent, with a conflict" : "Sent", text: `${bits.join(", ")}.${f.failed ? " They are still saved on this phone. Try again." : ""}${f.conflicts ? " Open the conflict to choose which version to keep." : ""}` }
 }
 
-/** Scenario step 7: connection status, the sync queue with retry one or all, the conflict screen and the demo controls. */
+/** Walkthrough step 7: connection status, the sync queue with retry one or all, the conflict screen and the demo controls. */
 export function SyncPage() {
   const s = useV2State()
   const run = useStudentRun()
@@ -65,7 +64,7 @@ export function SyncPage() {
           setMsg({
             variant: "success",
             title: "Conflict resolved",
-            text: `${choice === "mine" ? "Kept this phone's version." : choice === "theirs" ? "Kept the server's version." : "Kept both versions in one note."} ${queued ? "It is queued and sends when you are back online." : "The server and this phone now match."} The audit log has the decision.`,
+            text: `${choice === "mine" ? "Kept this phone's version." : choice === "theirs" ? "Kept the server's version." : "Kept both versions in one note."} ${queued ? "It is queued and sends when you are back online." : "The server and this phone now match."}`,
           })
         }}
       />
@@ -73,7 +72,7 @@ export function SyncPage() {
   }
 
   return (
-    <StudentPage title="Sync and offline" subtitle="Everything you log is saved on this phone first, then sent. Nothing waits for a signal.">
+    <StudentPage title="Sync and offline">
       <Announce message={msg ? `${msg.title}. ${msg.text}` : ""} />
       {msg ? (
         <LocalBanner className={BANNER_TOUCH} variant={msg.variant} title={msg.title} dismissible onDismiss={() => setMsg(null)} retry={msg.variant === "error" && msg.retry && !block ? { label: "Send failed changes again", onClick: () => send() } : undefined} data-sync-message>
@@ -126,7 +125,7 @@ export function SyncPage() {
         </p>
       </div>
 
-      <Block id="queue" title={`Changes (${items.length})`} description="Newest problems first. Each shows its state in words as well as an icon.">
+      <Block id="queue" title={`Changes (${items.length})`}>
         {items.length === 0 ? <p className="text-sm text-muted-foreground">Everything is saved. Nothing is waiting to send.</p> : null}
         <ul className="flex flex-col gap-3">
           {items.map((i) => (
@@ -175,8 +174,6 @@ export function SyncPage() {
           ))}
         </ul>
       </Block>
-
-      <DemoControls onMessage={(text, variant) => setMsg({ variant, title: variant === "error" ? "Could not do that" : "Demo control", text })} />
     </StudentPage>
   )
 }
@@ -194,7 +191,7 @@ function ConflictScreen({ item, skill, onBack, onResolve }: { item: SyncItem; sk
   React.useEffect(() => headingRef.current?.focus(), [])
   const noun = c.field === "rating" ? "rating" : "note"
   return (
-    <StudentPage wide title="Fix a sync conflict" subtitle={`${skill ? `${skill}: ` : ""}the ${noun} was changed in two places. Choose which version to keep.`}>
+    <StudentPage title="Fix a sync conflict">
       <h2 ref={headingRef} tabIndex={-1} className="text-lg font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50">{`Two versions of the ${noun}`}</h2>
       <div className="grid gap-3 md:grid-cols-2">
         <Card size="sm" role="region" aria-label="Version on this phone" data-version="mine">

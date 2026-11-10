@@ -5,7 +5,6 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { LoadingBlocks } from "@/components/v2/shared-loading"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { DatePickerField } from "@exxatdesignux/ui/components/ui/date-picker-field"
@@ -15,7 +14,9 @@ import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
+import { contextLine } from "@/lib/v2/page-context"
 import { PageFrame, PageSection } from "@/components/skills/page-header"
+import { hatch, STATE_META, TONE_COLOR } from "@/components/v2/viz/tokens"
 import { BTN } from "@/components/v2/preceptor/evaluation-form"
 import { cellKey, cellWord, labBatchesOf, labBlockReason, labCounts, labSkills, labStudents, nextCell, NAME_MAX, saveLabBatch, type LabInput } from "@/lib/v2/lab"
 import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
@@ -32,13 +33,64 @@ const CELL_CLASS: Record<string, string> = {
   none: "bg-background text-foreground",
 }
 
+type Tally = { met: number; notMet: number; notYet: number; absent: number; blank: number }
+type TallySquare = "met" | "notMet" | "notYet" | "absent" | "blank"
+
+/** One square per student and skill: what has been recorded so far, live. An absent student's squares are hatched. */
+function squaresOf(students: Array<{ id: string }>, skillIds: string[], absent: string[], cells: Record<string, Outcome | null>): TallySquare[] {
+  const out: TallySquare[] = []
+  for (const p of students) {
+    for (const id of skillIds) {
+      if (absent.includes(p.id)) out.push("absent")
+      else {
+        const v = cells[cellKey(p.id, id)] ?? null
+        out.push(v === "met" ? "met" : v === "not-met" ? "notMet" : v === "not-yet" ? "notYet" : "blank")
+      }
+    }
+  }
+  return out
+}
+
+const SQUARE_STYLE: Record<TallySquare, React.CSSProperties> = {
+  met: { background: TONE_COLOR.met, border: `1px solid ${TONE_COLOR.met}` },
+  notMet: { background: TONE_COLOR.notMet, border: `1px solid ${TONE_COLOR.notMet}` },
+  notYet: { background: TONE_COLOR.notYet, border: `1px solid ${TONE_COLOR.notYet}` },
+  absent: { background: "var(--background)", border: `1px solid ${TONE_COLOR.neutral}`, ...hatch(TONE_COLOR.neutral) },
+  blank: { background: "var(--background)", border: "1px solid var(--border-control-35)" },
+}
+
+const TALLY_WORD: Record<keyof Tally, string> = { met: "met", notMet: "not met", notYet: "not yet", absent: "absent", blank: "not recorded" }
+
+/** Live tally in the Save bar. Counts are printed beside the squares so colour is never the only signal. */
+function LabTally({ squares }: { squares: TallySquare[] }) {
+  const n: Tally = { met: 0, notMet: 0, notYet: 0, absent: 0, blank: 0 }
+  for (const q of squares) n[q] += 1
+  const spoken = (Object.keys(TALLY_WORD) as Array<keyof Tally>).map((k) => `${n[k]} ${TALLY_WORD[k]}`).join(", ")
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-2" data-lab-tally>
+      <div role="img" aria-label={`Session so far: ${spoken}`} className="flex max-h-14 flex-wrap gap-1 overflow-hidden">
+        {squares.map((q, i) => (
+          <span key={i} className="size-3 rounded-xs" style={SQUARE_STYLE[q]} data-square={q} />
+        ))}
+      </div>
+      <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground" data-lab-counts>
+        <span className="text-foreground tabular-nums"><i className={`${STATE_META.met.icon} me-1`} style={{ color: TONE_COLOR.met }} aria-hidden="true" />{`${n.met} met`}</span>
+        <span className="text-foreground tabular-nums"><i className={`${STATE_META.notMet.icon} me-1`} style={{ color: TONE_COLOR.notMet }} aria-hidden="true" />{`${n.notMet} not met`}</span>
+        <span className="text-foreground tabular-nums"><i className={`${STATE_META.notYet.icon} me-1`} style={{ color: TONE_COLOR.notYet }} aria-hidden="true" />{`${n.notYet} not yet`}</span>
+        <span className="tabular-nums"><i className="fa-light fa-user-slash me-1" aria-hidden="true" />{`${n.absent} absent`}</span>
+        <span className="tabular-nums">{`${n.blank} not recorded`}</span>
+      </p>
+    </div>
+  )
+}
+
 /** A day string and a local Date, both ways, without a time zone shift. */
 const toDate = (day: string) => new Date(`${day}T12:00:00`)
 const fromDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
 
 const DEFAULT_SKILLS = ["sk-vitals", "sk-sterile-dressing"]
 
-/** Scenario step 14: R. Whitmore records a lab session for the group. Students down, skills across, press a cell to cycle its state. */
+/** Walkthrough step 14: R. Whitmore records a lab session for the group. Students down, skills across, press a cell to cycle its state. */
 export function LabGridPage() {
   const params = useSearchParams()
   const s = useV2State()
@@ -75,7 +127,7 @@ export function LabGridPage() {
   const nameOf = (id: string) => s.people.find((p) => p.id === id)?.name ?? "Unknown person"
   const heldForApproval = skills.filter((k) => k.config?.approvalRequired).map((k) => k.name)
 
-  if (!hydrated && students.length === 0) return <PageFrame title="Record a lab session"><LoadingBlocks label="Opening the session" rows={4} /></PageFrame>
+  if (!hydrated && students.length === 0) return <PageFrame title="Lab sessions"><LoadingBlocks label="Opening the session" rows={4} /></PageFrame>
 
   const press = (studentId: string, skillId: string) => {
     const k = cellKey(studentId, skillId)
@@ -116,7 +168,7 @@ export function LabGridPage() {
     setError(null)
     setSaveFailed(false)
     if (counts.results === 0) {
-      setError("Record at least one result before you save. Press a cell to set Met, Not met or Not yet, or mark a student absent.")
+      setError("Record at least one result before you save.")
       return
     }
     setConfirm(true)
@@ -140,7 +192,7 @@ export function LabGridPage() {
   }
 
   return (
-    <PageFrame title="Record a lab session" subtitle={`${s.course.code}, ${s.course.term}. Record the whole group in one pass.`}>
+    <PageFrame title="Lab sessions" subtitle={contextLine(s)}>
       <div className="flex flex-col gap-6" data-lab-grid>
         <div role="status" aria-live="polite" className="sr-only">{announce}</div>
         <div role="status" aria-live="polite" ref={savedRef} tabIndex={-1} className="flex flex-col gap-2 outline-none">
@@ -149,12 +201,9 @@ export function LabGridPage() {
         {blockReason ? (
           <LocalBanner variant="warning" title="You cannot record a lab session here" data-lab-blocked>
             <p>{blockReason}</p>
-            <Button asChild variant="outline" size="lg" className={`${BTN} mt-2`}>
-              <Link href="/v2/preceptor/lab-batch-grid">Open as R. Whitmore</Link>
-            </Button>
           </LocalBanner>
         ) : (
-          <p className="text-sm text-muted-foreground">{`Recording as ${actor?.name}, ${actor?.title.toLowerCase()}. No account is needed.`}</p>
+          <p className="text-sm text-muted-foreground">{`Recording as ${actor?.name}, ${actor?.title.toLowerCase()}`}</p>
         )}
 
         <PageSection title="Session" id="session">
@@ -162,7 +211,7 @@ export function LabGridPage() {
             <div className="flex flex-col gap-1">
               <Label htmlFor="lab-name">Session name</Label>
               <Input id="lab-name" value={name} maxLength={NAME_MAX + 20} disabled={!!blockReason} aria-describedby="lab-name-hint" onChange={(e) => { setName(e.target.value); setSaved(null) }} />
-              <p id="lab-name-hint" className="text-xs text-muted-foreground">{`${name.trim().length} of ${NAME_MAX} characters. Saved sessions are not edited.`}</p>
+              <p id="lab-name-hint" className="text-xs text-muted-foreground">{`${name.trim().length} of ${NAME_MAX} characters`}</p>
             </div>
             <div className="flex flex-col gap-1">
               <Label htmlFor="lab-date">Date</Label>
@@ -179,10 +228,11 @@ export function LabGridPage() {
                 </div>
               ))}
             </RadioGroup>
+            <p className="text-xs text-muted-foreground">{setting === "lab" ? "Never counts toward a clinical setting." : "Never counts toward a clinical setting. Counts only up to each skill's simulation limit."}</p>
           </fieldset>
           <fieldset className="flex flex-col gap-1" disabled={!!blockReason}>
             <legend className="text-sm font-medium text-foreground">Skills in this session</legend>
-            {offered.length === 0 ? <p className="text-sm text-muted-foreground">No skill is open for lab sign-off yet. Publish a skill and map it to this course first.</p> : null}
+            {offered.length === 0 ? <p className="text-sm text-muted-foreground">No skill is open for lab sign-off yet.</p> : null}
             <ul className="grid gap-x-6 sm:grid-cols-2" aria-label="Skills in this session">
               {offered.map(({ skill, blocked }) => (
                 <li key={skill.id} className="flex min-h-(--control-height-touch) items-start gap-3 py-1.5">
@@ -197,7 +247,13 @@ export function LabGridPage() {
           </fieldset>
         </PageSection>
 
-        <PageSection title="Results" id="results" description="Press a cell to change it: Met, Not met, Not yet, Not recorded. Tick Absent for a student who was not there. Blank cells are not saved.">
+        <PageSection title="Results" id="results">
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Cell key" data-lab-key>
+            <li><i className="fa-solid fa-circle-check me-1" aria-hidden="true" />Met</li>
+            <li><i className="fa-light fa-circle-minus me-1" aria-hidden="true" />Not met</li>
+            <li><i className="fa-light fa-comment me-1" aria-hidden="true" />Not yet</li>
+            <li><i className="fa-light fa-circle me-1" aria-hidden="true" />Not recorded</li>
+          </ul>
           {skills.length === 0 ? (
             <p className="text-sm text-muted-foreground" data-lab-no-skills>Choose at least one skill above to show the grid.</p>
           ) : (
@@ -255,24 +311,19 @@ export function LabGridPage() {
             </Table>
           )}
 
-          <Card size="sm">
-            <CardContent className="flex flex-col gap-2 text-sm">
-              <p className="text-foreground" data-lab-counts>{`${counts.results} ${plural(counts.results, "result", "results")} for ${counts.studentsWithResults} ${plural(counts.studentsWithResults, "student", "students")}. ${counts.blank} ${plural(counts.blank, "cell is", "cells are")} blank and not saved. ${counts.absent} ${plural(counts.absent, "student is", "students are")} absent.`}</p>
-              {heldForApproval.length ? <p className="text-muted-foreground">{`${heldForApproval.join(" and ")} ${plural(heldForApproval.length, "is", "are")} held for administrator approval, so these results wait there before they count.`}</p> : null}
-              <p className="text-muted-foreground">Lab and simulation results count as evidence. They never count toward a clinical setting.</p>
-              {setting === "lab" ? <p className="text-muted-foreground">A Met in the lab adds a lab check-off for skills that ask for one.</p> : <p className="text-muted-foreground">Simulation results count only up to the share each skill allows.</p>}
-            </CardContent>
-          </Card>
           {error ? <LocalBanner variant="error" title="The session was not saved" retry={saveFailed ? { label: "Save the session again", onClick: save } : undefined} data-lab-error>{error}</LocalBanner> : null}
-          <div>
-            <Button type="button" variant="default" size="lg" className={BTN} disabled={!!blockReason || counts.results === 0} data-lab-save onClick={openConfirm}>
-              {`Save ${setting === "lab" ? "lab" : "simulation"} session for ${students.length - counts.absent} ${plural(students.length - counts.absent, "student", "students")}`}
-            </Button>
-            {counts.results === 0 && !blockReason ? <p className="mt-1 text-xs text-muted-foreground">Record a result to turn on Save.</p> : null}
+          <div className="sticky bottom-0 z-10 -mx-6 flex flex-col gap-3 border-t border-border bg-background px-6 py-3 sm:flex-row sm:items-center" data-lab-savebar>
+            <LabTally squares={squaresOf(students, chosen, absent, cells)} />
+            <div className="flex flex-col gap-1 sm:items-end">
+              <Button type="button" variant="default" size="lg" className={BTN} disabled={!!blockReason || counts.results === 0} data-lab-save onClick={openConfirm}>
+                {`Save ${setting === "lab" ? "lab" : "simulation"} session for ${students.length - counts.absent} ${plural(students.length - counts.absent, "student", "students")}`}
+              </Button>
+              <p className="text-xs text-muted-foreground">{heldForApproval.length ? `${heldForApproval.join(" and ")} wait${heldForApproval.length === 1 ? "s" : ""} for approval. ` : ""}Blank cells are not saved.</p>
+            </div>
           </div>
         </PageSection>
 
-        <PageSection title={`Saved sessions (${batches.length})`} id="saved" description="Newest first. A saved session is read-only. To correct a result, reopen the evaluation from the student's record.">
+        <PageSection title={`Saved sessions (${batches.length})`} id="saved">
           {batches.length === 0 ? (
             <p className="text-sm text-muted-foreground" data-lab-saved-empty>No session has been saved yet.</p>
           ) : (
