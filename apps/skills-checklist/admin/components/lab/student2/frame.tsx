@@ -47,8 +47,11 @@ export function Student2Frame({
   empty,
   loading,
   showSync = true,
+  fill = false,
   children,
 }: {
+  /** Fill the viewport height so a sticky footer (Send A and B) sits at the bottom of a short page, as on a lab form page. */
+  fill?: boolean
   /** False on Offline and sync, where the page itself is the sync status (say it once). */
   showSync?: boolean
   title: string
@@ -96,9 +99,9 @@ export function Student2Frame({
       </Link>
     </Button>
   ) : null
-  return (
-    <PageFrame title={title} width={width} actions={actions} lead={lead}>
-      <div className="flex flex-col gap-5" data-page-type="student">
+  const body = (
+    <PageFrame title={title} width={width} actions={actions} lead={lead} className={fill ? "flex-1" : undefined}>
+      <div className={fill ? "flex flex-1 flex-col gap-5" : "flex flex-col gap-5"} data-page-type="student">
         {ctx.offline ? (
           <LocalBanner variant="info" title="You are offline">
             Everything you add stays on this device and sends when you reconnect.
@@ -116,6 +119,7 @@ export function Student2Frame({
       </div>
     </PageFrame>
   )
+  return fill ? <div className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">{body}</div> : body
 }
 
 function DefaultLoading() {

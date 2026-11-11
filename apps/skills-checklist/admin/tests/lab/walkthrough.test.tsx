@@ -30,6 +30,7 @@ import { selfEvalEnabled } from "@/lib/lab/student2"
 import { skillById } from "@/lib/v2/evidence-index"
 import { createSeed } from "@/lib/v2/seed"
 import { FULFILLMENT_ENTRY, FULFILLMENT_WALKTHROUGH_ID, WALKTHROUGH_ENTRY, WALKTHROUGH_EXIT, WALKTHROUGH_ID, WALKTHROUGH_ROUTES, effectiveStep, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
+import { toLong } from "@/lib/short-urls"
 import { SKILLS_PANEL, selectedSkillsPanelKey } from "@/lib/lab/admin-ia"
 
 /**
@@ -70,7 +71,7 @@ const fulCtx = (step: string, search = "set=1&present=1"): LinkContext => {
 }
 const landing = (href: string) => {
   const u = new URL(href, "http://lab.test")
-  const [, , , flowId, stepId] = u.pathname.split("/")
+  const [, , , flowId, stepId] = toLong(u.pathname).split("/")
   return { flowId, stepId, q: u.searchParams }
 }
 
@@ -134,9 +135,10 @@ describe("walkthrough definition", () => {
   })
 
   it("has one entry URL each that lands on the first step in present mode, both listed on the present index", () => {
-    expect(WALKTHROUGH_ROUTES).toEqual({ admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID })
-    expect(walkthroughStart()).toBe("/lab/flow/setup-walkthrough/lists?set=1&present=1")
-    expect(walkthroughStart(FULFILLMENT_WALKTHROUGH_ID)).toBe("/lab/flow/fulfillment-walkthrough/progress?set=1&present=1")
+    expect(WALKTHROUGH_ROUTES).toEqual({ admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID, [WALKTHROUGH_ID]: WALKTHROUGH_ID, [FULFILLMENT_WALKTHROUGH_ID]: FULFILLMENT_WALKTHROUGH_ID })
+    // The short URL carries no `set=1` and no `present=1`: a walkthrough is presented in its one set, on the current term.
+    expect(walkthroughStart()).toBe("/walk/setup-walkthrough/lists")
+    expect(walkthroughStart(FULFILLMENT_WALKTHROUGH_ID)).toBe("/walk/fulfillment-walkthrough/progress")
     expect(PRESENT_WALKTHROUGHS.map((w) => w.href)).toEqual([WALKTHROUGH_ENTRY, FULFILLMENT_ENTRY])
   })
 
@@ -221,7 +223,7 @@ describe("the step a page is really on follows the screen's own params (effectiv
 describe("the product's own buttons lead on inside the walkthrough", () => {
   it("One skill goes to its panel in the Library, on the same stop (D-L91)", () => {
     const l = landing(rewriteLabUrl(configureHref("sk-new-1"), ctxFor("add")))
-    expect([l.flowId, l.stepId, l.q.get("skill"), l.q.get("present"), l.q.get("set")]).toEqual([WALKTHROUGH_ID, "library", "sk-new-1", "1", "1"])
+    expect([l.flowId, l.stepId, l.q.get("skill"), l.q.get("present"), l.q.get("set")]).toEqual([WALKTHROUGH_ID, "library", "sk-new-1", "1", null])
   })
 
   it("every link to course mapping lands on its one stop, whichever view it asks for", () => {
@@ -258,7 +260,7 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
     const group = landing(rewriteLabUrl(withFrom("/lab/admin/lists-cohorts?new=1", "skills"), ctxFor("library")))
     expect(group).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "lists" })
     expect([group.q.get("from"), group.q.get("new")]).toEqual(["skills", "1"])
-    expect(returnHref(bulk.q.get("from"), "/lab/admin/dashboard")).toBe("/lab/admin/skills-library")
+    expect(returnHref(bulk.q.get("from"), "/lab/admin/dashboard")).toBe("/as/admin/skills-library")
     expect(returnHref(null, "/lab/admin/dashboard")).toBe("/lab/admin/dashboard")
     expect(LEAF_TITLE["admin/import-ai-review"]()).toBe("Bulk upload")
   })
@@ -290,8 +292,8 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
         else if (f.then) expect(landing(w.next!.href)).toMatchObject({ flowId: f.then, stepId: mainSteps(findFlow(f.then)!)[0]!.id })
         else expect(w.next).toBeUndefined()
         if (i > 0) expect(landing(w.prev!.href).stepId).toBe(ids[i - 1])
-        // Present mode rides along on every hop.
-        for (const h of [w.prev?.href, w.next?.href]) if (h) expect(landing(h).q.get("present")).toBe("1")
+        // Present mode needs no param on a hop: the /walk/... route is always presented (the address carries no present=1 and no set=1).
+        for (const h of [w.prev?.href, w.next?.href]) if (h) { expect(landing(h).q.has("present")).toBe(false); expect(landing(h).q.has("set")).toBe(false); expect(h.startsWith("/walk/")).toBe(true) }
       })
     }
   })
@@ -365,10 +367,10 @@ describe("presenter control", () => {
     expect(screen.getByText("Admin walkthrough")).toBeInTheDocument()
     expect(screen.getByText("Evaluation settings")).toBeInTheDocument()
     expect(screen.getByText("2 of 3")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Back: Skill lists" })).toHaveAttribute("href", "/lab/flow/setup-walkthrough/lists?set=1&present=1")
-    expect(screen.getByRole("link", { name: "Next: Course mapping" }).getAttribute("href")).toMatch(/^\/lab\/flow\/setup-walkthrough\/map\?/)
+    expect(screen.getByRole("link", { name: "Back: Skill lists" })).toHaveAttribute("href", "/walk/setup-walkthrough/lists")
+    expect(screen.getByRole("link", { name: "Next: Course mapping" }).getAttribute("href")).toMatch(/^\/walk\/setup-walkthrough\/map(\?|$)/)
     expect(screen.getByRole("button", { name: "Exit" })).toBeInTheDocument()
-    expect(WALKTHROUGH_EXIT).toBe("/lab")
+    expect(WALKTHROUGH_EXIT).toBe("/all")
     const text = `${container.textContent ?? ""} ${[...container.querySelectorAll("[aria-label]")].map((e) => e.getAttribute("aria-label")).join(" ")}`
     for (const w of BANNED) expect(text, w).not.toContain(w)
   })
@@ -434,7 +436,7 @@ describe("no lab variant is deleted or hidden", () => {
     const { container } = render(<TooltipProvider><LabIndex /></TooltipProvider>)
     const hrefs = new Set([...container.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")))
     const missing: string[] = []
-    for (const s of SCREENS) for (const v of s.variants) if (!hrefs.has(`/lab/${s.persona}/${s.slug}?variant=${v.id}`)) missing.push(`${screenKey(s)}/${v.id}`)
+    for (const s of SCREENS) for (const v of s.variants) if (!hrefs.has(`/as/${s.persona}/${s.slug}?variant=${v.id}`)) missing.push(`${screenKey(s)}/${v.id}`)
     expect(missing).toEqual([])
     expect(container.querySelector(`a[href="${WALKTHROUGH_ENTRY}"]`)).not.toBeNull()
     expect(container.querySelector(`a[href="${FULFILLMENT_ENTRY}"]`)).not.toBeNull()

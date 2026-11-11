@@ -197,7 +197,7 @@ export function SkillRuleSentence({ rule, className }: { rule: LabRule; classNam
 /**
  * One skill's two forms beside the form (map D1c) [REQ SC-19]: the rule sentence, Student and Evaluator tabs, and a muted tray so the fields read as a picture rather than as more to fill in. Live from the draft, read only. With no model, or a model short of questions, one line says what comes first.
  */
-export function SkillPreviewPanel({ id, name, rule }: { id: string; name: string; rule: LabRule }) {
+export function SkillPreviewPanel({ id, name, rule, sentence = true }: { id: string; name: string; rule: LabRule; /** The page states the rule above its cards: the panel does not say it again. */ sentence?: boolean }) {
   const state = useV2State()
   const [who, setWho] = React.useState("student")
   const example = React.useMemo<Example>(() => ({ id, name, rule }), [id, name, rule])
@@ -206,7 +206,7 @@ export function SkillPreviewPanel({ id, name, rule }: { id: string; name: string
   return (
     <section ref={fitted} className="sticky top-4 flex min-w-0 flex-col gap-3 border-s border-border ps-6" aria-labelledby="cfg-preview-title" data-preview-panel>
       <h2 id="cfg-preview-title" className={TYPE.section}>What they will see</h2>
-      <SkillRuleSentence rule={rule} />
+      {sentence ? <SkillRuleSentence rule={rule} /> : null}
       {!rule.model ? <p className={TYPE.helper} data-preview-line>{`Choose how this ${skillNoun()} is judged first.`}</p> : null}
       {rule.model && !ready ? <p className={TYPE.helper} data-preview-line>Add questions to see the evaluator&apos;s form.</p> : null}
       {ready ? (

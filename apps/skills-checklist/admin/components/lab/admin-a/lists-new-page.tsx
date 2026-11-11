@@ -8,10 +8,11 @@ import { usePresent } from "@/components/lab/lab-bar/present"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { FloatingSheetPanel } from "@/components/lab/shared/sheet"
 import { FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar, FloatingSheetPanelWorkflowFooter } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
-import { Field, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@exxatdesignux/ui/components/ui/input-group"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
 import { createList, setListSkills, skillLists, validateNewList, type SkillList } from "@/lib/lab/lists"
-import { capitalize, countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, capitalize, countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { fmt } from "./parts"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import type { ListsModel } from "./lists-parts"
@@ -44,14 +45,18 @@ export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; on
   const [askingDraft, setAskingDraft] = React.useState(false)
   const [adding, setAdding] = React.useState(false)
   const [typed, setTyped] = React.useState("")
-  const [newCategory, setNewCategory] = React.useState("")
+  // A name already on the list says so under the field and keeps the text; the polite line tells a screen reader what was added, since the field clears.
+  const [typedError, setTypedError] = React.useState<string | null>(null)
+  const [announce, setAnnounce] = React.useState("")
   // Skills added here, whose category can still be set here. A skill that already has one keeps it: that is the Library's to change.
   const [addedHere, setAddedHere] = React.useState<ReadonlySet<string>>(new Set())
   const vocab = useVocabOptions()
   const stamp = () => `${DEMO_TODAY}T${new Date().toISOString().slice(11)}`
   const setCategoryOf = (id: string, category: string) => store.update((st) => setSkillDetailsInStore(category ? ensureVocab(st, "categories", [category], IDS.ross, stamp()) : st, [id], { category }, IDS.ross, stamp()))
   const rows = React.useMemo(() => model.state.skills.filter((k) => k.active !== false).sort((a, b) => a.name.localeCompare(b.name)), [model.state])
-  const onList = rows.filter((k) => picked.has(k.id))
+  const byId = React.useMemo(() => new Map(rows.map((k) => [k.id, k])), [rows])
+  // Newest first: what was just added sits under the field, so it is seen without scrolling a long list. `picked` keeps the order things were added.
+  const onList = React.useMemo(() => [...picked].reverse().flatMap((id) => { const k = byId.get(id); return k ? [k] : [] }), [picked, byId])
   const others = skillLists(model.lists).filter((l) => l.skillIds.length > 0)
   const dirty = !!name.trim() || picked.size > 0 || !!typed.trim()
   const leave = useLeaveGuard(dirty)
@@ -67,27 +72,49 @@ export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; on
   const leaveLibrary = () => (draftChanged ? setAskingDraft(true) : closeLibrary())
   const cancel = () => (dirty ? setAsking(true) : onClose())
   const addTyped = (raw: string) => {
-    // One name, or a pasted list, one per line. A name already in the library goes on the list as it is.
+    // One name, or a pasted list, one per line. A name already in the library goes on the list as it is; one already on the list is not added twice.
     const names = [...new Set(raw.split(/\r?\n/).map((n) => n.trim().replace(/\s+/g, " ")).filter(Boolean))]
     if (!names.length) return
     const existing = new Map(model.state.skills.map((k) => [normName(k.name), k.id]))
     const fresh: AddedSkill[] = []
     const ids: string[] = []
+    const already: string[] = []
     names.forEach((n, i) => {
       const had = existing.get(normName(n))
+      if (had && picked.has(had)) { already.push(n); return }
       if (had) { ids.push(had); return }
       const id = `lab-skill-${Date.now().toString(36)}-${i}`
-      fresh.push(draftToSkill({ ...EMPTY_DRAFT, name: n, category: newCategory, section: newCategory }, id))
+      fresh.push(draftToSkill({ ...EMPTY_DRAFT, name: n }, id))
       ids.push(id)
     })
+    if (!ids.length) {
+      setTypedError(already.length === 1 ? `${already[0]} is already on this list.` : `These ${skillNounPlural()} are already on this list.`)
+      focusOn("#new-skill-name")
+      return
+    }
     if (fresh.length) {
-      store.update((st) => addSkillsToStore(newCategory ? ensureVocab(st, "categories", [newCategory], IDS.ross, stamp()) : st, fresh, IDS.ross, stamp()))
+      store.update((st) => addSkillsToStore(st, fresh, IDS.ross, stamp()))
       setAddedHere((x) => new Set([...x, ...fresh.map((k) => k.id)]))
     }
-    setPicked((x) => new Set([...x, ...ids]))
+    // Stored in reverse so a pasted list reads top to bottom in the order it was pasted.
+    setPicked((x) => new Set([...x, ...[...ids].reverse()]))
     setTyped("")
+    setTypedError(null)
     setSkillError(null)
+    setAnnounce(ids.length === 1 ? `Added ${names.find((n) => !already.includes(n)) ?? ""}.` : `Added ${countSkills(ids.length)}.`)
     focusOn("#new-skill-name")
+  }
+  // Kept skills keep their place; new ones from the library go on top, A to Z.
+  const fromLibrary = (d: ReadonlySet<string>) => {
+    const added = [...d].filter((id) => !picked.has(id)).sort((a, b) => (byId.get(b)?.name ?? "").localeCompare(byId.get(a)?.name ?? ""))
+    return new Set([...[...picked].filter((id) => d.has(id)), ...added])
+  }
+  const remove = (id: string) => {
+    // Focus goes to the next row's remove, else the one before, else the field, else Choose from library.
+    const i = onList.findIndex((k) => k.id === id)
+    const next = onList[i + 1] ?? onList[i - 1]
+    setPicked((x) => { const s = new Set(x); s.delete(id); return s })
+    focusOn(next ? `[data-remove-skill="${next.id}"]` : adding ? "#new-skill-name" : "[data-add-new]")
   }
   const save = () => {
     const input = { name, noun, nounPlural: skillNounPlural(), standard: "", fromListId: null }
@@ -102,15 +129,18 @@ export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; on
     model.applyNow((ls) => setListSkills([...ls, list], list.id, ids))
     onSaved(list, ids.length)
   }
-  // Nothing on the list yet: the drawing carries the two ways in. Once there is something to count, they move up beside the count.
+  // Nothing on the list yet: the drawing carries the two ways in. Once started, the field is the one way to write and Choose from library sits beside the count.
   const started = onList.length > 0 || adding
   const hasLibrary = rows.length > 0
+  const chooseFromLibrary = hasLibrary ? <Button type="button" variant="outline" size="sm" onClick={openLibrary} data-add-library>Choose from library</Button> : null
   const addButtons = (
     <>
-      <Button type="button" variant="outline" size="sm" onClick={() => { setAdding(true); focusOn("#new-skill-name") }} data-add-new>Add new</Button>
-      {hasLibrary ? <Button type="button" variant="outline" size="sm" onClick={openLibrary} data-add-library>Add from library</Button> : null}
+      <Button type="button" variant="outline" size="sm" onClick={() => { setAdding(true); focusOn("#new-skill-name") }} data-add-new>{`Write ${aNoun()}`}</Button>
+      {chooseFromLibrary}
     </>
   )
+  const fieldError = typedError ?? skillError
+  const describedBy = [fieldError ? "new-skill-error" : "", "new-skill-hint"].filter(Boolean).join(" ")
   return (
     <>
     <FloatingSheetPanel open onOpenChange={(o) => (o ? null : draft ? leaveLibrary() : cancel())}>
@@ -118,11 +148,11 @@ export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; on
         {draft ? (
           <>
             <FloatingSheetPanelToolbar onBack={leaveLibrary} backLabel="Back to the list" closeLabel="Close" showSize={false} />
-            <FloatingSheetPanelHeader title="Add from library" subtitle={name.trim() || `New ${skillListNoun()}`} />
+            <FloatingSheetPanelHeader title="Choose from library" subtitle={name.trim() || `New ${skillListNoun()}`} />
             <FloatingSheetPanelBody className="flex min-w-0 flex-col gap-2 px-4 pb-4 pt-1" data-new-list-library>
               <SkillPicker skills={rows} savedIds={picked} selected={draft} others={others} onChange={(ids) => setDraft(ids)} idPrefix="new-list" library bulkHref={to("admin/import-ai-review", {})} />
             </FloatingSheetPanelBody>
-            <FloatingSheetPanelWorkflowFooter cancelLabel="Back" onCancel={leaveLibrary} primaryLabel={draftRemoved ? "Update the list" : draftNew ? `Add ${countSkills(draftNew)}` : "Add"} primaryDisabled={!draftChanged} onPrimary={() => { setPicked(draft); setSkillError(null); closeLibrary() }} primaryIconClassName="fa-light fa-plus text-xs" />
+            <FloatingSheetPanelWorkflowFooter cancelLabel="Back" onCancel={leaveLibrary} primaryLabel={draftRemoved ? "Update the list" : draftNew ? `Add ${countSkills(draftNew)}` : "Add"} primaryDisabled={!draftChanged} onPrimary={() => { setPicked(fromLibrary(draft)); setSkillError(null); setTypedError(null); closeLibrary() }} primaryIconClassName="fa-light fa-plus text-xs" />
           </>
         ) : (
           <>
@@ -138,35 +168,59 @@ export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; on
                 <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
                   <h2 id="new-list-skills" className={`${TYPE.group} flex items-baseline gap-2`}>
                     {`${capitalize(skillNounPlural())} on this list`}
-                    {started ? <span className="text-sm font-normal tabular-nums text-muted-foreground" data-picked-count={onList.length}>{fmt(onList.length)}</span> : null}
+                    {onList.length ? <span className="text-sm font-normal tabular-nums text-muted-foreground" data-picked-count={onList.length}>{fmt(onList.length)}</span> : null}
                   </h2>
-                  {started ? <span className="flex items-center gap-2">{addButtons}</span> : null}
+                  {started ? chooseFromLibrary : null}
                 </div>
-                {adding ? (
-                  <div className="flex items-center gap-2" data-add-new-row>
-                    <Input id="new-skill-name" aria-label={`Name of the new ${noun}`} placeholder={`Name of the new ${noun}`} className="min-w-0 flex-1" value={typed} onChange={(e) => setTyped(e.target.value)} onPaste={(e) => { const text = e.clipboardData.getData("text"); if (/\r?\n/.test(text.trim())) { e.preventDefault(); addTyped(text) } }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); addTyped(typed) } }} />
-                    <div className="w-48 shrink-0" data-add-new-category><span id="new-skill-category-label" className="sr-only">{`Category for the new ${noun}`}</span><CategoryPicker id="new-skill-category" labelId="new-skill-category-label" value={newCategory} options={vocab.categories} inactive={vocab.inactiveCategories} onChange={setNewCategory} emptyLabel="No category" /></div>
-                    <Button type="button" variant="outline" size="default" disabled={!typed.trim()} onClick={() => addTyped(typed)}>Add</Button>
-                    <Button type="button" variant="ghost" size="default" onClick={() => { setAdding(false); setTyped(""); focusOn("[data-add-new]") }}>Done</Button>
-                  </div>
+                {started ? (
+                  <Field data-invalid={fieldError ? true : undefined} className="gap-1.5" data-add-new-row>
+                    <InputGroup>
+                      <InputGroupInput
+                        id="new-skill-name"
+                        aria-label={`Name of a new ${noun}`}
+                        placeholder={`Name of a new ${noun}`}
+                        enterKeyHint="enter"
+                        autoComplete="off"
+                        aria-invalid={!!fieldError}
+                        aria-describedby={describedBy}
+                        value={typed}
+                        onChange={(e) => { setTyped(e.target.value); setTypedError(null) }}
+                        onPaste={(e) => { const text = e.clipboardData.getData("text"); if (/\r?\n/.test(text.trim())) { e.preventDefault(); addTyped(text) } }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); addTyped(typed) } }}
+                      />
+                      {typed.trim() ? (
+                        <InputGroupAddon align="inline-end">
+                          <InputGroupButton type="button" variant="ghost" size="xs" onClick={() => addTyped(typed)} data-add-typed>Add</InputGroupButton>
+                        </InputGroupAddon>
+                      ) : null}
+                    </InputGroup>
+                    {fieldError ? <FieldError id="new-skill-error" data-skill-error={skillError && !typedError ? true : undefined} data-typed-error={typedError ? true : undefined}>{fieldError}</FieldError> : null}
+                    <FieldDescription id="new-skill-hint">Press Enter to add. Paste a list to add several.</FieldDescription>
+                  </Field>
                 ) : null}
-                {skillError && started ? <FieldError data-skill-error>{skillError}</FieldError> : null}
+                <p role="status" className="sr-only">{announce}</p>
                 {onList.length ? (
                   <ul className="flex flex-col rounded-[var(--radius)] border border-border ps-3 pe-1" aria-label={`${capitalize(skillNounPlural())} on this list`} data-list-rows={onList.length}>
-                    {onList.map((k) => (
-                      <li key={k.id} className="flex min-h-11 items-center gap-3 border-b border-border py-1 text-sm last:border-b-0 [contain-intrinsic-size:auto_2.75rem] [content-visibility:auto]">
-                        <span className="min-w-0 flex-1 truncate" title={k.name}>{k.name}</span>
-                        {addedHere.has(k.id) || !k.category?.trim() || k.category === NO_CATEGORY ? (
-                          <div className="flex w-48 shrink-0 justify-end" data-row-category><span id={`category-label-${k.id}`} className="sr-only">{`Category for ${k.name}`}</span><CategoryPicker id={`category-${k.id}`} labelId={`category-label-${k.id}`} value={k.category === NO_CATEGORY ? "" : k.category ?? ""} options={vocab.categories} inactive={vocab.inactiveCategories} onChange={(c) => setCategoryOf(k.id, c)} size="sm" emptyLabel="No category" /></div>
-                        ) : <span className="shrink-0 text-muted-foreground">{k.category}</span>}
-                        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Remove ${k.name}`} onClick={() => setPicked((x) => { const next = new Set(x); next.delete(k.id); return next })}>
-                          <i className="fa-light fa-xmark" aria-hidden="true" />
-                        </Button>
-                      </li>
-                    ))}
+                    {onList.map((k) => {
+                      const settable = addedHere.has(k.id) || !k.category?.trim() || k.category === NO_CATEGORY
+                      return (
+                        <li key={k.id} className="flex min-h-11 items-center gap-2 border-b border-border py-1 text-sm last:border-b-0 [contain-intrinsic-size:auto_2.75rem] [content-visibility:auto]">
+                          <span className="min-w-0 flex-1 truncate" title={k.name}>{k.name}</span>
+                          {settable ? (
+                            <span className="flex min-w-0 max-w-[45%] shrink-0 justify-end" data-row-category>
+                              <span id={`category-label-${k.id}`} className="sr-only">{`Category for ${k.name}`}</span>
+                              <CategoryPicker id={`category-${k.id}`} labelId={`category-label-${k.id}`} value={k.category === NO_CATEGORY ? "" : k.category ?? ""} options={vocab.categories} inactive={vocab.inactiveCategories} onChange={(c) => setCategoryOf(k.id, c)} size="sm" appearance="quiet" emptyLabel="Add category" />
+                            </span>
+                          ) : <span className="min-w-0 max-w-[45%] shrink-0 truncate px-2 text-muted-foreground" title={k.category}>{k.category}</span>}
+                          <Button type="button" variant="ghost" size="icon-sm" className="max-md:size-11" aria-label={`Remove ${k.name}`} onClick={() => remove(k.id)} data-remove-skill={k.id}>
+                            <i className="fa-light fa-xmark" aria-hidden="true" />
+                          </Button>
+                        </li>
+                      )
+                    })}
                   </ul>
                 ) : adding ? null : (
-                  <FirstRun data-no-skills-yet scene="newList" title={`Add the ${skillNounPlural()} for this list`} body={hasLibrary ? "Write new ones, or pick from your library." : "Write them here, or paste a list."} actions={addButtons} error={skillError ? <FieldError data-skill-error>{skillError}</FieldError> : null} />
+                  <FirstRun data-no-skills-yet scene="newList" title={`No ${skillNounPlural()} on this list yet`} body={hasLibrary ? `Write your own, or reuse ${skillNounPlural()} from your library.` : "Write them here, or paste a list."} actions={addButtons} error={skillError ? <FieldError data-skill-error>{skillError}</FieldError> : null} />
                 )}
               </section>
             </FloatingSheetPanelBody>

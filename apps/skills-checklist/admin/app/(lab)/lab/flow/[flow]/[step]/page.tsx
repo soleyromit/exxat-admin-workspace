@@ -6,6 +6,7 @@ import { ProgramScope } from "@/components/lab/setup/new-program-scope"
 import { LabBar } from "@/components/lab/lab-bar"
 import { PlaceholderScreen } from "@/components/lab/placeholder-screen"
 import { VARIANT_COMPONENTS } from "@/components/lab/screens"
+import { toShort } from "@/lib/short-urls"
 import { isPersonaId } from "@/lib/lab/personas"
 import { findFlow, resolveStep } from "@/lib/lab/flows"
 import { isPresent } from "@/lib/lab/present"
@@ -30,19 +31,16 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
   const one = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : undefined)
   // Present mode shows only the recommended variant of each screen (granola 2026-10-26 item 20).
   // A walkthrough is always presented: without the param it gets it, and `?variant=` on its URL is ignored (D-L64).
-  if (findFlow(flowId)?.walkthrough && !isPresent(one("present"))) {
-    const q = new URLSearchParams()
-    for (const [k, v] of Object.entries(sp)) if (typeof v === "string") q.set(k, v)
-    q.set("present", "1")
-    redirect(`/lab/flow/${flowId}/${stepId}?${q.toString()}`)
-  }
+  // The URL need not say so (short URLs: `/walk/<flow>/<step>` carries no `present=1` and no `set=1`): a walkthrough is presented
+  // in its one set, and the term defaults to the current one (an absent `term` means CURRENT_TERM, lib/lab/scope.ts).
+  const walkthrough = !!findFlow(flowId)?.walkthrough
   // The Assign stop is gone (D-L106): who a list is assigned to is in its panel on Skill lists. An old link lands there, and the page reads the list it named.
   if (stepId === "assign" && findFlow(flowId)?.steps.some((s) => s.id === "lists")) {
     const q = new URLSearchParams()
     for (const [k, v] of Object.entries(sp)) if (typeof v === "string") q.set(k, v)
-    redirect(`/lab/flow/${flowId}/lists?${q.toString()}`)
+    redirect(toShort(`/lab/flow/${flowId}/lists?${q.toString()}`))
   }
-  const present = isPresent(one("present"))
+  const present = isPresent(one("present")) || walkthrough
   const requestedSet = present ? findFlow(flowId)?.recommendedSet : one("set")
   const r = resolveStep(flowId, stepId, requestedSet)
   if (!r) notFound()
@@ -62,7 +60,7 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
     for (const [k, v] of Object.entries(sp)) if (typeof v === "string") q.set(k, v)
     q.set("set", r.set)
     for (const [k, v] of missing) q.set(k, v)
-    redirect(`/lab/flow/${flowId}/${stepId}?${q.toString()}`)
+    redirect(toShort(`/lab/flow/${flowId}/${stepId}?${q.toString()}`))
   }
 
   // A walkthrough screen that moves on by its own params (Send C's Continue, My progress opening a course) stays on its route:
@@ -76,8 +74,10 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
   const Built = variant.file ? VARIANT_COMPONENTS[key] : undefined
   // A walkthrough can cross roles (student, evaluator, faculty): its breadcrumb names the role of the page, not the flow's first role.
   const navPersona = !r.flow.walkthrough && isPersonaId(r.flow.persona) ? r.flow.persona : persona
+  // A walkthrough shows no lab bar (D-L139), so it reserves no row for one while it loads either. The element stays: the frames
+  // hang the path bar of a focus or evaluator page beside it.
   const bar = (
-    <React.Suspense fallback={<div className="h-10 shrink-0 border-b border-border" data-lab-chrome aria-hidden="true" />}>
+    <React.Suspense fallback={r.flow.walkthrough ? null : <div className="h-10 shrink-0 border-b border-border" data-lab-chrome aria-hidden="true" />}>
       <LabBar persona={navPersona} flow={r.flow.id} step={step.id} set={r.set} variant={variant.id} />
     </React.Suspense>
   )

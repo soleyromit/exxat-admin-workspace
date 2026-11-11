@@ -22,11 +22,11 @@ import { CONFIGURATION_META } from "@/lib/lab/library"
 import { panelIssues, rebuildForModel, TIMES_MAX } from "@/lib/lab/program-settings"
 import { inSentence, skillNoun } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
-import { BinaryLabelsField, checkOffGrantSelect, ListEditor, ModelSection, PasteQuestions, QualifyingField, QuestionRuleField, QuestionSubsetPicker, ScaleField, ScoredRuleField, SignersField, withCheckOffPatch, type SectionProps } from "./fields"
+import { BinaryLabelsField, checkOffGrantSelect, ListEditor, ModelSection, NUMBER_WIDTH, PasteQuestions, QualifyingField, QuestionRuleField, QuestionSubsetPicker, ScaleField, ScoredRuleField, SignersField, withCheckOffPatch, type SectionProps } from "./fields"
 import { useFieldLayer, useFocusBack } from "./field-layer"
 import { MinimumsField } from "./rule-conditions"
 import { StudentAddsRow } from "./settings-dialogs"
-import { LevelList, Row, SwitchRow, tileExamples } from "./settings-rows"
+import { LevelList, NumberWithUnit, Row, SwitchRow, tileExamples } from "./settings-rows"
 
 export type SkillSection = "judged" | "counts" | "student" | "who"
 
@@ -130,24 +130,28 @@ export function packageReadOut(r: LabRule): Array<{ label: string; value: string
   ]
 }
 
-/** Times needed, the one input of a skill's own part. */
-export function TimesNeededField({ rule, setRule, error }: Pick<SectionProps, "rule" | "setRule"> & { error?: string }) {
+/** Times needed, the one input of a skill's own part. `unit`: the words after the number, so the number reads with them (the cards page). */
+export function TimesNeededField({ rule, setRule, error, unit }: Pick<SectionProps, "rule" | "setRule"> & { error?: string; unit?: string }) {
+  const input = (
+    <Input
+      id="cfg-need"
+      type="number"
+      inputMode="numeric"
+      min={1}
+      max={TIMES_MAX}
+      step={1}
+      className={NUMBER_WIDTH}
+      // Five characters wide beside its unit: an empty box says it is empty without a placeholder that would not fit.
+      placeholder={unit ? undefined : "Not set"}
+      value={Number.isFinite(rule.need) ? String(rule.need) : ""}
+      onChange={(e) => { const raw = e.target.value; setRule((r) => ({ ...r, need: raw.trim() === "" ? Number.NaN : Number(raw) })) }}
+      aria-invalid={!!error || undefined}
+      aria-describedby={[error ? "cfg-need-error" : "", unit ? "cfg-need-unit" : ""].filter(Boolean).join(" ") || undefined}
+    />
+  )
   return (
     <div className="flex flex-col gap-1">
-      <Input
-        id="cfg-need"
-        type="number"
-        inputMode="numeric"
-        min={1}
-        max={TIMES_MAX}
-        step={1}
-        className="w-24 tabular-nums"
-        placeholder="Not set"
-        value={Number.isFinite(rule.need) ? String(rule.need) : ""}
-        onChange={(e) => { const raw = e.target.value; setRule((r) => ({ ...r, need: raw.trim() === "" ? Number.NaN : Number(raw) })) }}
-        aria-invalid={!!error || undefined}
-        aria-describedby={error ? "cfg-need-error" : undefined}
-      />
+      {unit ? <NumberWithUnit unit={unit} unitId="cfg-need-unit">{input}</NumberWithUnit> : input}
       {error ? <FieldError id="cfg-need-error">{error}</FieldError> : null}
     </div>
   )

@@ -1,30 +1,28 @@
 "use client"
 
 /**
- * Student Send for evaluation, variant A: who, then how (recommended).
- * Tests: do skills, then the evaluator (site preceptors first, or anyone by name and email), then one of four ways to reach them,
- * with one Send and one sentence on what happens next, get a request out fastest?
- * Regions (form budget 5): header · skills, where and who signs off · details and note · how they sign · this request (Send).
- * Where decides who may sign (clinical: preceptor or faculty; lab or simulation: lab instructor or faculty). Required details are
- * enforced with one summary on a failed Send; the result lists skills, evaluator and role, setting and location.
- * [REQ ST-04..ST-10, ST-12, ST-13, SL-11, EV-01, EV-02, EV-05, EV-07; LEDGER D-L2 one link per request; COMP QR fastest, CORE link]
+ * Student Send for evaluation, variant A: one page, who then how (recommended).
+ * Tests: on one page with no steps, do the skills (two likely ones chosen for you, changed in place), then the evaluator (three
+ * suggestions, anyone by search, or someone not listed by name and email), then one of four illustrated ways to reach them, with
+ * one Send, get a request out fastest?
+ * The Send design is shared with B and C (student2/request-parts.tsx SendSection, Romit 2026-11-10: "This screen isn't simple at
+ * all"): a summary card with Change (skills, where, date performed, capped at the program's today), the self-evaluation inline
+ * when a chosen skill asks for one, who signs off, how they sign, a note behind a disclosure, and the Send footer. What makes A
+ * itself: one page, skills chosen in place from the whole library, no course step (C) and no situation question first (B).
+ * [REQ ST-04..ST-13, SL-11, EV-01, EV-02, EV-05, EV-07; LEDGER D-L2 one link per request]
  */
 import * as React from "react"
-import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
-import { FieldError } from "@exxatdesignux/ui/components/ui/field"
 import { EmptyBlock, Student2Frame, type Student2Ctx } from "@/components/lab/student2/frame"
-import { EvaluatorPicker, MethodTiles } from "@/components/lab/student2/log-parts"
-import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SelfEvalPart, SendBlockedNote, SendIssues, SkillsField, WherePick, scopeSentence, useRequestDraft } from "@/components/lab/student2/request-parts"
-import { SectionTitle } from "@/components/lab/student/parts"
+import { RequestResult, SavedForLater, SendIssues, SendPageFooter, SendSection, useRequestDraft } from "@/components/lab/student2/request-parts"
 import { FormSkeleton } from "./student-log-a"
-import { aNoun, countSkills, skillNounPlural } from "@/lib/lab/terms"
-import { noAccountLine, methodById, needsApproval, settingWords } from "@/lib/lab/student2"
+import { aNoun, skillNounPlural } from "@/lib/lab/terms"
+import { LATEST_DATE } from "@/lib/lab/student2"
 
 export function StudentRequestA() {
   return (
     <Student2Frame
       title={`Log ${aNoun()}`}
+      fill
       empty={() => <EmptyBlock title={`No ${skillNounPlural()} open yet`} body={`Your program has not set up ${skillNounPlural()} to send. Check back once it has.`} />}
       loading={<FormSkeleton />}
     >
@@ -34,66 +32,16 @@ export function StudentRequestA() {
 }
 
 function RequestForm({ ctx }: { ctx: Student2Ctx }) {
-  const d = useRequestDraft(ctx)
-  if (d.result) return <div className="max-w-3xl"><RequestResult d={d} r={d.result} /></div>
-  const approval = needsApproval(d.s, d.skills)
-  const m = methodById(d.method)
+  // Date performed starts on today, on the program's clock, as on C [REQ ST-10].
+  const d = useRequestDraft(ctx, { defaultDate: LATEST_DATE })
+  React.useEffect(() => { if (d.result) window.scrollTo({ top: 0 }) }, [!!d.result]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (d.result) return <div data-student-lab="request-A" data-step="sent"><RequestResult d={d} wide r={d.result} /></div>
   return (
-    <form className="grid gap-5 lg:grid-cols-12" noValidate onSubmit={(e) => { e.preventDefault(); d.send() }} data-student-lab="request-A">
-      <div className="flex min-w-0 flex-col gap-5 lg:col-span-8">
-        <SendIssues d={d} />
-        <Card className="gap-0 py-0" data-region="who">
-          <CardContent className="flex flex-col gap-5 py-4">
-            <SkillsField d={d} picks={d.picks} />
-            <div className="flex flex-col gap-3 border-t border-border pt-4">
-              <WherePick d={d} />
-              <EvaluatorPicker options={d.options} value={d.who} onChange={d.setWho} fresh={d.fresh} onFresh={d.setFresh} errors={d.freshErrors} showErrors={d.tried} compact />
-              {d.tried && d.errors.who ? <FieldError>{d.errors.who}</FieldError> : null}
-            </div>
-          </CardContent>
-        </Card>
-        <SelfEvalPart d={d} />
-        <Card className="gap-0 py-0" data-region="details">
-          <CardContent className="py-4">
-            <DetailsAndNote d={d} />
-          </CardContent>
-        </Card>
-        <Card className="gap-0 py-0" data-region="how">
-          <CardContent className="flex flex-col gap-4 py-4">
-            <MethodTiles value={d.method} onChange={d.setMethod} offline={d.offline} />
-            {d.method === "photo" ? <PhotoField d={d} /> : null}
-          </CardContent>
-        </Card>
-      </div>
-      <div className="lg:col-span-4">
-        <Card className="gap-0 py-0 lg:sticky lg:top-4" data-region="send">
-          <CardContent className="flex flex-col gap-3 py-4">
-            <SectionTitle>This request</SectionTitle>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
-              <dt className="text-muted-foreground">{skillNounPlural().replace(/^./, (c) => c.toUpperCase())}</dt>
-              <dd className="text-foreground">{d.skills.length ? countSkills(d.skills.length) : "None yet"}</dd>
-              <dt className="text-muted-foreground">Where</dt>
-              <dd className="truncate text-foreground">{settingWords(d.chosen)}</dd>
-              <dt className="text-muted-foreground">To</dt>
-              <dd className="truncate text-foreground">{d.who ? d.whoName : "Not chosen"}</dd>
-              <dt className="text-muted-foreground">How</dt>
-              <dd className="text-foreground">{m.label}</dd>
-              <dt className="text-muted-foreground">Counts</dt>
-              <dd className="text-foreground">{d.method === "photo" ? "After review" : approval ? "After approval" : "When the evaluation meets the rule"}</dd>
-            </dl>
-            {/* One paragraph: how this signer signs, only when it is through a link (a preceptor or a new name: no account, REQ
-                EV-01; faculty and lab instructors sign in to Prism), then what they see. */}
-            <p className="text-sm text-muted-foreground" data-scope-sentence>{[d.method === "photo" || !d.who ? "" : noAccountLine(d.whoSignsByLink, d.whoName), scopeSentence(d)].filter(Boolean).join(" ")}</p>
-            <SavedForLater d={d} />
-            <SendBlockedNote d={d} />
-            {/* Save for later keeps it in My requests, Drafts; nothing counts until it is sent (LEDGER D-L10). */}
-            <div className="flex flex-col gap-2 sm:flex-row-reverse">
-              <Button type="submit" variant="default" size="default" className="w-full sm:flex-1 max-sm:h-11" disabled={d.blocked} aria-describedby={d.blocked ? "send-blocked" : undefined}>{d.offline && !m.offline ? "Keep and send later" : "Send"}</Button>
-              <Button type="button" variant="outline" size="default" className="w-full sm:flex-1 max-sm:h-11" onClick={() => d.saveForLater()}>Save for later</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </form>
+    <div className="flex flex-1 flex-col gap-5" data-student-lab="request-A" data-step="send">
+      <SendIssues d={d} />
+      <SavedForLater d={d} />
+      <SendSection d={d} editSkills />
+      <SendPageFooter d={d} />
+    </div>
   )
 }

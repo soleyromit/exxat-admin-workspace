@@ -5,6 +5,7 @@
  */
 import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { isFlowPath } from "@/lib/short-urls"
 import { SkillsLibraryTablePage } from "./admin-skills-library-a"
 import { ConfigureManyPage } from "@/components/lab/configure/many-page"
 import { ConfigureOneSkillPage } from "@/components/lab/configure/one-skill-page"
@@ -21,7 +22,7 @@ export function AdminConfigureSkillB() {
   if (ids.length > 1) return <ConfigureManyPage ids={ids} />
   const skillId = ids[0] ?? params?.get("skill") ?? null
   if (skillId) return <ConfigureOneSkillPage skillId={skillId} />
-  if (pathname.startsWith("/lab/flow/")) return <SkillsLibraryTablePage />
+  if (isFlowPath(pathname)) return <SkillsLibraryTablePage />
   return <OpenInLibrary skillId={null} />
 }
 

@@ -15,27 +15,27 @@ const pairs = (role: RoleId) => rows(role).map((r) => [r.title, r.url])
 describe("nav rows per role", () => {
   it("administrator", () => {
     expect(pairs("admin")).toEqual([
-      ["Dashboard", "/v2/admin"],
-      ["Skills library", "/v2/admin/starter-library"],
-      ["Courses", "/v2/admin/map-courses"],
-      ["Review and approve", "/v2/admin/review-queue"],
-      ["Outcomes", "/v2/admin/outcomes"],
-      ["Records", "/v2/admin/verification"],
-      ["Reports", "/v2/admin/reports"],
+      ["Dashboard", "/proto/admin"],
+      ["Skills library", "/proto/admin/starter-library"],
+      ["Courses", "/proto/admin/map-courses"],
+      ["Review and approve", "/proto/admin/review-queue"],
+      ["Outcomes", "/proto/admin/outcomes"],
+      ["Records", "/proto/admin/verification"],
+      ["Reports", "/proto/admin/reports"],
     ])
   })
   it("reviewer", () => {
     expect(pairs("reviewer")).toEqual([
-      ["Review and approve", "/v2/reviewer/review-queue"],
-      ["Outcomes", "/v2/reviewer/outcome-remediation"],
-      ["Records", "/v2/reviewer/verification"],
+      ["Review and approve", "/proto/reviewer/review-queue"],
+      ["Outcomes", "/proto/reviewer/outcome-remediation"],
+      ["Records", "/proto/reviewer/verification"],
     ])
   })
   it("director", () => {
     expect(pairs("director")).toEqual([
-      ["Outcomes", "/v2/director/outcomes"],
-      ["Records", "/v2/director/director-verification"],
-      ["Reports", "/v2/director/reports"],
+      ["Outcomes", "/proto/director/outcomes"],
+      ["Records", "/proto/director/director-verification"],
+      ["Reports", "/proto/director/reports"],
     ])
   })
   it("shared rows keep one relative order for every role: Outcomes, Records, Reports", () => {
@@ -46,24 +46,24 @@ describe("nav rows per role", () => {
     }
   })
   it("every role has an explicit landing; the director lands on Records although it is the second row", () => {
-    for (const r of ROLES) expect(r.landing, r.id).toMatch(/^\/v2\//)
-    expect(ROLE_BY_ID.director.landing).toBe("/v2/director/director-verification")
+    for (const r of ROLES) expect(r.landing, r.id).toMatch(/^\/proto\//)
+    expect(ROLE_BY_ID.director.landing).toBe("/proto/director/director-verification")
     expect(NAV_ROWS.director[1].url).toBe(ROLE_BY_ID.director.landing)
     expect(NAV_ROWS.reviewer[0].url).toBe(ROLE_BY_ID.reviewer.landing)
     expect(NAV_ROWS.preceptor[0].url).toBe(ROLE_BY_ID.preceptor.landing)
   })
   it("preceptor", () => {
     expect(pairs("preceptor")).toEqual([
-      ["Requests", "/v2/preceptor/preceptor-evaluation"],
-      ["Lab sessions", "/v2/preceptor/lab-batch-grid"],
+      ["Requests", "/proto/preceptor/preceptor-evaluation"],
+      ["Lab sessions", "/proto/preceptor/lab-batch-grid"],
     ])
   })
   it("student", () => {
     expect(pairs("student")).toEqual([
-      ["Home", "/v2/student"],
-      ["Log skills", "/v2/student/pick-and-rate"],
-      ["Requests", "/v2/student/request-signoff"],
-      ["Record", "/v2/student/history"],
+      ["Home", "/proto/student"],
+      ["Log skills", "/proto/student/pick-and-rate"],
+      ["Requests", "/proto/student/request-signoff"],
+      ["Record", "/proto/student/history"],
     ])
   })
   it("no title carries a step, scenario or number", () => {
@@ -123,8 +123,12 @@ describe("breadcrumbs", () => {
     }
   })
   it("links the first crumb to the parent nav row", () => {
-    expect(v2CrumbsFor("/v2/admin/configure-skill")[0].href).toBe("/v2/admin/starter-library")
-    expect(v2CrumbsFor("/v2/director/evaluation/e1")[0].href).toBe("/v2/director/outcomes")
+    expect(v2CrumbsFor("/v2/admin/configure-skill")[0].href).toBe("/proto/admin/starter-library")
+    expect(v2CrumbsFor("/v2/director/evaluation/e1")[0].href).toBe("/proto/director/outcomes")
+  })
+  it("reads a short /proto path as its long /v2 twin", () => {
+    expect(v2CrumbsFor("/proto/admin/configure-skill")).toEqual(v2CrumbsFor("/v2/admin/configure-skill"))
+    expect(v2CrumbsFor("/proto/student/history")).toEqual([{ label: "Record" }])
   })
   it("has no step numbers or scenario wording", () => {
     for (const p of ["/v2/admin/map-courses", "/v2/reviewer/outcome-remediation", "/v2/preceptor/lab-batch-grid"]) expect(v2CrumbsFor(p)[0].label).not.toMatch(/\d|scenario|step/i)

@@ -36,7 +36,7 @@ function useNav(): ShellNav {
   // The preceptor badge counts the evaluator link's person, else J. Delgado, whatever page they are on.
   const badgeActor = role === "preceptor" ? (asParam ?? actorIdFor("preceptor", "", null)) : actorId
   return React.useMemo(() => {
-    const primary = buildV2Nav(role, state, badgeActor)
+    const primary = buildV2Nav(role, state, badgeActor, pathname)
     return {
       primary,
       primaryLayout: { preamble: primary, sections: [] },
@@ -44,9 +44,9 @@ function useNav(): ShellNav {
       documents: [],
       secondary: [],
       user: { name: personName(state, actorId), email: "", avatar: "" },
-      knownUrls: allV2Urls(),
+      knownUrls: allV2Urls(pathname),
     }
-  }, [role, state, badgeActor, actorId])
+  }, [role, state, badgeActor, actorId, pathname])
 }
 
 const SHELL_DATA: AppShellData = { useNav }

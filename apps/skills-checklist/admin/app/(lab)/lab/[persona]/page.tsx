@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { PERSONAS, isPersonaId } from "@/lib/lab/personas"
+import { toShort } from "@/lib/short-urls"
 
 type Search = Record<string, string | string[] | undefined>
 
@@ -19,5 +20,5 @@ export default async function LabPersonaIndex({ params, searchParams }: { params
   if (!isPersonaId(persona)) notFound()
   const def = PERSONAS.find((p) => p.id === persona)
   if (!def) notFound()
-  redirect(`/lab/${persona}/${def.landing}${toQuery(await searchParams)}`)
+  redirect(toShort(`/lab/${persona}/${def.landing}${toQuery(await searchParams)}`))
 }

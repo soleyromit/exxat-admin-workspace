@@ -1,3 +1,4 @@
+import { toLong } from "@/lib/short-urls"
 import { NAV_ROWS, roleForPath } from "@/lib/v2/roles"
 import type { RoleId } from "@/lib/v2/types"
 
@@ -13,7 +14,8 @@ function under(role: RoleId, key: string, child: string): Crumb[] {
 }
 
 /** Utility-bar breadcrumb for a /v2 path: the nav row, or the parent nav row then the page (one level only). */
-export function v2CrumbsFor(pathname: string, search?: URLSearchParams | null): Crumb[] {
+export function v2CrumbsFor(shortOrLongPathname: string, search?: URLSearchParams | null): Crumb[] {
+  const pathname = toLong(shortOrLongPathname)
   const role = roleForPath(pathname)
   if (!role) return [{ label: "Skills tracking" }]
   const staff = role === "admin" || role === "reviewer" || role === "director"
@@ -30,7 +32,7 @@ export function v2CrumbsFor(pathname: string, search?: URLSearchParams | null): 
     if (pathname === "/v2/student/verified-record") return under("student", "record", "Share verified record")
     if (pathname.startsWith("/v2/student/evaluation/")) return under("student", "record", "Evaluation")
   }
-  const exact = NAV_ROWS[role].find((r) => r.url === pathname)
+  const exact = NAV_ROWS[role].find((r) => toLong(r.url) === pathname)
   if (exact) return [{ label: exact.title }]
   // Generic list routes that share a nav row (for example /v2/reviewer/outcomes, /v2/director/verification).
   if (staff && pathname === `/v2/${role}/outcomes`) return [{ label: "Outcomes" }]

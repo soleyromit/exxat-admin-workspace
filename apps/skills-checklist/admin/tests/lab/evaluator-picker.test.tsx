@@ -24,7 +24,7 @@ describe("EvaluatorPicker", () => {
     const { container } = render(<Harness />)
     expect(screen.getByRole("searchbox", { name: "Search evaluators by name" })).toBeTruthy()
     expect(container.querySelectorAll("[data-who-row]").length).toBe(PICKER_VISIBLE)
-    expect(screen.getByRole("button", { name: `Show all ${OPTIONS.length}` })).toBeTruthy()
+    expect(screen.getByRole("button", { name: `Show all ${OPTIONS.length} evaluators` })).toBeTruthy()
     const radios = screen.getAllByRole("radio")
     expect(radios[radios.length - 1].id).toBe("who-new")
     expect(screen.queryByText("Find an evaluator")).toBeNull()

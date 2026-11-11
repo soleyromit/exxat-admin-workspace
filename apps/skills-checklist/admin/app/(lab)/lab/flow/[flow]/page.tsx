@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import { findFlow, mainSteps } from "@/lib/lab/flows"
+import { toShort } from "@/lib/short-urls"
 
 type Search = Record<string, string | string[] | undefined>
 
@@ -16,5 +17,5 @@ export default async function LabFlowPage({ params, searchParams }: { params: Pr
   const q = new URLSearchParams()
   for (const [k, v] of Object.entries(sp)) if (typeof v === "string") q.set(k, v)
   const s = q.toString()
-  redirect(`/lab/flow/${flow.id}/${first.id}${s ? `?${s}` : ""}`)
+  redirect(toShort(`/lab/flow/${flow.id}/${first.id}${s ? `?${s}` : ""}`))
 }

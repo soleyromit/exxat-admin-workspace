@@ -24,7 +24,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import NextLink from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { focusTitleAfterLeaving } from "@/components/lab/shared/focus"
 import { markReturn, publishShownSkill } from "@/lib/lab/configure-origin"
 import { skillById } from "@/lib/v2/evidence-index"
@@ -33,7 +32,8 @@ import { FormPage } from "@/components/lab/layout"
 import { TYPE } from "@/components/lab/type-scale"
 import { CHECKOFF_LABEL, computeImpact, fromV2, programRuleIn, validateRule, withCheckOffDecided, withModel, type Impact, type LabRule, type PublishMode, type RuleIssue } from "@/lib/lab/configure"
 import { blankField, blankRule, configurableSkills, copyField, issueField, mergeRules, ownRule, planMany, saveMany, touchedFields, type BulkField } from "@/lib/lab/configure-many"
-import { CONFIGURATION_META, LAB_ADMIN } from "@/lib/lab/library"
+import { useLabHref } from "@/components/lab/lab-bar/page-context"
+import { CONFIGURATION_META } from "@/lib/lab/library"
 import { aNoun, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { fmt } from "@/lib/v2/format"
 import { isConfigured } from "@/lib/v2/population"
@@ -204,6 +204,8 @@ function StartFromPicker({ value, sources, hasDefault, onChange }: { value: stri
 }
 
 export function ConfigureManyPage({ ids }: { ids: string[] }) {
+  // The context-aware builder: the link stays in the page's flow and carries the `program` scope from the URL.
+  const to = useLabHref()
   const state = useV2State()
   const store = useV2Store()
   const hydrated = useV2Hydrated()
@@ -492,7 +494,7 @@ export function ConfigureManyPage({ ids }: { ids: string[] }) {
             {program ? null : (
               <div className="flex flex-wrap items-center justify-between gap-3" data-no-program>
                 <p className={TYPE.body}>{`Your program has not set how ${skillNounPlural()} are judged.`}</p>
-                <Button asChild variant="outline" size="sm"><Link href={`${LAB_ADMIN}/evaluation-settings${params?.get("program") ? `?program=${params.get("program")}` : ""}`}>{`Set how ${skillNounPlural()} are judged`}</Link></Button>
+                <Button asChild variant="outline" size="sm"><NextLink href={to("admin/evaluation-settings")}>{`Set how ${skillNounPlural()} are judged`}</NextLink></Button>
               </div>
             )}
             {wide ? null : (

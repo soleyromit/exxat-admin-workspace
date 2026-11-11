@@ -7,7 +7,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@exxatdesignux/ui/components/ui/tooltip"
 import { withNoun } from "@/lib/lab/terms"
-import { PRESENT_PARAM, isPresent } from "@/lib/lab/present"
+import { toLong } from "@/lib/short-urls"
 import { WALKTHROUGH_EXIT, isWalkthrough, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
 import { useLabPage } from "./page-context"
 import { usePresent } from "./present"
@@ -19,11 +19,11 @@ import { startAgain } from "./reset"
  */
 export function useInWalkthrough(): boolean {
   const page = useLabPage()
-  const params = useSearchParams()
   const pathname = usePathname() ?? ""
-  const [, lab, a, b] = pathname.split("/")
+  const [, lab, a, b] = toLong(pathname).split("/")
   const flow = page.flow ?? (lab === "lab" && a === "flow" ? b : undefined)
-  return isPresent(params?.get(PRESENT_PARAM)) && isWalkthrough(flow)
+  // A walkthrough is always presented, with or without `present=1` in its short URL.
+  return isWalkthrough(flow)
 }
 
 /** The walkthrough step the page is on, in present mode only (outside present mode the lab bar does the job). */

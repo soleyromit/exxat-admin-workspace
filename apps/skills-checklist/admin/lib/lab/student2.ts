@@ -1,4 +1,5 @@
 import { DEMO_TODAY } from "@/lib/v2/seed-core"
+import { longDate } from "@/lib/v2/format"
 import { EVALUATION_STATUS_LABEL, OVERLAY_LABEL, SENT_FOR_NEW_EVALUATION_WORD, STUDENT_NOT_COUNTED, answeredSentence, sentForNewEvaluationLabel } from "@/lib/v2/labels"
 import { evalsOfStudent, personById, skillById, submissionsOfStudent } from "@/lib/v2/evidence-index"
 import { evaluatorChoices, openToLog, ratingKind, ratingOptions, sentElsewhereTo, skillProgress, whereOptions, type WhereOption } from "@/lib/v2/student"
@@ -112,13 +113,24 @@ export function extraDetails(values: DetailValues): Record<string, string> {
   return Object.fromEntries(Object.entries(values).filter(([k, v]) => k.startsWith("f-") && v.trim()))
 }
 
+/**
+ * The latest day a "Date performed" may be: today on the program's clock (the lab's demo clock, `DEMO_TODAY`). The date picker
+ * caps at it and the check below refuses anything later, so the picker and the message never disagree.
+ */
+export const LATEST_DATE = DEMO_TODAY
+
+/** "Date performed is after today. Choose Oct 26, 2026 or earlier." Names the rule and the fix, from the same clock. */
+export function futureDateError(label: string, latest: string = LATEST_DATE): string {
+  return `${capitalize(label.trim().toLowerCase())} is after today. Choose ${longDate(latest)} or earlier.`
+}
+
 /** Mandatory details that are empty, by field id, with the message the field shows [REQ ST-10]. */
 export function detailErrors(values: DetailValues, fields: DetailField[] = PROGRAM_DETAILS): Record<string, string> {
   const out: Record<string, string> = {}
   for (const f of fields) {
     const v = (values[f.id] ?? "").trim()
     if (f.required && !v) out[f.id] = f.type === "choice" ? `Choose the ${f.label.toLowerCase()}.` : `Enter the ${f.label.toLowerCase()}.`
-    else if (f.type === "date" && v && v > DEMO_TODAY) out[f.id] = "The date cannot be in the future."
+    else if (f.type === "date" && v && v > LATEST_DATE) out[f.id] = futureDateError(f.label)
     else if (f.type === "number" && v && Number.isNaN(Number(v))) out[f.id] = "Enter a number."
   }
   return out
@@ -422,6 +434,19 @@ export const METHODS: MethodDef[] = [
 
 export const methodById = (id: SignoffMethod): MethodDef => METHODS.find((m) => m.id === id) ?? METHODS[0]
 
+/**
+ * What happens with each way, one short line on its card, before Send (Romit 2026-11-10: "why can't I send and see a QR code").
+ * The QR code and the hand-over sign-off exist only once the request is sent (RequestResult), so the cards say so rather than
+ * showing a preview. Offline, a way that needs a connection says it waits [REQ ST-03].
+ */
+export function methodLine(method: SignoffMethod, offline: boolean): string {
+  if (offline && !methodById(method).offline) return "Goes when you reconnect."
+  if (method === "qr") return "The code appears after you send."
+  if (method === "handover") return "They sign on your device."
+  if (method === "photo") return "Your program reviews it."
+  return "They get one link by email."
+}
+
 /** The method a new request starts on [LEDGER D-L2]: an email with one link to this request only. */
 export const DEFAULT_METHOD: SignoffMethod = "link"
 
@@ -485,7 +510,8 @@ export function confirmationLines(c: { skillNames: string[]; who: string; role: 
     { label: "To", value: c.role ? `${c.who}, ${c.role}` : c.who },
     { label: "Setting", value: c.setting },
     { label: "Location", value: c.location ?? "Not recorded" },
-    { label: "Date performed", value: c.date ? shortDate(c.date) : "Not recorded" },
+    // One date format on the Send step, its picker and this confirmation: "Oct 26, 2026" [REQ ST-13].
+    { label: "Date performed", value: c.date ? longDate(c.date) : "Not recorded" },
     ...(c.note.trim() ? [{ label: "Your note", value: c.note.trim() }] : []),
   ]
 }

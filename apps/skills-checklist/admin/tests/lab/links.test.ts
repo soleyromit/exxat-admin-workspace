@@ -62,7 +62,7 @@ describe("labHref", () => {
 
   it("sends a link to another step of the page's flow to that step in the active set, with the scope", () => {
     const h = parse(labHref("admin/configure-skill", { skill: "sk-1" }, set2))
-    expect(h.path).toBe("/lab/flow/set-up-skills/configure")
+    expect(h.path).toBe("/flow/set-up-skills/configure")
     expect(h.q.get("set")).toBe("2")
     expect(h.q.get("term")).toBe("Fall 2026")
     expect(h.q.get("skill")).toBe("sk-1")
@@ -71,21 +71,21 @@ describe("labHref", () => {
   it("never carries a variant letter, even when the caller passes one", () => {
     const h = parse(labHref("admin/import-ai-review", { variant: "C" }, set2))
     expect(h.q.has("variant")).toBe(false)
-    expect(h.path).toBe("/lab/flow/set-up-skills/import")
+    expect(h.path).toBe("/flow/set-up-skills/import")
   })
 
   it("lands the publish step when the link asks for the check step in that set", () => {
-    expect(parse(labHref("admin/configure-skill", { section: "check", change: "sample" }, set2)).path).toBe("/lab/flow/set-up-skills/publish")
-    expect(parse(labHref("admin/configure-skill", { step: "rule" }, set2)).path).toBe("/lab/flow/set-up-skills/configure")
+    expect(parse(labHref("admin/configure-skill", { section: "check", change: "sample" }, set2)).path).toBe("/flow/set-up-skills/publish")
+    expect(parse(labHref("admin/configure-skill", { step: "rule" }, set2)).path).toBe("/flow/set-up-skills/configure")
   })
 
   it("keeps a self link on the same flow step", () => {
-    expect(parse(labHref("admin/skills-library", { skill: "a" }, set2)).path).toBe("/lab/flow/set-up-skills/library")
+    expect(parse(labHref("admin/skills-library", { skill: "a" }, set2)).path).toBe("/flow/set-up-skills/library")
   })
 
   it("uses the first flow holding a screen the page's flow does not have", () => {
     const h = parse(labHref("admin/attainment", {}, set2))
-    expect(h.path).toBe("/lab/flow/watch-the-cohort/attainment")
+    expect(h.path).toBe("/flow/watch-the-cohort/attainment")
     expect(h.q.get("set")).toBe("2")
   })
 
@@ -97,19 +97,22 @@ describe("labHref", () => {
   it("keeps a variant outside the sets on a self link (screen route)", () => {
     const ctx: LinkContext = { flowId: "watch-the-cohort", set: "1", screen: "admin/dashboard", variant: "D", carry: params("variant=D") }
     const h = parse(labHref("admin/dashboard", { list: "records" }, ctx))
-    expect(h.path).toBe("/lab/admin/dashboard")
+    expect(h.path).toBe("/as/admin/dashboard")
     expect(h.q.get("variant")).toBe("D")
   })
 
   it("keeps the set on a link to a screen in no flow", () => {
     const h = parse(labHref("admin/starter-library", {}, set2))
-    expect(h.path).toBe("/lab/admin/starter-library")
+    expect(h.path).toBe("/as/admin/starter-library")
     expect(h.q.get("set")).toBe("2")
     expect(h.q.has("variant")).toBe(false)
   })
 
   it("rewrites plain screen URLs and leaves everything else alone", () => {
-    expect(parse(rewriteLabUrl("/lab/admin/configure-skill?skill=a", set2)).path).toBe("/lab/flow/set-up-skills/configure")
+    expect(parse(rewriteLabUrl("/lab/admin/configure-skill?skill=a", set2)).path).toBe("/flow/set-up-skills/configure")
+    // The short form of a screen URL reads as its long twin.
+    expect(parse(rewriteLabUrl("/as/admin/configure-skill?skill=a", set2)).path).toBe("/flow/set-up-skills/configure")
+    expect(rewriteLabUrl("/flow/set-up-skills/map?set=2", set2)).toBe("/flow/set-up-skills/map?set=2")
     expect(rewriteLabUrl("/lab", set2)).toBe("/lab")
     expect(rewriteLabUrl("/lab/flow/set-up-skills/map?set=2", set2)).toBe("/lab/flow/set-up-skills/map?set=2")
     expect(rewriteLabUrl("https://example.com/x", set2)).toBe("https://example.com/x")
@@ -149,11 +152,11 @@ describe("variants outside the sets", () => {
 describe("sidebar rows", () => {
   it("open their flow so every step of it highlights the row, keeping the set", () => {
     const ctx: LinkContext = { flowId: "set-up-skills", set: "2", screen: "admin/import-ai-review", variant: "B", onFlowRoute: true }
-    expect(navHref("admin/skills-library", ctx)).toBe("/lab/flow/set-up-skills?set=2")
-    expect(navHref("admin/dashboard", ctx)).toBe("/lab/flow/watch-the-cohort?set=2")
-    expect(parse(navHref("admin/attainment", ctx)).path).toBe("/lab/flow/watch-the-cohort/attainment")
+    expect(navHref("admin/skills-library", ctx)).toBe("/flow/set-up-skills?set=2")
+    expect(navHref("admin/dashboard", ctx)).toBe("/flow/watch-the-cohort?set=2")
+    expect(parse(navHref("admin/attainment", ctx)).path).toBe("/flow/watch-the-cohort/attainment")
     expect(flowFor("admin/skills-library", "keep-library-right")?.id).toBe("keep-library-right")
     const keep: LinkContext = { flowId: "keep-library-right", set: "2", screen: "admin/settings", variant: "B", onFlowRoute: true }
-    expect(navHref("admin/skills-library", keep)).toBe("/lab/flow/keep-library-right?set=2")
+    expect(navHref("admin/skills-library", keep)).toBe("/flow/keep-library-right?set=2")
   })
 })

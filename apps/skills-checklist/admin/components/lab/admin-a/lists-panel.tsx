@@ -406,7 +406,7 @@ function ListBody({ model, list, onSkills, onChangeSkills, onAddStudents, onRemo
           <Separator />
           <section aria-labelledby={`courses-${list.id}`} className="flex flex-col gap-2" data-list-courses>
             <div className="flex min-h-8 items-center"><SectionTitle icon="fa-sitemap" id={`courses-${list.id}`} className={TYPE.group}>Courses</SectionTitle></div>
-            <SetupPrompt scene="courses" text={`Show which courses expect these ${skillNounPlural()}.`} action={<Button asChild variant="outline" size="sm"><Link href={to("admin/course-mapping", { by: "skill" })}>Map to courses</Link></Button>} />
+            <SetupPrompt scene="courses" text={`Show which courses expect these ${skillNounPlural()}.`} action={<Button asChild variant="outline" size="sm"><Link href={to("admin/course-mapping", { by: "skill", list: list.id, from: "lists" })}>Map to courses</Link></Button>} />
           </section>
         </>
       ) : null}

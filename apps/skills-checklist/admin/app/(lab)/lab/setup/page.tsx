@@ -5,5 +5,5 @@ import { redirect } from "next/navigation"
  * the wizard. A static segment, so it wins over `[persona]`.
  */
 export default function LabSetupPage() {
-  redirect("/lab/flow/set-up-skills/library?set=1&program=new")
+  redirect("/flow/set-up-skills/library?set=1&program=new")
 }

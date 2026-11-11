@@ -617,7 +617,22 @@ export function pendingLevelsLine(s: V2State, changes: readonly LevelChange[], r
 
 export const MAPPING_PATH = `${LAB_ADMIN}/course-mapping`
 
-export type MappingParam = "variant" | "by" | "term" | "offering" | "skill" | "view" | "cohort" | "year" | "ay" | "terms" | "q" | "fq" | "oq" | "sq" | "lv" | "show" | "incl" | "sg" | "cat"
+export type MappingParam = "variant" | "by" | "term" | "offering" | "skill" | "view" | "cohort" | "year" | "ay" | "terms" | "q" | "fq" | "oq" | "sq" | "lv" | "show" | "incl" | "sg" | "cat" | "list"
+
+/**
+ * The skill list a link names (`?list=`): the lists page's "Map to courses" opens By skill on that list's skills. An id that is not
+ * there (deleted, or from another session) is no filter, never an error.
+ */
+export function listFilter(lists: readonly SkillList[], id: string | null | undefined): SkillList | undefined {
+  return id ? lists.find((l) => l.id === id) : undefined
+}
+
+/** The rows whose skill is on the list; every row when there is no list. */
+export function onSkillList<T extends { id: string }>(rows: readonly T[], list: Pick<SkillList, "skillIds"> | undefined): T[] {
+  if (!list) return [...rows]
+  const ids = new Set(list.skillIds)
+  return rows.filter((r) => ids.has(r.id))
+}
 
 /**
  * Course mapping opens skill first (`by=skill`, the default with no `by`); `by=course` opens it course first. A link that names an

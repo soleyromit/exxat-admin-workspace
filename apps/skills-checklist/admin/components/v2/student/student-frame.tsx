@@ -1,5 +1,6 @@
 "use client"
 
+import { toLong } from "@/lib/short-urls"
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -69,10 +70,10 @@ export function DeviceBanners() {
 }
 
 const NAV = [
-  { href: "/v2/student", label: "Home", icon: "house", match: (p: string) => p === "/v2/student" },
-  { href: "/v2/student/pick-and-rate", label: "Log", icon: "pen-to-square", match: (p: string) => p.startsWith("/v2/student/pick-and-rate") },
-  { href: "/v2/student/request-signoff", label: "Requests", icon: "paper-plane", match: (p: string) => p.startsWith("/v2/student/request-signoff") },
-  { href: "/v2/student/history", label: "Record", icon: "clock-rotate-left", match: (p: string) => p.startsWith("/v2/student/history") },
+  { href: "/proto/student", label: "Home", icon: "house", match: (p: string) => toLong(p) === "/v2/student" },
+  { href: "/proto/student/pick-and-rate", label: "Log", icon: "pen-to-square", match: (p: string) => toLong(p).startsWith("/v2/student/pick-and-rate") },
+  { href: "/proto/student/request-signoff", label: "Requests", icon: "paper-plane", match: (p: string) => toLong(p).startsWith("/v2/student/request-signoff") },
+  { href: "/proto/student/history", label: "Record", icon: "clock-rotate-left", match: (p: string) => toLong(p).startsWith("/v2/student/history") },
 ] as const
 
 /** Mobile bottom navigation: four destinations, 44 px targets, safe-area aware. From 768 px the same four rows are in the left shell. */

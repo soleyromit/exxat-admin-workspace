@@ -1,3 +1,4 @@
+import { inFormOf } from "@/lib/short-urls"
 import type { NavLinkItem } from "@exxatdesignux/ui/components/shell"
 import { allKnownUrls, NAV_ROWS, type NavRowDef } from "@/lib/v2/roles"
 import { approvalsBadge, evaluatorRequestsBadge, unsentRequestsBadge } from "@/lib/v2/selectors"
@@ -13,13 +14,15 @@ function badgeFor(row: NavRowDef, state: V2State, actorId: string): number {
 }
 
 /** Sidebar rows for a v2 role (contract section 3). A count badge is set only when it is above 0. */
-export function buildV2Nav(role: RoleId, state: V2State, actorId: string): NavLinkItem[] {
+export function buildV2Nav(role: RoleId, state: V2State, actorId: string, pathname?: string): NavLinkItem[] {
+  // The DS matches the active row by comparing urls with the browser path, so a row is written in the form the path is in (short /proto/... or the long /v2/...).
+  const form = (u: string) => (pathname ? inFormOf(pathname, u) : u)
   return NAV_ROWS[role].map((r) => {
     const n = badgeFor(r, state, actorId)
-    return { key: `v2-${role}-${r.key}`, title: r.title, url: r.url, icon: icon(r.icon), iconActive: icon(r.icon, true), ...(n > 0 ? { badge: n } : {}) }
+    return { key: `v2-${role}-${r.key}`, title: r.title, url: form(r.url), icon: icon(r.icon), iconActive: icon(r.icon, true), ...(n > 0 ? { badge: n } : {}) }
   })
 }
 
-export function allV2Urls(): string[] {
-  return allKnownUrls()
+export function allV2Urls(pathname?: string): string[] {
+  return pathname ? allKnownUrls().map((u) => inFormOf(pathname, u)) : allKnownUrls()
 }

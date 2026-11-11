@@ -141,7 +141,69 @@ function UploadScene() {
   )
 }
 
-const SCENES = { newList: NewListScene, lists: ListsScene, library: LibraryScene, courses: CoursesScene, settings: SettingsScene, upload: UploadScene }
+/** Send, Email a link: an envelope and the one link it carries (one link per request, D-L2). */
+function EmailScene() {
+  return (
+    <Canvas>
+      <rect x={52} y={30} width={104} height={70} rx={8} stroke="currentColor" className="fill-background" />
+      <path d="M52 38l52 36 52-36" stroke="currentColor" />
+      <rect x={128} y={78} width={74} height={26} rx={13} className="fill-background stroke-brand" />
+      <path d="M142 91h10M160 91h28" className="stroke-brand" />
+      <circle cx={204} cy={78} r={9} className="fill-brand" />
+      <path d="M200 78h8M205 74.5l3.5 3.5-3.5 3.5" className="stroke-background" />
+    </Canvas>
+  )
+}
+
+/** Send, QR code: a phone showing the code the evaluator scans. */
+function QrScene() {
+  const cells: [number, number][] = [[110, 60], [122, 60], [116, 72], [128, 72], [110, 84], [134, 84], [122, 90]]
+  return (
+    <Canvas>
+      <rect x={86} y={16} width={68} height={104} rx={12} stroke="currentColor" className="fill-background" />
+      <path d="M112 26h16" stroke="currentColor" />
+      <rect x={98} y={40} width={14} height={14} rx={2} className="fill-brand" />
+      <rect x={128} y={40} width={14} height={14} rx={2} className="fill-brand" />
+      <rect x={98} y={92} width={14} height={14} rx={2} className="fill-brand" />
+      {cells.map(([x, y]) => <rect key={`${x}-${y}`} x={x} y={y} width={6} height={6} rx={1} stroke="currentColor" />)}
+      <path d="M164 46c10 6 10 34 0 40M176 38c16 10 16 46 0 56" className="stroke-brand" strokeDasharray="3 3" />
+    </Canvas>
+  )
+}
+
+/** Send, Hand over device: the student's phone passing to the evaluator beside them. */
+function HandoverScene() {
+  return (
+    <Canvas>
+      <rect x={50} y={30} width={52} height={80} rx={10} stroke="currentColor" className="fill-background" transform="rotate(-8 76 70)" />
+      <path d="M62 56h26M62 68h20" stroke="currentColor" transform="rotate(-8 76 70)" />
+      <path d="M112 66h28" className="stroke-brand" strokeDasharray="3 3" />
+      <path d="M136 62l4 4-4 4" className="stroke-brand" />
+      <circle cx={172} cy={66} r={22} className="fill-brand" />
+      <circle cx={172} cy={60} r={7} className="fill-background" />
+      <path d="M160 80a12 12 0 0 1 24 0" className="stroke-background" />
+    </Canvas>
+  )
+}
+
+/** Send, Photo of paper form: a signed paper form and the camera that captures it. */
+function PhotoScene() {
+  return (
+    <Canvas>
+      <path d="M50 20h56l16 16v76H50z" stroke="currentColor" className="fill-background" />
+      <path d="M106 20v16h16" stroke="currentColor" />
+      <Row x={60} y={50} w={34} done />
+      <Row x={60} y={68} w={28} done />
+      <path d="M62 92c6-6 10 4 16-2s8 2 14-2" stroke="currentColor" />
+      <rect x={128} y={52} width={76} height={54} rx={10} className="fill-background stroke-brand" />
+      <path d="M148 52l6-10h20l6 10" className="stroke-brand" />
+      <circle cx={166} cy={79} r={15} className="fill-brand" />
+      <circle cx={166} cy={79} r={7} className="fill-background" />
+    </Canvas>
+  )
+}
+
+const SCENES = { newList: NewListScene, lists: ListsScene, library: LibraryScene, courses: CoursesScene, settings: SettingsScene, upload: UploadScene, email: EmailScene, qr: QrScene, handover: HandoverScene, photo: PhotoScene }
 
 /** The drawing alone, where a host lays out its own words (a drop target). */
 export function SceneArt({ scene, className }: { scene: keyof typeof SCENES; className?: string }) {

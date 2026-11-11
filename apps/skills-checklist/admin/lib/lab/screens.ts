@@ -1,4 +1,5 @@
 import registry from "./screens.json"
+import { toShort } from "../short-urls"
 
 export type PersonaId = "admin" | "student" | "evaluator" | "reviewer" | "director" | "course-faculty"
 export type Tier = 1 | 2 | 3
@@ -48,7 +49,7 @@ export const SCREENS = registry.screens as ScreenDef[]
  * One screen in one explicit variant, for the lab index's "By persona" browser and the persona landing. Links between
  * screens never use it: they go through lib/lab/links.ts so they follow the active option set.
  */
-export const screenHref = (persona: string, slug: string, variant?: string): string => `/lab/${persona}/${slug}${variant ? `?variant=${variant}` : ""}`
+export const screenHref = (persona: string, slug: string, variant?: string): string => toShort(`/lab/${persona}/${slug}${variant ? `?variant=${variant}` : ""}`)
 
 export const findScreen = (persona: string, slug: string): ScreenDef | undefined => SCREENS.find((s) => s.persona === persona && s.slug === slug)
 export const screensFor = (persona: PersonaId): ScreenDef[] => SCREENS.filter((s) => s.persona === persona)

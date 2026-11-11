@@ -26,9 +26,10 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { ProductSwitcher } from "@/components/shell/product-switcher"
 import { PersonaSwitcher } from "@/components/lab/lab-bar/persona-switcher"
 import { LabPageProvider, useLabHref, useLabLinkContext, type LabPage } from "@/components/lab/lab-bar/page-context"
-import { FROM_PARAM, LEAF_TITLE, returnTarget } from "@/lib/lab/return-to"
+import { FROM_PARAM, LEAF_TITLE, returnCarry, returnTarget } from "@/lib/lab/return-to"
 import { SCOPE_CARRY, labHref, navHref } from "@/lib/lab/links"
 import { findFlow } from "@/lib/lab/flows"
+import { inFormOf, toLong, isLabPath } from "@/lib/short-urls"
 import { usePresent } from "@/components/lab/lab-bar/present"
 import { ResultBannerSlot } from "@/components/lab/shared/result-banner"
 import { WalkthroughControls } from "@/components/lab/lab-bar/walkthrough-controls"
@@ -73,7 +74,8 @@ function makeData(persona: PersonaDef): AppShellData {
       const rowUrl = (slug: string) => {
         const screen = `${persona.id}/${slug}`
         const url = !link.onFlowRoute && link.screen === screen ? labHref(screen, {}, link) : navHref(screen, link)
-        return url.split("?")[0]!
+        // Written in the form the browser path is in (short /as/..., /flow/... or the long /lab/...), since the DS compares them.
+        return inFormOf(pathname, url.split("?")[0]!)
       }
       const primary = rows.map((r) => {
         const skills = admin && r.key === "skills"
@@ -93,7 +95,7 @@ function makeData(persona: PersonaDef): AppShellData {
       // sidebar footer in any layout (showsProfileInSidebar is false), so it sits in the DS trailing group (primaryLayout
       // epilogue) after the main rows. On a Settings page it points at the page itself, so the DS lights it by path.
       const settingsRows = admin
-        ? [{ key: "lab-admin-settings", title: "Settings", url: isSettingsArea(link.screen, params) ? pathname : settingsHref(link), icon: icon("gear"), iconActive: icon("gear", true) }]
+        ? [{ key: "lab-admin-settings", title: "Settings", url: isSettingsArea(link.screen, params) ? pathname : inFormOf(pathname, settingsHref(link)), icon: icon("gear"), iconActive: icon("gear", true) }]
         : []
       const all = [...primary, ...settingsRows]
       return { primary: all, primaryLayout: { preamble: primary, sections: [], epilogue: settingsRows }, quickActions: [], documents: [], secondary: [], user: { name: persona.label, email: "", avatar: "" }, knownUrls: all.map((p) => p.url.split("?")[0]!) }
@@ -137,7 +139,7 @@ function usePageHeading(on: boolean): string | undefined {
 function Crumbs() {
   const pathname = usePathname() ?? ""
   const ctx = React.useContext(FrameContext)
-  const [, , seg, screen] = pathname.split("/")
+  const [, , seg, screen] = toLong(pathname).split("/")
   const persona = ctx.persona ?? (isPersonaId(seg ?? "") ? (seg as PersonaId) : undefined)
   const title = ctx.title ?? (seg && screen ? findScreen(seg, screen)?.title : undefined)
   const { present } = usePresent()
@@ -148,12 +150,16 @@ function Crumbs() {
   // leaf is the page's own title so the crumb and the H1 agree (Romit 2026-10-27).
   const state = useV2State()
   const shownSkill = React.useSyncExternalStore(subscribeShownSkill, shownSkillSnapshot, () => null)
-  const back = returnTarget(params?.get(FROM_PARAM))
+  const from = params?.get(FROM_PARAM)
+  const carried = returnCarry(from, params)
+  const back = returnTarget(from, carried)
+  // Back to one skill reads that skill's name, as its own page title does.
+  const backLabel = back ? (from === "configure" && carried ? skillById(state, carried)?.name : undefined) ?? back.label() : undefined
   const leaf = back && link.screen ? LEAF_TITLE[link.screen]?.() : undefined
   // Present mode shows no lab label: product crumbs only.
-  const crumbs: Array<{ label: string; href?: string }> = present ? [] : [{ label: "Design lab", href: "/lab" }]
+  const crumbs: Array<{ label: string; href?: string; back?: boolean }> = present ? [] : [{ label: "Design lab", href: "/lab" }]
   if (persona && !present) crumbs.push({ label: PERSONA_BY_ID[persona].label })
-  if (back) crumbs.push({ label: back.label(), href: to(back.href) })
+  if (back && backLabel) crumbs.push({ label: backLabel, href: to(back.href), back: true })
   // The course view (My progress with ?course=) is its own place: "My progress > NURS 350" (Romit 2026-10-27, "why does the
   // dropdown change when I am changing a course on My progress?"). Product words, so it shows in present mode too.
   const courseId = link.screen === "student/home" ? params?.get("course") : null
@@ -186,7 +192,7 @@ function Crumbs() {
   } else if (settingsLeafLabel) {
     // Reached from Add students' "Manage student groups": the crumb returns to Skill lists, carrying the list it left (F:N6).
     const fromLists = params?.get("tab") === "student-groups" ? params.get("from") : null
-    if (fromLists?.startsWith("/lab/")) {
+    if (fromLists && isLabPath(fromLists)) {
       crumbs.push({ label: skillsLabel(), href: labHref("admin/skills-library", {}, link) }, { label: withNoun(capitalize(skillListsNoun())), href: fromLists })
     } else crumbs.push({ label: "Settings", href: settingsHref(link) })
     groupLeaf = settingsLeafLabel
@@ -212,7 +218,7 @@ function Crumbs() {
         return (
           <React.Fragment key={`${c.label}-${i}`}>
             <BreadcrumbItem className="min-w-0">
-              {last || !c.href ? <BreadcrumbPage className="truncate">{c.label}</BreadcrumbPage> : <BreadcrumbLink asChild><Link href={c.href}>{c.label}</Link></BreadcrumbLink>}
+              {last || !c.href ? <BreadcrumbPage className="truncate">{c.label}</BreadcrumbPage> : <BreadcrumbLink asChild><Link href={c.href} data-return-to={c.back ? "" : undefined}>{c.label}</Link></BreadcrumbLink>}
             </BreadcrumbItem>
             {last ? null : <BreadcrumbSeparator />}
           </React.Fragment>
@@ -263,14 +269,14 @@ export function SidebarCarry() {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
       const a = (e.target as Element | null)?.closest?.("a[data-sidebar=menu-button]") as HTMLAnchorElement | null
       const href = a?.getAttribute("href")
-      if (!a || !href || !href.startsWith("/lab/") || href.includes("?")) return
+      if (!a || !href || !isLabPath(href) || href.includes("?")) return
       // A row that points at the page itself (Skills on a Skills panel page, Settings on a Settings page) stays put and keeps
       // the page's query; the DS still gets the click, so the Skills row reopens its panel (D-L20).
-      if (href === window.location.pathname) { e.preventDefault(); return }
+      if (toLong(href) === toLong(window.location.pathname)) { e.preventDefault(); return }
       const q = new URLSearchParams()
       for (const k of SCOPE_CARRY) { const v = link.carry?.get(k); if (v) q.set(k, v) }
       // Only a set the target flow has; otherwise the flow opens in its recommended set.
-      const target = findFlow(href.split("/")[3])
+      const target = findFlow(toLong(href).split("/")[3])
       if (link.set && (!target || target.sets.some((x) => x.id === link.set))) q.set("set", link.set)
       const s = q.toString()
       if (!s) return

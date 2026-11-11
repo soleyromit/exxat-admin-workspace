@@ -1,5 +1,6 @@
 "use client"
 
+import { toLong } from "@/lib/short-urls"
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -24,8 +25,8 @@ import { IDS } from "@/lib/v2/seed"
 import { useV2State, useV2Store } from "@/lib/v2/react"
 import { setDevice, simulateServerEdit } from "@/lib/v2/sync"
 
-const EVALUATION_PATH = "/v2/preceptor/preceptor-evaluation"
-const LAB_PATH = "/v2/preceptor/lab-batch-grid"
+const EVALUATION_PATH = "/proto/preceptor/preceptor-evaluation"
+const LAB_PATH = "/proto/preceptor/lab-batch-grid"
 
 type Panel = { kind: "confirm" } | { kind: "done" } | { kind: "notice"; title: string; text: string }
 
@@ -39,7 +40,7 @@ export function ScenarioMenu() {
   const [openAs, setOpenAs] = React.useState<string>(IDS.delgado)
   const triggerRef = React.useRef<HTMLButtonElement>(null)
   const role = roleForPath(pathname)
-  const home = role ? ROLE_BY_ID[role].home : "/v2/admin"
+  const home = role ? ROLE_BY_ID[role].home : "/proto/admin"
   const d = state.device
   const nowIso = () => new Date().toISOString()
 
@@ -61,8 +62,9 @@ export function ScenarioMenu() {
   // The same ?as= query the evaluation form and the lab grid read. Other query parts, such as the request, stay.
   const openEvaluatorAs = (personId: string) => {
     setOpenAs(personId)
-    const onLab = pathname === LAB_PATH
-    const base = onLab || pathname === EVALUATION_PATH ? pathname : EVALUATION_PATH
+    const here = toLong(pathname)
+    const onLab = here === toLong(LAB_PATH)
+    const base = onLab || here === toLong(EVALUATION_PATH) ? pathname : EVALUATION_PATH
     const q = new URLSearchParams(base === pathname && typeof window !== "undefined" ? window.location.search : "")
     q.set("as", personId)
     router.replace(`${base}?${q.toString()}`)

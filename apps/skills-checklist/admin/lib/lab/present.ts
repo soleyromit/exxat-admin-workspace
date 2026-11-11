@@ -41,8 +41,8 @@ export const MARQUEE: MarqueeItem[] = [
  * recommended design, driven by the product's own buttons (lib/lab/walkthrough.ts). The href is the entry route.
  */
 export const PRESENT_WALKTHROUGHS: Array<{ label: string; who: string; href: string }> = [
-  { label: "Admin, start to finish", who: "Program", href: "/lab/walkthrough/admin" },
-  { label: "Student and evaluator, start to finish", who: "Student", href: "/lab/walkthrough/student" },
+  { label: "Admin, start to finish", who: "Program", href: "/walk" },
+  { label: "Student and evaluator, start to finish", who: "Student", href: "/walk/student" },
 ]
 
 /** Shown, not linked: reporting is not ready for the client yet. */

@@ -7,9 +7,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuRadio
 import { PERSONAS, PERSONA_BY_ID, isPersonaId } from "@/lib/lab/personas"
 import { screenHref, type PersonaId } from "@/lib/lab/screens"
 import { flowHref, flowsForPersona, mainSteps } from "@/lib/lab/flows"
+import { toLong } from "@/lib/short-urls"
 
 export function personaFromPath(pathname: string): PersonaId | null {
-  const seg = pathname.split("/")[2] ?? ""
+  const seg = toLong(pathname).split("/")[2] ?? ""
   return isPersonaId(seg) ? seg : null
 }
 

@@ -158,7 +158,7 @@ describe("admin IA: Categories and tags under Skills, Settings on its own sectio
     const item = SKILLS_PANEL.find((i) => i.key === "categories")!
     expect(item.screen).toBe("admin/categories-tags")
     expect(item.label()).toBe("Categories and tags")
-    expect(skillsPanelHref(item, {})).toMatch(/^\/lab\/flow\/keep-library-right\/categories\?set=1/)
+    expect(skillsPanelHref(item, {})).toMatch(/^\/flow\/keep-library-right\/categories\?set=1/)
   })
 
   it.each(["A", "B", "C"])("Add a skill (%s) is a Library page: Skills row lit, panel open on Library (D-L41)", (variant) => {

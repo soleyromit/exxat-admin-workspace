@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest"
 import { createSeed } from "@/lib/v2/seed"
+import { DEMO_TODAY } from "@/lib/v2/seed-core"
+import { longDate } from "@/lib/v2/format"
 import { skillById } from "@/lib/v2/evidence-index"
 import { buildStudent } from "@/lib/lab/student"
 import {
   DEFAULT_METHOD,
+  LATEST_DATE,
+  methodLine,
   METHODS,
   PROGRAM_DETAILS,
   clrDocument,
@@ -55,7 +59,11 @@ describe("Log a skill (Maya, 123 students, 150+ skills)", () => {
     expect(PROGRAM_DETAILS.filter((f) => f.required).map((f) => f.id)).toEqual(["date", "unit"])
     expect(Object.keys(detailErrors({ date: "", unit: "", case: "" }))).toEqual(["date", "unit"])
     expect(detailErrors({ date: "2026-10-26", unit: "4 West", case: "" })).toEqual({})
-    expect(detailErrors({ date: "2027-01-01", unit: "4 West" }).date).toMatch(/future/)
+    // The message names the rule and the latest allowed day, from the same clock the date picker caps at (Romit 2026-11-10).
+    expect(detailErrors({ date: "2027-01-01", unit: "4 West" }).date).toBe(`Date performed is after today. Choose ${longDate(LATEST_DATE)} or earlier.`)
+    expect(detailErrors({ date: "2026-11-12", unit: "4 West" }).date).toBe("Date performed is after today. Choose Oct 26, 2026 or earlier.")
+    expect(detailErrors({ date: LATEST_DATE, unit: "4 West" })).toEqual({})
+    expect(LATEST_DATE).toBe(DEMO_TODAY)
   })
 
   it("asks a self-evaluation only where the skill has it switched on [REQ SC-15, ST-11]", () => {
@@ -190,5 +198,21 @@ describe("Offline and sync", () => {
   it("builds links with one helper", () => {
     expect(student2Href("request-signoff", { skills: "a,b" })).toBe("/lab/student/request-signoff?skills=a%2Cb")
     expect(student2Href("record", {}, "stu-02")).toBe("/lab/student/record?student=stu-02")
+  })
+})
+
+describe("Send: what each way does, said on its card before Send (Romit 2026-11-10)", () => {
+  it("says the QR code comes after Send, and gives every way its own line", () => {
+    expect(methodLine("qr", false)).toBe("The code appears after you send.")
+    expect(methodLine("handover", false)).toBe("They sign on your device.")
+    expect(methodLine("link", false)).toBe("They get one link by email.")
+    expect(methodLine("photo", false)).toBe("Your program reviews it.")
+    // Offline, a way that needs a connection waits; hand over and the photo work offline [REQ ST-03].
+    expect(methodLine("qr", true)).toBe("Goes when you reconnect.")
+    expect(methodLine("link", true)).toBe("Goes when you reconnect.")
+    expect(methodLine("handover", true)).toBe("They sign on your device.")
+    const lines = METHODS.map((m) => methodLine(m.id, false))
+    expect(new Set(lines).size).toBe(METHODS.length)
+    for (const l of lines) expect(l).not.toMatch(/\bitems?\b|pending/i)
   })
 })

@@ -12,6 +12,7 @@ import { originFor } from "@/lib/lab/configure-origin"
 import { SCOPE_CARRY } from "@/lib/lab/links"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { usePathname, useSearchParams } from "next/navigation"
+import { toLong, isFlowPath } from "@/lib/short-urls"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +56,7 @@ export function useWayBack(key: string) {
   const origin = originFor(key)
   const library = React.useCallback((given: Record<string, string> = {}): string => {
     const extra = Object.fromEntries(Object.entries(given).filter(([, v]) => v))
-    if (pathname.startsWith("/lab/flow/")) return to(LIBRARY_HREF, extra)
+    if (isFlowPath(pathname)) return to(LIBRARY_HREF, extra)
     const q = new URLSearchParams(extra)
     for (const k of SCOPE_CARRY) { const v = params?.get(k); if (v && !q.has(k)) q.set(k, v) }
     const s = q.toString()
@@ -67,7 +68,7 @@ export function useWayBack(key: string) {
     return `${u.pathname}${u.search}`
   }
   /** Where a save lands: always the Library (map D1c, D4), with the filters the admin left it on. */
-  const fromLibrary = !!origin && /skills-library|\/lab\/flow\/[^/?]+\/library|^\/(\?|$)/.test(origin.href)
+  const fromLibrary = !!origin && /skills-library|\/lab\/flow\/[^/?]+\/library|^\/(\?|$)/.test(toLong(origin.href))
   const landHref = (extra: Record<string, string>) => (fromLibrary ? add(origin!.href, extra) : library(extra))
   return { origin, fromLibrary, landHref, cancelHref: (extra: Record<string, string> = {}) => (origin ? add(origin.href, extra) : library(extra)) }
 }

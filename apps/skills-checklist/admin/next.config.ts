@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 import path from 'path'
 import { LEGACY_REDIRECTS } from './lib/redirects'
+import { SHORT_REWRITES } from './lib/short-urls'
 
 // Mirrors apps/pce/admin (known-good) without the studentUX alias: this product
 // uses @exxatdesignux/ui for every surface (docs/build/contracts/00-cross-cutting.md §13).
@@ -17,6 +18,10 @@ const nextConfig: NextConfig = {
   // Hybrid IA: every previous URL keeps working (lib/redirects.ts).
   async redirects() {
     return LEGACY_REDIRECTS
+  },
+  // Short URLs (lib/short-urls.ts): /walk, /flow, /as, /proto and /all serve the long /lab and /v2 routes; the browser keeps the short address.
+  async rewrites() {
+    return { beforeFiles: SHORT_REWRITES, afterFiles: [], fallback: [] }
   },
   // The DS dist imports react-router(-dom) directly (it targets a Vite stack).
   // Remap both to a Next-safe shim so DS shell components render without a <Router>.

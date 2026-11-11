@@ -61,9 +61,12 @@ export interface CategoryPickerProps {
   className?: string
   /** What no value means here: "None" on one skill, "Keep current" on several. */
   emptyLabel?: string
+  /** "quiet": a ghost text trigger with no chevron, for a row where the category is secondary (New skill list). */
+  appearance?: "field" | "quiet"
 }
 
-export function CategoryPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", className, emptyLabel = "None" }: CategoryPickerProps) {
+export function CategoryPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", className, emptyLabel = "None", appearance = "field" }: CategoryPickerProps) {
+  const quiet = appearance === "quiet"
   const valueInactive = !!value && inactive.some((x) => normName(x) === normName(value))
   const [open, setOpen] = React.useState(false)
   const [q, setQ] = React.useState("")
@@ -85,17 +88,17 @@ export function CategoryPicker({ id, labelId, value, options, inactive = [], onC
         <Button
           id={id}
           type="button"
-          variant="outline"
+          variant={quiet ? "ghost" : "outline"}
           size={size}
           aria-labelledby={`${labelId} ${id}-value`}
-          className={`justify-between gap-2 font-normal ${className ?? ""}`}
+          className={`${quiet ? "max-w-full" : "justify-between"} gap-2 font-normal ${className ?? ""}`}
           data-category-picker
         >
-          <span id={`${id}-value`} className={`flex min-w-0 items-center gap-2 ${value ? "" : "text-muted-foreground"}`}>
+          <span id={`${id}-value`} className={`flex min-w-0 items-center gap-2 ${value && !quiet ? "" : "text-muted-foreground"}`}>
             <span className="truncate">{value || emptyLabel}</span>
             {valueInactive ? <InactiveMark /> : null}
           </span>
-          <i className="fa-light fa-chevron-down text-xs text-muted-foreground" aria-hidden="true" />
+          {quiet ? null : <i className="fa-light fa-chevron-down text-xs text-muted-foreground" aria-hidden="true" />}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="z-[90] w-72 p-0" onInteractOutside={keepTyped}>

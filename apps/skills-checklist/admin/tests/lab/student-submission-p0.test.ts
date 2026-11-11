@@ -115,8 +115,12 @@ describe("SC-13, ST-10: the details each skill's configuration asks for, mandato
     expect(src).toMatch(/detailFieldsFor\(s, skills\)/)
     expect(src).toMatch(/detailErrors\(details, fields\)/)
     expect(src).toMatch(/const blocked = tried && !valid/)
-    for (const v of ["a", "b"]) expect(readFileSync(`components/lab/screens/student-request-${v}.tsx`, "utf8")).toMatch(/disabled=\{d\.blocked\}/)
-    expect(readFileSync("components/lab/screens/student-request-c.tsx", "utf8")).toMatch(/d\.blocked \? \{ disabled: true/)
+    // A and B share C's Send footer (2026-11-10): SendPageFooter disables Send with the first problem named, as C does.
+    for (const v of ["a", "b"]) expect(readFileSync(`components/lab/screens/student-request-${v}.tsx`, "utf8")).toMatch(/<SendPageFooter d=\{d\} \/>/)
+    expect(src).toMatch(/d\.blockedReason \? \{ disabled: true, disabledReason: d\.blockedReason \}/)
+    // C names the first problem beside the disabled Send; the reason exists only while Send is blocked (Romit 2026-11-10).
+    expect(src).toMatch(/const blockedReason = blocked \? /)
+    expect(readFileSync("components/lab/screens/student-request-c.tsx", "utf8")).toMatch(/d\.blockedReason \? \{ disabled: true, disabledReason: d\.blockedReason \}/)
     expect(readFileSync("components/lab/screens/student-request-c.tsx", "utf8")).toMatch(/offered\.has\(r\.id\)/)
     for (const f of ["components/lab/screens/student-log-a.tsx", "components/lab/screens/student-log-b.tsx", "components/lab/student/fix.tsx"]) expect(readFileSync(f, "utf8")).toMatch(/detailFieldsFor\(/)
   })

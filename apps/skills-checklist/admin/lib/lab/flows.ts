@@ -1,4 +1,5 @@
 import registry from "./flows.json"
+import { toShort } from "../short-urls"
 import { findScreen, type PersonaId, type ScreenDef, type VariantDef } from "./screens"
 
 /**
@@ -152,7 +153,7 @@ function read(src: ParamSource, key: string): string | undefined {
   return (src as Record<string, string | undefined>)[key]
 }
 
-/** `/lab/flow/{flow}/{step}?set=n` plus the carried params found in `carry`. */
+/** `/flow/{flow}/{step}?set=n` (a walkthrough flow: `/walk/...`; the long `/lab/flow/...` serves the same page) plus the carried params found in `carry`. */
 export function flowHref(flowId: string, stepId: string, set: string, carry?: ParamSource): string {
   const q = new URLSearchParams()
   q.set("set", set)
@@ -160,7 +161,7 @@ export function flowHref(flowId: string, stepId: string, set: string, carry?: Pa
     const v = read(carry, k)
     if (v) q.set(k, v)
   }
-  return `/lab/flow/${flowId}/${stepId}?${q.toString()}`
+  return toShort(`/lab/flow/${flowId}/${stepId}?${q.toString()}`)
 }
 
 export interface FlowMatch {

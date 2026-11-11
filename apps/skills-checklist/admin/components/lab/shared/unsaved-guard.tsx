@@ -12,6 +12,7 @@
  * below the page's first entry, from the moment the page opens: the stop before leaving. Reaching it asks while dirty, and steps over it otherwise. The router listens to popstate
  * first and cannot be stopped, which is why the question has to sit on an entry of this page. Keep editing drops Forward's entries, as the plain guard does.
  */
+import { toLong } from "@/lib/short-urls"
 import * as React from "react"
 import { useRouter } from "next/navigation"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
@@ -144,7 +145,7 @@ export function useLeaveGuard(dirty: boolean, { backWithinPage = false, keepReco
       const href = a?.getAttribute("href")
       if (!a || !href || !href.startsWith("/") || a.target === "_blank") return
       // A sidebar row pointing at this page stays put and only reopens its panel.
-      if (a.matches("[data-sidebar=menu-button]") && href === window.location.pathname) return
+      if (a.matches("[data-sidebar=menu-button]") && toLong(href) === toLong(window.location.pathname)) return
       // A row link that moves within the page: the draft stays, so there is nothing to lose.
       if (a.hasAttribute("data-keeps-draft")) return
       e.preventDefault()

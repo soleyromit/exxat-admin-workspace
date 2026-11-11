@@ -111,7 +111,7 @@ export function MappingFrame({ variant, children }: { variant: string; children:
   const [draft, setDraft] = React.useState<MappingOverlay | null>(null)
   const overlay = !embedded && draft ? draft : saved
   // A step has no Save to re-filter at, so its filtered list stands until the admin changes a filter or the view.
-  const heldKey = ["by", "show", "lv", "cat", "sg", "q", "incl"].map((k) => data.query.get(k)).join("|")
+  const heldKey = ["by", "show", "lv", "cat", "sg", "list", "q", "incl"].map((k) => data.query.get(k)).join("|")
   const heldRef = React.useRef({ key: heldKey, levels: saved })
   if (!embedded || heldRef.current.key !== heldKey) heldRef.current = { key: heldKey, levels: saved }
   const held = heldRef.current.levels

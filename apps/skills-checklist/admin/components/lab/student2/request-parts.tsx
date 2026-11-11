@@ -13,22 +13,27 @@ import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
+import { Label } from "@exxatdesignux/ui/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@exxatdesignux/ui/components/ui/input-group"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
-import { DetailsFields, EvaluatorChecks, LocationField, NoteField, SelectedSkills, SelfEvalCards, SkillPicker, TOUCH_ROW, WhereSelect, selfEvalIssues, selfShape, selfSummary, type SelfAnswers, type WhoValue } from "@/components/lab/student2/log-parts"
+import { DetailsFields, EvaluatorChecks, EvaluatorPicker, LocationField, NoteField, SelectedSkills, SelfEvalCards, SkillPicker, TOUCH_ROW, WhereSelect, selfEvalIssues, selfShape, selfSummary, type SelfAnswers, type WhoValue } from "@/components/lab/student2/log-parts"
 import { QrSvg } from "@/components/lab/student2/qr"
-import { SectionTitle } from "@/components/lab/student/parts"
+import { SceneArt } from "@/components/lab/first-run"
 import { ValidationSummary, type ValidationIssue } from "@/components/lab/layout/validation-summary"
+import { StickyFooter } from "@/components/lab/layout/sticky-footer"
 import type { Student2Ctx } from "@/components/lab/student2/frame"
 import type { Setting, SignoffMethod, Submission, V2State } from "@/lib/v2/types"
 import { skillById } from "@/lib/v2/evidence-index"
 import { qualifyingWord, skillRecord } from "@/lib/lab/student"
 import { labNow, loggedSitting, markLoggedSent, saveLogged, sendNew, type LoggedInput } from "@/lib/lab/logged"
 import { updateActiveV2Store } from "@/lib/v2/react"
-import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { longDate } from "@/lib/v2/format"
+import { CHOICE_CARD } from "./touch"
 import { TYPE } from "@/components/lab/type-scale"
 import { useInWalkthrough } from "@/components/lab/lab-bar/walkthrough-controls"
 import { findFlow } from "@/lib/lab/flows"
@@ -46,7 +51,9 @@ import {
   extraDetails,
   locationError,
   locationFor,
+  METHODS,
   methodById,
+  methodLine,
   needsApproval,
   newEvaluatorErrors,
   nextSentence,
@@ -150,6 +157,8 @@ export function useRequestDraft(ctx: Student2Ctx, opts: { onSent?: (id: string) 
   const selfIssues = selfEvalIssues(s, selfIds, ratings, answers)
   const [photo, setPhoto] = React.useState<{ name: string; sizeKb: number } | null>(null)
   const [tried, setTried] = React.useState(false)
+  // Each press of Send that finds problems: the summary takes focus then, and not again while the student fixes fields.
+  const [attempt, setAttempt] = React.useState(0)
   // A walkthrough stop opened again (Back from the evaluator) shows the request as it was sent, not an empty form to send twice.
   const [result, setResult] = React.useState<RequestResultInfo | null>(() => (opts.restore ? sentResult(s, m, studentId, opts.restore) : null))
 
@@ -190,6 +199,8 @@ export function useRequestDraft(ctx: Student2Ctx, opts: { onSent?: (id: string) 
   const valid = issues.length === 0
   // Send stays available until the first failed attempt; after it, Send waits until every listed field is fixed [strategy 07].
   const blocked = tried && !valid
+  // Beside the disabled Send: the first problem in the student's terms, and how many more (never a generic "fix the fields").
+  const blockedReason = blocked ? (issues.length > 1 ? `${issues[0]!.message} ${issues.length - 1} more above.` : issues[0]!.message) : null
   const whoOption = who?.kind === "person" ? options.find((o) => o.id === who.id) : undefined
   const whoName = whoOption?.name ?? (who?.kind === "new" ? fresh.name.trim() || "your evaluator" : "your evaluator")
   const whoRole = whoOption?.role ?? (who?.kind === "new" ? (setting === "clinical" ? "Not yet recorded" : "Lab instructor, not yet recorded") : "")
@@ -229,7 +240,10 @@ export function useRequestDraft(ctx: Student2Ctx, opts: { onSent?: (id: string) 
   const send = () => {
     setTried(true)
     setSaveError(null)
-    if (!valid) return false
+    if (!valid) {
+      setAttempt((n) => n + 1)
+      return false
+    }
     const queued = offline && !methodById(method).offline
     const id = `req-lab-${Date.now().toString(36)}`
     const submission: Submission = { id, studentId, skillIds: skills, method, status: queued ? "on-device" : method === "photo" ? "awaiting-review" : "with-evaluator", assignedToId: whoOption?.id ?? "", createdAt: new Date().toISOString(), daysWaiting: 0, candidateIds: whoOption ? [whoOption.id] : [], ...(note.trim() ? { studentNote: note.trim() } : {}) }
@@ -281,7 +295,7 @@ export function useRequestDraft(ctx: Student2Ctx, opts: { onSent?: (id: string) 
     setPhoto(null)
     setNote("")
   }
-  return { s, studentId, offline, picks, where, chosen, whereVal, setWhere, location, setLocation, details, setDetails, detailErrs, fields, blocked, note, setNote, skills, setSkills, toggle, options, who, setWho, fresh, setFresh, freshErrors, method, setMethod, photo, setPhoto, tried, errors, issues, valid, send, result, reset, whoName, whoSignsByLink, ratings, setRatings, answers, setAnswer, selfIds, selfIssues, saveForLater, saveError, savedAt, draftId }
+  return { s, studentId, offline, picks, where, chosen, whereVal, setWhere, location, setLocation, details, setDetails, detailErrs, fields, blocked, blockedReason, attempt, note, setNote, skills, setSkills, toggle, options, who, setWho, fresh, setFresh, freshErrors, method, setMethod, photo, setPhoto, tried, errors, issues, valid, send, result, reset, whoName, whoSignsByLink, ratings, setRatings, answers, setAnswer, selfIds, selfIssues, saveForLater, saveError, savedAt, draftId }
 }
 
 export type RequestDraft = ReturnType<typeof useRequestDraft>
@@ -303,7 +317,11 @@ export function SkillsField({ d, picks }: { d: RequestDraft; picks: PickRow[] })
   return (
     <div className="flex flex-col gap-2" data-region="skills">
       <div className="flex items-center justify-between gap-2">
-        <SectionTitle count={d.skills.length}>{skillNounPlural().replace(/^./, (c) => c.toUpperCase())}</SectionTitle>
+        {/* A label inside the Send summary card, the same weight as "Who signs off" (was a card title, larger than its section). */}
+        <h2 className={cn("flex items-baseline gap-2", TYPE.label)}>
+          {skillNounPlural().replace(/^./, (c) => c.toUpperCase())}
+          <span className="text-xs font-normal tabular-nums text-muted-foreground">{d.skills.length}</span>
+        </h2>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button id="req-skills-add" type="button" variant="outline" size="sm">{`Add ${aNoun()}`}</Button>
@@ -380,8 +398,214 @@ export function SendBlockedNote({ d }: { d: RequestDraft }) {
 
 /** After a failed Send: one summary, each entry focusing its field [REQ ST-10; rule L9]. */
 export function SendIssues({ d }: { d: RequestDraft }) {
-  if (!d.tried || d.valid) return null
-  return <ValidationSummary issues={d.issues} title="Fix these to send" />
+  const ref = React.useRef<HTMLDivElement>(null)
+  // Focus moves to the summary on each failed Send only; fixing one field never pulls focus away from the next one.
+  // One problem: no summary, focus goes straight to its field (the field and the footer already name it, so a banner would say it
+  // a third time and push the page under the footer). Several: the summary, focused, each entry focusing its field.
+  const single = d.issues.length === 1
+  React.useEffect(() => {
+    if (d.attempt && !single) ref.current?.querySelector<HTMLElement>("[data-region=validation-summary]")?.focus()
+  }, [d.attempt]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!d.tried || d.valid || single) return null
+  return <div ref={ref}><ValidationSummary issues={d.issues} title="Fix these to send" autoFocus={false} /></div>
+}
+
+/** With one problem after a failed Send there is no summary (SendIssues): focus goes straight to that field. Call it in the step body. */
+export function useFocusSingleIssue(d: RequestDraft) {
+  React.useEffect(() => {
+    if (d.attempt && d.issues.length === 1) document.getElementById(d.issues[0]!.fieldId)?.focus()
+  }, [d.attempt]) // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+/** Each way's drawing, from the lab's one illustration set (components/lab/first-run.tsx). */
+const METHOD_SCENE = { link: "email", qr: "qr", handover: "handover", photo: "photo" } as const
+
+/**
+ * How they sign: four illustrated choice cards in one radio group (Romit 2026-11-10: "simplicity with better visuals, icon or
+ * illustrations"). Each card carries its drawing, its name and one line on what happens, since the QR code and the hand-over
+ * sign-off exist only after Send [LEDGER D-L2, D-X5]. A visible radio and a dark border mark the chosen card; arrow keys move
+ * between cards (DS RadioGroup). Four across from 48rem, two by two below.
+ */
+export function MethodChoice({ d, bySituation = false }: { d: RequestDraft; /** Send B (situation first): the same four cards under "Is your evaluator with you?", grouped With me, Not here, On paper. */ bySituation?: boolean }) {
+  const card = (m: (typeof METHODS)[number]) => (
+    <Label
+      key={m.id}
+      htmlFor={`method-${m.id}`}
+      className={cn(CHOICE_CARD, "relative flex min-h-11 cursor-pointer flex-col items-center gap-1 px-3 py-2 text-center font-normal")}
+      data-method={m.id}
+    >
+      <RadioGroupItem value={m.id} id={`method-${m.id}`} className="absolute start-3 top-3" aria-describedby={`method-${m.id}-line`} />
+      <SceneArt scene={METHOD_SCENE[m.id]} className="block w-full max-w-24 max-sm:max-w-20" />
+      <span className="text-sm font-medium text-foreground">{d.offline && !m.offline ? `${m.label}, later` : m.label}</span>
+      <span id={`method-${m.id}-line`} className="text-xs text-muted-foreground" data-method-line>{methodLine(m.id, d.offline)}</span>
+    </Label>
+  )
+  return (
+    <FieldSet className="gap-2" data-how-to-send>
+      <FieldLegend variant="label">{bySituation ? "Is your evaluator with you?" : "How they sign"}</FieldLegend>
+      <RadioGroup value={d.method} onValueChange={(v) => d.setMethod(v as typeof d.method)} className="grid grid-cols-2 gap-2 @3xl:grid-cols-4">
+        {bySituation
+          ? SITUATIONS.map((g) => (
+              <div key={g.id} role="group" aria-labelledby={`situation-${g.id}`} className={cn("grid grid-rows-[auto_1fr] gap-x-2 gap-y-1", g.ids.length > 1 ? "col-span-2 grid-cols-2" : "col-span-1")} data-situation={g.id}>
+                <span id={`situation-${g.id}`} className={cn("text-xs text-muted-foreground", g.ids.length > 1 && "col-span-2")}>{g.label}</span>
+                {g.ids.map((id) => card(methodById(id)))}
+              </div>
+            ))
+          : METHODS.map(card)}
+      </RadioGroup>
+    </FieldSet>
+  )
+}
+
+/** Send B's situations, each the ways that fit it: with me (QR code, hand over), not here (email a link), on paper (photo). */
+const SITUATIONS: Array<{ id: string; label: string; ids: SignoffMethod[] }> = [
+  { id: "with-me", label: "With me", ids: ["qr", "handover"] },
+  { id: "not-here", label: "Not here", ids: ["link"] },
+  { id: "paper", label: "On paper", ids: ["photo"] },
+]
+
+/**
+ * The phone footer on Send (all variants): the primary on its own row, Back and Save for later side by side under it, the course
+ * line (a span) dropped; a reason that blocks the step stays. It took 200 px of an 812 px page and covered the last answers.
+ */
+export const SEND_FOOTER_PHONE = "max-sm:grid max-sm:grid-cols-2 max-sm:gap-2 [&>[data-footer-back-slot]]:max-sm:order-none [&_[data-footer-back-slot]_a]:max-sm:w-full [&_[data-footer-back-slot]_button]:max-sm:w-full [&>[data-footer-actions]]:max-sm:contents [&>p]:max-sm:col-span-2 [&>p:has(>span)]:max-sm:hidden [&>[data-footer-actions]>*:last-child]:max-sm:col-span-2 [&>div:empty]:max-sm:hidden"
+
+/**
+ * Send on a phone, while Send waits: the reason stays tied to the button for screen readers but is not printed a third time, since
+ * the summary above and the field itself already say it (Romit 2026-11-10, "the validation is not helping").
+ */
+export const SEND_FOOTER_PHONE_BLOCKED = "[&>p]:max-sm:sr-only"
+
+/**
+ * Send, simply (Romit 2026-11-10: "This screen isn't simple at all. Can you apply correct design layout with simplicity with
+ * better visuals"). The one Send design for variants A, B and C; one decision per region, in the order they depend on each other:
+ *   1. What is sent, where and when: one quiet card ("Nasogastric tube care, NURS 350" / "Harbor Outpatient Clinic, Outpatient ·
+ *      Oct 26, 2026") with Change, which opens Where and Date performed in place [REQ ST-05..ST-07, ST-10] and, on A and B, the
+ *      skills too (`editSkills`; C chose them on its own step) [REQ ST-04]. It opens on its own when a place needs typing, when no
+ *      skill is chosen, or after a failed Send with a problem in it, so the summary's link always has a field to focus.
+ *   2. A and B only: the self-evaluation cards, when a chosen skill asks for one (C has its own step) [REQ ST-11].
+ *   3. Who signs off: three suggestions and "Someone not listed" as choice tiles, and one quiet "Search all n" that opens the
+ *      search and the full list [REQ ST-08, ST-09].
+ *   4. How they sign: four illustrated cards, one line each [LEDGER D-L2, D-X5]; the paper photo field under them when chosen.
+ *      B (`situationFirst`) asks this first, as "Is your evaluator with you?", with the same four cards grouped by situation.
+ *   5. Add a note, a disclosure [REQ ST-12].
+ * No side column. A single problem after Send focuses its field (no summary); several show SendIssues (the page's banner).
+ */
+export function SendSection({ d, courseCode = null, editSkills = false, situationFirst = false }: { d: RequestDraft; courseCode?: string | null; editSkills?: boolean; situationFirst?: boolean }) {
+  useFocusSingleIssue(d)
+  const [changing, setChanging] = React.useState(false)
+  const placeProblem = d.tried && (!!d.errors.location || Object.keys(d.detailErrs).length > 0 || (editSkills && !!d.errors.skills))
+  const open = changing || placeProblem || (!!d.chosen?.askLocation && !d.location.trim()) || (editSkills && d.skills.length === 0)
+  const [noteOpen, setNoteOpen] = React.useState(() => !!d.note)
+  const showNote = noteOpen || !!d.note || (d.tried && !!d.errors.note)
+  const names = d.skills.map((id) => d.picks.find((p) => p.id === id)?.name ?? skillById(d.s, id)?.name ?? skillNoun())
+  const what = names.length === 0 ? `No ${skillNounPlural()} chosen yet` : names.length > 2 ? `${names[0]} and ${countSkills(names.length - 1)} more` : names.join(" and ")
+  const place = d.chosen ? (d.chosen.setting === "clinical" ? `${d.chosen.label}, ${d.chosen.clinicalSetting}` : d.chosen.label) : "Where not chosen"
+  const when = d.details.date ? longDate(d.details.date) : "No date yet"
+  const method = (
+    <>
+      <MethodChoice d={d} bySituation={situationFirst} />
+      {d.method === "photo" ? <PhotoField d={d} /> : null}
+    </>
+  )
+  return (
+    <div className="@container flex flex-col gap-5" data-send-order={situationFirst ? "how visit who note" : editSkills ? "visit self who how note" : "visit who how note"}>
+      {situationFirst ? method : null}
+      <section aria-label="What you are sending" className={cn("flex flex-col rounded-lg border border-border p-3", open ? "gap-2" : "gap-3")} data-visit>
+        <div className="flex items-start gap-3">
+          <i className="fa-light fa-clipboard-check mt-0.5 w-5 text-center text-base text-muted-foreground" aria-hidden="true" />
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <p className={cn("text-sm font-medium", names.length ? "text-foreground" : "text-muted-foreground")}>{editSkills && open ? "What you are sending" : courseCode && names.length ? `${what}, ${courseCode}` : what}</p>
+            <p className={cn("text-sm text-muted-foreground", open && "sr-only")} data-visit-line>
+              <span>{place}</span>
+              <span aria-hidden="true">{" · "}</span>
+              <span className="sr-only">{", "}</span>
+              <span className="tabular-nums">{when}</span>
+            </p>
+            <p className={cn("text-xs text-muted-foreground", open && "sr-only")}>{scopeSentence(d)}</p>
+          </div>
+          {placeProblem || (editSkills && d.skills.length === 0) ? null : (
+            <Button type="button" variant="ghost" size="sm" aria-expanded={open} aria-controls="visit-fields" onClick={() => setChanging((x) => !x)} data-visit-change>
+              {open ? "Done" : "Change"}
+            </Button>
+          )}
+        </div>
+        {open ? (
+          <div id="visit-fields" className="flex flex-col gap-3 border-t border-border pt-2">
+            {editSkills ? <SkillsField d={d} picks={d.picks} /> : null}
+            <div className={cn("grid items-start gap-3 @2xl:grid-cols-2 @6xl:grid-cols-3", editSkills && "border-t border-border pt-3")}>
+              <WherePick d={d} />
+              <DetailsFields idPrefix="req-detail" fields={d.fields} values={d.details} onChange={(id, v) => d.setDetails((x) => ({ ...x, [id]: v }))} errors={d.detailErrs} showErrors={d.tried} columns={false} />
+            </div>
+          </div>
+        ) : null}
+      </section>
+      {editSkills ? <SelfEvalDisclosure d={d} /> : null}
+      <div className="flex flex-col gap-2">
+        <EvaluatorPicker options={d.options} value={d.who} onChange={d.setWho} fresh={d.fresh} onFresh={d.setFresh} errors={d.freshErrors} showErrors={d.tried} invalid={d.tried && !!d.errors.who} suggested={3} searchOnDemand layout="tiles" />
+        {d.tried && d.errors.who ? <FieldError>{d.errors.who}</FieldError> : null}
+      </div>
+      {situationFirst ? null : method}
+      {showNote ? (
+        <NoteField id="req-note" value={d.note} onChange={d.setNote} error={d.tried ? d.errors.note : null} helper={null} />
+      ) : (
+        <Button type="button" variant="ghost" size="sm" className="self-start" onClick={() => { setNoteOpen(true); requestAnimationFrame(() => document.getElementById("req-note")?.focus()) }} data-add-note>
+          Add a note for the evaluator
+        </Button>
+      )}
+    </div>
+  )
+}
+
+/**
+ * A and B: the self-evaluation as a second quiet card under "What you are sending", same anatomy (icon, what, one line, one
+ * action), so the page keeps its first viewport for who and how; the questions open in place (plain cards, as on C's own step)
+ * [REQ ST-11, SC-15]. It opens on its own after a failed Send with an unanswered question, so focus always has a field to land on.
+ */
+function SelfEvalDisclosure({ d }: { d: RequestDraft }) {
+  const [opened, setOpened] = React.useState(false)
+  const n = d.selfIds.length
+  if (n === 0) return null
+  const problem = d.tried && d.selfIssues.length > 0
+  const open = opened || problem
+  const done = d.selfIds.filter((id) => !d.selfIssues.some((x) => x.fieldId.startsWith(`self-${id}-`))).length
+  return (
+    <section aria-label="Self-evaluation" className={cn("flex flex-col rounded-lg border border-border p-3", open ? "gap-2" : "gap-3")} data-self-summary>
+      <div className="flex items-start gap-3">
+        <i className="fa-light fa-user-check mt-0.5 w-5 text-center text-base text-muted-foreground" aria-hidden="true" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <p className="text-sm font-medium text-foreground">{n === 1 ? `Rate yourself on ${d.picks.find((p) => p.id === d.selfIds[0])?.name ?? skillById(d.s, d.selfIds[0]!)?.name ?? aNoun()}` : `Rate yourself on ${countSkills(n)}`}</p>
+          <p className="text-sm tabular-nums text-muted-foreground" data-self-done>{`${done} of ${n} done`}</p>
+        </div>
+        {problem ? null : (
+          <Button type="button" variant="ghost" size="sm" aria-expanded={open} aria-controls="self-fields" onClick={() => setOpened((x) => !x)} data-self-open>
+            {open ? "Done" : done === n ? "Change" : "Answer"}
+          </Button>
+        )}
+      </div>
+      {open ? (
+        <div id="self-fields" className="border-t border-border pt-2">
+          <SelfEvalCards s={d.s} ids={d.selfIds} ratings={d.ratings} answers={d.answers} onRating={(id, v) => d.setRatings((r) => ({ ...r, [id]: v }))} onAnswer={d.setAnswer} showErrors={d.tried} plain />
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+/**
+ * Send A and B's footer, the same bar as C's last step (StickyFooter): Save for later (outline) and the one Send. After a failed
+ * Send it names the first problem beside the disabled button; on a phone the reason is not printed a third time, and with no Back
+ * both buttons take the full width.
+ */
+export function SendPageFooter({ d }: { d: RequestDraft }) {
+  const label = d.offline && !methodById(d.method).offline ? "Keep and send later" : "Send"
+  return (
+    <StickyFooter
+      className={cn("mt-auto", SEND_FOOTER_PHONE, "[&>[data-footer-actions]>*]:max-sm:col-span-2", d.blockedReason && SEND_FOOTER_PHONE_BLOCKED)}
+      secondary={{ label: "Save for later", onClick: () => { d.saveForLater() } }}
+      primary={{ label, onClick: () => { d.send() }, ...(d.blockedReason ? { disabled: true, disabledReason: d.blockedReason } : {}) }}
+    />
+  )
 }
 
 export function PhotoField({ d }: { d: RequestDraft }) {

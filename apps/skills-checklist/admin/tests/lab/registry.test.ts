@@ -66,7 +66,7 @@ describe("lab registry", () => {
     const keys = SCREENS.map((s) => `${s.persona}/${s.slug}`)
     expect(new Set(keys).size).toBe(keys.length)
     for (const s of SCREENS) for (const v of s.variants) {
-      const m = /^\/lab\/([^/]+)\/([^/?]+)\?variant=(\w+)$/.exec(screenHref(s.persona, s.slug, v.id))
+      const m = /^\/as\/([^/]+)\/([^/?]+)\?variant=(\w+)$/.exec(screenHref(s.persona, s.slug, v.id))
       expect(m).toBeTruthy()
       expect(findScreen(m![1], m![2])).toBe(s)
       expect(resolveVariant(s, m![3]).id).toBe(v.id)

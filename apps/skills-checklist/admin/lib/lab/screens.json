@@ -226,7 +226,7 @@
         },
         {
           "id": "B",
-          "question": "Settings beside a live summary: does seeing the resulting settings as label and value pairs while editing the four sections make the page easiest to understand? (Chosen as the default by Romit 2026-11-04, D-L50)",
+          "question": "Every field on the page: do five sections on one sheet, every control visible and edited in place, with a sticky rule panel, make the settings easiest to understand and change? (Concept D, chosen by Romit 2026-11-10, D-L141)",
           "file": "components/lab/screens/admin-evaluation-settings-b.tsx",
           "requiredDsComponents": [
             "PageHeader",
@@ -1144,7 +1144,7 @@
         "Input",
         "Field",
         "Command",
-        "DatePickerField",
+        "Calendar",
         "RadioGroup",
         "LocalBanner"
       ],

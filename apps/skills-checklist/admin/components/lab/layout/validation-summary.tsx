@@ -42,7 +42,7 @@ export function ValidationSummary({ issues, title = "Fix these to continue", aut
                 type="button"
                 variant="link"
                 size="xs"
-                className="h-auto p-0 text-start"
+                className="h-auto whitespace-normal p-0 text-start"
                 onClick={() => document.getElementById(issue.fieldId)?.focus()}
               >
                 {issue.message}

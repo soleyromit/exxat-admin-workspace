@@ -58,8 +58,8 @@ describe("LabBar", () => {
     const journey = screen.getByRole("navigation", { name: "Journey" })
     const prev = within(journey).getAllByRole("link", { name: "Previous step: Add a skill" })[0]!
     const next = within(journey).getAllByRole("link", { name: "Next step: Check and save" })[0]!
-    expect(prev.getAttribute("href")).toBe("/lab/flow/set-up-skills/add?set=1&term=Fall+2026")
-    expect(next.getAttribute("href")).toBe("/lab/flow/set-up-skills/publish?set=1&term=Fall+2026")
+    expect(prev.getAttribute("href")).toBe("/flow/set-up-skills/add?set=1&term=Fall+2026")
+    expect(next.getAttribute("href")).toBe("/flow/set-up-skills/publish?set=1&term=Fall+2026")
     expect(journey.textContent).toContain("Configure")
     expect(journey.textContent).toContain("3 of 6")
   })
@@ -76,7 +76,7 @@ describe("LabBar", () => {
     const group = screen.getByRole("radiogroup", { name: "Option set" })
     const two = within(group).getByRole("radio", { name: /2 One page/ })
     fireEvent.click(two)
-    expect(nav.replace).toHaveBeenCalledWith("/lab/flow/set-up-skills/configure?set=2&term=Fall+2026")
+    expect(nav.replace).toHaveBeenCalledWith("/flow/set-up-skills/configure?set=2&term=Fall+2026")
     expect(window.sessionStorage.getItem("lab:set")).toBe("2")
   })
 
@@ -135,7 +135,7 @@ describe("LabBar", () => {
     nav.search = "variant=B"
     renderBar({ persona: "admin", screen: "admin/configure-skill", variant: "B" })
     const journey = screen.getByRole("navigation", { name: "Journey" })
-    expect(within(journey).getAllByRole("link", { name: "Next step: Check and save" })[0]!.getAttribute("href")).toBe("/lab/flow/set-up-skills/publish?set=1")
+    expect(within(journey).getAllByRole("link", { name: "Next step: Check and save" })[0]!.getAttribute("href")).toBe("/flow/set-up-skills/publish?set=1")
   })
 
   it("off a flow, hides the journey and switches variants like the old variant bar", () => {
@@ -159,7 +159,7 @@ describe("LabBar", () => {
     await user.click(screen.getByRole("button", { name: "More variants: C, D, E" }))
     const items = await screen.findAllByRole("menuitem")
     expect(items.map((i) => i.textContent)).toEqual(expect.arrayContaining([expect.stringContaining("Variant C"), expect.stringContaining("Variant D, showing"), expect.stringContaining("Variant E")]))
-    expect(items.find((i) => i.textContent?.includes("Variant E"))?.getAttribute("href")).toBe("/lab/admin/dashboard?variant=E&set=1")
+    expect(items.find((i) => i.textContent?.includes("Variant E"))?.getAttribute("href")).toBe("/as/admin/dashboard?variant=E&set=1")
   })
 
   it("shows no More variants menu when the sets cover every variant", () => {
@@ -189,7 +189,7 @@ describe("LabBar", () => {
     const links = within(dots).getAllByRole("link")
     expect(links).toHaveLength(6)
     expect(links[2]).toHaveAttribute("aria-current", "step")
-    expect(links[0]).toHaveAttribute("href", "/lab/flow/set-up-skills/library?set=1&term=Fall+2026")
+    expect(links[0]).toHaveAttribute("href", "/flow/set-up-skills/library?set=1&term=Fall+2026")
     expect(within(journey).getByText("Step 3 of 6")).toBeInTheDocument()
   })
 

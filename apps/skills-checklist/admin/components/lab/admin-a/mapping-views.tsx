@@ -11,7 +11,7 @@
  * A view change or a pick is a step browser Back returns through; a filter replaces the entry.
  * Clinical courses only by default [CALL 10-26]. Mapping is expectation, not eligibility [REQ CM-05]. Skills not configured cannot be mapped
  * [REQ IM-09], so they are out of both views and one note says how many.
- * URL: ?by= &skill= &offering= &q= &fq= &oq= &sq= &lv= &show= &cat= &sg= &cohort= &term= &terms=all &ay= &year= &incl=.
+ * URL: ?by= &list= &skill= &offering= &q= &fq= &oq= &sq= &lv= &show= &cat= &sg= &cohort= &term= &terms=all &ay= &year= &incl=.
  * Each search is its view's own: q and fq on By skill (skills, offerings), oq and sq on By course (offerings, skills); lv is By course's Show.
  */
 import * as React from "react"
@@ -29,7 +29,7 @@ import { ScrollLabel } from "@/components/lab/layout/scroll-label"
 import { TYPE } from "@/components/lab/type-scale"
 import { LAB_ADMIN } from "@/lib/lab/library"
 import { studentGroups, type StudentGroup } from "@/lib/lab/lists"
-import { ALL_TERMS, LEVEL_LABEL, LEVELS, coverageGrid, currentTermId, filterOfferings, mappingLink, paramsToReveal, skillReach, type CoverageGridRow } from "@/lib/lab/mapping"
+import { ALL_TERMS, LEVEL_LABEL, LEVELS, coverageGrid, currentTermId, filterOfferings, listFilter, mappingLink, onSkillList, paramsToReveal, skillReach, type CoverageGridRow } from "@/lib/lab/mapping"
 import { setupResult, type GroupResult } from "@/lib/lab/setup-result"
 import { capitalize, countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { MappingModel } from "@/components/lab/admin-a/mapping-frame"
@@ -182,9 +182,12 @@ function BySkill({ m }: { m: MappingModel }) {
   const show: Show = rawShow === "nocourse" || rawShow === "gaps" ? "nocourse" : rawShow === "incourse" ? "incourse" : ""
   const cat = query.get("cat")
   const sg = query.get("sg")
+  // A skill list from the Skill lists page: only its skills, in every count and note below. An unknown id is no filter.
+  const listId = query.get("list")
+  const onList = React.useMemo(() => listFilter(m.lists, listId), [m.lists, listId])
   // Figures read saved levels and the list's filters read `held`: a draft leaves the list, its count and the skill in the pane where they are.
-  const all = React.useMemo(() => skillReach(m.state, m.saved, "", m.lists, m.didactic), [m.state, m.saved, m.lists, m.didactic])
-  const heldReach = React.useMemo(() => (m.held === m.saved ? all : skillReach(m.state, m.held, "", m.lists, m.didactic)), [all, m.state, m.held, m.saved, m.lists, m.didactic])
+  const all = React.useMemo(() => onSkillList(skillReach(m.state, m.saved, "", m.lists, m.didactic), onList), [m.state, m.saved, m.lists, m.didactic, onList])
+  const heldReach = React.useMemo(() => (m.held === m.saved ? all : onSkillList(skillReach(m.state, m.held, "", m.lists, m.didactic), onList)), [all, m.state, m.held, m.saved, m.lists, m.didactic, onList])
   const usable = React.useMemo(() => all.filter((r) => r.configured), [all])
   const usableIds = React.useMemo(() => usable.map((r) => r.id), [usable])
   const coverage = useGroupCoverage(m, usableIds)
@@ -220,7 +223,7 @@ function BySkill({ m }: { m: MappingModel }) {
   const filter = React.useMemo(() => ({ q: fq, cohort, term: termId(term), academicYear: ay, year, upcoming: term !== ALL_TERMS, cohorts: groupCohorts }), [fq, cohort, term, ay, year, groupCohorts])
   const requested = query.get("skill")
   const selected = usable.find((r) => r.id === requested) ?? rows[0]
-  const hrefFor = (id: string) => mappingLink({ by: "skill", q: q || undefined, show: show || undefined, cat: cat || undefined, sg: sg || undefined, incl: m.didactic ? "didactic" : undefined, fq: fq || undefined, cohort: cohort || undefined, ...termParams(term), ay: ay || undefined, year: year || undefined, skill: id })
+  const hrefFor = (id: string) => mappingLink({ by: "skill", q: q || undefined, show: show || undefined, cat: cat || undefined, sg: sg || undefined, list: onList ? onList.id : undefined, incl: m.didactic ? "didactic" : undefined, fq: fq || undefined, cohort: cohort || undefined, ...termParams(term), ay: ay || undefined, year: year || undefined, skill: id })
   const showField: FilterField = {
     id: "show",
     label: "Show",
@@ -235,6 +238,7 @@ function BySkill({ m }: { m: MappingModel }) {
   const catField: FilterField = { id: "cat", label: "Category", value: cat, allLabel: "All categories", options: cats, onChange: (v) => query.set({ cat: v || null, skill: null }) }
   const kindField = courseKindField(m.didactic, m.setDidactic)
   const sgField: FilterField | null = sg ? { id: "sg", label: "Student group", value: sg, options: [{ value: sg, label: group?.group.label ?? sg }], onChange: () => query.set({ sg: null, show: null, skill: null }) } : null
+  const listField: FilterField | null = onList ? { id: "list", label: capitalize(skillListNoun()), value: onList.id, options: [{ value: onList.id, label: onList.name }], onChange: () => query.set({ list: null, skill: null }) } : null
   const savedFigures = React.useMemo(() => new Map(m.savedOfferings.map((r) => [r.id, r])), [m.savedOfferings])
   const pick: PickRow[] = rows.map((r) => ({ id: r.id, name: r.name, meta: r.section, count: countOf(r), countLabel: countOf(r) === 1 ? "course" : "courses", noneLabel: "No courses", href: hrefFor(r.id) }))
   // The first edit pins the skill the pane opened on, so Save re-filters the list and the pane stays on the record the banner names.
@@ -242,13 +246,13 @@ function BySkill({ m }: { m: MappingModel }) {
     if (!requested && selected) query.set({ skill: selected.id })
     m.setOverlay(next)
   }
-  const filtered = !!(q || cat || show || sg)
+  const filtered = !!(q || cat || show || sg || onList)
   return (
     <TwoPane
       showDetail={!!requested}
       left={
         <>
-          <ListControls fields={[catField, showField, kindField]} chips={[...(sgField ? [sgField] : []), showField, catField, kindField]} courseKind={m.didactic ? "all" : "clinical"} search={<SearchField value={q} onChange={(v) => query.set({ q: v || null })} label={`Search ${skillNounPlural()} by name or category`} placeholder={`Search ${skillNounPlural()}`} className="min-w-0 flex-1" />} />
+          <ListControls fields={[catField, showField, kindField]} chips={[...(listField ? [listField] : []), ...(sgField ? [sgField] : []), showField, catField, kindField]} courseKind={m.didactic ? "all" : "clinical"} search={<SearchField value={q} onChange={(v) => query.set({ q: v || null })} label={`Search ${skillNounPlural()} by name or category`} placeholder={`Search ${skillNounPlural()}`} className="min-w-0 flex-1" />} />
           <NotConfiguredNote n={unconfigured} />
           {filtered ? <p className={TYPE.meta} role="status" data-pick-count={rows.length}>{countSkills(rows.length)}</p> : null}
           <PickList label={capitalize(skillNounPlural())} rows={pick} selectedId={selected?.id ?? ""} onSelect={(id) => query.push({ skill: id })} empty={q ? <EmptyBlock compact title={`No ${skillNounPlural()} match this search`} action={{ label: "Clear search" }} onAction={() => query.set({ q: null })} /> : <EmptyBlock compact title={`No ${skillNounPlural()} match these filters`} body="Clear a filter to see more." />} />
@@ -280,7 +284,7 @@ function Coverage({ m }: { m: MappingModel }) {
   const figure = (row: GroupResult, n: number, show: "" | "incourse" | "nocourse", what: string) => {
     if (n === 0) return <span className="tabular-nums text-muted-foreground">0</span>
     // The figure counts this group's courses across every term. Any other filter would land on a list or a pane that contradicts it, so none comes along; course kind does, since the figure read it.
-    const params = { by: "skill", sg: row.group.id, show: show || null, skill: null, offering: null, q: null, fq: null, oq: null, sq: null, lv: null, cat: null, cohort: null, term: null, terms: null, ay: null, year: null }
+    const params = { by: "skill", list: null, sg: row.group.id, show: show || null, skill: null, offering: null, q: null, fq: null, oq: null, sq: null, lv: null, cat: null, cohort: null, term: null, terms: null, ay: null, year: null }
     return (
       <Link className={NUM_LINK} href={to("admin/course-mapping", { ...params, incl: m.didactic ? "didactic" : null })} data-keeps-draft aria-label={`${fmt(n)} ${what} for ${row.group.label}`} onClick={(e) => inPlace(e, () => query.push(params))}>
         {fmt(n)}
@@ -297,7 +301,7 @@ function Coverage({ m }: { m: MappingModel }) {
     return coverageGrid(m.state, m.saved, termId, groups.flatMap((g) => g.skills.map((k) => k.skillId)), cohorts, m.didactic)
   }, [m.state, m.saved, termId, gridGroup, result, m.didactic])
   const termLabel = m.termOpts.find((t) => t.value === termId)?.label ?? ""
-  const skillHref = (row: CoverageGridRow) => to("admin/course-mapping", { by: "skill", skill: row.id, sg: gridGroupId, term: null, terms: null, q: null, fq: null, oq: null, sq: null, lv: null, show: null, offering: null, incl: m.didactic ? "didactic" : null })
+  const skillHref = (row: CoverageGridRow) => to("admin/course-mapping", { by: "skill", skill: row.id, list: null, sg: gridGroupId, term: null, terms: null, q: null, fq: null, oq: null, sq: null, lv: null, show: null, offering: null, incl: m.didactic ? "didactic" : null })
   const gridColumns: ColumnDef<CoverageGridRow>[] = [
     {
       key: "name",
@@ -337,7 +341,7 @@ function Coverage({ m }: { m: MappingModel }) {
       cell: (r) => {
         const lv = r.cells[c.offeringId] ?? "none"
         return (
-          <Link href={to("admin/course-mapping", { by: "course", offering: c.offeringId, sq: r.name, skill: null, sg: null, q: null, fq: null, oq: null, show: null, lv: null, term: null, terms: null, incl: m.didactic ? "didactic" : null })} data-keeps-draft className="flex h-8 w-10 items-center justify-center rounded-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`${r.name} in ${c.code}, ${c.cohort}: ${LEVEL_LABEL[lv]}. Open the course`}>
+          <Link href={to("admin/course-mapping", { by: "course", offering: c.offeringId, sq: r.name, skill: null, sg: null, list: null, q: null, fq: null, oq: null, show: null, lv: null, term: null, terms: null, incl: m.didactic ? "didactic" : null })} data-keeps-draft className="flex h-8 w-10 items-center justify-center rounded-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`${r.name} in ${c.code}, ${c.cohort}: ${LEVEL_LABEL[lv]}. Open the course`}>
             <LevelGlyph level={lv} />
           </Link>
         )

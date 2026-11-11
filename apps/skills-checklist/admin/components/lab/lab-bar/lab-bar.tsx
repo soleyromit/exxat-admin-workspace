@@ -17,12 +17,12 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { DsUsedList, dsUsedCount } from "@/components/lab/ds-used-panel"
 import { flowsForPersona, mainSteps } from "@/lib/lab/flows"
 import { PERSONA_BY_ID } from "@/lib/lab/personas"
-import { WALKTHROUGH_ENTRY } from "@/lib/lab/walkthrough"
+import { WALKTHROUGH_ENTRY, isWalkthrough } from "@/lib/lab/walkthrough"
 import type { PersonaId } from "@/lib/lab/screens"
 import { PersonaRadioItems, personaTarget } from "./persona-switcher"
 import { useLabBar, type LabBarModel, type LabBarProps } from "./use-lab-bar"
 import { PresentControls, usePresent } from "./present"
-import { useWalkthrough } from "./walkthrough-controls"
+import { useInWalkthrough, useWalkthrough } from "./walkthrough-controls"
 import type { Scenario } from "./scenarios"
 
 /**
@@ -47,8 +47,12 @@ export function LabBar(props: LabBarProps) {
   const { present } = usePresent()
   // A walkthrough step (lib/lab/walkthrough.ts) carries its presenter control in the utility bar instead (lab-frame).
   const walkthrough = useWalkthrough()
+  // Any page of a walkthrough flow, in either URL form (`/walk/<flow>/<step>` or `/lab/flow/<flow>/<step>`), with or without
+  // `present=1`: no lab bar at all, not even the present-mode row (D-L139). The route decides, so a step the path bar cannot
+  // place still shows no strip.
+  const onWalkthroughRoute = useInWalkthrough() || isWalkthrough(props.flow)
   const params = useSearchParams()
-  if (walkthrough) return null
+  if (walkthrough || onWalkthroughRoute) return null
   // A scanned or emailed request opens the evaluator's page alone: no account, no chrome, not even the presenter's row.
   if (present && props.persona === "evaluator" && params?.get("request")) return null
   return present ? <PresentControls /> : <WorkingBar {...props} />

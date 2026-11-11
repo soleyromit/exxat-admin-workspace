@@ -1,5 +1,6 @@
 import { CARRY_KEYS, WALKTHROUGH_FLOWS, findFlow, mainSteps, type FlowDef, type FlowStep } from "./flows"
 import { PRESENT_PARAM } from "./present"
+import { toShort } from "../short-urls"
 
 /**
  * The two walkthroughs (Romit 2026-10-27, for Sankalp's Thursday meeting: "show setup and configuration design based on the
@@ -20,11 +21,12 @@ export const WALKTHROUGH_ID = "setup-walkthrough"
  */
 export const FULFILLMENT_WALKTHROUGH_ID = "fulfillment-walkthrough"
 /** Entry URLs, linked from the lab index. */
-export const WALKTHROUGH_ENTRY = "/lab/walkthrough/admin"
-export const FULFILLMENT_ENTRY = "/lab/walkthrough/student"
+export const WALKTHROUGH_ENTRY = "/walk"
+export const FULFILLMENT_ENTRY = "/walk/student"
 /** Short ids the entry route accepts, to the flow they open. */
 // Romit 2026-10-28: "instead of setup, use admin; for fulfillment, use student". The old ids still resolve so shared links keep working.
-export const WALKTHROUGH_ROUTES: Record<string, string> = { admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID }
+// `/walk/<flow id>` opens that flow too, so the flow ids are ids as well.
+export const WALKTHROUGH_ROUTES: Record<string, string> = { admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID, [WALKTHROUGH_ID]: WALKTHROUGH_ID, [FULFILLMENT_WALKTHROUGH_ID]: FULFILLMENT_WALKTHROUGH_ID }
 
 export const isWalkthrough = (flowId: string | null | undefined): boolean => !!findFlow(flowId)?.walkthrough
 
@@ -74,8 +76,10 @@ export function walkthroughStepHref(flow: FlowDef, stepId: string, carry?: Param
   const target = flow.steps.find((s) => s.id === stepId)
   const own = target?.params?.[set] ?? {}
   const siblingKeys = new Set(flow.steps.filter((s) => target && s.id !== target.id && s.screen === target.screen).flatMap((s) => Object.keys(s.params?.[set] ?? {})))
+  // The URL carries neither `set` (a walkthrough has one set) nor `present` (a walkthrough is always presented): `/walk/<flow>/<step>`
+  // is the whole address, plus whatever the step needs (its own params, an explicit `term`). An explicit `?set=`, `?variant=` or
+  // `?term=` on a hand-written URL still wins.
   const q = new URLSearchParams()
-  q.set("set", set)
   for (const k of WALKTHROUGH_CARRY) {
     if (k === PRESENT_PARAM) continue
     if (siblingKeys.has(k) && !(k in own)) continue
@@ -85,8 +89,8 @@ export function walkthroughStepHref(flow: FlowDef, stepId: string, carry?: Param
   // The step's own params win over the carry, so a presenter hop always opens the step as defined: Check and save opens on a
   // configured skill with a sample change (the check needs a rule to compare), whatever skill the previous step held.
   for (const [k, v] of Object.entries(own)) q.set(k, v)
-  q.set(PRESENT_PARAM, "1")
-  return `/lab/flow/${flow.id}/${stepId}?${q.toString()}`
+  const s = q.toString()
+  return toShort(`/lab/flow/${flow.id}/${stepId}${s ? `?${s}` : ""}`)
 }
 
 /** The first step's href: where the entry URL lands. */
@@ -157,4 +161,4 @@ export function walkthroughPaths(): Array<{ id: string; title: string; href: str
 }
 
 /** "All variants" in the path bar's Exit menu: the lab index, where every screen, variant and other flow lives (D-L64). */
-export const WALKTHROUGH_EXIT = "/lab"
+export const WALKTHROUGH_EXIT = "/all"

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { FLOWS, findFlow, flowHref, flowsForScreen, mainSteps, neighbours, resolveSet, resolveStep, splitScreen, stepScreen, variantLetter } from "@/lib/lab/flows"
 import { isPersonaId } from "@/lib/lab/personas"
+import { toLong } from "@/lib/short-urls"
 import { findScreen } from "@/lib/lab/screens"
 
 /**
@@ -117,7 +118,8 @@ describe("resolvers", () => {
         for (const set of f.sets) {
           const href = flowHref(f.id, st.id, set.id)
           const url = new URL(href, "http://lab.test")
-          const [, , , flowId, stepId] = url.pathname.split("/")
+          // flowHref prints the short form (/flow/... or /walk/...); its long twin is /lab/flow/...
+          const [, , , flowId, stepId] = toLong(url.pathname).split("/")
           const r = resolveStep(flowId!, stepId!, url.searchParams.get("set"))
           expect(r, href).toBeDefined()
           expect(r!.set).toBe(set.id)

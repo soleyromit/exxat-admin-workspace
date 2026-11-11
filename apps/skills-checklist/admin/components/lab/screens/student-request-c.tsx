@@ -24,7 +24,7 @@ import { TYPE } from "@/components/lab/type-scale"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
-import { FieldError, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
+import { FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
@@ -40,29 +40,27 @@ import { useInWalkthrough } from "@/components/lab/lab-bar/walkthrough-controls"
 import { useStudentPage } from "@/components/lab/student/use-student"
 import { StateLabel } from "@/components/lab/student/parts"
 import { Unit } from "@/components/lab/student/dashboard"
-import { EvaluatorChecks, EvaluatorPicker, MethodTiles, SelectedSkills, SelfEvalCards, SkillPicker, TOUCH_ROW } from "@/components/lab/student2/log-parts"
-import { DetailsAndNote, PhotoField, RequestResult, SavedForLater, SendIssues, WherePick, scopeSentence, useRequestDraft, type RequestDraft } from "@/components/lab/student2/request-parts"
+import { EvaluatorChecks, SelectedSkills, SelfEvalCards, SkillPicker, TOUCH_ROW } from "@/components/lab/student2/log-parts"
+import { RequestResult, SavedForLater, SEND_FOOTER_PHONE, SEND_FOOTER_PHONE_BLOCKED, SendIssues, SendSection, scopeSentence, useRequestDraft, type RequestDraft } from "@/components/lab/student2/request-parts"
 import type { Student2Ctx } from "@/components/lab/student2/frame"
 import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
-import { DEMO_TODAY } from "@/lib/v2/seed-core"
 import { skillById } from "@/lib/v2/evidence-index"
+import { longDate } from "@/lib/v2/format"
 import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { METHODS, methodById } from "@/lib/lab/student2"
+import { LATEST_DATE, methodById } from "@/lib/lab/student2"
 import { courseLevels, type CourseExpectation, type SkillRecord, type StudentModel } from "@/lib/lab/student"
 
 type StepId = "course" | "skills" | "self" | "send"
 
-/**
- * On a phone the stacked footer took 200 px of an 812 px page and covered the last answers: the primary on its own row, Back and Save
- * for later side by side under it, the course line (a span, the summary's words) dropped; a reason that blocks the step stays.
- */
-const PHONE_FOOTER = "max-sm:grid max-sm:grid-cols-2 max-sm:gap-2 [&>[data-footer-back-slot]]:max-sm:order-none [&_[data-footer-back-slot]_a]:max-sm:w-full [&_[data-footer-back-slot]_button]:max-sm:w-full [&>[data-footer-actions]]:max-sm:contents [&>p]:max-sm:col-span-2 [&>p:has(>span)]:max-sm:hidden [&>[data-footer-actions]>*:last-child]:max-sm:col-span-2 [&>div:empty]:max-sm:hidden"
+/** Send's phone footer and its blocked state, shared with A and B (student2/request-parts.tsx). */
+const PHONE_FOOTER = SEND_FOOTER_PHONE
+const SEND_PHONE_FOOTER = SEND_FOOTER_PHONE_BLOCKED
 
 export function StudentRequestC() {
   const page = useStudentPage()
   if (!page.model) {
     return (
-      <div className="flex flex-col gap-4 p-6" aria-hidden="true">
+      <div className="flex flex-col gap-4 p-6" aria-busy="true" aria-label="Loading your request">
         <Skeleton className="h-10 w-72" />
         <Skeleton className="h-64" />
       </div>
@@ -76,7 +74,9 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
   const m = ctx.model
   // On a walkthrough the sent request goes on the URL, so the path bar's Next opens that request and Back returns to its result.
   const inWalkthrough = useInWalkthrough()
-  const d = useRequestDraft(ctx, inWalkthrough ? { onSent: (id) => ctx.setParams({ request: id }), restore: ctx.param("request"), defaultDate: DEMO_TODAY } : {})
+  // Date performed starts on today, on the program's clock, in and out of the walkthrough (it was empty outside it, so the same
+  // flow behaved two ways); the student changes it only when the skill was done earlier [REQ ST-10].
+  const d = useRequestDraft(ctx, inWalkthrough ? { onSent: (id) => ctx.setParams({ request: id }), restore: ctx.param("request"), defaultDate: LATEST_DATE } : { defaultDate: LATEST_DATE })
   const courses = React.useMemo(() => m.courses.filter((c) => c.skills.length > 0).sort((a, b) => b.mandatory - a.mandatory || a.code.localeCompare(b.code)), [m])
   const courseId = ctx.param("course")
   const course = courses.find((c) => c.id === courseId) ?? null
@@ -156,7 +156,8 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
       return go("send")
     }
     // Reached without answering (a link or the path bar): the self-evaluation is its own step, so Send goes back to it.
-    if (d.selfIssues.length) return go("self")
+    // Reached without answering (a link or the stepper): say why Send waits, in the footer, instead of switching steps silently.
+    if (d.selfIssues.length) return setIssues([{ fieldId: "fulfil-self", message: "Answer the self-evaluation first. Back opens it." }])
     d.send()
   }
   const back = index > 0 ? () => go(order[index - 1]) : undefined
@@ -178,10 +179,10 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
 
   // The reason the step cannot move on sits in the footer, beside the primary (Romit 2026-10-27, self-evaluation).
   // From 1280 px "Your request" says the course and skills, so the footer says them only below that.
-  const context = step === "self" && issues.length ? issues[0].message : course ? <span className="min-[80rem]:hidden">{`${course.code} · ${d.skills.length ? countSkills(d.skills.length) : `no ${skillNounPlural()} yet`}`}</span> : null
+  const context = (step === "self" || step === "send") && issues.length ? issues[0].message : course ? <span className="min-[80rem]:hidden">{`${course.code} · ${d.skills.length ? countSkills(d.skills.length) : `no ${skillNounPlural()} yet`}`}</span> : null
   const saved = d.saveError || d.savedAt ? <SavedForLater d={d} /> : null
   // Self-evaluation says what is missing once, in the footer beside Continue (and on the card); no banner on top.
-  const banner = step === "send" && d.tried && !d.valid ? <SendIssues d={d} /> : issues.length && step !== "self" ? <ValidationSummary issues={issues} title="Fix this to continue" /> : saved
+  const banner = step === "send" && d.tried && !d.valid && d.issues.length > 1 ? <SendIssues d={d} /> : issues.length && step !== "self" && step !== "send" ? <ValidationSummary issues={issues} title="Fix this to continue" /> : saved
 
   return (
     <WizardPage
@@ -191,8 +192,9 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
       current={index}
       onStepClick={(i) => go(order[i])}
       banner={banner}
-      aside={<RequestSummary d={d} model={m} course={course} selfLine={selfLine} step={step} />}
-      footer={<StickyFooter className={PHONE_FOOTER} back={back ? { onClick: back } : undefined} context={context} secondary={step !== "course" ? { label: "Save for later", onClick: () => { setIssues([]); d.saveForLater({ course: course?.id ?? null, step }) } } : undefined} primary={{ label: step === "send" ? (d.offline ? "Keep and send later" : "Send") : "Continue", onClick: next, ...(step === "send" && d.blocked ? { disabled: true, disabledReason: "Fix the fields above to send." } : {}) }} />}
+      // Send has no side column (Romit 2026-11-10, "this screen isn't simple at all"): its first card says what is sent.
+      aside={step === "send" ? null : <RequestSummary d={d} model={m} course={course} selfLine={selfLine} step={step} />}
+      footer={<StickyFooter className={cn(PHONE_FOOTER, step === "send" && !!d.blockedReason && SEND_PHONE_FOOTER)} back={back ? { onClick: back } : undefined} context={context} secondary={step !== "course" ? { label: "Save for later", onClick: () => { setIssues([]); d.saveForLater({ course: course?.id ?? null, step }) } } : undefined} primary={{ label: step === "send" ? (d.offline ? "Keep and send later" : "Send") : "Continue", onClick: next, ...(step === "send" && d.blockedReason ? { disabled: true, disabledReason: d.blockedReason } : step === "send" && issues.length ? { disabled: true, disabledReason: issues[0].message } : {}) }} />}
     >
       <div data-student-lab="request-C" data-step={step}>
         <WizardPanel step={index}>
@@ -200,7 +202,7 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
           {step === "skills" && course ? <SkillsStep model={m} course={course} selected={d.skills} onToggle={d.toggle} d={d} /> : null}
           {/* The evaluator's own criteria, answered for yourself [REQ ST-11]: one card per skill, no third column. */}
           {step === "self" ? <SelfEvalCards s={d.s} ids={selfIds} ratings={d.ratings} answers={d.answers} onRating={(id, v) => d.setRatings((r) => ({ ...r, [id]: v }))} onAnswer={d.setAnswer} showErrors={issues.length > 0} plain /> : null}
-          {step === "send" ? <SendStep d={d} /> : null}
+          {step === "send" ? <SendSection d={d} courseCode={course?.code ?? null} /> : null}
         </WizardPanel>
       </div>
       {discard}
@@ -244,12 +246,23 @@ function RequestSummary({ d, model, course, selfLine, step }: { d: RequestDraft;
             <dd className="text-foreground">{selfLine}</dd>
           </>
         ) : null}
-        {step === "send" ? (
+        {/* Only what is chosen (Romit 2026-11-10): no "Not chosen yet" rows; the form says what is missing. */}
+        {step === "send" && who ? (
           <>
             <dt className="text-muted-foreground">Who</dt>
-            <dd className="min-w-0 text-foreground">{who ?? <span className="text-muted-foreground">Not chosen yet</span>}</dd>
+            <dd className="min-w-0 text-foreground">{who}</dd>
+          </>
+        ) : null}
+        {step === "send" ? (
+          <>
             <dt className="text-muted-foreground">How</dt>
             <dd className="text-foreground">{methodById(d.method).label}</dd>
+            {d.details.date && !d.detailErrs.date ? (
+              <>
+                <dt className="text-muted-foreground">Date</dt>
+                <dd className="text-foreground tabular-nums">{longDate(d.details.date)}</dd>
+              </>
+            ) : null}
           </>
         ) : null}
         {step === "send" ? (
@@ -358,40 +371,6 @@ function SkillsStep({ model, course, selected, onToggle, d }: { model: StudentMo
           </CollapsibleContent>
         </Collapsible>
       ) : null}
-    </div>
-  )
-}
-
-/**
- * Where it was performed decides who may sign; how they sign starts on Email a link (D-L2); then who, the details and the one note
- * [REQ ST-05..ST-10, ST-12]. Two columns once the step is wide (size container), one column on a phone.
- */
-/** Email or QR, the two ways the program asks about; hand over and the paper photo stay one click away [LEDGER D-X5, D-L67]. */
-function HowToSend({ d }: { d: RequestDraft }) {
-  const main = METHODS.filter((m) => m.id === "link" || m.id === "qr")
-  const other = !main.some((m) => m.id === d.method)
-  const [more, setMore] = React.useState(other)
-  return (
-    <div className="flex flex-col gap-1" data-how-to-send>
-      <MethodTiles label="How to send" value={d.method} onChange={d.setMethod} offline={d.offline} methods={more ? METHODS : main} />
-      {more ? null : <Button type="button" variant="ghost" size="sm" className="-ms-2 self-start" onClick={() => setMore(true)}>Other ways</Button>}
-    </div>
-  )
-}
-
-function SendStep({ d }: { d: RequestDraft }) {
-  return (
-    <div className="grid items-start gap-x-8 gap-y-6 @2xl:grid-cols-2">
-      <div className="flex flex-col gap-5">
-        <WherePick d={d} />
-        <HowToSend d={d} />
-        {d.method === "photo" ? <PhotoField d={d} /> : null}
-      </div>
-      <div className="flex flex-col gap-2 @2xl:row-span-2">
-        <EvaluatorPicker options={d.options} value={d.who} onChange={d.setWho} fresh={d.fresh} onFresh={d.setFresh} errors={d.freshErrors} showErrors={d.tried} compact />
-        {d.tried && d.errors.who ? <FieldError>{d.errors.who}</FieldError> : null}
-      </div>
-      <DetailsAndNote d={d} columns={false} noteHelper={null} />
     </div>
   )
 }

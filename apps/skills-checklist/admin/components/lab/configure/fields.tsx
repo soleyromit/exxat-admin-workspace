@@ -78,7 +78,10 @@ function Err({ id, message }: { id: string; message?: string }) {
 
 const errProps = (id: string, message?: string) => (message ? { "aria-invalid": true as const, "aria-describedby": `${id}-error` } : {})
 
-function NumberInput({ id, label, value, onChange, error, width = "w-20", hideLabel }: { id: string; label: string; value: number; onChange: (n: number) => void; error?: string; width?: string; hideLabel?: boolean }) {
+/** One width for every short number on the configure pages (times needed, at least n, a score): five characters, right next to its words. */
+export const NUMBER_WIDTH = "w-20 tabular-nums"
+
+function NumberInput({ id, label, value, onChange, error, width = NUMBER_WIDTH, hideLabel }: { id: string; label: string; value: number; onChange: (n: number) => void; error?: string; width?: string; hideLabel?: boolean }) {
   return <Input id={id} type="number" inputMode="numeric" min={0} aria-label={hideLabel ? label : undefined} className={width} value={numValue(value)} onChange={(e) => onChange(toInt(e.target.value))} {...errProps(id, error)} />
 }
 
@@ -122,7 +125,7 @@ const MODEL_SAMPLE: Record<EvalModel, string[]> = {
   scored: ["1", "2", "3", "4", "5"],
 }
 
-export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, legend, legendHidden, onChosen, plain, across, rebuild, examples }: SectionProps & { columns?: 1 | 2 | 4; legend?: string; onChosen?: (m: EvalModel) => void; /** A stacked list of plain radios (the Library edit panel), not tiles. */ plain?: boolean; /** Plain radios side by side across a wide row. */ across?: boolean; /** The panel's own model change [REQ SC-09]: no question first; the form rebuilds and its Save lists what is cleared. */ rebuild?: (r: LabRule, m: EvalModel) => LabRule; /** Tiles of a name and one example line, across the row (Evaluation settings, map D3). The name alone names the radio. Needs a container above it. */ examples?: Record<EvalModel, string> }) {
+export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, legend, legendHidden, onChosen, plain, across, rebuild, examples, row }: SectionProps & { columns?: 1 | 2 | 4; legend?: string; onChosen?: (m: EvalModel) => void; /** A stacked list of plain radios (the Library edit panel), not tiles. */ plain?: boolean; /** Plain radios side by side across a wide row. */ across?: boolean; /** The panel's own model change [REQ SC-09]: no question first; the form rebuilds and its Save lists what is cleared. */ rebuild?: (r: LabRule, m: EvalModel) => LabRule; /** Tiles of a name and one example line, across the row (Evaluation settings, map D3). The name alone names the radio. Needs a container above it. */ examples?: Record<EvalModel, string>; /** With `examples`: four quiet tiles in one row from a 56rem container, the choice marked by its radio and a brand border (Evaluation settings, 2026-11-10). */ row?: boolean }) {
   const err = useErr(issues, showErrors)("cfg-model")
   const [pending, setPending] = React.useState<EvalModel | null>(null)
   const modelNow = React.useRef(rule.model)
@@ -157,11 +160,22 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
         value={rule.model ?? ""}
         onValueChange={onValue}
         aria-label="Evaluation model"
-        className={cn(columns === 4 ? "flex flex-wrap gap-x-6 gap-y-3 outline-none" : "grid gap-3 outline-none", columns === 2 && !plain && !examples && "@min-[64rem]:grid-cols-2", across && "sm:grid-cols-2 @min-[56rem]:grid-cols-4", examples && "@min-[26rem]:grid-cols-2")}
+        className={cn(columns === 4 ? "flex flex-wrap gap-x-6 gap-y-3 outline-none" : "grid gap-3 outline-none", columns === 2 && !plain && !examples && "@min-[64rem]:grid-cols-2", across && "sm:grid-cols-2 @min-[56rem]:grid-cols-4", examples && !row && "@min-[26rem]:grid-cols-2", examples && row && "grid-cols-1 @min-[26rem]:grid-cols-2 @min-[56rem]:grid-cols-4")}
         {...errProps("cfg-model", err)}
       >
         {(plain || examples ? PLAIN_ORDER : MODELS).map((m) => {
           const id = `cfg-model-${m}`
+          if (examples && row) {
+            return (
+              <Label key={m} htmlFor={id} className="flex cursor-pointer flex-col items-start gap-2 rounded-[var(--radius)] border border-border bg-background p-3 font-normal hover:border-[var(--border-control-35)] has-[[data-state=checked]]:border-[var(--brand-color)] has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-[var(--brand-color)]" data-model-tile={m}>
+                <span className="flex items-center gap-2">
+                  <RadioGroupItem id={id} value={m} aria-labelledby={`${id}-name`} aria-describedby={`${id}-example`} />
+                  <span id={`${id}-name`} className={TYPE.label}>{MODEL_LABEL[m]}</span>
+                </span>
+                <span id={`${id}-example`} title={examples[m]} className={cn(TYPE.meta, "line-clamp-2 break-words")}>{examples[m]}</span>
+              </Label>
+            )
+          }
           if (examples) {
             return (
               <Label key={m} htmlFor={id} className="flex cursor-pointer items-start gap-2.5 rounded-[var(--radius)] border border-border bg-background p-3 font-normal has-[[data-state=checked]]:border-[var(--brand-color)] has-[[data-state=checked]]:bg-[var(--brand-tint)]" data-model-tile={m}>
@@ -272,7 +286,7 @@ export function placeholderFor(noun: string, i: number, count: number): string |
   return `For example, ${LEVEL_EXAMPLES[k]}`
 }
 
-export function ListEditor({ idBase, noun, values, onChange, onRemove, onMove, addId, ordered, err, extra }: { idBase: string; noun: string; values: string[]; onChange: (v: string[]) => void; onRemove?: (i: number) => void; onMove?: (i: number, j: number) => void; addId: string; ordered?: boolean; err: (f: string) => string | undefined; /** A second add action beside "Add a …" (Paste a list, for questions). */ extra?: React.ReactNode }) {
+export function ListEditor({ idBase, noun, values, onChange, onRemove, onMove, addId, ordered, err, extra }: { idBase: string; noun: string; values: string[]; onChange: (v: string[]) => void; onRemove?: (i: number) => void; onMove?: (i: number, j: number) => void; addId: string; ordered?: boolean; err: (f: string) => string | undefined; /** A second add action beside "Add a …" (Paste a list, for questions). */ extra?: React.ReactNode; }) {
   const move = (i: number, d: -1 | 1) => {
     const j = i + d
     if (j < 0 || j >= values.length) return
@@ -401,9 +415,9 @@ export interface OutcomeWords {
 type FieldErr = (f: string) => string | undefined
 
 /** The two labels of the binary model [REQ SC-03]. */
-export function BinaryLabelsField({ rule, setRule, err, first = "First outcome", second = "Second outcome" }: { rule: LabRule; setRule: SectionProps["setRule"]; err: FieldErr; first?: string; second?: string }) {
+export function BinaryLabelsField({ rule, setRule, err, first = "First outcome", second = "Second outcome", fill }: { rule: LabRule; setRule: SectionProps["setRule"]; err: FieldErr; first?: string; second?: string; /** The two halves of the card's content width (settings cards), not a 48rem cap. */ fill?: boolean }) {
   return (
-    <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
+    <div className={cn("grid gap-4 sm:grid-cols-2", !fill && "max-w-3xl")}>
       {[0, 1].map((i) => {
         const id = `cfg-label-${i}`
         return (
@@ -521,7 +535,7 @@ export function ScaleField({ rule, setRule, issues, showErrors, short }: Pick<Se
       <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby="cfg-scale-lead">
         <span id="cfg-scale-lead" className={TYPE.body}>{short ? "1 to" : "Each question is scored from 1 to"}</span>
         <Select value={scaleTop} onValueChange={(v) => setRule((r) => ({ ...r, scaleMax: Number(v) }))}>
-          <SelectTrigger id="cfg-scale" className="w-20" aria-label="Top of the score scale" {...errProps("cfg-scale", scaleErr)}>
+          <SelectTrigger id="cfg-scale" className={NUMBER_WIDTH} aria-label="Top of the score scale" {...errProps("cfg-scale", scaleErr)}>
             <SelectValue placeholder={short ? "" : "Top"} />
           </SelectTrigger>
           <SelectContent className={layer.menu}>
@@ -624,7 +638,7 @@ export function QuestionRuleField({ rule, setRule, err, legendHidden, subsetSlot
           </Select>
           {r?.kind === "atLeast" ? (
             <>
-              <NumberInput id="cfg-qrule-n" label="Questions that must be answered Yes" hideLabel width="w-16" value={r.n} error={err("cfg-qrule-n")} onChange={(n) => setRule((x) => ({ ...x, questionRule: { kind: "atLeast", n } }))} />
+              <NumberInput id="cfg-qrule-n" label="Questions that must be answered Yes" hideLabel value={r.n} error={err("cfg-qrule-n")} onChange={(n) => setRule((x) => ({ ...x, questionRule: { kind: "atLeast", n } }))} />
               <span className={TYPE.body}>{m > 0 ? `of ${m} Yes` : "Yes"}</span>
             </>
           ) : null}
@@ -651,7 +665,7 @@ export function QuestionRuleField({ rule, setRule, err, legendHidden, subsetSlot
         <div className="flex flex-wrap items-center gap-2">
           <RadioGroupItem id="cfg-qrule-atleast" value="atLeast" />
           <Label htmlFor="cfg-qrule-atleast">At least</Label>
-          <NumberInput id="cfg-qrule-n" label="Questions that must be answered Yes" hideLabel width="w-16" value={r?.kind === "atLeast" ? r.n : Number.NaN} error={err("cfg-qrule-n")} onChange={(n) => setRule((x) => ({ ...x, questionRule: { kind: "atLeast", n } }))} />
+          <NumberInput id="cfg-qrule-n" label="Questions that must be answered Yes" hideLabel value={r?.kind === "atLeast" ? r.n : Number.NaN} error={err("cfg-qrule-n")} onChange={(n) => setRule((x) => ({ ...x, questionRule: { kind: "atLeast", n } }))} />
           {/* No questions yet (a skill waiting for them, or the program's rule): there is no "of 0". */}
           <span className={TYPE.body}>{m > 0 ? `of ${m} Yes` : "Yes"}</span>
         </div>
@@ -695,9 +709,9 @@ export function QuestionSubsetPicker({ rule, setRule, error, className }: { rule
           {m > 10 ? (
             <span className="flex flex-wrap items-center gap-2" role="group" aria-label="Select a range of questions">
               <Label htmlFor="cfg-qsub-from" className="text-sm font-normal">Questions</Label>
-              <Input id="cfg-qsub-from" inputMode="numeric" className="w-16" value={from} onChange={(e) => setFrom(e.target.value.replace(/\D/g, ""))} aria-label="First question in the range" />
+              <Input id="cfg-qsub-from" inputMode="numeric" className={NUMBER_WIDTH} value={from} onChange={(e) => setFrom(e.target.value.replace(/\D/g, ""))} aria-label="First question in the range" />
               <Label htmlFor="cfg-qsub-to" className="text-sm font-normal">to</Label>
-              <Input id="cfg-qsub-to" inputMode="numeric" className="w-16" value={to} onChange={(e) => setTo(e.target.value.replace(/\D/g, ""))} aria-label="Last question in the range" />
+              <Input id="cfg-qsub-to" inputMode="numeric" className={NUMBER_WIDTH} value={to} onChange={(e) => setTo(e.target.value.replace(/\D/g, ""))} aria-label="Last question in the range" />
               <Button type="button" variant="outline" size="sm" disabled={!rangeOk} onClick={() => range(true)}>
                 Select range
               </Button>
@@ -800,9 +814,11 @@ export function ScoredRuleField({ rule, setRule, err, radios, legendHidden, comp
             </div>
           ))}
         </RadioGroup>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="cfg-srule-value">Value</Label>
-          <NumberInput id="cfg-srule-value" label="Value" width="w-16" value={r ? r.value : pendingValue} error={err("cfg-srule-value")} onChange={(n) => (r ? setRule((x) => ({ ...x, scoredRule: { kind: r.kind, value: n } })) : setPendingValue(n))} />
+        {/* The pass mark reads as the end of the choice above it: "At least [3] out of 5", indented to the radios' words. */}
+        <div className="flex flex-wrap items-center gap-2 ps-6">
+          <Label htmlFor="cfg-srule-value" className="font-normal">At least</Label>
+          <NumberInput id="cfg-srule-value" label="At least" value={r ? r.value : pendingValue} error={err("cfg-srule-value")} onChange={(n) => (r ? setRule((x) => ({ ...x, scoredRule: { kind: r.kind, value: n } })) : setPendingValue(n))} />
+          {Number.isFinite(max) && max >= 2 ? <span className={TYPE.helper}>{`out of ${max}`}</span> : null}
         </div>
         <Err id="cfg-srule" message={err("cfg-srule") ?? err("cfg-srule-value")} />
       </FieldSet>
@@ -823,7 +839,7 @@ export function ScoredRuleField({ rule, setRule, err, radios, legendHidden, comp
             </SelectContent>
           </Select>
           <span className={TYPE.body}>at least</span>
-          <NumberInput id="cfg-srule-value" label="Score that counts" hideLabel width="w-16" value={r ? r.value : pendingValue} error={err("cfg-srule-value")} onChange={(n) => (r ? setRule((x) => ({ ...x, scoredRule: { kind: r.kind, value: n } })) : setPendingValue(n))} />
+          <NumberInput id="cfg-srule-value" label="Score that counts" hideLabel value={r ? r.value : pendingValue} error={err("cfg-srule-value")} onChange={(n) => (r ? setRule((x) => ({ ...x, scoredRule: { kind: r.kind, value: n } })) : setPendingValue(n))} />
         </div>
         <Err id="cfg-srule" message={err("cfg-srule") ?? err("cfg-srule-value")} />
       </div>
@@ -849,7 +865,6 @@ export function ScoredRuleField({ rule, setRule, err, radios, legendHidden, comp
           id="cfg-srule-value"
           label="Value"
           hideLabel
-          width="w-16"
           value={r ? r.value : pendingValue}
           error={err("cfg-srule-value")}
           onChange={(n) => (r ? setRule((x) => ({ ...x, scoredRule: { kind: r.kind, value: n } })) : setPendingValue(n))}

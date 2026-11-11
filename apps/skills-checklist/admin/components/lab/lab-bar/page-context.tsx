@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { usePathname, useSearchParams } from "next/navigation"
+import { toLong } from "@/lib/short-urls"
 import { SCOPE_CARRY, activeSetFor, labHref, rewriteLabUrl, type LinkContext, type LinkParams } from "@/lib/lab/links"
 import { flowsForScreen, splitScreen } from "@/lib/lab/flows"
 
@@ -34,7 +35,7 @@ export function writeStoredSet(set: string) {
 
 /** Screen and variant of a /lab/<persona>/<screen> URL when the route did not provide them (components rendered outside a frame). */
 function pageFromPath(pathname: string, params: URLSearchParams | null): LabPage {
-  const [, lab, a, b, c] = pathname.split("/")
+  const [, lab, a, b, c] = toLong(pathname).split("/")
   if (lab !== "lab" || !a) return {}
   if (a === "flow") return { flow: b, step: c }
   return b ? { screen: `${a}/${b}`, variant: params?.get("variant") ?? undefined } : {}
@@ -84,7 +85,8 @@ export function useLabHref(): (target: string, params?: LinkParams) => string {
       return `?${q.toString()}`
     }
     if (SCREEN_KEY.test(target)) return labHref(target, params, ctx)
-    if (target.startsWith("/lab/")) return params ? labHref(target.slice(5).split("?")[0]!, params, ctx) : rewriteLabUrl(target, ctx)
+    const long = toLong(target)
+    if (long.startsWith("/lab/")) return params ? labHref(long.slice(5).split("?")[0]!, params, ctx) : rewriteLabUrl(long, ctx)
     return target
   }, [ctx])
 }

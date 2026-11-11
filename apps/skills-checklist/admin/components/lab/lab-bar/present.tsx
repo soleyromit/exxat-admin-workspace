@@ -7,6 +7,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { PRESENT_PARAM, PRESENT_STORAGE_KEY, isPresent } from "@/lib/lab/present"
 import { WALKTHROUGH_ENTRY, isWalkthrough } from "@/lib/lab/walkthrough"
+import { toLong, isFlowPath, isLabPath } from "@/lib/short-urls"
 
 function readStored(): boolean {
   try { return window.sessionStorage.getItem(PRESENT_STORAGE_KEY) === "1" } catch { return false }
@@ -24,18 +25,21 @@ export function usePresent(): { present: boolean; setPresent: (on: boolean) => v
   const pathname = usePathname() ?? ""
   const router = useRouter()
   const raw = params?.get(PRESENT_PARAM) ?? null
-  const present = isPresent(raw)
+  const longPath = toLong(pathname)
+  const inWalkthrough = isFlowPath(longPath) && isWalkthrough(longPath.split("/")[3])
+  // A walkthrough is presented whether or not its short URL says so (`/walk/<flow>/<step>` has no `present=1`).
+  const present = isPresent(raw) || inWalkthrough
   React.useEffect(() => {
     // A walkthrough is always presented (its route adds the param), but that is not a choice to present the lab: leaving it for `/lab`
     // opens the working index with its variant controls (D-L64). Only the Present switch on the index turns present mode on.
-    if (pathname.startsWith("/lab/flow/") && isWalkthrough(pathname.split("/")[3])) { writeStored(false); return }
+    if (inWalkthrough) { writeStored(false); return }
     if (raw !== null) { writeStored(present); return }
-    if (readStored() && pathname.startsWith("/lab")) {
+    if (readStored() && isLabPath(pathname)) {
       const q = new URLSearchParams(params?.toString() ?? "")
       q.set(PRESENT_PARAM, "1")
       router.replace(`${pathname}?${q.toString()}`)
     }
-  }, [raw, present, pathname, params, router])
+  }, [raw, present, pathname, inWalkthrough, params, router])
   const setPresent = React.useCallback((on: boolean) => {
     writeStored(on)
     const q = new URLSearchParams(params?.toString() ?? "")

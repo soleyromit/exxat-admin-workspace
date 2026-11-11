@@ -15,7 +15,8 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@exxatdesignux/ui/components/ui/command"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@exxatdesignux/ui/components/ui/input-group"
-import { DatePickerField } from "@exxatdesignux/ui/components/ui/date-picker-field"
+import { Calendar } from "@exxatdesignux/ui/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
 import { Field, FieldDescription, FieldError, FieldLabel, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
@@ -27,7 +28,7 @@ import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@exxatdesignux/ui/components/ui/toggle-group"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { StateGlyph, stateWord } from "@/components/lab/student/parts"
-import { initialsOf } from "@/lib/v2/format"
+import { initialsOf, longDate } from "@/lib/v2/format"
 import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { ratingKind, ratingOptions } from "@/lib/v2/student"
 import { skillById } from "@/lib/v2/evidence-index"
@@ -39,6 +40,7 @@ import {
   NOTE_LABEL,
   PRACTICE_LINE,
   PROGRAM_DETAILS,
+  LATEST_DATE,
   STUDENT_NOTE_MAX,
   pickerGroups,
   type DetailField,
@@ -50,7 +52,7 @@ import {
 } from "@/lib/lab/student2"
 
 import { binaryLabels } from "@/lib/v2/labels"
-import { TOUCH_ROW } from "./touch"
+import { CHOICE_CARD, CHOICE_ROW, TOUCH_ROW } from "./touch"
 export { TOUCH_ROW }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -210,6 +212,51 @@ const toDate = (v: string) => (v ? new Date(`${v}T12:00:00`) : undefined)
 const fromDate = (d: Date | undefined) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : "")
 
 /**
+ * A date that cannot be after today on the program's clock (LATEST_DATE) [REQ ST-10]: Romit 2026-11-10, "the validation is not
+ * helping". The DS DatePickerField has no maximum and marks the machine's today, so a student could pick a day the check then
+ * refused. Same DS parts (Popover, Calendar) with later days disabled and the program's today marked; the button keeps the
+ * field's id, so the error summary focuses it.
+ */
+export function PastDateField({ id, label, value, onChange, invalid = false, latest = LATEST_DATE }: { id: string; label: string; value: string; onChange: (v: string) => void; invalid?: boolean; latest?: string }) {
+  const [open, setOpen] = React.useState(false)
+  const max = toDate(latest)!
+  const chosen = toDate(value)
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-invalid={invalid || undefined}
+          aria-label={`${label}, ${value ? longDate(value) : "not chosen"}`}
+          className={cn("w-full justify-between font-normal", TOUCH_ROW)}
+          data-past-date
+        >
+          <span className={cn("tabular-nums", value ? "text-foreground" : "text-muted-foreground")}>{value ? longDate(value) : "Choose a date"}</span>
+          <i className="fa-light fa-calendar text-xs text-muted-foreground" aria-hidden="true" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={chosen}
+          onSelect={(d: Date | undefined) => { if (d) { onChange(fromDate(d)); setOpen(false) } }}
+          defaultMonth={chosen && chosen <= max ? chosen : max}
+          today={max}
+          disabled={{ after: max }}
+          startMonth={new Date(max.getFullYear() - 2, 0)}
+          endMonth={max}
+          captionLayout="dropdown"
+          autoFocus
+        />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/**
  * The details the program asks for, as configured on the chosen skills (lib/lab/student2.ts detailFieldsFor) [REQ SC-13, ST-10]. A
  * long text field and a choice list each take a full row; the error sits on the field.
  */
@@ -230,7 +277,7 @@ export function DetailsFields({ values, onChange, errors, showErrors, idPrefix =
               {f.required ? null : <span className="font-normal text-muted-foreground"> (optional)</span>}
             </FieldLabel>
             {f.type === "date" ? (
-              <DatePickerField id={id} value={toDate(values[f.id] ?? "")} onChange={(d) => onChange(f.id, fromDate(d))} triggerClassName={cn("h-8 text-sm", TOUCH_ROW)} toYear={2026} />
+              <PastDateField id={id} label={f.label} value={values[f.id] ?? ""} onChange={(v) => onChange(f.id, v)} invalid={!!err} />
             ) : f.type === "long" ? (
               <Textarea id={id} rows={2} value={values[f.id] ?? ""} onChange={(e) => onChange(f.id, e.target.value)} aria-invalid={!!err || undefined} aria-describedby={f.helper ? `${id}-help` : undefined} />
             ) : f.type === "choice" ? (
@@ -312,9 +359,12 @@ export const PICKER_VISIBLE = 5
  * further attempt's previous evaluator). "Someone not listed" is always last: name and email, no account needed. Arrow Down from
  * the search moves into the list (the radio group moves with the arrow keys); Enter in the search picks the first match.
  */
-export function EvaluatorPicker({ options, value, onChange, fresh, onFresh, errors, showErrors, pinnedId, legend = "Who signs off", legendHidden = false }: { options: EvaluatorOption[]; value: WhoValue; onChange: (v: WhoValue) => void; fresh: NewEvaluator; onFresh: (n: NewEvaluator) => void; errors: { name?: string; email?: string }; showErrors: boolean; /** Kept for older callers; the list is always compact now. */ compact?: boolean; pinnedId?: string | null; legend?: string; /** The page already titles the section (Fix "2 Who signs"): legend for screen readers only. */ legendHidden?: boolean }) {
+export function EvaluatorPicker({ options, value, onChange, fresh, onFresh, errors, showErrors, pinnedId, legend = "Who signs off", legendHidden = false, invalid = false, suggested = PICKER_VISIBLE, searchOnDemand = false, layout = "list" }: { /** "tiles" (Send A, B, C): choice tiles in a grid, name over role and site, so a row never stretches across the page with its words at the left edge (Romit 2026-11-10). "list": one-line rows (Fix). */ layout?: "list" | "tiles"; /** Rows shown before the full list (Send C shows 3 suggestions, Romit 2026-11-10 "this screen isn't simple at all"). */ suggested?: number; /** Hide the search box until the student asks for the full list; the one quiet control opens both. */ searchOnDemand?: boolean; /** Nobody chosen after a failed Send: the group reads as invalid, not only the sentence under it. */ invalid?: boolean; options: EvaluatorOption[]; value: WhoValue; onChange: (v: WhoValue) => void; fresh: NewEvaluator; onFresh: (n: NewEvaluator) => void; errors: { name?: string; email?: string }; showErrors: boolean; /** Kept for older callers; the list is always compact now. */ compact?: boolean; pinnedId?: string | null; legend?: string; /** The page already titles the section (Fix "2 Who signs"): legend for screen readers only. */ legendHidden?: boolean }) {
   const [q, setQ] = React.useState("")
   const [showAll, setShowAll] = React.useState(false)
+  const [searching, setSearching] = React.useState(!searchOnDemand)
+  const tiles = layout === "tiles"
+  const searchRef = React.useRef<HTMLInputElement>(null)
   const listRef = React.useRef<HTMLDivElement>(null)
   const ordered = React.useMemo(() => {
     const rank = (o: EvaluatorOption) => (o.id === pinnedId ? 0 : o.here ? 1 : o.eligible ? 2 : 3)
@@ -323,21 +373,27 @@ export function EvaluatorPicker({ options, value, onChange, fresh, onFresh, erro
   const needle = q.trim().toLowerCase()
   const matches = needle ? ordered.filter((o) => `${o.name} ${o.role}`.toLowerCase().includes(needle)) : ordered
   // The chosen person stays visible even when the list is cut, so the choice is never hidden.
-  const cut = showAll || needle ? matches : matches.slice(0, PICKER_VISIBLE)
+  const cut = showAll || needle ? matches : matches.slice(0, suggested)
   const chosen = value?.kind === "person" ? matches.find((o) => o.id === value.id) : undefined
-  const visible = chosen && !cut.includes(chosen) ? [...cut, chosen] : cut
+  // The first eligible person (in the options' own order) stays visible too: after a failed Send with nobody chosen, the error
+  // summary or the single-issue focus targets that row (useRequestDraft issues), so it must be rendered.
+  const target = options.find((o) => o.eligible)
+  const withChosen = chosen && !cut.includes(chosen) ? [...cut, chosen] : cut
+  const visible = target && !needle && !withChosen.includes(target) ? [...withChosen, target] : withChosen
   const radio = value?.kind === "person" ? value.id : value?.kind === "new" ? "__new" : ""
   const anyEligible = options.some((o) => o.eligible)
   const firstEligible = matches.find((o) => o.eligible)
   return (
-    <FieldSet data-evaluator-picker>
+    <FieldSet data-evaluator-picker data-invalid={invalid || undefined}>
       <FieldLegend variant="label" className={legendHidden ? "sr-only" : undefined}>{legend}</FieldLegend>
       {!anyEligible ? <FieldDescription>{`Nobody on record can sign off every ${skillNoun()} you picked. Name someone below, or send fewer ${skillNounPlural()}.`}</FieldDescription> : null}
+      {searching ? (
       <InputGroup className="max-w-md">
         <InputGroupAddon align="inline-start">
           <i className="fa-light fa-magnifying-glass" aria-hidden="true" />
         </InputGroupAddon>
         <InputGroupInput
+          ref={searchRef}
           type="search"
           value={q}
           onChange={(e) => { setQ(e.target.value); setShowAll(false) }}
@@ -356,33 +412,55 @@ export function EvaluatorPicker({ options, value, onChange, fresh, onFresh, erro
           }}
         />
       </InputGroup>
-      <div ref={listRef}>
-      <RadioGroup id="who-list" value={radio} onValueChange={(v) => onChange(v === "__new" ? { kind: "new" } : { kind: "person", id: v })} className="flex flex-col gap-0 divide-y divide-border rounded-md border border-border" aria-label={legend}>
-        {visible.map((o) => {
+      ) : null}
+      <div ref={listRef} className={tiles ? "flex flex-col items-start gap-1" : "flex flex-col divide-y divide-border rounded-md border border-border"}>
+      <RadioGroup id="who-list" value={radio} onValueChange={(v) => onChange(v === "__new" ? { kind: "new" } : { kind: "person", id: v })} className={tiles ? "grid w-full grid-cols-1 gap-2 @xl:grid-cols-2 @5xl:grid-cols-4" : "flex flex-col gap-0 divide-y divide-border"} aria-label={legend} aria-invalid={invalid || undefined}>
+        {visible.map((o, i) => {
           const id = `who-${o.id}`
           return (
-            <Label key={o.id} htmlFor={id} className={cn("flex min-h-10 items-center gap-3 px-3 py-1.5 font-normal has-[[data-state=checked]]:bg-muted", o.eligible ? "cursor-pointer" : "cursor-not-allowed", TOUCH_ROW)} data-who-row={o.id}>
+            <Label key={o.id} htmlFor={id} className={cn("flex items-center gap-3 font-normal", tiles ? cn(CHOICE_CARD, "min-h-14 px-3 py-2") : cn(CHOICE_ROW, "min-h-10 px-3 py-1.5", i === 0 && "rounded-t-md"), o.eligible ? "cursor-pointer" : "cursor-not-allowed", TOUCH_ROW)} data-who-row={o.id}>
               <RadioGroupItem value={o.id} id={id} disabled={!o.eligible} aria-describedby={o.reason ? `${id}-why` : undefined} />
               <AvatarInitials initials={initialsOf(o.name)} size="sm" aria-hidden="true" />
-              <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-                <span className={cn("text-sm", o.eligible ? "text-foreground" : "text-muted-foreground")}>{o.name}</span>
+              <span className={cn("flex min-w-0 flex-1", tiles ? "flex-col" : "flex-wrap items-baseline gap-x-2")}>
+                <span className={cn("text-sm", tiles && "break-words", o.eligible ? "text-foreground" : "text-muted-foreground")}>{o.name}</span>
                 <span id={o.reason ? `${id}-why` : undefined} className="truncate text-xs text-muted-foreground">{o.reason ?? o.role}</span>
               </span>
               {o.id === pinnedId ? <Badge variant="outline">Signed before</Badge> : null}
             </Label>
           )
         })}
-        {needle && matches.length === 0 ? <p className="px-3 py-2 text-sm text-muted-foreground" role="status" data-who-empty>No match. Add someone not listed.</p> : null}
-        <Label htmlFor="who-new" className={cn("flex min-h-10 cursor-pointer items-center gap-3 px-3 py-1.5 font-normal has-[[data-state=checked]]:bg-muted", TOUCH_ROW)}>
+        {needle && matches.length === 0 ? <p className={cn("text-sm text-muted-foreground", tiles ? "self-center" : "px-3 py-2")} role="status" data-who-empty>No match. Add someone not listed.</p> : null}
+        <Label htmlFor="who-new" className={cn("flex cursor-pointer items-center gap-3 font-normal", tiles ? cn(CHOICE_CARD, "min-h-14 px-3 py-2") : cn(CHOICE_ROW, "min-h-10 px-3 py-1.5", !(!showAll && !needle && matches.length > suggested) && "rounded-b-md"), TOUCH_ROW)}>
           <RadioGroupItem value="__new" id="who-new" />
-          <span className="text-sm text-foreground">Someone not listed</span>
-          <span className="text-xs text-muted-foreground">No account needed</span>
+          {tiles ? <span className="flex size-6 shrink-0 items-center justify-center text-sm text-muted-foreground" aria-hidden="true"><i className="fa-light fa-user-plus" aria-hidden="true" /></span> : null}
+          <span className={cn("flex min-w-0 flex-1", tiles ? "flex-col" : "items-baseline gap-x-3")}>
+            <span className="text-sm text-foreground">Someone not listed</span>
+            <span className="text-xs text-muted-foreground">No account needed</span>
+          </span>
         </Label>
       </RadioGroup>
-      </div>
-      {!showAll && !needle && matches.length > PICKER_VISIBLE ? (
-        <Button type="button" variant="ghost" size="sm" className="self-start" onClick={() => setShowAll(true)}>{`Show all ${matches.length}`}</Button>
+      {/* Part of the list it extends (Romit 2026-11-10: "not easy to select and navigate between the other options"). */}
+      {!showAll && !needle && matches.length > suggested ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={cn(tiles ? "font-normal" : "h-10 w-full justify-start rounded-none rounded-b-md px-3 font-normal", TOUCH_ROW)}
+          onClick={() => {
+            setShowAll(true)
+            if (!searching) {
+              setSearching(true)
+              requestAnimationFrame(() => searchRef.current?.focus())
+            }
+          }}
+          aria-controls="who-list"
+          data-who-show-all
+        >
+          <i className={cn("fa-light text-xs", searching ? "fa-chevron-down" : "fa-magnifying-glass")} aria-hidden="true" />
+          {searching ? `Show all ${matches.length} evaluators` : `Search all ${matches.length} evaluators`}
+        </Button>
       ) : null}
+      </div>
       {value?.kind === "new" ? (
         <div className="grid gap-3 rounded-md bg-muted/50 p-3 sm:grid-cols-2">
           <Field data-invalid={showErrors && !!errors.name}>

@@ -23,7 +23,7 @@ export interface ProgramPage {
 }
 
 /** Page frame: title with the one Save, banner, the layout, the confirmation. `onIssue` lets a layout reveal a group. */
-export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction }: { children: (p: ProgramPage) => React.ReactNode; onIssue?: (i: RuleIssue) => void; /** The control a problem focuses, when it sits inside a dialog on this layout. */ focusOf?: (i: RuleIssue) => string; /** Beside the one Save: Preview on the plain page (map D3). */ headerAction?: (m: ProgramModel) => React.ReactNode }) {
+export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction, phoneSaveBar }: { children: (p: ProgramPage) => React.ReactNode; onIssue?: (i: RuleIssue) => void; /** The control a problem focuses, when it sits inside a dialog on this layout. */ focusOf?: (i: RuleIssue) => string; /** Beside the one Save: Preview on the plain page (map D3). */ headerAction?: (m: ProgramModel) => React.ReactNode; /** Below 640 px Save leaves the header for a full-width bar at the bottom of the screen (variant B, D-L141). Off by default. */ phoneSaveBar?: boolean }) {
   const m = useProgramSettings()
   const s = useProgramSave(m, (i) => {
     onIssue?.(i)
@@ -41,10 +41,14 @@ export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction 
     register(() => { const pending = pendingRef.current; saveRef.current(); return pending })
     return () => register(null)
   }, [register])
+  const bar = !!phoneSaveBar && !embedded
+  const saveLabel = m.saved ? "Save changes" : "Save settings"
   if (m.loading) {
     return (
       <PageFrame title={EVALUATION_SETTINGS_TITLE}>
-        <Skeleton className="h-96 w-full" aria-label="Loading" />
+        <div aria-busy="true">
+          <Skeleton className="h-96 w-full" aria-label="Loading" />
+        </div>
       </PageFrame>
     )
   }
@@ -55,11 +59,17 @@ export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction 
         className="flex-1"
         // Navigation model A (D-L42): the page's one filled action sits in the header; no flow footer.
         // Nothing chosen on a new program: nothing to save yet (map D3, S1).
-        actions={<>{headerAction?.(m)}<Button type="button" variant="default" size="sm" onClick={s.save} disabled={!s.changed || s.invalid || !m.rule.model}>{m.saved ? "Save changes" : "Save settings"}</Button></>}
+        actions={<>{headerAction?.(m)}<Button type="button" variant="default" size="sm" className={bar ? "max-sm:hidden" : undefined} onClick={s.save} disabled={!s.changed || s.invalid || !m.rule.model}>{saveLabel}</Button></>}
       >
         <ProgramBanners m={m} onApplyNew={s.applyNew} />
         {children({ m, edits: s.edits, setEdits: s.setEdits })}
+        {bar ? <div className="h-20 sm:hidden" aria-hidden="true" /> : null}
       </PageFrame>
+      {bar ? (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background px-4 py-3 sm:hidden" data-phone-save-bar>
+          <Button type="button" variant="default" size="lg" className="w-full" onClick={s.save} disabled={!s.changed || s.invalid || !m.rule.model}>{saveLabel}</Button>
+        </div>
+      ) : null}
       {s.dialog}
       {embedded ? null : <UnsavedChangesGuard dirty={m.dirty} onDiscard={m.discard} />}
     </div>

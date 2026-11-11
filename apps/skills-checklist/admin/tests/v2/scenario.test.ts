@@ -23,7 +23,7 @@ describe("scenario", () => {
 
   it("routes match role and id, and resolve back to the step", () => {
     for (const s of STEPS) {
-      expect(s.route).toBe(`/v2/${s.role}/${s.id}`)
+      expect(s.route).toBe(`/proto/${s.role}/${s.id}`)
       expect(stepForRoute(s.role, s.id)).toBe(s)
       expect(roleForPath(s.route)).toBe(s.role)
     }

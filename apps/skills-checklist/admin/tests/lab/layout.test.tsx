@@ -101,7 +101,7 @@ describe("StickyFooter", () => {
     render(<StickyFooter primary={{ label: "Map to courses", href: "/lab/admin/course-mapping" }} />)
     const link = screen.getByRole("link", { name: "Map to courses" })
     // Lab links follow the active option set (lib/lab/links.ts): with no page context the map step opens in the recommended set.
-    expect(link).toHaveAttribute("href", "/lab/flow/set-up-skills/map?set=1")
+    expect(link).toHaveAttribute("href", "/flow/set-up-skills/map?set=1")
     expect(link).toHaveAttribute("data-variant", "default")
   })
 

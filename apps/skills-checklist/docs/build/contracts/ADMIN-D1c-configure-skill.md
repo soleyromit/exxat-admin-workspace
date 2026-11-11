@@ -38,3 +38,53 @@ Status (the panel's header switch); name, description, category and tags (the pa
 | Go back to the default | Any door on a Custom skill | Default, Save changes, confirm when named | Saved, reads Default | Library, same filters and scroll, panel open, banner |
 | Add questions | Not configured (b) | Add questions, write them, Save, Save changes | Saved, reads Default or Custom | Library, same filters and scroll, panel open, banner |
 | Leave without saving | Any door, a change made | Cancel, Discard | Nothing saved | Where the admin came from |
+
+## Layout amendment 2026-11-10: the Evaluation settings cards
+Coordinator brief, 2026-11-10: the per-skill page reads as one system with Evaluation settings B (D-L134). The accordion goes; the same three DS Cards, in the same order and names, hold every setting. Recorded as D-L135 (Proposed until Romit tries it).
+
+```
+Nasogastric tube care  [badges]                                   [Preview <1100] [Cancel] [Save changes]
+Evaluation settings  [ Default | Custom ]          Edit Evaluation settings (link, Default only)
++-- What counts as achieved ---------------------------------- Default / Custom --+   +-- What they will see --+
+| [ This skill's rule: Student needs 2 evaluations rated works alone. ]           |   | Student | Evaluator    |
+| Default:  How this skill is judged   Independence level        (label | value)  |   | (tray, read only)      |
+|           Levels                     Needs coaching, ...                         |   |                        |
+|           Counts                     Works alone                                 |   |                        |
+|           Questions   This skill only   4 questions          [Edit questions]    |   |                        |
+|           Times needed  This skill only  [ 2 ] evaluations                       |   |                        |
+|           Minimums      This skill only  None                  [Add minimum]     |   |                        |
+|           Who can sign off           Preceptor, Clinical faculty                 |   |                        |
+| Custom:   model tiles · Levels (LevelList) · Labels · Scale · Counts when       |   |                        |
+|           (radios) · Questions [Edit questions] · Times needed · Minimums ·     |   |                        |
+|           Who can sign off (boxes)                                               |   |                        |
++---------------------------------------------------------------------------------+   +------------------------+
++-- Steps before it counts ------------------------------------ Default / Custom --+
+| (1) Student logs the skill  Always · (2) Student rates themselves first  On|switch |
+| (3) Evaluator signs off  Always · (4) Approval before it counts  Off|switch · (5)  |
++---------------------------------------------------------------------------------+
++-- Forms ------------------------------------------------------ Default / Custom --+
+| What the student fills in   value | Edit fields                                  |
+| Feedback is required        value | switch                                       |
+| Faculty can check off a group  value | switch, then level or score               |
++---------------------------------------------------------------------------------+
+```
+
+| Before (accordion, D-L115) | After (cards) |
+|---|---|
+| Evaluation settings Default / Custom | Same segmented control, top of the form column |
+| How this skill is judged (tiles, rebuild on change) | Card 1 first row; Default reads the model as a value |
+| Levels: table with Counts + Edit levels dialog | Card 1: LevelList (names inline, Counts, row menu), same as Evaluation settings |
+| Labels, Which one qualifies | Card 1, fields span the card |
+| Scale, Counts when (Select) | Card 1: Scale, Counts when as radios, same as Evaluation settings; named questions keep Choose |
+| Questions (Edit questions dialog), Questions that must be Yes | Card 1, unchanged controls |
+| Times needed | Card 1, number with its unit, always editable |
+| Minimums | Card 1, always editable |
+| Who can sign off | Card 1 |
+| Student fills in, Student rates first | Card 3 row; card 2 step 2 |
+| Feedback, Group check-off and its level or score | Card 3 |
+| Approval before it counts | Card 2 step 4 |
+| Default read-out "From Evaluation settings" | Values in place in each card; each card's header says Default or Custom; the skill's own rows say "This skill only"; one link "Edit Evaluation settings" |
+
+Inherit or override, without opening anything: each card's header carries Default (muted) or Custom (badge); under Default the rows the skill keeps for itself carry "This skill only" and stay live controls.
+Density: the D-L115 budget (Custom 9 fields, 900 px fit) cannot hold with every card open; CFG1 now checks no repeats, no filled button on arrival, one form column and the tray in view, and records the counts. Raised for Romit, not silently.
+Tasks unchanged. Save, Cancel, the unsaved guard, the impact dialog, a failed save and validation work as before; a problem names its card and focuses its field (no section to open).

@@ -31,10 +31,11 @@ export function SettingsSummary({ rule, word, action, emptyText, id = "settings-
           <dl className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-sm">
             <dt className="text-muted-foreground">Evaluation model</dt>
             <dd>{LAB_MODEL_LABEL[known.model!]}</dd>
-            <dt className="text-muted-foreground">Admin approval</dt>
-            <dd>{known.approvalRequired ? "Required" : "Not required"}</dd>
+            {/* The path's order on Evaluation settings: the student rates first, approval comes last (2026-11-10). */}
             <dt className="text-muted-foreground">Self-evaluation</dt>
             <dd>{known.selfEvaluation ? "On" : "Off"}</dd>
+            <dt className="text-muted-foreground">Admin approval</dt>
+            <dd>{known.approvalRequired ? "Required" : "Not required"}</dd>
           </dl>
         </>
       ) : <p className="text-sm text-muted-foreground">{emptyText}</p>}

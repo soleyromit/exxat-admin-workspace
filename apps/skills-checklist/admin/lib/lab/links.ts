@@ -1,3 +1,4 @@
+import { toLong, toShort } from "../short-urls"
 import { FLOWS, findFlow, flowsForScreen, mainSteps, resolveSet, splitScreen, type FlowDef, type FlowStep } from "./flows"
 
 /**
@@ -99,19 +100,19 @@ export function labHref(screen: string, params: LinkParams = {}, ctx: LinkContex
     if (sameScreen && ctx.variant && !flow.steps.some((s) => s.screen === screen && s.variants[set] === ctx.variant)) {
       // The page shows a variant the active set does not map here (chosen from "More variants" or an old screen URL):
       // a self link stays in that variant on the screen route.
-      return `/lab/${persona}/${slug}${query({ variant: ctx.variant, set }, params, ctx.carry)}`
+      return toShort(`/lab/${persona}/${slug}${query({ variant: ctx.variant, set }, params, ctx.carry)}`)
     }
     // A walkthrough moves on by params alone (My progress -> Skills by course is the same screen with ?course=), so its
     // self links do not prefer the page's own step.
     const step = stepFor(flow, screen, set, params, sameScreen && ctx.onFlowRoute && !flow.walkthrough ? ctx.stepId : undefined)
-    if (step) return `/lab/flow/${flow.id}/${step.id}${query({ set }, params, ctx.carry)}`
+    if (step) return toShort(`/lab/flow/${flow.id}/${step.id}${query(flow.walkthrough ? {} : { set }, params, ctx.carry)}`)
   }
 
   // No flow holds the screen: keep the page's variant on a self link, else the recommended one.
   const base: Record<string, string> = {}
   if (sameScreen && ctx.variant) base.variant = ctx.variant
   if (ctx.set) base.set = ctx.set
-  return `/lab/${persona}/${slug}${query(base, params, ctx.carry)}`
+  return toShort(`/lab/${persona}/${slug}${query(base, params, ctx.carry)}`)
 }
 
 const SCREEN_URL = /^\/lab\/([a-z-]+)\/([a-z0-9-]+)(?:\?([^#]*))?(#.*)?$/
@@ -120,10 +121,12 @@ const SCREEN_URL = /^\/lab\/([a-z-]+)\/([a-z0-9-]+)(?:\?([^#]*))?(#.*)?$/
  * Rewrites a plain screen URL built elsewhere ("/lab/admin/configure-skill?skill=x") into the set-aware href. Flow URLs,
  * `/lab`, external and non-lab URLs pass through unchanged.
  */
-export function rewriteLabUrl(url: string, ctx: LinkContext = {}): string {
-  if (!url.startsWith("/lab/") || url.startsWith("/lab/flow/")) return url
+export function rewriteLabUrl(input: string, ctx: LinkContext = {}): string {
+  // A short form (/as/admin/..., /flow/...) is read as its long twin.
+  const url = toLong(input)
+  if (!url.startsWith("/lab/") || url.startsWith("/lab/flow/")) return input
   const m = SCREEN_URL.exec(url)
-  if (!m) return url
+  if (!m) return input
   const [, persona, slug, search = "", hash = ""] = m
   const params: LinkParams = {}
   new URLSearchParams(search).forEach((v, k) => { params[k] = v })
@@ -157,12 +160,12 @@ export function activeSetFor(ctx: { flowId?: string; screen?: string; variant?: 
 
 /** The variant letter a link to `screen` lands on from this page (undefined: the screen's recommended variant). */
 export function variantFor(screen: string, ctx: LinkContext = {}): string | undefined {
-  const href = labHref(screen, {}, ctx)
-  const flowMatch = /^\/lab\/flow\/([^/]+)\/([^/?]+)\?(.*)$/.exec(href)
+  const href = toLong(labHref(screen, {}, ctx))
+  const flowMatch = /^\/lab\/flow\/([^/]+)\/([^/?]+)(?:\?(.*))?$/.exec(href)
   if (flowMatch) {
     const flow = findFlow(flowMatch[1])
     const step = flow?.steps.find((s) => s.id === flowMatch[2])
-    const set = new URLSearchParams(flowMatch[3]).get("set") ?? flow?.recommendedSet ?? ""
+    const set = new URLSearchParams(flowMatch[3] ?? "").get("set") ?? flow?.recommendedSet ?? ""
     return step?.variants[set]
   }
   return new URLSearchParams(href.split("?")[1] ?? "").get("variant") ?? undefined
@@ -195,7 +198,7 @@ export function navHref(screen: string, ctx: LinkContext = {}): string {
   const own: LinkParams = screen.startsWith("student/") ? { course: null } : {}
   if (flow) {
     const set = resolveSet(flow, ctx.set)
-    return `/lab/flow/${flow.id}${query({ set }, own, ctx.carry)}`
+    return toShort(`/lab/flow/${flow.id}${query({ set }, own, ctx.carry)}`)
   }
   return labHref(screen, own, ctx)
 }

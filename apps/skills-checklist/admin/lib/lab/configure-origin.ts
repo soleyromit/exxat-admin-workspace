@@ -2,6 +2,8 @@
  * Where the Configure one skill page was opened from, and the scroll to restore there (map D1c, D-L115). Read when a link to the page is pressed, in the capture phase, so a dirty panel's guard (which holds the
  * press and navigates later) cannot lose it. In this tab's session storage, so a reload of the page keeps it. Every read and write tolerates storage being blocked: the fallback is the plain Library.
  */
+import { toLong } from "@/lib/short-urls"
+
 const ORIGIN = "lab:configure-origin"
 const RETURN = "lab:configure-return"
 const RETURN_SEARCH = "lab:configure-return-search"
@@ -80,7 +82,7 @@ export function takeReturnSearch(): string {
 
 /** Links to the two configure pages, in whichever form the option set wrote them: the key is the skill, or the bulk page's list. */
 function skillOfDoor(href: string): string | null {
-  if (!/configure-skill|\/lab\/flow\/[^/?]+\/configure\b/.test(href)) return null
+  if (!/configure-skill|\/lab\/flow\/[^/?]+\/configure\b/.test(toLong(href))) return null
   const q = new URL(href, window.location.origin).searchParams
   return q.get("skills") || q.get("skill")
 }

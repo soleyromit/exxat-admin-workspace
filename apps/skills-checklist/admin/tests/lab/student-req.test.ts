@@ -143,8 +143,11 @@ describe("ST-10: required details are enforced before a submission is sent", () 
     expect(req).toMatch(/ValidationSummary/)
     for (const f of ["components/lab/screens/student-request-a.tsx", "components/lab/screens/student-request-b.tsx"]) {
       expect(src(f)).toMatch(/<SendIssues d=\{d\} \/>/)
-      expect(src(f)).toMatch(/<DetailsAndNote d=\{d\}/)
+      // The one Send design (2026-11-10): the shared section carries the details (in the summary card) and the note disclosure.
+      expect(src(f)).toMatch(/<SendSection d=\{d\} editSkills/)
     }
+    expect(req).toMatch(/<DetailsFields idPrefix="req-detail"/)
+    expect(req).toMatch(/<NoteField id="req-note"/)
     expect(src("components/lab/student/fix.tsx")).toMatch(/detailErrors\(draft\.details, fields\)/)
   })
 })
