@@ -2,7 +2,7 @@
 
 /**
  * Evaluation settings B, "every field on the page" (concept D, D-L141, Romit 2026-11-10). The parts only this layout uses: a sheet of sections (name
- * left, fields right, labels above fields), the sticky "Your rule" panel, the Levels and Outcomes lists with one radio per row for what counts,
+ * left, fields right, labels above fields), the sticky "Your rule" panel, the Levels and Outcomes lists (a status per row, one select under the list for what counts),
  * the question list (first 8, then Show all), the two Counts when controls, the plain list of steps and the student's fields edited in place.
  * Configure one skill does not use these, so nothing here changes it.
  */
@@ -37,9 +37,10 @@ import {
   ROLES,
   applyPreset,
   appendQuestions,
-  countsFromIndex,
   hasNeed,
   levelMoveChange,
+  levelTicked,
+  levelPlace,
   presetReplaces,
   removeLevel,
   removeQuestion,
@@ -47,7 +48,7 @@ import {
   ruleClauses,
   ruleSaysWhatCounts,
   swapItems,
-  withCountsFrom,
+  withLevelTicked,
   type FieldType,
   type LabelPresetId,
   type LabRule,
@@ -55,7 +56,7 @@ import {
 } from "@/lib/lab/configure"
 import { TIMES_MAX } from "@/lib/lab/program-settings"
 import { aNoun, skillNounPlural } from "@/lib/lab/terms"
-import { NUMBER_WIDTH, PasteQuestions, QuestionSubsetPicker, RemoveButton, placeholderFor, type SectionProps } from "./fields"
+import { NUMBER_WIDTH, NumberWithUnit, PasteQuestions, QuestionSubsetPicker, RemoveButton, placeholderFor, type SectionProps } from "./fields"
 
 type SetRule = SectionProps["setRule"]
 type Err = (f: string) => string | undefined
@@ -234,7 +235,7 @@ function StartFrom({ rule, setRule }: { rule: LabRule; setRule: SetRule }) {
         <AlertDialogContent data-preset-confirm onCloseAutoFocus={(e) => { e.preventDefault(); document.getElementById("cfg-preset")?.focus({ preventScroll: true }) }}>
           <AlertDialogHeader>
             <AlertDialogTitle>{ask ? `Replace ${ask.was.length} ${ask.noun}${ask.was.length === 1 ? "" : "s"}?` : "Replace them?"}</AlertDialogTitle>
-            <AlertDialogDescription>{ask ? `${listWords(ask.was)} ${ask.was.length === 1 ? "becomes" : "become"} ${listWords(ask.next)}.${ask.clearsCounts ? " Which level counts is cleared." : ""}` : ""}</AlertDialogDescription>
+            <AlertDialogDescription>{ask ? `${listWords(ask.was)} ${ask.was.length === 1 ? "becomes" : "become"} ${listWords(ask.next)}.${ask.clearsCounts ? " The accepted levels are cleared." : ""}` : ""}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel variant="outline" size="default" autoFocus onClick={holdSecondPress}>{`Keep my ${ask?.noun ?? "level"}s`}</AlertDialogCancel>
@@ -251,52 +252,55 @@ function StartFrom({ rule, setRule }: { rule: LabRule; setRule: SetRule }) {
 const listWords = (xs: readonly string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`)
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Levels and outcomes: one list, a radio per row for what counts (D-L141)
+// Levels and outcomes: one list, a control per row under one "Accepted" heading (2026-11-11; Romit's D-L74 and D-L95 checkboxes restored on B)
 
-/** The list's frame and its quiet column heads (wide only). */
-function CountList({ head, countHead, grip, children }: { head: string; countHead: string; grip?: boolean; children: React.ReactNode }) {
+/** The column word above the row controls, the only head the list has. */
+export const ACCEPTED_HEAD = "Accepted"
+/** The validation word for "no level chosen" on this page (the shared message is worded for every variant; this page says it in its own word). */
+export const LEVELS_NOT_CHOSEN = "Choose the levels you accept."
+
+const ROW = "grid min-w-0 items-center gap-x-2 gap-y-1 border-t border-border px-2 py-1.5"
+const LEVEL_COLS = "grid-cols-[2rem_minmax(0,1fr)_5.5rem_2rem]"
+const OUTCOME_COLS = "grid-cols-[minmax(0,1fr)_5.5rem]"
+
+/** The list's frame with its one head: "Accepted", over the control column. */
+function AcceptedList({ id, cols, children, invalid, describedBy }: { id: string; cols: string; children: React.ReactNode; invalid?: boolean; describedBy?: string }) {
   return (
-    <div className="@container min-w-0 overflow-hidden rounded-[var(--radius)] border border-border">
-      <div className={cn("hidden items-center gap-2 border-b border-border bg-muted px-2 py-1.5 @[26rem]:grid", grip ? "grid-cols-[2rem_minmax(0,1fr)_9.5rem_2rem]" : "grid-cols-[minmax(0,1fr)_9.5rem] ps-3")} aria-hidden="true">
-        {grip ? <span /> : null}
-        <span className={TYPE.meta}>{head}</span>
-        <span className={TYPE.meta}>{countHead}</span>
+    <div id={id} tabIndex={-1} className="min-w-0 overflow-hidden rounded-[var(--radius)] border border-border outline-none" aria-invalid={invalid || undefined} aria-describedby={describedBy} data-counts-from>
+      <div className={cn("grid items-center gap-x-2 px-2 py-1.5", cols)} aria-hidden="true">
+        <span className={cn(TYPE.meta, "col-start-3 row-start-1 text-center")}>{ACCEPTED_HEAD}</span>
       </div>
       {children}
     </div>
   )
 }
 
-const ROW = "grid min-w-0 items-center gap-x-2 gap-y-1 border-t border-border px-2 py-1.5 first:border-t-0"
-
-/** The radio and the words that say what it means for this row: Counts, or Does not count. */
-function CountsCell({ id, value, counts, name }: { id: string; value: string; counts: boolean; name: string }) {
-  return (
-    <Label htmlFor={id} className={cn("flex min-h-8 cursor-pointer items-center gap-2.5 font-normal", TYPE.body, !counts && "text-muted-foreground")} data-level-segment={value} data-counts={counts || undefined}>
-      <RadioGroupItem id={id} value={value} aria-label={name} />
-      <span aria-hidden="true">{counts ? "Counts" : "Does not count"}</span>
-    </Label>
-  )
-}
-
 /**
- * Levels (D-L141): highest first, so "and above" is above. Each row: a grip, the name in place, a radio whose words say whether that level counts, Remove.
- * The radio group is "Lowest level that counts": choosing a row makes it and every row above it count (D-L95: one threshold; the lowest level may count),
- * and those rows share a tint. Reorder by dragging the grip or, focused, the arrow keys; a move that changes what counts is said aloud.
+ * Levels (D-L74, D-L95, restored 2026-11-11): highest first. Each row: a grip, the name in place, a checkbox "Accept {name}" under the Accepted head,
+ * Remove. The boxes are linked through `withLevelTicked`, the same logic as Configure one skill: checking a level checks every level above it, unchecking
+ * one clears every level below it; the engine keeps one threshold, and every box checked is "at any level". A linked change to other rows is said aloud.
+ * Reorder by dragging the grip or, focused, the arrow keys; a move that changes what is accepted is said aloud too.
  */
 export function LevelsField({ rule, setRule, err, changed }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean }) {
   const n = rule.levels.length
-  const from = countsFromIndex(rule)
-  const cut = from !== null && from >= 0 && from < n ? from : null
   const [said, setSaid] = React.useState("")
-  const countsErr = err("cfg-counts-from")
+  const countsErr = err("cfg-counts-from") ? LEVELS_NOT_CHOSEN_OR(err("cfg-counts-from")!) : undefined
   const addErr = err("cfg-add-level")
+  const nameOf = (levels: readonly string[], i: number) => levels[i]?.trim() || lowerPlace(i, levels.length)
   const move = (i: number, j: number) => {
     const next = moveItem(rule, "levels", i, j)
     const change = Math.abs(i - j) === 1 ? levelMoveChange(rule, next, i, j) : null
-    const name = rule.levels[i]?.trim() || `Level ${i + 1}`
-    const changeName = change ? next.levels[change.index]?.trim() || `Level ${change.index + 1}` : ""
-    setSaid(`${name} moved ${j > i ? "up" : "down"}.${change ? ` ${changeName} ${change.counts ? "now counts" : "no longer counts"}.` : ""}`)
+    const name = rule.levels[i]?.trim() || levelPlace(i, n)
+    const changeName = change ? nameOf(next.levels, change.index) : ""
+    setSaid(`${name} moved ${j > i ? "up" : "down"}.${change ? ` ${changeName} is ${change.counts ? "now accepted" : "no longer accepted"}.` : ""}`)
+    setRule(() => next)
+  }
+  const tick = (i: number, on: boolean) => {
+    const next = withLevelTicked(rule, i, on)
+    const others = rule.levels.map((_, k) => k).filter((k) => k !== i && levelTicked(rule, k) !== levelTicked(next, k))
+    const names = others.sort((x, y) => y - x).map((k) => nameOf(rule.levels, k))
+    const list = names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
+    setSaid(names.length ? `${list} ${names.length === 1 ? "is" : "are"} ${on ? "also accepted" : "no longer accepted"}.` : "")
     setRule(() => next)
   }
   const reorder = useReorder(n, move)
@@ -304,40 +308,28 @@ export function LevelsField({ rule, setRule, err, changed }: { rule: LabRule; se
   return (
     <FieldBlock label="Level names" labelId="cfg-levels-label" hint="highest first" changed={changed} end={<StartFrom rule={rule} setRule={setRule} />}>
       {n ? (
-        <CountList head="Level" countHead="Lowest that counts" grip>
-          <RadioGroup
-            id="cfg-counts-from"
-            tabIndex={-1}
-            value={cut === null ? "" : String(cut)}
-            onValueChange={(v) => setRule((r) => withCountsFrom(r, Number(v)))}
-            aria-label="Lowest level that counts"
-            aria-invalid={!!countsErr || undefined}
-            aria-describedby={countsErr ? "cfg-counts-from-error" : undefined}
-            className="flex flex-col gap-0 outline-none"
-            data-counts-from
-          >
-            <ol className="flex flex-col" aria-labelledby="cfg-levels-label">
-              {order.map((i) => {
-                const id = `cfg-level-${i}`
-                const message = err(id)
-                const shown = rule.levels[i]?.trim() || `Level ${i + 1}`
-                const counts = cut !== null && i >= cut
-                const r = reorder(i, (k) => `cfg-level-grip-${k}`, `Move ${shown}`, 1)
-                return (
-                  <li key={i} className={cn(ROW, "grid-cols-[2rem_minmax(0,1fr)_2rem] @[26rem]:grid-cols-[2rem_minmax(0,1fr)_9.5rem_2rem]", counts && "bg-[var(--brand-tint-light)]")} data-level-row {...r.row}>
-                    {r.grip}
-                    <Input id={id} className="h-8 min-w-0" aria-label={`Level ${i + 1}`} placeholder={placeholderFor("Level", i, n)} value={rule.levels[i]} onChange={(e) => setRule((x) => ({ ...x, levels: x.levels.map((l, k) => (k === i ? e.target.value : l)) }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
-                    <div className="col-start-2 row-start-2 @[26rem]:col-start-3 @[26rem]:row-start-1">
-                      <CountsCell id={`cfg-counts-from-${i}`} value={String(i)} counts={counts} name={`Count from ${shown}`} />
-                    </div>
-                    <span className="col-start-3 row-start-1 @[26rem]:col-start-4"><RemoveButton label={`Remove ${shown}`} onClick={() => { setRule((x) => removeLevel(x, i)); requestAnimationFrame(() => document.getElementById(n > 1 ? `cfg-level-${Math.min(i, n - 2)}` : "cfg-add-level")?.focus()) }} /></span>
-                    {message ? <FieldError id={`${id}-error`} className="col-start-2 col-end-[-1]">{message}</FieldError> : null}
-                  </li>
-                )
-              })}
-            </ol>
-          </RadioGroup>
-        </CountList>
+        <AcceptedList id="cfg-counts-from" cols={LEVEL_COLS} invalid={!!countsErr} describedBy={countsErr ? "cfg-counts-from-error" : undefined}>
+          <ol className="flex flex-col" aria-labelledby="cfg-levels-label">
+            {order.map((i) => {
+              const id = `cfg-level-${i}`
+              const message = err(id)
+              const shown = nameOf(rule.levels, i)
+              const on = levelTicked(rule, i)
+              const r = reorder(i, (k) => `cfg-level-grip-${k}`, `Move ${shown}`, 1)
+              return (
+                <li key={i} className={cn(ROW, LEVEL_COLS)} data-level-row {...r.row}>
+                  {r.grip}
+                  <Input id={id} className="h-8 min-w-0" aria-label={`Level ${i + 1}`} placeholder={placeholderFor("Level", i, n)} value={rule.levels[i]} onChange={(e) => setRule((x) => ({ ...x, levels: x.levels.map((l, k) => (k === i ? e.target.value : l)) }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
+                  <span className="flex justify-center" data-level-segment={i} data-counts={on || undefined}>
+                    <Checkbox id={`cfg-counts-from-${i}`} aria-label={`Accept ${shown}`} checked={on} onCheckedChange={(c) => tick(i, c === true)} />
+                  </span>
+                  <RemoveButton label={`Remove ${shown}`} onClick={() => { setRule((x) => removeLevel(x, i)); requestAnimationFrame(() => document.getElementById(n > 1 ? `cfg-level-${Math.min(i, n - 2)}` : "cfg-add-level")?.focus()) }} />
+                  {message ? <FieldError id={`${id}-error`} className="col-start-2 col-end-[-1]">{message}</FieldError> : null}
+                </li>
+              )
+            })}
+          </ol>
+        </AcceptedList>
       ) : null}
       {countsErr ? <FieldError id="cfg-counts-from-error">{countsErr}</FieldError> : null}
       <div className="flex flex-col gap-1">
@@ -349,19 +341,32 @@ export function LevelsField({ rule, setRule, err, changed }: { rule: LabRule; se
   )
 }
 
-/** Outcomes of the approved model [REQ SC-03]: the two names in place, and the same radio as Levels for the one that counts. */
+/** On this page the "nothing chosen" problem uses the page's word; any other levels problem keeps its own text. */
+function LEVELS_NOT_CHOSEN_OR(message: string): string {
+  return /^Choose which levels count/.test(message) ? LEVELS_NOT_CHOSEN : message
+}
+export const levelsProblemText = LEVELS_NOT_CHOSEN_OR
+
+const lowerPlace = (i: number, n: number) => { const p = levelPlace(i, n); return p.charAt(0).toLowerCase() + p.slice(1) }
+
+/** Outcomes of the approved model [REQ SC-03]: the two names in place, and one radio per row under the same Accepted head; exactly one is accepted. */
 export function OutcomesField({ rule, setRule, err, changed }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean }) {
   const q = rule.qualifyingLabel
   const qErr = err("cfg-qualifying")
+  const shownOf = (i: number) => rule.outcomeLabels[i].trim() || (i === 0 ? "the first outcome" : "the second outcome")
   return (
     <FieldBlock label="Outcome names" labelId="cfg-outcomes-label" changed={changed} end={<StartFrom rule={rule} setRule={setRule} />}>
-      <CountList head="Outcome" countHead="Counts toward achieved">
+      <div className="min-w-0 overflow-hidden rounded-[var(--radius)] border border-border">
+        <div className={cn("grid items-center gap-x-2 px-2 py-1.5 ps-3", OUTCOME_COLS)} aria-hidden="true">
+          <span />
+          <span className={cn(TYPE.meta, "text-center")}>{ACCEPTED_HEAD}</span>
+        </div>
         <RadioGroup
           id="cfg-qualifying"
           tabIndex={-1}
           value={q === null ? "" : String(q)}
           onValueChange={(v) => setRule((r) => ({ ...r, qualifyingLabel: v === "1" ? 1 : 0 }))}
-          aria-label="Which outcome counts toward achieved"
+          aria-label="Accepted outcome"
           aria-invalid={!!qErr || undefined}
           aria-describedby={qErr ? "cfg-qualifying-error" : undefined}
           className="flex flex-col gap-0 outline-none"
@@ -370,18 +375,17 @@ export function OutcomesField({ rule, setRule, err, changed }: { rule: LabRule; 
             {[0, 1].map((i) => {
               const id = `cfg-label-${i}`
               const message = err(id)
-              const shown = rule.outcomeLabels[i].trim() || (i === 0 ? "the first outcome" : "the second outcome")
               return (
-                <li key={i} className={cn(ROW, "ps-3 grid-cols-[minmax(0,1fr)] @[26rem]:grid-cols-[minmax(0,1fr)_9.5rem]", q === i && "bg-[var(--brand-tint-light)]")} data-outcome-row>
+                <li key={i} className={cn(ROW, "ps-3", OUTCOME_COLS)} data-outcome-row>
                   <Input id={id} className="h-8 min-w-0" aria-label={i === 0 ? "First label" : "Second label"} value={rule.outcomeLabels[i]} onChange={(e) => setRule((r) => ({ ...r, outcomeLabels: (i === 0 ? [e.target.value, r.outcomeLabels[1]] : [r.outcomeLabels[0], e.target.value]) as [string, string] }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
-                  <CountsCell id={`cfg-qualifying-${i}`} value={String(i)} counts={q === i} name={`${shown} counts`} />
+                  <span className="flex justify-center"><RadioGroupItem id={`cfg-qualifying-${i}`} value={String(i)} aria-label={`Accept ${shownOf(i)}`} /></span>
                   {message ? <FieldError id={`${id}-error`} className="col-span-full">{message}</FieldError> : null}
                 </li>
               )
             })}
           </ul>
         </RadioGroup>
-      </CountList>
+      </div>
       {qErr ? <FieldError id="cfg-qualifying-error">{qErr}</FieldError> : null}
     </FieldBlock>
   )
@@ -457,6 +461,7 @@ export function QuestionCountsWhen({ rule, setRule, err, changed }: { rule: LabR
         <div className="flex min-h-9 flex-wrap items-center gap-2.5">
           <RadioGroupItem id="cfg-qrule-atleast" value="atLeast" aria-label="At least a number of questions answered Yes" />
           <Label htmlFor="cfg-qrule-atleast" className="font-normal">At least</Label>
+          <NumberWithUnit unit={m > 0 ? `of ${m} answered Yes` : "answered Yes"}>
           <Input
             id="cfg-qrule-n"
             type="number"
@@ -470,7 +475,7 @@ export function QuestionCountsWhen({ rule, setRule, err, changed }: { rule: LabR
             aria-invalid={!!nErr || undefined}
             aria-describedby={nErr ? "cfg-qrule-n-error" : undefined}
           />
-          <span className={TYPE.body}>{m > 0 ? `of ${m} answered Yes` : "answered Yes"}</span>
+          </NumberWithUnit>
         </div>
         {nErr ? <FieldError id="cfg-qrule-n-error" className="ps-6.5">{nErr}</FieldError> : null}
         <div className="flex min-h-9 items-center gap-2.5">
@@ -503,7 +508,7 @@ export function ScoredCountsWhen({ rule, setRule, err, changed }: { rule: LabRul
   const pick = (kind: (typeof SCORED_ROWS)[number]["kind"], value?: number) => setRule((x) => ({ ...x, scoredRule: { kind, value: value ?? x.scoredRule?.value ?? Number.NaN } }))
   return (
     <FieldBlock label="Counts when" labelId="cfg-srule-label" changed={changed}>
-      <RadioGroup id="cfg-srule" tabIndex={-1} value={r?.kind ?? ""} onValueChange={(v) => pick(v as (typeof SCORED_ROWS)[number]["kind"])} aria-labelledby="cfg-srule-label" className="grid grid-cols-[1rem_max-content_5rem_auto] items-center gap-x-2.5 gap-y-2 outline-none" aria-invalid={!!kErr || undefined} aria-describedby={kErr ? "cfg-srule-error" : undefined}>
+      <RadioGroup id="cfg-srule" tabIndex={-1} value={r?.kind ?? ""} onValueChange={(v) => pick(v as (typeof SCORED_ROWS)[number]["kind"])} aria-labelledby="cfg-srule-label" className="grid grid-cols-[1rem_max-content_auto] items-center gap-x-2.5 gap-y-2 outline-none" aria-invalid={!!kErr || undefined} aria-describedby={kErr ? "cfg-srule-error" : undefined}>
         {SCORED_ROWS.map((row) => {
           const on = r?.kind === row.kind
           const o = outOf(row.kind)
@@ -511,6 +516,7 @@ export function ScoredCountsWhen({ rule, setRule, err, changed }: { rule: LabRul
             <React.Fragment key={row.kind}>
               <RadioGroupItem id={`cfg-srule-${row.kind}`} value={row.kind} />
               <Label htmlFor={`cfg-srule-${row.kind}`} className="font-normal">{row.label}</Label>
+              <NumberWithUnit unit={o ? `out of ${o}` : undefined}>
               <Input
                 id={on ? "cfg-srule-value" : `cfg-srule-value-${row.kind}`}
                 type="number"
@@ -524,7 +530,7 @@ export function ScoredCountsWhen({ rule, setRule, err, changed }: { rule: LabRul
                 aria-invalid={(on && !!vErr) || undefined}
                 aria-describedby={on && vErr ? "cfg-srule-error" : undefined}
               />
-              <span className={on ? TYPE.body : TYPE.helper}>{o ? `out of ${o}` : ""}</span>
+              </NumberWithUnit>
             </React.Fragment>
           )
         })}
@@ -657,27 +663,18 @@ export function fieldName(i: RuleIssue): string {
 }
 
 const lowerFirst = (s: string) => (s.length > 1 && /[a-z]/.test(s[1]) ? s[0].toLowerCase() + s.slice(1) : s)
-export const problemText = (i: RuleIssue) => `${fieldName(i)}: ${lowerFirst(i.message)}`
+export const problemText = (i: RuleIssue) => `${fieldName(i)}: ${lowerFirst(i.field === "cfg-counts-from" ? LEVELS_NOT_CHOSEN_OR(i.message) : i.message)}`
 
 /**
- * "Your rule" (D-L141): the live sentence and who it applies to. With unsaved changes it counts them above the rule; while the rule is unfinished it lists
+ * "Your rule" (D-L141): the live sentence and who it applies to (the unsaved count moved to the save bar, 2026-11-11); while the rule is unfinished it lists
  * what is missing, and after a failed Save the same list in the error tone, each a link that focuses its field [REQ SC-17, SC-18].
  */
-export function RulePanel({ rule, issues, showErrors, unsaved, applies, onGo }: { rule: LabRule; issues: RuleIssue[]; showErrors: boolean; unsaved: number; applies: React.ReactNode; onGo: (i: RuleIssue) => void }) {
+export function RulePanel({ rule, issues, showErrors, applies, onGo }: { rule: LabRule; issues: RuleIssue[]; showErrors: boolean; applies: React.ReactNode; onGo: (i: RuleIssue) => void }) {
   const said = ruleStatement(rule)
   const failing = showErrors && issues.length > 0
   const gaps = rule.model ? issues : []
   return (
     <aside aria-labelledby="cfg-rule-lead" className="flex min-w-0 flex-col gap-4 rounded-xl border border-[var(--brand-tint)] bg-[var(--brand-tint-light)] p-5" data-rule-panel data-settings-glance>
-      {unsaved ? (
-        <>
-          <p className="flex items-center gap-2 text-sm font-medium text-[var(--status-badge-warning-fg)]" data-unsaved-count>
-            <span className="size-2 rounded-full bg-current" aria-hidden="true" />
-            {`${unsaved} unsaved ${unsaved === 1 ? "change" : "changes"}`}
-          </p>
-          <div className="h-px bg-[var(--brand-tint)]" aria-hidden="true" />
-        </>
-      ) : null}
       <div className="flex flex-col gap-2" role={failing ? "alert" : undefined}>
         <p id="cfg-rule-lead" className={TYPE.meta}>Your rule</p>
         {failing ? (

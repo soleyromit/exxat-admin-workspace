@@ -22,7 +22,7 @@ import { CONFIGURATION_META } from "@/lib/lab/library"
 import { panelIssues, rebuildForModel, TIMES_MAX } from "@/lib/lab/program-settings"
 import { inSentence, skillNoun } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
-import { BinaryLabelsField, checkOffGrantSelect, ListEditor, ModelSection, NUMBER_WIDTH, PasteQuestions, QualifyingField, QuestionRuleField, QuestionSubsetPicker, ScaleField, ScoredRuleField, SignersField, withCheckOffPatch, type SectionProps } from "./fields"
+import { BinaryLabelsField, CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, CheckOffGrantNote, checkOffGrantSelect, ListEditor, ModelSection, NUMBER_WIDTH, PasteQuestions, QualifyingField, QuestionRuleField, QuestionSubsetPicker, ScaleField, ScoredRuleField, SignersField, withCheckOffPatch, type SectionProps } from "./fields"
 import { useFieldLayer, useFocusBack } from "./field-layer"
 import { MinimumsField } from "./rule-conditions"
 import { StudentAddsRow } from "./settings-dialogs"
@@ -409,7 +409,7 @@ export function ConfigureSections({ rule, setRule, issues, showErrors, settings,
                   {usesQ ? <Row label="Questions" stacked><QuestionsRow rule={rule} setRule={setRule} error={firstErr(/^cfg-(add-question|question-)/)} /></Row> : null}
                 </>
               ))}
-              <Row label="Times needed" htmlFor="cfg-need">{put("need", <TimesNeededField rule={rule} setRule={setRule} error={err("cfg-need")} />)}</Row>
+              <Row label="Times needed" htmlFor="cfg-need" stacked>{put("need", <TimesNeededField rule={rule} setRule={setRule} error={err("cfg-need")} />)}</Row>
               <Row label="Minimums" stacked>{put("minimums", <MinimumsField rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} settings={settings} />)}</Row>
               {sentence ? <div className="py-3">{sentence}</div> : null}
             </>
@@ -426,8 +426,8 @@ export function ConfigureSections({ rule, setRule, issues, showErrors, settings,
               {put("feedback", <SwitchRow id="cfg-feedback" label="Feedback is required" checked={rule.feedbackRequired} onChange={(v) => setRule((r) => ({ ...r, feedbackRequired: v }))} />)}
               {put("checkOff", (
                 <div data-section="checkoff">
-                  <SwitchRow id="cfg-checkoff" label="Faculty can check off a group" checked={ruleAllowsCheckOff(rule)} onChange={(v) => setRule((r) => withCheckOffPatch(r, { enabled: v }))} />
-                  {grant ? <Row label={rule.model === "scored" ? "Score for each student checked off" : "Level for each student checked off"} htmlFor={grant.id} className="ms-1 mb-3 border-s-2 border-border py-1 ps-4">{grant.control}</Row> : null}
+                  <SwitchRow id="cfg-checkoff" label={CHECKOFF_SWITCH_LABEL} checked={ruleAllowsCheckOff(rule)} onChange={(v) => setRule((r) => withCheckOffPatch(r, { enabled: v }))} />
+                  {grant ? <Row label={CHECKOFF_GRANT_LABEL} htmlFor={grant.id} className="ms-1 mb-3 border-s-2 border-border py-1 ps-4"><div className="flex flex-col gap-2">{grant.control}<CheckOffGrantNote rule={rule} id={grant.id} /></div></Row> : null}
                 </div>
               ))}
               {put("approval", <SwitchRow id="cfg-approval" label="Approval before it counts" checked={rule.approvalRequired} onChange={(v) => setRule((r) => ({ ...r, approvalRequired: v }))} />)}

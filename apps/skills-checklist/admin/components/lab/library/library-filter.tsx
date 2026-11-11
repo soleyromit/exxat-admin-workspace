@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/compo
 import { CONFIGURATION_META, CONFIGURATION_ORDER, filterOptions, isConfiguration, type LibraryFilter, type LibraryRow } from "@/lib/lab/library"
 import { pushPageUrl } from "@/components/lab/shared/unsaved-guard"
 import { capitalize, skillListsNoun } from "@/lib/lab/terms"
+import { RETURN_TARGETS } from "@/lib/lab/return-to"
 import { usePathname, useSearchParams } from "next/navigation"
 
 export const NO_FILTER: LibraryFilter = { cat: null, tag: null, config: null, different: false, added: null, from: null, noList: false }
@@ -27,7 +28,9 @@ export function useLibraryFilter(): [LibraryFilter, (f: Partial<LibraryFilter>, 
   const config = isConfiguration(rawConfig) ? rawConfig : null
   const different = params?.get("different") === "1"
   const added = params?.get("added") ?? null
-  const from = params?.get("from") ?? null
+  // `from` is also the way back (lib/lab/return-to.ts, `?from=settings`): a return target is never a "came from" filter.
+  const rawFrom = params?.get("from") ?? null
+  const from = rawFrom && !Object.hasOwn(RETURN_TARGETS, rawFrom) ? rawFrom : null
   const noList = params?.get("nolist") === "1"
   // One replace for all keys, so "Clear filters" never loses one to a stale URL.
   // `push`: a filter a banner applied for the admin, so Back returns to the whole list.
@@ -37,7 +40,8 @@ export function useLibraryFilter(): [LibraryFilter, (f: Partial<LibraryFilter>, 
       if (!(k in f)) continue
       const v = f[k]
       if (v) q.set(k, v)
-      else q.delete(k)
+      // Clearing the "came from" filter keeps a way back that rides in the same key.
+      else if (!(k === "from" && Object.hasOwn(RETURN_TARGETS, q.get(k) ?? ""))) q.delete(k)
     }
     if ("different" in f) { if (f.different) q.set("different", "1"); else q.delete("different") }
     if ("noList" in f) { if (f.noList) q.set("nolist", "1"); else q.delete("nolist") }
@@ -100,7 +104,7 @@ export function LibraryFilterMenu({ rows, value, onChange }: { rows: readonly Li
             <CommandGroup heading="Times needed">
               <CommandItem value="times different number" onSelect={() => onChange({ different: !value.different })} aria-selected={!!value.different}>
                 <Check on={!!value.different} />
-                <span className="min-w-0 flex-1 truncate">Different number</span>
+                <span className="min-w-0 flex-1 truncate">Own number of times needed</span>
                 <span className="text-xs tabular-nums text-muted-foreground">{rows.filter((r) => r.timesDiffer).length}</span>
               </CommandItem>
             </CommandGroup>
@@ -151,7 +155,7 @@ export function LibraryFilterChips({ value, onChange }: { value: LibraryFilter; 
   const chips: Array<{ label: string; clear: Partial<LibraryFilter> }> = [
     ...(value.added ? [{ label: "Added together", clear: { added: null } }] : []),
     ...(value.config ? [{ label: CONFIGURATION_META[value.config].label, clear: { config: null } }] : []),
-    ...(value.different ? [{ label: "Different number", clear: { different: false } }] : []),
+    ...(value.different ? [{ label: "Own number of times needed", clear: { different: false } }] : []),
     ...(value.from ? [{ label: value.from, clear: { from: null } }] : []),
     ...(value.noList ? [{ label: "On no list", clear: { noList: false } }] : []),
     ...(value.tag ? [{ label: value.tag, clear: { tag: null } }] : []),

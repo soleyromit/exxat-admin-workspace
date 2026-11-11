@@ -52,7 +52,11 @@ if (SHOTS) (await import("node:fs")).mkdirSync(SHOTS, { recursive: true })
 const shot = async (name) => { if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: false }).catch(() => {}) }
 
 let browser = await chromium().launch()
+// The walkthrough path bar is hidden by default (D-L139 amended, 2026-11-11); this check walks it, so it turns the bar on, as the
+// presenter does from the user menu, on every page load.
+const SHOW_PATH_BAR = () => { try { window.localStorage.setItem("walkthrough-steps-shown", "1") } catch { /* blocked storage */ } }
 let ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+await ctx.addInitScript(SHOW_PATH_BAR)
 let page = await ctx.newPage()
 const rows = []
 const fails = []
@@ -64,6 +68,7 @@ async function relaunch() {
   await browser.close().catch(() => {})
   browser = await chromium().launch()
   ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  await ctx.addInitScript(SHOW_PATH_BAR)
   page = await ctx.newPage()
 }
 async function load(url) {

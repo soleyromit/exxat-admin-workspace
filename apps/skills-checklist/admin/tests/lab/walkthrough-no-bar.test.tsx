@@ -1,6 +1,7 @@
 import * as React from "react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
-import { render } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 
 const nav = vi.hoisted(() => ({ pathname: "/walk/setup-walkthrough/configure", search: "skill=sk-vitals", replace: vi.fn(), push: vi.fn() }))
 vi.mock("next/navigation", () => ({
@@ -24,6 +25,9 @@ import { FROM_PARAM, LEAF_TITLE, returnCarry, returnTarget } from "@/lib/lab/ret
 import { LAB_ADMIN, importHref, newListHref, starterHref } from "@/lib/lab/library"
 import { MAPPING_PATH } from "@/lib/lab/mapping"
 import { EVALUATION_SETTINGS_HREF } from "@/lib/lab/admin-ia"
+import { WalkthroughControls, WalkthroughRow } from "@/components/lab/lab-bar/walkthrough-controls"
+import { WALKTHROUGH_STEPS_KEY, setWalkthroughStepsShown } from "@/components/lab/lab-bar/walkthrough-visibility"
+import { UserMenu } from "@/components/shell/user-menu"
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 
@@ -224,5 +228,108 @@ describe("Configure one skill: the Evaluation settings link and its way back", (
       for (const l of literals) expect(rewriteLabUrl(l, walkCtx(from.id)), `${from.id} -> ${l}`).toMatch(/^\/walk\/setup-walkthrough\/[a-z-]+(\?|$)/)
     }
     expect(rewriteLabUrl(`${LAB_ADMIN}/evaluation-settings?program=new`, walkCtx("library"))).toBe("/walk/setup-walkthrough/settings?program=new")
+  })
+})
+
+/**
+ * D-L139 amended (2026-11-11, Romit: "don't show this. However, I should be able to access this later."): the path bar is hidden by
+ * default on every walkthrough step, with nothing in the DOM or the tab order and no reserved row. "Show walkthrough steps" in the
+ * user menu, or Ctrl+Shift+?, brings it back; the choice lasts for the browser and across steps.
+ */
+describe("the walkthrough path bar is hidden until the presenter asks for it", () => {
+  beforeEach(() => {
+    window.localStorage.removeItem(WALKTHROUGH_STEPS_KEY)
+    act(() => setWalkthroughStepsShown(false))
+  })
+
+  const at = (step: string, f = flow) => {
+    nav.pathname = `/walk/${f.id}/${step}`
+    nav.search = "set=1&present=1"
+    const st = f.steps.find((s) => s.id === step)!
+    return { flow: f.id, step, screen: st.screen, variant: st.variants[f.recommendedSet] }
+  }
+  const renderControls = (step = "settings") =>
+    render(<TooltipProvider><LabPageProvider page={at(step)}><WalkthroughControls /></LabPageProvider></TooltipProvider>)
+  const pressShortcut = () => act(() => { fireEvent.keyDown(window, { key: "?", ctrlKey: true, shiftKey: true }) })
+
+  it("hidden by default on every stop: no path bar, no Back, Next or Exit in the DOM; the user menu is there", () => {
+    for (const s of flow.steps) {
+      const { container, unmount } = renderControls(s.id)
+      expect(container.querySelector("[data-lab-walkthrough]"), s.id).toBeNull()
+      expect(container.querySelector("[data-walkthrough-prev], [data-walkthrough-next], [data-walkthrough-exit]"), s.id).toBeNull()
+      expect(container.querySelector("[data-lab-chrome]"), s.id).toBeNull()
+      expect(screen.getByRole("button", { name: /open profile and settings menu/ })).toBeInTheDocument()
+      unmount()
+    }
+  })
+
+  it("the row frames (evaluator, Log a skill) reserve no row while hidden, and show the row when turned on", () => {
+    const { container } = render(<TooltipProvider><LabPageProvider page={at("settings")}><WalkthroughRow /></LabPageProvider></TooltipProvider>)
+    // Only the hidden route-smoke marker: no row, no control, nothing that takes space or focus.
+    expect(container.querySelector("[data-walkthrough-row]")).toBeNull()
+    expect([...container.children].every((el) => el.hasAttribute("hidden"))).toBe(true)
+    expect(container.querySelector("a, button")).toBeNull()
+    pressShortcut()
+    expect(container.querySelector("[data-walkthrough-row] [data-lab-walkthrough]")).not.toBeNull()
+  })
+
+  it("the user menu entry shows the bar, moves focus to it, and then reads Hide walkthrough steps", async () => {
+    const user = userEvent.setup()
+    const { container } = renderControls()
+    await user.click(screen.getByRole("button", { name: /open profile and settings menu/ }))
+    const item = await screen.findByRole("menuitem", { name: "Show walkthrough steps" })
+    expect(item).toHaveAttribute("aria-keyshortcuts", "Control+Shift+?")
+    expect(item.querySelectorAll("kbd").length).toBe(3)
+    await user.click(item)
+    const bar = container.querySelector("[data-lab-walkthrough]")
+    expect(bar).not.toBeNull()
+    expect(screen.getByText("2 of 3")).toBeInTheDocument()
+    expect(bar!.contains(document.activeElement)).toBe(true)
+    await user.click(screen.getByRole("button", { name: /open profile and settings menu/ }))
+    await user.click(await screen.findByRole("menuitem", { name: "Hide walkthrough steps" }))
+    expect(container.querySelector("[data-lab-walkthrough]")).toBeNull()
+  })
+
+  it("the choice is kept in this browser and holds on the next stop", () => {
+    const first = renderControls("lists")
+    pressShortcut()
+    expect(window.localStorage.getItem(WALKTHROUGH_STEPS_KEY)).toBe("1")
+    first.unmount()
+    const next = renderControls("map")
+    expect(next.container.querySelector("[data-lab-walkthrough]")).not.toBeNull()
+    next.unmount()
+    // A fresh load reads storage: the module's in-memory value is not what keeps it.
+    window.localStorage.removeItem(WALKTHROUGH_STEPS_KEY)
+    const fresh = renderControls("lists")
+    expect(fresh.container.querySelector("[data-lab-walkthrough]")).toBeNull()
+  })
+
+  it("Ctrl+Shift+? toggles it, and is ignored while typing in a field", () => {
+    const { container } = renderControls()
+    pressShortcut()
+    expect(container.querySelector("[data-lab-walkthrough]")).not.toBeNull()
+    pressShortcut()
+    expect(container.querySelector("[data-lab-walkthrough]")).toBeNull()
+    const input = document.createElement("input")
+    document.body.appendChild(input)
+    act(() => { fireEvent.keyDown(input, { key: "?", ctrlKey: true, shiftKey: true }) })
+    expect(container.querySelector("[data-lab-walkthrough]")).toBeNull()
+    input.remove()
+  })
+
+  it("the product's own user menu (no walkthrough) has no such entry", async () => {
+    nav.pathname = "/"
+    const user = userEvent.setup()
+    render(<UserMenu />)
+    await user.click(screen.getByRole("button", { name: /open profile and settings menu/ }))
+    await screen.findByRole("menuitem", { name: /Sample data and display options/ })
+    expect(screen.queryByRole("menuitem", { name: /walkthrough steps/ })).toBeNull()
+  })
+
+  it("off a walkthrough (a persona route) the controls render nothing, so the lab strip there is untouched", () => {
+    nav.pathname = "/as/admin/configure-skill"
+    nav.search = "skill=sk-vitals"
+    const { container } = render(<TooltipProvider><LabPageProvider page={{ screen: "admin/configure-skill", variant: "B" }}><WalkthroughControls /></LabPageProvider></TooltipProvider>)
+    expect(container.innerHTML).toBe("")
   })
 })

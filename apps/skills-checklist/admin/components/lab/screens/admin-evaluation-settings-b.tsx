@@ -11,14 +11,12 @@
  */
 import * as React from "react"
 import Link from "next/link"
-import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { FieldError } from "@exxatdesignux/ui/components/ui/field"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
-import { cn } from "@exxatdesignux/ui/lib/utils"
 import { TYPE } from "@/components/lab/type-scale"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
-import { ModelSection, NUMBER_WIDTH, ScaleField, SignersField, checkOffGrantSelect, withCheckOffPatch, type SectionProps } from "@/components/lab/configure/fields"
+import { CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, CheckOffGrantNote, ModelSection, NUMBER_WIDTH, ScaleField, SignersField, checkOffGrantSelect, withCheckOffPatch, type SectionProps } from "@/components/lab/configure/fields"
 import { NumberWithUnit, tileExamples } from "@/components/lab/configure/settings-rows"
 import { ProgramPreviewDialog, ProgramPreviewPanel } from "@/components/lab/configure/settings-dialogs"
 import { ProgramSettingsFrame, type ProgramPage } from "@/components/lab/configure/program-layout"
@@ -42,6 +40,7 @@ import {
 import { focusField } from "@/components/lab/configure/use-configure"
 import { ruleAllowsCheckOff, withCheckOffDecided, type LabRule, type RuleIssue } from "@/lib/lab/configure"
 import { TIMES_MAX } from "@/lib/lab/program-settings"
+import { FROM_PARAM } from "@/lib/lab/return-to"
 import { buildLibrary } from "@/lib/lab/library"
 import { useV2State } from "@/lib/v2/react"
 import { countSkills, inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -84,10 +83,12 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
   const props: SectionProps = { rule, setRule, issues, showErrors, settings: [], legendHidden: true }
   const err = (f: string) => (showErrors ? issues.find((i) => i.field === f)?.message : undefined)
   const needErr = err("cfg-need")
-  const different = m.differentNumber
   const grant = rule.model ? checkOffGrantSelect(rule, setRule) : null
   const library = React.useMemo(() => buildLibrary(state), [state])
   const custom = library.filter((r) => r.configuration === "edited").length
+  // The Times needed line reads from the rule panel's base (the skills on these settings, Custom left out), so the two never disagree (2026-11-11).
+  const onDefault = m.ids.length - custom
+  const ownDefault = library.filter((r) => r.configuration !== "edited" && r.timesDiffer).length
   const changed = React.useMemo(() => changedSettings(rule, m.saved), [rule, m.saved])
   const own = modelSection(rule)
   const total = m.ids.length
@@ -124,7 +125,7 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
           </div>
         ) : null}
         <div className="order-first min-w-0 @[60rem]:order-none @[60rem]:sticky @[60rem]:top-4 @[60rem]:col-start-2 @[60rem]:row-start-1">
-          <RulePanel rule={rule} issues={issues} showErrors={showErrors} unsaved={m.saved && m.dirty ? Math.max(1, changed.size) : 0} applies={applies} onGo={go} />
+          <RulePanel rule={rule} issues={issues} showErrors={showErrors} applies={applies} onGo={go} />
         </div>
         <div className="@container min-w-0 @[60rem]:col-start-1 @[60rem]:row-start-1" data-sheet>
           <SheetSection id="cfg-sec-model" title={judgedName()}>
@@ -140,7 +141,7 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
               {rule.model === "question" || rule.model === "scored" ? <QuestionsField rule={rule} setRule={setRule} err={err} changed={changed.has("questions")} expanded={expanded} setExpanded={setExpanded} /> : null}
               {rule.model === "scored" ? (
                 <FieldBlock label="Scale" changed={changed.has("scale")}>
-                  <ScaleField rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} />
+                  <ScaleField rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} short />
                 </FieldBlock>
               ) : null}
               {rule.model === "question" ? <QuestionCountsWhen rule={rule} setRule={setRule} err={err} changed={changed.has("countsWhen")} /> : null}
@@ -154,11 +155,6 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
                   label="Times needed"
                   htmlFor="cfg-need"
                   changed={changed.has("need")}
-                  end={m.saved && different ? (
-                    <Link href={to("admin/skills-library", { different: "1" })} className={cn(TYPE.label, "underline underline-offset-4 hover:text-[var(--brand-color)]")} data-different-link>
-                      {`${countSkills(different)} ${different === 1 ? "uses its" : "use their"} own number`}
-                    </Link>
-                  ) : undefined}
                 >
                   <NumberWithUnit unit={`${rule.need === 1 ? "evaluation" : "evaluations"} for each ${skillNoun()}`} unitId="cfg-need-unit">
                     <Input
@@ -172,10 +168,24 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
                       value={Number.isFinite(rule.need) ? String(rule.need) : ""}
                       onChange={(e) => { const raw = e.target.value; setRule((r) => ({ ...r, need: raw.trim() === "" ? Number.NaN : Number(raw) })) }}
                       aria-invalid={!!needErr || undefined}
-                      aria-describedby={[needErr ? "cfg-need-error" : "", "cfg-need-unit"].filter(Boolean).join(" ")}
+                      aria-describedby={[needErr ? "cfg-need-error" : "", "cfg-need-unit", m.saved ? "cfg-need-scope" : ""].filter(Boolean).join(" ")}
                     />
                   </NumberWithUnit>
                   {needErr ? <FieldError id="cfg-need-error">{needErr}</FieldError> : null}
+                  {/* Who the number reaches, once: the skills on the program's number, and a link to those on their own, which a save leaves alone. */}
+                  {m.saved ? (
+                    <p id="cfg-need-scope" className={TYPE.helper} data-need-scope>
+                      {ownDefault ? (
+                        <>
+                          {`Of the ${countSkills(onDefault)} on these settings, `}
+                          <Link href={to("admin/skills-library", { different: "1", config: "default", [FROM_PARAM]: "settings" })} className="text-foreground underline underline-offset-4 hover:text-[var(--brand-color)]" data-different-link>
+                            {`${ownDefault.toLocaleString("en-US")} ${ownDefault === 1 ? "uses its" : "use their"} own number`}
+                          </Link>
+                          {` and ${ownDefault === 1 ? "is" : "are"} not changed.`}
+                        </>
+                      ) : `Applies to all ${countSkills(onDefault)} on these settings.`}
+                    </p>
+                  ) : null}
                 </FieldBlock>
                 <FieldBlock label="Who can sign off" changed={changed.has("signers")}>
                   <SignersField {...props} />
@@ -192,8 +202,7 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
                 <div data-section="checkoff">
                   <SwitchField
                     id="cfg-checkoff"
-                    label="Faculty can check off a group"
-                    help="One faculty member ticks several students at once"
+                    label={CHECKOFF_SWITCH_LABEL}
                     checked={ruleAllowsCheckOff(rule)}
                     onChange={(v) => setRule((r) => withCheckOffPatch(r, { enabled: v }))}
                     changed={changed.has("checkOff")}
@@ -201,11 +210,12 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
                       <div className="flex flex-col gap-2 border-s-2 border-border ps-4" data-checkoff-grant>
                         {grant ? (
                           <>
-                            <Label htmlFor={grant.id} className={TYPE.group}>{rule.model === "scored" ? "Score given to each student checked off" : "Level given to each student checked off"}</Label>
+                            <Label htmlFor={grant.id} className={TYPE.group}>{CHECKOFF_GRANT_LABEL}</Label>
                             <div className="w-44">{grant.control}</div>
+                            <CheckOffGrantNote rule={rule} id={grant.id} />
                           </>
                         ) : (
-                          <p className={TYPE.body}>{rule.model === "binary" ? `A tick records ${rule.qualifyingLabel !== null && rule.outcomeLabels[rule.qualifyingLabel].trim() ? inSentence(rule.outcomeLabels[rule.qualifyingLabel].trim()) : "the outcome that counts"}.` : rule.model === "question" ? "A tick records every question answered Yes." : "A tick records the level that counts."}</p>
+                          <p className={TYPE.body}>{`${CHECKOFF_GRANT_LABEL} ${rule.model === "binary" ? (rule.qualifyingLabel !== null && rule.outcomeLabels[rule.qualifyingLabel].trim() ? inSentence(rule.outcomeLabels[rule.qualifyingLabel].trim()) : "the outcome that counts") : rule.model === "question" ? "every question answered Yes" : "the level that counts"}.`}</p>
                         )}
                       </div>
                     ) : undefined}
@@ -224,13 +234,12 @@ export function AdminEvaluationSettingsB() {
   const [expanded, setExpanded] = React.useState(false)
   return (
     <ProgramSettingsFrame
-      phoneSaveBar
+      saveBar={{ unsaved: (m) => (m.saved && m.dirty ? Math.max(1, changedSettings(m.rule, m.saved).size) : 0) }}
       // Save with a problem in a question the list hides: the list opens, then the frame focuses the field.
       onIssue={(i) => { if (hiddenQuestion(i)) setExpanded(true) }}
       headerAction={(m) => (
         <>
           <ProgramPreviewDialog draft={m.rule} />
-          {m.dirty ? <Button type="button" variant="ghost" size="sm" onClick={() => m.discard()} data-discard>Discard</Button> : null}
         </>
       )}
     >

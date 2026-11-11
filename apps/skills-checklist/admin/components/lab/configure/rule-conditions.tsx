@@ -22,6 +22,7 @@ import { FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { settingNote, type LabRule, type RuleIssue } from "@/lib/lab/configure"
 import { useFieldLayer } from "./field-layer"
+import { NUMBER_WIDTH } from "./number-field"
 
 type SetRule = (fn: (r: LabRule) => LabRule) => void
 
@@ -39,7 +40,7 @@ export function RuleNumber({ id, label, value, onChange, error, placeholder }: {
       aria-label={label}
       aria-invalid={error || undefined}
       aria-describedby={error ? `${id}-error` : undefined}
-      className={placeholder ? "w-24" : "w-16"}
+      className={NUMBER_WIDTH}
       placeholder={placeholder}
       value={val(value)}
       onChange={(e) => onChange(toNum(e.target.value))}

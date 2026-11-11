@@ -57,3 +57,16 @@ Every control labelled (field aria-label, remove "Remove {name}", category "Cate
 
 ## Task test IDs
 T1 T14 T16 T18 T28 (labels updated to Write a skill, Choose from library; T28 new: Enter, focus, newest first, duplicate, paste)
+
+## Amendment 2026-11-11 (D-L144; Proposed)
+
+```
+| Skills on this list                                  [Choose from library] |
+| Name of a new skill                                                       |
+| [ Wound irrigation                                   ] [Add skill]        |  <- outline, off while empty
+| Paste a list to add several.                                              |
+```
+
+- "Add skill" (the program's noun) is a DS Button, outline, beside the field, same height; Enter adds too. After adding, the field clears, keeps focus, and the live region says "Added {name}." The ghost Add inside the field is removed. "Press Enter to add" is removed (the button says it). At 375 the field and the button stay on one row.
+- Step 2 rows: `{name} [Default]  ...  [ 3 ]` under one caption row "Skill | Times needed". The number is the skill's Times needed (`TimesNeededCell`, shared with the Library): bold with "This skill's own number" when it differs from Evaluation settings. Long names wrap the badge under the name; the number keeps its column.
+

@@ -26,6 +26,8 @@ export const RETURN_TARGETS: Record<string, ReturnTarget> = {
   skills: { label: () => capitalize(skillNounPlural()), href: toShort("/lab/admin/skills-library") },
   // Configure one skill, left for Evaluation settings: `?from=configure&skill=<id>` leads back to that skill's page. With no id
   // the way back is the Library, since Configure has no page without a skill.
+  // Evaluation settings, left by "31 use their own number" for the Library filtered to those skills: the crumb leads back to the settings page.
+  settings: { label: () => "Evaluation settings", href: toShort("/lab/admin/evaluation-settings") },
   configure: { label: () => capitalize(skillNoun()), href: toShort("/lab/admin/skills-library"), hrefFor: (id) => toShort(`/lab/admin/configure-skill?skill=${encodeURIComponent(id)}`), carryKey: "skill" },
 }
 

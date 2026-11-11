@@ -35,7 +35,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@e
 import { TYPE } from "@/components/lab/type-scale"
 import { RoleRow } from "./section"
 import { countingLevelsPhrase, levelTicked, withLevelTicked } from "@/lib/lab/configure"
-import { criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, appendQuestions, newQuestionLines, parseQuestionLines, setSubsetRange, applyPreset, presetReplaces, FIELD_TYPE_LABEL, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
+import { countsFromIndex, criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, appendQuestions, newQuestionLines, parseQuestionLines, setSubsetRange, applyPreset, presetReplaces, FIELD_TYPE_LABEL, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import type { EvalModel } from "@/lib/v2/types"
 import { aNoun, skillNoun } from "@/lib/lab/terms"
 import { RuleConditions, RuleNumber } from "./rule-conditions"
@@ -79,7 +79,8 @@ function Err({ id, message }: { id: string; message?: string }) {
 const errProps = (id: string, message?: string) => (message ? { "aria-invalid": true as const, "aria-describedby": `${id}-error` } : {})
 
 /** One width for every short number on the configure pages (times needed, at least n, a score): five characters, right next to its words. */
-export const NUMBER_WIDTH = "w-20 tabular-nums"
+import { NUMBER_WIDTH, NumberWithUnit } from "./number-field"
+export { NUMBER_WIDTH, NumberWithUnit }
 
 function NumberInput({ id, label, value, onChange, error, width = NUMBER_WIDTH, hideLabel }: { id: string; label: string; value: number; onChange: (n: number) => void; error?: string; width?: string; hideLabel?: boolean }) {
   return <Input id={id} type="number" inputMode="numeric" min={0} aria-label={hideLabel ? label : undefined} className={width} value={numValue(value)} onChange={(e) => onChange(toInt(e.target.value))} {...errProps(id, error)} />
@@ -245,8 +246,8 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
             <AlertDialogTitle>{pending ? `Switch to ${MODEL_LABEL[pending].toLowerCase()}?` : "Switch how it's judged?"}</AlertDialogTitle>
             <AlertDialogDescription>{`Your ${lostText} will be removed, because ${pending ? MODEL_LABEL[pending].toLowerCase() : "the new choice"} is judged differently. Evidence is kept and read under the new rule.`}</AlertDialogDescription>
           </AlertDialogHeader>
-          {/* Wraps: the longest pair ("Switch to approved or not approved") is wider than the card. */}
-          <AlertDialogFooter className="flex-wrap">
+          {/* One row from sm: the title names the target, so the action says only "Switch" and the longest pair ("Keep approved or not approved", "Switch") fits the card. */}
+          <AlertDialogFooter>
             <AlertDialogCancel variant="outline" size="default" autoFocus onClick={holdSecondPress}>
               {`Keep ${rule.model ? MODEL_LABEL[rule.model].toLowerCase() : "the model"}`}
             </AlertDialogCancel>
@@ -260,7 +261,7 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
                 setPending(null)
               }}
             >
-              {pending ? `Switch to ${MODEL_LABEL[pending].toLowerCase()}` : "Switch"}
+              Switch
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -533,7 +534,7 @@ export function ScaleField({ rule, setRule, issues, showErrors, short }: Pick<Se
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby="cfg-scale-lead">
-        <span id="cfg-scale-lead" className={TYPE.body}>{short ? "1 to" : "Each question is scored from 1 to"}</span>
+        <span id="cfg-scale-lead" className={short ? TYPE.helper : TYPE.body}>{short ? "1 to" : "Each question is scored from 1 to"}</span>
         <Select value={scaleTop} onValueChange={(v) => setRule((r) => ({ ...r, scaleMax: Number(v) }))}>
           <SelectTrigger id="cfg-scale" className={NUMBER_WIDTH} aria-label="Top of the score scale" {...errProps("cfg-scale", scaleErr)}>
             <SelectValue placeholder={short ? "" : "Top"} />
@@ -638,8 +639,7 @@ export function QuestionRuleField({ rule, setRule, err, legendHidden, subsetSlot
           </Select>
           {r?.kind === "atLeast" ? (
             <>
-              <NumberInput id="cfg-qrule-n" label="Questions that must be answered Yes" hideLabel value={r.n} error={err("cfg-qrule-n")} onChange={(n) => setRule((x) => ({ ...x, questionRule: { kind: "atLeast", n } }))} />
-              <span className={TYPE.body}>{m > 0 ? `of ${m} Yes` : "Yes"}</span>
+              <NumberWithUnit unit={m > 0 ? `of ${m} Yes` : "Yes"}><NumberInput id="cfg-qrule-n" label="Questions that must be answered Yes" hideLabel value={r.n} error={err("cfg-qrule-n")} onChange={(n) => setRule((x) => ({ ...x, questionRule: { kind: "atLeast", n } }))} /></NumberWithUnit>
             </>
           ) : null}
         </div>
@@ -665,9 +665,8 @@ export function QuestionRuleField({ rule, setRule, err, legendHidden, subsetSlot
         <div className="flex flex-wrap items-center gap-2">
           <RadioGroupItem id="cfg-qrule-atleast" value="atLeast" />
           <Label htmlFor="cfg-qrule-atleast">At least</Label>
-          <NumberInput id="cfg-qrule-n" label="Questions that must be answered Yes" hideLabel value={r?.kind === "atLeast" ? r.n : Number.NaN} error={err("cfg-qrule-n")} onChange={(n) => setRule((x) => ({ ...x, questionRule: { kind: "atLeast", n } }))} />
           {/* No questions yet (a skill waiting for them, or the program's rule): there is no "of 0". */}
-          <span className={TYPE.body}>{m > 0 ? `of ${m} Yes` : "Yes"}</span>
+          <NumberWithUnit unit={m > 0 ? `of ${m} Yes` : "Yes"}><NumberInput id="cfg-qrule-n" label="Questions that must be answered Yes" hideLabel value={r?.kind === "atLeast" ? r.n : Number.NaN} error={err("cfg-qrule-n")} onChange={(n) => setRule((x) => ({ ...x, questionRule: { kind: "atLeast", n } }))} /></NumberWithUnit>
         </div>
         <div className="flex items-center gap-2">
           <RadioGroupItem id="cfg-qrule-subsetopt" value="subset" />
@@ -1121,7 +1120,42 @@ export function SignOffSection(props: SectionProps) {
  * group on the course offering page without a student submission, and what one check-off records. A rule with no saved choice starts
  * off (`withCheckOffDecided`); seeded skills read the engine's model default. Under Evaluator on every Configure page (D-L52).
  */
-export function GroupCheckOffSection({ rule, setRule, title = "Allow group check-off", switchOnly }: Pick<SectionProps, "rule" | "setRule"> & { title?: string; /** The row carries the label beside the switch. */ switchOnly?: string }) {
+/** One wording for group check-off on every settings page (Romit 2026-11-11: he never understood "Level for each student checked off"). */
+export const CHECKOFF_SWITCH_LABEL = "Let faculty check off a group at once"
+export const CHECKOFF_GRANT_LABEL = "A group check-off counts as"
+
+/** The level a group check-off gives sits below the lowest level that counts (Independence level only; the other models have no such cut-off here). */
+export function checkOffBelowCut(rule: LabRule): boolean {
+  if (rule.model !== "demonstration" || !ruleAllowsCheckOff(rule)) return false
+  const cut = countsFromIndex(rule)
+  if (cut === null || cut < 0 || cut >= rule.levels.length) return false
+  const named = rule.levels.map((l, i) => ({ i, l: l.trim() })).filter((x) => x.l)
+  if (!named.length) return false
+  const co = rule.checkOff?.levelIndex
+  const index = named.some((x) => x.i === co) ? co! : named[named.length - 1]!.i
+  return index < cut
+}
+
+/**
+ * What the select under the group check-off switch means, said once: faculty do not evaluate each student, so every student gets this level (or score).
+ * With a level below the cut-off, a quiet amber note says it will not count (shortfall is amber, never red).
+ */
+export function CheckOffGrantNote({ rule, id }: { rule: LabRule; id: string }) {
+  const below = checkOffBelowCut(rule)
+  return (
+    <>
+      <p id={`${id}-help`} className={TYPE.helper} data-checkoff-help>{`Faculty do not evaluate each student in a group check-off, so every student gets this ${rule.model === "scored" ? "score" : "level"}.`}</p>
+      {below ? (
+        <p id={`${id}-below`} className={cn(TYPE.helper, "flex items-center gap-1.5 text-[var(--status-badge-warning-fg)]")} data-checkoff-below>
+          <i className="fa-light fa-triangle-exclamation text-xs" aria-hidden="true" />
+          This level is not accepted, so a group check-off will not add to the times needed.
+        </p>
+      ) : null}
+    </>
+  )
+}
+
+export function GroupCheckOffSection({ rule, setRule, title = CHECKOFF_SWITCH_LABEL, switchOnly }: Pick<SectionProps, "rule" | "setRule"> & { title?: string; /** The row carries the label beside the switch. */ switchOnly?: string }) {
   const allowed = ruleAllowsCheckOff(rule)
   const onChange = (v: boolean) => setRule((r) => withCheckOffPatch(r, { enabled: v }))
   const select = checkOffGrantSelect(rule, setRule)
@@ -1129,9 +1163,10 @@ export function GroupCheckOffSection({ rule, setRule, title = "Allow group check
     <div className="flex flex-col gap-3" data-section="checkoff">
       {switchOnly ? <ToggleSwitch id="cfg-checkoff" aria-labelledby={switchOnly} checked={allowed} onChange={onChange} /> : <ToggleRow id="cfg-checkoff" title={title} checked={allowed} onChange={onChange} />}
       {select ? (
-        <Field className="max-w-64">
-          <FieldLabel htmlFor={select.id}>{rule.model === "scored" ? "Score for each student checked off" : "Level for each student checked off"}</FieldLabel>
-          {select.control}
+        <Field className="max-w-96">
+          <FieldLabel htmlFor={select.id}>{CHECKOFF_GRANT_LABEL}</FieldLabel>
+          <div className="max-w-64">{select.control}</div>
+          <CheckOffGrantNote rule={rule} id={select.id} />
         </Field>
       ) : null}
     </div>

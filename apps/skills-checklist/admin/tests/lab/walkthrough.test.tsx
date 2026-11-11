@@ -1,5 +1,5 @@
 import * as React from "react"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 
 const nav = vi.hoisted(() => ({ pathname: "/lab/flow/setup-walkthrough/configure", search: "set=1&present=1&skill=sk-pressure-injury", replace: vi.fn(), push: vi.fn() }))
@@ -15,6 +15,7 @@ import { TooltipProvider } from "@exxatdesignux/ui/components/ui/tooltip"
 import { LabBar } from "@/components/lab/lab-bar"
 import { LabPageProvider } from "@/components/lab/lab-bar/page-context"
 import { WalkthroughControls } from "@/components/lab/lab-bar/walkthrough-controls"
+import { WALKTHROUGH_STEPS_KEY } from "@/components/lab/lab-bar/walkthrough-visibility"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { selfEvalOptions } from "@/components/lab/student2/log-parts"
 import { LabIndex } from "@/components/lab/lab-index"
@@ -347,6 +348,10 @@ describe("navigation model A on the admin walkthrough (D-L42: hub pages, breadcr
 })
 
 describe("presenter control", () => {
+  // The path bar is hidden by default (D-L139 amended, 2026-11-11); these tests read the bar the presenter turned on. Hidden by
+  // default, the menu entry and the shortcut: tests/lab/walkthrough-no-bar.test.tsx.
+  beforeEach(() => { window.localStorage.setItem(WALKTHROUGH_STEPS_KEY, "1") })
+  afterEach(() => { window.localStorage.removeItem(WALKTHROUGH_STEPS_KEY) })
   const renderAt = (step: string, search = "set=1&present=1", f = flow()) => {
     nav.pathname = `/lab/flow/${f.id}/${step}`
     nav.search = search

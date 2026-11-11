@@ -49,7 +49,8 @@ import { TYPE } from "@/components/lab/type-scale"
 import { LINK_IN_TABLE } from "@/components/lab/link-styles"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
-import { ApprovalToggle, FeedbackToggle, GroupCheckOffSection, ModelSection, OutcomesSection, RuleSection, SelfRatingToggle, SignersField, SignOffSection, StudentFieldsField, type SectionProps } from "./fields"
+import { NUMBER_WIDTH } from "./number-field"
+import { ApprovalToggle, CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, FeedbackToggle, GroupCheckOffSection, ModelSection, OutcomesSection, RuleSection, SelfRatingToggle, SignersField, SignOffSection, StudentFieldsField, type SectionProps } from "./fields"
 import { ConfigSection } from "./section"
 import { useFocusBack } from "./settings-dialogs"
 import { holdSecondPress } from "@/components/lab/shared/focus"
@@ -239,7 +240,7 @@ export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: Progr
   const effects = programSaveEffects(m.saved, m.rule)
   const usesQuestions = m.rule.model === "question" || m.rule.model === "scored"
   // Only fields this page shows, in its words: minimums are per skill (they have their own row above), the rest fold into the row that holds them.
-  const pageCleared = effects.cleared.flatMap((w) => (w === "Minimum at each level" || w === "Levels that count" || w === "Named questions" ? [] : w === "Checked-off students get" ? [m.saved?.model === "scored" ? "Score for each student checked off" : "Level for each student checked off"] : [w]))
+  const pageCleared = effects.cleared.flatMap((w) => (w === "Minimum at each level" || w === "Levels that count" || w === "Named questions" ? [] : w === "Checked-off students get" ? [CHECKOFF_GRANT_LABEL] : [w]))
   const rows: Array<{ label: string; value: string }> = [
     // A rename is said as a rename [REQ AE-06]: nothing about those skills changes but the words.
     ...(n ? [{ label: CONFIGURATION_META.default.label, value: effects.namesOnly ? `${n} show the new names` : `${n} will change` }] : []),
@@ -253,7 +254,7 @@ export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: Progr
     ...(plan.ownNumber ? [{ label: `${CONFIGURATION_META.default.label} with their own number`, value: `${plan.ownNumber} keep their number` }] : []),
     ...blockedGroups(plan).map((g) => ({ label: g.words, value: `${g.count} become not configured` })),
     ...(plan.minimumsCleared ? [{ label: "Level minimums", value: `Cleared on ${plan.minimumsCleared}` }] : []),
-    ...(effects.checkOff ? [{ label: "Faculty can check off a group", value: effects.checkOff === "off" ? "Turns off" : "Turns on" }] : []),
+    ...(effects.checkOff ? [{ label: CHECKOFF_SWITCH_LABEL, value: effects.checkOff === "off" ? "Turns off" : "Turns on" }] : []),
     ...(pageCleared.length ? [{ label: "Cleared", value: pageCleared.join(", ") }] : []),
   ]
   // A switch every skill follows into Not configured must say so in its title: "Apply to 0" would hide it.
@@ -457,7 +458,7 @@ export function TimesNeededTable({ m, edits, setEdits, programNeed }: { m: Progr
             type="number"
             inputMode="numeric"
             min={1}
-            className="w-24"
+            className={NUMBER_WIDTH}
             placeholder="Not set"
             aria-invalid={bad || undefined}
             value={valueOf(r)}

@@ -156,3 +156,78 @@ Evaluation settings                                   [Preview] [Discard]* [Save
 
 Requirement places: SC-01/02 How skills are judged, nothing preselected; SC-03 Outcomes; SC-04 to SC-07 Questions and what counts; SC-08 Levels; SC-10 Times needed; SC-13 What the student fills in; SC-14 Feedback switch; SC-15 Steps switches; SC-16 Who can sign off; SC-17 the rule panel and the section order; SC-18 problems in the panel and beside each field, Save blocked; SC-19 Preview; AE-02 the impact dialog on save (frame, unchanged). Tasks S1 to S30 are updated: no row opens before a control is used.
 Not on the page: purpose lines under the section names (D-L34, anatomy A8; the mockup had them), Edit-to-reveal rows, the side panel, the cut-off track, numbered circles and connector on the steps, the Student fields dialog (the fields are in place).
+
+## Amendment 2026-11-11: Levels control, save bar, wording (D-L142, variant B; Proposed)
+Amends the D-L141 layout above. Data model unchanged (one threshold, D-L95).
+
+```
+| Levels 3                Level names  highest first          Start from [v]  |
+|                         +--------------------------------------------------+|
+|                         | :: [Works alone      ]   v Counts             x  ||
+|                         | :: [With assistance  ]   v Counts             x  ||
+|                         | :: [Needs coaching   ]   Does not count       x  ||  <- bg-muted, muted text
+|                         +--------------------------------------------------+|
+|                         Add a level                                         |
+|                         Lowest level that counts                            |
+|                         [With assistance        v]                          |
+|                         Works alone and with assistance count toward the    |
+|                         skill. Needs coaching does not.                     |
+| Achieved when           Times needed                                        |
+|                         [ 1] evaluation for each skill                      |
+|                         Applies to 147 skills. 31 use their own number and  |
+|                         are not changed.        (link -> Library ?different=1&from=settings)
+| Forms ...               Let faculty check off a group at once        [o ]   |
+|                           A group check-off counts as [Works alone v]       |
+|                           Faculty do not evaluate each student in a group   |
+|                           check-off, so every student gets this level.      |
+|                           ! This level does not count toward the skill.     |  <- amber, only below the cut-off
++-----------------------------------------------------------------------------+
+| / 1 unsaved change                                  [Discard] [Save changes] |  <- sticky bottom of the content column
++-----------------------------------------------------------------------------+
+```
+
+- Levels: status is text, not a control; the select is the one control, with a visible label and a helper sentence generated from the levels (all count: "Every level counts."; one level: "{Name} counts toward the skill."). Before a cut-off is chosen, rows show no status and the select reads "Choose a level". At 375 the status drops under the name. Outcomes: same rows, select "Outcome that counts", helper "{A} counts toward the skill. {B} does not."
+- Level errors use place words ("The top level", "The lowest level", "The second level from the top"); the rule panel lists them as "Levels: the second level from the top has no name."
+- Model switch dialog: "Keep {current model}" and "Switch", one row from 640 px; stacked full width below.
+- Times needed helper: shown once the program is saved; the second sentence only when some skills use their own number; the Library opened from it shows the chip "Number of times needed Own number" and the crumb "Evaluation settings > Library", whose first part returns to this page (also inside the walkthrough). A "came from" filter never reads `from=settings`.
+- Save bar (`ProgramSettingsFrame saveBar`, variant B only; A, C and the embedded wizard step keep Save in the header): a labelled region, sticky at the bottom of the content column, last in the tab order. Saved setup with changes: pencil + "n unsaved change(s)", Discard (ghost), Save changes. First setup: "Not saved yet", Save settings. After a failed Save: "n to fix before saving" as a link that focuses the first problem. After saving the bar goes and the existing success banner says "Saved for n skills." The unsaved-changes guard is unchanged.
+- Tests: `tests/lab/levels-cutoff.test.tsx`; task scripts S2, S6, S9, S20 updated (`chooseCut`, helper line, back crumb).
+
+## Amendment 2026-11-11: one rule for number fields (D-L142; Proposed)
+Every small number on Evaluation settings and Configure one or several skills uses one width (`NUMBER_WIDTH`, 5rem) and one line component (`configure/number-field.tsx` `NumberWithUnit`): gap-2 between the input and its words, the words muted 14 px (`TYPE.helper`) on every row, selected or not. A standalone field has its label above the control: Times needed ("[ 1 ] evaluation for each skill"), Scale ("1 to [ 6 ]"), minimums. A radio option that carries a number (Counts when for scores and for questions) is the one inline case: the option's label, then the same input and words, the inputs left-aligned in one column. Covered: `cfg-need` (Evaluation settings B, Configure one skill, Configure several), `cfg-scale`, `cfg-srule-value` (and its two siblings), `cfg-qrule-n`, level, setting and evaluator minimums (`RuleNumber`), the Evaluation settings times table. Not covered: the Library table's Times needed cell (a table cell, 56 px), the question range inputs inside "Only the questions you choose".
+
+## Amendment 2026-11-11 (later): wording without "Counts", no sentence under the select (D-L142 item 7; Proposed)
+Supersedes the Levels and Outcomes words in the first 2026-11-11 amendment.
+
+```
+|                         | :: [Works alone      ]   v Reaches it         x  |
+|                         | :: [With assistance  ]   v Reaches it         x  |
+|                         | :: [Needs coaching   ]   Below it             x  |   <- muted words, no row tint
+|                         Level a student must reach                          |
+|                         [With assistance        v]                          |   <- no sentence under it
+```
+
+- Lowest level chosen: no row shows a status; the select alone says it. Before a choice: no statuses, the select reads "Choose a level".
+- Outcomes: "Outcome a student must get"; rows "Adds to times needed" / "Does not add" (muted). No sentence.
+- Times needed line: "Of the {n} skills on these settings, {m} use their own number and are not changed." n is the rule panel's base (all minus Custom); m counts Default skills on their own number, and its link opens the Library with `different=1&config=default&from=settings`. With m = 0: "Applies to all {n} skills on these settings."
+- Group check-off note (amber, below the cut-off only): "This level is below the level a student must reach, so a group check-off will not add to the times needed."
+
+## Amendment 2026-11-11 (last): D-L74 checkboxes restored on B (D-L142 item 8)
+Supersedes the select and the row statuses in the two earlier 2026-11-11 amendments.
+
+```
+|                         +--------------------------------------------------+|
+|                         |                                  Accepted        ||
+|                         | :: [Works alone      ]             [x]        x  ||
+|                         | :: [With assistance  ]             [x]        x  ||
+|                         | :: [Needs coaching   ]             [ ]        x  ||
+|                         +--------------------------------------------------+|
+|                         Add a level                                         |
+```
+
+- Each box: DS Checkbox, accessible name "Accept {level}". Linked via `withLevelTicked` (D-L74): check one, every level above is checked; clear one, every level below is cleared. One stored threshold (D-L95); all checked is "at any level". A linked change to other rows is announced in the live region.
+- Nothing accepted: "Choose the levels you accept." inline and in the rule panel ("Levels: choose the levels you accept."); the link focuses the list.
+- Outcomes: one radio per row under the same head, "Accept {outcome}", group "Accepted outcome". No select below either list, no sentence, no tint.
+- Configure one skill (`settings-rows.tsx` `LevelList`): the box word reads "Accepted" and the box is named "Accept {level}"; nothing else changed.
+- Group check-off note: "This level is not accepted, so a group check-off will not add to the times needed." Start from dialog: "The accepted levels are cleared." Move announcement: "{level} is now accepted" / "is no longer accepted".
+

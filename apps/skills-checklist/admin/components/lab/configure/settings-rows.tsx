@@ -193,14 +193,7 @@ export function FieldRow({ label, htmlFor, tag, children }: { label: string; htm
 }
 
 /** A short number and the words that follow it, so the unit reads with the number: "[2] evaluations". */
-export function NumberWithUnit({ children, unit, unitId }: { children: React.ReactNode; unit: string; unitId?: string }) {
-  return (
-    <span className="flex flex-wrap items-center gap-2">
-      {children}
-      <span id={unitId} className={TYPE.body}>{unit}</span>
-    </span>
-  )
-}
+export { NumberWithUnit } from "./number-field"
 
 /** On or off as a setting row: the switch takes its name from the visible label. */
 export function SwitchSetting({ id, label, help, checked, onChange, below }: { id: string; label: string; help?: string; checked: boolean; onChange: (v: boolean) => void; below?: React.ReactNode }) {
@@ -246,7 +239,7 @@ export function PathSteps({ steps, label }: { steps: PathStep[]; label: string }
 
 /**
  * Levels and which of them count, as one bordered list (D-L74, D-L95): the links between the boxes and the threshold stay in `withLevelTicked` and `removeLevel`.
- * Each row: its number, its name, a "Counts" box with its word beside it, and one menu at the right edge. Focus stays with the row being moved or removed.
+ * Each row: its number, its name, an "Accepted" box with its word beside it (2026-11-11, was "Counts"), and one menu at the right edge. Focus stays with the row being moved or removed.
  */
 export function LevelList({ rule, setRule, err, namesOnly }: { rule: LabRule; setRule: SectionProps["setRule"]; err: (f: string) => string | undefined; /** The Levels dialog: the page beside it holds the Counts boxes. */ namesOnly?: boolean }) {
   const countsErr = err("cfg-counts-from")
@@ -274,7 +267,7 @@ export function LevelList({ rule, setRule, err, namesOnly }: { rule: LabRule; se
   }
   return (
     <FieldSet id="cfg-counts-from" tabIndex={-1} className="flex flex-col gap-3 outline-none" data-counts-from aria-invalid={!!countsErr || undefined} aria-describedby={countsErr ? "cfg-counts-from-error" : undefined}>
-      <FieldLegend variant="label" className="sr-only">Levels that count</FieldLegend>
+      <FieldLegend variant="label" className="sr-only">Accepted levels</FieldLegend>
       {n ? (
         <ol className="flex flex-col divide-y divide-border rounded-[var(--radius)] border border-border" aria-label="Levels">
           {rule.levels.map((name, i) => {
@@ -293,8 +286,8 @@ export function LevelList({ rule, setRule, err, namesOnly }: { rule: LabRule; se
                   <Input id={id} className={cn("min-w-0", name.trim() && !message && "border-transparent shadow-none hover:border-input")} aria-label={`Level ${i + 1}`} placeholder={placeholderFor("Level", i, n)} value={name} onChange={(e) => setRule((r) => ({ ...r, levels: r.levels.map((x, k) => (k === i ? e.target.value : x)) }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} data-level-name />
                   {namesOnly ? null : (
                     <Label htmlFor={`cfg-counts-from-${i}`} className={cn("col-start-2 row-start-2 flex w-fit cursor-pointer items-center gap-2 ps-2.5 font-normal @lg:col-start-3 @lg:row-start-1 @lg:pe-2 @lg:ps-0", TYPE.body, !ticked && "text-muted-foreground")}>
-                      <Checkbox id={`cfg-counts-from-${i}`} aria-label={`${shown} counts`} checked={ticked} onCheckedChange={(c) => setRule((r) => withLevelTicked(r, i, c === true))} />
-                      <span aria-hidden="true">Counts</span>
+                      <Checkbox id={`cfg-counts-from-${i}`} aria-label={`Accept ${shown}`} checked={ticked} onCheckedChange={(c) => setRule((r) => withLevelTicked(r, i, c === true))} />
+                      <span aria-hidden="true">Accepted</span>
                     </Label>
                   )}
                   <span className={cn("col-start-3 row-start-1 flex justify-end", !namesOnly && "@lg:col-start-4")}>
@@ -302,7 +295,7 @@ export function LevelList({ rule, setRule, err, namesOnly }: { rule: LabRule; se
                   </span>
                 </div>
                 {message ? <FieldError id={`${id}-error`} className="ms-7">{message}</FieldError> : null}
-                {moved?.rule === rule && moved.index === i ? <p role="status" className={cn(TYPE.helper, "ms-7")} data-level-count-change>{moved.counts ? "Now counts: it sits above a level that counts." : "No longer counts: it sits below a level that does not."}</p> : null}
+                {moved?.rule === rule && moved.index === i ? <p role="status" className={cn(TYPE.helper, "ms-7")} data-level-count-change>{moved.counts ? "Now accepted: it sits above an accepted level." : "No longer accepted: it sits below a level that is not accepted."}</p> : null}
               </li>
             )
           })}

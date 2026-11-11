@@ -93,7 +93,7 @@ const pick = (values: readonly string[]) => values.map((v) => ({ value: v, label
 
 /** Filter-only fields: what the DS filter menu offers beyond the columns (map D1, REQ SL-10). Their values are set on each row (`withFilterFields`). */
 const FILTER_ONLY: ColumnDef<LibraryRow>[] = [
-  { key: "fTimes", label: "Times needed setting", filterOnly: true, filter: { type: "select", icon: "fa-hashtag", operators: IS, options: [{ value: "program", label: "Program number" }, { value: "different", label: "Different number" }] } },
+  { key: "fTimes", label: "Number of times needed", filterOnly: true, filter: { type: "select", icon: "fa-hashtag", operators: IS, options: [{ value: "program", label: "Same as program" }, { value: "different", label: "Own number" }] } },
   { key: "fList", label: capitalize(skillListsNoun()), filterOnly: true, filter: { type: "select", icon: "fa-list-check", operators: IS, options: [{ value: "some", label: "On a list" }, { value: "none", label: "On no list" }] } },
 ]
 

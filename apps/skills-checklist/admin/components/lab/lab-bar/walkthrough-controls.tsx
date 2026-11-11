@@ -6,12 +6,15 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@exxatdesignux/ui/components/ui/tooltip"
+import { useShortcut } from "@exxatdesignux/ui/components/ui/dropdown-menu"
+import { UserMenu } from "@/components/shell/user-menu"
 import { withNoun } from "@/lib/lab/terms"
 import { toLong } from "@/lib/short-urls"
 import { WALKTHROUGH_EXIT, isWalkthrough, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
 import { useLabPage } from "./page-context"
 import { usePresent } from "./present"
 import { startAgain } from "./reset"
+import { WALKTHROUGH_STEPS_SHORTCUT, focusWalkthroughBar, takeFocusOnShow, toggleWalkthroughSteps, useWalkthroughStepsShown } from "./walkthrough-visibility"
 
 /**
  * True on a walkthrough step in present mode. Reads only the route and the URL (no router), so lab labels such as the Sample data
@@ -36,19 +39,56 @@ export function useWalkthrough() {
 
 const chevron = (dir: "left" | "right") => <i className={`fa-light fa-chevron-${dir}`} aria-hidden="true" />
 
+/** Moves focus to the user menu's avatar when the bar it sat in goes away, so the keyboard user is not left on the body. */
+function focusMenuTrigger() {
+  window.requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-walkthrough-menu-trigger]")?.focus())
+}
+
+/** The shortcut that shows or hides the path bar, bound while a walkthrough step is on screen (WALKTHROUGH_STEPS_SHORTCUT). */
+function WalkthroughShortcut() {
+  useShortcut(WALKTHROUGH_STEPS_SHORTCUT, () => {
+    const inBar = !!document.activeElement?.closest("[data-lab-walkthrough]")
+    toggleWalkthroughSteps()
+    if (inBar) focusMenuTrigger()
+  })
+  return null
+}
+
+/**
+ * The end of the utility bar on a walkthrough step: the path bar when the presenter has turned it on, then the product's user menu,
+ * which holds "Show walkthrough steps" (D-L139 amended, 2026-11-11). By default the path bar is not rendered at all: the page looks
+ * like the plain product, with nothing in the DOM or the tab order where the bar was. `placement="row"` is the frame with no utility
+ * bar (WalkthroughRow): the bar only, no user menu.
+ */
+export function WalkthroughControls({ placement = "bar" }: { placement?: "bar" | "row" }) {
+  const w = useWalkthrough()
+  const shown = useWalkthroughStepsShown()
+  if (!w) return null
+  if (placement === "row") return shown ? <PathBar w={w} /> : null
+  return (
+    <div className="ms-auto flex min-w-0 shrink-0 items-center gap-1" data-walkthrough-controls>
+      <WalkthroughShortcut />
+      {shown ? <><PathBar w={w} /><span aria-hidden="true" className="mx-1 h-5 w-px bg-border" /></> : null}
+      <UserMenu walkthroughSteps={{ shown }} />
+    </div>
+  )
+}
+
 /**
  * The path bar of a walkthrough (D-L64): "Admin walkthrough", Back, the page's name, "N of M", Next, Exit. Nothing else: no persona, flow,
  * variant, score or scenario. It sits at the end of the utility bar, so it reads as tooling around the product rather than a step rail on
  * the page (D-L42). The page's own buttons still lead on. Next is a link, so Assign's unsaved-changes guard catches it.
  */
-export function WalkthroughControls() {
-  const w = useWalkthrough()
-  if (!w) return null
+function PathBar({ w }: { w: NonNullable<ReturnType<typeof useWalkthrough>> }) {
+  // Turned on by the presenter (menu or shortcut): focus moves to the bar, on its first control that can take it.
+  React.useEffect(() => {
+    if (takeFocusOnShow()) focusWalkthroughBar()
+  }, [])
   // The configure pages hang off the Library: the bar reads the stop the admin is on, not a word from the old path (W4).
   const stop = w.step.screen === "admin/configure-skill" && w.step.after ? w.flow.steps.find((s) => s.id === w.step.after) ?? w.step : w.step
   const name = withNoun(stop.label)
   return (
-    <div role="group" aria-label={w.flow.title} data-lab-chrome data-lab-walkthrough className="ms-auto flex min-w-0 shrink-0 items-center gap-1">
+    <div role="group" aria-label={w.flow.title} data-lab-chrome data-lab-walkthrough className="flex min-w-0 shrink-0 items-center gap-1">
       <span className="hidden whitespace-nowrap px-1 text-sm text-muted-foreground min-[75rem]:inline" data-walkthrough-title>{w.flow.title}</span>
       {w.prev ? (
         <Tooltip>
@@ -101,6 +141,16 @@ export function WalkthroughControls() {
 /** The same path bar on a page whose frame has no utility bar to hold it: a focus workflow (Log a skill), the evaluator's light frame. */
 export function WalkthroughRow() {
   const w = useWalkthrough()
+  const shown = useWalkthroughStepsShown()
   if (!w) return null
-  return <div className="flex h-11 items-center justify-end px-3" data-walkthrough-row><WalkthroughControls /></div>
+  // No user menu on these frames (the evaluator has no account, Log a skill is a focus workflow): the shortcut is the only way back.
+  // Hidden, the row reserves no height.
+  return (
+    <>
+      <WalkthroughShortcut />
+      {/* A marker for the route smoke (scripts/lab-route-smoke.mjs): hidden, it takes no space and no focus. */}
+      <span hidden data-walkthrough-controls />
+      {shown ? <div className="flex h-11 items-center justify-end px-3" data-walkthrough-row><WalkthroughControls placement="row" /></div> : null}
+    </>
+  )
 }

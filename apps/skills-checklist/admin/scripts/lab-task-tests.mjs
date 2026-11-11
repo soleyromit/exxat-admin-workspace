@@ -375,7 +375,8 @@ class T {
   /** Rows under one Configuration filter, read from the Library: the filter's own count, which the map says equals the rows. */
   async filterConfigCount(word) {
     await this.open(`${LIB}?config=${{ Custom: "edited", Default: "default", "Not configured": "not-configured" }[word]}`)
-    await this.visible(this.button(new RegExp(`^Remove filter ${word}`), this.main), `no chip for ${word}`)
+    // The DS chip names its field ("Remove Configuration filter"); the older chip named its value.
+    await this.visible(this.button(new RegExp(`^Remove (filter ${word}|Configuration filter)`), this.main), `no chip for ${word}`)
     return this.allCount()
   }
   async selectRows(names) {
@@ -581,7 +582,13 @@ class T {
   // ---- evaluation settings
   saveSettingsButton() { return this.button(/^Save( settings| changes)$/, this.main) }
   levelBoxes() { return this.main.getByRole("textbox", { name: /^Level \d+/ }) }
-  countsGroup() { return this.main.getByRole("radiogroup", { name: /levels? (that )?count/i }).or(this.main.getByRole("group", { name: /levels? (that )?count/i })) }
+  /** Levels on Evaluation settings B (D-L74 boxes restored 2026-11-11): accept level `i` and every level above it, nothing below. `i` is the level index, lowest 0. */
+  async chooseCut(i) {
+    const box = (k) => this.main.locator(`#cfg-counts-from-${k}`)
+    if (!(await box(i).isChecked())) { await box(i).click(); await this.p.waitForTimeout(150) }
+    if (i > 0 && (await box(i - 1).isChecked())) { await box(i - 1).click(); await this.p.waitForTimeout(150) }
+  }
+  countsGroup() { return this.main.getByRole("radiogroup", { name: /levels? (that )?count/i }).or(this.main.getByRole("group", { name: /levels? (that )?count/i })).or(this.main.getByRole("group", { name: /accepted levels/i })).or(this.main.locator("#cfg-counts-from")) }
   feedbackSwitch() { return this.main.getByRole("switch", { name: /feedback/i }) }
   /** Today's and the new page both: pick Independence level and fill every row with a program's real values. */
   async fillIndependence(names = ["Underdeveloped", "Developing", "Developed"], times = "3") {
@@ -598,13 +605,13 @@ class T {
     const group = this.countsGroup()
     await this.visible(group, "no levels that count row")
     const boxesC = group.first().getByRole("checkbox")
-    if (await boxesC.count()) {
+    const top = (await this.levelBoxes().count()) - 1
+    if (await this.main.locator(`#cfg-counts-from-${top}`).count() && await this.main.locator("[data-level-segment]").count()) {
+      // Evaluation settings B: the top level only.
+      await this.chooseCut(top)
+    } else if (await boxesC.count()) {
       const c = boxesC.nth((await boxesC.count()) - 1)
       if (!(await c.isChecked())) await c.click()
-    } else {
-      // One radio per level (D-L141, highest first on screen): the top level counts. The segment's value is the level's index, lowest 0.
-      const top = Math.max(...(await this.p.locator("[data-level-segment]").evaluateAll((a) => a.map((e) => Number(e.getAttribute("data-level-segment"))))))
-      await this.p.locator(`[data-level-segment="${top}"]`).click()
     }
     await this.settingsRow("times")
     const need = this.main.getByRole("spinbutton", { name: /needed/i }).first()
@@ -1004,7 +1011,7 @@ test("L4", "L", "Filter Different number lists the changed skill", async (t) => 
   await t.setTimes(BP, before === "5" ? "6" : "5")
   const all = await t.allCount()
   await t.openFilters()
-  const opt = t.p.getByRole("option", { name: /different number/i }).or(t.p.getByRole("menuitemcheckbox", { name: /different number/i })).or(t.p.getByRole("checkbox", { name: /different number/i }))
+  const opt = t.p.getByRole("option", { name: /different number|own number/i }).or(t.p.getByRole("menuitemcheckbox", { name: /different number|own number/i })).or(t.p.getByRole("checkbox", { name: /different number|own number/i }))
   if (!(await t.isVisible(opt, 1200))) fail("no Different number filter")
   await opt.first().click()
   await t.p.keyboard.press("Escape")
@@ -1498,12 +1505,12 @@ test("E9", "E", "The page: three cards as on Evaluation settings; Default reads 
   const custom = await page.locator("[data-card-word]").evaluateAll((els) => els.map((e) => e.getAttribute("data-card-word")))
   if (custom.join() !== "custom,custom,custom") fail(`card sources under Custom read ${custom.join()}`)
   const live = async (loc, what) => { await t.visible(loc, `no ${what}`); if (await loc.first().isDisabled()) fail(`${what} is not live`) }
-  await live(page.getByRole("checkbox", { name: / counts$/ }), "a Counts box")
+  await live(page.getByRole("checkbox", { name: /^Accept | counts$/ }), "a Counts box")
   await live(page.getByRole("textbox", { name: /^Level 1$/ }), "a level name")
   await live(page.getByRole("button", { name: /^Add minimum/ }), "Add minimum")
   for (const m of [/^Independence level/, /^Approved or not approved/, /^Questions/, /^Score on a scale/]) await live(page.getByRole("radio", { name: m }), String(m))
   await live(page.getByRole("button", { name: /^Edit fields/ }), "Edit fields")
-  for (const m of [/^Student rates themselves first/, /^Feedback is required/, /^Faculty can check off a group/, /^Approval before it counts/]) await live(page.getByRole("switch", { name: m }), String(m))
+  for (const m of [/^Student rates themselves first/, /^Feedback is required/, /^Let faculty check off a group at once/, /^Approval before it counts/]) await live(page.getByRole("switch", { name: m }), String(m))
   await live(page.getByRole("group", { name: /^Who can sign off/ }).getByRole("checkbox"), "Who can sign off")
   // Choosing Default again with nothing changed leaves nothing to save.
   await t.chooseDefault(page)
@@ -1609,7 +1616,7 @@ async function toApproved(t) {
 test("E16", "E", "Choose Approved or not approved: rows rebuild, nothing preselected", async (t) => {
   const page = await toApproved(t)
   await t.absent(page.getByRole("button", { name: /^Edit levels/ }), "Levels is still in the form")
-  await t.absent(page.getByRole("checkbox", { name: / counts$/ }), "Counts is still in the form")
+  await t.absent(page.getByRole("checkbox", { name: /^Accept | counts$/ }), "Counts is still in the form")
   for (const r of await page.getByRole("group", { name: /^Which one qualifies/ }).getByRole("radio").all()) if (await r.isChecked()) fail("Which one qualifies is preselected")
   if ((await page.getByRole("textbox", { name: /^First label/ }).inputValue()) !== "") fail("a label is preselected")
   await t.visible(page.getByRole("button", { name: /^Add minimum/ }), "clinical setting minimums went")
@@ -1703,7 +1710,7 @@ test("E22", "E", "Raise Times needed: students named first; stays Default; Diffe
   if ((await t.rowConfig(BP)) !== "Default") fail(`row reads ${await t.rowConfig(BP)}`)
   await t.open(`${LIB}?different=1`)
   await t.row(BP)
-  await t.visible(t.button(/^Remove filter Different number/, t.main), "no chip for Different number")
+  await t.visible(t.button(/^Remove (filter )?(Different number|.*own number|Number of times needed)/i, t.main), "no chip for Different number")
   await t.reload()
   if ((await t.times(BP)) !== need) fail(`after reload the table reads ${await t.times(BP)}`)
 })
@@ -2602,18 +2609,16 @@ test("S5", "S", "Open the library: Default on all, Not configured 0", async (t) 
 })
 test("S6", "S", "Levels that count are one cut-off: choosing a level counts it and every level above, and nothing below", async (t) => {
   await t.seededSettings()
+  // Statuses show only once a level above the lowest is chosen (with every level enough, no row repeats it, 2026-11-11): count the names.
   const segs = t.p.locator("[data-level-segment]")
-  const n = await segs.count()
+  const n = await t.levelBoxes().count()
   if (n < 2) fail(`only ${n} level in the list; needs two to test the cut-off`)
-  const seg = (i) => t.p.locator(`[data-level-segment="${i}"]`)
   // By level index, lowest 0 (the list shows them highest first, D-L141).
   const counting = () => segs.evaluateAll((a) => a.map((e) => [Number(e.getAttribute("data-level-segment")), e.hasAttribute("data-counts")]).sort((x, y) => x[0] - y[0]).map((x) => x[1]))
-  await seg(n - 2).click()
-  await t.p.waitForTimeout(200)
+  await t.chooseCut(n - 2)
   let c = await counting()
   if (!c[n - 2] || !c[n - 1] || c.slice(0, n - 2).some(Boolean)) fail(`choosing the second highest level counts ${JSON.stringify(c)}`)
-  await seg(n - 1).click()
-  await t.p.waitForTimeout(200)
+  await t.chooseCut(n - 1)
   c = await counting()
   if (c[n - 2] || !c[n - 1]) fail(`choosing the highest level counts ${JSON.stringify(c)}`)
   const top = (await t.levelBoxes().first().inputValue()).trim().toLowerCase()
@@ -2679,14 +2684,24 @@ test("S8", "S", "Change the program's number: dialog counts, followers change, o
 })
 test("S9", "S", "Link: skills use a different number, Library filtered, count matches", async (t) => {
   await t.seededSettings()
-  const link = t.link(/skills? (uses? a different|uses? (its|their) own) number/i, t.main)
-  if (!(await t.isVisible(link, 1500))) fail('no link "skills use their own number"')
+  // The line under Times needed (2026-11-11): "Of the 166 skills on these settings, 19 use their own number and are not changed."
+  const scope = t.main.locator("[data-need-scope]")
+  await t.visible(scope, "no line under Times needed saying who it applies to")
+  if (!/^(Of the [\d,]+ \S+ on these settings, [\d,]+ (uses its|use their) own number and (is|are) not changed|Applies to all [\d,]+ \S+ on these settings)\.$/.test((await scope.innerText()).trim())) fail(`the line under Times needed reads "${await scope.innerText()}"`)
+  const link = t.link(/^[\d,]+ (uses? a different|uses? (its|their) own) number/i, t.main)
+  if (!(await t.isVisible(link, 1500))) fail('no link "31 use their own number"')
   const n = +(await link.first().innerText()).replace(/,/g, "").match(/\d+/)?.[0]
   await link.first().click()
   await t.afterNav(1500)
   await t.settle()
   await t.visible(t.main.getByRole("heading", { level: 1, name: /library/i }), "the link did not open the Library")
   if ((await t.rowCount()) !== n) fail(`Library shows ${await t.rowCount()} rows; the link said ${n}`)
+  // The way back: an "Evaluation settings" crumb that lands on the settings page.
+  const back = t.p.locator("[data-return-to]").filter({ hasText: /^Evaluation settings$/ })
+  await t.visible(back, "no Evaluation settings crumb on the Library reached from the link")
+  await back.first().click()
+  await t.afterNav(1500)
+  await t.visible(t.main.getByRole("heading", { level: 1, name: /evaluation settings/i }), "the crumb did not return to Evaluation settings")
 })
 test("S10", "S", "Switch to Questions: rows change, no final result, Counts when options", async (t) => {
   await t.seededSettings()
@@ -3157,7 +3172,7 @@ test("CFG13", "CFG", "Each model, each section: a change saves, survives a reloa
     return { student, evaluator }
   }
   const fillModel = {
-    "Independence level": async (page) => { await t.openGroup(page, "What counts as achieved"); await t.click(page.getByRole("checkbox", { name: / counts$/ }).first(), "no Counts box") },
+    "Independence level": async (page) => { await t.openGroup(page, "What counts as achieved"); await t.click(page.getByRole("checkbox", { name: /^Accept | counts$/ }).first(), "no Counts box") },
     "Approved or not approved": async (page) => {
       await t.openGroup(page, "What counts as achieved")
       await page.getByRole("textbox", { name: /^First label/ }).fill("Met")
@@ -3647,9 +3662,9 @@ const secondLabelQualifies = async (t, first, second) => {
   await t.settingsRow("labels")
   await t.main.getByRole("textbox", { name: /^First label/ }).fill(first)
   await t.main.getByRole("textbox", { name: /^Second label/ }).fill(second)
-  const group = t.main.getByRole("radiogroup", { name: /which (one|outcome) (qualifies|counts)/i })
-  await t.visible(group, "no Which one qualifies row")
-  for (const r of await group.first().getByRole("radio").all()) if (await r.isChecked()) fail("a label is preselected")
+  const group = t.main.getByRole("radiogroup", { name: /accepted outcome/i })
+  await t.visible(group, "no Accepted outcome radios")
+  for (const r of await group.first().getByRole("radio").all()) if (await r.isChecked()) fail("an outcome is preselected")
   await group.first().getByRole("radio").nth(1).click()
   await t.click(t.button(/^Preview$/, t.main), "no Preview button")
   const pv = t.dialog().first()
@@ -3803,9 +3818,9 @@ test("S19b", "S", "Double-clicking Apply: the second press does nothing", async 
   await t.levelNames()
   if (JSON.stringify(await names()) !== JSON.stringify(before)) fail(`the second press moved a level: ${await names()}`)
   await t.visible(t.main.getByText(/^Saved for \d+/), "the second press cleared Saved", QUICK)
-  if (!(await t.saveSettingsButton().first().isDisabled())) fail("Save is enabled again after a double click")
+  if (!(await saveOff(t))) fail("Save is enabled again after a double click")
 })
-test("S20", "S", "Keyboard only: tiles, the Levels radios, a grip moves a level, switch, Save, Esc", async (t) => {
+test("S20", "S", "Keyboard only: tiles, the Levels select, a grip moves a level, switch, Save, Esc", async (t) => {
   await t.open(`${SET}?program=new`)
   const focused = () => t.p.evaluate(() => document.activeElement?.id ?? "")
   const press = async (k) => { await t.p.keyboard.down(k); await t.p.waitForTimeout(60); await t.p.keyboard.up(k); await t.p.waitForTimeout(350) }
@@ -3816,13 +3831,14 @@ test("S20", "S", "Keyboard only: tiles, the Levels radios, a grip moves a level,
   if (!(await t.main.locator("#cfg-model-binary").isChecked())) fail("an arrow key does not select the next tile")
   await press("ArrowLeft")
   await t.open(SET)
-  // Levels (D-L141): one radio group, highest first; an arrow key moves the cut-off. The grip moves a level with the arrow keys.
-  const checked = t.main.locator('#cfg-counts-from [role="radio"][aria-checked="true"]')
-  await checked.first().focus()
-  const i = Number((await focused()).split("-").pop())
-  await press("ArrowUp")
-  const j = await focused()
-  if (!/^cfg-counts-from-\d+$/.test(j) || j === `cfg-counts-from-${i}` || (await t.main.locator(`#${j}`).getAttribute("aria-checked")) !== "true") fail(`an arrow key in Levels left focus on "${j}" and did not move the cut-off`)
+  // Levels (D-L74 boxes, restored on B 2026-11-11): Space on a focused box changes what is accepted, and focus stays on the box. The grip moves a level with the arrow keys.
+  const accepted = () => t.p.evaluate(() => [...document.querySelectorAll("[id^=cfg-counts-from-]")].map((x) => x.getAttribute("data-state") ?? x.getAttribute("aria-checked")).join(","))
+  const boxIds = await t.p.evaluate(() => [...document.querySelectorAll("[id^=cfg-counts-from-]")].map((x) => x.id))
+  const target = boxIds[1] ?? boxIds[0]
+  const acceptedWas = await accepted()
+  await t.main.locator(`#${target}`).focus()
+  await press("Space")
+  if ((await focused()) !== target || (await accepted()) === acceptedWas) fail(`Space on "${target}" left focus on "${await focused()}" and did not change what is accepted`)
   const names = () => t.p.evaluate(() => [...document.querySelectorAll("input[id^=cfg-level-]")].map((x) => ({ id: x.id, v: x.value })).sort((a, b) => Number(a.id.split("-").pop()) - Number(b.id.split("-").pop())).map((x) => x.v))
   const before = await names()
   await t.main.locator("#cfg-level-grip-0").focus()
@@ -5587,6 +5603,8 @@ test("A13", "A", "Add several: the repeated-line selects line up; Category and T
 const setDialog = (t) => t.p.locator("[data-apply-dialog]")
 const setText = async (t) => (await setDialog(t).innerText()).replace(/\s+/g, " ")
 const needBox = (t) => t.p.locator("#cfg-need")
+/** Save is off: on variant B the save bar is gone while nothing changed (2026-11-11); elsewhere the button is disabled. */
+const saveOff = async (t) => { const b = t.p.getByRole("button", { name: /^Save (changes|settings)$/ }); return (await b.count()) === 0 || (await b.first().isDisabled()) }
 /** Times needed is a row that opens on Edit (D-L140): open it, then the field. */
 const openNeed = async (t) => { await t.settingsRow("times"); return needBox(t) }
 const pressSave = async (t) => { await t.closeSettingsPanel(); await t.click(t.p.getByRole("button", { name: /^Save (changes|settings)$/ }), "no Save on Evaluation settings"); await t.p.waitForTimeout(400) }
@@ -5604,7 +5622,8 @@ const chooseBinary = async (t, first, second, qualifying) => {
   await t.settingsRow("labels")
   await t.p.getByRole("textbox", { name: /^First label/ }).fill(first)
   await t.p.getByRole("textbox", { name: /^Second label/ }).fill(second)
-  await t.p.getByRole("radiogroup", { name: /which (one|outcome) (qualifies|counts)/i }).getByRole("radio").nth(qualifying).click()
+  // One radio per outcome under Accepted (2026-11-11).
+  await t.p.locator(`#cfg-qualifying-${qualifying}`).click()
   await t.p.waitForTimeout(200)
 }
 const chooseQuestions = async (t) => {
@@ -5684,7 +5703,8 @@ test("S8c", "S", "Past the match: it stays, a follower moves, the link equals th
   const link = await ownLinkCount(t)
   if ((await timesInLibrary(t, BP)).value !== "2") fail(`${BP} moved off its number`)
   if ((await timesInLibrary(t, follower)).value !== "4") fail(`${follower} did not follow to 4`)
-  await t.open(`${LIB}?different=1`)
+  // The link counts the skills on these settings (Custom left out, as the rule panel does) that keep their own number (2026-11-11).
+  await t.open(`${LIB}?different=1&config=default`)
   const all = await t.allCount()
   if (all !== link) fail(`the link says ${link}, the filter holds ${all}`)
 })
@@ -5718,14 +5738,13 @@ test("S2b", "S", "The switch-model question stays inside its card at every width
 })
 test("S21", "S", "Student fields edit in place: add, name, type, choices, Required; Save changes only once something changed", async (t) => {
   await t.open(SET)
-  const save = t.p.getByRole("button", { name: /^Save changes/ }).first()
-  if (!(await save.isDisabled())) fail("Save changes is enabled before anything changed")
+  if (!(await saveOff(t))) fail("Save changes is enabled before anything changed")
   const n = await t.main.locator("[data-student-field]").count()
   await t.click(t.main.getByRole("button", { name: "Add a field", exact: true }), "no Add a field")
   await focusedIs(t, "Add a field", (a) => a.id === `cfg-field-${n}`)
   await t.p.locator(`#cfg-field-${n}`).fill("Site")
   await t.p.waitForTimeout(200)
-  if (await save.isDisabled()) fail("Save changes stayed disabled after a field was added")
+  if (await saveOff(t)) fail("Save changes stayed disabled after a field was added")
   await t.click(t.p.locator(`#cfg-field-${n}-type`), "no Type on the new field")
   await t.click(t.p.getByRole("option", { name: "Choice list" }), "no Choice list type")
   const chips = t.p.locator(`#cfg-field-${n}-choices`)
@@ -5773,7 +5792,7 @@ test("S23", "S", "No level chosen: no rule sentence; one chosen on the track: it
   if (!(await role.isChecked())) await role.click()
   await t.waitFor(async () => (await t.p.locator("[data-rule-sentence]").count()) === 0, "a sentence shows with no level counting", 1500)
   await t.settingsRow("levels")
-  await t.p.locator("[data-level-segment]").last().click()
+  await t.chooseCut(0)
   await t.visible(t.p.locator("[data-rule-sentence]"), "the sentence did not return", QUICK)
 })
 test("S24", "S", "One question, At least 9: says there is 1, not 'from 1 to 1'", async (t) => {
@@ -5813,12 +5832,11 @@ test("S25", "S", "Paste a list leaves repeats out and says so; only repeats, not
 })
 test("S26", "S", "Off and on again is no change: Save stays disabled", async (t) => {
   await t.open(SET)
-  const s = t.p.getByRole("button", { name: /^Save changes/ })
-  if (!(await s.isDisabled())) fail("Save changes is enabled before anything changed")
+  if (!(await saveOff(t))) fail("Save changes is enabled before anything changed")
   await t.p.locator("#cfg-checkoff").click(); await t.p.waitForTimeout(150)
-  if (await s.isDisabled()) fail("the change did not enable Save changes")
+  if (await saveOff(t)) fail("the change did not enable Save changes")
   await t.p.locator("#cfg-checkoff").click(); await t.p.waitForTimeout(200)
-  if (!(await s.isDisabled())) fail("back where it started, Save changes is still enabled")
+  if (!(await saveOff(t))) fail("back where it started, Save changes is still enabled")
 })
 test("S27", "S", "Nobody moves: no students row; first save with no skills: no zero", async (t) => {
   await t.open(SET)
@@ -6044,10 +6062,23 @@ test("T28", "T", "New skill list add row: Enter adds and keeps focus, newest on 
   await t.visible(d.locator("[data-typed-error]"), "a name already on the list says nothing", QUICK)
   if ((await field.inputValue()) !== a) fail("the typed name was cleared on a duplicate")
   if ((await rows.count()) !== 2) fail("a duplicate was added")
+  // The Add button beside the field (2026-11-11): off while the field is empty, on with a name; a click adds and keeps focus in the field.
+  const addBtn = d.locator("[data-add-typed]")
+  await field.fill("")
+  if (!(await addBtn.isDisabled())) fail("Add is on with an empty field")
+  if (!/^Add \w+$/.test((await addBtn.innerText()).trim())) fail(`the button reads "${await addBtn.innerText()}", not "Add skill"`)
+  const c = unique("Zz third")
+  await field.fill(c)
+  if (await addBtn.isDisabled()) fail("Add stayed off with a name typed")
+  await addBtn.click()
+  await t.p.waitForTimeout(300)
+  if ((await rows.count()) !== 3) fail(`Add left ${await rows.count()} rows, want 3`)
+  if ((await field.inputValue()) !== "") fail("the field kept the name after Add")
+  if (!(await field.evaluate((el) => el === document.activeElement))) fail("focus left the field after Add")
   await field.fill("")
   await field.evaluate((el, text) => { const dt = new DataTransfer(); dt.setData("text", text); el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })) }, [unique("Zz p1"), unique("Zz p2"), unique("Zz p3")].join("\n"))
   await t.p.waitForTimeout(300)
-  if ((await rows.count()) !== 5) fail(`a pasted list of 3 left ${await rows.count()} rows, want 5`)
+  if ((await rows.count()) !== 6) fail(`a pasted list of 3 left ${await rows.count()} rows, want 6`)
   await t.absent(d.locator("[data-typed-error]"), "the duplicate message stayed after a good add")
   await t.visible(d.locator("[data-row-category] [data-category-picker]").first(), "a skill written here has no way to set its category")
 })
@@ -7300,6 +7331,8 @@ async function runOnce(x) {
   const host = await live()
   onBrowser.set(host, onBrowser.get(host) + 1)
   const ctx = await host.newContext({ viewport: { width: 1440, height: 900 } })
+  // The path bar is hidden by default (D-L143): the task tests walk with it on.
+  await ctx.addInitScript(() => { try { window.localStorage.setItem("walkthrough-steps-shown", "1") } catch {} })
   const page = await ctx.newPage()
   const t = new T(page)
   let runnerClosing = false

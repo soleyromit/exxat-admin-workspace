@@ -17,7 +17,7 @@ import { CONFIGURATION_META } from "@/lib/lab/library"
 import { rebuildForModel } from "@/lib/lab/program-settings"
 import { skillNoun } from "@/lib/lab/terms"
 import type { Configuration } from "@/lib/lab/library"
-import { BinaryLabelsField, checkOffGrantSelect, ModelSection, QualifyingField, QuestionRuleField, ScaleField, ScoredRuleField, SignersField, withCheckOffPatch, type SectionProps } from "./fields"
+import { BinaryLabelsField, CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, CheckOffGrantNote, checkOffGrantSelect, ModelSection, QualifyingField, QuestionRuleField, ScaleField, ScoredRuleField, SignersField, withCheckOffPatch, type SectionProps } from "./fields"
 import { MinimumsField } from "./rule-conditions"
 import { SkillRuleSentence, StudentAddsRow } from "./settings-dialogs"
 import { FieldRow, LevelList, PathSteps, SettingRow, SettingsCard, SwitchSetting, tileExamples, ValueRow, type PathStep } from "./settings-rows"
@@ -93,7 +93,7 @@ function ModelRows({ rule, setRule, issues, showErrors, err }: Pick<SkillCardsPr
       </>
     )
   }
-  if (rule.model === "demonstration") return <SettingRow label="Levels" help="Tick the levels that count toward achieved" below={<LevelList rule={rule} setRule={setRule} err={err} />} />
+  if (rule.model === "demonstration") return <SettingRow label="Levels" below={<LevelList rule={rule} setRule={setRule} err={err} />} />
   const questions = <SettingRow label="Questions" below={<QuestionsRow rule={rule} setRule={setRule} error={qErr} />} />
   if (rule.model === "question") {
     return (
@@ -107,7 +107,7 @@ function ModelRows({ rule, setRule, issues, showErrors, err }: Pick<SkillCardsPr
     return (
       <>
         {questions}
-        <SettingRow label="Scale" below={<ScaleField rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} />} />
+        <SettingRow label="Scale" below={<ScaleField short rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} />} />
         <SettingRow label="Counts when" below={<ScoredRuleField rule={rule} setRule={setRule} err={err} radios legendHidden />} />
       </>
     )
@@ -212,13 +212,16 @@ export function SkillCards(p: SkillCardsProps) {
             <div data-section="checkoff">
               <SwitchSetting
                 id="cfg-checkoff"
-                label="Faculty can check off a group"
+                label={CHECKOFF_SWITCH_LABEL}
                 checked={ruleAllowsCheckOff(rule)}
                 onChange={(v) => setRule((r) => withCheckOffPatch(r, { enabled: v }))}
                 below={grant ? (
-                  <div className="flex flex-col gap-2 rounded-[var(--radius)] bg-muted px-4 py-3 @xl:flex-row @xl:items-center @xl:justify-between">
-                    <Label htmlFor={grant.id} className={cn(TYPE.body, "font-normal")}>{rule.model === "scored" ? "Score for each student checked off" : "Level for each student checked off"}</Label>
-                    {grant.control}
+                  <div className="flex flex-col gap-2 rounded-[var(--radius)] bg-muted px-4 py-3">
+                    <div className="flex flex-col gap-2 @xl:flex-row @xl:items-center @xl:justify-between">
+                      <Label htmlFor={grant.id} className={cn(TYPE.body, "font-normal")}>{CHECKOFF_GRANT_LABEL}</Label>
+                      {grant.control}
+                    </div>
+                    <CheckOffGrantNote rule={rule} id={grant.id} />
                   </div>
                 ) : undefined}
               />

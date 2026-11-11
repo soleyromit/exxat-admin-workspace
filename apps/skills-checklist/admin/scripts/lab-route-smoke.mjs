@@ -27,7 +27,7 @@ for (const u of urls) {
     const res = await fetch(base + u, { redirect: "follow" })
     status = res.status
     const html = await res.text()
-    ok = status === 200 && (u === "/lab" || html.includes("data-lab-bar") || html.includes("Design lab controls") || html.includes("data-lab-walkthrough"))
+    ok = status === 200 && (u === "/lab" || html.includes("data-lab-bar") || html.includes("Design lab controls") || html.includes("data-lab-walkthrough") || html.includes("data-walkthrough-controls"))
   } catch (e) {
     status = String(e)
   }

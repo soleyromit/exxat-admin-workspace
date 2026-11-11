@@ -9,7 +9,6 @@ import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { FloatingSheetPanel } from "@/components/lab/shared/sheet"
 import { FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar, FloatingSheetPanelWorkflowFooter } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@exxatdesignux/ui/components/ui/input-group"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
 import { createList, setListSkills, skillLists, validateNewList, type SkillList } from "@/lib/lab/lists"
 import { aNoun, capitalize, countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -29,6 +28,7 @@ import { CONFIGURATION_META, EMPTY_DRAFT, NO_CATEGORY, setSkillDetailsInStore, a
 import { configurationOf, programSettingsOf } from "@/lib/lab/program-settings"
 import { SettingsSummary } from "@/components/lab/library/settings-summary"
 import { TYPE } from "@/components/lab/type-scale"
+import { cn } from "@exxatdesignux/ui/lib/utils"
 import { FirstRun } from "@/components/lab/first-run"
 
 export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; onClose: () => void; onSaved: (l: SkillList, n: number) => void }) {
@@ -174,11 +174,13 @@ export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; on
                 </div>
                 {started ? (
                   <Field data-invalid={fieldError ? true : undefined} className="gap-1.5" data-add-new-row>
-                    <InputGroup>
-                      <InputGroupInput
+                    {/* A visible label and a real button beside the field (2026-11-11, Romit: "the Add button isn't clear"): the ghost Add inside the field read as
+                        text. Outline, so the panel's Next stays the one filled button; off until there is a name. Enter still adds; focus stays in the field. */}
+                    <FieldLabel htmlFor="new-skill-name">{`Name of a new ${noun}`}</FieldLabel>
+                    <div className="flex min-w-0 items-center gap-2" data-add-row>
+                      <Input
                         id="new-skill-name"
-                        aria-label={`Name of a new ${noun}`}
-                        placeholder={`Name of a new ${noun}`}
+                        className="min-w-0 flex-1"
                         enterKeyHint="enter"
                         autoComplete="off"
                         aria-invalid={!!fieldError}
@@ -188,14 +190,10 @@ export function NewListPage({ model, onClose, onSaved }: { model: ListsModel; on
                         onPaste={(e) => { const text = e.clipboardData.getData("text"); if (/\r?\n/.test(text.trim())) { e.preventDefault(); addTyped(text) } }}
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); addTyped(typed) } }}
                       />
-                      {typed.trim() ? (
-                        <InputGroupAddon align="inline-end">
-                          <InputGroupButton type="button" variant="ghost" size="xs" onClick={() => addTyped(typed)} data-add-typed>Add</InputGroupButton>
-                        </InputGroupAddon>
-                      ) : null}
-                    </InputGroup>
+                      <Button type="button" variant="outline" size="default" className="shrink-0" disabled={!typed.trim()} onClick={() => addTyped(typed)} data-add-typed>{`Add ${noun}`}</Button>
+                    </div>
                     {fieldError ? <FieldError id="new-skill-error" data-skill-error={skillError && !typedError ? true : undefined} data-typed-error={typedError ? true : undefined}>{fieldError}</FieldError> : null}
-                    <FieldDescription id="new-skill-hint">Press Enter to add. Paste a list to add several.</FieldDescription>
+                    <FieldDescription id="new-skill-hint">Paste a list to add several.</FieldDescription>
                   </Field>
                 ) : null}
                 <p role="status" className="sr-only">{announce}</p>
@@ -255,21 +253,32 @@ export function ListSetupLevel({ model, list, leaveRef, onBack, onNext }: { mode
           emptyText={`Your program has not set how ${skillNounPlural()} are judged.`}
           action={<Button asChild variant="outline" size="sm"><Link href={to("admin/evaluation-settings", {})}>{noSettings ? "Set them" : "Change"}<i className="fa-light fa-arrow-right text-xs" aria-hidden="true" /></Link></Button>}
         />
-        <ul className="flex flex-col rounded-[var(--radius)] border border-border px-3" aria-label={capitalize(skillNounPlural())} data-list-setup-rows={skills.length}>
-          {skills.map((k) => {
-            const word = configurationOf(state, k)
-            const spec = CONFIGURATION_META[word]
-            return (
-              <li key={k.id} className="flex min-h-12 items-center gap-3 border-b border-border py-1.5 text-sm last:border-b-0 [contain-intrinsic-size:auto_3rem] [content-visibility:auto]">
-                <span className="min-w-0 flex-1 truncate" title={k.name}>{k.name}</span>
-                <Link href={configureHref(k.id)} aria-label={`Configure ${k.name}, ${spec.label}`} className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <StatusBadge label={spec.label} tone={spec.tone} icon={spec.icon} size="sm" />
-                </Link>
-                <span className="w-20 shrink-0"><TimesNeededCell id={k.id} name={k.name} /></span>
-              </li>
-            )
-          })}
-        </ul>
+        {/* The number is each skill's Times needed (2026-11-11, Romit: "the number isn't clear to me"). One column caption, as the Library's Times needed
+            column and the settings times table do, not a unit on every row; a number the skill keeps of its own reads bold, as in the Library. The
+            configuration badge sits with the name, so it never reads as the number's label. */}
+        <div className="flex flex-col rounded-[var(--radius)] border border-border" data-list-setup-table>
+          <div className="flex items-center gap-3 border-b border-border px-3 py-1.5" aria-hidden="true">
+            <span className={cn(TYPE.meta, "min-w-0 flex-1")}>{capitalize(skillNoun())}</span>
+            <span className={cn(TYPE.meta, "w-28 shrink-0 whitespace-nowrap")}>Times needed</span>
+          </div>
+          <ul className="flex flex-col px-3" aria-label={capitalize(skillNounPlural())} data-list-setup-rows={skills.length}>
+            {skills.map((k) => {
+              const word = configurationOf(state, k)
+              const spec = CONFIGURATION_META[word]
+              return (
+                <li key={k.id} className="flex min-h-12 items-center gap-3 border-b border-border py-1.5 text-sm last:border-b-0 [contain-intrinsic-size:auto_3rem] [content-visibility:auto]">
+                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="min-w-0 max-w-full truncate" title={k.name}>{k.name}</span>
+                    <Link href={configureHref(k.id)} aria-label={`Configure ${k.name}, ${spec.label}`} className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      <StatusBadge label={spec.label} tone={spec.tone} icon={spec.icon} size="sm" />
+                    </Link>
+                  </span>
+                  <span className="w-28 shrink-0"><TimesNeededCell id={k.id} name={k.name} /></span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
       </FloatingSheetPanelBody>
       <FloatingSheetPanelWorkflowFooter cancelLabel="Back" onCancel={onBack} primaryLabel="Next" onPrimary={onNext} primaryIconClassName="fa-light fa-arrow-right text-xs" />
     </>

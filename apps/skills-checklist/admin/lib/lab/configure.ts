@@ -460,6 +460,18 @@ function qualifierOf(rule: LabRule): string {
 // itself"). One choice: the lowest level that counts, every level above it counting too (the engine's minLevelIndex, at or above).
 
 /** The index of the lowest level that counts, or null until the admin chooses (never preset, never defaulted). */
+const ORDINAL = ["", "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth"]
+/**
+ * A level named by where it sits, never by a number the list does not show (the Levels list has no numbers, 2026-11-11): "The top level",
+ * "The lowest level", "The second level from the top". `i` counts from the lowest, as the rule stores levels.
+ */
+export function levelPlace(i: number, n: number): string {
+  if (n <= 1 || i === n - 1) return "The top level"
+  if (i === 0) return "The lowest level"
+  const k = n - i
+  return `The ${ORDINAL[k] ?? `${k}th`} level from the top`
+}
+
 export const countsFromIndex = (rule: Pick<LabRule, "model" | "carried">): number | null => (rule.model === "demonstration" ? rule.carried.minLevelIndex : null)
 
 /** Set the lowest level that counts. */
@@ -901,8 +913,8 @@ export function validateRule(rule: LabRule): RuleIssue[] {
     if (rule.levels.length < 2) add("outcomes", "cfg-add-level", "few", "Add at least two levels.")
     const dup = dupIndexes(rule.levels)
     rule.levels.forEach((l, i) => {
-      if (!l.trim()) add("outcomes", `cfg-level-${i}`, "blank", `Level ${i + 1} has no name.`)
-      else if (dup.has(i)) add("outcomes", `cfg-level-${i}`, "dup", `Level ${i + 1} repeats another level.`)
+      if (!l.trim()) add("outcomes", `cfg-level-${i}`, "blank", `${levelPlace(i, rule.levels.length)} has no name.`)
+      else if (dup.has(i)) add("outcomes", `cfg-level-${i}`, "dup", `${levelPlace(i, rule.levels.length)} repeats another level.`)
     })
     // Which levels count is the program's choice, never defaulted [REQ SC-02 spirit; Romit 2026-11-02].
     const from = rule.carried.minLevelIndex
