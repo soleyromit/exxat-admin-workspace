@@ -3625,9 +3625,9 @@ test("S14", "S", "A skill with its own questions keeps them; the dialog's counts
   const num = (re) => Number(text.match(re)?.[1] ?? 0)
   // D-L146: said once, under What stays the same ("1 skill keeps its own questions") or inside the change line ("including 1 that keeps its own questions").
   if (!/\b1 (skill|that) keeps its own questions/.test(text)) fail(`dialog does not say the one skill keeps its own questions: "${text.slice(0, 220)}"`)
-  const title = num(/^Apply to (\d+)/), change = Number(await d.getAttribute("data-apply-change")), use = num(/(\d+) skills? on Default uses? the questions on this page/), button = num(/Apply to (\d+) skills? (?:Close)?$/)
-  if (title !== change || title !== use) fail(`title ${title}, change ${change}, use the questions ${use}: they should match`)
-  if (button && button !== title) fail(`button says ${button}, title says ${title}`)
+  // C2 (D-L148): the title is the action or the students sentence; the button carries the number.
+  const change = Number(await d.getAttribute("data-apply-change")), use = num(/(\d+) skills? on Default uses? the questions on this page/), button = num(/Apply to (\d+) skills?(?: Close)?$/)
+  if (button !== change || button !== use) fail(`button ${button}, change ${change}, use the questions ${use}: they should match`)
   await d.getByRole("button", { name: /^Apply/ }).click()
   await t.p.waitForTimeout(800)
   const again = await t.openConfigure(own)
@@ -3753,7 +3753,8 @@ test("S16c", "S", "Changing which label qualifies names students", async (t) => 
   await t.main.getByRole("radiogroup", { name: /which (one|outcome) (qualifies|counts|moves)/i }).first().getByRole("radio").nth(0).click()
   await t.pressSaveSettings()
   const dialog = await t.applyDialog().first().innerText()
-  if (!/students whose progress changes\s*\d+/i.test(dialog)) fail(`changing the qualifying label names nobody: "${dialog.replace(/\s+/g, " ").slice(0, 160)}"`)
+  // V1 (D-L147): the hero's sentence, read from the dialog's description ("123 students go from Achieved to ...").
+  if (!/\d+ students? (go|goes|are|is|reach|reaches|lose|loses|see|sees) /.test(dialog.replace(/\s+/g, " "))) fail(`changing the qualifying label names nobody: "${dialog.replace(/\s+/g, " ").slice(0, 160)}"`)
 })
 test("S17", "S", "Lab instructor only: the dialog names the real reason, not No questions yet", async (t) => {
   await t.seededSettings()
@@ -5616,7 +5617,9 @@ const openNeed = async (t) => { await t.settingsRow("times"); return needBox(t) 
 const pressSave = async (t) => { await t.closeSettingsPanel(); await t.click(t.p.getByRole("button", { name: /^Save (changes|settings)$/ }), "no Save on Evaluation settings"); await t.p.waitForTimeout(400) }
 const pressApply = async (t) => { await t.click(setDialog(t).getByRole("button", { name: /^Apply/ }), "no Apply"); await t.p.waitForTimeout(800) }
 const ownLinkCount = async (t) => { const l = t.main.getByRole("link", { name: /different number|own number/ }); await t.visible(l, "no different number link"); return +(await l.first().innerText()).replace(/,/g, "").match(/\d+/)[0] }
-const timesInLibrary = async (t, name) => { await t.open(LIB); await t.main.getByRole("searchbox").first().fill(name); await t.p.waitForTimeout(800); const c = t.main.locator("[data-times-cell]").first(); return { value: await c.locator("input").inputValue(), differs: await c.getAttribute("data-times-differs") } }
+/** The Library's search sits behind the toolbar's Search button until opened (DS table toolbar); open it, then type. */
+const librarySearch = async (t, q) => { const box = t.main.getByRole("searchbox").first(); if (!(await t.isVisible(box, 500))) await t.click(t.main.getByRole("button", { name: /^Search/ }), "the Library has no Search"); await box.fill(q) }
+const timesInLibrary = async (t, name) => { await t.open(LIB); await librarySearch(t, name); await t.p.waitForTimeout(800); const c = t.main.locator("[data-times-cell]").first(); return { value: await c.locator("input").inputValue(), differs: await c.getAttribute("data-times-differs") } }
 const followerName = async (t) => { await t.open(LIB); for (const r of await t.skillRows().all()) { const x = await r.innerText(); if (!x.includes(BP) && /\bDefault\b/.test(x) && !/This skill's own number/.test(x)) return (await r.locator("[data-skill-link]").innerText()).trim() } fail("no skill follows the program's number") }
 const chooseBinary = async (t, first, second, qualifying) => {
   await t.settingsRow("judged")
@@ -5689,7 +5692,7 @@ test("S8b", "S", "A number that comes to match the program's stays the skill's o
   const bp = await timesInLibrary(t, BP)
   if (bp.value !== "2") fail(`${BP} reads ${bp.value}`)
   await t.open(`${LIB}?different=1`)
-  await t.main.getByRole("searchbox").first().fill(BP)
+  await librarySearch(t, BP)
   await t.waitFor(async () => (await t.main.locator("[data-skill-link]").count()) === 1, `${BP} is not under the Different number filter`)
 })
 test("S8c", "S", "Past the match: it stays, a follower moves, the link equals the filter", async (t) => {

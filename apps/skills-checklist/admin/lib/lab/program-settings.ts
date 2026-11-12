@@ -19,7 +19,7 @@
 import { isConfigured } from "@/lib/v2/population"
 import type { Skill, V2State } from "@/lib/v2/types"
 import { appendAudit } from "@/lib/v2/store"
-import { computeImpact, copyRule, differsFromProgram, emptyRule, engineKey, fromV2, progressChanges, progressLost, progressMoves, programRuleIn, ruleAllowsCheckOff, saveLabRule, toSkillConfig, validateRule, type LabRule, type RecordState, type RuleIssue } from "./configure"
+import { computeImpact, copyRule, differsFromProgram, emptyRule, engineKey, fromV2, progressChanges, progressLost, progressMoves, programRuleIn, ruleAllowsCheckOff, saveLabRule, STATE_RANK, toSkillConfig, validateRule, type LabRule, type RecordState, type RuleIssue } from "./configure"
 import { movesWhen } from "./terms"
 
 export { differsFromProgram, PROGRAM_KEYS } from "./configure"
@@ -327,6 +327,9 @@ export interface StudentImpact {
   up: number
   other: number
   lost: number
+  /** Of `other`: moves that go forward (a higher state, or the same state with more evaluations that move the student forward) and moves that go back. */
+  forward: number
+  back: number
 }
 
 export interface ProgramImpact {
@@ -341,6 +344,8 @@ export interface ProgramImpact {
   skillsUp: number
   skillsOther: number
   skillsLost: number
+  /** When every `other` move keeps its state word and they share one, that state ("15 students stay Achieved"); else null. */
+  otherStays: RecordState | null
 }
 
 export function programImpact(s: V2State, program: LabRule, plan: ProgramApplyPlan): ProgramImpact {
@@ -348,10 +353,13 @@ export function programImpact(s: V2State, program: LabRule, plan: ProgramApplyPl
   const by = new Map<string, StudentImpact>()
   const downTo = new Set<RecordState>()
   const skillsBy = { down: new Set<string>(), up: new Set<string>(), other: new Set<string>(), lost: new Set<string>() }
-  const add = (studentId: string, name: string, way: "down" | "up" | "other" | "lost", skillId: string) => {
-    const e = by.get(studentId) ?? { id: studentId, name, skills: 0, down: 0, up: 0, other: 0, lost: 0 }
+  const otherStates = new Set<string>()
+  const add = (studentId: string, name: string, way: "down" | "up" | "other" | "lost", skillId: string, dir: 1 | -1 | 0 = 0) => {
+    const e = by.get(studentId) ?? { id: studentId, name, skills: 0, down: 0, up: 0, other: 0, lost: 0, forward: 0, back: 0 }
     e.skills += 1
     e[way] += 1
+    if (way === "other" && dir > 0) e.forward += 1
+    if (way === "other" && dir < 0) e.back += 1
     by.set(studentId, e)
     skillsBy[way].add(skillId)
   }
@@ -368,7 +376,10 @@ export function programImpact(s: V2State, program: LabRule, plan: ProgramApplyPl
     for (const c of progressChanges(s, id, now, after)) {
       const way = c.from === "achieved" && c.to !== "achieved" ? "down" : c.from !== "achieved" && c.to === "achieved" ? "up" : "other"
       if (way === "down") downTo.add(c.to)
-      add(c.studentId, c.name, way, id)
+      // Which way an `other` move goes: by state, else by the evaluations that move the student forward (a looser level rule keeps Achieved but adds to them).
+      const dir = Math.sign(STATE_RANK[c.to] - STATE_RANK[c.from] || c.haveTo - c.haveFrom) as 1 | -1 | 0
+      if (way === "other") otherStates.add(c.from === c.to ? c.from : "*")
+      add(c.studentId, c.name, way, id, dir)
     }
   }
   // A skill that goes Not configured stops counting for every student it counted for (`progressLost`).
@@ -385,6 +396,7 @@ export function programImpact(s: V2State, program: LabRule, plan: ProgramApplyPl
     skillsUp: skillsBy.up.size,
     skillsOther: skillsBy.other.size,
     skillsLost: skillsBy.lost.size,
+    otherStays: otherStates.size === 1 && !otherStates.has("*") ? ([...otherStates][0] as RecordState) : null,
   }
 }
 

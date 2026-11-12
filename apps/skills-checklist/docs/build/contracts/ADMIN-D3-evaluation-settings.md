@@ -348,3 +348,84 @@ Old row to new line:
 | Let faculty check off a group at once: "Turns off" / "Turns on" | "Group check-off turns off on {n} skills" (amber) / "Group check-off turns on for {n} skills" | What changes |
 | Cleared: "{fields}" | "These settings are cleared: {fields}" (amber); "A group check-off counts as" is named "What a group check-off records" | What changes |
 | Students whose progress changes: {n} [Show names] | The amber callout above the groups, with direction and per-student skills | First, above the groups |
+
+## Amendment 2026-11-11: the Apply dialog as change cards (D-L147, Proposed, Romit chose V1 of three visual mockups)
+Supersedes the callout, the two sentence groups and the in-callout names list of the D-L146 amendment. Arithmetic and words stay in `lib/lab/apply-summary.ts` (unit tested); the partition is unchanged (each skill in exactly one group).
+
+```
+Apply to 166 skills?                                              [x]
+(o) 123  students  [Achieved] -> [In progress]  on some skills
+    Their evaluations are kept.  Show the 123 students
+-------------------------------------------------------------------
+What changes
+(=) Levels that move a student forward
+    166 skills, including 27 that keep their own number
+    [Any level] -> [With assistance or works alone]
+(r) Times needed             139 skills                 [1] -> [2]
+(v) Group check-off          166 skills          [On] -> [! Off]   amber
+Not changed:  [Custom] 12 skills keep their own settings
+-------------------------------------------------------------------
+                                   [Cancel]  [Apply to 166 skills]
+```
+
+| Part | Rule |
+|---|---|
+| Students hero | 36px tile (`fa-users`): amber when anyone leaves Achieved or loses progress, neutral when students only gain or move without crossing Achieved. Figure (TYPE.figure), "students", the record states as DS StatusBadges with an arrow; one line per direction when there are several. "Their evaluations are kept." and the reason, then the link "Show the n students". Nobody moves: neutral tile with a check, "No student's progress changes". The dialog description (`aria-describedby`) is the hero's sentence(s), sr-only; the drawn hero is `aria-hidden`. |
+| Change row | One per changed setting: 36px tile with the setting's icon (the "Your rule" path's own: stairs, repeat, signature, stamp, star-half, user-pen; check-off `fa-check-double`, never the hero's `fa-users`), name, scope (skills it reaches, own-number clause on the scope), before (DS Badge secondary) -> after (DS Badge outline). A row that takes something away (check-off off, minimums or settings cleared) has an amber tile and an amber DS StatusBadge with a glyph as its after value; skills that become not configured read [Default] -> [Not configured] with the reason as the scope. Values longer than 30 characters sit under the name. Each row's sentence is its sr-only text. |
+| Names | "Levels that move a student forward" / "Outcome that moves a student forward" / "What moves a student forward"; never counts, Accepted or items. |
+| Not changed | One line: "Not changed:" then each stays group, with the Library's Custom or Not configured badge where it has one. |
+| Names view | "Show the n students" swaps the body: "Back to the summary", the hero line as an h3 that takes focus, search above 20 names, A to Z with skills per student. Back returns focus to the link. The footer stays. |
+| Phone | Amber rows come first (CSS order below 640px), the body scrolls between the title and the footer so Not changed is reachable; footer stacks with the primary on top (DS). |
+| Width | 36rem from 640px. |
+| Data attributes | `data-apply-dialog`, `data-apply-change`, `data-apply-total`, `data-apply-view` (summary, names), `data-apply-students` (moves, zero), `data-apply-loss`, `data-apply-group` (apply-changes, apply-stays), `data-apply-line`, `data-apply-part`, `data-attention`, `data-apply-names` (the names body). |
+
+## Amendment 2026-11-12: change cards r1 (D-L147 items r1 to r4, Proposed, approved by Romit)
+| Fix | Rule |
+|---|---|
+| r1 Phone fit | At 375 x 812 the mixed state (three changed rows) shows Not changed without scrolling (measured: Not changed ends at 663 px, footer starts at 683 px). Chip pairs up to 12 characters ("1 -> 2", "On -> Off") sit beside the row name at every width, 13 to 30 from 640 px, longer under the name. The footer buttons sit side by side at every width (equal halves on a phone). The dialog may use the viewport less 1rem on a phone. |
+| r2 Direction | The hero always states a direction. A move that crosses no state word reads by its evaluations: "15 students stay [Achieved] on some skills, with more evaluations moving them forward" (neutral), or "with fewer" (amber). A state move with no single state reads "move forward" or "move back"; only a genuine mix reads "see their progress change". Engine: `ProgressChange` carries `haveFrom` and `haveTo`, `StudentImpact` carries `forward` and `back`, `ProgramImpact` carries `otherStays`. |
+| r3 Own number | A row says only the skills it reaches. The own-number fact is said once: on the Times needed row ("139 skills, not the 27 with their own number") when Times needed changed and those skills take other changes, or on the Not changed line when they take nothing. Own questions likewise, on the Questions row. A levels row never mentions the number. |
+| r4 Focus | Focus starts on Cancel (`onOpenAutoFocus`). Back from the names view returns focus to "Show the n students"; Escape closes and returns focus to where it was (Save). |
+
+## Amendment 2026-11-12 (later): the Apply dialog as C2 "hero figure" (D-L148, Proposed, Romit chose C2 of three rendered concepts)
+
+Supersedes the change-cards layout (D-L147); its words for students, the partition, the button and r1 (own number said once, focus on Cancel, Escape returns focus, names A to Z with search above 20) stand.
+
+| Part | Rule |
+|---|---|
+| Students move | DS Card hero: people icon, "{n} students" in `TYPE.hero` (30 / 36), one line per direction (its own count when two or more), "Their evaluations are kept." (plus "Each of these skills needs n more." when only the number changed), "See who". Amber (`--status-badge-warning-*`) when anyone loses progress, `bg-muted` otherwise. A stay reads "stay [Achieved] on some skills" with "More evaluations now move them forward." on its own line. |
+| Accessible name | The header is `sr-only` while the hero shows: title = the hero sentence(s), description = the reason. Hero visuals are `aria-hidden`; See who keeps `aria-expanded` and `aria-controls="apply-names"`. |
+| Names | Inside the hero card, A to Z, each with its skill count; search above 20 names; the table hides while names show; "Hide names" closes them and keeps focus on the toggle. |
+| Nobody moves | Visible title = `actionTitle` (Turn on/off ..., Change ..., Rename ..., Reorder the levels?, Clear ..., Apply n changes?); description "No student's progress changes." with a check. One brief change (both values together 16 characters or fewer, no configuration badge) is `ApplyFigure`: the setting's icon and "before -> after" in `TYPE.hero`. Otherwise `ApplyTable`. |
+| Table | Setting / Now / After from 640 px; under it, name then "before -> after". One note per row (own number on Times needed; reason on a not configured row). Not configured rows show the Library badges and come first on a phone. Each row keeps its full sentence as `sr-only` text and `data-apply-line`, `data-apply-part`. |
+| Not changed | One `TYPE.meta` footnote of sentences ("12 skills on Custom keep their own settings."), each with `data-apply-line` and `data-apply-part`. |
+| Colour | Amber only when students lose progress. Group check-off off, cleared settings and cleared minimums are neutral. |
+| Number | The scope number appears once, on the button ("Apply to 166 skills"). |
+
+## Amendment 2026-11-12 (H1): the Apply dialog hero as a "figure card" (D-L149, Proposed, Romit chose H1 of three rendered treatments)
+
+Replaces the C2 hero card (D-L148). The partition, the table, the footnote's sentences, `actionTitle`, `TYPE.hero`, the button and r1 behaviours stand.
+
+| Part | Rule |
+|---|---|
+| Title | Visible in every state: `actionTitle` ("Apply 3 changes?", "Change the levels that move a student forward?", "Turn off group check-off?"); first save keeps "Apply to n skills?". This is the dialog's accessible name. |
+| Description | Students move: the hero sentence(s) and "No evaluation is deleted." (`sr-only`; the card shows the same). Nobody moves with a figure: "No student's progress changes." (`sr-only`; the card shows it). Nobody moves with a table: shown under the title with a check. |
+| Students card | Neutral DS Card, no icon. "{n} students" in `TYPE.hero`, amber (`--status-badge-warning-fg`) only when students leave a state. One line per direction; with two or more, each line starts with its own count. A losing line starts with an amber down arrow. Separator, then "See who" (DS Button `variant="link"`, `aria-expanded`, `aria-controls="apply-names"`, min 24 px, 44 px under 640 px). |
+| Stay | One line: "stay [Achieved] on fewer evaluations" or "on more evaluations"; neutral either way. |
+| Names | Inside the card under See who: search above 20 names, A to Z, skills per student (muted), scrolling list (max 14rem), inset focus ring; "Hide names" closes them and keeps focus on the toggle; the table hides while names show. |
+| Nobody moves, one brief change | The same card: "before -> after" at `TYPE.hero`, the setting's name, separator, a check and "No student's progress changes". |
+| Footnote | Not changed sentences, then "No evaluation is deleted." when students move (said once). |
+| Wrapping | The badge pair never splits at the arrow; phrases of 24 characters or fewer wrap as one unit; longer phrases wrap normally. |
+
+Principles check (short; full table in the work report):
+
+| Principle | Decision it drove |
+|---|---|
+| Jakob's law, Nielsen consistency | Visible action title in every state, so the top of the dialog is never an empty band |
+| Von Restorff (won over Fitts) | See who has no fill; the figure is the one thing that stands out; the target still meets 24 px (44 px on a phone) |
+| Gestalt proximity (won over right-aligned counts) | Each direction line starts with its own count; no orphan "On some skills." line |
+| Nielsen minimalism | "No evaluation is deleted." once, in the footnote; the needs-n-more sentence removed (the table says it) |
+| Pragnanz, hierarchy | Stay case on one line; no "=" glyph; no people icon |
+| Colour rule, WCAG 1.4.1 | Amber only when a student leaves a state, always with a down arrow and the state badges |
+| WCAG 4.1.2, 2.5.8, 1.4.10 | Name = title, description = card sentence; targets measured; reflow units at 320 |
+

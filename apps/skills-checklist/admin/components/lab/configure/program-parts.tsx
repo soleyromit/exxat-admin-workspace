@@ -14,6 +14,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
+import { Separator } from "@exxatdesignux/ui/components/ui/separator"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { ResultBanner } from "@/components/lab/shared/result-banner"
@@ -45,7 +46,8 @@ import {
   type StudentImpact,
   type TimesRow,
 } from "@/lib/lab/program-settings"
-import { applySummary, type StudentsBlock, type SummaryLine } from "@/lib/lab/apply-summary"
+import { applySummary, type ChangeFigure, type ChangeValue, type ConfigWord, type HeroPart, type StudentsBlock, type SummaryLine } from "@/lib/lab/apply-summary"
+import { STATE_SPEC } from "@/lib/lab/configure"
 import { capitalize, inSentence, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { TYPE } from "@/components/lab/type-scale"
 import { LINK_IN_TABLE } from "@/components/lab/link-styles"
@@ -227,9 +229,12 @@ export function ProgramSections({ m, idPrefix = "prog-sec" }: { m: ProgramModel;
 }
 
 /**
- * The confirmation before settings reach any skill [REQ IM-13, AE-02, SC-18; map D3; D-L146, concept A]. Students first, with the way their
- * progress moves; then What changes, one line per part of the settings; then What stays the same. Each skill sits in one group only, so the
- * title's number, the not configured lines and the stays lines add up to the program's skills (lib/lab/apply-summary.ts, unit tested).
+ * The confirmation before settings reach any skill [REQ IM-13, AE-02, SC-18; map D3; D-L146; H1 "figure card", D-L149, replacing C2's (D-L148)
+ * hero card; principles check in the ADMIN-D3 amendment 2026-11-12 (H1)]. Every state has a visible action title. Students move: a neutral card
+ * with their number at hero size (amber only when students leave a state), one line per direction with record state badges, and "See who",
+ * which opens the names A to Z inside the card. Nobody moves and one brief change: the same card with "On -> Off" and "No student's progress
+ * changes"; otherwise that line under the title and a Setting / Now / After table. Not changed is one quiet footnote, which also says "No
+ * evaluation is deleted." when students move. Each skill sits in one group only (lib/lab/apply-summary.ts, unit tested).
  */
 export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: ProgramModel; open: boolean; onOpenChange: (o: boolean) => void; only?: readonly string[]; onSaved?: (r: ProgramSaved | null) => void }) {
   const plan = React.useMemo(() => (open ? m.plan(only) : null), [open, m, only])
@@ -239,30 +244,51 @@ export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: Progr
     [plan, impact, m.saved, m.rule],
   )
   const focus = useFocusBack()
+  const [names, setNames] = React.useState(false)
+  const cancelRef = React.useRef<HTMLButtonElement>(null)
+  React.useEffect(() => { if (!open) setNames(false) }, [open])
   if (!plan || !impact || !summary) return null
+  const block = summary.students
+  const moves = block.kind === "moves" ? block : null
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg"
+        className="flex max-h-[calc(100dvh-1rem)] flex-col sm:max-h-[calc(100dvh-2rem)] sm:max-w-[36rem]"
         data-apply-dialog
+        data-apply-view={names ? "names" : "summary"}
         data-apply-change={summary.partition.change}
         data-apply-total={summary.partition.total}
         {...focus}
+        onOpenAutoFocus={(e) => {
+          // Remember where focus was (for Escape), then start on Cancel: the safe choice in a confirm (D-L147 r1).
+          focus.onOpenAutoFocus()
+          e.preventDefault()
+          cancelRef.current?.focus()
+        }}
       >
+        {/* One title rule for every state, visible (H1, D-L149): the action. The card's words are the description, so the hidden sentence and
+            the card say the same thing; a table case with nobody moving shows the description itself under the title. */}
         <DialogHeader className="pe-8">
           <DialogTitle>{summary.title}</DialogTitle>
-          {/* Nothing to count (a program with no skills yet): the one plain line, and no groups. */}
-          {summary.empty ? <DialogDescription>{`New ${skillNounPlural()} take these settings when they are added.`}</DialogDescription> : null}
+          {moves || summary.figure ? (
+            <DialogDescription className="sr-only">{summary.description}</DialogDescription>
+          ) : (
+            <DialogDescription className="flex items-center gap-2" data-apply-students={block.kind === "zero" ? "zero" : undefined}>
+              {block.kind === "zero" ? <i className="fa-light fa-circle-check" aria-hidden="true" /> : null}
+              {summary.description}
+            </DialogDescription>
+          )}
         </DialogHeader>
         {summary.empty ? null : (
-          <div className="-mx-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 *:shrink-0" data-apply-body>
-            <ApplyStudents block={summary.students} students={impact.students} />
-            <ApplyGroup title="What changes" lines={summary.changes} id="apply-changes" />
-            <ApplyGroup title="What stays the same" lines={summary.stays} id="apply-stays" />
+          <div className="-mx-4 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-4 pt-1 pb-1 *:shrink-0" data-apply-body>
+            {moves ? <ApplyHero block={moves} students={impact.students} names={names} onToggle={() => setNames((v) => !v)} /> : null}
+            {summary.figure ? <ApplyFigure figure={summary.figure} line={summary.changes[0]!} zero={block.kind === "zero" ? block.text : null} /> : names ? null : <ApplyTable lines={summary.changes} />}
+            <ApplyStays lines={summary.stays} extra={moves ? moves.reason : null} />
           </div>
         )}
-        <DialogFooter>
-          <Button type="button" variant="outline" size="default" onClick={(e) => { holdSecondPress(e); onOpenChange(false) }}>Cancel</Button>
+        {/* Side by side at every width, so a phone keeps its height for the content (D-L147 r1). */}
+        <DialogFooter className="flex-row justify-end max-sm:*:flex-1">
+          <Button ref={cancelRef} type="button" variant="outline" size="default" onClick={(e) => { holdSecondPress(e); onOpenChange(false) }}>Cancel</Button>
           <Button
             type="button"
             variant="default"
@@ -283,95 +309,203 @@ export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: Progr
   )
 }
 
-const WARN_FG = "text-[var(--status-badge-warning-fg)]"
+/** Amber text for a figure whose students lose a state: the DS warning badge foreground, which keeps its contrast on the card in light and dark. */
+const LOSS_FG = "text-[var(--status-badge-warning-fg)]"
 
-/** One group of the dialog: a small heading and one line per effect, the number first. Nothing to say, no heading. */
-function ApplyGroup({ title, lines, id }: { title: string; lines: SummaryLine[]; id: string }) {
+/** A configuration word as the Library's badge (CONFIGURATION_META), so the dialog and the table read alike. */
+function ConfigBadge({ word }: { word: ConfigWord }) {
+  const meta = CONFIGURATION_META[word]
+  return <StatusBadge label={meta.label} tone={meta.tone} icon={meta.icon} size="sm" />
+}
+
+const Arrow = () => <i className="fa-light fa-arrow-right text-xs text-muted-foreground" aria-hidden="true" />
+
+/**
+ * One way students move, on one line that wraps only between whole units: the count (two or more directions), each phrase, and the badge pair
+ * ("Achieved -> In progress" never breaks at the arrow; "on some skills" drops as one piece at 375).
+ */
+function HeroPartLine({ part, count }: { part: HeroPart; count: boolean }) {
+  const out: React.ReactNode[] = []
+  let run: React.ReactNode[] = []
+  const flush = () => { if (run.length) out.push(<span key={`r${out.length}`} className="inline-flex shrink-0 items-center gap-2">{run}</span>); run = [] }
+  part.segs.forEach((sg, i) => {
+    if ("state" in sg) run.push(<StatusBadge key={i} label={STATE_SPEC[sg.state].label} tone={STATE_SPEC[sg.state].tone} icon={STATE_SPEC[sg.state].icon} size="sm" />)
+    else if ("arrow" in sg) run.push(<Arrow key={i} />)
+    // A short phrase ("on some skills", "move back on some skills") wraps as one unit; a long one wraps normally so it never overflows at 320.
+    else { flush(); out.push(<span key={i} className={cn(TYPE.body, sg.text.length <= 24 && "whitespace-nowrap")}>{sg.text}</span>) }
+  })
+  flush()
+  return (
+    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+      {count ? <span className={cn(TYPE.label, "whitespace-nowrap tabular-nums")}>{`${part.count.toLocaleString("en-US")} ${part.count === 1 ? "student" : "students"}`}</span> : null}
+      {out}
+    </span>
+  )
+}
+
+/**
+ * H1 "figure card" (D-L149, replacing C2's amber card): a neutral DS Card. The figure at hero size, amber only when students leave a state; one
+ * line per direction (a down arrow, amber, only on a loss: glyph, word and colour); then See who, a link button that opens the names inside the
+ * card. No people icon, no reason sentence: "No evaluation is deleted." is the footnote's.
+ */
+function ApplyHero({ block, students, names, onToggle }: { block: Extract<StudentsBlock, { kind: "moves" }>; students: StudentImpact[]; names: boolean; onToggle: () => void }) {
+  const many = block.parts.length > 1
+  const glyphs = block.parts.some((p) => p.loss)
+  return (
+    <Card className="gap-0 py-0" data-apply-students="moves" data-apply-loss={block.loss || undefined}>
+      <CardContent className="flex flex-col gap-3 pt-5 pb-4" aria-hidden="true">
+        <span className={cn(TYPE.hero, block.loss && LOSS_FG)}>{`${block.total.toLocaleString("en-US")} ${block.total === 1 ? "student" : "students"}`}</span>
+        <ul className="flex flex-col gap-2">
+          {block.parts.map((p, k) => (
+            <li key={k} className="flex items-start gap-2" data-apply-direction={p.loss ? "loss" : "other"}>
+              {glyphs ? (
+                <span className="flex h-6 w-4 shrink-0 items-center justify-center">
+                  {p.loss ? <i className={cn("fa-solid fa-arrow-down text-sm", LOSS_FG)} aria-hidden="true" /> : null}
+                </span>
+              ) : null}
+              <HeroPartLine part={p} count={many} />
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+      <Separator />
+      <CardContent className="flex py-1">
+        <Button
+          type="button"
+          variant="link"
+          size="sm"
+          className="min-h-6 px-0 text-sm font-medium text-foreground underline underline-offset-4 max-sm:min-h-11"
+          aria-expanded={names}
+          aria-controls="apply-names"
+          data-apply-see-who
+          onClick={onToggle}
+        >
+          {names ? block.back : block.show}
+        </Button>
+      </CardContent>
+      {names ? <CardContent className="pt-1 pb-4"><ApplyNames students={students} /></CardContent> : null}
+    </Card>
+  )
+}
+
+/** Nobody moves and one brief change: the same card, the change at hero size ("On -> Off"), the setting's name, then the students' line. */
+function ApplyFigure({ figure, line, zero }: { figure: ChangeFigure; line: SummaryLine; zero: string | null }) {
+  return (
+    <Card className="gap-0 py-0" data-apply-figure>
+      <CardContent className="flex flex-col gap-2 pt-5 pb-4" data-apply-line={line.key} data-apply-part={line.part}>
+        <span className="flex flex-wrap items-center gap-3" aria-hidden="true">
+          <span className={cn(TYPE.hero, "text-muted-foreground")}>{figure.before}</span>
+          <i className="fa-light fa-arrow-right text-xl text-muted-foreground" aria-hidden="true" />
+          <span className={TYPE.hero}>{figure.after}</span>
+        </span>
+        <span className={TYPE.helper} aria-hidden="true">{line.row?.name ?? ""}</span>
+        {figure.note ? <span className={TYPE.meta} aria-hidden="true">{figure.note}</span> : null}
+        <span className="sr-only">{`${line.text}.`}</span>
+      </CardContent>
+      {zero ? (
+        <>
+          <Separator />
+          <CardContent className="flex items-center gap-2 py-3" data-apply-students="zero">
+            <i className="fa-light fa-circle-check text-muted-foreground" aria-hidden="true" />
+            <span className={TYPE.body}>{zero}</span>
+          </CardContent>
+        </>
+      ) : null}
+    </Card>
+  )
+}
+
+const TABLE_COLS = "sm:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)_minmax(0,1.2fr)] sm:gap-x-4"
+
+/** A value in the table: the Library's badge for a configuration word, else plain words (the after value stronger). */
+function TableValue({ value, after }: { value?: ChangeValue; after?: boolean }) {
+  if (!value) return <span className={TYPE.helper}>{"–"}</span>
+  if (value.config) return <ConfigBadge word={value.config} />
+  return <span className={after ? TYPE.label : TYPE.helper}>{value.text}</span>
+}
+
+/** What changes: Setting, Now, After, one row per setting. Under 640px each row stacks: the name, then "before -> after". Rows that take a skill
+ * out of use come first on a phone (Romit, 2026-11-11). Each row's sentence is its accessible text. */
+function ApplyTable({ lines }: { lines: SummaryLine[] }) {
   if (!lines.length) return null
   return (
-    <section aria-labelledby={id} data-apply-group={id}>
-      <h3 id={id} className={cn(TYPE.meta, "mb-1 font-semibold")}>{title}</h3>
+    <section aria-label="What changes" data-apply-group="apply-changes" className="flex flex-col">
+      <div className={cn("hidden border-b border-border pb-2 sm:grid", TABLE_COLS)} aria-hidden="true">
+        <span className={TYPE.meta}>Setting</span>
+        <span className={TYPE.meta}>Now</span>
+        <span className={TYPE.meta}>After</span>
+      </div>
       <ul className="flex flex-col">
-        {lines.map((l) => (
-          <li key={l.key} className="flex items-start gap-2.5 py-1.5" data-apply-line={l.key} data-apply-part={l.part}>
-            <i className={cn("fa-light mt-0.5 w-4 shrink-0 text-center", l.icon, l.attention ? WARN_FG : "text-muted-foreground")} aria-hidden="true" />
-            <span className={cn(TYPE.body, "min-w-0")}>
-              {l.segs.map((sg, i) => (
-                <span key={i} className={sg.tone === "strong" ? "font-semibold tabular-nums" : sg.tone === "old" ? "text-muted-foreground tabular-nums" : undefined}>{sg.text}</span>
-              ))}
-            </span>
-          </li>
-        ))}
+        {lines.map((l) => {
+          const r = l.row
+          return (
+            <li
+              key={l.key}
+              className={cn("grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-2 gap-y-1 py-2", TABLE_COLS, l.attention && "max-sm:order-first")}
+              data-apply-line={l.key}
+              data-apply-part={l.part}
+              data-attention={l.attention || undefined}
+            >
+              {r ? (
+                <>
+                  <span className="col-span-2 flex min-w-0 flex-col sm:col-span-1" aria-hidden="true">
+                    <span className={TYPE.body}>{r.name}</span>
+                    {r.note ? <span className={TYPE.meta}>{r.note}</span> : null}
+                  </span>
+                  <span className="inline-flex items-center gap-2" aria-hidden="true"><TableValue value={r.before} /><span className="sm:hidden"><Arrow /></span></span>
+                  <span className="min-w-0" aria-hidden="true"><TableValue value={r.after} after /></span>
+                  <span className="sr-only">{`${l.text}.`}</span>
+                </>
+              ) : (
+                <span className={cn(TYPE.body, "col-span-full")}>{l.text}</span>
+              )}
+            </li>
+          )
+        })}
       </ul>
     </section>
+  )
+}
+
+/** Not changed: one quiet footnote, a sentence per group; when students move, it ends with "No evaluation is deleted." (said once, D-L149). */
+function ApplyStays({ lines, extra }: { lines: SummaryLine[]; extra: string | null }) {
+  if (!lines.length && !extra) return null
+  return (
+    <p className={TYPE.meta} data-apply-group="apply-stays">
+      {lines.map((l, i) => (
+        <span key={l.key} data-apply-line={l.key} data-apply-part={l.part}>{`${i ? " " : ""}${l.text}.`}</span>
+      ))}
+      {extra ? <span data-apply-kept>{`${lines.length ? " " : ""}${extra}`}</span> : null}
+    </p>
   )
 }
 
 /** Above this many names the list gets a search field. */
 const SEARCH_FROM = 20
 
-/**
- * Students first: an amber callout naming how many and which way, the plain reason, and their names on demand, A to Z with the skills that move for
- * each. Nobody moves: one neutral line with a check, never a missing row. The callout's headline is the dialog's description.
- */
-function ApplyStudents({ block, students }: { block: StudentsBlock; students: StudentImpact[] }) {
-  const [open, setOpen] = React.useState(false)
+/** The names: A to Z, each with the number of skills that change for them; a search field above 20 names. */
+function ApplyNames({ students }: { students: StudentImpact[] }) {
   const [q, setQ] = React.useState("")
-  const listId = React.useId()
-  if (block.kind === "none") return null
-  if (block.kind === "zero") {
-    return (
-      <Card size="sm" className="bg-muted" data-apply-students="zero">
-        <CardContent className="flex items-start gap-2.5">
-          <i className="fa-light fa-circle-check mt-0.5 w-4 shrink-0 text-center text-muted-foreground" aria-hidden="true" />
-          <DialogDescription asChild className="text-foreground">
-            <p className={TYPE.body}>{block.text}</p>
-          </DialogDescription>
-        </CardContent>
-      </Card>
-    )
-  }
   const term = q.trim().toLowerCase()
   const shown = term ? students.filter((x) => x.name.toLowerCase().includes(term)) : students
   return (
-    <Card size="sm" className="border-s-[3px] border-s-[var(--status-badge-warning-fg)] bg-[var(--status-badge-warning-fill)]" data-apply-students="moves">
-      <CardContent className="flex items-start gap-2.5">
-        <i className={cn("fa-solid fa-triangle-exclamation mt-0.5 w-4 shrink-0 text-center", WARN_FG)} aria-hidden="true" />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <DialogDescription asChild className="text-foreground">
-            <div className="flex flex-col gap-0.5">
-              {block.heads.map((h) => <p key={h} className={cn(TYPE.body, "font-semibold")}>{h}</p>)}
-              <p className={TYPE.body}>{block.reason}</p>
-            </div>
-          </DialogDescription>
-          <div>
-            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-sm text-foreground underline underline-offset-4" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((x) => !x)}>
-              {open ? block.hide : block.show}
-            </Button>
-          </div>
-          <p className="sr-only" aria-live="polite">{open ? `${students.length.toLocaleString("en-US")} ${students.length === 1 ? "student" : "students"} listed below, A to Z.` : ""}</p>
-          {open ? (
-            <div id={listId} className="mt-1 flex flex-col gap-2" data-apply-names>
-              {students.length > SEARCH_FROM ? (
-                <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search students" aria-label="Search students" className="bg-background" />
-              ) : null}
-              {shown.length ? (
-                <ul tabIndex={0} aria-label="Students whose progress changes" className="max-h-[13.5rem] overflow-y-auto border-t border-border outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  {shown.map((x) => (
-                    <li key={x.id} className="flex items-baseline justify-between gap-3 border-b border-border py-1.5">
-                      <span className={cn(TYPE.body, "min-w-0 truncate")}>{x.name}</span>
-                      <span className="shrink-0 text-sm tabular-nums text-muted-foreground">{countSkills(x.skills)}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className={TYPE.body}>{`No students match "${q.trim()}".`}</p>
-              )}
-            </div>
-          ) : null}
-        </div>
-      </CardContent>
-    </Card>
+    <div id="apply-names" className="flex flex-col gap-2" data-apply-names>
+      {students.length > SEARCH_FROM ? (
+        <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${students.length.toLocaleString("en-US")} students`} aria-label="Search students" className="bg-background" />
+      ) : null}
+      {shown.length ? (
+        <ul tabIndex={0} aria-label="Students whose progress changes, A to Z" className="max-h-[min(14rem,calc(100dvh-24rem))] overflow-y-auto text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset">
+          {shown.map((x) => (
+            <li key={x.id} className="flex items-baseline justify-between gap-3 border-b border-border py-2 last:border-b-0">
+              <span className={cn(TYPE.body, "min-w-0 truncate")}>{x.name}</span>
+              <span className="shrink-0 text-sm tabular-nums text-muted-foreground">{countSkills(x.skills)}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className={TYPE.body} role="status">{`No students match "${q.trim()}".`}</p>
+      )}
+    </div>
   )
 }
 

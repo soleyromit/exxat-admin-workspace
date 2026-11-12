@@ -12,7 +12,8 @@
  *   Body         14 (DS Card body).
  *   Helper       14 muted, one line at most.
  *   Meta         12 muted, for data labels in rows, charts and legends. Nothing renders under 12.
- *   Figure       24 semibold, sans (never the serif), the DS KeyMetrics md strip value. One size for every KPI or hero number.
+ *   Figure       24 semibold, sans (never the serif), the DS KeyMetrics md strip value. One size for every KPI or hero number on a page.
+ *   Hero         30 / 36 semibold: a confirm dialog's one dominant figure only (D-L148).
  *
  * tests/lab/typography.test.ts fails on raw text-lg and larger and on font-heading outside a heading. tests/lab/type-rubric.test.ts
  * fails on an arbitrary text-[Npx], on a heading that hand-sets its size instead of reading TYPE, and on SVG text under 12.
@@ -26,4 +27,9 @@ export const TYPE = {
   helper: "text-sm text-muted-foreground",
   meta: "text-xs text-muted-foreground",
   figure: "text-2xl font-semibold leading-none tabular-nums",
+  /**
+   * Dialog hero, the one exception to "one size for every figure" (Romit via coordinator, 2026-11-12, D-L148): the single dominant figure of a
+   * confirm dialog ("123 students", "On -> Off"). The DS KeyMetrics large size, 30 at 375 and 36 from 640px. Never on a page or in a card grid.
+   */
+  hero: "text-3xl font-semibold leading-none tracking-tight tabular-nums sm:text-4xl",
 } as const

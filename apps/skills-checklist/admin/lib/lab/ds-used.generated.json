@@ -5097,6 +5097,11 @@
     "via": "components/skills/page-header"
    },
    {
+    "name": "Separator",
+    "from": "@exxatdesignux/ui/components/ui/separator",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
     "name": "Skeleton",
     "from": "@exxatdesignux/ui/components/ui/skeleton",
     "via": "components/lab/configure/program-layout"
@@ -6102,6 +6107,11 @@
     "via": "components/lab/admin-a/parts"
    },
    {
+    "name": "Separator",
+    "from": "@exxatdesignux/ui/components/ui/separator",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
     "name": "Skeleton",
     "from": "@exxatdesignux/ui/components/ui/skeleton",
     "via": "components/lab/admin-a/parts"
@@ -6949,6 +6959,11 @@
     "via": "components/lab/student2/log-parts"
    },
    {
+    "name": "Separator",
+    "from": "@exxatdesignux/ui/components/ui/separator",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
     "name": "Skeleton",
     "from": "@exxatdesignux/ui/components/ui/skeleton",
     "via": "components/lab/configure/program-context"
@@ -7639,6 +7654,11 @@
     "via": "components/lab/configure/fields"
    },
    {
+    "name": "Separator",
+    "from": "@exxatdesignux/ui/components/ui/separator",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
     "name": "Skeleton",
     "from": "@exxatdesignux/ui/components/ui/skeleton",
     "via": "components/lab/admin-a/parts"
@@ -8189,6 +8209,11 @@
     "name": "SelectValue",
     "from": "@exxatdesignux/ui/components/ui/select",
     "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Separator",
+    "from": "@exxatdesignux/ui/components/ui/separator",
+    "via": "components/lab/configure/program-parts"
    },
    {
     "name": "Skeleton",

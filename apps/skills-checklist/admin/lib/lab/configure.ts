@@ -1246,7 +1246,13 @@ export interface ProgressChange {
   name: string
   from: RecordState
   to: RecordState
+  /** Evaluations that move the student toward achieving the skill, before and after: the direction when the state word stays the same. */
+  haveFrom: number
+  haveTo: number
 }
+
+/** The order of record states, lowest first, for which way a move goes. */
+export const STATE_RANK: Readonly<Record<RecordState, number>> = { achieved: 3, "in-progress": 2, "not-qualifying": 1, "no-evidence": 0 }
 
 /** The same students as `progressMoves`, each with the state before and after. */
 export function progressChanges(input: V2State, skillId: string, before: LabRule, after: LabRule): ProgressChange[] {
@@ -1261,7 +1267,7 @@ export function progressChanges(input: V2State, skillId: string, before: LabRule
     if (!evals.length) continue
     const b = read(before, evals)
     const a = read(after, evals)
-    if (b.state !== a.state || b.have !== a.have) out.push({ studentId: p.id, name: p.name, from: b.state, to: a.state })
+    if (b.state !== a.state || b.have !== a.have) out.push({ studentId: p.id, name: p.name, from: b.state, to: a.state, haveFrom: b.have, haveTo: a.have })
   }
   return out
 }
