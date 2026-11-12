@@ -91,3 +91,22 @@ Tasks unchanged. Save, Cancel, the unsaved guard, the impact dialog, a failed sa
 
 ## Amendment 2026-11-11: one rule for number fields (D-L142; Proposed)
 Every small number on Evaluation settings and Configure one or several skills uses one width (`NUMBER_WIDTH`, 5rem) and one line component (`configure/number-field.tsx` `NumberWithUnit`): gap-2 between the input and its words, the words muted 14 px (`TYPE.helper`) on every row, selected or not. A standalone field has its label above the control: Times needed ("[ 1 ] evaluation for each skill"), Scale ("1 to [ 6 ]"), minimums. A radio option that carries a number (Counts when for scores and for questions) is the one inline case: the option's label, then the same input and words, the inputs left-aligned in one column. Covered: `cfg-need` (Evaluation settings B, Configure one skill, Configure several), `cfg-scale`, `cfg-srule-value` (and its two siblings), `cfg-qrule-n`, level, setting and evaluator minimums (`RuleNumber`), the Evaluation settings times table. Not covered: the Library table's Times needed cell (a table cell, 56 px), the question range inputs inside "Only the questions you choose".
+
+## Amendment 2026-11-11 (question label; D-L142 item 9, Proposed)
+Replaces the "Accepted" head (and, on Configure one skill, the "Accepted" word beside each box).
+
+```
+| Which levels move a student toward achieving the skill?  highest first   Start from [v] |
+| :: [Works alone      ]  [x]  x |
+| :: [With assistance  ]  [x]  x |
+| :: [Needs coaching   ]  [ ]  x |
+```
+
+- The question is the list's one label line and names the checkbox group; rows carry no word. Each box: "{level} moves a student toward achieving the skill". Linked as D-L74; the live region says "{level} now also moves a student toward achieving the skill." or "{level} no longer does."
+- Outcomes: "Which outcome moves a student toward achieving the skill?" labels the radio group; each radio named the same way.
+- Nothing chosen: "Choose at least one level." (shared by every variant).
+- On Configure one skill the card row's label is the question (it was "Levels"); the box column has no word.
+
+
+## Amendment 2026-11-11 (column heads over the level checkboxes; D-L145, Proposed)
+Romit: "I can't tell what does the checkbox offer". The Levels row's label is "Levels" again (the question moved off screen); the list carries column heads "Level" and "Moves student toward achieving the skill" on the rows' own grid (muted 12 px, `aria-hidden`; each box keeps the name "{level} moves a student toward achieving the skill"; the question stays the fieldset's legend for screen readers). The box sits in its own column at every width; below a 28rem list the row number is hidden so a name like "Needs coaching" keeps its room. The Levels dialog (names only) has no heads.

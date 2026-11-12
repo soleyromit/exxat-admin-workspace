@@ -90,7 +90,7 @@ describe("a model change rebuilds what depends on it [REQ SC-09]", () => {
   })
   it("names what is cleared in the admin's words", () => {
     expect(modelChangeClears("demonstration", "binary")).toEqual(["Levels", "Levels that count", "Minimum at each level", "Checked-off students get"])
-    expect(modelChangeClears("question", "scored")).toEqual(["Counts when", "Named questions"])
+    expect(modelChangeClears("question", "scored")).toEqual(["Moves student toward achieving the skill when", "Named questions"])
     expect(modelChangeClears("question", "binary")).toContain("Questions")
     expect(modelChangeClears("binary", "binary")).toEqual([])
   })

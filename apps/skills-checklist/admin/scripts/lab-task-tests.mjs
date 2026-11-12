@@ -588,7 +588,7 @@ class T {
     if (!(await box(i).isChecked())) { await box(i).click(); await this.p.waitForTimeout(150) }
     if (i > 0 && (await box(i - 1).isChecked())) { await box(i - 1).click(); await this.p.waitForTimeout(150) }
   }
-  countsGroup() { return this.main.getByRole("radiogroup", { name: /levels? (that )?count/i }).or(this.main.getByRole("group", { name: /levels? (that )?count/i })).or(this.main.getByRole("group", { name: /accepted levels/i })).or(this.main.locator("#cfg-counts-from")) }
+  countsGroup() { return this.main.getByRole("radiogroup", { name: /levels? (that )?count/i }).or(this.main.getByRole("group", { name: /levels? (that )?count/i })).or(this.main.getByRole("group", { name: /accepted levels|which levels move/i })).or(this.main.locator("#cfg-counts-from")) }
   feedbackSwitch() { return this.main.getByRole("switch", { name: /feedback/i }) }
   /** Today's and the new page both: pick Independence level and fill every row with a program's real values. */
   async fillIndependence(names = ["Underdeveloped", "Developing", "Developed"], times = "3") {
@@ -1099,8 +1099,8 @@ test("L10", "L", "Filter Configuration Custom: about 12 rows, the same as keep t
   await t.pressSaveSettings()
   const d = t.applyDialog()
   await t.visible(d, "no dialog", QUICK)
-  const keep = +((await d.first().innerText()).replace(/\s+/g, " ").match(/(\d+) keep their settings/)?.[1] ?? -1)
-  if (keep !== n) fail(`the dialog says ${keep} keep their settings; the filter finds ${n}`)
+  const keep = +((await d.first().innerText()).replace(/\s+/g, " ").match(/(\d+) skills? on Custom keeps? (?:its|their) own settings/)?.[1] ?? -1)
+  if (keep !== n) fail(`the dialog says ${keep} on Custom keep their own settings; the filter finds ${n}`)
 })
 test("L11", "L", "Times needed cell, Cancel in the dialog: the old number returns, nothing saved", async (t) => {
   await t.open(LIB)
@@ -1505,7 +1505,7 @@ test("E9", "E", "The page: three cards as on Evaluation settings; Default reads 
   const custom = await page.locator("[data-card-word]").evaluateAll((els) => els.map((e) => e.getAttribute("data-card-word")))
   if (custom.join() !== "custom,custom,custom") fail(`card sources under Custom read ${custom.join()}`)
   const live = async (loc, what) => { await t.visible(loc, `no ${what}`); if (await loc.first().isDisabled()) fail(`${what} is not live`) }
-  await live(page.getByRole("checkbox", { name: /^Accept | counts$/ }), "a Counts box")
+  await live(page.getByRole("checkbox", { name: /^Accept | counts$| moves a student toward/ }), "a Counts box")
   await live(page.getByRole("textbox", { name: /^Level 1$/ }), "a level name")
   await live(page.getByRole("button", { name: /^Add minimum/ }), "Add minimum")
   for (const m of [/^Independence level/, /^Approved or not approved/, /^Questions/, /^Score on a scale/]) await live(page.getByRole("radio", { name: m }), String(m))
@@ -1616,7 +1616,7 @@ async function toApproved(t) {
 test("E16", "E", "Choose Approved or not approved: rows rebuild, nothing preselected", async (t) => {
   const page = await toApproved(t)
   await t.absent(page.getByRole("button", { name: /^Edit levels/ }), "Levels is still in the form")
-  await t.absent(page.getByRole("checkbox", { name: /^Accept | counts$/ }), "Counts is still in the form")
+  await t.absent(page.getByRole("checkbox", { name: /^Accept | counts$| moves a student toward/ }), "Counts is still in the form")
   for (const r of await page.getByRole("group", { name: /^Which one qualifies/ }).getByRole("radio").all()) if (await r.isChecked()) fail("Which one qualifies is preselected")
   if ((await page.getByRole("textbox", { name: /^First label/ }).inputValue()) !== "") fail("a label is preselected")
   await t.visible(page.getByRole("button", { name: /^Add minimum/ }), "clinical setting minimums went")
@@ -1765,7 +1765,7 @@ test("E25", "E", "A program save counts the skill under keep their settings, and
   const d = t.applyDialog()
   await t.visible(d, "changing a setting opened no dialog", QUICK)
   const text = (await d.first().innerText()).replace(/\s+/g, " ")
-  const m = text.match(/(\d+) keep their settings/)
+  const m = text.replace(/,/g, "").match(/(\d+) skills? on Custom keeps? (?:its|their) own settings/)
   if (!m || +m[1] < 13) fail(`dialog says "${m?.[0] ?? "nothing"}"; want the 12 seeded plus this one: "${text.slice(0, 160)}"`)
   await d.first().getByRole("button", { name: /^Apply/ }).click()
   await t.p.waitForTimeout(700)
@@ -2622,8 +2622,9 @@ test("S6", "S", "Levels that count are one cut-off: choosing a level counts it a
   c = await counting()
   if (c[n - 2] || !c[n - 1]) fail(`choosing the highest level counts ${JSON.stringify(c)}`)
   const top = (await t.levelBoxes().first().inputValue()).trim().toLowerCase()
-  const said = (await t.p.locator("[data-rule-sentence]").innerText()).toLowerCase()
-  if (!said.includes(top) || / or /.test(said.split("signed off")[0])) fail(`the rule does not say the top level only: "${said.slice(0, 120)}"`)
+  // The rule panel is a path since 2026-11-11 (D-L145): the sign-off step's chip names what moves a student on.
+  const said = (await t.p.locator("[data-rule-panel] [data-rule-chip]").innerText()).toLowerCase()
+  if (!said.includes(top) || / or /.test(said)) fail(`the rule does not say the top level only: "${said.slice(0, 120)}"`)
 })
 const reportNumbers = async (t) => {
   await t.open("/lab/flow/watch-the-cohort/attainment")
@@ -2643,7 +2644,8 @@ test("S7", "S", "Rename a level: no students line, Reports counts unchanged", as
   await t.pressSaveSettings()
   const d = t.applyDialog()
   await t.visible(d, "rename opened no dialog", QUICK)
-  if (/student/i.test(await d.first().innerText())) fail("dialog has a students line for a rename")
+  // D-L146: a rename moves nobody, said once as the neutral line "No student's progress changes", never a count of students.
+  if ((await d.first().locator('[data-apply-students="moves"]').count()) || !(await d.first().locator('[data-apply-students="zero"]').count())) fail("dialog has a students line for a rename")
   await d.first().getByRole("button", { name: /^Apply/ }).click()
   await t.p.waitForTimeout(700)
   const after = await reportNumbers(t)
@@ -2675,7 +2677,8 @@ test("S8", "S", "Change the program's number: dialog counts, followers change, o
   const d = t.applyDialog()
   await t.visible(d, "changing the number opened no dialog", QUICK)
   const text = (await d.first().innerText()).replace(/\s+/g, " ")
-  if (!/\d+[^.]*(follow|will change)/i.test(text) || !/\d+[^.]*keep/i.test(text)) fail(`dialog does not say how many follow and how many keep their own: "${text.slice(0, 140)}"`)
+  // D-L146: "139 skills on Default need 7 evaluations instead of 1" under What changes; "27 skills keep their own number" under What stays the same.
+  if (!/\d+ skills? on Default needs? \d+ evaluations?/i.test(text) || !/\d+ skills? keeps? (its|their) own number/i.test(text)) fail(`dialog does not say how many follow and how many keep their own: "${text.slice(0, 140)}"`)
   await d.first().getByRole("button", { name: /^Apply/ }).click()
   await t.p.waitForTimeout(700)
   await t.leaveAndReturn(LIB)
@@ -2684,11 +2687,12 @@ test("S8", "S", "Change the program's number: dialog counts, followers change, o
 })
 test("S9", "S", "Link: skills use a different number, Library filtered, count matches", async (t) => {
   await t.seededSettings()
-  // The line under Times needed (2026-11-11): "Of the 166 skills on these settings, 19 use their own number and are not changed."
+  // The line under Times needed (2026-11-11, D-L145): "27 of these skills use their own number and are not changed." (no second total beside the
+  // rule panel's "Applies to"; the line is hidden when no skill keeps its own number).
   const scope = t.main.locator("[data-need-scope]")
-  await t.visible(scope, "no line under Times needed saying who it applies to")
-  if (!/^(Of the [\d,]+ \S+ on these settings, [\d,]+ (uses its|use their) own number and (is|are) not changed|Applies to all [\d,]+ \S+ on these settings)\.$/.test((await scope.innerText()).trim())) fail(`the line under Times needed reads "${await scope.innerText()}"`)
-  const link = t.link(/^[\d,]+ (uses? a different|uses? (its|their) own) number/i, t.main)
+  await t.visible(scope, "no line under Times needed saying which skills keep their own number")
+  if (!/^[\d,]+ of these \S+ (uses its|use their) own number and (is|are) not changed\.$/.test((await scope.innerText()).trim())) fail(`the line under Times needed reads "${await scope.innerText()}"`)
+  const link = t.link(/^[\d,]+ (of these \S+ )?(uses? a different|uses? (its|their) own) number/i, t.main)
   if (!(await t.isVisible(link, 1500))) fail('no link "31 use their own number"')
   const n = +(await link.first().innerText()).replace(/,/g, "").match(/\d+/)?.[0]
   await link.first().click()
@@ -2713,7 +2717,7 @@ test("S10", "S", "Switch to Questions: rows change, no final result, Counts when
   await t.chooseModel("Questions", "no Questions option")
   const text = await t.main.innerText()
   if (/final result/i.test(text)) fail('"final result" still shows on the page')
-  for (const w of ["Counts when", "Every question answered Yes", "At least", "Only the questions you choose answered Yes"]) if (!new RegExp(w, "i").test(text)) fail(`no "${w}" after choosing Questions`)
+  for (const w of ["Moves student toward achieving the skill when", "Every question answered Yes", "At least", "Only the questions you choose answered Yes"]) if (!new RegExp(w, "i").test(text)) fail(`no "${w}" after choosing Questions`)
 })
 test("S11", "S", "Preview waits behind a button: closed at first, the rule leads the page; a dialog with both forms at 1440 and 1024", async (t) => {
   await t.seededSettings()
@@ -3172,7 +3176,7 @@ test("CFG13", "CFG", "Each model, each section: a change saves, survives a reloa
     return { student, evaluator }
   }
   const fillModel = {
-    "Independence level": async (page) => { await t.openGroup(page, "What counts as achieved"); await t.click(page.getByRole("checkbox", { name: /^Accept | counts$/ }).first(), "no Counts box") },
+    "Independence level": async (page) => { await t.openGroup(page, "What counts as achieved"); await t.click(page.getByRole("checkbox", { name: /^Accept | counts$| moves a student toward/ }).first(), "no Counts box") },
     "Approved or not approved": async (page) => {
       await t.openGroup(page, "What counts as achieved")
       await page.getByRole("textbox", { name: /^First label/ }).fill("Met")
@@ -3588,7 +3592,7 @@ test("S13", "S", "Questions: the set goes to skills on the default configuration
   await fillQuestions(t, ["Hand hygiene", "Clean field", "Explains each step"])
   await t.click(t.p.locator("#cfg-qrule-all"), "no Every question is answered Yes")
   const text = await t.applySettings()
-  if (!/\d+ use them/.test(text)) fail(`dialog does not say who takes the questions: "${text.slice(0, 160)}"`)
+  if (!/\d+ skills? on Default uses? the questions on this page/.test(text)) fail(`dialog does not say who takes the questions: "${text.slice(0, 160)}"`)
   if (/not configured|no questions/i.test(text)) fail(`dialog says skills lose their setup: "${text.slice(0, 160)}"`)
   await t.open(LIB)
   if ((await t.filterConfigCount("Not configured")) !== 0) fail("skills went Not configured after saving questions")
@@ -3619,10 +3623,10 @@ test("S14", "S", "A skill with its own questions keeps them; the dialog's counts
   await t.visible(d, "saving opened no dialog", QUICK)
   const text = (await d.innerText()).replace(/\s+/g, " ")
   const num = (re) => Number(text.match(re)?.[1] ?? 0)
-  if (!/1 keep their own/.test(text)) fail(`dialog does not say "1 keep their own": "${text.slice(0, 220)}"`)
-  if (/already match/.test(text)) fail(`the skill keeping its own questions also sits on Already on these settings: "${text.slice(0, 220)}"`)
-  const title = num(/^Apply to (\d+)/), change = num(/(\d+) will change/), use = num(/(\d+) use them/), button = num(/Apply to (\d+) skills? (?:Close)?$/)
-  if (title !== change || title !== use) fail(`title ${title}, will change ${change}, use them ${use}: they should match`)
+  // D-L146: said once, under What stays the same ("1 skill keeps its own questions") or inside the change line ("including 1 that keeps its own questions").
+  if (!/\b1 (skill|that) keeps its own questions/.test(text)) fail(`dialog does not say the one skill keeps its own questions: "${text.slice(0, 220)}"`)
+  const title = num(/^Apply to (\d+)/), change = Number(await d.getAttribute("data-apply-change")), use = num(/(\d+) skills? on Default uses? the questions on this page/), button = num(/Apply to (\d+) skills? (?:Close)?$/)
+  if (title !== change || title !== use) fail(`title ${title}, change ${change}, use the questions ${use}: they should match`)
   if (button && button !== title) fail(`button says ${button}, title says ${title}`)
   await d.getByRole("button", { name: /^Apply/ }).click()
   await t.p.waitForTimeout(800)
@@ -3662,8 +3666,8 @@ const secondLabelQualifies = async (t, first, second) => {
   await t.settingsRow("labels")
   await t.main.getByRole("textbox", { name: /^First label/ }).fill(first)
   await t.main.getByRole("textbox", { name: /^Second label/ }).fill(second)
-  const group = t.main.getByRole("radiogroup", { name: /accepted outcome/i })
-  await t.visible(group, "no Accepted outcome radios")
+  const group = t.main.getByRole("radiogroup", { name: /accepted outcome|which outcome moves/i })
+  await t.visible(group, "no outcome radios under their question")
   for (const r of await group.first().getByRole("radio").all()) if (await r.isChecked()) fail("an outcome is preselected")
   await group.first().getByRole("radio").nth(1).click()
   await t.click(t.button(/^Preview$/, t.main), "no Preview button")
@@ -3676,7 +3680,8 @@ const secondLabelQualifies = async (t, first, second) => {
   await t.p.waitForTimeout(300)
   if (!told.includes(`${second} counts now`)) fail(`the panel says "${told}"; want ${second} to count now`)
   const text = await t.applySettings()
-  if (!/students whose progress changes\s*\d+/i.test(text)) fail(`the dialog names nobody: "${text.slice(0, 160)}"`)
+  // D-L146: the students callout says how many and which way ("123 students go from Achieved to ...", "are no longer Achieved", "reach Achieved").
+  if (!/\d+ students? (go|goes|are|is|reach|reaches|lose|loses|see|sees) /.test(text)) fail(`the dialog names nobody: "${text.slice(0, 160)}"`)
 }
 /** How many evaluations the record says count: "1 of 3" at the top of the skill's page. */
 const recordHave = async (t) => {
@@ -3745,7 +3750,7 @@ test("S16c", "S", "Changing which label qualifies names students", async (t) => 
   await secondLabelQualifies(t, "Alpha", "Beta")
   await t.open(SET)
   await t.settingsRow("labels")
-  await t.main.getByRole("radiogroup", { name: /which (one|outcome) (qualifies|counts)/i }).first().getByRole("radio").nth(0).click()
+  await t.main.getByRole("radiogroup", { name: /which (one|outcome) (qualifies|counts|moves)/i }).first().getByRole("radio").nth(0).click()
   await t.pressSaveSettings()
   const dialog = await t.applyDialog().first().innerText()
   if (!/students whose progress changes\s*\d+/i.test(dialog)) fail(`changing the qualifying label names nobody: "${dialog.replace(/\s+/g, " ").slice(0, 160)}"`)
@@ -3774,7 +3779,8 @@ for (const bad of ["51", "-3"]) test(`S18${bad === "51" ? "" : "b"}`, "S", `Time
   const banner = t.main.locator('[data-region="validation-summary"]')
   await t.visible(banner, "no problems banner", QUICK)
   const text = (await banner.innerText()).replace(/\s+/g, " ")
-  if (!/Times needed: [Ee]nter 1 to 50\./.test(text)) fail(`the banner reads "${text}"`)
+  // On the rule path the problem sits on its step ("Times needed Enter 1 to 50."); in the narrow line it reads "Times needed: enter 1 to 50." (D-L145).
+  if (!/Times needed:? [Ee]nter 1 to 50\./.test(text)) fail(`the banner reads "${text}"`)
   if (/minimum/i.test(text)) fail(`the banner talks about minimums: "${text}"`)
   if (!(await need.evaluate((e) => e === document.activeElement))) fail("focus is not on Times needed")
   // Both really on screen, under the chrome, not just in the page.
@@ -3923,7 +3929,7 @@ test("K4", "K", "Program change: these 3 counted under keep their settings, unch
   const d = t.applyDialog()
   await t.visible(d, "changing a setting opened no dialog", QUICK)
   const text = (await d.first().innerText()).replace(/\s+/g, " ")
-  const m = text.match(/(\d+) keep their settings/)
+  const m = text.replace(/,/g, "").match(/(\d+) skills? on Custom keeps? (?:its|their) own settings/)
   if (!m || +m[1] < 15) fail(`dialog says "${m?.[0] ?? "nothing"}"; want the 12 seeded plus these 3`)
   await d.first().getByRole("button", { name: /^Apply/ }).click()
   await t.p.waitForTimeout(700)
@@ -5111,9 +5117,9 @@ test("NM-settings-library", "NUMBERS", "Skills count on Evaluation settings equa
   await t.visible(d, "saving opened no Apply dialog", QUICK)
   const text = (await d.first().innerText()).replace(/\s+/g, " ")
   // D3's dialog reads "Apply to 166 skills?" with Custom on a row of its own, and Inactive skills count like any other, so the rows add up to the Library.
-  const count = (re) => +(text.replace(/,/g, "").match(re)?.[1] ?? 0)
-  // D-L99: skills on the default with their own number have their own row, "27 keep their number".
-  const n = count(/(\d+) will change/) + count(/(\d+) already match/) + count(/(\d+) keep their settings/) + count(/(\d+) keep their number/) + count(/(\d+) become not configured/) + count(/(\d+) stay not configured/)
+  // D-L146: each skill sits in one group. The title's number (the skills that change), the lines that become not configured and the stays lines add up.
+  const parts = await d.first().locator("[data-apply-part]").evaluateAll((els) => els.reduce((a, e) => a + Number(e.getAttribute("data-apply-part") || 0), 0))
+  const n = Number(await d.first().getAttribute("data-apply-change")) + parts
   if (n !== all) fail(`settings accounts for ${n} skills ("${text.slice(0, 120)}"); Library says ${all}`)
 })
 
@@ -5128,12 +5134,12 @@ test("NM-own-settings", "NUMBERS", "Impact dialog: Custom equals the Library's C
   const d = t.applyDialog()
   await t.visible(d, "saving opened no Apply dialog", QUICK)
   const text = (await d.first().innerText()).replace(/\s+/g, " ").replace(/,/g, "")
-  const keep = +text.match(/(\d+) keep their settings/)?.[1]
-  if (keep !== own) fail(`dialog says ${keep} keep their settings; the Library's Custom filter says ${own}`)
-  const stays = +(text.match(/(\d+) stay not configured/)?.[1] ?? 0)
+  const keep = +text.match(/(\d+) skills? on Custom keeps? (?:its|their) own settings/)?.[1]
+  if (keep !== own) fail(`dialog says ${keep} on Custom keep their own settings; the Library's Custom filter says ${own}`)
+  const stays = +(text.match(/(\d+) skills? stays? not configured/)?.[1] ?? 0)
   if (stays !== notConfigured) fail(`dialog says ${stays} stay not configured; the Library's filter says ${notConfigured}`)
-  const labels = await d.first().locator("dt").allInnerTexts()
-  if (new Set(labels).size !== labels.length) fail(`two rows share a label: ${labels.join(", ")}`)
+  const labels = await d.first().locator("[data-apply-line]").allInnerTexts()
+  if (new Set(labels).size !== labels.length) fail(`two lines say the same: ${labels.join(", ")}`)
 })
 
 // ------------------------------------------------------------------ QUESTIONS: the result comes from the answers (D-L73)
@@ -5647,7 +5653,7 @@ test("S4a", "S", "No skills: 'Apply these settings?', no number, Settings saved,
   if (!/Apply these settings\?/.test(text)) fail(`the title is not "Apply these settings?": "${text.slice(0, 80)}"`)
   if (!/New skills take these settings when they are added\./.test(text)) fail(`the dialog reads "${text.slice(0, 120)}"`)
   if (/\d/.test(text)) fail(`a number shows with no skills to count: "${text.slice(0, 120)}"`)
-  if (await setDialog(t).locator("dt").count()) fail("the dialog has rows with nothing to say")
+  if (await setDialog(t).locator("[data-apply-line], [data-apply-students]").count()) fail("the dialog has lines with nothing to say")
   await t.visible(setDialog(t).getByRole("button", { name: "Apply settings", exact: true }), "the button does not read Apply settings", QUICK)
   await pressApply(t)
   const b = await t.expectBanner(/^Settings saved\./, "first save, no skills")
@@ -5676,7 +5682,7 @@ test("S8b", "S", "A number that comes to match the program's stays the skill's o
   await (await openNeed(t)).fill("2")
   await pressSave(t)
   const text = await setText(t)
-  const said = +text.replace(/,/g, "").match(/(\d+) keep their number/)?.[1]
+  const said = +text.replace(/,/g, "").match(/(\d+) skills? keeps? (?:its|their) own number/)?.[1]
   if (said !== ownDefault) fail(`the dialog says ${said} keep their number; before this save the Library's Default rows on another number were ${ownDefault}`)
   await pressApply(t)
   if ((await ownLinkCount(t)) < before) fail(`the link fell from ${before} to ${await ownLinkCount(t)}`)
@@ -5691,14 +5697,14 @@ test("S8c", "S", "Past the match: it stays, a follower moves, the link equals th
   await t.open(SET)
   await (await openNeed(t)).fill("2")
   await pressSave(t)
-  const keep2 = +(await setText(t)).replace(/,/g, "").match(/(\d+) keep their number/)?.[1]
-  const change2 = (await setText(t)).replace(/,/g, "").match(/(\d+) will change/)?.[1]
+  const keep2 = +(await setText(t)).replace(/,/g, "").match(/(\d+) skills? keeps? (?:its|their) own number/)?.[1]
+  const change2 = await setDialog(t).getAttribute("data-apply-change")
   await pressApply(t)
   await (await openNeed(t)).fill("4")
   await pressSave(t)
   const text = (await setText(t)).replace(/,/g, "")
-  if (+text.match(/(\d+) keep their number/)?.[1] !== keep2) fail(`keep their number moved from ${keep2}: "${text.slice(0, 120)}"`)
-  if (text.match(/(\d+) will change/)?.[1] !== change2) fail(`will change moved from ${change2}: "${text.slice(0, 120)}"`)
+  if (+text.match(/(\d+) skills? keeps? (?:its|their) own number/)?.[1] !== keep2) fail(`keep their own number moved from ${keep2}: "${text.slice(0, 120)}"`)
+  if ((await setDialog(t).getAttribute("data-apply-change")) !== change2) fail(`the skills that change moved from ${change2}: "${text.slice(0, 120)}"`)
   await pressApply(t)
   const link = await ownLinkCount(t)
   if ((await timesInLibrary(t, BP)).value !== "2") fail(`${BP} moved off its number`)

@@ -159,3 +159,10 @@ export function withNoun(text: string, t: Terms = current): string {
 /** "1 skill", "12 skills". */
 export const countSkills = (n: number): string => `${n.toLocaleString("en-US")} ${n === 1 ? skillNoun() : skillNounPlural()}`
 export const capitalize = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1)
+
+/**
+ * What a level, outcome or answer rule does, in one phrase (Romit 2026-11-11, replacing "counts"): the head over the Levels checkboxes, and with
+ * "when" the label of the Questions and Score rule ("Moves student toward achieving the skill when"). Follows the program's noun.
+ */
+export const movesHead = (noun: string = skillNoun()): string => `Moves student toward achieving the ${noun}`
+export const movesWhen = (noun: string = skillNoun()): string => `${movesHead(noun)} when`

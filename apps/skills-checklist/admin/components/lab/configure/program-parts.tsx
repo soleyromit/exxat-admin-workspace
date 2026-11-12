@@ -13,6 +13,7 @@ import * as React from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { ResultBanner } from "@/components/lab/shared/result-banner"
@@ -29,7 +30,6 @@ import { buildLibrary, CONFIGURATION_META, CONFIGURATION_ORDER } from "@/lib/lab
 import { useDsTableToolbar } from "@/components/lab/shared/ds-table-toolbar"
 import { CHECKOFF_LABEL, CRITERIA_LABEL, HOW_MANY_LABEL, WHO_DOES_WHAT_LABEL, MODEL_STEP_LABEL, configureStepHead, configureStepValue, LAB_MODEL_LABEL, ROLE_LABEL, ruleAllowsCheckOff, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import {
-  blockedGroups,
   notConfiguredIds,
   planProgramApply,
   programIssues,
@@ -42,15 +42,17 @@ import {
   timesRows,
   type ProgramApplyPlan,
   type ProgramImpact,
+  type StudentImpact,
   type TimesRow,
 } from "@/lib/lab/program-settings"
+import { applySummary, type StudentsBlock, type SummaryLine } from "@/lib/lab/apply-summary"
 import { capitalize, inSentence, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { TYPE } from "@/components/lab/type-scale"
 import { LINK_IN_TABLE } from "@/components/lab/link-styles"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
 import { NUMBER_WIDTH } from "./number-field"
-import { ApprovalToggle, CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, FeedbackToggle, GroupCheckOffSection, ModelSection, OutcomesSection, RuleSection, SelfRatingToggle, SignersField, SignOffSection, StudentFieldsField, type SectionProps } from "./fields"
+import { ApprovalToggle, FeedbackToggle, GroupCheckOffSection, ModelSection, OutcomesSection, RuleSection, SelfRatingToggle, SignersField, SignOffSection, StudentFieldsField, type SectionProps } from "./fields"
 import { ConfigSection } from "./section"
 import { useFocusBack } from "./settings-dialogs"
 import { holdSecondPress } from "@/components/lab/shared/focus"
@@ -225,71 +227,40 @@ export function ProgramSections({ m, idPrefix = "prog-sec" }: { m: ProgramModel;
 }
 
 /**
- * The confirmation before settings reach any skill [REQ IM-13, AE-02; map D3, D0 rules 2, 6, 7, 8, 9]: who changes, who stays Edited, and
- * the students whose progress changes, by name. A rename changes nobody's progress, so it has no students line [REQ AE-06].
+ * The confirmation before settings reach any skill [REQ IM-13, AE-02, SC-18; map D3; D-L146, concept A]. Students first, with the way their
+ * progress moves; then What changes, one line per part of the settings; then What stays the same. Each skill sits in one group only, so the
+ * title's number, the not configured lines and the stays lines add up to the program's skills (lib/lab/apply-summary.ts, unit tested).
  */
 export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: ProgramModel; open: boolean; onOpenChange: (o: boolean) => void; only?: readonly string[]; onSaved?: (r: ProgramSaved | null) => void }) {
   const plan = React.useMemo(() => (open ? m.plan(only) : null), [open, m, only])
   const impact = React.useMemo(() => (plan ? m.impactOf(plan) : null), [plan, m])
-  const [names, setNames] = React.useState(false)
-  React.useEffect(() => { if (open) setNames(false) }, [open])
+  const summary = React.useMemo(
+    () => (plan && impact ? applySummary({ saved: m.saved, rule: m.rule, plan, impact, effects: programSaveEffects(m.saved, m.rule) }) : null),
+    [plan, impact, m.saved, m.rule],
+  )
   const focus = useFocusBack()
-  if (!plan || !impact) return null
-  const n = plan.change.length
-  const gone = plan.blocked.length
-  const effects = programSaveEffects(m.saved, m.rule)
-  const usesQuestions = m.rule.model === "question" || m.rule.model === "scored"
-  // Only fields this page shows, in its words: minimums are per skill (they have their own row above), the rest fold into the row that holds them.
-  const pageCleared = effects.cleared.flatMap((w) => (w === "Minimum at each level" || w === "Levels that count" || w === "Named questions" ? [] : w === "Checked-off students get" ? [CHECKOFF_GRANT_LABEL] : [w]))
-  const rows: Array<{ label: string; value: string }> = [
-    // A rename is said as a rename [REQ AE-06]: nothing about those skills changes but the words.
-    ...(n ? [{ label: CONFIGURATION_META.default.label, value: effects.namesOnly ? `${n} show the new names` : `${n} will change` }] : []),
-    ...(usesQuestions && plan.programQuestions ? [{ label: "Questions on this page", value: `${plan.programQuestions} use them` }] : []),
-    ...(usesQuestions && plan.ownQuestions ? [{ label: "Own questions", value: `${plan.ownQuestions} keep their own` }] : []),
-    // Only those no other row names: a skill unchanged because it keeps its own number or its own questions is said once, there.
-    ...(plan.alreadyOnSettings ? [{ label: "Already on these settings", value: `${plan.alreadyOnSettings} already match` }] : []),
-    ...(plan.edited.length ? [{ label: CONFIGURATION_META.edited.label, value: `${plan.edited.length} keep their settings and number` }] : []),
-    ...(plan.staysNotConfigured.length ? [{ label: "Not configured", value: `${plan.staysNotConfigured.length} stay not configured` }] : []),
-    // The page's link counts Custom skills too, so this row says whose number it counts; the Custom row above says those keep theirs.
-    ...(plan.ownNumber ? [{ label: `${CONFIGURATION_META.default.label} with their own number`, value: `${plan.ownNumber} keep their number` }] : []),
-    ...blockedGroups(plan).map((g) => ({ label: g.words, value: `${g.count} become not configured` })),
-    ...(plan.minimumsCleared ? [{ label: "Level minimums", value: `Cleared on ${plan.minimumsCleared}` }] : []),
-    ...(effects.checkOff ? [{ label: CHECKOFF_SWITCH_LABEL, value: effects.checkOff === "off" ? "Turns off" : "Turns on" }] : []),
-    ...(pageCleared.length ? [{ label: "Cleared", value: pageCleared.join(", ") }] : []),
-  ]
-  // A switch every skill follows into Not configured must say so in its title: "Apply to 0" would hide it.
-  const title = !n && gone ? `${countSkills(gone)} become not configured. Apply?` : n ? `Apply to ${countSkills(n)}?` : "Apply these settings?"
-  const students = impact.ruleChanged && impact.students.length > 0
+  if (!plan || !impact || !summary) return null
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg" data-apply-dialog {...focus}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {/* Nothing to count (a program with no skills yet): the one plain line, and no rows. */}
-          {rows.length || students ? <DialogDescription className="sr-only">Saving applies these settings to the program.</DialogDescription> : <DialogDescription>{`New ${skillNounPlural()} take these settings when they are added.`}</DialogDescription>}
+      <DialogContent
+        className="flex max-h-[calc(100dvh-2rem)] flex-col sm:max-w-lg"
+        data-apply-dialog
+        data-apply-change={summary.partition.change}
+        data-apply-total={summary.partition.total}
+        {...focus}
+      >
+        <DialogHeader className="pe-8">
+          <DialogTitle>{summary.title}</DialogTitle>
+          {/* Nothing to count (a program with no skills yet): the one plain line, and no groups. */}
+          {summary.empty ? <DialogDescription>{`New ${skillNounPlural()} take these settings when they are added.`}</DialogDescription> : null}
         </DialogHeader>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-2 empty:hidden" data-apply-plan>
-          {rows.map((r) => (
-            <React.Fragment key={r.label}>
-              <dt className={TYPE.body}>{r.label}</dt>
-              <dd className="text-end text-sm font-medium tabular-nums text-foreground">{r.value}</dd>
-            </React.Fragment>
-          ))}
-          {students ? (
-            <>
-              <dt className={TYPE.body}>Students whose progress changes</dt>
-              <dd className="text-end text-sm font-medium tabular-nums text-foreground">
-                {impact.students.length}
-                <Button type="button" variant="link" size="sm" className="ms-2 h-auto p-0" aria-expanded={names} onClick={() => setNames((x) => !x)}>{names ? "Hide names" : "Show names"}</Button>
-              </dd>
-            </>
-          ) : null}
-        </dl>
-        {names ? (
-          <ul className="max-h-40 overflow-y-auto rounded-[var(--radius)] border border-border p-2 text-sm text-foreground" data-apply-names>
-            {impact.students.map((x) => <li key={x.id}>{x.name}</li>)}
-          </ul>
-        ) : null}
+        {summary.empty ? null : (
+          <div className="-mx-4 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 *:shrink-0" data-apply-body>
+            <ApplyStudents block={summary.students} students={impact.students} />
+            <ApplyGroup title="What changes" lines={summary.changes} id="apply-changes" />
+            <ApplyGroup title="What stays the same" lines={summary.stays} id="apply-stays" />
+          </div>
+        )}
         <DialogFooter>
           <Button type="button" variant="outline" size="default" onClick={(e) => { holdSecondPress(e); onOpenChange(false) }}>Cancel</Button>
           <Button
@@ -304,11 +275,103 @@ export function ApplyDialog({ m, open, onOpenChange, only, onSaved }: { m: Progr
               onOpenChange(false)
             }}
           >
-            {n ? `Apply to ${countSkills(n)}` : "Apply settings"}
+            {summary.button}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+const WARN_FG = "text-[var(--status-badge-warning-fg)]"
+
+/** One group of the dialog: a small heading and one line per effect, the number first. Nothing to say, no heading. */
+function ApplyGroup({ title, lines, id }: { title: string; lines: SummaryLine[]; id: string }) {
+  if (!lines.length) return null
+  return (
+    <section aria-labelledby={id} data-apply-group={id}>
+      <h3 id={id} className={cn(TYPE.meta, "mb-1 font-semibold")}>{title}</h3>
+      <ul className="flex flex-col">
+        {lines.map((l) => (
+          <li key={l.key} className="flex items-start gap-2.5 py-1.5" data-apply-line={l.key} data-apply-part={l.part}>
+            <i className={cn("fa-light mt-0.5 w-4 shrink-0 text-center", l.icon, l.attention ? WARN_FG : "text-muted-foreground")} aria-hidden="true" />
+            <span className={cn(TYPE.body, "min-w-0")}>
+              {l.segs.map((sg, i) => (
+                <span key={i} className={sg.tone === "strong" ? "font-semibold tabular-nums" : sg.tone === "old" ? "text-muted-foreground tabular-nums" : undefined}>{sg.text}</span>
+              ))}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+/** Above this many names the list gets a search field. */
+const SEARCH_FROM = 20
+
+/**
+ * Students first: an amber callout naming how many and which way, the plain reason, and their names on demand, A to Z with the skills that move for
+ * each. Nobody moves: one neutral line with a check, never a missing row. The callout's headline is the dialog's description.
+ */
+function ApplyStudents({ block, students }: { block: StudentsBlock; students: StudentImpact[] }) {
+  const [open, setOpen] = React.useState(false)
+  const [q, setQ] = React.useState("")
+  const listId = React.useId()
+  if (block.kind === "none") return null
+  if (block.kind === "zero") {
+    return (
+      <Card size="sm" className="bg-muted" data-apply-students="zero">
+        <CardContent className="flex items-start gap-2.5">
+          <i className="fa-light fa-circle-check mt-0.5 w-4 shrink-0 text-center text-muted-foreground" aria-hidden="true" />
+          <DialogDescription asChild className="text-foreground">
+            <p className={TYPE.body}>{block.text}</p>
+          </DialogDescription>
+        </CardContent>
+      </Card>
+    )
+  }
+  const term = q.trim().toLowerCase()
+  const shown = term ? students.filter((x) => x.name.toLowerCase().includes(term)) : students
+  return (
+    <Card size="sm" className="border-s-[3px] border-s-[var(--status-badge-warning-fg)] bg-[var(--status-badge-warning-fill)]" data-apply-students="moves">
+      <CardContent className="flex items-start gap-2.5">
+        <i className={cn("fa-solid fa-triangle-exclamation mt-0.5 w-4 shrink-0 text-center", WARN_FG)} aria-hidden="true" />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <DialogDescription asChild className="text-foreground">
+            <div className="flex flex-col gap-0.5">
+              {block.heads.map((h) => <p key={h} className={cn(TYPE.body, "font-semibold")}>{h}</p>)}
+              <p className={TYPE.body}>{block.reason}</p>
+            </div>
+          </DialogDescription>
+          <div>
+            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-sm text-foreground underline underline-offset-4" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((x) => !x)}>
+              {open ? block.hide : block.show}
+            </Button>
+          </div>
+          <p className="sr-only" aria-live="polite">{open ? `${students.length.toLocaleString("en-US")} ${students.length === 1 ? "student" : "students"} listed below, A to Z.` : ""}</p>
+          {open ? (
+            <div id={listId} className="mt-1 flex flex-col gap-2" data-apply-names>
+              {students.length > SEARCH_FROM ? (
+                <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search students" aria-label="Search students" className="bg-background" />
+              ) : null}
+              {shown.length ? (
+                <ul tabIndex={0} aria-label="Students whose progress changes" className="max-h-[13.5rem] overflow-y-auto border-t border-border outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {shown.map((x) => (
+                    <li key={x.id} className="flex items-baseline justify-between gap-3 border-b border-border py-1.5">
+                      <span className={cn(TYPE.body, "min-w-0 truncate")}>{x.name}</span>
+                      <span className="shrink-0 text-sm tabular-nums text-muted-foreground">{countSkills(x.skills)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={TYPE.body}>{`No students match "${q.trim()}".`}</p>
+              )}
+            </div>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 

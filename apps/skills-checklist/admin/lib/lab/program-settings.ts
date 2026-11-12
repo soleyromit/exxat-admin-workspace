@@ -19,7 +19,8 @@
 import { isConfigured } from "@/lib/v2/population"
 import type { Skill, V2State } from "@/lib/v2/types"
 import { appendAudit } from "@/lib/v2/store"
-import { computeImpact, copyRule, differsFromProgram, emptyRule, engineKey, fromV2, progressLost, progressMoves, programRuleIn, ruleAllowsCheckOff, saveLabRule, toSkillConfig, validateRule, type LabRule, type RuleIssue } from "./configure"
+import { computeImpact, copyRule, differsFromProgram, emptyRule, engineKey, fromV2, progressChanges, progressLost, progressMoves, programRuleIn, ruleAllowsCheckOff, saveLabRule, toSkillConfig, validateRule, type LabRule, type RecordState, type RuleIssue } from "./configure"
+import { movesWhen } from "./terms"
 
 export { differsFromProgram, PROGRAM_KEYS } from "./configure"
 
@@ -182,6 +183,49 @@ export interface ProgramApplyPlan {
   alreadyOnSettings: number
   /** Skills whose level minimums are cleared, because their levels change [REQ SC-09]. */
   minimumsCleared: number
+  /** Of `change`, those that keep their own number: they take the other changes, so the dialog says them inside the change line, never as staying (D-L146). */
+  changeOwnNumber: number
+  /** Of `change`, those that keep their own questions (and not their own number, which is said first). */
+  changeOwnQuestions: number
+  /** Of `unchanged`, those only because they keep their own questions: the rest of `unchanged` is `ownNumberUnchanged` plus `alreadyOnSettings`. */
+  ownQuestionsUnchanged: number
+  /** For each part of the settings, how many of `change` it changes: one dialog line per part (D-L146). */
+  changeKeys: Partial<Record<ChangeKey, number>>
+}
+
+/** The parts of a skill's rule the Apply dialog names one line each, in the order it lists them. "new": the skill had no rule; "other": nothing named here. */
+export const CHANGE_KEYS = ["new", "model", "criteria", "levels", "outcomeLabels", "questions", "need", "evaluatorRoles", "approvalRequired", "selfEvaluation", "feedbackRequired", "studentFields", "checkOff", "other"] as const
+export type ChangeKey = (typeof CHANGE_KEYS)[number]
+
+const checkOffKey = (r: LabRule) => JSON.stringify({ on: r.model ? ruleAllowsCheckOff(r) : false, level: r.checkOff?.levelIndex ?? null, score: r.checkOff?.score ?? null })
+
+/** Which named parts differ between a skill's rule now and after the save. A model change is said as the model alone: the new model's own fields are new, not edits. */
+export function changedKeys(now: LabRule | null, next: LabRule): ChangeKey[] {
+  if (!now || !now.model) return ["new"]
+  const out: ChangeKey[] = []
+  const diff = (a: unknown, b: unknown) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null)
+  if (now.model !== next.model) out.push("model")
+  else {
+    const m = next.model
+    const criteria =
+      m === "binary" ? diff(now.qualifyingLabel, next.qualifyingLabel)
+      : m === "question" ? diff(now.questionRule, next.questionRule)
+      : m === "scored" ? diff(now.scaleMax, next.scaleMax) || diff(now.scoredRule, next.scoredRule)
+      : diff(now.carried.minLevelIndex, next.carried.minLevelIndex)
+    if (criteria) out.push("criteria")
+    if (m === "demonstration" && diff(now.levels, next.levels)) out.push("levels")
+    if (m === "binary" && diff(now.outcomeLabels, next.outcomeLabels)) out.push("outcomeLabels")
+  }
+  if (usesQuestions(next) && diff(questionsOf(now), questionsOf(next))) out.push("questions")
+  if (now.need !== next.need) out.push("need")
+  if (diff([...now.evaluatorRoles].sort(), [...next.evaluatorRoles].sort())) out.push("evaluatorRoles")
+  if (now.approvalRequired !== next.approvalRequired) out.push("approvalRequired")
+  if (now.selfEvaluation !== next.selfEvaluation) out.push("selfEvaluation")
+  if (now.feedbackRequired !== next.feedbackRequired) out.push("feedbackRequired")
+  if (diff(now.studentFields, next.studentFields)) out.push("studentFields")
+  if (now.model === next.model && checkOffKey(now) !== checkOffKey(next)) out.push("checkOff")
+  if (!out.length) out.push("other")
+  return out
 }
 
 const activeSkills = (s: V2State): Skill[] => s.skills.filter((k) => k.active !== false)
@@ -210,7 +254,7 @@ function holdsOwnQuestions(k: Skill, previous: LabRule | null, program: LabRule)
  */
 export function planProgramApply(s: V2State, program: LabRule, opts: { only?: readonly string[] } = {}): ProgramApplyPlan {
   const previous = programRuleIn(s)
-  const plan: ProgramApplyPlan = { change: [], unchanged: [], edited: [], staysNotConfigured: [], blocked: [], ownQuestions: 0, programQuestions: 0, newlyConfigured: 0, ownNumber: 0, ownNumberUnchanged: 0, alreadyOnSettings: 0, minimumsCleared: 0 }
+  const plan: ProgramApplyPlan = { change: [], unchanged: [], edited: [], staysNotConfigured: [], blocked: [], ownQuestions: 0, programQuestions: 0, newlyConfigured: 0, ownNumber: 0, ownNumberUnchanged: 0, alreadyOnSettings: 0, minimumsCleared: 0, changeOwnNumber: 0, changeOwnQuestions: 0, ownQuestionsUnchanged: 0, changeKeys: {} }
   const only = opts.only ? new Set(opts.only) : null
   for (const k of s.skills) {
     if (only && !only.has(k.id)) continue
@@ -239,10 +283,14 @@ export function planProgramApply(s: V2State, program: LabRule, opts: { only?: re
     if (now && same(next, now)) {
       plan.unchanged.push(k.id)
       if (keepsOwnNumber) plan.ownNumberUnchanged += 1
+      else if (keepsOwnQuestions) plan.ownQuestionsUnchanged += 1
       if (!keepsOwnNumber && !keepsOwnQuestions) plan.alreadyOnSettings += 1
     } else {
       plan.change.push(k.id)
       if (!now) plan.newlyConfigured += 1
+      if (keepsOwnNumber) plan.changeOwnNumber += 1
+      else if (keepsOwnQuestions) plan.changeOwnQuestions += 1
+      for (const key of changedKeys(now, next)) plan.changeKeys[key] = (plan.changeKeys[key] ?? 0) + 1
     }
   }
   return plan
@@ -269,16 +317,44 @@ export function programSaveEffects(saved: LabRule | null, next: LabRule): { name
 }
 
 /** Who a save reaches, before it applies [REQ AE-02]: the students whose progress changes. A rename changes nobody's [REQ AE-06]. */
+/** One student the save moves, with how many skills and which way (D-L146): `down` leaves Achieved, `up` reaches it, `other` moves without crossing it, `lost` goes Not configured. */
+export interface StudentImpact {
+  id: string
+  name: string
+  /** Skills whose progress changes for this student: the figure beside the name. */
+  skills: number
+  down: number
+  up: number
+  other: number
+  lost: number
+}
+
 export interface ProgramImpact {
   /** The save changes what achievement requires, so the students line belongs in the dialog. */
   ruleChanged: boolean
-  students: Array<{ id: string; name: string }>
+  /** A to Z, never ranked. */
+  students: StudentImpact[]
+  /** The states students leaving Achieved land on, so the headline can name one ("In progress") or say it plainly when they differ. */
+  downTo: RecordState[]
+  /** How many skills each direction touches, for "on 1 skill" against "on some skills". */
+  skillsDown: number
+  skillsUp: number
+  skillsOther: number
+  skillsLost: number
 }
 
 export function programImpact(s: V2State, program: LabRule, plan: ProgramApplyPlan): ProgramImpact {
   const previous = programRuleIn(s)
-  const names = new Map(s.people.map((p) => [p.id, p.name]))
-  const hit = new Set<string>()
+  const by = new Map<string, StudentImpact>()
+  const downTo = new Set<RecordState>()
+  const skillsBy = { down: new Set<string>(), up: new Set<string>(), other: new Set<string>(), lost: new Set<string>() }
+  const add = (studentId: string, name: string, way: "down" | "up" | "other" | "lost", skillId: string) => {
+    const e = by.get(studentId) ?? { id: studentId, name, skills: 0, down: 0, up: 0, other: 0, lost: 0 }
+    e.skills += 1
+    e[way] += 1
+    by.set(studentId, e)
+    skillsBy[way].add(skillId)
+  }
   let ruleChanged = plan.blocked.length > 0
   for (const id of plan.change) {
     const k = s.skills.find((x) => x.id === id)
@@ -288,15 +364,28 @@ export function programImpact(s: V2State, program: LabRule, plan: ProgramApplyPl
     const impact = computeImpact(s, id, now, after, "reapply")
     if (impact.ruleChanged) ruleChanged = true
     // An Inactive skill is outside reporting scope, so its saves name nobody; its Reactivate names them (D0 rule 9).
-    if (k?.active !== false) for (const c of progressMoves(s, id, now, after)) hit.add(c.studentId)
+    if (k?.active === false) continue
+    for (const c of progressChanges(s, id, now, after)) {
+      const way = c.from === "achieved" && c.to !== "achieved" ? "down" : c.from !== "achieved" && c.to === "achieved" ? "up" : "other"
+      if (way === "down") downTo.add(c.to)
+      add(c.studentId, c.name, way, id)
+    }
   }
   // A skill that goes Not configured stops counting for every student it counted for (`progressLost`).
   for (const b of plan.blocked) {
     const k = s.skills.find((x) => x.id === b.skillId)
     const now = k ? skillRuleOf(k) : null
-    if (k && now && k.active !== false) for (const c of progressLost(s, b.skillId, now)) hit.add(c.studentId)
+    if (k && now && k.active !== false) for (const c of progressLost(s, b.skillId, now)) add(c.studentId, c.name, "lost", b.skillId)
   }
-  return { ruleChanged, students: [...hit].map((id) => ({ id, name: names.get(id) ?? id })).sort((a, b) => a.name.localeCompare(b.name)) }
+  return {
+    ruleChanged,
+    students: [...by.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    downTo: [...downTo],
+    skillsDown: skillsBy.down.size,
+    skillsUp: skillsBy.up.size,
+    skillsOther: skillsBy.other.size,
+    skillsLost: skillsBy.lost.size,
+  }
 }
 
 export interface ProgramApplyResult {
@@ -395,7 +484,7 @@ const PANEL_WORDS: Record<string, string> = {
   "cfg-label-1:blank": "Enter the second label.",
   "cfg-label-1:same": "The two labels need different words.",
   "cfg-qualifying:missing": "Choose which one qualifies.",
-  "cfg-counts-from:missing": "Choose which levels count.",
+  "cfg-counts-from:missing": "Choose at least one level.",
   "cfg-qrule:missing": "Choose when it counts.",
   "cfg-srule:missing": "Choose when it counts.",
 }
@@ -436,18 +525,19 @@ export function draftConfiguration(w: DraftWord): Configuration {
   return draftEdited(w) ? "edited" : "default"
 }
 
-const MODEL_CLEARS: Record<NonNullable<LabRule["model"]>, string[]> = {
+// Read at call time, so the rule's label follows the program's noun ("Moves student toward achieving the skill when", 2026-11-11).
+const MODEL_CLEARS = (): Record<NonNullable<LabRule["model"]>, string[]> => ({
   demonstration: ["Levels", "Levels that count", "Minimum at each level", "Checked-off students get"],
   binary: ["Labels", "Which one qualifies"],
-  question: ["Counts when", "Named questions"],
-  scored: ["Scale", "Counts when", "Checked-off students get"],
-}
+  question: [movesWhen(), "Named questions"],
+  scored: ["Scale", movesWhen(), "Checked-off students get"],
+})
 
 /** What leaving a model clears, in the admin's words [REQ SC-09; map D1a]. */
 export function modelChangeClears(from: LabRule["model"], to: LabRule["model"]): string[] {
   if (!from || !to || from === to) return []
   const usesBoth = usesQuestions({ model: from }) && usesQuestions({ model: to })
-  return [...MODEL_CLEARS[from], ...(usesQuestions({ model: from }) && !usesBoth ? ["Questions"] : [])]
+  return [...MODEL_CLEARS()[from], ...(usesQuestions({ model: from }) && !usesBoth ? ["Questions"] : [])]
 }
 
 /**

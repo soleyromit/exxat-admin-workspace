@@ -231,3 +231,120 @@ Supersedes the select and the row statuses in the two earlier 2026-11-11 amendme
 - Configure one skill (`settings-rows.tsx` `LevelList`): the box word reads "Accepted" and the box is named "Accept {level}"; nothing else changed.
 - Group check-off note: "This level is not accepted, so a group check-off will not add to the times needed." Start from dialog: "The accepted levels are cleared." Move announcement: "{level} is now accepted" / "is no longer accepted".
 
+## Amendment 2026-11-11 (question label; D-L142 item 9, Proposed)
+Replaces the "Accepted" head (and, on Configure one skill, the "Accepted" word beside each box).
+
+```
+| Which levels move a student toward achieving the skill?  highest first   Start from [v] |
+| :: [Works alone      ]  [x]  x |
+| :: [With assistance  ]  [x]  x |
+| :: [Needs coaching   ]  [ ]  x |
+```
+
+- The question is the list's one label line and names the checkbox group; rows carry no word. Each box: "{level} moves a student toward achieving the skill". Linked as D-L74; the live region says "{level} now also moves a student toward achieving the skill." or "{level} no longer does."
+- Outcomes: "Which outcome moves a student toward achieving the skill?" labels the radio group; each radio named the same way.
+- Nothing chosen: "Choose at least one level." (shared by every variant).
+- On Configure one skill the card row's label is the question (it was "Levels"); the box column has no word.
+
+
+## Amendment 2026-11-11 (column heads over the checkboxes; D-L142 item 10, Proposed)
+Romit: "I can't tell what does the checkbox offer". The question above the list did not attach to the checkbox column. Replaces the visible question line of item 9.
+
+```
+|                                                     [Changed]   Start from [v] |
+| +----------------------------------------------------------------------------+ |
+| |     Level, highest first                    Moves student toward           | |
+| |                                             achieving the skill            | |
+| | :: [Works alone      ]                            [x]                  x   | |
+| | :: [With assistance  ]                            [x]                  x   | |
+| | :: [Needs coaching   ]                            [ ]                  x   | |
+| +----------------------------------------------------------------------------+ |
+```
+
+- Column heads on the rows' own grid, muted 12 px, as the New list page's "Skill | Times needed" row: "Level, highest first" over the names, "Moves student toward achieving the skill" over the checkbox column (6rem below a 28rem list, 9rem from it; the head wraps to two or three lines). Outcomes: "Outcome" and the same head. The heads are `aria-hidden`; each control keeps its full name ("{level} moves a student toward achieving the skill").
+- The question ("Which levels move a student toward achieving the skill?", "Which outcome moves...") stays as the group's accessible name, screen reader only. With it gone from view, Changed and Start from share one line at every width.
+- Remove carries the DS Tooltip "Remove level" and the name "Remove level {name}"; the grip carries "Reorder level" and the name "Reorder level {name}".
+- Configure one skill (`LevelList`): the same heads ("Level", the moves head); its card row is "Levels" again; the box sits in its own column at every width (it used to drop under the name in a narrow card). The Levels dialog (names only) has no heads.
+
+## Amendment 2026-11-11 ("Your rule" as a path; D-L145, Proposed, Romit chose concept A)
+Replaces the sentence panel. Built in `RulePanel` (`configure/settings-sheet.tsx`), data in `lib/lab/rule-path.ts`. Only Evaluation settings B renders it.
+
+```
+Beside the sheet (page 60rem and up)          Above the sheet (1024, 375)
++-------------------------------+             +------------------------------------------+
+| Your rule             2 to fix|             | Your rule                                |
+| (o) Student logs the skill    |             |  (o)----(o)----(o)----(o)----(o)          |
+|  |                            |             |  Logs  Rates   Signs  2     Achieved     |
+| (o) Rates themselves first    |             |        self    off    times              |
+|  |                            |             | A student achieves a skill with 2 ...    |
+| (o) Preceptor or clinical     |             | ---------------------------------------- |
+|  |  faculty signs off         |             | [=] Applies to 166 of 178 skills         |
+|  |  [/ With assistance or     |             |     12 skills on Custom keep their own   |
+|  |     works alone]           |             +------------------------------------------+
+| (o) Needed 2 times            |
+|  |  == ==                     |
+| (o) Skill achieved            |
+| ----------------------------- |
+| [=] Applies to 166 of 178     |
+|     12 skills on Custom ...   |
++-------------------------------+
+```
+
+- An ordered list, one node per step: Student logs the skill; Rates themselves first (only with self rating on); {Who} signs off with a chip of what moves a student toward achieving the skill; An admin approves it (only with approval on); Needed {n} times ("Needed 1 time"); Skill achieved. Tally marks under the number up to 5, the number only above.
+- Chip per model, from its own data: levels "With assistance or works alone", "Works alone", "Any level", "{Lowest} or above"; approved "Approved" (the outcome chosen); questions "All 5 questions answered Yes", "At least 4 of 5 answered Yes", "Questions 1 and 3 answered Yes"; score "Average 4 or more out of 5", "At least 3 on every question", "Total 12 or more out of 15".
+- First run (no model): Student logs the skill, "Choose how skills are judged" (a link to the model cards), Who signs off, Times needed, Skill achieved; dashed nodes for what is not set. No "Applies to".
+- Still filling in: a step with a gap has a dashed node and the gap as a link under it. After a failed Save: the node turns into an error glyph, the problem is a link that focuses its field, "n to fix" heads the panel, and the save bar keeps "n to fix before saving". Below 60rem the problems are one list under the row ("Times needed: enter 1 to 50.").
+- End node: a neutral outline, never filled, so it never competes with Save. Panel: card surface with a hairline border, no brand tint.
+- Applies to: "{n} of {total} skills" and "{n} skills on Custom keep their own settings", a link to the Library filtered to Custom (`config=edited`, back crumb Evaluation settings).
+- Narrow: the five icons in a row with one or two words under each, the rule sentence as one muted line under the row. Screen readers get the full step text in both layouts.
+- The levels tile example no longer skips a blank end ("Needs coaching to with assistance"): a blank lowest or top level reads "3 levels, 1 without a name" (`levelRangeExample`).
+
+## Amendment 2026-11-11 (four follow-ups; D-L145 items 2 to 5, Proposed, approved by Romit)
+1. Tally marks under "Needed n times" only for 2 to 5; "Needed 1 time" and 6 or more are words only (one mark read as a stray dash). `tallyFor` in `lib/lab/rule-path.ts`.
+2. No "counts" in the Questions and Score on a scale models: the section title is "Questions" (was "Questions and what counts"); the answer rule's label is "Moves student toward achieving the skill when" (was "Counts when"), the Levels head plus "when" (`movesWhen` in `lib/lab/terms.ts`). The same label on the shared fields (`QuestionRuleField`, `ScoredRuleField` legends and group names), Configure one skill's rows, the problem prefix ("Moves student toward achieving the skill when: enter a value from 1 to 5.") and the model-switch list of what is cleared. It fits on one line at 1440 and 375.
+3. Score on a scale with no scale: one problem, "Choose a scale first.", on the Scale select (`cfg-scale`); the value is not checked against a missing top, so "1 to NaN" never shows. Check summaries read "Scale: Not chosen".
+4. Times needed helper: "27 of these skills use their own number and are not changed." (singular "1 of these skills uses its own number and is not changed."), the link on "27 of these skills use their own number" (Library, Different number, Default, back crumb). Hidden when none do. The rule panel's "Applies to 166 of 178 skills" is now the page's only 166 (anatomy A5 clear).
+5. "Changed" always follows the visible name of what changed, gap-2, centred on the line, never alone (Romit: "looks inconsistent"). List sections (Levels, Outcomes, Questions) carry it on the section heading in the left column ("Levels 3 [Changed]"), at every width; the label line above the list holds only Start from, right-aligned. The model cards carry it on "How skills are judged" when the model changed (it showed nowhere before). Fields with a visible label (Times needed, Who can sign off, Scale, Moves student toward achieving the skill when, What the student fills in) and the switches (Student rates themselves first, Approval before it counts, Feedback is required, Let faculty check off a group at once) already put it right after their label; unchanged. `FieldBlock` drops the mark when its label is screen reader only. Start from is 12rem (levels) or 14rem (outcomes), so "AACN developmental" and "Approved / Not approved" show whole; no overflow at 375.
+
+## Amendment 2026-11-11: the Apply dialog, concept A (D-L146, Proposed, Romit chose concept A)
+The confirmation before Evaluation settings reach any skill [REQ IM-13, AE-02, SC-18]. One component for every layout: `ApplyDialog` (`components/lab/configure/program-parts.tsx`), reached from `useProgramSave` (variants A, B, C through `ProgramSettingsFrame`) and from `ScopeApplyDialog` (variants D, E, F through `ContextSettingsFrame`). Words and arithmetic: `lib/lab/apply-summary.ts` (pure, `tests/lab/apply-summary.test.ts`).
+
+```
+Apply to 139 skills?                                              [x]
++-[!]-------------------------------------------------------------+   amber callout, never red
+| 123 students go from Achieved to In progress on some skills      |   one line per direction
+| Their evaluations are kept. Each of these skills needs 1 more.   |   reason only when the number alone changed
+| Show the 123 students                                            |   -> list in the callout, A to Z, "54 skills"
++-----------------------------------------------------------------+      on the right, scrolls after about 6 rows,
+What changes                                                            search from 21 names, link reads Hide
+ [pen] 139 skills on Default need 2 evaluations instead of 1          one line per part of the settings
+What stays the same
+ [#]   27 skills keep their own number
+ [=]   12 skills on Custom keep their own settings
+                                          [Cancel] [Apply to 139 skills]
+```
+
+- Each skill sits in exactly one group: the skills that change (the title's number), the skills that become not configured (amber lines under What changes) or one What stays the same line. They add up to the program's skills every time (unit tested for a number edit, a rename, a model switch, a mixed edit, a lab instructor only edit, a score model and a switch).
+- Skills that keep their own number take any other change, so they are said inside the change line ("166 skills on Default show the level name Assisted instead of With assistance, including 27 that keep their own number") and not under What stays the same. On a number edit they are untouched and are a stays line.
+- Several settings changed at once: one What changes line each, each with the skills it reaches ("166 ... level name ...", "139 ... need 2 evaluations instead of 1").
+- Students: the headline names the count and the direction from the engine's own before and after (`progressChanges`, `programImpact`): "go from Achieved to {state}", "reach Achieved", "lose progress on the skills that become not configured", "see their progress change". Nobody moves: a neutral line with a check, "No student's progress changes". No skills at all: no callout, the one line "New skills take these settings when they are added."
+- The callout's headline and reason are the dialog's description. Opening the list announces "123 students listed below, A to Z." Focus stays on the Show or Hide link. The list is a focusable scroll area; the dialog body scrolls inside the dialog when tall; no horizontal scroll at 375.
+- Buttons unchanged: Cancel (outline) and "Apply to {n} skills" (verb and scope, Romit's choice; not "Apply change"). With no skills: "Apply settings".
+- Data attributes for tests: `data-apply-change` (skills that change), `data-apply-total`, `data-apply-line`, `data-apply-part` (skills a partition line holds), `data-apply-students` ("moves" or "zero"), `data-apply-names`.
+
+Old row to new line:
+
+| Old row (before 2026-11-11) | New line | Group |
+|---|---|---|
+| Default: "{n} will change" / "{n} show the new names" | One line per changed part: "{n} skills on Default need 2 evaluations instead of 1", "... show the level name X instead of Y", "... are judged by X instead of Y", "... need {criterion} instead of {criterion}", "... can be signed off by X instead of Y", "... no longer ask the student to rate themselves first", and so on | What changes |
+| Questions on this page: "{n} use them" | "{n} skills on Default use the questions on this page" | What changes |
+| Own questions: "{n} keep their own" | Untouched: "{n} skills keep their own questions". Taking another change: "..., including {n} that keep their own questions" | What stays the same, or inside a What changes line |
+| Already on these settings: "{n} already match" | "{n} skills on Default are already on these settings" | What stays the same |
+| Custom: "{n} keep their settings and number" | "{n} skills on Custom keep their own settings" | What stays the same |
+| Not configured: "{n} stay not configured" | "{n} skills stay not configured" (amber glyph) | What stays the same |
+| Default with their own number: "{n} keep their number" | Number edit: "{n} skills keep their own number". Other edits: "..., including {n} that keep their own number" | What stays the same, or inside a What changes line |
+| {reason}: "{n} become not configured" | "{n} skills become not configured because {reason in plain words}" (amber) | What changes |
+| Level minimums: "Cleared on {n}" | "Level minimums are cleared on {n} skills" (amber) | What changes |
+| Let faculty check off a group at once: "Turns off" / "Turns on" | "Group check-off turns off on {n} skills" (amber) / "Group check-off turns on for {n} skills" | What changes |
+| Cleared: "{fields}" | "These settings are cleared: {fields}" (amber); "A group check-off counts as" is named "What a group check-off records" | What changes |
+| Students whose progress changes: {n} [Show names] | The amber callout above the groups, with direction and per-student skills | First, above the groups |

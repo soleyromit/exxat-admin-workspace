@@ -2,11 +2,13 @@
 
 /**
  * Evaluation settings B, "every field on the page" (concept D, D-L141, Romit 2026-11-10). The parts only this layout uses: a sheet of sections (name
- * left, fields right, labels above fields), the sticky "Your rule" panel, the Levels and Outcomes lists (a status per row, one select under the list for what counts),
+ * left, fields right, labels above fields), the sticky "Your rule" panel (a path of steps, D-L145), the Levels and Outcomes lists (a checkbox or radio per row under
+ * column heads, D-L142, D-L145),
  * the question list (first 8, then Show all), the two Counts when controls, the plain list of steps and the student's fields edited in place.
  * Configure one skill does not use these, so nothing here changes it.
  */
 import * as React from "react"
+import Link from "next/link"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@exxatdesignux/ui/components/ui/alert-dialog"
+import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { DragHandleGripIcon } from "@exxatdesignux/ui/components/ui/drag-handle-grip"
@@ -27,9 +30,11 @@ import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radi
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@exxatdesignux/ui/components/ui/tooltip"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import { TYPE } from "@/components/lab/type-scale"
 import { TagsPicker } from "@/components/lab/library/category-tag-pickers"
+import { rulePath, tallyFor } from "@/lib/lab/rule-path"
 import { holdSecondPress } from "@/components/lab/shared/focus"
 import {
   FIELD_TYPE_LABEL,
@@ -55,7 +60,7 @@ import {
   type RuleIssue,
 } from "@/lib/lab/configure"
 import { TIMES_MAX } from "@/lib/lab/program-settings"
-import { aNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, countSkills, movesHead, movesWhen, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { NUMBER_WIDTH, NumberWithUnit, PasteQuestions, QuestionSubsetPicker, RemoveButton, placeholderFor, type SectionProps } from "./fields"
 
 type SetRule = SectionProps["setRule"]
@@ -118,14 +123,18 @@ export function ChangedMark() {
  * One section of the sheet: its name (with a count when it lists something) in the left column, its fields in the right column. No purpose line (D-L34).
  * A hairline above every section but the first; one column in a narrow sheet.
  */
-export function SheetSection({ id, title, count, children }: { id: string; title: string; count?: number; children: React.ReactNode }) {
+export function SheetSection({ id, title, count, changed, children }: { id: string; title: string; count?: number; /** The section's own list (levels, outcomes, questions) or the model changed: "Changed" follows the heading (2026-11-11). */ changed?: boolean; children: React.ReactNode }) {
   return (
     <section aria-labelledby={id} className="grid min-w-0 gap-x-10 gap-y-4 border-t border-border py-7 first:border-t-0 first:pt-1 @[44rem]:grid-cols-[13rem_minmax(0,34rem)]" data-settings-section data-sheet-section={id}>
       <div className="flex min-w-0 flex-col gap-1">
-        <h2 id={id} className={TYPE.card}>
-          {title}
-          {count !== undefined ? <span className="ms-1.5 font-normal text-muted-foreground tabular-nums">{count}</span> : null}
-        </h2>
+        {/* "Changed" right after the visible name of what changed, gap-2 and centred on the line, as on every field label (Romit 2026-11-11: "looks inconsistent"). */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <h2 id={id} className={TYPE.card}>
+            {title}
+            {count !== undefined ? <span className="ms-1.5 font-normal text-muted-foreground tabular-nums">{count}</span> : null}
+          </h2>
+          {changed ? <ChangedMark /> : null}
+        </div>
       </div>
       <div className="flex min-w-0 flex-col gap-6">{children}</div>
     </section>
@@ -133,16 +142,18 @@ export function SheetSection({ id, title, count, children }: { id: string; title
 }
 
 /** A field: its label above the control, an optional quiet word after it, "Changed", and on the right of the label line an action of the field's own. */
-export function FieldBlock({ label, labelId, htmlFor, hint, end, changed, children, srLabel }: { label: string; labelId?: string; htmlFor?: string; hint?: string; end?: React.ReactNode; changed?: boolean; children: React.ReactNode; /** The section's name already says it: the label is for a screen reader only. */ srLabel?: boolean }) {
+export function FieldBlock({ label, labelId, htmlFor, hint, end, changed, children, srLabel }: { label: string; labelId?: string; htmlFor?: string; hint?: string; end?: React.ReactNode; changed?: boolean; children: React.ReactNode; /** The section's name already says it: the label is for a screen reader only, and "Changed" goes on the section heading (SheetSection). */ srLabel?: boolean }) {
   const name = htmlFor ? <Label htmlFor={htmlFor} id={labelId} className={cn(TYPE.group, srLabel && "sr-only")}>{label}</Label> : <p id={labelId} className={cn(TYPE.group, srLabel && "sr-only")}>{label}</p>
-  const line = !srLabel || changed || end
+  // "Changed" sits only after a visible label, never alone on a line (2026-11-11).
+  const mark = changed && !srLabel
+  const line = !srLabel || end
   return (
     <div className="flex min-w-0 flex-col gap-2" data-field-block>
       {line ? (
         <div className="flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1">
           {name}
           {hint && !srLabel ? <span className={TYPE.helper}>{hint}</span> : null}
-          {changed ? <ChangedMark /> : null}
+          {mark ? <ChangedMark /> : null}
           {end ? <div className="ms-auto flex min-w-0 items-center gap-2">{end}</div> : null}
         </div>
       ) : name}
@@ -154,10 +165,24 @@ export function FieldBlock({ label, labelId, htmlFor, hint, end, changed, childr
 // ---------------------------------------------------------------------------------------------------------------------
 // Rows that reorder: a grip that drags and, focused, moves with the arrow keys
 
+/** A hover and focus tip for an icon-only control, in the DS Tooltip; the control keeps its own full name. */
+function withTip(tip: string | undefined, control: React.ReactElement) {
+  if (!tip) return control
+  return (
+    // Its own provider, so the list also works outside the app shell (a test, a dialog).
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>{control}</TooltipTrigger>
+        <TooltipContent>{tip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
 function useReorder(count: number, move: (from: number, to: number) => void) {
   const from = React.useRef<number | null>(null)
-  return (i: number, idOf: (i: number) => string, label: string, step: 1 | -1 = -1) => ({
-    grip: (
+  return (i: number, idOf: (i: number) => string, label: string, step: 1 | -1 = -1, tip?: string) => ({
+    grip: withTip(tip,
       <Button
         id={idOf(i)}
         type="button"
@@ -180,7 +205,7 @@ function useReorder(count: number, move: (from: number, to: number) => void) {
         }}
       >
         <DragHandleGripIcon />
-      </Button>
+      </Button>,
     ),
     row: {
       onDragOver: (e: React.DragEvent) => { if (from.current !== null) e.preventDefault() },
@@ -223,7 +248,7 @@ function StartFrom({ rule, setRule }: { rule: LabRule; setRule: SetRule }) {
     <>
       <Label htmlFor="cfg-preset" className={cn(TYPE.helper, "font-normal")}>Start from</Label>
       <Select value={current} onValueChange={(v) => { const id = v as LabelPresetId; if (presetReplaces(rule, id)) setPending(id); else setRule((r) => applyPreset(r, id)) }}>
-        <SelectTrigger id="cfg-preset" size="sm" className={rule.model === "binary" ? "w-52" : "w-40"} data-presets>
+        <SelectTrigger id="cfg-preset" size="sm" className={cn("max-w-full", rule.model === "binary" ? "w-56" : "w-48")} data-presets>
           <SelectValue placeholder="Choose a set" />
         </SelectTrigger>
         <SelectContent>
@@ -235,7 +260,7 @@ function StartFrom({ rule, setRule }: { rule: LabRule; setRule: SetRule }) {
         <AlertDialogContent data-preset-confirm onCloseAutoFocus={(e) => { e.preventDefault(); document.getElementById("cfg-preset")?.focus({ preventScroll: true }) }}>
           <AlertDialogHeader>
             <AlertDialogTitle>{ask ? `Replace ${ask.was.length} ${ask.noun}${ask.was.length === 1 ? "" : "s"}?` : "Replace them?"}</AlertDialogTitle>
-            <AlertDialogDescription>{ask ? `${listWords(ask.was)} ${ask.was.length === 1 ? "becomes" : "become"} ${listWords(ask.next)}.${ask.clearsCounts ? " The accepted levels are cleared." : ""}` : ""}</AlertDialogDescription>
+            <AlertDialogDescription>{ask ? `${listWords(ask.was)} ${ask.was.length === 1 ? "becomes" : "become"} ${listWords(ask.next)}.${ask.clearsCounts ? " Your level choices are cleared." : ""}` : ""}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel variant="outline" size="default" autoFocus onClick={holdSecondPress}>{`Keep my ${ask?.noun ?? "level"}s`}</AlertDialogCancel>
@@ -252,39 +277,55 @@ function StartFrom({ rule, setRule }: { rule: LabRule; setRule: SetRule }) {
 const listWords = (xs: readonly string[]) => (xs.length <= 1 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`)
 
 // ---------------------------------------------------------------------------------------------------------------------
-// Levels and outcomes: one list, a control per row under one "Accepted" heading (2026-11-11; Romit's D-L74 and D-L95 checkboxes restored on B)
+// Levels and outcomes: one list, a control per row, the list labelled by the question it answers (2026-11-11, Romit approved; replaces the "Accepted" head)
 
-/** The column word above the row controls, the only head the list has. */
-export const ACCEPTED_HEAD = "Accepted"
-/** The validation word for "no level chosen" on this page (the shared message is worded for every variant; this page says it in its own word). */
-export const LEVELS_NOT_CHOSEN = "Choose the levels you accept."
+/** What the checkboxes answer, as the list's one visible label (Romit asked what "Accepted" meant). `noun` is the program's word for a skill. */
+export const levelsQuestion = (noun: string = skillNoun()) => `Which levels move a student toward achieving the ${noun}?`
+export const outcomeQuestion = (noun: string = skillNoun()) => `Which outcome moves a student toward achieving the ${noun}?`
+/** A row's control name: "{level} moves a student toward achieving the skill". */
+export const movesName = (name: string, noun: string = skillNoun()) => `${name.charAt(0).toUpperCase()}${name.slice(1)} moves a student toward achieving the ${noun}`
+
+/** The column head over the checkboxes (Romit 2026-11-11: "I can't tell what does the checkbox offer"). Each control still carries the full name. */
+export const MOVES_HEAD = movesHead("skill")
+export { movesHead }
 
 const ROW = "grid min-w-0 items-center gap-x-2 gap-y-1 border-t border-border px-2 py-1.5"
-const LEVEL_COLS = "grid-cols-[2rem_minmax(0,1fr)_5.5rem_2rem]"
-const OUTCOME_COLS = "grid-cols-[minmax(0,1fr)_5.5rem]"
+// The checkbox column is wide enough for its head on three or four lines; from a 28rem list it widens so the head takes two.
+const LEVEL_COLS = "grid-cols-[2rem_minmax(0,1fr)_5rem_2rem] @[28rem]:grid-cols-[2rem_minmax(0,1fr)_9rem_2rem]"
+const OUTCOME_COLS = "grid-cols-[minmax(0,1fr)_5rem] @[28rem]:grid-cols-[minmax(0,1fr)_9rem]"
 
-/** The list's frame with its one head: "Accepted", over the control column. */
-function AcceptedList({ id, cols, children, invalid, describedBy }: { id: string; cols: string; children: React.ReactNode; invalid?: boolean; describedBy?: string }) {
+/** The list's column heads, on the rows' own grid so each sits over its column. Hidden from a screen reader: every control names itself in full. */
+function ColumnHeads({ name, cols, lead, inset }: { name: string; cols: string; /** A grip column before the name. */ lead?: boolean; inset?: boolean }) {
   return (
-    <div id={id} tabIndex={-1} className="min-w-0 overflow-hidden rounded-[var(--radius)] border border-border outline-none" aria-invalid={invalid || undefined} aria-describedby={describedBy} data-counts-from>
-      <div className={cn("grid items-center gap-x-2 px-2 py-1.5", cols)} aria-hidden="true">
-        <span className={cn(TYPE.meta, "col-start-3 row-start-1 text-center")}>{ACCEPTED_HEAD}</span>
-      </div>
+    <div className={cn("grid min-w-0 items-end gap-x-2 px-2 py-1.5", inset && "ps-3", cols)} aria-hidden="true" data-list-heads>
+      {lead ? <span /> : null}
+      <span className={TYPE.meta}>{name}</span>
+      <span className={cn(TYPE.meta, "text-balance text-center")}>{movesHead()}</span>
+      {lead ? <span /> : null}
+    </div>
+  )
+}
+
+/** The list's frame: one bordered group, named by the field's label (the question). */
+function ChoiceList({ id, labelledBy, children, invalid, describedBy }: { id: string; labelledBy: string; children: React.ReactNode; invalid?: boolean; describedBy?: string }) {
+  return (
+    <div id={id} role="group" tabIndex={-1} aria-labelledby={labelledBy} className="@container min-w-0 overflow-hidden rounded-[var(--radius)] border border-border outline-none" aria-invalid={invalid || undefined} aria-describedby={describedBy} data-counts-from>
       {children}
     </div>
   )
 }
 
 /**
- * Levels (D-L74, D-L95, restored 2026-11-11): highest first. Each row: a grip, the name in place, a checkbox "Accept {name}" under the Accepted head,
+ * Levels (D-L74, D-L95, restored 2026-11-11): highest first, under the question "Which levels move a student toward achieving the skill?". Each row: a
+ * grip, the name in place, a checkbox named "{level} moves a student toward achieving the skill" (no visible word on the row),
  * Remove. The boxes are linked through `withLevelTicked`, the same logic as Configure one skill: checking a level checks every level above it, unchecking
  * one clears every level below it; the engine keeps one threshold, and every box checked is "at any level". A linked change to other rows is said aloud.
- * Reorder by dragging the grip or, focused, the arrow keys; a move that changes what is accepted is said aloud too.
+ * Reorder by dragging the grip or, focused, the arrow keys; a move that changes which levels move a student on is said aloud too.
  */
-export function LevelsField({ rule, setRule, err, changed }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean }) {
+export function LevelsField({ rule, setRule, err }: { rule: LabRule; setRule: SetRule; err: Err }) {
   const n = rule.levels.length
   const [said, setSaid] = React.useState("")
-  const countsErr = err("cfg-counts-from") ? LEVELS_NOT_CHOSEN_OR(err("cfg-counts-from")!) : undefined
+  const countsErr = err("cfg-counts-from")
   const addErr = err("cfg-add-level")
   const nameOf = (levels: readonly string[], i: number) => levels[i]?.trim() || lowerPlace(i, levels.length)
   const move = (i: number, j: number) => {
@@ -292,7 +333,7 @@ export function LevelsField({ rule, setRule, err, changed }: { rule: LabRule; se
     const change = Math.abs(i - j) === 1 ? levelMoveChange(rule, next, i, j) : null
     const name = rule.levels[i]?.trim() || levelPlace(i, n)
     const changeName = change ? nameOf(next.levels, change.index) : ""
-    setSaid(`${name} moved ${j > i ? "up" : "down"}.${change ? ` ${changeName} is ${change.counts ? "now accepted" : "no longer accepted"}.` : ""}`)
+    setSaid(`${name} moved ${j > i ? "up" : "down"}.${change ? ` ${movedWords(changeName, change.counts)}` : ""}`)
     setRule(() => next)
   }
   const tick = (i: number, on: boolean) => {
@@ -300,36 +341,40 @@ export function LevelsField({ rule, setRule, err, changed }: { rule: LabRule; se
     const others = rule.levels.map((_, k) => k).filter((k) => k !== i && levelTicked(rule, k) !== levelTicked(next, k))
     const names = others.sort((x, y) => y - x).map((k) => nameOf(rule.levels, k))
     const list = names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
-    setSaid(names.length ? `${list} ${names.length === 1 ? "is" : "are"} ${on ? "also accepted" : "no longer accepted"}.` : "")
+    // "With assistance now also moves a student toward achieving the skill." / "Needs coaching no longer does."
+    setSaid(names.length ? (on ? `${cap(list)} now also ${names.length === 1 ? "moves" : "move"} a student toward achieving the ${skillNoun()}.` : `${cap(list)} no longer ${names.length === 1 ? "does" : "do"}.`) : "")
     setRule(() => next)
   }
   const reorder = useReorder(n, move)
   const order = Array.from({ length: n }, (_, k) => n - 1 - k)
   return (
-    <FieldBlock label="Level names" labelId="cfg-levels-label" hint="highest first" changed={changed} end={<StartFrom rule={rule} setRule={setRule} />}>
+    // The question names the group for a screen reader; on screen the column heads say it over the checkboxes (2026-11-11), so the label line keeps only
+    // Changed and Start from.
+    <FieldBlock label={levelsQuestion()} labelId="cfg-levels-label" srLabel end={<StartFrom rule={rule} setRule={setRule} />}>
       {n ? (
-        <AcceptedList id="cfg-counts-from" cols={LEVEL_COLS} invalid={!!countsErr} describedBy={countsErr ? "cfg-counts-from-error" : undefined}>
-          <ol className="flex flex-col" aria-labelledby="cfg-levels-label">
+        <ChoiceList id="cfg-counts-from" labelledBy="cfg-levels-label" invalid={!!countsErr} describedBy={countsErr ? "cfg-counts-from-error" : undefined}>
+          <ColumnHeads name="Level, highest first" cols={LEVEL_COLS} lead />
+          <ol className="flex flex-col" aria-label="Levels, highest first">
             {order.map((i) => {
               const id = `cfg-level-${i}`
               const message = err(id)
               const shown = nameOf(rule.levels, i)
               const on = levelTicked(rule, i)
-              const r = reorder(i, (k) => `cfg-level-grip-${k}`, `Move ${shown}`, 1)
+              const r = reorder(i, (k) => `cfg-level-grip-${k}`, `Reorder level ${shown}`, 1, "Reorder level")
               return (
                 <li key={i} className={cn(ROW, LEVEL_COLS)} data-level-row {...r.row}>
                   {r.grip}
                   <Input id={id} className="h-8 min-w-0" aria-label={`Level ${i + 1}`} placeholder={placeholderFor("Level", i, n)} value={rule.levels[i]} onChange={(e) => setRule((x) => ({ ...x, levels: x.levels.map((l, k) => (k === i ? e.target.value : l)) }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
                   <span className="flex justify-center" data-level-segment={i} data-counts={on || undefined}>
-                    <Checkbox id={`cfg-counts-from-${i}`} aria-label={`Accept ${shown}`} checked={on} onCheckedChange={(c) => tick(i, c === true)} />
+                    <Checkbox id={`cfg-counts-from-${i}`} aria-label={movesName(shown)} checked={on} onCheckedChange={(c) => tick(i, c === true)} />
                   </span>
-                  <RemoveButton label={`Remove ${shown}`} onClick={() => { setRule((x) => removeLevel(x, i)); requestAnimationFrame(() => document.getElementById(n > 1 ? `cfg-level-${Math.min(i, n - 2)}` : "cfg-add-level")?.focus()) }} />
+                  <RemoveButton label={`Remove level ${shown}`} tip="Remove level" onClick={() => { setRule((x) => removeLevel(x, i)); requestAnimationFrame(() => document.getElementById(n > 1 ? `cfg-level-${Math.min(i, n - 2)}` : "cfg-add-level")?.focus()) }} />
                   {message ? <FieldError id={`${id}-error`} className="col-start-2 col-end-[-1]">{message}</FieldError> : null}
                 </li>
               )
             })}
           </ol>
-        </AcceptedList>
+        </ChoiceList>
       ) : null}
       {countsErr ? <FieldError id="cfg-counts-from-error">{countsErr}</FieldError> : null}
       <div className="flex flex-col gap-1">
@@ -341,44 +386,39 @@ export function LevelsField({ rule, setRule, err, changed }: { rule: LabRule; se
   )
 }
 
-/** On this page the "nothing chosen" problem uses the page's word; any other levels problem keeps its own text. */
-function LEVELS_NOT_CHOSEN_OR(message: string): string {
-  return /^Choose which levels count/.test(message) ? LEVELS_NOT_CHOSEN : message
-}
-export const levelsProblemText = LEVELS_NOT_CHOSEN_OR
+const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1)
+/** After a move: "{level} now moves a student toward achieving the skill." / "{level} no longer does." */
+const movedWords = (name: string, now: boolean) => (now ? `${cap(name)} now moves a student toward achieving the ${skillNoun()}.` : `${cap(name)} no longer does.`)
 
 const lowerPlace = (i: number, n: number) => { const p = levelPlace(i, n); return p.charAt(0).toLowerCase() + p.slice(1) }
 
-/** Outcomes of the approved model [REQ SC-03]: the two names in place, and one radio per row under the same Accepted head; exactly one is accepted. */
-export function OutcomesField({ rule, setRule, err, changed }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean }) {
+/** Outcomes of the approved model [REQ SC-03]: the two names in place, one radio per row, the list labelled by its question; exactly one is chosen. */
+export function OutcomesField({ rule, setRule, err }: { rule: LabRule; setRule: SetRule; err: Err }) {
   const q = rule.qualifyingLabel
   const qErr = err("cfg-qualifying")
   const shownOf = (i: number) => rule.outcomeLabels[i].trim() || (i === 0 ? "the first outcome" : "the second outcome")
   return (
-    <FieldBlock label="Outcome names" labelId="cfg-outcomes-label" changed={changed} end={<StartFrom rule={rule} setRule={setRule} />}>
-      <div className="min-w-0 overflow-hidden rounded-[var(--radius)] border border-border">
-        <div className={cn("grid items-center gap-x-2 px-2 py-1.5 ps-3", OUTCOME_COLS)} aria-hidden="true">
-          <span />
-          <span className={cn(TYPE.meta, "text-center")}>{ACCEPTED_HEAD}</span>
-        </div>
+    <FieldBlock label={outcomeQuestion()} labelId="cfg-outcomes-label" srLabel end={<StartFrom rule={rule} setRule={setRule} />}>
+      <div className="@container min-w-0 overflow-hidden rounded-[var(--radius)] border border-border">
+        <ColumnHeads name="Outcome" cols={OUTCOME_COLS} inset />
         <RadioGroup
           id="cfg-qualifying"
           tabIndex={-1}
           value={q === null ? "" : String(q)}
           onValueChange={(v) => setRule((r) => ({ ...r, qualifyingLabel: v === "1" ? 1 : 0 }))}
-          aria-label="Accepted outcome"
+          aria-labelledby="cfg-outcomes-label"
           aria-invalid={!!qErr || undefined}
           aria-describedby={qErr ? "cfg-qualifying-error" : undefined}
           className="flex flex-col gap-0 outline-none"
         >
-          <ul className="flex flex-col" aria-labelledby="cfg-outcomes-label">
+          <ul className="flex flex-col" aria-label="Outcomes">
             {[0, 1].map((i) => {
               const id = `cfg-label-${i}`
               const message = err(id)
               return (
                 <li key={i} className={cn(ROW, "ps-3", OUTCOME_COLS)} data-outcome-row>
                   <Input id={id} className="h-8 min-w-0" aria-label={i === 0 ? "First label" : "Second label"} value={rule.outcomeLabels[i]} onChange={(e) => setRule((r) => ({ ...r, outcomeLabels: (i === 0 ? [e.target.value, r.outcomeLabels[1]] : [r.outcomeLabels[0], e.target.value]) as [string, string] }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
-                  <span className="flex justify-center"><RadioGroupItem id={`cfg-qualifying-${i}`} value={String(i)} aria-label={`Accept ${shownOf(i)}`} /></span>
+                  <span className="flex justify-center"><RadioGroupItem id={`cfg-qualifying-${i}`} value={String(i)} aria-label={movesName(shownOf(i))} /></span>
                   {message ? <FieldError id={`${id}-error`} className="col-span-full">{message}</FieldError> : null}
                 </li>
               )
@@ -401,7 +441,7 @@ export const QUESTIONS_SHOWN = 8
  * The question list in place [REQ SC-04, SC-07]: a grip, the number, the question, Remove; Add a question and Paste a list under it. Longer than 8, the
  * first 8 and "Show all n"; a new question, or a problem in a hidden one, opens the list (`expanded` is the page's, so a problem link can open it).
  */
-export function QuestionsField({ rule, setRule, err, changed, expanded, setExpanded }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean; expanded: boolean; setExpanded: (v: boolean) => void }) {
+export function QuestionsField({ rule, setRule, err, expanded, setExpanded }: { rule: LabRule; setRule: SetRule; err: Err; expanded: boolean; setExpanded: (v: boolean) => void }) {
   const m = rule.questions.length
   const move = (i: number, j: number) => setRule((r) => moveItem(r, "questions", i, j))
   const reorder = useReorder(m, move)
@@ -409,7 +449,7 @@ export function QuestionsField({ rule, setRule, err, changed, expanded, setExpan
   const shown = hidden ? rule.questions.slice(0, QUESTIONS_SHOWN) : rule.questions
   const addErr = err("cfg-add-question")
   return (
-    <FieldBlock label="Questions" labelId="cfg-questions-label" srLabel changed={changed}>
+    <FieldBlock label="Questions" labelId="cfg-questions-label" srLabel>
       {m ? (
         <ol className="flex flex-col gap-2" aria-labelledby="cfg-questions-label" id="cfg-question-list">
           {shown.map((q, i) => {
@@ -452,7 +492,7 @@ export function QuestionCountsWhen({ rule, setRule, err, changed }: { rule: LabR
   const kindErr = err("cfg-qrule")
   const choose = (v: string) => setRule((x) => ({ ...x, questionRule: v === "all" ? { kind: "all" } : v === "atLeast" ? { kind: "atLeast", n: x.questionRule?.kind === "atLeast" ? x.questionRule.n : Math.max(1, m - 1) } : { kind: "subset", indices: x.questionRule?.kind === "subset" ? x.questionRule.indices : [] } }))
   return (
-    <FieldBlock label="Counts when" labelId="cfg-qrule-label" changed={changed}>
+    <FieldBlock label={movesWhen()} labelId="cfg-qrule-label" changed={changed}>
       <RadioGroup id="cfg-qrule" tabIndex={-1} value={r?.kind ?? ""} onValueChange={choose} aria-labelledby="cfg-qrule-label" className="flex flex-col gap-2 outline-none" aria-invalid={!!kindErr || undefined} aria-describedby={kindErr ? "cfg-qrule-error" : undefined}>
         <div className="flex min-h-9 items-center gap-2.5">
           <RadioGroupItem id="cfg-qrule-all" value="all" />
@@ -507,7 +547,7 @@ export function ScoredCountsWhen({ rule, setRule, err, changed }: { rule: LabRul
   const kErr = err("cfg-srule")
   const pick = (kind: (typeof SCORED_ROWS)[number]["kind"], value?: number) => setRule((x) => ({ ...x, scoredRule: { kind, value: value ?? x.scoredRule?.value ?? Number.NaN } }))
   return (
-    <FieldBlock label="Counts when" labelId="cfg-srule-label" changed={changed}>
+    <FieldBlock label={movesWhen()} labelId="cfg-srule-label" changed={changed}>
       <RadioGroup id="cfg-srule" tabIndex={-1} value={r?.kind ?? ""} onValueChange={(v) => pick(v as (typeof SCORED_ROWS)[number]["kind"])} aria-labelledby="cfg-srule-label" className="grid grid-cols-[1rem_max-content_auto] items-center gap-x-2.5 gap-y-2 outline-none" aria-invalid={!!kErr || undefined} aria-describedby={kErr ? "cfg-srule-error" : undefined}>
         {SCORED_ROWS.map((row) => {
           const on = r?.kind === row.kind
@@ -654,7 +694,7 @@ export function fieldName(i: RuleIssue): string {
   if (f.startsWith("cfg-level-") || f === "cfg-add-level" || f.startsWith("cfg-counts-from")) return "Levels"
   if (f.startsWith("cfg-label-") || f === "cfg-qualifying") return "Outcomes"
   if (f.startsWith("cfg-question-") || f === "cfg-add-question") return "Questions"
-  if (f.startsWith("cfg-qrule") || f.startsWith("cfg-srule")) return "Counts when"
+  if (f.startsWith("cfg-qrule") || f.startsWith("cfg-srule")) return movesWhen()
   if (f.startsWith("cfg-scale")) return "Scale"
   if (f.startsWith("cfg-role-")) return "Who can sign off"
   if (f.startsWith("cfg-field-")) return "What the student fills in"
@@ -663,46 +703,131 @@ export function fieldName(i: RuleIssue): string {
 }
 
 const lowerFirst = (s: string) => (s.length > 1 && /[a-z]/.test(s[1]) ? s[0].toLowerCase() + s.slice(1) : s)
-export const problemText = (i: RuleIssue) => `${fieldName(i)}: ${lowerFirst(i.field === "cfg-counts-from" ? LEVELS_NOT_CHOSEN_OR(i.message) : i.message)}`
+export const problemText = (i: RuleIssue) => `${fieldName(i)}: ${lowerFirst(i.message)}`
 
 /**
- * "Your rule" (D-L141): the live sentence and who it applies to (the unsaved count moved to the save bar, 2026-11-11); while the rule is unfinished it lists
- * what is missing, and after a failed Save the same list in the error tone, each a link that focuses its field [REQ SC-17, SC-18].
+ * "Your rule" as a path (concept A, Romit 2026-11-11, D-L145; replaces the sentence panel of D-L141): one node per step a student goes through, read from
+ * the rule (lib/lab/rule-path.ts), an ordered list a screen reader reads in order. Beside the sheet (from a 60rem page) it is a vertical path; above the
+ * sheet (1024 and phone width) a row of the icons with the rule sentence as one muted line under it. While the rule is unfinished a step shows what it
+ * still needs; after a failed Save the problems sit on the step they block, each a link that focuses its field, and "n to fix" heads the panel
+ * [REQ SC-17, SC-18]. The end node is a neutral outline, so it never competes with Save.
  */
-export function RulePanel({ rule, issues, showErrors, applies, onGo }: { rule: LabRule; issues: RuleIssue[]; showErrors: boolean; applies: React.ReactNode; onGo: (i: RuleIssue) => void }) {
-  const said = ruleStatement(rule)
+export function RulePanel({ rule, issues, showErrors, applies, onGo }: { rule: LabRule; issues: RuleIssue[]; showErrors: boolean; applies: { total: number; custom: number; customHref?: string }; onGo: (i: RuleIssue) => void }) {
   const failing = showErrors && issues.length > 0
-  const gaps = rule.model ? issues : []
+  const steps = rulePath(rule, issues, failing)
+  const said = ruleStatement(rule)
+  const complete = !!said && issues.length === 0
+  const modelIssue = issues.find((i) => i.field === "cfg-model") ?? { id: "cfg-model:missing", section: "model" as const, field: "cfg-model", message: "" }
+  const linkClass = (bad: boolean) => cn("h-auto items-start gap-1.5 whitespace-normal p-0 text-start font-normal", TYPE.meta, bad ? "text-destructive" : "text-foreground")
   return (
-    <aside aria-labelledby="cfg-rule-lead" className="flex min-w-0 flex-col gap-4 rounded-xl border border-[var(--brand-tint)] bg-[var(--brand-tint-light)] p-5" data-rule-panel data-settings-glance>
-      <div className="flex flex-col gap-2" role={failing ? "alert" : undefined}>
-        <p id="cfg-rule-lead" className={TYPE.meta}>Your rule</p>
+    <aside aria-labelledby="cfg-rule-lead" className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-5" data-rule-panel data-settings-glance>
+      <div className="flex items-center justify-between gap-2">
+        <p id="cfg-rule-lead" className={cn(TYPE.meta, "font-semibold")}>Your rule</p>
         {failing ? (
-          <p className={TYPE.body} aria-live="polite">{`Fix ${issues.length} ${issues.length === 1 ? "problem" : "problems"} to see the rule.`}</p>
-        ) : said ? (
-          <p className={cn(TYPE.card, "text-pretty")} data-rule-sentence aria-live="polite">{said}</p>
-        ) : (
-          <p className={TYPE.body} aria-live="polite">{rule.model ? "Finish these to see the rule:" : `Choose how ${skillNounPlural()} are judged to start.`}</p>
-        )}
-        {(failing || (!said && gaps.length)) ? (
-          <ul className="flex flex-col gap-1.5" aria-label={failing ? "Problems to fix" : "Still to set"} data-region="validation-summary">
-            {(failing ? issues : gaps).map((i) => (
+          <p role="status" className={cn(TYPE.meta, "flex items-center gap-1 text-destructive")} data-rule-to-fix>
+            <i className="fa-light fa-circle-exclamation" aria-hidden="true" />
+            {`${issues.length} to fix`}
+          </p>
+        ) : null}
+      </div>
+      <ol
+        aria-label={`What a student does to achieve ${aNoun()}`}
+        className="flex flex-row justify-between @[60rem]:flex-col @[60rem]:justify-start"
+        data-rule-path
+        data-rule-sentence={complete || undefined}
+        data-region={failing ? "validation-summary" : undefined}
+      >
+        {steps.map((s, k) => {
+          const last = k === steps.length - 1
+          const bad = s.state === "error"
+          return (
+            <li key={s.id} className="relative flex min-w-0 flex-1 flex-col items-center gap-1.5 text-center @[60rem]:grid @[60rem]:flex-none @[60rem]:grid-cols-[1.75rem_minmax(0,1fr)] @[60rem]:items-start @[60rem]:gap-x-3 @[60rem]:gap-y-0 @[60rem]:pb-3.5 @[60rem]:text-start @[60rem]:last:pb-0" data-path-node={s.id} data-state={s.state}>
+              {/* The line to the next node: across in the row, down in the column. */}
+              {last ? null : <span className="absolute top-3.5 h-px start-[calc(50%+1rem)] end-[calc(-50%+1rem)] bg-border @[60rem]:start-3.5 @[60rem]:end-auto @[60rem]:top-8 @[60rem]:bottom-0.5 @[60rem]:h-auto @[60rem]:w-px" aria-hidden="true" />}
+              <span
+                className={cn(
+                  "relative flex size-7 shrink-0 items-center justify-center rounded-full border bg-card text-sm",
+                  s.state === "set" && "border-border text-foreground",
+                  s.state === "todo" && "border-dashed border-muted-foreground text-muted-foreground",
+                  bad && "border-destructive text-destructive",
+                )}
+                aria-hidden="true"
+              >
+                <i className={cn("fa-light", bad ? "fa-circle-exclamation" : s.icon)} />
+              </span>
+              {/* Phone-wide row: a word or two under the icon; the full step for a screen reader. */}
+              <span className={cn(TYPE.meta, "text-foreground @[60rem]:hidden", s.state === "todo" && "text-muted-foreground", bad && "text-destructive")} aria-hidden="true">{s.short}</span>
+              <div className="min-w-0 @[60rem]:flex @[60rem]:flex-col @[60rem]:gap-1.5 @[60rem]:pt-1">
+                {s.start ? (
+                  <>
+                    <Button type="button" variant="link" size="sm" className="hidden h-auto justify-start whitespace-normal p-0 text-start font-semibold text-foreground underline underline-offset-4 @[60rem]:inline-flex" onClick={() => onGo(modelIssue)}>{s.label}</Button>
+                    <span className="sr-only @[60rem]:hidden">{s.label}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={cn("hidden @[60rem]:inline", TYPE.body, s.id === "achieved" && "font-semibold", s.state === "todo" && "text-muted-foreground")}>{s.label}</span>
+                    <span className="sr-only @[60rem]:hidden">{s.label}</span>
+                  </>
+                )}
+                {s.chip ? (
+                  <Badge variant="outline" className="hidden h-auto w-fit max-w-full items-start justify-start gap-1.5 whitespace-normal text-balance text-start font-normal leading-4 @[60rem]:inline-flex" data-rule-chip>
+                    <i className={cn("fa-light mt-0.5", s.chip.icon)} aria-hidden="true" />
+                    <span><span className="sr-only">{`Moves a student toward achieving the ${skillNoun()}: `}</span>{s.chip.text}</span>
+                  </Badge>
+                ) : null}
+                {tallyFor(s.times) ? (
+                  <span className="hidden gap-1 @[60rem]:flex" aria-hidden="true" data-rule-tally>
+                    {Array.from({ length: tallyFor(s.times) }, (_, t) => <span key={t} className="h-1.5 w-4 rounded-full bg-foreground" />)}
+                  </span>
+                ) : null}
+                {s.issues.length ? (
+                  <ul className="hidden flex-col gap-1 @[60rem]:flex" aria-label={bad ? "Problems to fix" : "Still to set"}>
+                    {s.issues.map((i) => (
+                      <li key={i.id}>
+                        <Button type="button" variant="link" size="sm" className={linkClass(bad)} onClick={() => onGo(i)}>{i.message}</Button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            </li>
+          )
+        })}
+      </ol>
+      {/* Phone-wide and 1024: the rule in one muted line under the row, or the problems, each a link. */}
+      <div className="flex flex-col gap-1 @[60rem]:hidden" data-rule-line>
+        {failing || (!said && rule.model && issues.length) ? (
+          <ul className="flex flex-col gap-1" aria-label={failing ? "Problems to fix" : "Still to set"}>
+            {issues.map((i) => (
               <li key={i.id}>
-                <Button type="button" variant="link" size="sm" className={cn("h-auto items-start gap-1.5 whitespace-normal p-0 text-start font-normal", failing ? "text-destructive" : "text-foreground")} onClick={() => onGo(i)}>
-                  {failing ? <i className="fa-light fa-circle-exclamation mt-1 text-xs" aria-hidden="true" /> : null}
-                  <span>{problemText(i)}</span>
-                </Button>
+                <Button type="button" variant="link" size="sm" className={linkClass(failing)} onClick={() => onGo(i)}>{problemText(i)}</Button>
               </li>
             ))}
           </ul>
+        ) : said ? (
+          <p className={TYPE.meta}>{said}</p>
+        ) : !rule.model ? (
+          <Button type="button" variant="link" size="sm" className={linkClass(false)} onClick={() => onGo(modelIssue)}>{`Choose how ${skillNounPlural()} are judged to start.`}</Button>
         ) : null}
       </div>
       {rule.model ? (
         <>
-          <div className="h-px bg-[var(--brand-tint)]" aria-hidden="true" />
-          <div className="flex flex-col gap-1" data-applies-to>
-            <p className={TYPE.meta}>Applies to</p>
-            {applies}
+          <div className="h-px bg-border" aria-hidden="true" />
+          <div className="flex items-start gap-2.5" data-applies-to>
+            <i className={cn("fa-light fa-layer-group mt-0.5", TYPE.helper)} aria-hidden="true" />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <p className={TYPE.body}>
+                {"Applies to "}
+                <span className="font-semibold tabular-nums">{applies.custom ? `${(applies.total - applies.custom).toLocaleString("en-US")} of ${countSkills(applies.total)}` : `all ${countSkills(applies.total)}`}</span>
+              </p>
+              {applies.custom ? (
+                applies.customHref ? (
+                  <Link href={applies.customHref} className={cn(TYPE.meta, "underline underline-offset-2 hover:text-foreground")} data-custom-link>{`${countSkills(applies.custom)} on Custom keep their own settings`}</Link>
+                ) : (
+                  <p className={TYPE.meta}>{`${countSkills(applies.custom)} on Custom keep their own settings`}</p>
+                )
+              ) : null}
+            </div>
           </div>
         </>
       ) : null}

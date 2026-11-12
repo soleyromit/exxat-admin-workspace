@@ -631,7 +631,7 @@ export function criteriaMeaning(rule: LabRule): Meaning {
     const lines = [`The evaluator picks one of ${named.length} ${plural(named.length, "level", "levels")}, ${inSentence(named[0]!)} lowest.`]
     const from = countsFromIndex(rule)
     const counting = countingLevels(rule)
-    if (from === null || counting.length === 0) return { lines: [...lines, "Choose which levels count toward achievement."] }
+    if (from === null || counting.length === 0) return { lines: [...lines, "Choose at least one level."] }
     lines.push(
       from === 0
         ? "An evaluation at any level counts toward achievement."
@@ -866,6 +866,9 @@ function dupIndexes(list: string[]): Set<number> {
   return out
 }
 
+/** Score on a scale with no scale chosen. */
+export const SCALE_MISSING_MESSAGE = "Choose a scale first."
+
 export function validateRule(rule: LabRule): RuleIssue[] {
   const out: RuleIssue[] = []
   const add = (section: SectionId, field: string, code: string, message: string) => out.push({ id: `${field}:${code}`, section, field, message })
@@ -900,10 +903,13 @@ export function validateRule(rule: LabRule): RuleIssue[] {
   }
 
   if (m === "scored") {
-    if (!isInt(rule.scaleMax) || rule.scaleMax < 2 || rule.scaleMax > 10) add("outcomes", "cfg-scale", "range", "Enter a scale top from 2 to 10.")
+    // No scale yet: the one problem is the scale, focused on its select; a value is never checked against a missing top ("1 to NaN", 2026-11-11).
+    const noScale = !isInt(rule.scaleMax)
+    if (noScale) add("outcomes", "cfg-scale", "missing", SCALE_MISSING_MESSAGE)
+    else if (rule.scaleMax < 2 || rule.scaleMax > 10) add("outcomes", "cfg-scale", "range", "Enter a scale top from 2 to 10.")
     const r = rule.scoredRule
     if (!r) add("outcomes", "cfg-srule", "missing", "Choose how a score qualifies.")
-    else {
+    else if (!noScale) {
       const max = r.kind === "total" ? rule.scaleMax * Math.max(1, rule.questions.length) : rule.scaleMax
       if (!(typeof r.value === "number" && r.value >= 1 && r.value <= max)) add("outcomes", "cfg-srule-value", "range", `Enter a value from 1 to ${max}.`)
     }
@@ -919,8 +925,8 @@ export function validateRule(rule: LabRule): RuleIssue[] {
     // Which levels count is the program's choice, never defaulted [REQ SC-02 spirit; Romit 2026-11-02].
     const from = rule.carried.minLevelIndex
     if (rule.levels.length >= 2) {
-      if (from === null) add("outcomes", "cfg-counts-from", "missing", "Choose which levels count toward achievement.")
-      else if (from < 0 || from >= rule.levels.length) add("outcomes", "cfg-counts-from", "range", "That level was removed. Choose which levels count.")
+      if (from === null) add("outcomes", "cfg-counts-from", "missing", "Choose at least one level.")
+      else if (from < 0 || from >= rule.levels.length) add("outcomes", "cfg-counts-from", "range", "That level was removed. Choose at least one level.")
     }
   }
 
@@ -1231,18 +1237,31 @@ export function computeImpact(input: V2State, skillId: string, before: LabRule, 
  * changes". A new Times needed alone moves neither unless it moves the word.
  */
 export function progressMoves(input: V2State, skillId: string, before: LabRule, after: LabRule): Array<{ studentId: string; name: string }> {
+  return progressChanges(input, skillId, before, after).map(({ studentId, name }) => ({ studentId, name }))
+}
+
+/** One student's move on one skill: the state word before and after, so a dialog can say which way progress goes (D-L146). */
+export interface ProgressChange {
+  studentId: string
+  name: string
+  from: RecordState
+  to: RecordState
+}
+
+/** The same students as `progressMoves`, each with the state before and after. */
+export function progressChanges(input: V2State, skillId: string, before: LabRule, after: LabRule): ProgressChange[] {
   const s = heldState(input)
   const read = (r: LabRule, evals: readonly Evaluation[]) => {
     const run = r.model ? evaluateRule(r, evals) : null
     return run && !isInvalidResult(run) ? { state: run.state as RecordState, have: run.have } : { state: "no-evidence" as RecordState, have: 0 }
   }
-  const out: Array<{ studentId: string; name: string }> = []
+  const out: ProgressChange[] = []
   for (const p of studentsOf(s)) {
     const evals = evalsOfStudentSkill(s, p.id, skillId)
     if (!evals.length) continue
     const b = read(before, evals)
     const a = read(after, evals)
-    if (b.state !== a.state || b.have !== a.have) out.push({ studentId: p.id, name: p.name })
+    if (b.state !== a.state || b.have !== a.have) out.push({ studentId: p.id, name: p.name, from: b.state, to: a.state })
   }
   return out
 }
@@ -1251,14 +1270,14 @@ export function progressMoves(input: V2State, skillId: string, before: LabRule, 
  * The students a skill stops counting for when it goes Not configured [REQ AE-02, IM-09]: with no rule that can be applied, no held evidence qualifies, so whoever had qualifying
  * evidence falls to none. A student whose evidence already counted for nothing reads the same before and after, so is not named. `skillProgress` is the same fact on the student's page.
  */
-export function progressLost(input: V2State, skillId: string, before: LabRule): Array<{ studentId: string; name: string }> {
+export function progressLost(input: V2State, skillId: string, before: LabRule): Array<{ studentId: string; name: string; from: RecordState }> {
   const s = heldState(input)
-  const out: Array<{ studentId: string; name: string }> = []
+  const out: Array<{ studentId: string; name: string; from: RecordState }> = []
   for (const p of studentsOf(s)) {
     const evals = evalsOfStudentSkill(s, p.id, skillId)
     if (!evals.length || !before.model) continue
     const run = evaluateRule(before, evals)
-    if (!isInvalidResult(run) && run.have > 0) out.push({ studentId: p.id, name: p.name })
+    if (!isInvalidResult(run) && run.have > 0) out.push({ studentId: p.id, name: p.name, from: run.state as RecordState })
   }
   return out
 }
@@ -1633,7 +1652,7 @@ export function setupSummary(rule: LabRule): SetupGroup[] {
         ]
       : m === "demonstration"
         ? [rule.levels.filter((l) => l.trim()).join(", ") || "No levels yet", countsLine(rule)]
-        : [`${rule.questions.length} ${plural(rule.questions.length, "question", "questions")}${m === "scored" ? `, scored 1 to ${rule.scaleMax}` : ""}`]
+        : [`${rule.questions.length} ${plural(rule.questions.length, "question", "questions")}${m === "scored" ? (isInt(rule.scaleMax) ? `, scored 1 to ${rule.scaleMax}` : ", scale not chosen") : ""}`]
   const fields = rule.studentFields.filter((f) => f.label.trim())
   const roles = rule.evaluatorRoles.map((r) => ROLE_LABEL[r])
   const onOff = (b: boolean) => (b ? "Yes" : "No")
@@ -1721,7 +1740,7 @@ export function checkGroups(rule: LabRule, current: LabRule | null = null): Chec
           ]
         : [
             { label: "Questions", value: realQuestions ? `${rule.questions.length} ${plural(rule.questions.length, "question", "questions")}` : "None yet", missing: realQuestions === 0 },
-            ...(m === "scored" ? [{ label: "Scale", value: `1 to ${rule.scaleMax}` }] : []),
+            ...(m === "scored" ? [isInt(rule.scaleMax) ? { label: "Scale", value: `1 to ${rule.scaleMax}` } : { label: "Scale", value: "Not chosen", missing: true }] : []),
           ]
   const ruleRows: CheckRow[] = !m
     ? [{ label: "Rule", value: "Not set", missing: true }]

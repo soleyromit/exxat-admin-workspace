@@ -18,6 +18,7 @@ import {
   AlertDialogTitle,
 } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@exxatdesignux/ui/components/ui/tooltip"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { Card, CardContent } from "@exxatdesignux/ui/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
@@ -37,7 +38,7 @@ import { RoleRow } from "./section"
 import { countingLevelsPhrase, levelTicked, withLevelTicked } from "@/lib/lab/configure"
 import { countsFromIndex, criteriaMeaning, ruleMeaning, type Meaning, MODEL_STEP_LABEL, removeLevel, removeQuestion, swapItems, appendQuestions, newQuestionLines, parseQuestionLines, setSubsetRange, applyPreset, presetReplaces, FIELD_TYPE_LABEL, LAB_MODELS as MODELS, LABEL_PRESETS, MODEL_HELP, MODEL_LABEL, ROLE_LABEL, ROLES, withModel, type FieldType, type LabelPresetId, type LabRule, type RuleIssue, type SectionId } from "@/lib/lab/configure"
 import type { EvalModel } from "@/lib/v2/types"
-import { aNoun, skillNoun } from "@/lib/lab/terms"
+import { aNoun, movesWhen, skillNoun } from "@/lib/lab/terms"
 import { RuleConditions, RuleNumber } from "./rule-conditions"
 import { useFieldLayer, useFocusBack } from "./field-layer"
 import { useDialogDiscard } from "@/components/lab/shared/unsaved-guard"
@@ -90,11 +91,21 @@ function NumberInput({ id, label, value, onChange, error, width = NUMBER_WIDTH, 
  * One Remove style on every configure list (Romit 2026-10-27, "why is this layout like this?": a grey text Remove outweighed the
  * question): an icon-only ghost button at the end of its row, named for its row, so the row's content carries the weight.
  */
-export function RemoveButton({ id, label, onClick }: { id?: string; label: string; onClick: () => void }) {
-  return (
+export function RemoveButton({ id, label, onClick, tip }: { id?: string; label: string; onClick: () => void; /** A short hover and focus tip ("Remove level"); the button keeps its full name. */ tip?: string }) {
+  const button = (
     <Button id={id} type="button" variant="ghost" size="icon-sm" aria-label={label} onClick={onClick}>
       <i className="fa-light fa-xmark" aria-hidden="true" />
     </Button>
+  )
+  if (!tip) return button
+  return (
+    // Its own provider, so the list also works outside the app shell (a test, a dialog).
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent>{tip}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
@@ -626,7 +637,7 @@ export function QuestionRuleField({ rule, setRule, err, legendHidden, subsetSlot
   if (compact) {
     return (
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Counts when">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label={movesWhen()}>
           <Select value={r?.kind ?? ""} onValueChange={choose}>
             <SelectTrigger id="cfg-qrule" className="w-44" aria-label="Which answers count" {...errProps("cfg-qrule", err("cfg-qrule"))}>
               <SelectValue placeholder="Choose" />
@@ -650,7 +661,7 @@ export function QuestionRuleField({ rule, setRule, err, legendHidden, subsetSlot
   }
   return (
     <FieldSet>
-      <FieldLegend variant="label" className={legendHidden ? "sr-only" : undefined}>Counts when</FieldLegend>
+      <FieldLegend variant="label" className={legendHidden ? "sr-only" : undefined}>{movesWhen()}</FieldLegend>
       <RadioGroup
         id="cfg-qrule"
         value={r?.kind ?? ""}
@@ -804,7 +815,7 @@ export function ScoredRuleField({ rule, setRule, err, radios, legendHidden, comp
     const start = () => (Number.isFinite(pendingValue) ? pendingValue : Number.NaN)
     return (
       <FieldSet>
-        <FieldLegend variant="label" className={legendHidden ? "sr-only" : undefined}>Counts when</FieldLegend>
+        <FieldLegend variant="label" className={legendHidden ? "sr-only" : undefined}>{movesWhen()}</FieldLegend>
         <RadioGroup id="cfg-srule" value={r?.kind ?? ""} onValueChange={(v) => setRule((x) => ({ ...x, scoredRule: { kind: v as "average" | "minEach" | "total", value: r?.value ?? start() } }))} className="flex flex-col gap-3 outline-none" {...errProps("cfg-srule", err("cfg-srule"))}>
           {SCORED_KINDS.map((k) => (
             <div key={k.value} className="flex items-center gap-2">
@@ -826,7 +837,7 @@ export function ScoredRuleField({ rule, setRule, err, radios, legendHidden, comp
   if (compact) {
     return (
       <div className="flex flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Counts when">
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label={movesWhen()}>
           <Select value={r?.kind ?? ""} onValueChange={(v) => setRule((x) => ({ ...x, scoredRule: { kind: v as "average" | "minEach" | "total", value: r?.value ?? (Number.isFinite(pendingValue) ? pendingValue : Number.NaN) } }))}>
             <SelectTrigger id="cfg-srule" className="w-44" aria-label="Which score counts" {...errProps("cfg-srule", err("cfg-srule"))}>
               <SelectValue placeholder="Choose" />
@@ -848,7 +859,7 @@ export function ScoredRuleField({ rule, setRule, err, radios, legendHidden, comp
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby="cfg-srule-lead">
-        <span id="cfg-srule-lead" className={TYPE.body}>Counts when</span>
+        <span id="cfg-srule-lead" className={TYPE.body}>{movesWhen()}</span>
         <Select value={r?.kind ?? ""} onValueChange={(v) => setRule((x) => ({ ...x, scoredRule: { kind: v as "average" | "minEach" | "total", value: r?.value ?? (Number.isFinite(pendingValue) ? pendingValue : Math.ceil(x.scaleMax * 0.6)) } }))}>
           <SelectTrigger id="cfg-srule" className="w-48" aria-label="Which score counts" {...errProps("cfg-srule", err("cfg-srule"))}>
             <SelectValue placeholder="Choose which score" />
@@ -1148,7 +1159,7 @@ export function CheckOffGrantNote({ rule, id }: { rule: LabRule; id: string }) {
       {below ? (
         <p id={`${id}-below`} className={cn(TYPE.helper, "flex items-center gap-1.5 text-[var(--status-badge-warning-fg)]")} data-checkoff-below>
           <i className="fa-light fa-triangle-exclamation text-xs" aria-hidden="true" />
-          This level is not accepted, so a group check-off will not add to the times needed.
+          {`An evaluation at this level does not move a student toward achieving the ${skillNoun()}, so a group check-off will not add to the times needed.`}
         </p>
       ) : null}
     </>

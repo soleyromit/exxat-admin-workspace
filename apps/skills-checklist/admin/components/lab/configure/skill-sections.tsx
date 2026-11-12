@@ -20,7 +20,7 @@ import { appendQuestions, countsFromIndex, countsFromOption, hasNeed, LAB_MODEL_
 import { checkOffLevelIndex } from "@/lib/lab/checkoff-rules"
 import { CONFIGURATION_META } from "@/lib/lab/library"
 import { panelIssues, rebuildForModel, TIMES_MAX } from "@/lib/lab/program-settings"
-import { inSentence, skillNoun } from "@/lib/lab/terms"
+import { inSentence, movesWhen, skillNoun } from "@/lib/lab/terms"
 import { plural } from "@/lib/v2/format"
 import { BinaryLabelsField, CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, CheckOffGrantNote, checkOffGrantSelect, ListEditor, ModelSection, NUMBER_WIDTH, PasteQuestions, QualifyingField, QuestionRuleField, QuestionSubsetPicker, ScaleField, ScoredRuleField, SignersField, withCheckOffPatch, type SectionProps } from "./fields"
 import { useFieldLayer, useFocusBack } from "./field-layer"
@@ -404,8 +404,8 @@ export function ConfigureSections({ rule, setRule, issues, showErrors, settings,
                     </>
                   ) : null}
                   {rule.model === "scored" ? <Row label="Scale" stacked><ScaleField short rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} /></Row> : null}
-                  {rule.model === "scored" ? <Row label="Counts when" stacked><ScoredRuleField rule={rule} setRule={setRule} err={err} compact /></Row> : null}
-                  {rule.model === "question" ? <Row label="Counts when" stacked><QuestionRuleField compact rule={rule} setRule={setRule} err={err} subsetSlot={<SubsetRow rule={rule} setRule={setRule} error={err("cfg-qrule-subset")} />} /></Row> : null}
+                  {rule.model === "scored" ? <Row label={movesWhen()} stacked><ScoredRuleField rule={rule} setRule={setRule} err={err} compact /></Row> : null}
+                  {rule.model === "question" ? <Row label={movesWhen()} stacked><QuestionRuleField compact rule={rule} setRule={setRule} err={err} subsetSlot={<SubsetRow rule={rule} setRule={setRule} error={err("cfg-qrule-subset")} />} /></Row> : null}
                   {usesQ ? <Row label="Questions" stacked><QuestionsRow rule={rule} setRule={setRule} error={firstErr(/^cfg-(add-question|question-)/)} /></Row> : null}
                 </>
               ))}

@@ -15,7 +15,7 @@ import { TYPE } from "@/components/lab/type-scale"
 import { ruleAllowsCheckOff, withCheckOffDecided, type LabRule, type RuleIssue } from "@/lib/lab/configure"
 import { CONFIGURATION_META } from "@/lib/lab/library"
 import { rebuildForModel } from "@/lib/lab/program-settings"
-import { skillNoun } from "@/lib/lab/terms"
+import { movesWhen, skillNoun } from "@/lib/lab/terms"
 import type { Configuration } from "@/lib/lab/library"
 import { BinaryLabelsField, CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, CheckOffGrantNote, checkOffGrantSelect, ModelSection, QualifyingField, QuestionRuleField, ScaleField, ScoredRuleField, SignersField, withCheckOffPatch, type SectionProps } from "./fields"
 import { MinimumsField } from "./rule-conditions"
@@ -99,7 +99,7 @@ function ModelRows({ rule, setRule, issues, showErrors, err }: Pick<SkillCardsPr
     return (
       <>
         {questions}
-        <SettingRow label="Counts when" below={<QuestionRuleField rule={rule} setRule={setRule} err={err} legendHidden subsetSlot={<SubsetRow rule={rule} setRule={setRule} error={err("cfg-qrule-subset")} />} />} />
+        <SettingRow label={movesWhen()} below={<QuestionRuleField rule={rule} setRule={setRule} err={err} legendHidden subsetSlot={<SubsetRow rule={rule} setRule={setRule} error={err("cfg-qrule-subset")} />} />} />
       </>
     )
   }
@@ -108,7 +108,7 @@ function ModelRows({ rule, setRule, issues, showErrors, err }: Pick<SkillCardsPr
       <>
         {questions}
         <SettingRow label="Scale" below={<ScaleField short rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} />} />
-        <SettingRow label="Counts when" below={<ScoredRuleField rule={rule} setRule={setRule} err={err} radios legendHidden />} />
+        <SettingRow label={movesWhen()} below={<ScoredRuleField rule={rule} setRule={setRule} err={err} radios legendHidden />} />
       </>
     )
   }

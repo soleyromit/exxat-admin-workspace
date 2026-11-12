@@ -5012,6 +5012,16 @@
     "via": "components/lab/configure/program-layout"
    },
    {
+    "name": "Card",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
+    "name": "CardContent",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
     "name": "ColumnDef",
     "from": "@exxatdesignux/ui/components/data-table/types",
     "via": "components/lab/configure/program-parts"
@@ -5130,10 +5140,6 @@
  },
  "admin/evaluation-settings/B": {
   "direct": [
-   {
-    "name": "Button",
-    "from": "@exxatdesignux/ui/components/ui/button"
-   },
    {
     "name": "FieldError",
     "from": "@exxatdesignux/ui/components/ui/field"
@@ -5266,6 +5272,11 @@
    {
     "name": "AlertDialogTitle",
     "from": "@exxatdesignux/ui/components/ui/alert-dialog",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "Badge",
+    "from": "@exxatdesignux/ui/components/ui/badge",
     "via": "components/lab/configure/settings-sheet"
    },
    {
@@ -5606,11 +5617,6 @@
    {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
-    "via": "components/lab/configure/settings-rows"
-   },
-   {
-    "name": "Label",
-    "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/configure/settings-sheet"
    },
    {
@@ -5767,6 +5773,46 @@
     "name": "ToggleSwitch",
     "from": "@exxatdesignux/ui/components/ui/toggle-switch",
     "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
    }
   ]
  },
@@ -5854,6 +5900,16 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/configure/program-layout"
+   },
+   {
+    "name": "Card",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
+    "name": "CardContent",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
    },
    {
     "name": "ColumnDef",
@@ -6363,9 +6419,19 @@
     "via": "components/lab/configure/fields"
    },
    {
+    "name": "Card",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
     "name": "CardContent",
     "from": "@exxatdesignux/ui/components/ui/card",
     "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "CardContent",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
    },
    {
     "name": "Checkbox",
@@ -6993,6 +7059,26 @@
     "via": "components/lab/configure/fields"
    },
    {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
     "name": "ViewSegmentedControl",
     "from": "@exxatdesignux/ui/components/ui/view-segmented-control",
     "via": "components/lab/configure/program-preview"
@@ -7178,9 +7264,19 @@
     "via": "components/lab/configure/fields"
    },
    {
+    "name": "Card",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
     "name": "CardContent",
     "from": "@exxatdesignux/ui/components/ui/card",
     "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "CardContent",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
    },
    {
     "name": "Checkbox",
@@ -7606,6 +7702,26 @@
     "name": "ToggleSwitch",
     "from": "@exxatdesignux/ui/components/ui/toggle-switch",
     "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
    }
   ]
  },
@@ -7815,9 +7931,19 @@
     "via": "components/lab/configure/fields"
    },
    {
+    "name": "Card",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
+   },
+   {
     "name": "CardContent",
     "from": "@exxatdesignux/ui/components/ui/card",
     "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "CardContent",
+    "from": "@exxatdesignux/ui/components/ui/card",
+    "via": "components/lab/configure/program-parts"
    },
    {
     "name": "Checkbox",
@@ -8117,6 +8243,26 @@
    {
     "name": "ToggleSwitch",
     "from": "@exxatdesignux/ui/components/ui/toggle-switch",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
     "via": "components/lab/configure/fields"
    }
   ]
@@ -8601,6 +8747,11 @@
     "via": "components/lab/admin-b/settings-page"
    },
    {
+    "name": "Badge",
+    "from": "@exxatdesignux/ui/components/ui/badge",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/empty-block"
@@ -8679,11 +8830,6 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/admin-a/student-groups-section"
-   },
-   {
-    "name": "Button",
-    "from": "@exxatdesignux/ui/components/ui/button",
-    "via": "components/lab/screens/admin-evaluation-settings-b"
    },
    {
     "name": "Button",
@@ -9728,11 +9874,6 @@
    {
     "name": "InputGroup",
     "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroup",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/setup/skills-list-step"
    },
    {
@@ -9753,27 +9894,12 @@
    {
     "name": "InputGroupAddon",
     "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupAddon",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/configure/fields"
    },
    {
     "name": "InputGroupAddon",
     "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/admin-a/parts"
-   },
-   {
-    "name": "InputGroupButton",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupInput",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "InputGroupInput",
@@ -9829,11 +9955,6 @@
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/configure/fields"
-   },
-   {
-    "name": "Label",
-    "from": "@exxatdesignux/ui/components/ui/label",
-    "via": "components/lab/configure/settings-rows"
    },
    {
     "name": "Label",
@@ -10321,6 +10442,46 @@
     "via": "components/lab/configure/settings-sheet"
    },
    {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
     "name": "ViewSegmentedControl",
     "from": "@exxatdesignux/ui/components/ui/view-segmented-control",
     "via": "components/lab/admin-a/mapping-views"
@@ -10591,6 +10752,11 @@
     "via": "components/lab/admin-b/settings-page"
    },
    {
+    "name": "Badge",
+    "from": "@exxatdesignux/ui/components/ui/badge",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/screens/admin-setup-skills-a"
@@ -10649,11 +10815,6 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/admin-b/settings-page"
-   },
-   {
-    "name": "Button",
-    "from": "@exxatdesignux/ui/components/ui/button",
-    "via": "components/lab/screens/admin-evaluation-settings-b"
    },
    {
     "name": "Button",
@@ -11418,11 +11579,6 @@
    {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
-    "via": "components/lab/configure/settings-rows"
-   },
-   {
-    "name": "Label",
-    "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/configure/settings-sheet"
    },
    {
@@ -11743,6 +11899,46 @@
    {
     "name": "ToggleSwitch",
     "from": "@exxatdesignux/ui/components/ui/toggle-switch",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/settings-sheet"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
     "via": "components/lab/configure/settings-sheet"
    },
    {
@@ -15846,6 +16042,26 @@
     "name": "ToggleSwitch",
     "from": "@exxatdesignux/ui/components/ui/toggle-switch",
     "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
    }
   ]
  },
@@ -16420,6 +16636,26 @@
    {
     "name": "ToggleSwitch",
     "from": "@exxatdesignux/ui/components/ui/toggle-switch",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
     "via": "components/lab/configure/fields"
    },
    {
@@ -17090,6 +17326,26 @@
    {
     "name": "ToggleSwitch",
     "from": "@exxatdesignux/ui/components/ui/toggle-switch",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "Tooltip",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipContent",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipProvider",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
+    "via": "components/lab/configure/fields"
+   },
+   {
+    "name": "TooltipTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tooltip",
     "via": "components/lab/configure/fields"
    }
   ]
@@ -19509,26 +19765,6 @@
     "via": "components/lab/admin-a/lists-new-page"
    },
    {
-    "name": "InputGroup",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupAddon",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupButton",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupInput",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-parts"
@@ -20116,26 +20352,6 @@
    {
     "name": "Input",
     "from": "@exxatdesignux/ui/components/ui/input",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroup",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupAddon",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupButton",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupInput",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/admin-a/lists-new-page"
    },
    {
@@ -20729,26 +20945,6 @@
     "via": "components/lab/admin-a/lists-new-page"
    },
    {
-    "name": "InputGroup",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupAddon",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupButton",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupInput",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-parts"
@@ -21336,26 +21532,6 @@
    {
     "name": "Input",
     "from": "@exxatdesignux/ui/components/ui/input",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroup",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupAddon",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupButton",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupInput",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/admin-a/lists-new-page"
    },
    {
@@ -23008,32 +23184,12 @@
    {
     "name": "InputGroup",
     "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroup",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/admin-a/parts"
    },
    {
     "name": "InputGroupAddon",
     "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupAddon",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/admin-a/parts"
-   },
-   {
-    "name": "InputGroupButton",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "InputGroupInput",
-    "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "InputGroupInput",
@@ -28331,6 +28487,16 @@
   "direct": [],
   "via": [
    {
+    "name": "Avatar",
+    "from": "@exxatdesignux/ui/components/ui/avatar",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "AvatarFallback",
+    "from": "@exxatdesignux/ui/components/ui/avatar",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "AvatarInitials",
     "from": "@exxatdesignux/ui/components/ui/avatar",
     "via": "components/lab/student2/log-parts"
@@ -28404,6 +28570,11 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Calendar",
@@ -28486,9 +28657,19 @@
     "via": "components/lab/lab-bar/walkthrough-controls"
    },
    {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "DropdownMenuItem",
@@ -28496,9 +28677,54 @@
     "via": "components/lab/lab-bar/walkthrough-controls"
    },
    {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuLabel",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuRadioGroup",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuRadioItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSeparator",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSub",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSubContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSubTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Field",
@@ -28604,6 +28830,16 @@
     "name": "InputGroupInput",
     "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/student2/log-parts"
+   },
+   {
+    "name": "Kbd",
+    "from": "@exxatdesignux/ui/components/ui/kbd",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "KbdGroup",
+    "from": "@exxatdesignux/ui/components/ui/kbd",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Label",
@@ -28786,6 +29022,16 @@
   "direct": [],
   "via": [
    {
+    "name": "Avatar",
+    "from": "@exxatdesignux/ui/components/ui/avatar",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "AvatarFallback",
+    "from": "@exxatdesignux/ui/components/ui/avatar",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "AvatarInitials",
     "from": "@exxatdesignux/ui/components/ui/avatar",
     "via": "components/lab/student2/log-parts"
@@ -28859,6 +29105,11 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Calendar",
@@ -28941,9 +29192,19 @@
     "via": "components/lab/lab-bar/walkthrough-controls"
    },
    {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "DropdownMenuItem",
@@ -28951,9 +29212,54 @@
     "via": "components/lab/lab-bar/walkthrough-controls"
    },
    {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuLabel",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuRadioGroup",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuRadioItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSeparator",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSub",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSubContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSubTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Field",
@@ -29059,6 +29365,16 @@
     "name": "InputGroupInput",
     "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/student2/log-parts"
+   },
+   {
+    "name": "Kbd",
+    "from": "@exxatdesignux/ui/components/ui/kbd",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "KbdGroup",
+    "from": "@exxatdesignux/ui/components/ui/kbd",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Label",
@@ -29385,6 +29701,16 @@
     "via": "components/lab/import/import-parts"
    },
    {
+    "name": "Avatar",
+    "from": "@exxatdesignux/ui/components/ui/avatar",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "AvatarFallback",
+    "from": "@exxatdesignux/ui/components/ui/avatar",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "AvatarInitials",
     "from": "@exxatdesignux/ui/components/ui/avatar",
     "via": "components/lab/student2/log-parts"
@@ -29438,6 +29764,11 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Button",
@@ -29690,6 +30021,11 @@
     "via": "components/lab/lab-bar/walkthrough-controls"
    },
    {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/import/import-parts"
@@ -29698,6 +30034,11 @@
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "DropdownMenuItem",
@@ -29710,6 +30051,46 @@
     "via": "components/lab/lab-bar/walkthrough-controls"
    },
    {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuLabel",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuRadioGroup",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuRadioItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSeparator",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSub",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSubContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "DropdownMenuSubTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
+   },
+   {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/import/import-parts"
@@ -29718,6 +30099,11 @@
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/lab-bar/walkthrough-controls"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Field",
@@ -29873,6 +30259,16 @@
     "name": "InputGroupInput",
     "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/student2/request-parts"
+   },
+   {
+    "name": "Kbd",
+    "from": "@exxatdesignux/ui/components/ui/kbd",
+    "via": "components/shell/user-menu"
+   },
+   {
+    "name": "KbdGroup",
+    "from": "@exxatdesignux/ui/components/ui/kbd",
+    "via": "components/shell/user-menu"
    },
    {
     "name": "Label",

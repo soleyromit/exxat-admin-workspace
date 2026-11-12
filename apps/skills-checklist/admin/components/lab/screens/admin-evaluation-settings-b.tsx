@@ -4,8 +4,8 @@
  * Evaluation settings (map D3), "every field on the page" (concept D, D-L141, Romit 2026-11-10: "Concept D, make the level counts selection process
  * better"). One sheet of five sections divided by hairlines: How skills are judged, the model's own section (Levels, Outcomes, or Questions and what
  * counts), Achieved when, Steps before it counts, Forms. Each section's name sits left, its fields right, labels above fields. Nothing is behind
- * an Edit, a tab or a side panel. A sticky "Your rule" panel reads the rule aloud, counts unsaved changes and lists what is missing or wrong, each a link
- * to its field. At phone width the panel goes first and Save is a bar at the bottom. Preview is a dialog.
+ * an Edit, a tab or a side panel. A sticky "Your rule" panel draws the rule as a path of steps (D-L145) and puts what is missing or wrong on the step it
+ * blocks, each a link to its field. At phone width the panel goes first and Save is a bar at the bottom. Preview is a dialog.
  *
  * URL: ?state=loading.
  */
@@ -43,17 +43,10 @@ import { TIMES_MAX } from "@/lib/lab/program-settings"
 import { FROM_PARAM } from "@/lib/lab/return-to"
 import { buildLibrary } from "@/lib/lab/library"
 import { useV2State } from "@/lib/v2/react"
-import { countSkills, inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
 const judgedName = () => `How ${skillNounPlural()} are judged`
 const STUDENT_FIELDS_LABEL = "What the student fills in"
-
-/** The cards' example lines, with a level name lowercased where it falls mid-sentence ("Needs coaching to works alone"). */
-function examples(rule: LabRule) {
-  const e = tileExamples(rule)
-  const named = rule.levels.map((l) => l.trim()).filter(Boolean)
-  return named.length >= 2 ? { ...e, demonstration: `${named[0]} to ${inSentence(named[named.length - 1])}` } : e
-}
 
 /** A problem in a question the list hides (past the first 8): the list opens before focus moves to it. */
 const hiddenQuestion = (i: RuleIssue) => {
@@ -67,7 +60,7 @@ function modelSection(rule: LabRule): { title: string; count?: number } | null {
     case "demonstration": return { title: "Levels", count: rule.levels.length }
     case "binary": return { title: "Outcomes" }
     case "question":
-    case "scored": return { title: "Questions and what counts", count: rule.questions.length }
+    case "scored": return { title: "Questions", count: rule.questions.length }
     default: return null
   }
 }
@@ -86,8 +79,7 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
   const grant = rule.model ? checkOffGrantSelect(rule, setRule) : null
   const library = React.useMemo(() => buildLibrary(state), [state])
   const custom = library.filter((r) => r.configuration === "edited").length
-  // The Times needed line reads from the rule panel's base (the skills on these settings, Custom left out), so the two never disagree (2026-11-11).
-  const onDefault = m.ids.length - custom
+  // Skills on these settings (Custom left out, as the rule panel counts) that keep their own number; the Times needed line names only these.
   const ownDefault = library.filter((r) => r.configuration !== "edited" && r.timesDiffer).length
   const changed = React.useMemo(() => changedSettings(rule, m.saved), [rule, m.saved])
   const own = modelSection(rule)
@@ -107,12 +99,8 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
     { id: "cfg-step-counts", label: "Counts toward achieved", fixed: true },
   ]
 
-  const applies = (
-    <>
-      <p className={TYPE.body}>{custom ? `${(total - custom).toLocaleString("en-US")} of ${countSkills(total)}` : `All ${countSkills(total)}`}</p>
-      {custom ? <p className={TYPE.meta}>{`${countSkills(custom)} on Custom keep their own settings`}</p> : null}
-    </>
-  )
+  // Who the settings reach: the skills on Default, and a link to those on Custom, which keep their own (D-L145).
+  const applies = { total, custom, customHref: to("admin/skills-library", { config: "edited", [FROM_PARAM]: "settings" }) }
 
   return (
     <div className="@container min-w-0" data-layout="sheet">
@@ -128,17 +116,17 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
           <RulePanel rule={rule} issues={issues} showErrors={showErrors} applies={applies} onGo={go} />
         </div>
         <div className="@container min-w-0 @[60rem]:col-start-1 @[60rem]:row-start-1" data-sheet>
-          <SheetSection id="cfg-sec-model" title={judgedName()}>
+          <SheetSection id="cfg-sec-model" title={judgedName()} changed={changed.has("model")}>
             {/* Before a model is chosen this section is alone, with nothing chosen [REQ SC-02]. Its own container, so the four cards sit 2 x 2 here. */}
             <div className="@container min-w-0">
-              <ModelSection {...props} examples={examples(rule)} legend={judgedName()} row />
+              <ModelSection {...props} examples={tileExamples(rule)} legend={judgedName()} row />
             </div>
           </SheetSection>
           {own ? (
-            <SheetSection id="cfg-sec-own" title={own.title} count={own.count}>
-              {rule.model === "demonstration" ? <LevelsField rule={rule} setRule={setRule} err={err} changed={changed.has("levels")} /> : null}
-              {rule.model === "binary" ? <OutcomesField rule={rule} setRule={setRule} err={err} changed={changed.has("outcomes")} /> : null}
-              {rule.model === "question" || rule.model === "scored" ? <QuestionsField rule={rule} setRule={setRule} err={err} changed={changed.has("questions")} expanded={expanded} setExpanded={setExpanded} /> : null}
+            <SheetSection id="cfg-sec-own" title={own.title} count={own.count} changed={changed.has("levels") || changed.has("outcomes") || changed.has("questions")}>
+              {rule.model === "demonstration" ? <LevelsField rule={rule} setRule={setRule} err={err} /> : null}
+              {rule.model === "binary" ? <OutcomesField rule={rule} setRule={setRule} err={err} /> : null}
+              {rule.model === "question" || rule.model === "scored" ? <QuestionsField rule={rule} setRule={setRule} err={err} expanded={expanded} setExpanded={setExpanded} /> : null}
               {rule.model === "scored" ? (
                 <FieldBlock label="Scale" changed={changed.has("scale")}>
                   <ScaleField rule={rule} setRule={setRule} issues={issues} showErrors={showErrors} short />
@@ -168,22 +156,18 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
                       value={Number.isFinite(rule.need) ? String(rule.need) : ""}
                       onChange={(e) => { const raw = e.target.value; setRule((r) => ({ ...r, need: raw.trim() === "" ? Number.NaN : Number(raw) })) }}
                       aria-invalid={!!needErr || undefined}
-                      aria-describedby={[needErr ? "cfg-need-error" : "", "cfg-need-unit", m.saved ? "cfg-need-scope" : ""].filter(Boolean).join(" ")}
+                      aria-describedby={[needErr ? "cfg-need-error" : "", "cfg-need-unit", m.saved && ownDefault ? "cfg-need-scope" : ""].filter(Boolean).join(" ")}
                     />
                   </NumberWithUnit>
                   {needErr ? <FieldError id="cfg-need-error">{needErr}</FieldError> : null}
-                  {/* Who the number reaches, once: the skills on the program's number, and a link to those on their own, which a save leaves alone. */}
-                  {m.saved ? (
+                  {/* The skills that keep their own number, which a save leaves alone (2026-11-11: no second "166" beside the rule panel's "Applies to").
+                      Hidden when none do. */}
+                  {m.saved && ownDefault ? (
                     <p id="cfg-need-scope" className={TYPE.helper} data-need-scope>
-                      {ownDefault ? (
-                        <>
-                          {`Of the ${countSkills(onDefault)} on these settings, `}
-                          <Link href={to("admin/skills-library", { different: "1", config: "default", [FROM_PARAM]: "settings" })} className="text-foreground underline underline-offset-4 hover:text-[var(--brand-color)]" data-different-link>
-                            {`${ownDefault.toLocaleString("en-US")} ${ownDefault === 1 ? "uses its" : "use their"} own number`}
-                          </Link>
-                          {` and ${ownDefault === 1 ? "is" : "are"} not changed.`}
-                        </>
-                      ) : `Applies to all ${countSkills(onDefault)} on these settings.`}
+                      <Link href={to("admin/skills-library", { different: "1", config: "default", [FROM_PARAM]: "settings" })} className="text-foreground underline underline-offset-4 hover:text-[var(--brand-color)]" data-different-link>
+                        {`${ownDefault.toLocaleString("en-US")} of these ${ownDefault === 1 ? `${skillNounPlural()} uses its` : `${skillNounPlural()} use their`} own number`}
+                      </Link>
+                      {` and ${ownDefault === 1 ? "is" : "are"} not changed.`}
                     </p>
                   ) : null}
                 </FieldBlock>

@@ -7,7 +7,6 @@ import * as React from "react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@exxatdesignux/ui/components/ui/card"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
-import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { FieldError, FieldLabel, FieldLegend, FieldSet } from "@exxatdesignux/ui/components/ui/field"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
@@ -16,6 +15,8 @@ import { cn } from "@exxatdesignux/ui/lib/utils"
 import { TYPE } from "@/components/lab/type-scale"
 import { levelMoveChange, levelTicked, removeLevel, swapItems, withLevelTicked, type LabRule } from "@/lib/lab/configure"
 import type { EvalModel } from "@/lib/v2/types"
+import { skillNoun } from "@/lib/lab/terms"
+import { levelRangeExample } from "@/lib/lab/rule-path"
 import { PresetChips, placeholderFor, type SectionProps } from "./fields"
 
 /** The panel needs room beside the settings; below this the page stacks and Preview is a dialog (map D3). */
@@ -83,10 +84,10 @@ export function SwitchRow({ id, label, hint, checked, onChange }: { id: string; 
 
 /** One short example per choice [INFER words]: tiles sit 2 by 2, so name and example stay within three lines. The first two show the program's own words once it has them; the rest are examples only, nothing is preselected [REQ SC-02]. */
 export function tileExamples(rule: LabRule): Record<EvalModel, string> {
-  const named = rule.levels.map((l) => l.trim()).filter(Boolean)
   const labels = rule.outcomeLabels.map((l) => l.trim())
   return {
-    demonstration: named.length >= 2 ? `${named[0]} to ${named[named.length - 1]}` : "Levels you name, such as Observed to Independent",
+    // "Needs coaching to works alone"; a blank lowest or top level is counted, never skipped (levelRangeExample).
+    demonstration: levelRangeExample(rule.levels) ?? "Levels you name, such as Observed to Independent",
     binary: rule.model === "binary" && labels[0] && labels[1] ? `One result: ${labels[0]} or ${labels[1]}` : "One result, with two labels you name",
     question: "Yes or No on each question",
     scored: "A score on each question",
@@ -237,9 +238,15 @@ export function PathSteps({ steps, label }: { steps: PathStep[]; label: string }
   )
 }
 
+/** Number, name, the checkbox column (wide enough for its head on two or three lines), the menu. */
+// Below a 28rem list the row number goes (it repeats the order), so the name keeps room for "Needs coaching" at phone width.
+const LIST_COLS = "gap-x-2 grid-cols-[minmax(0,1fr)_5rem_2rem] @[28rem]:gap-x-3 @[28rem]:grid-cols-[1rem_minmax(0,1fr)_9rem_2rem]"
+
 /**
  * Levels and which of them count, as one bordered list (D-L74, D-L95): the links between the boxes and the threshold stay in `withLevelTicked` and `removeLevel`.
- * Each row: its number, its name, an "Accepted" box with its word beside it (2026-11-11, was "Counts"), and one menu at the right edge. Focus stays with the row being moved or removed.
+ * Each row: its number, its name, a checkbox named "{level} moves a student toward achieving the skill", and one menu at the right edge. Column heads
+ * "Level" and "Moves student toward achieving the skill" sit over the rows (2026-11-11, Romit could not tell what the checkbox offers). Focus stays
+ * with the row being moved or removed.
  */
 export function LevelList({ rule, setRule, err, namesOnly }: { rule: LabRule; setRule: SectionProps["setRule"]; err: (f: string) => string | undefined; /** The Levels dialog: the page beside it holds the Counts boxes. */ namesOnly?: boolean }) {
   const countsErr = err("cfg-counts-from")
@@ -267,9 +274,19 @@ export function LevelList({ rule, setRule, err, namesOnly }: { rule: LabRule; se
   }
   return (
     <FieldSet id="cfg-counts-from" tabIndex={-1} className="flex flex-col gap-3 outline-none" data-counts-from aria-invalid={!!countsErr || undefined} aria-describedby={countsErr ? "cfg-counts-from-error" : undefined}>
-      <FieldLegend variant="label" className="sr-only">Accepted levels</FieldLegend>
+      <FieldLegend variant="label" className="sr-only">{`Which levels move a student toward achieving the ${skillNoun()}?`}</FieldLegend>
       {n ? (
-        <ol className="flex flex-col divide-y divide-border rounded-[var(--radius)] border border-border" aria-label="Levels">
+        <div className="@container min-w-0 rounded-[var(--radius)] border border-border">
+        {/* Column heads over the name and the checkbox (Romit 2026-11-11: "I can't tell what does the checkbox offer"); each checkbox keeps its full name. */}
+        {namesOnly ? null : (
+          <div className={cn("grid min-w-0 items-end border-b border-border px-3 py-1.5", LIST_COLS)} aria-hidden="true" data-list-heads>
+            <span className="hidden @[28rem]:block" />
+            <span className={TYPE.meta}>Level</span>
+            <span className={cn(TYPE.meta, "text-balance text-center")}>{`Moves student toward achieving the ${skillNoun()}`}</span>
+            <span />
+          </div>
+        )}
+        <ol className="flex flex-col divide-y divide-border" aria-label="Levels">
           {rule.levels.map((name, i) => {
             const id = `cfg-level-${i}`
             const message = err(id)
@@ -277,29 +294,27 @@ export function LevelList({ rule, setRule, err, namesOnly }: { rule: LabRule; se
             const ticked = levelTicked(rule, i)
             return (
               <li key={i} className="flex flex-col gap-1 px-3 py-2">
-                {/* Number, name, Counts beside the name, the menu on the right edge. In a phone-wide card Counts moves under the name, so the name keeps its width. */}
-                {/* Number, name across the row, Counts beside the menu at the right edge, like a table's last two columns. A named level reads as text and shows
-                    its field on hover and focus (Rename in the menu focuses it); an empty or invalid one keeps the field's border, so it reads as still to fill. In a
-                    phone-wide card Counts moves under the name, so the name keeps its width. */}
-                <div className={cn("grid min-w-0 items-center gap-x-3 gap-y-1", namesOnly ? "grid-cols-[1rem_minmax(0,1fr)_auto]" : "grid-cols-[1rem_minmax(0,1fr)_auto] @lg:grid-cols-[1rem_minmax(0,1fr)_auto_auto]")} data-level-row>
-                  <span className={cn(TYPE.meta, "text-end tabular-nums")} aria-hidden="true">{i + 1}</span>
+                {/* Number, name across the row, the checkbox under its column head, the menu at the right edge. A named level reads as text and shows
+                    its field on hover and focus (Rename in the menu focuses it); an empty or invalid one keeps the field's border, so it reads as still to fill. */}
+                <div className={cn("grid min-w-0 items-center gap-y-1", namesOnly ? "gap-x-3 grid-cols-[1rem_minmax(0,1fr)_auto]" : LIST_COLS)} data-level-row>
+                  <span className={cn(TYPE.meta, "text-end tabular-nums", !namesOnly && "hidden @[28rem]:block")} aria-hidden="true">{i + 1}</span>
                   <Input id={id} className={cn("min-w-0", name.trim() && !message && "border-transparent shadow-none hover:border-input")} aria-label={`Level ${i + 1}`} placeholder={placeholderFor("Level", i, n)} value={name} onChange={(e) => setRule((r) => ({ ...r, levels: r.levels.map((x, k) => (k === i ? e.target.value : x)) }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} data-level-name />
                   {namesOnly ? null : (
-                    <Label htmlFor={`cfg-counts-from-${i}`} className={cn("col-start-2 row-start-2 flex w-fit cursor-pointer items-center gap-2 ps-2.5 font-normal @lg:col-start-3 @lg:row-start-1 @lg:pe-2 @lg:ps-0", TYPE.body, !ticked && "text-muted-foreground")}>
-                      <Checkbox id={`cfg-counts-from-${i}`} aria-label={`Accept ${shown}`} checked={ticked} onCheckedChange={(c) => setRule((r) => withLevelTicked(r, i, c === true))} />
-                      <span aria-hidden="true">Accepted</span>
-                    </Label>
+                    <span className="flex justify-center">
+                      <Checkbox id={`cfg-counts-from-${i}`} aria-label={`${shown} moves a student toward achieving the ${skillNoun()}`} checked={ticked} onCheckedChange={(c) => setRule((r) => withLevelTicked(r, i, c === true))} />
+                    </span>
                   )}
-                  <span className={cn("col-start-3 row-start-1 flex justify-end", !namesOnly && "@lg:col-start-4")}>
+                  <span className="flex justify-end">
                     <LevelMenu index={i} n={n} shown={shown} onMove={(d) => move(i, d)} onRemove={() => remove(i)} onRename={() => id} />
                   </span>
                 </div>
                 {message ? <FieldError id={`${id}-error`} className="ms-7">{message}</FieldError> : null}
-                {moved?.rule === rule && moved.index === i ? <p role="status" className={cn(TYPE.helper, "ms-7")} data-level-count-change>{moved.counts ? "Now accepted: it sits above an accepted level." : "No longer accepted: it sits below a level that is not accepted."}</p> : null}
+                {moved?.rule === rule && moved.index === i ? <p role="status" className={cn(TYPE.helper, "ms-7")} data-level-count-change>{moved.counts ? `${shown} now moves a student toward achieving the ${skillNoun()}.` : `${shown} no longer does.`}</p> : null}
               </li>
             )
           })}
         </ol>
+        </div>
       ) : null}
       {countsErr ? <FieldError id="cfg-counts-from-error">{countsErr}</FieldError> : null}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
