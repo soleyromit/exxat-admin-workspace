@@ -19,7 +19,7 @@ import { configureSkillHref, LIBRARY_HREF, libraryReturnHref } from "@/component
 import { findFlow, mainSteps } from "@/lib/lab/flows"
 import { labHref, navHref, rewriteLabUrl, type LinkContext } from "@/lib/lab/links"
 import { configureHref, mappingHref } from "@/lib/lab/library"
-import { SKILLS_PANEL, skillsPanelHref } from "@/lib/lab/admin-ia"
+import { SKILLS_PANEL, skillsNavHref, skillsPanelHref } from "@/lib/lab/admin-ia"
 import { WALKTHROUGH_ID } from "@/lib/lab/walkthrough"
 import { FROM_PARAM, LEAF_TITLE, returnCarry, returnTarget } from "@/lib/lab/return-to"
 import { LAB_ADMIN, importHref, newListHref, starterHref } from "@/lib/lab/library"
@@ -133,6 +133,36 @@ describe("links from a walkthrough step stay on the walkthrough", () => {
       for (const item of SKILLS_PANEL) expect(skillsPanelHref(item, ctx), `${from.id} panel ${item.key}`).toMatch(onPath)
       expect(navHref("admin/skills-library", ctx)).toMatch(onPath)
     }
+  })
+
+  /**
+   * Romit 2026-11-13 ("when i click on skills nav, it needs to go through skills checklist nav walkthrough"): from a page outside the
+   * walkthrough (the Dashboard, Approvals, Reports and Settings rows lead to design flows; a /as/ screen URL) the Skills nav opens
+   * the walkthrough's page, so the lab strip never comes back by a Skills click. Only a Skills page of a lab flow that holds the
+   * target keeps its option set: the deliberate way into the lab, with /all and the strip's flow menu.
+   */
+  it("the Skills nav from a page outside the walkthrough opens the walkthrough, without the lab strip", () => {
+    const outside: Array<[string, LinkContext]> = [
+      ["dashboard flow", { flowId: "watch-the-cohort", stepId: "dashboard", set: "1", screen: "admin/dashboard", variant: "A", onFlowRoute: true, carry: new URLSearchParams("set=1") }],
+      ["approvals flow", { flowId: "admin-approvals", stepId: "queue", set: "1", screen: "admin/approvals", variant: "A", onFlowRoute: true, carry: new URLSearchParams("set=1") }],
+      ["settings flow", { flowId: "keep-library-right", stepId: "settings", set: "1", screen: "admin/settings", variant: "A", onFlowRoute: true, carry: new URLSearchParams("set=1&tab=settings") }],
+      ["/as/admin/evaluation-settings", { screen: "admin/evaluation-settings", variant: "B", carry: new URLSearchParams("") }],
+      ["no context", {}],
+    ]
+    for (const [name, ctx] of outside) {
+      for (const item of SKILLS_PANEL) expect(skillsPanelHref(item, ctx), `${name} panel ${item.key}`).toMatch(onPath)
+      expect(skillsNavHref(ctx), `${name} Skills row`).toBe("/walk/setup-walkthrough/library")
+    }
+  })
+
+  it("a Skills page of a lab flow keeps its option set for the rows that flow holds (the deliberate lab view)", () => {
+    const ctx: LinkContext = { flowId: "set-up-skills", stepId: "library", set: "2", screen: "admin/skills-library", variant: "A", onFlowRoute: true, carry: new URLSearchParams("set=2") }
+    const lists = SKILLS_PANEL.find((i) => i.key === "groups")!
+    expect(skillsPanelHref(lists, ctx)).toMatch(/^\/flow\/set-up-skills\/lists\?set=2/)
+    expect(skillsNavHref(ctx)).toMatch(/^\/flow\/set-up-skills/)
+    // Evaluation settings is in no lab flow: before, this row went to /as/admin/evaluation-settings with the strip.
+    const settings = SKILLS_PANEL.find((i) => i.key === "settings")!
+    expect(skillsPanelHref(settings, ctx)).toBe("/walk/setup-walkthrough/settings")
   })
 
   it("names the stops it can reach", () => {

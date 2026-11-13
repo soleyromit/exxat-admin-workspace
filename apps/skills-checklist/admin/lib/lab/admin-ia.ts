@@ -12,6 +12,8 @@
 import { capitalize, skillListsNoun, skillNounPlural } from "./terms"
 import { isVocabularySection, scopeSection, sectionLabel, type SettingsSection } from "./settings"
 import { labHref, navHref, type LinkContext } from "./links"
+import { findFlow } from "./flows"
+import { WALKTHROUGH_ID, walkthroughFlow } from "./walkthrough"
 
 export const SKILLS_PANEL_ID = "lab-skills"
 
@@ -130,10 +132,36 @@ export function legacyDirectoryHref(query: URLSearchParams): string {
   return withQuery("/lab/admin/settings", q)
 }
 
-/** Where a Skills panel item goes, keeping the option set and the scope. */
+const LIBRARY_SCREEN = "admin/skills-library"
+
+/**
+ * The link context a Skills nav link (the Skills row, a panel row, the "Skills" crumb) is built from (Romit 2026-11-13, "when i click
+ * on skills nav, it needs to go through skills checklist nav walkthrough"). The Skills nav opens the admin walkthrough's page for that
+ * row, without the lab strip, unless the page is itself a Skills page of a lab flow that holds the row's screen (a designer comparing
+ * an option set of the Skills pages stays in it). Before, a page outside the walkthrough (Dashboard, Approvals, Reports or Settings,
+ * all design flows, or a /as/ screen URL) sent the Skills rows to the design flows or to /as/admin/evaluation-settings, which carry
+ * the strip. The lab view stays one deliberate step away: the lab index (/all), the lab strip's flow menu, and /flow/... or /as/...
+ * URLs.
+ */
+export function skillsNavContext(screen: string, ctx: LinkContext): LinkContext {
+  const page = findFlow(ctx.flowId)
+  if (page?.walkthrough) return ctx
+  const onLabSkillsPage = !!skillsPanelItemFor(ctx.screen, ctx.carry, ctx.variant)
+  if (onLabSkillsPage && page?.steps.some((s) => s.screen === screen)) return ctx
+  if (!walkthroughFlow(WALKTHROUGH_ID)?.steps.some((s) => s.screen === screen)) return ctx
+  return { flowId: WALKTHROUGH_ID, carry: ctx.carry }
+}
+
+/** The Skills row and the "Skills" crumb: the Library, in the walkthrough unless the page's lab flow holds it (skillsNavContext). */
+export function skillsNavHref(ctx: LinkContext): string {
+  return navHref(LIBRARY_SCREEN, skillsNavContext(LIBRARY_SCREEN, ctx))
+}
+
+/** Where a Skills panel item goes, keeping the option set and the scope (in the walkthrough, skillsNavContext). */
 export function skillsPanelHref(item: SkillsPanelItem, ctx: LinkContext): string {
-  if (item.key === "library") return navHref(item.screen, ctx)
-  return labHref(item.screen, item.key === "categories" ? { tab: null, list: null, entry: null } : {}, ctx)
+  const nav = skillsNavContext(item.screen, ctx)
+  if (item.key === "library") return navHref(item.screen, nav)
+  return labHref(item.screen, item.key === "categories" ? { tab: null, list: null, entry: null } : {}, nav)
 }
 
 /** The Settings footer link: the Settings page on its first program section (clinical settings), set-aware. */

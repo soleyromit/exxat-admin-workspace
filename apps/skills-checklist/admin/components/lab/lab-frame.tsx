@@ -19,7 +19,7 @@ import { LeoAmbienceProvider } from "@exxatdesignux/ui/components/ui/leo-ambienc
 import { AppShellSlotsProvider, AppSidebar, SecondaryHubNavCompactShell, SecondaryHubNavRow, SecondaryPanel, SecondaryPanelProvider, SidebarShell, useSecondaryHubNavChrome, useSecondaryPanel, type AppShellData, type AppShellRoutePolicy, type AppShellSlots, type SecondaryPanelSpec, type ShellNav } from "@exxatdesignux/ui/components/shell"
 import { ResizablePanel, ResizablePanelGroup } from "@exxatdesignux/ui/components/ui/resizable"
 import { installOriginCapture, shownSkillSnapshot, subscribeShownSkill } from "@/lib/lab/configure-origin"
-import { CONFIGURE_SKILL_SCREEN, SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, settingsHref, settingsLeaf, skillsLabel, selectedSkillsPanelKey, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
+import { CONFIGURE_SKILL_SCREEN, SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, settingsHref, settingsLeaf, skillsLabel, selectedSkillsPanelKey, skillsNavHref, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { utilityBarActionButtonClass } from "@exxatdesignux/ui/components/shell/utility-bar-chrome"
 import { cn } from "@exxatdesignux/ui/lib/utils"
@@ -48,6 +48,9 @@ import { skillById } from "@/lib/v2/evidence-index"
 
 export { PersonaSwitcher }
 
+/** The admin Skills row's slug (lib/lab/personas.ts): the Library. */
+const SKILLS_ROW_SLUG = "skills-library"
+
 const icon = (name: string, solid = false) => <i className={`${solid ? "fa-solid" : "fa-light"} fa-${name}`} aria-hidden="true" />
 
 function makeData(persona: PersonaDef): AppShellData {
@@ -73,7 +76,8 @@ function makeData(persona: PersonaDef): AppShellData {
       // query; the set and scope ride along at click time (SidebarCarry below).
       const rowUrl = (slug: string) => {
         const screen = `${persona.id}/${slug}`
-        const url = !link.onFlowRoute && link.screen === screen ? labHref(screen, {}, link) : navHref(screen, link)
+        // The Skills row opens the walkthrough's Library unless the page's lab flow holds it (skillsNavHref).
+        const url = !link.onFlowRoute && link.screen === screen ? labHref(screen, {}, link) : admin && slug === SKILLS_ROW_SLUG ? skillsNavHref(link) : navHref(screen, link)
         // Written in the form the browser path is in (short /as/..., /flow/... or the long /lab/...), since the DS compares them.
         return inFormOf(pathname, url.split("?")[0]!)
       }
@@ -173,7 +177,7 @@ function Crumbs() {
   const settingsLeafLabel = admin && !back && isSettingsArea(link.screen, params) ? settingsLeaf(link.screen, params) : undefined
   let groupLeaf: string | undefined
   if (panelItem) {
-    const libraryHref = navHref("admin/skills-library", link)
+    const libraryHref = skillsNavHref(link)
     if (link.screen === CONFIGURE_SKILL_SCREEN) {
       // One skill is a level below its panel row: "Skills > Library > {skill}" (or "Skills > Evaluation settings > {skill}").
       crumbs.push({ label: skillsLabel(), href: libraryHref })
@@ -277,7 +281,8 @@ export function SidebarCarry() {
       for (const k of SCOPE_CARRY) { const v = link.carry?.get(k); if (v) q.set(k, v) }
       // Only a set the target flow has; otherwise the flow opens in its recommended set.
       const target = findFlow(toLong(href).split("/")[3])
-      if (link.set && (!target || target.sets.some((x) => x.id === link.set))) q.set("set", link.set)
+      // A walkthrough has one set and its URL carries none (lib/lab/walkthrough.ts).
+      if (link.set && !target?.walkthrough && (!target || target.sets.some((x) => x.id === link.set))) q.set("set", link.set)
       const s = q.toString()
       if (!s) return
       // preventDefault only: Next's Link skips its own navigation, but the DS row still gets the click, so it closes the

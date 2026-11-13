@@ -158,7 +158,16 @@ describe("admin IA: Categories and tags under Skills, Settings on its own sectio
     const item = SKILLS_PANEL.find((i) => i.key === "categories")!
     expect(item.screen).toBe("admin/categories-tags")
     expect(item.label()).toBe("Categories and tags")
-    expect(skillsPanelHref(item, {})).toMatch(/^\/flow\/keep-library-right\/categories\?set=1/)
+    // Outside a lab Skills flow the Skills nav opens the walkthrough's page, without the lab strip (Romit 2026-11-13).
+    expect(skillsPanelHref(item, {})).toBe("/walk/setup-walkthrough/categories")
+  })
+
+  it.each([
+    ["Dashboard", "/flow/watch-the-cohort/dashboard", { flow: "watch-the-cohort", step: "dashboard", screen: "admin/dashboard", variant: "A" }],
+    ["Settings", "/flow/keep-library-right/settings", { flow: "keep-library-right", step: "settings", screen: "admin/settings", variant: "A" }],
+  ])("from %s the Skills row opens the walkthrough's Library, not a lab flow (Romit 2026-11-13)", (_name, pathname, page) => {
+    const rows = rawRows(pathname, "set=1", page)
+    expect(rows.Skills).toBe("/walk/setup-walkthrough/library")
   })
 
   it.each(["A", "B", "C"])("Add a skill (%s) is a Library page: Skills row lit, panel open on Library (D-L41)", (variant) => {
