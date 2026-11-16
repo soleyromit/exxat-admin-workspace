@@ -28,23 +28,24 @@ import { Field, FieldDescription, FieldError, FieldLabel } from "@exxatdesignux/
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@exxatdesignux/ui/components/ui/table"
+import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
 import { InlineInputEdit } from "@exxatdesignux/ui/components/ui/inline-edit"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from "@exxatdesignux/ui/components/ui/select"
 import { TYPE } from "@/components/lab/type-scale"
+import { LabKeyMetrics as KeyMetrics, type MetricItem } from "@/components/lab/lab-bar/lab-key-metrics"
 import { Skeleton } from "@exxatdesignux/ui/components/ui/skeleton"
 import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { cn } from "@exxatdesignux/ui/lib/utils"
 import {
-  CONFIDENCE_ICON,
-  CONFIDENCE_WORD,
   EXCEPTION_LABEL,
   IMPORT_GROUPING,
   NEW_LIBRARY,
   NO_CATEGORY,
   applySuggestions,
   categoriesOf,
-  confirmSentence,
+  confirmGroups,
   decisionKey,
   fixContext,
   fixOptions,
@@ -62,9 +63,10 @@ import {
   type FixGroup,
   type ParsedRow,
 } from "@/lib/lab/import"
-import { aNoun, countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
-import { FROM_PARAM, returnHref } from "@/lib/lab/return-to"
+import { aNoun, capitalize, countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { FROM_PARAM, returnCarry, returnHref } from "@/lib/lab/return-to"
 import { useSearchParams } from "next/navigation"
+import { useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
 import type { ImportSession } from "./use-import-session"
 
 export const ACCEPT = ".pdf,.docx,.doc,.xlsx,.xls,.csv,.txt"
@@ -129,7 +131,7 @@ export function Dropzone({ onFiles, multiple = false, title, hint, compact = fal
       ) : (
         <>
           <p id={`${id}-title`} className={TYPE.card}>{title ?? `Drop your ${skillNounPlural()} list here`}</p>
-          <p id={`${id}-hint`} className={TYPE.helper}>{hint ?? "PDF, Word or Excel, any layout."}</p>
+          <p id={`${id}-hint`} className={TYPE.helper}>{hint ?? "Accepts PDF, Word or Excel files in any layout."}</p>
         </>
       )}
       <input
@@ -178,9 +180,9 @@ export const groupNoun = skillListNoun
 export function TargetField({ session, labelledBy, className }: { session: ImportSession; labelledBy?: string; className?: string }) {
   const id = React.useId()
   return (
-    <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-end", className)} data-target-field>
+    <div className={cn("flex flex-col gap-4", className)} data-target-field>
       <Field className="w-full sm:max-w-md">
-        {labelledBy ? null : <FieldLabel htmlFor={`${id}-target`}>Add to</FieldLabel>}
+        {labelledBy ? null : <FieldLabel htmlFor={`${id}-target`}>{capitalize(skillListNoun())}</FieldLabel>}
         <Select value={session.target} onValueChange={(v) => session.setTarget(v)}>
           <SelectTrigger id={`${id}-target`} className="w-full" aria-labelledby={labelledBy ? `${labelledBy} ${id}-target` : undefined}>
             <SelectValue />
@@ -197,9 +199,11 @@ export function TargetField({ session, labelledBy, className }: { session: Impor
         </Select>
       </Field>
       {session.isNewList ? (
-        <Field className="w-full sm:max-w-sm">
-          <FieldLabel htmlFor={`${id}-new-name`}>{`Name of the new ${groupNoun()}`}</FieldLabel>
-          <Input id={`${id}-new-name`} value={session.newLibraryName} onChange={(e) => session.setNewLibraryName(e.target.value)} placeholder="For example, Associate degree nursing" />
+        // Asked once, here, beside the choice that needs it (Romit 2026-11-15); checked by New skill list's rules, said after a first try.
+        <Field className="w-full sm:max-w-sm" data-invalid={session.nameTried && session.nameError ? true : undefined}>
+          <FieldLabel htmlFor="import-new-list-name">{`Name of the new ${groupNoun()}`}</FieldLabel>
+          <Input id="import-new-list-name" value={session.newLibraryName} onChange={(e) => session.setNewLibraryName(e.target.value)} onBlur={() => { if (session.newLibraryName.trim()) session.setNameTried(true) }} aria-invalid={!!(session.nameTried && session.nameError)} aria-describedby={session.nameTried && session.nameError ? "import-new-list-name-error" : undefined} autoComplete="off" data-import-new-list-name />
+          {session.nameTried && session.nameError ? <FieldError id="import-new-list-name-error">{session.nameError}</FieldError> : null}
         </Field>
       ) : null}
     </div>
@@ -218,16 +222,22 @@ export function TargetSummary({ session, className }: { session: ImportSession; 
 
 const FILE_ICON = (name: string | null) => (/\.xlsx?$|\.csv$/i.test(name ?? "") ? "fa-file-excel" : /\.docx?$/i.test(name ?? "") ? "fa-file-word" : "fa-file-pdf")
 
+/**
+ * The file's size in lines, the unit Confirm counts in, with the lines that could not be read said once (2026-11-15: step 1 said "156 skills read"
+ * while Confirm counted 158 lines; the 2 are unreadable lines, which Confirm lists under Left out).
+ */
+export const linesRead = (lines: number, unreadable: number): string => `${lines.toLocaleString("en-US")} ${lines === 1 ? "line" : "lines"} read${unreadable ? `, ${unreadable.toLocaleString("en-US")} could not be read` : ""}`
+
 /** The chosen file, its state, and the one way to swap it. */
 export function FileStatus({ session, className }: { session: ImportSession; className?: string }) {
   if (!session.fileName) return null
   const state = session.phase === "reading" ? "processing" : session.phase === "failed" ? "error" : "done"
   const detail =
-    session.phase === "reading" ? "Reading the file" : session.phase === "failed" ? "Could not be read" : session.summary ? `${plural(session.summary.read, skillNoun(), skillNounPlural())} read` : ""
+    session.phase === "reading" ? "Reading the file" : session.phase === "failed" ? "Could not be read" : session.summary ? linesRead(session.summary.read + session.summary.unreadable, session.summary.unreadable) : ""
   return (
     <>
     {/* Reading a file is Later: what the review shows is sample lines, so the page says so while the rest of the flow is previewed. */}
-    <LaterNotice>Later. This preview shows sample lines, not your file. Nothing is added to the library.</LaterNotice>
+    <LaterNotice>This preview shows sample lines, not your file.</LaterNotice>
     <Attachment state={state} size="default" orientation="horizontal" className={cn("w-full", className)} data-file-status>
       <AttachmentMedia variant="icon"><i className={`fa-light ${FILE_ICON(session.fileName)}`} aria-hidden="true" /></AttachmentMedia>
       <AttachmentContent>
@@ -272,18 +282,23 @@ export function FailedState({ session }: { session: ImportSession }) {
 // Review
 
 /** One sentence with the engine's figures, then the file's legend once (only when the file has one). */
+/**
+ * Review's figures (2026-11-15, steps v4): what was read, as numbers. Found plus could not be read is the lines read, which the File row says once. The open decisions are not a
+ * figure here: the footer's "Fix {n} lines" says it once, and Fix is where they are made. No amber on this step: nothing here needs action.
+ */
 export function ReviewSummary({ session }: { session: ImportSession }) {
   const s = session.summary
   if (!s || !session.review) return null
   const cats = categoriesOf(session.resolved).filter((c) => c.name !== NO_CATEGORY).length
-  const where = cats > 0 ? ` in ${plural(cats, IMPORT_GROUPING.category.toLowerCase(), IMPORT_GROUPING.categories)}` : ""
+  const metrics: MetricItem[] = [
+    { id: "skills", label: `${capitalize(skillNounPlural())} found`, value: s.read.toLocaleString("en-US"), delta: "", trend: "neutral" },
+    { id: "categories", label: capitalize(IMPORT_GROUPING.categories), value: cats.toLocaleString("en-US"), delta: "", trend: "neutral" },
+    { id: "unreadable", label: "Could not be read", value: s.unreadable.toLocaleString("en-US"), delta: "", trend: "neutral" },
+  ]
   return (
-    <div className="flex flex-col gap-1" data-review-summary>
-      <p className="text-sm font-medium text-foreground">
-        {`${plural(s.read, skillNoun(), skillNounPlural())} read${where}. `}
-        {session.left > 0 ? `${plural(session.left, "needs", "need")} a decision.` : "Nothing needs a decision."}
-      </p>
-    </div>
+    <section aria-label="What was read" data-review-summary data-lines-read={s.read + s.unreadable}>
+      <KeyMetrics variant="flat" size="sm" showHeader={false} metrics={metrics} metricsSingleRow className="px-0 lg:px-0" />
+    </section>
   )
 }
 
@@ -291,10 +306,6 @@ export function ReviewSummary({ session }: { session: ImportSession }) {
 export function LineText({ row, className }: { row: ParsedRow; className?: string }) {
   const text = row.unreadable ? readableText(row) : row.name
   return text ? <span className={cn("text-sm text-foreground", className)}>{text}</span> : <span className={cn("text-sm italic text-muted-foreground", className)}>{UNREADABLE_WORDS}</span>
-}
-
-function DecisionBadge() {
-  return <StatusBadge size="sm" tone="warning" icon={CONFIDENCE_ICON.look} label={CONFIDENCE_WORD.look} />
 }
 
 /**
@@ -320,6 +331,7 @@ export function CategoryList({ session }: { session: ImportSession }) {
   }, [session, vocab])
   const furniture = session.review?.furniture ?? []
   const [editing, setEditing] = React.useState<RowEdit | null>(null)
+  if (cats.length === 0 && furniture.length === 0) return <p className="py-4 text-sm text-muted-foreground" data-category-empty>{`No ${skillNounPlural()} were found in this file.`}</p>
   return (
     <>
     <RowEditDialog session={session} edit={editing} onClose={() => setEditing(null)} />
@@ -329,7 +341,6 @@ export function CategoryList({ session }: { session: ImportSession }) {
           <AccordionTrigger className="min-h-12 py-3 hover:no-underline">
             <span className="flex min-w-0 flex-1 items-center gap-3">
               <span className="min-w-0 truncate text-sm font-medium text-foreground">{c.name}</span>
-              {c.toDecide > 0 ? <StatusBadge size="sm" tone="warning" icon={CONFIDENCE_ICON.look} label={`${c.toDecide} to decide`} /> : null}
               <span className="ms-auto pe-2 text-sm tabular-nums text-muted-foreground">{c.rows.length}</span>
             </span>
           </AccordionTrigger>
@@ -374,7 +385,6 @@ export function CategoryList({ session }: { session: ImportSession }) {
                     </span>
                   )}
                   <span className="flex items-center gap-1">
-                    {r.status === "look" ? <DecisionBadge /> : null}
                     <RowEditMenu row={r} onEdit={(mode) => setEditing({ mode, rowId: r.row.id, section: r.section })} onUnmerge={() => session.unmergeRow(r.row.id)} onUnsplit={() => { if (r.row.splitFrom) session.unsplitRow(r.row.splitFrom) }} />
                   </span>
                 </li>
@@ -600,10 +610,11 @@ function FixGroupBlock({ session, group, open, onOpenChange, activeId, onFocusRo
     <Collapsible open={open} onOpenChange={onOpenChange} data-fix-group={group.kind} data-fix-open={open ? "true" : undefined} className="flex flex-col">
       <div className={cn(FIX_GRID, "min-h-12 items-center gap-y-1 bg-muted px-3 py-1.5")} data-fix-group-head>
         <CollapsibleTrigger asChild>
-          <Button type="button" variant="ghost" size="sm" className="col-span-2 -ms-2 w-fit justify-start gap-2 px-2" id={headingId} aria-label={`${EXCEPTION_LABEL[group.kind]}, ${plural(group.rows.length, "line", "lines")}`}>
+          <Button type="button" variant="ghost" size="sm" className="col-span-2 -ms-2 w-fit justify-start gap-2 px-2" id={headingId}>
             <i className={cn("fa-light fa-chevron-right text-xs transition-transform", open && "rotate-90")} aria-hidden="true" />
+            {group.open > 0 ? <i className="fa-solid fa-triangle-exclamation text-xs text-[var(--status-badge-warning-fg)]" aria-hidden="true" /> : null}
             <span className={TYPE.label}>{EXCEPTION_LABEL[group.kind]}</span>
-            <span className="tabular-nums text-muted-foreground">{group.rows.length.toLocaleString("en-US")}</span>
+            <span className="tabular-nums text-muted-foreground"><span className="sr-only">, </span>{group.rows.length.toLocaleString("en-US")}<span className="sr-only">{group.rows.length === 1 ? " line" : " lines"}{group.open > 0 ? `, ${group.open.toLocaleString("en-US")} open` : ""}</span></span>
           </Button>
         </CollapsibleTrigger>
         <span className={cn("col-span-2 truncate sm:col-span-1", TYPE.helper)}>
@@ -613,7 +624,7 @@ function FixGroupBlock({ session, group, open, onOpenChange, activeId, onFocusRo
           {done ? (
             <StatusBadge size="sm" tone="neutral" icon="fa-check" label={accepted ? "Accepted" : "Decided"} />
           ) : (
-            <Button type="button" variant="outline" size="sm" onClick={() => session.bulkSuggest({ rowIds: new Set(group.rows.map((r) => r.id)) })} aria-label={`Accept the suggestion for ${plural(group.open, "line", "lines")}: ${EXCEPTION_LABEL[group.kind]}`}>
+            <Button type="button" variant="outline" size="sm" onClick={() => session.bulkSuggest({ rowIds: new Set(group.rows.map((r) => r.id)) })} aria-label={`Accept ${group.open.toLocaleString("en-US")} suggestions: ${EXCEPTION_LABEL[group.kind]}`}>
               {`Accept ${group.open.toLocaleString("en-US")}`}
             </Button>
           )}
@@ -695,10 +706,22 @@ export function FixIntro({ session }: { session: ImportSession }) {
     setUndo({ before, accepted })
   }
   const stillOpen = session.left
+  const decided = session.groups.reduce((t, g) => t + g.rows.length, 0) - stillOpen
   return (
     <div className="flex flex-col gap-4" data-fix-intro>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {fixCountsLine(session) ? <p className={TYPE.body} data-fix-counts>{fixCountsLine(session)}</p> : <span />}
+      {/* The step's figures and its one bulk action in one toolbar row (steps v4): open lines are the attention state, amber with a glyph and a word. */}
+      <div className="flex flex-wrap items-center justify-between gap-3" data-fix-toolbar>
+        <p className={cn(TYPE.body, "flex flex-wrap items-center gap-x-4 gap-y-1")} data-fix-counts data-fix-open={stillOpen} data-fix-decided={decided}>
+          {stillOpen > 0 ? (
+            <span className="flex items-center gap-1.5">
+              <i className="fa-solid fa-triangle-exclamation text-xs text-[var(--status-badge-warning-fg)]" aria-hidden="true" />
+              <span className="font-medium tabular-nums">{stillOpen.toLocaleString("en-US")}</span> open
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5"><i className="fa-light fa-check text-xs text-muted-foreground" aria-hidden="true" />Every line decided</span>
+          )}
+          <span className="text-muted-foreground"><span className="tabular-nums">{decided.toLocaleString("en-US")}</span> decided</span>
+        </p>
         {session.left > 0 ? (
           <Button type="button" variant="outline" size="sm" onClick={acceptAll} data-accept-all>Accept all suggestions</Button>
         ) : null}
@@ -707,7 +730,7 @@ export function FixIntro({ session }: { session: ImportSession }) {
         <LocalBanner
           variant="success"
           title={`Accepted ${plural(undo.accepted, "suggestion", "suggestions")}.`}
-          action={{ label: "Undo", onClick: () => { session.restoreDecisions(undo.before); setUndo(null) } }}
+          action={{ label: "Undo", onClick: () => { session.restoreDecisions(undo.before); setUndo(null); window.setTimeout(() => document.querySelector<HTMLElement>("[data-accept-all]")?.focus(), 50) } }}
           dismissible
           onDismiss={() => setUndo(null)}
           data-accept-all-result
@@ -768,9 +791,11 @@ export function ImportNameField({ session }: { session: ImportSession }) {
 export function NewListField({ session }: { session: ImportSession }) {
   if (!session.isNewList) return null
   return (
-    <Field className="max-w-md">
+    // Variants B and C ask here; the same New skill list rules as step 1 of variant A, said after a first try.
+    <Field className="max-w-md" data-invalid={session.nameTried && session.nameError ? true : undefined}>
       <FieldLabel htmlFor="import-new-list">{`Name of the new ${groupNoun()}`}</FieldLabel>
-      <Input id="import-new-list" value={session.newLibraryName} onChange={(e) => session.setNewLibraryName(e.target.value)} placeholder="For example, Associate degree nursing" />
+      <Input id="import-new-list" value={session.newLibraryName} onChange={(e) => session.setNewLibraryName(e.target.value)} onBlur={() => { if (session.newLibraryName.trim()) session.setNameTried(true) }} aria-invalid={!!(session.nameTried && session.nameError)} aria-describedby={session.nameTried && session.nameError ? "import-new-list-error" : undefined} placeholder="For example, Associate degree nursing" />
+      {session.nameTried && session.nameError ? <FieldError id="import-new-list-error">{session.nameError}</FieldError> : null}
     </Field>
   )
 }
@@ -814,22 +839,112 @@ export function NotCreatedList({ session }: { session: ImportSession }) {
   )
 }
 
-/** Confirm: one plan sentence, what each new skill starts as, the import name, then what is not created. */
-export function ConfirmPanel({ session }: { session: ImportSession }) {
+/**
+ * Check your answers (steps 2 to 4, 2026-11-15): where the skills go and which file, chosen once on step 1 and shown read-only after it, each with
+ * Change back to step 1 (GOV.UK "Check answers"). The same block on every step after Upload, so nothing is asked twice.
+ */
+export function ImportAnswers({ session, onChange }: { session: ImportSession; onChange: () => void }) {
+  const plan = session.listPlan
+  const destination = plan ? plan.listName : session.targetList ? session.targetList.name : session.isNewList ? session.newLibraryName.trim() : "The library"
+  const lines = session.resolved.length
   return (
-    <div className="flex flex-col gap-6" data-confirm-panel>
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-foreground" data-plan-sentence>
-          {confirmSentence(session.plan, session.targetLabel, { one: skillNoun(), many: skillNounPlural() })}
-        </p>
-        <p className="text-sm text-muted-foreground">Each starts not configured.</p>
-      </div>
-      <NewListField session={session} />
-      <ImportNameField session={session} />
-      <NotCreatedList session={session} />
+      <dl className="grid min-w-0 grid-cols-[minmax(0,7rem)_minmax(0,1fr)_auto] items-center gap-x-4 rounded-[var(--radius)] border border-border px-4 text-sm" data-confirm-answers>
+        <dt className="py-3 text-muted-foreground">{capitalize(skillListNoun())}</dt>
+        <dd className="flex min-w-0 flex-wrap items-center gap-2 py-3 font-medium text-foreground" data-confirm-destination>
+          <span className="min-w-0 break-words">{destination}</span>
+          {plan?.versionOf ? <StatusBadge label="New version" tone="info" icon="fa-code-branch" size="sm" /> : session.isNewList ? <StatusBadge label={`New ${skillListNoun()}`} tone="info" icon="fa-plus" size="sm" /> : null}
+        </dd>
+        <dd className="py-3"><Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={onChange} aria-label={`Change ${skillListNoun()}`}>Change</Button></dd>
+        <dt className="border-t border-border py-3 text-muted-foreground">File</dt>
+        <dd className="flex min-w-0 flex-wrap items-baseline gap-x-2 border-t border-border py-3 text-foreground" data-confirm-file>
+          <span className="min-w-0 break-words font-medium">{session.fileName ?? "Pasted list"}</span>
+          <span className="tabular-nums text-muted-foreground">{`${lines.toLocaleString("en-US")} ${lines === 1 ? "line" : "lines"} read`}</span>
+        </dd>
+        <dd className="border-t border-border py-3"><Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={onChange} aria-label="Change file">Change</Button></dd>
+      </dl>
+  )
+}
+
+/**
+ * Confirm, concept C of three (2026-11-15, Romit: "make the confirm step look more organized and professional"): what the button will do is the
+ * step's heading; a check-your-answers summary (Skill list, File) with Change back to step 1; a plain notice when the skills go on a new version; then
+ * every line of the file in one table, one tab per outcome with its count. The tab counts add up to the file's lines [REQ IM-08]. Left out is the only
+ * amber group (glyph and word). References: GOV.UK "Check answers", Carbon create flows (review step), Square's import summary.
+ */
+export function ConfirmSummary({ session, onChange }: { session: ImportSession; /** Back to step 1, where the file and the destination are chosen. */ onChange: () => void }) {
+  const toList = !!session.targetList || session.isNewList
+  const onList = session.targetList ? new Set(session.targetList.skillIds) : session.isNewList ? new Set<string>() : null
+  const g = React.useMemo(() => (session.review ? confirmGroups(session.review, session.resolved, onList) : null), [session.review, session.resolved, session.targetList, session.isNewList]) // eslint-disable-line react-hooks/exhaustive-deps
+  const groups = g
+    ? [
+        { id: "new", label: `New ${skillNounPlural()}`, rows: g.created, what: (r: ResolvedRow) => (r.replaces ? `Replaces ${r.replaces} in the library` : toList ? "Added to the library and the list" : "Added to the library"), attention: false },
+        { id: "library", label: toList ? "From the library" : "In the library already", rows: g.inLibrary, what: () => (toList ? "Added to the list" : "No change"), attention: false },
+        { id: "on-list", label: "On the list already", rows: g.onListAlready, what: () => "No change", attention: false },
+        { id: "merged", label: "Merged or repeated", rows: g.mergedOrJoined, what: (r: ResolvedRow) => (r.status === "left-out" && r.outcome === "Skipped, already in the library" ? "Repeated in the file" : r.outcome), attention: false },
+        { id: "left-out", label: "Left out", rows: g.leftOut, what: (r: ResolvedRow) => r.outcome, attention: true },
+      ].filter((x) => x.rows.length)
+    : []
+  const [tab, setTab] = React.useState<string>("")
+  const current = groups.some((x) => x.id === tab) ? tab : groups[0]?.id ?? ""
+  const plan = session.listPlan
+  const lines = session.resolved.length
+  return (
+    <div className="flex min-w-0 flex-col gap-6" data-confirm-summary data-lines-read={lines}>
+      <ImportAnswers session={session} onChange={onChange} />
+      {plan?.versionOf ? (
+        // The consequence of a list someone has, said on its own (D-L104, D-L106; whether to change it in place instead is Romit's call).
+        <LocalBanner variant="info" data-confirm-version>
+          {`Students on ${plan.versionOf.name} keep it. The ${skillNounPlural()} go on a new version, ${plan.listName}, which nobody has yet.`}
+        </LocalBanner>
+      ) : null}
+      {groups.length ? (
+        <section aria-labelledby="confirm-lines" className="flex min-w-0 flex-col gap-3">
+          <h3 id="confirm-lines" className={TYPE.group}>Lines in the file</h3>
+          <Tabs value={current} onValueChange={setTab} className="flex min-w-0 flex-col gap-3">
+            <TabsList variant="line" ariaLabel="Lines by outcome">
+              {groups.map((x) => (
+                <TabsTrigger key={x.id} value={x.id} data-line-group={x.id} data-line-count={x.rows.length}>
+                  {x.attention ? <i className="fa-solid fa-triangle-exclamation text-xs text-[var(--status-badge-warning-fg)]" aria-hidden="true" /> : null}
+                  {x.label}
+                  <TabsCountBadge count={x.rows.length} />
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {groups.map((x) => (
+              <TabsContent key={x.id} value={x.id} className="mt-0">
+                {/* A scroll region a keyboard can reach, named by its tab (axe scrollable-region-focusable). */}
+                <div className="max-h-[26rem] overflow-y-auto rounded-[var(--radius)] border border-border outline-none focus-visible:ring-3 focus-visible:ring-ring/50" tabIndex={0} role="region" aria-label={`${x.label}, ${x.rows.length} ${x.rows.length === 1 ? "line" : "lines"}`}>
+                  <Table aria-label={x.label}>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-20">Line</TableHead>
+                        <TableHead>Text in the file</TableHead>
+                        <TableHead className="w-[38%]">Result</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {x.rows.map((r) => (
+                        <TableRow key={r.row.id}>
+                          <TableCell className="tabular-nums text-muted-foreground">{r.row.line}</TableCell>
+                          <TableCell className="max-w-0"><LineText row={r.row} className="block truncate" /></TableCell>
+                          <TableCell className="whitespace-normal">
+                            {x.attention ? <StatusBadge label="Not added" tone="warning" icon="fa-triangle-exclamation" size="sm" /> : <span className="text-muted-foreground">{x.what(r)}</span>}
+                            {x.attention && r.outcome !== "Left out" ? <span className="ms-2 text-muted-foreground">{r.outcome}</span> : null}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </section>
+      ) : null}
     </div>
   )
 }
+
 
 /** After Create: the success banner takes focus and names the next step (configure). */
 export function DoneBanner({ session, count }: { session: ImportSession; /** What was created: once they are in the library, the plan reads them as repeats. */ count?: number }) {
@@ -866,13 +981,27 @@ export function DiscardDialog({ open, onOpenChange, onDiscard, title = "Discard 
   )
 }
 
-/** The title-zone Cancel. With a file read it confirms first; otherwise it goes back to the library. */
-export function useCancel(session: ImportSession, go: (href: string) => void) {
+/**
+ * The title-zone Cancel, and every other way out (walk 3, D1). With a file read, Cancel, the breadcrumb, the sidebar and Skills panel rows, the
+ * phone's back link, browser Back and closing the tab all ask the same "Discard this import?" first; with nothing read they just go. The leave
+ * paths are the shared unsaved changes guard (shared/unsaved-guard.tsx), the same one New skill list, Settings and Course mapping use, showing
+ * this page's own question. `stepsInUrl` (variant A): the steps are history entries of this page, so Back between them just moves and only Back
+ * past the first one asks (the guard's `backWithinPage`).
+ */
+export function useCancel(session: ImportSession, go: (href: string) => void, { stepsInUrl = false }: { stepsInUrl?: boolean } = {}) {
   const [asking, setAsking] = React.useState(false)
-  // Back where the admin came from (?from=skills from the library's More menu), else the library.
-  const back = returnHref(useSearchParams()?.get(FROM_PARAM), LIBRARY_HREF)
+  // Back where the admin came from (?from=skills from the library's More menu; ?from=lists&list=<id> from a list's panel, which reopens it), else the library.
+  const params = useSearchParams()
+  const from = params?.get(FROM_PARAM)
+  const back = returnHref(from, LIBRARY_HREF, returnCarry(from, params))
   const hasWork = session.phase === "review" || session.phase === "reading"
+  const leave = useLeaveGuard(hasWork, { backWithinPage: stepsInUrl })
   const onCancel = () => (hasWork ? setAsking(true) : go(back))
-  const dialog = <DiscardDialog open={asking} onOpenChange={setAsking} onDiscard={() => { session.reset(); go(back) }} />
-  return { onCancel, dialog }
+  const dialog = (
+    <>
+      <DiscardDialog open={asking} onOpenChange={setAsking} onDiscard={() => { session.reset(); go(back) }} />
+      <DiscardDialog open={leave.asking} onOpenChange={(o) => { if (!o) leave.setAsking(false) }} onDiscard={() => leave.go(session.reset)} />
+    </>
+  )
+  return { onCancel, dialog, hasWork }
 }

@@ -14,6 +14,8 @@
 
 import * as React from "react"
 import NextLink from "next/link"
+import { Tip } from "@exxatdesignux/ui/components/ui/tip"
+import { cn } from "@exxatdesignux/ui/lib/utils"
 import {
   usePathname,
   useRouter,
@@ -132,10 +134,26 @@ export function useParams(): Record<string, string | undefined> {
 // shim by next.config.ts, so this one component decides whether client-side
 // navigation actually works across the entire app.
 // ---------------------------------------------------------------------------
+/** A `to` starting with this draws an inert row: no navigation (the walkthrough sidebar rows that open no walkthrough page). */
+export const INERT_PREFIX = "inert:"
+
 export const Link = React.forwardRef<
   HTMLAnchorElement,
   React.AnchorHTMLAttributes<HTMLAnchorElement> & { to?: string }
 >(function Link({ to, href, ...props }, ref) {
+  // A row that goes nowhere: aria-disabled, no href, so it is not a link at all (not focusable, no dead "#"). It must not look live either
+  // (walk 3, D11): no pointer cursor or hover fill, and its own tooltip says why. The DS row's tooltip (the collapsed rail's name) is not
+  // opened: its trigger handlers are dropped here, so the one tooltip names the row and the reason together.
+  if (to?.startsWith(INERT_PREFIX)) {
+    const { onPointerMove: _m, onPointerLeave: _l, onPointerDown: _d, onFocus: _f, onBlur: _b, onClick: _c, className, "aria-label": name, ...rest } = props
+    const title = to.slice(INERT_PREFIX.length).split("|")[1] || name?.split(",")[0]
+    const label = title ? `${title} is not part of this walkthrough` : "Not part of this walkthrough"
+    return (
+      <Tip label={label} side="right" triggerClassName="cursor-not-allowed">
+        <a ref={ref} role="link" aria-disabled="true" tabIndex={-1} aria-label={name} className={cn(className, "cursor-not-allowed aria-disabled:pointer-events-auto hover:bg-transparent hover:text-sidebar-foreground")} data-inert-row="" {...rest} />
+      </Tip>
+    )
+  }
   return <NextLink ref={ref} href={to ?? href ?? ""} {...props} />
 })
 Link.displayName = "Link"

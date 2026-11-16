@@ -1,0 +1,154 @@
+/*
+ * PRISM home look-alike. Every --prism-* value is the computed value read from the live page
+ * (steps.exxat.com/dashboard, 2026-11-15, Chrome getComputedStyle). The DS has no tokens for these
+ * product colours (Angular Material "blue-light" theme), so they live here, scoped to .prism-root.
+ */
+.prism-root {
+  --prism-text: rgba(0, 0, 0, 0.87);          /* body text */
+  --prism-hairline: rgba(0, 0, 0, 0.12);      /* top bar and drawer borders, banner border */
+  --prism-indigo: rgb(63, 81, 181);           /* Chat button, date chip, Explore link, Forms icon */
+  --prism-pink: rgb(228, 7, 125);             /* Program title and icons */
+  --prism-pink-line: rgb(236, 38, 143);       /* Program card border */
+  --prism-orange: rgb(182, 95, 3);            /* Curriculum title and icons */
+  --prism-orange-line: rgb(245, 136, 54);     /* Curriculum card border */
+  --prism-teal: rgb(13, 130, 130);            /* Placement title and icons */
+  --prism-teal-line: rgb(3, 161, 160);        /* Placement card border */
+  --prism-leo: rgb(196, 21, 104);             /* Ask Leo button */
+  --prism-green: rgb(139, 195, 74);           /* New pills */
+  --prism-yellow: rgb(248, 225, 150);         /* Beta pill */
+  --prism-red: rgb(255, 0, 0);                /* task count badge */
+  --prism-on-fill: rgb(255, 255, 255);
+  --prism-banner-bg: rgb(246, 243, 255);
+  --prism-active-row: rgba(0, 0, 0, 0.1);     /* active drawer row */
+  --prism-new-gradient: linear-gradient(135deg, rgb(124, 58, 237), rgb(157, 142, 192), rgb(176, 168, 200));
+  --prism-leo-gradient: linear-gradient(53.37deg, rgba(246, 168, 202, 0.4) 34.27%, rgba(247, 184, 161, 0.4) 55.77%, rgba(237, 219, 146, 0.4) 76.27%);
+  --prism-drawer-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.35);
+  --prism-scrim: rgba(0, 0, 0, 0.32);         /* not measurable in the capture; matched by eye */
+  --prism-surface: rgb(255, 255, 255);
+  --prism-placeholder: rgba(0, 0, 0, 0.72);   /* search placeholder */
+
+  display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
+  background: var(--prism-surface); color: var(--prism-text);
+  font-family: "Source Sans Pro", var(--prism-font, "Source Sans 3"), sans-serif;
+  font-size: 14px; line-height: 19.6px;
+}
+.prism-root * { box-sizing: border-box; }
+.prism-root :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.prism-skip { position: absolute; left: 8px; top: -64px; z-index: 2000; padding: 8px 12px; background: var(--prism-surface); color: var(--prism-indigo); font-weight: 600; }
+.prism-skip:focus { top: 4px; }
+
+/* top bar */
+.prism-bar { flex: none; height: 48px; display: flex; align-items: stretch; background: var(--prism-surface); border-bottom: 1px solid var(--prism-hairline); position: relative; z-index: 1100; }
+.prism-bar-left { display: flex; align-items: center; flex: 1; min-width: 0; }
+.prism-bar-right { display: flex; align-items: center; margin-left: auto; }
+.prism-ibtn.prism-ibtn { position: relative; width: 48px; height: 47px; min-width: 48px; padding: 0; border-radius: 0; color: var(--prism-text); font-size: 24px; background: transparent; }
+.prism-ibtn.prism-help { width: 32px; min-width: 32px; margin-right: 12px; color: var(--prism-pink); }
+.prism-ibtn i { font-size: 18px; } .prism-ibtn.prism-burger i, .prism-ibtn.prism-grid i { font-size: 24px; }
+.prism-title { margin: 0; color: var(--prism-text); font-size: 18px; font-weight: 600; line-height: 28px; white-space: nowrap; }
+.prism-search { margin-left: 53px; width: 221px; height: 40px; display: flex; align-items: center; gap: 4px; padding: 8px 40px 8px 8px; border: 1px solid var(--prism-hairline); border-radius: 12px; font-size: 14px; }
+.prism-search i { font-size: 18px; line-height: 18px; width: 18px; text-align: center; }
+.prism-search input { flex: 1; min-width: 0; height: 18px; padding: 0 8px; border: 0; outline: 0; background: transparent; font: inherit; line-height: 18px; color: inherit; }
+.prism-search input::placeholder { color: var(--prism-placeholder); opacity: 1; }
+.prism-search:focus-within { outline: 2px solid var(--ring); outline-offset: 1px; }
+.prism-pill { display: inline-flex; align-items: center; height: 17px; padding: 0 8px; border-radius: 20px; font-size: 12px; line-height: 16.8px; color: var(--prism-text); }
+.prism-pill-new { background: var(--prism-green); } .prism-pill-beta { background: var(--prism-yellow); height: 20px; }
+.prism-bell-new { position: absolute; left: -10px; top: 0; height: 20px; padding: 1px 5px; border: 1px solid var(--prism-green); border-radius: 15px; background: var(--prism-green); font-size: 12px; line-height: 16px; }
+.prism-count { position: absolute; left: -14px; top: 0; width: 28px; height: 26px; border-radius: 20px; background: var(--prism-red); color: var(--prism-on-fill); font-size: 16px; line-height: 26px; text-align: center; }
+.prism-fill.prism-fill { height: 32px; padding: 8px; gap: 4px; font-size: 14px; font-weight: 600; color: var(--prism-on-fill); border-radius: 4px; }
+.prism-fill i { font-size: 16px; }
+.prism-chat.prism-chat { background: var(--prism-indigo); margin-right: 8px; width: 80px; }
+.prism-leo-btn.prism-leo-btn { background: var(--prism-leo); width: 103px; padding-right: 16px; margin-right: 8px; }
+.prism-leo-mark { width: 14px; height: 14px; background: currentColor; -webkit-mask: url(/prism/leo.svg) center / contain no-repeat; mask: url(/prism/leo.svg) center / contain no-repeat; }
+.prism-user.prism-user { height: 48px; padding: 8px; gap: 8px; border: 0; border-radius: 0; background: transparent; font-size: 14px; font-weight: 600; color: var(--prism-text); }
+.prism-user .prism-org { font-weight: 600; margin-left: 10px; }
+
+/* scrolling region and footer */
+.prism-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding: 16px; }
+.prism-foot { flex: none; height: 36px; display: flex; align-items: center; padding: 8px 16px; background: var(--prism-surface); box-shadow: 0 -1px 0 var(--prism-hairline); font-size: 14px; }
+
+/* banner row */
+.prism-banner-row { display: flex; }
+.prism-banner { flex: 1; min-width: 0; margin: 0 0 12px 16px; min-height: 96px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 16px; background: var(--prism-banner-bg); border: 1px solid var(--prism-hairline); border-radius: 12px; }
+.prism-banner-main { display: flex; align-items: center; min-width: 0; }
+.prism-banner-main > img { width: 114px; height: 30px; flex: none; }
+.prism-banner-text { margin: 0 4px 0 8px; min-width: 0; }
+.prism-banner-title { display: flex; align-items: center; padding-bottom: 4px; font-size: 18px; font-weight: 600; line-height: 25.2px; flex-wrap: wrap; }
+.prism-banner-new { margin-left: 8px; padding: 3px 8px 0; border-radius: 12px; background: var(--prism-new-gradient); color: var(--prism-on-fill); font-size: 14px; font-weight: 600; line-height: 19.6px; height: 27px; }
+.prism-explore { flex: none; display: inline-flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; line-height: 28px; color: var(--prism-indigo); }
+.prism-explore i { font-size: 16px; margin-top: 4px; }
+.prism-logo-tile { flex: none; width: 210px; height: 64px; margin: 0 0 12px 16px; display: flex; align-items: center; justify-content: center; background: var(--prism-surface); border-radius: 4px; }
+.prism-logo-tile img { width: 125px; height: 75px; flex: none; }
+
+/* section cards */
+.prism-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; align-items: stretch; }
+.prism-cards > :nth-child(1) { margin-right: 8px; } .prism-cards > :nth-child(2) { margin: 0 8px; } .prism-cards > :nth-child(3) { margin-left: 8px; }
+.prism-card { display: flex; flex-direction: column; border: 1px solid var(--tone-line); border-radius: 8px; background: var(--prism-surface); overflow: hidden; }
+.prism-card[data-tone="pink"] { --tone: var(--prism-pink); --tone-line: var(--prism-pink-line); }
+.prism-card[data-tone="orange"] { --tone: var(--prism-orange); --tone-line: var(--prism-orange-line); }
+.prism-card[data-tone="teal"] { --tone: var(--prism-teal); --tone-line: var(--prism-teal-line); }
+.prism-card-head { display: flex; align-items: center; justify-content: space-between; min-height: 40px; padding: 8px 16px; border-bottom: 1px solid var(--tone-line); }
+.prism-card-head h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 22.4px; color: var(--tone); }
+.prism-date { display: inline-flex; align-items: center; gap: 4px; height: 24px; font-size: 16px; font-weight: 600; line-height: 22.4px; color: var(--prism-indigo); }
+.prism-date i { font-size: 18px; }
+.prism-card-body { padding: 16px; }
+.prism-row { padding: 12px 16px; border-radius: 8px; cursor: pointer; }
+.prism-row-top { display: flex; align-items: center; gap: 16px; height: 26px; }
+.prism-row-top > i { width: 24px; font-size: 24px; line-height: 24px; text-align: center; color: var(--tone); flex: none; }
+.prism-row-title { text-decoration: none; font-size: 18px; font-weight: 600; line-height: 25.2px; color: var(--tone); }
+.prism-row-top .prism-pill, .prism-row-top .prism-leo-pill { margin-left: auto; }
+.prism-row-desc { margin: 8px 0 0; font-size: 14px; line-height: 19.6px; }
+.prism-leo-pill { display: inline-flex; align-items: center; gap: 0; height: 28px; padding: 4px 8px; border-radius: 9999px; background: var(--prism-leo-gradient); font-size: 14px; line-height: 19.6px; }
+.prism-leo-pill .prism-leo-mark { width: 14px; height: 14px; margin-right: 0; color: var(--prism-leo); }
+
+/* drawer */
+.prism-scrim { position: fixed; inset: 48px 0 0 0; z-index: 1000; background: var(--prism-scrim); }
+.prism-drawer { scrollbar-width: thin; position: fixed; top: 48px; bottom: 0; left: 0; width: 265px; z-index: 1001; display: flex; flex-direction: column; background: var(--prism-surface); box-shadow: var(--prism-drawer-shadow); overflow-y: auto; }
+.prism-drawer-head { flex: none; height: 88px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 24px; border-bottom: 1px solid var(--prism-hairline); }
+.prism-drawer-head img { width: 88px; height: 53px; margin-left: -8px; }
+.prism-nav { padding-bottom: 8px; }
+.prism-nav ul { list-style: none; margin: 0; padding: 0; }
+.prism-nav-row { text-decoration: none; display: flex; align-items: center; width: 231px; height: 40px; margin: 0 12px; padding: 0 0 0 24px; white-space: nowrap; gap: 16px; font-size: 14px; line-height: 19.6px; color: var(--prism-text); text-align: left; cursor: pointer; }
+.prism-nav-row > i { width: 16px; font-size: 16px; text-align: center; color: var(--tone); flex: none; }
+.prism-nav-row[aria-current="page"] { background: var(--prism-active-row); margin-block: 8px; }
+.prism-nav ul.prism-group { padding: 0 0 16px; margin: 0 0 16px; border-bottom: 1px solid var(--prism-hairline); }
+.prism-nav ul.prism-group:last-child { border-bottom: 0; }
+.prism-group[data-tone="pink"] { --tone: var(--prism-pink); } .prism-group[data-tone="orange"] { --tone: var(--prism-orange); } .prism-group[data-tone="teal"] { --tone: var(--prism-teal); } .prism-group[data-tone="indigo"] { --tone: var(--prism-indigo); }
+.prism-nav-row.is-toggle { justify-content: flex-start; }
+.prism-nav-row .prism-chev { margin-left: auto; width: auto; font-size: 14px; color: var(--prism-text); transition: transform 0.15s; }
+.prism-nav-row[aria-expanded="true"] .prism-chev { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .prism-nav-row .prism-chev { transition: none; } }
+
+/* below 960: cards stack, banner logo tile and user name drop (live breakpoint) */
+@media (max-width: 959px) {
+  .prism-cards { grid-template-columns: minmax(0, 1fr); }
+  .prism-cards > * { margin: 0 0 16px !important; }
+  .prism-logo-tile { display: none; }
+  .prism-user .prism-name { display: none; }
+}
+/*
+ * Narrow widths: the bar's right group kept its full width and slid over the hamburger (375, 2026-11-15). The right group never shrinks,
+ * the title truncates, and lower-priority controls drop in steps so the hamburger, Notifications, Ask Leo and the account menu stay.
+ * 1024 and up is unchanged.
+ */
+.prism-bar-right { flex: none; }
+.prism-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 1023px) {
+  .prism-search { display: none; }
+}
+@media (max-width: 767px) {
+  .prism-grid.prism-grid, .prism-tasks.prism-tasks, .prism-help.prism-help, .prism-chat.prism-chat { display: none; }
+}
+@media (max-width: 359px) {
+  .prism-ibtn.prism-ibtn:not(.prism-burger) { display: none; }
+}
+@media (min-width: 1280px) { .prism-search { margin-left: calc(152px + (100vw - 1440px) * 0.3125); width: 398px; } }
+.prism-root .prism-title, .prism-root .prism-card-head h2, .prism-root button, .prism-root input { font-family: inherit !important; letter-spacing: normal; }
+/* Live "New" chip flips on a 3s loop (keyframes read from the live page: chip-flip). */
+@keyframes prism-chip-flip {
+  0% { transform: rotateY(0deg) scale(1); opacity: 1; }
+  45% { transform: rotateY(90deg) scale(1.08); opacity: 0; }
+  55% { transform: rotateY(-90deg) scale(1.08); opacity: 0; }
+  100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
+.prism-banner-new { animation: prism-chip-flip 3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .prism-banner-new { animation: none; } }

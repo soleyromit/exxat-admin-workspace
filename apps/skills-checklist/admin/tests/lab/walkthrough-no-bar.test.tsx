@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 
-const nav = vi.hoisted(() => ({ pathname: "/walk/setup-walkthrough/configure", search: "skill=sk-vitals", replace: vi.fn(), push: vi.fn() }))
+const nav = vi.hoisted(() => ({ pathname: "/admin/configure", search: "skill=sk-vitals", replace: vi.fn(), push: vi.fn() }))
 vi.mock("next/navigation", () => ({
   usePathname: () => nav.pathname,
   useRouter: () => ({ push: nav.push, replace: nav.replace, back: vi.fn(), forward: vi.fn(), prefetch: vi.fn() }),
@@ -33,7 +33,7 @@ import { resolve } from "node:path"
 
 /**
  * D-L139 (2026-11-10): the admin walkthrough shows no lab strip, in either URL form, with or without `present=1`, and every link
- * from a walkthrough step to a screen of the walkthrough stays on `/walk/setup-walkthrough/<step>`. Persona routes and the design
+ * from a walkthrough step to a screen of the walkthrough stays on `/admin/<step>`. Persona routes and the design
  * flows keep their bar.
  */
 const flow = findFlow(WALKTHROUGH_ID)!
@@ -49,7 +49,7 @@ function renderBar(props: React.ComponentProps<typeof LabBar>, page: React.Compo
 }
 
 describe("no lab bar on the admin walkthrough", () => {
-  const forms = (step: string) => [`/walk/${WALKTHROUGH_ID}/${step}`, `/lab/flow/${WALKTHROUGH_ID}/${step}`]
+  const forms = (step: string) => [`/admin/${step}`, `/lab/flow/${WALKTHROUGH_ID}/${step}`]
   for (const s of flow.steps) {
     for (const pathname of forms(s.id)) {
       for (const search of ["", "present=1", "set=1&present=1"]) {
@@ -68,7 +68,7 @@ describe("no lab bar on the admin walkthrough", () => {
   }
 
   it("hides the bar from the route alone, even when the page context is missing", () => {
-    nav.pathname = `/walk/${WALKTHROUGH_ID}/configure`
+    nav.pathname = `/admin/configure`
     nav.search = "skill=sk-vitals"
     const { container } = renderBar({ persona: "admin", flow: WALKTHROUGH_ID, step: "configure", set: "1", variant: "B" })
     expect(container.querySelector("[data-lab-bar]")).toBeNull()
@@ -99,9 +99,9 @@ describe("links from a walkthrough step stay on the walkthrough", () => {
     const s = flow.steps.find((x) => x.id === stepId)!
     return { flowId: WALKTHROUGH_ID, stepId, set: flow.recommendedSet, screen: s.screen, variant: s.variants[flow.recommendedSet], onFlowRoute: true, carry: new URLSearchParams(search) }
   }
-  const onPath = /^\/walk\/setup-walkthrough\/[a-z-]+(\?|$)/
+  const onPath = /^\/admin\/[a-z-]+(\?|$)/
 
-  it("every walkthrough screen, linked from every step, lands on its /walk step", () => {
+  it("every walkthrough screen, linked from every step, lands on its /admin step", () => {
     const screens = [...new Set(flow.steps.map((s) => s.screen))]
     for (const from of flow.steps) {
       for (const screen of screens) {
@@ -111,20 +111,20 @@ describe("links from a walkthrough step stay on the walkthrough", () => {
     }
   })
 
-  it("Configure the skill, the user's case: /walk/setup-walkthrough/configure?skill=sk-vitals, never /as/admin/configure-skill", () => {
+  it("Configure the skill, the user's case: /admin/configure?skill=sk-vitals, never /as/admin/configure-skill", () => {
     for (const from of flow.steps) {
       const href = rewriteLabUrl(configureSkillHref("sk-vitals"), ctxOn(from.id))
-      expect(href).toBe("/walk/setup-walkthrough/configure?skill=sk-vitals")
+      expect(href).toBe("/admin/configure?skill=sk-vitals")
       expect(href).not.toContain("/as/")
     }
   })
 
   it("Library, the Library's own panel link, course mapping and the post-save return stay on the path", () => {
     const ctx = ctxOn("configure", "skill=sk-vitals")
-    expect(rewriteLabUrl(LIBRARY_HREF, ctx)).toMatch(/^\/walk\/setup-walkthrough\/library/)
-    expect(rewriteLabUrl(libraryReturnHref("sk-vitals", "saved"), ctx)).toBe("/walk/setup-walkthrough/library?skill=sk-vitals&saved=1")
-    expect(rewriteLabUrl(configureHref("sk-vitals"), ctx)).toBe("/walk/setup-walkthrough/library?skill=sk-vitals")
-    expect(rewriteLabUrl(mappingHref("sk-vitals"), ctx)).toMatch(/^\/walk\/setup-walkthrough\/map\?/)
+    expect(rewriteLabUrl(LIBRARY_HREF, ctx)).toMatch(/^\/admin\/library/)
+    expect(rewriteLabUrl(libraryReturnHref("sk-vitals", "saved"), ctx)).toBe("/admin/library?skill=sk-vitals&saved=1")
+    expect(rewriteLabUrl(configureHref("sk-vitals"), ctx)).toBe("/admin/library?skill=sk-vitals")
+    expect(rewriteLabUrl(mappingHref("sk-vitals"), ctx)).toMatch(/^\/admin\/map\?/)
   })
 
   it("the Skills panel rows and the Library crumb stay on the path from every step", () => {
@@ -151,7 +151,7 @@ describe("links from a walkthrough step stay on the walkthrough", () => {
     ]
     for (const [name, ctx] of outside) {
       for (const item of SKILLS_PANEL) expect(skillsPanelHref(item, ctx), `${name} panel ${item.key}`).toMatch(onPath)
-      expect(skillsNavHref(ctx), `${name} Skills row`).toBe("/walk/setup-walkthrough/library")
+      expect(skillsNavHref(ctx), `${name} Skills row`).toBe("/admin/lists")
     }
   })
 
@@ -162,7 +162,7 @@ describe("links from a walkthrough step stay on the walkthrough", () => {
     expect(skillsNavHref(ctx)).toMatch(/^\/flow\/set-up-skills/)
     // Evaluation settings is in no lab flow: before, this row went to /as/admin/evaluation-settings with the strip.
     const settings = SKILLS_PANEL.find((i) => i.key === "settings")!
-    expect(skillsPanelHref(settings, ctx)).toBe("/walk/setup-walkthrough/settings")
+    expect(skillsPanelHref(settings, ctx)).toBe("/admin/settings")
   })
 
   it("names the stops it can reach", () => {
@@ -195,14 +195,14 @@ describe("Configure one skill: the Evaluation settings link and its way back", (
   }
 
   it("on the walkthrough path it resolves to the walkthrough's settings step", () => {
-    expect(hrefOn(`/walk/${WALKTHROUGH_ID}/configure`, `skill=${SKILL}`, { flow: WALKTHROUGH_ID, step: "configure", screen: "admin/configure-skill", variant: "B" })).toBe(`/walk/${WALKTHROUGH_ID}/settings?from=configure&skill=${SKILL}`)
+    expect(hrefOn(`/admin/configure`, `skill=${SKILL}`, { flow: WALKTHROUGH_ID, step: "configure", screen: "admin/configure-skill", variant: "B" })).toBe(`/admin/settings?from=configure&skill=${SKILL}`)
     // From the route alone, with no page context provided.
-    expect(hrefOn(`/walk/${WALKTHROUGH_ID}/configure`, `skill=${SKILL}`, {})).toBe(`/walk/${WALKTHROUGH_ID}/settings?from=configure&skill=${SKILL}`)
-    expect(hrefOn(`/lab/flow/${WALKTHROUGH_ID}/configure`, `skill=${SKILL}`, {})).toBe(`/walk/${WALKTHROUGH_ID}/settings?from=configure&skill=${SKILL}`)
+    expect(hrefOn(`/admin/configure`, `skill=${SKILL}`, {})).toBe(`/admin/settings?from=configure&skill=${SKILL}`)
+    expect(hrefOn(`/lab/flow/${WALKTHROUGH_ID}/configure`, `skill=${SKILL}`, {})).toBe(`/admin/settings?from=configure&skill=${SKILL}`)
   })
 
   it("keeps the program scope", () => {
-    expect(hrefOn(`/walk/${WALKTHROUGH_ID}/configure`, `skill=${SKILL}&program=new`, { flow: WALKTHROUGH_ID, step: "configure", screen: "admin/configure-skill", variant: "B" })).toBe(`/walk/${WALKTHROUGH_ID}/settings?program=new&from=configure&skill=${SKILL}`)
+    expect(hrefOn(`/admin/configure`, `skill=${SKILL}&program=new`, { flow: WALKTHROUGH_ID, step: "configure", screen: "admin/configure-skill", variant: "B" })).toBe(`/admin/settings?program=new&from=configure&skill=${SKILL}`)
     const persona = new URL(hrefOn("/as/admin/configure-skill", `skill=${SKILL}&program=new`, { screen: "admin/configure-skill", variant: "B" }), "http://x")
     expect(persona.searchParams.get("program")).toBe("new")
   })
@@ -225,11 +225,11 @@ describe("Configure one skill: the Evaluation settings link and its way back", (
     const back = returnTarget("configure", returnCarry("configure", settingsParams))!
     expect(back.href).toBe(`/as/admin/configure-skill?skill=${SKILL}`)
     // In the walkthrough, on the settings step: back on the walkthrough's configure step, with the skill left, not the step's own.
-    expect(rewriteLabUrl(back.href, walkCtx("settings", settingsParams.toString()))).toBe(`/walk/${WALKTHROUGH_ID}/configure?skill=${SKILL}`)
+    expect(rewriteLabUrl(back.href, walkCtx("settings", settingsParams.toString()))).toBe(`/admin/configure?skill=${SKILL}`)
     // Off the walkthrough (persona route): back to that skill outside the walkthrough. Configure is a step of the design flow
     // "set-up-skills", so the builder sends it there, as it does every other link to Configure from a persona route.
     const persona = new URL(rewriteLabUrl(back.href, personaCtx("admin/evaluation-settings", settingsParams.toString())), "http://x")
-    expect(persona.pathname).not.toMatch(/^\/walk\//)
+    expect(persona.pathname).not.toMatch(/^\/(admin|student)\//)
     expect(persona.pathname).toBe(new URL(rewriteLabUrl(configureSkillHref(SKILL), personaCtx("admin/evaluation-settings")), "http://x").pathname)
     expect(persona.searchParams.get("skill")).toBe(SKILL)
     // An id with characters that need encoding survives the round trip.
@@ -255,9 +255,9 @@ describe("Configure one skill: the Evaluation settings link and its way back", (
       "/lab/admin/import-ai-review", "/as/admin/skills-library", "/as/admin/lists-cohorts?list=list-7",
     ]
     for (const from of flow.steps) {
-      for (const l of literals) expect(rewriteLabUrl(l, walkCtx(from.id)), `${from.id} -> ${l}`).toMatch(/^\/walk\/setup-walkthrough\/[a-z-]+(\?|$)/)
+      for (const l of literals) expect(rewriteLabUrl(l, walkCtx(from.id)), `${from.id} -> ${l}`).toMatch(/^\/admin\/[a-z-]+(\?|$)/)
     }
-    expect(rewriteLabUrl(`${LAB_ADMIN}/evaluation-settings?program=new`, walkCtx("library"))).toBe("/walk/setup-walkthrough/settings?program=new")
+    expect(rewriteLabUrl(`${LAB_ADMIN}/evaluation-settings?program=new`, walkCtx("library"))).toBe("/admin/settings?program=new")
   })
 })
 
@@ -273,7 +273,7 @@ describe("the walkthrough path bar is hidden until the presenter asks for it", (
   })
 
   const at = (step: string, f = flow) => {
-    nav.pathname = `/walk/${f.id}/${step}`
+    nav.pathname = `${f.id === "setup-walkthrough" ? "/admin" : "/student"}/${step}`
     nav.search = "set=1&present=1"
     const st = f.steps.find((s) => s.id === step)!
     return { flow: f.id, step, screen: st.screen, variant: st.variants[f.recommendedSet] }

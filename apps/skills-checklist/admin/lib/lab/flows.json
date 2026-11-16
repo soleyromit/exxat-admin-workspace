@@ -108,8 +108,7 @@
             "3": "C"
           },
           "side": true,
-          "after": "add",
-          "tag": "Later"
+          "after": "add"
         }
       ]
     },
@@ -769,7 +768,6 @@
           "variants": {
             "1": "A"
           },
-          "tag": "Later",
           "side": true,
           "after": "lists"
         },
@@ -780,7 +778,6 @@
           "variants": {
             "1": "A"
           },
-          "tag": "Later",
           "side": true,
           "after": "lists"
         }

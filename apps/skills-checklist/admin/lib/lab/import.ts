@@ -404,9 +404,8 @@ export const IMPORT_GROUPING = { category: "Category", categories: "categories",
  * one-line note ("Import and AI reading arrive in a later phase.") was tried as the header subtitle and put the wizard
  * variants over their 30-word budget, so the title carries this badge instead.
  */
-export const LATER_LABEL = "Later"
 /** Reading a file is Later: this page previews sample lines, and nothing it shows is added to the library. */
-export const UPLOAD_LATER = "Later. Nothing is added from a file yet."
+export const UPLOAD_LATER = "Nothing is added from a file yet."
 
 export const EXCEPTION_LABEL: Record<ExceptionKind, string> = {
   unread: "Could not read",
@@ -1033,4 +1032,54 @@ export function copyPlan(p: StartingPoint, library: LibrarySkill[], keepRepeats:
   const names = new Set(library.map((k) => normName(k.name)))
   const repeats = p.skills.filter((k) => names.has(normName(k.name))).map((k) => k.name)
   return { copy: keepRepeats ? p.skills.length : p.skills.length - repeats.length, repeats }
+}
+
+/**
+ * The skills an upload puts on a skill list [INFER, approved by Romit 2026-11-15]: every skill it creates, plus the library skills the file
+ * names exactly (a replaced one, or a line skipped as already in the library). `createdId` names the skill a ready row creates.
+ */
+export function importListIds(review: Review, resolved: readonly ResolvedRow[], createdId: (rowId: string) => string): string[] {
+  const ids: string[] = []
+  for (const r of resolved) {
+    const match = review.library[r.row.id]
+    if (r.status === "ready") ids.push(r.replaces && match ? match.skillId : createdId(r.row.id))
+    // A line left out because the library has it already: the library skill goes on the list. One left out on purpose does not.
+    else if (r.status === "left-out" && match?.match === "same" && r.outcome === "Skipped, already in the library") ids.push(match.skillId)
+  }
+  return [...new Set(ids)]
+}
+
+/** What happens to every line read, for Confirm (2026-11-15): each line in exactly one group, so the counts add up to the lines read. */
+export interface ConfirmGroups {
+  /** Becomes a new skill, or replaces a library one. */
+  created: ResolvedRow[]
+  /** The library has it already. With a list: goes on the list. */
+  inLibrary: ResolvedRow[]
+  /** The library has it and the list does too: nothing to add. Empty without a list. */
+  onListAlready: ResolvedRow[]
+  /** Merged into another line or joined to the line above. */
+  mergedOrJoined: ResolvedRow[]
+  /** Left out: the only lines that go nowhere. */
+  leftOut: ResolvedRow[]
+}
+
+export function confirmGroups(review: Review, resolved: readonly ResolvedRow[], onList: ReadonlySet<string> | null): ConfirmGroups {
+  const g: ConfirmGroups = { created: [], inLibrary: [], onListAlready: [], mergedOrJoined: [], leftOut: [] }
+  const seen = new Set<string>()
+  for (const r of resolved) {
+    if (r.status === "ready") { g.created.push(r); continue }
+    if (r.status !== "left-out") { g.leftOut.push(r); continue }
+    if (r.outcome.startsWith("Merged") || r.outcome.startsWith("Joined")) { g.mergedOrJoined.push(r); continue }
+    const match = review.library[r.row.id]
+    if (r.outcome === "Skipped, already in the library" && match?.match === "same") {
+      // A second line naming the same library skill adds nothing more: it is a repeat, counted with the merged lines. One the list has is on the list already.
+      if (seen.has(match.skillId)) g.mergedOrJoined.push(r)
+      else if (onList?.has(match.skillId)) g.onListAlready.push(r)
+      else g.inLibrary.push(r)
+      seen.add(match.skillId)
+      continue
+    }
+    g.leftOut.push(r)
+  }
+  return g
 }

@@ -81,7 +81,7 @@ describe("flows.json", () => {
     // Granola 2026-10-26 items 6 and 8: Library, Add, Configure, Publish, Assign, Map; import is Phase 2, an optional side step.
     expect(mainSteps(f).map((s) => s.label)).toEqual(["Library", "Add a skill", "Configure the skill", "Check and save", "Skill lists", "Course mapping"])
     const imp = f.steps.find((s) => s.id === "import")!
-    expect(imp).toMatchObject({ side: true, after: "add", tag: "Later" })
+    expect(imp).toMatchObject({ side: true, after: "add" })
     const row = (id: string) => ["1", "2", "3"].map((s) => variantLetter(f, f.steps.find((x) => x.id === id)!, s)).join("")
     expect(row("library")).toBe("ABC")
     expect(row("add")).toBe("ABC")
@@ -118,7 +118,7 @@ describe("resolvers", () => {
         for (const set of f.sets) {
           const href = flowHref(f.id, st.id, set.id)
           const url = new URL(href, "http://lab.test")
-          // flowHref prints the short form (/flow/... or /walk/...); its long twin is /lab/flow/...
+          // flowHref prints the short form (/flow/... or /admin|student/...); its long twin is /lab/flow/...
           const [, , , flowId, stepId] = toLong(url.pathname).split("/")
           const r = resolveStep(flowId!, stepId!, url.searchParams.get("set"))
           expect(r, href).toBeDefined()

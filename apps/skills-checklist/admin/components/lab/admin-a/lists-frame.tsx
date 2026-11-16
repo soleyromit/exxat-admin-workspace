@@ -15,8 +15,11 @@ import { LoadingState } from "./parts"
 import { useAdminData, type AdminData } from "./use-admin-data"
 import { useListActions, useListsModel, type ListsModel } from "@/components/lab/admin-a/lists-parts"
 import { useOnePressAtATime } from "./lists-focus"
-import { capitalize, skillListNoun, skillListsNoun, skillNounPlural } from "@/lib/lab/terms"
-import { groupLabel, listForOldLink, skillLists, type SkillList } from "@/lib/lab/lists"
+import { capitalize, countSkills, skillListNoun, skillListsNoun } from "@/lib/lab/terms"
+import { useV2Store } from "@/lib/v2/react"
+import { UPLOAD_RESULT_KEY } from "@/lib/lab/upload-result"
+import { groupLabel, listForOldLink, setupDone, skillLists, type SkillList } from "@/lib/lab/lists"
+import { SETUP_CONFIGURE, SETUP_PARAM } from "@/lib/lab/return-to"
 
 export interface ListsContext extends AdminData {
   model: ListsModel
@@ -71,6 +74,49 @@ function Ready({ data, variant, children }: { data: AdminData; variant: string; 
     const ask = focus && list && list.skillIds.length > 0 && !list.groupIds.includes(focus) && model.groups.some((g) => g.id === focus) ? groupLabel(model.groups, focus) : null
     if (list && ask) askToAdd(list.id, ask)
   }, [data.ready, view, focus]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Back from a bulk upload started on a list's panel (?uploaded=1): the result once, on that list's panel, with Undo for the list (the skills stay in the library).
+  const store = useV2Store()
+  const uploaded = params?.get("uploaded") === "1"
+  const shownUpload = React.useRef(false)
+  const { setFeedback } = actions
+  React.useEffect(() => {
+    if (shownUpload.current || !data.ready || !uploaded) return
+    shownUpload.current = true
+    data.query.set({ uploaded: null })
+    let result: { listId: string; listName: string; added: number; before: unknown; after?: unknown } | null = null
+    try { result = JSON.parse(window.sessionStorage.getItem(UPLOAD_RESULT_KEY) ?? "null"); window.sessionStorage.removeItem(UPLOAD_RESULT_KEY) } catch { result = null }
+    if (!result) return
+    const before = result.before
+    setFeedback({
+      title: `${countSkills(result.added)} added to ${result.listName}.`,
+      body: "",
+      listId: result.listId,
+      // Undo restores the lists as they were before the upload, so it only runs while nothing else has changed them since: a later edit
+      // (another upload, a rename, an assignment) would be lost. The skills the upload made stay in the library either way.
+      action: { label: "Undo", onClick: () => {
+        const now = JSON.stringify(store.getSnapshot().listEdits ?? null)
+        if (result!.after !== undefined && now !== JSON.stringify(result!.after ?? null)) {
+          setFeedback({ title: `${capitalize(skillListsNoun())} changed after the upload. Nothing was undone.`, body: "", listId: result!.listId, tone: "warning" })
+          return
+        }
+        store.update((s) => ({ ...s, listEdits: (before ?? undefined) as typeof s.listEdits }))
+        setFeedback({ title: "Change undone.", body: "", listId: result!.listId })
+      } },
+    })
+  }, [data.ready, uploaded]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Back from Evaluation settings or one skill, left on step 3 of New skill list (`?setup=configure&list=<id>`, lib/lab/return-to): that step again.
+  const resume = params?.get(SETUP_PARAM) === SETUP_CONFIGURE
+  const resumed = React.useRef(false)
+  const { resumeSetup } = actions
+  React.useEffect(() => {
+    if (resumed.current || !data.ready || !resume) return
+    resumed.current = true
+    const id = params?.get("list")
+    // The param stays while the step is open (lists-parts keeps it and takes it off when the wizard ends), so Back from a page reached from step 3
+    // returns to step 3 again. A list whose setup was finished opens as the list: an entry from before the finish must not reopen its setup.
+    if (id && skillLists(model.lists).some((l) => l.id === id) && !setupDone(id)) resumeSetup(id)
+    else data.query.set({ [SETUP_PARAM]: null })
+  }, [data.ready, resume]) // eslint-disable-line react-hooks/exhaustive-deps
   // A link to a list that is not there (deleted, or from another session) opens nothing.
   const openId = params?.get("list") ?? null
   const { closePanel } = actions
@@ -87,7 +133,7 @@ function Ready({ data, variant, children }: { data: AdminData; variant: string; 
   )
   else if (noLists) body = (
     // New skill list is the page's one filled button (map D6, E rule 5).
-    <FirstRun scene="lists" title={`Start your first ${skillListNoun()}`} body={`Put together the ${skillNounPlural()} students must achieve, then choose who it applies to.`} actions={<Button type="button" variant="default" size="sm" onClick={() => actions.openNew()} data-new-list="">{`New ${skillListNoun()}`}</Button>} />
+    <FirstRun scene="lists" title={`Start your first ${skillListNoun()}`} actions={<Button type="button" variant="default" size="sm" onClick={() => actions.openNew()} data-new-list="">{`New ${skillListNoun()}`}</Button>} />
   )
   else body = children(c)
   return (

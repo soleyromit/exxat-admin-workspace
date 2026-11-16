@@ -165,3 +165,63 @@ See `docs/research/meetings/2026-10-08-mobbin-remaining-surfaces.md` §M-1. Stro
 **Unchanged:** IM-01..IM-13, nothing created before explicit confirmation, imported skills arrive unconfigured and are excluded from mapping and student lists (IM-09), junk lines never proposed as skills, ALL-CAPS headings proposed as opt-in categories, unread lines kept with original text (IM-08), batch traceability (IM-11).
 
 **Weakened or traded away (honest list):** IM-02 is only partly met: text and CSV parse in the app; spreadsheet, document and PDF extraction exist only as the design until the TypeSafe build ships. The review table is a dialog (1024px), so very long lists scroll inside it. IM-14 copy and apply controls live in S-09, not here.
+
+## Amendment 2026-11-15 (Bulk upload into a skill list; approved by Romit: "Yes")
+
+Screen: `admin/import-ai-review` variant A (`components/lab/screens/admin-import-a.tsx`), shared parts in `components/lab/import/import-parts.tsx` and `use-import-session.ts`.
+
+- **Where should they go?** One Select: "The library" (its active skill count), then every skill list of the program with its skill count (`programLists`, the same lists as Skill lists), then "A new skill list". The old specialty libraries (`importTargets`, `TARGET_LABEL`) are no longer offered here; `starter-copy.tsx` and the lib tests still use them, so the code stays. Variants B and C share `TargetField` and get the same options.
+- **Every upload makes its skills in the library**, not configured [REQ IM-09, SC-02]. Repeats are checked against the whole library whatever the destination.
+- **A list as destination** [INFER, approved by Romit 2026-11-15]: the skills the upload makes, plus the library skills the file names exactly (a replaced one, or a line skipped as already in the library), go on that list alongside its own. Nothing is removed; a skill already on the list is not added twice (`uploadToList`, `importListIds`).
+  - A list someone has is not edited in place (D-L104, D-L106): the skills go on a new version, nobody has it yet, and the students keep the original. Confirm says so. Whether an assigned list should change in place instead is **[PENDING-ROMIT]**.
+- **A new list**: its name is asked once, on step 1 beside the destination, and checked by New skill list's rules (`validateListName`), shown after a first try (blur or Next). Next stays on step 1 until the name is valid. The list is made with the skills on Create.
+- **No "Import name" field** (Romit approved dropping it). Downstream, the import batch label (`addSkillsToStore` batch `label`, read by the Library's "came from" history) is the file name, set when the file is read; a paste reads "Pasted list, {date}".
+- **Confirm** has one sentence: "Adds {n} skills to {list}." (or "... to the library, in {k} categories.", or "... to a new skill list, {name}."; for an assigned list, "Adds {n} skills to {list} v2. It is a new version of {list}; students on {list} keep it."). It keeps the "Lines not added" disclosure and nothing else; "Name this import" and the not-configured line are gone.
+- **Entry points**:
+  - A list's panel: "Upload a file" (outline) beside Edit skills / Change skills opens the wizard with `?to=<listId>&from=lists&list=<listId>`. Create returns to Skill lists with the list's panel open (the new version's, when one was made) and the banner "{n} skills added to {list}." with Undo (Undo puts the lists back; the skills stay in the library). Cancel returns to the same panel.
+  - The Library's Bulk upload is unchanged and starts on "The library". When it makes a new list, Done's primary is "Open {list}".
+  - The "Bulk upload (Later)" item in the New skill list's Choose from library level is removed. Nothing else in New skill list changes.
+
+Tests: `tests/lab/bulk-upload-lists.test.tsx`.
+
+### Rework 1 (2026-11-15, coordinator review of Confirm)
+- Confirm's lines are grouped by what happens to them, each with its count and its own Show: "Already in the library, added to the list" (with no list: "Already in the library"), "Already on the list", "Merged or joined", "Left out". With the new skills in the sentence, the groups add up to the lines read (`confirmGroups`), and "created + already in the library, added" equals the sentence's and Done's "added to the list" count.
+- The primary names the outcome: "Add {n} skills to {list}" (to a list or a new list; "to the list" / "to the new list" when the name is longer than three words), "Create {n} skills" for the library. With nothing new for the library: "Every skill in this file is in the library already." and the button is off with "Nothing new to create."
+- The Skills panel lights Skill lists, not Library, when Bulk upload is opened from a list (`?from=lists` or `?to=`), matching the crumb "Skill lists > Bulk upload" (`skillsPanelItemFor`, lib/lab/admin-ia.ts).
+- Step 1's Later notice now reads "Later. Reading PDF, Word and Excel is not built yet: this preview shows sample lines, not your file." The Later badge stays: Create works in the lab, but reading those file types is still sample-only (only CSV and plain text are read for real).
+
+### Confirm v3 (2026-11-15, Romit: "make the confirm step look more organized and professional"; concept C of three, Proposed)
+```
+Add 104 skills to Core clinical skills v2                      <- step heading = the button's action
++---------------------------------------------------------------+
+| Goes to   Core clinical skills v2  [New version]      Change  |  <- check your answers (Change = step 1)
+| File      Clinical skills checklist.pdf  158 lines read Change |
++---------------------------------------------------------------+
+(i) Students on Core clinical skills keep it. The skills go on a new version, Core clinical skills v2, which nobody has yet.
+Lines in the file
+[New skills 5] [From the library 99] [On the list already 48] [Merged or repeated 4] [/!\ Left out 2]
+| Line | In the file            | What happens                       |
+| 62   | Sterile dressing       | Made in the library, goes on the list |
+                                                   [Back]   [Add 104 skills to the list]
+```
+- One heading that states the action ("Add {n} skills to {list}", "Create {n} skills in the library", "Nothing new to create"); the button says the same verb and number.
+- The destination and the new-version consequence each have their own element (summary row with a New version badge; an info LocalBanner). The new-version rule itself is unchanged (PENDING-ROMIT).
+- Every line read sits in exactly one tab; the tab counts add up to the lines read (`confirmGroups`): 5 + 99 + 48 + 4 + 2 = 158. New + From the library = the list's count (104) = the button = Done's banner. A line naming a library skill the file already named counts under "Merged or repeated".
+- Left out is the only attention state: amber glyph on its tab, "Not added" warning badge per row; never red.
+- Line numbers stay on every row [REQ IM-08]. Tabs follow the DS overflow (a menu at 375). The table region is keyboard-focusable.
+- Step 1 and Confirm count the same unit: "158 lines read, 2 could not be read" on step 1 (it said "156 skills read": the 2 were unreadable lines, which Confirm lists under Left out).
+
+### Steps v4 (2026-11-15, Romit: "Can you do the same for every step of bulk upload?"; Proposed)
+```
+1 Upload a file                      2 Review what was read                  3 Fix the lines
+Goes to  [The library 176 v]         | Goes to The library        Change |   /!\ 155 open   0 decided   [Accept all suggestions]
+File     [Drop a file or (Choose)]   | File    x.pdf 158 lines read Change|   [> /!\ Could not read 2   Suggested: Leave out  Accept 2]
+         PDF, Word or Excel          Skills found 156 | Categories 10 |     [v /!\ Already in the library 150  ...       Accept 150]
+                                     Could not be read 2                     | 8  CPR (Independent Study)  [Choose v] |
+                                     > Basic Skills 23 ...                   Next off: "Decide every line first."
+```
+- Headings name the step's job and match the rail: "Upload a file", "Review what was read", "Fix the lines", then Confirm's action heading.
+- Step 1 asks Goes to, then File, in the two-column answers layout Confirm uses; the destination comes first (Romit 2026-10-27). The three promise tiles and the large drawing are removed: the rail already shows that the file is reviewed and fixed before anything is added (D-L34).
+- Steps 2 and 4 show Goes to and File read only with Change back to step 1 (`ImportAnswers`); nothing is asked twice.
+- Review's figures are Skills found + Could not be read (= the lines read, which the File row states once) and Categories; no amber on Review (nothing to act on there); the open count is said once, on the footer's "Fix {n} lines".
+- Fix: a toolbar with the open and decided figures and Accept all (Undo kept); the amber glyph only on groups with open lines and on the open figure; Next stays off until no line is open, with "Decide every line first."

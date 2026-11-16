@@ -102,13 +102,16 @@ function sidebarOf(p: Page): string[] {
     // D-L20: on a Skills panel page the Skills row points at the page itself (the DS lights it by path and a click reopens the
     // panel); on a Settings page the Settings row does. Either way it is that row, on its own page.
     const own = p.frame.page.screen ?? ""
-    if (title === "Skills" && screen === own && (PANEL_SCREENS.has(own) || skillsPanelItemFor(own, null, p.frame.page.variant))) screen = "admin/skills-library"
+    if (title === "Skills" && screen === own && (PANEL_SCREENS.has(own) || skillsPanelItemFor(own, null, p.frame.page.variant))) screen = ADMIN_SKILLS_ROW
     if (title === "Settings" && screen === own && own === "admin/settings") screen = "admin/settings"
     return `${title} -> ${screen}`
   })
   unmount()
   return rows
 }
+
+/** Where the admin Skills row leads: Skill lists, the walkthrough's first stop (lib/lab/admin-ia.ts skillsNavHref). */
+const ADMIN_SKILLS_ROW = "admin/lists-cohorts"
 
 const SHELL = PERSONAS.filter((p) => p.chrome === "shell")
 
@@ -117,7 +120,8 @@ describe("sidebar identity across variants (layout code path)", () => {
     const pages = pagesFor(persona as PersonaId)
     expect(pages.length).toBeGreaterThan(0)
     // The frame renders exactly the persona's nav rows, in order, each opening its own screen.
-    const expected = (PERSONAS.find((p) => p.id === persona)!.nav?.() ?? []).map((r) => `${r.title} -> ${persona}/${r.slug}`)
+    // The admin Skills row opens Skill lists, as the "Skills" crumb does (Sankalp point 7, 2026-11-15).
+    const expected = (PERSONAS.find((p) => p.id === persona)!.nav?.() ?? []).map((r) => `${r.title} -> ${persona === "admin" && r.key === "skills" ? ADMIN_SKILLS_ROW : `${persona}/${r.slug}`}`)
     // The admin's Settings link sits after the main rows (D-L20; the DS 1.6.5 shell draws no sidebar footer).
     if (persona === "admin") expected.push("Settings -> admin/settings")
     const first = sidebarOf(pages[0]!)
@@ -159,15 +163,15 @@ describe("admin IA: Categories and tags under Skills, Settings on its own sectio
     expect(item.screen).toBe("admin/categories-tags")
     expect(item.label()).toBe("Categories and tags")
     // Outside a lab Skills flow the Skills nav opens the walkthrough's page, without the lab strip (Romit 2026-11-13).
-    expect(skillsPanelHref(item, {})).toBe("/walk/setup-walkthrough/categories")
+    expect(skillsPanelHref(item, {})).toBe("/admin/categories")
   })
 
   it.each([
     ["Dashboard", "/flow/watch-the-cohort/dashboard", { flow: "watch-the-cohort", step: "dashboard", screen: "admin/dashboard", variant: "A" }],
     ["Settings", "/flow/keep-library-right/settings", { flow: "keep-library-right", step: "settings", screen: "admin/settings", variant: "A" }],
-  ])("from %s the Skills row opens the walkthrough's Library, not a lab flow (Romit 2026-11-13)", (_name, pathname, page) => {
+  ])("from %s the Skills row opens the walkthrough's Skill lists, not a lab flow (Romit 2026-11-13; Skill lists 2026-11-15)", (_name, pathname, page) => {
     const rows = rawRows(pathname, "set=1", page)
-    expect(rows.Skills).toBe("/walk/setup-walkthrough/library")
+    expect(rows.Skills).toBe("/admin/lists")
   })
 
   it.each(["A", "B", "C"])("Add a skill (%s) is a Library page: Skills row lit, panel open on Library (D-L41)", (variant) => {
@@ -270,5 +274,69 @@ describe("variant counts: /lab index equals the lab bar", () => {
     })
     expect(cells.length).toBe(SCREENS.length)
     expect([...cells].sort()).toEqual([...want].sort())
+  })
+})
+
+/**
+ * Romit 2026-11-15 ("why does it show only skills?"): inside a walkthrough the sidebar keeps every row of the persona, in order.
+ * A row that opens a page of the walkthrough links there (Skills), the admin Dashboard row links to the PRISM home, and the rest
+ * (Approvals, Reports, Settings) are inert: aria-disabled, no href. Nothing links to a lab, walk or flow address.
+ */
+describe("walkthrough sidebar: every row shows, only walkthrough pages and the PRISM home are links", () => {
+  const WALK = [
+    { persona: "admin" as PersonaId, flowId: "setup-walkthrough", root: "/admin" },
+    { persona: "student" as PersonaId, flowId: "fulfillment-walkthrough", root: "/student" },
+  ]
+  const rowsOnStep = (persona: PersonaId, flowId: string, root: string, stepId: string) => {
+    const f = findFlow(flowId)!
+    const step = f.steps.find((s) => s.id === stepId)!
+    const variant = step.variants[f.recommendedSet]!
+    nav.pathname = `${root}/${stepId}`
+    nav.search = ""
+    const { container, unmount } = render(
+      React.createElement(LabProviders, null, React.createElement(Frame, { persona, navPersona: persona, page: { flow: flowId, step: stepId, screen: step.screen, variant } }, React.createElement("div", null, "page"))),
+    )
+    const rows = Array.from(container.querySelectorAll<HTMLAnchorElement>("a[data-sidebar=menu-button]")).map((a) => ({
+      title: (a.textContent ?? "").replace(/\d+$/, "").trim(),
+      href: a.getAttribute("href"),
+      disabled: a.getAttribute("aria-disabled") === "true",
+      current: a.getAttribute("aria-current") === "page",
+    }))
+    unmount()
+    return rows
+  }
+
+  it("admin: all five rows on every step; Skills opens the walkthrough and is lit, Dashboard opens /, the rest are inert", () => {
+    const f = findFlow("setup-walkthrough")!
+    for (const s of f.steps) {
+      const rows = rowsOnStep("admin", f.id, "/admin", s.id)
+      expect(rows.map((r) => r.title), s.id).toEqual(["Dashboard", "Skills", "Approvals", "Reports", "Settings"])
+      const by = Object.fromEntries(rows.map((r) => [r.title, r]))
+      expect(by.Dashboard!.href, s.id).toBe("/")
+      expect(by.Skills!.href, s.id).toMatch(/^\/admin\/[a-z]+$/)
+      for (const t of ["Approvals", "Reports", "Settings"]) {
+        expect(by[t]!.href, `${s.id} ${t}`).toBeNull()
+        expect(by[t]!.disabled, `${s.id} ${t}`).toBe(true)
+      }
+      for (const t of ["Dashboard", "Skills"]) expect(by[t]!.disabled, `${s.id} ${t}`).toBe(false)
+      for (const r of rows) expect(r.href ?? "", `${s.id} ${r.title}`).not.toMatch(/\/lab|\/walk|\/flow/)
+    }
+  })
+
+  it("admin: Skills is the lit row on every walkthrough step", () => {
+    const f = findFlow("setup-walkthrough")!
+    for (const s of f.steps) expect(rowsOnStep("admin", f.id, "/admin", s.id).filter((r) => r.current).map((r) => r.title), s.id).toEqual(["Skills"])
+  })
+
+  it("student: every row opens a walkthrough page, none leaves /student, none is a lab address", () => {
+    const f = findFlow("fulfillment-walkthrough")!
+    for (const s of f.steps) {
+      const rows = rowsOnStep("student", f.id, "/student", s.id)
+      expect(rows.length, s.id).toBeGreaterThan(0)
+      for (const r of rows) {
+        if (r.href === null) { expect(r.disabled, `${s.id} ${r.title}`).toBe(true); continue }
+        expect(r.href, `${s.id} ${r.title}`).toMatch(/^(\/|\/student(\/[a-z]+)?)$/)
+      }
+    }
   })
 })

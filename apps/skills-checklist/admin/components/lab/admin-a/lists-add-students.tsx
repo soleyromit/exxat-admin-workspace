@@ -11,7 +11,7 @@ import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { TYPE } from "@/components/lab/type-scale"
-import { ALL_STUDENTS_GROUP, groupRuleOptions, namesOf, skillLists, studentFilterIsEmpty, studentsMatching, studentsOnList, type SkillList, type StudentFilter } from "@/lib/lab/lists"
+import { ALL_STUDENTS_GROUP, ASSIGN_UNSAVED, groupRuleOptions, namesOf, skillLists, studentFilterIsEmpty, studentsMatching, studentsOnList, type SkillList, type StudentFilter } from "@/lib/lab/lists"
 import type { Person } from "@/lib/v2/types"
 import { AppliedFilterChips, FiltersControl, SearchField, fmt, plural, type FilterField } from "./parts"
 import { RadioGroup, RadioGroupItem } from "@exxatdesignux/ui/components/ui/radio-group"
@@ -20,12 +20,25 @@ import { useRovingChecks } from "./lists-focus"
 import { useGroupForm } from "./lists-parts"
 import { FloatingSheetPanelBody, FloatingSheetPanelHeader, FloatingSheetPanelToolbar, FloatingSheetPanelWorkflowFooter } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
-import { skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { skillNounPlural } from "@/lib/lab/terms"
 
 export interface AddedStudents {
   groupIds: string[]
   studentIds: string[]
 }
+
+/** What step 4 of New skill list holds, kept while the admin steps back to step 3 and forward again (no question: only leaving the wizard asks). */
+export interface AssignDraft {
+  listId: string
+  who: "all" | "specific"
+  query: string
+  filter: StudentFilter
+  groupIds: string[]
+  studentIds: string[]
+}
+
+/** Whether a kept step 4 holds anyone to lose. */
+export const draftHasPicks = (d: AssignDraft | null | undefined): boolean => !!d && d.who === "specific" && (d.groupIds.length > 0 || d.studentIds.length > 0)
 
 /** Long lists stay quick: rows out of view skip their layout and paint, at the height they will take. */
 const ROW = "flex min-h-11 items-center gap-3 border-b border-border py-1.5 last:border-b-0 [contain-intrinsic-size:auto_2.75rem] [content-visibility:auto]"
@@ -49,19 +62,39 @@ function PickRow({ id, checked, disabled, onChange, name, meta, notes }: { id: s
   )
 }
 
-export function AssignWizard({ model, list, initialQuery, stepLabel, leaveRef, dirtyRef, onClose, onAdd }: { model: ListsModel; list: SkillList; initialQuery: string; /** "Step 3 of 3" inside New skill list. */ stepLabel?: string; /** How the panel's Close, Esc and an outside press leave this level. */ leaveRef: React.MutableRefObject<(() => void) | null>; dirtyRef: React.MutableRefObject<boolean>; onClose: () => void; onAdd: (a: AddedStudents) => void }) {
+export function AssignWizard({ model, list, initialQuery, stepLabel, leaveRef, dirtyRef, onClose, onBack, draft, onAdd }: {
+  model: ListsModel
+  list: SkillList
+  initialQuery: string
+  /** "Step 4 of 4" inside New skill list. */
+  stepLabel?: string
+  /** How the panel's Close, Esc and an outside press leave this level. */
+  leaveRef: React.MutableRefObject<(() => void) | null>
+  dirtyRef: React.MutableRefObject<boolean>
+  /** Leaves Assign altogether (after Discard when students are ticked). */
+  onClose: () => void
+  /** Inside New skill list: one step back, keeping what is ticked, with no question (Esc, the arrow and Back). */
+  onBack?: () => void
+  /** Where the step keeps its choices while it is stepped back from. */
+  draft?: React.MutableRefObject<AssignDraft | null>
+  onAdd: (a: AddedStudents) => void
+}) {
   const s = model.state
+  const kept = draft?.current?.listId === list.id ? draft.current : null
   // All students is the usual answer [Aarti, Sankalp, 741d1f1c ch 7-9], so it starts chosen unless the list is already on someone or a link named a group.
-  const [who, setWho] = React.useState<"all" | "specific">(initialQuery || list.groupIds.length || list.studentIds?.length ? "specific" : "all")
+  const [who, setWho] = React.useState<"all" | "specific">(kept?.who ?? (initialQuery || list.groupIds.length || list.studentIds?.length ? "specific" : "all"))
   const [creating, setCreating] = React.useState(false)
   const [askingBack, setAskingBack] = React.useState(false)
   const form = useGroupForm(model, (_f, id) => { setGroupIds((x) => new Set(x).add(id)); setCreating(false) })
   const stepBack = () => { setAskingBack(false); setCreating(false); requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-new-group]")?.focus({ preventScroll: true })) }
   const [asking, setAsking] = React.useState(false)
-  const [query, setQuery] = React.useState(initialQuery)
-  const [filter, setFilter] = React.useState<StudentFilter>({})
-  const [groupIds, setGroupIds] = React.useState<ReadonlySet<string>>(new Set())
-  const [studentIds, setStudentIds] = React.useState<ReadonlySet<string>>(new Set())
+  const [query, setQuery] = React.useState(kept?.query ?? initialQuery)
+  const [filter, setFilter] = React.useState<StudentFilter>(kept?.filter ?? {})
+  const [groupIds, setGroupIds] = React.useState<ReadonlySet<string>>(() => new Set(kept?.groupIds ?? []))
+  const [studentIds, setStudentIds] = React.useState<ReadonlySet<string>>(() => new Set(kept?.studentIds ?? []))
+  React.useLayoutEffect(() => {
+    if (draft) draft.current = { listId: list.id, who, query, filter, groupIds: [...groupIds], studentIds: [...studentIds] }
+  }, [draft, list.id, who, query, filter, groupIds, studentIds])
   const deferred = React.useDeferredValue(query)
   const needle = deferred.trim().toLowerCase()
   const everyone = React.useMemo(() => s.people.filter((p) => p.kind === "student").sort(byName), [s])
@@ -105,23 +138,30 @@ export function AssignWizard({ model, list, initialQuery, stepLabel, leaveRef, d
   const showStudents = !!needle || filtered
   const chosen = who === "specific" && anything
   const leave = useLeaveGuard(chosen || (creating && form.dirty))
-  const unsaved = "Nobody has been assigned yet."
+  const unsaved = ASSIGN_UNSAVED
   const cancel = () => (chosen ? setAsking(true) : onClose())
   const leaveForm = () => (form.dirty ? setAskingBack(true) : stepBack())
   const namedStudents = [...studentIds].filter((id) => !inPicked.has(id))
   const assignLabel = count ? `Assign to ${plural(count, "student", "students")}` : `Assign to ${plural(groupIds.size, "group", "groups")}`
-  const skills = plural(list.skillIds.length, skillNoun(), skillNounPlural())
-  leaveRef.current = creating ? leaveForm : cancel
-  dirtyRef.current = chosen || (creating && form.dirty)
-  React.useEffect(() => () => { leaveRef.current = null; dirtyRef.current = false }, [leaveRef, dirtyRef])
-  React.useEffect(() => { if (!creating) requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-add-dialog] input")?.focus({ preventScroll: true })) }, [creating])
+  // Set after each commit and cleared only if still its own (see ListSetupLevel): Esc on step 4 of New skill list steps back to step 3.
+  // Inside New skill list, stepping back keeps the picks and asks nothing (as steps 1 to 3 do); only leaving the wizard asks.
+  const stepOut = onBack ?? cancel
+  const leaveHere = creating ? leaveForm : stepOut
+  const dirtyHere = chosen || (creating && form.dirty)
+  React.useLayoutEffect(() => {
+    leaveRef.current = leaveHere
+    dirtyRef.current = dirtyHere
+    return () => { if (leaveRef.current === leaveHere) { leaveRef.current = null; dirtyRef.current = false } }
+  })
+  // Focus lands in the panel (the search, or the chosen option when All students needs none), so Esc and Tab start here.
+  React.useEffect(() => { if (!creating) requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-add-dialog] input, [data-add-dialog] [role=radio][data-state=checked]")?.focus({ preventScroll: true })) }, [creating])
   const everyoneCount = model.state.people.filter((p) => p.kind === "student").length
   const assignNow = () => onAdd(who === "all" ? { groupIds: [ALL_STUDENTS_GROUP], studentIds: [] } : { groupIds: [...groupIds], studentIds: namedStudents })
   return (
     <>
       {/* One panel, as the DS rail: a level replaces the content, Back in the toolbar, Close beside it. */}
-      <FloatingSheetPanelToolbar onBack={creating ? leaveForm : cancel} backLabel={creating ? "Back to Assign to students" : `Back to ${list.name}`} closeLabel="Close" showSize={false} />
-      <FloatingSheetPanelHeader title={creating ? "New student group" : "Assign to students"} subtitle={creating ? undefined : `${stepLabel ? `${stepLabel} · ` : ""}${list.name}, ${skills}`} />
+      <FloatingSheetPanelToolbar onBack={creating ? leaveForm : stepOut} backLabel={creating ? "Back to Assign to students" : onBack ? `Back to Configure ${skillNounPlural()}` : `Back to ${list.name}`} closeLabel="Close" showSize={false} />
+      <FloatingSheetPanelHeader title={creating ? "New student group" : "Assign to students"} subtitle={creating ? undefined : `${stepLabel ? `${stepLabel} · ` : ""}${list.name}`} />
       {creating ? (
         <>
           <FloatingSheetPanelBody className="flex min-w-0 flex-col gap-4 px-4 pb-4 pt-1" data-new-group-form>{form.body}</FloatingSheetPanelBody>
@@ -198,7 +238,7 @@ export function AssignWizard({ model, list, initialQuery, stepLabel, leaveRef, d
           </div>
         )}
       </FloatingSheetPanelBody>
-      <FloatingSheetPanelWorkflowFooter cancelLabel={stepLabel ? "Back" : "Cancel"} onCancel={cancel} primaryLabel={who === "all" ? `Assign to all ${fmt(everyoneCount)} students` : count || groupIds.size ? assignLabel : "Assign"} onPrimary={assignNow} primaryDisabled={who === "specific" && !anything} primaryIconClassName="fa-light fa-user-plus text-xs" />
+      <FloatingSheetPanelWorkflowFooter cancelLabel={stepLabel ? "Back" : "Cancel"} onCancel={stepOut} primaryLabel={who === "all" ? `Assign to all ${fmt(everyoneCount)} students` : count || groupIds.size ? assignLabel : "Assign"} onPrimary={assignNow} primaryDisabled={who === "specific" && !anything} primaryIconClassName="fa-light fa-user-plus text-xs" />
       </>
       )}
       <DiscardChangesDialog open={askingBack} onKeep={() => setAskingBack(false)} onDiscard={stepBack} body="This group has not been created." />

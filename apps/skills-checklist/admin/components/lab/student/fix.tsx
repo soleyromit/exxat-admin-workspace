@@ -24,6 +24,7 @@ import { FieldError } from "@exxatdesignux/ui/components/ui/field"
 import { LabLocalBanner as LocalBanner } from "@/components/lab/lab-bar/lab-banner"
 import { TYPE } from "@/components/lab/type-scale"
 import { StickyFooter } from "@/components/lab/layout/sticky-footer"
+import { UnsavedChangesGuard } from "@/components/lab/shared/unsaved-guard"
 import { updateActiveV2Store } from "@/lib/v2/react"
 import { labNow, saveLogged } from "@/lib/lab/logged"
 import { recordNamedEvaluator } from "@/lib/lab/new-evaluators"
@@ -301,6 +302,12 @@ function FixPageBody({ ctx, marker, aside, inline }: { ctx: StudentFrameCtx; mar
   const f = useFix(ctx)
   const api = useFixDraft(f, ctx.state, ctx.studentId)
   const offline = ctx.demo === "offline"
+  // Leaving with changes not sent asks first, on every way out: the breadcrumb, the sidebar, the phone's back link, browser Back and closing the
+  // tab (walk 3, D12). Save for later (a further attempt) keeps what is saved; Send ends the question.
+  const now = JSON.stringify(api.draft)
+  const [baseline, setBaseline] = React.useState(now)
+  React.useEffect(() => { if (api.savedId) setBaseline(now) }, [api.savedId]) // eslint-disable-line react-hooks/exhaustive-deps
+  const dirty = !!f && !api.sent && now !== baseline
   if (!f) {
     return (
       <FormPage title={fixTitle(null)}>
@@ -310,6 +317,7 @@ function FixPageBody({ ctx, marker, aside, inline }: { ctx: StudentFrameCtx; mar
   }
   return (
     <FormPage title={fixTitle(f)} banner={api.sent ? null : <FixContext f={f} />} aside={aside(f, api, ctx)} footer={<FixFooter f={f} api={api} offline={offline} studentId={ctx.studentId} />}>
+      <UnsavedChangesGuard dirty={dirty} onDiscard={() => undefined} body={f.case === "attempt" ? "Your attempt has not been sent or saved." : "Your correction has not been sent."} keepRecord />
       <div className="flex flex-col gap-6" data-student-lab={marker}>
         {inline && !api.sent ? <div className="min-[1280px]:hidden">{inline(f, ctx)}</div> : null}
         {api.sent ? <FixSent f={f} api={api} /> : <FixSections f={f} api={api} />}

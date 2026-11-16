@@ -8,7 +8,7 @@
 //     Scenario menu, More variants, the variant switch, the "Design lab" crumb; and no lab chrome root ([data-lab-bar],
 //     [data-ds-used-panel], [data-lab-question], [data-variant-bar]); the breadcrumb holds the screen title only; no tier or
 //     build badge markers ([data-tier], [data-build-status], [data-lab-tier]).
-// Then both walkthroughs (/lab/walkthrough/admin and /lab/walkthrough/student): every step in order, the presenter control as
+// Then both walkthroughs (/admin and /student): every step in order, the presenter control as
 // the only lab element, the agreed step string in the breadcrumb and heading, and two product buttons that lead on (--no-walkthrough
 // skips this part).
 // Prints a table and exits 1 on any failure. Usage: node scripts/lab-present-check.mjs [baseUrl]
@@ -146,7 +146,7 @@ for (const l of targets) {
 // add sheet and "Map to courses" from the assign footer land on their walkthrough steps.
 const WALKS = [
   {
-    entry: "/lab/walkthrough/admin",
+    entry: "/admin",
     flow: "setup-walkthrough",
     steps: [
       // D-L64, D-L77, D-L106: recommended pages only, four stops.
@@ -157,7 +157,7 @@ const WALKS = [
     ],
   },
   {
-    entry: "/lab/walkthrough/student",
+    entry: "/student",
     flow: "fulfillment-walkthrough",
     steps: [
       // D-L67, D-L110: seven stops. Log a skill, Email to the preceptor, My requests, My evaluations and Fix or further attempt are side steps, off the numbered path.

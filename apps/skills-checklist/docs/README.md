@@ -114,3 +114,5 @@ Vault (canonical, outside repo): `~/Documents/research-repos/Transcripts/exxat/2
 15. **Existing FAST forms vs a configuration-generated form is unresolved.** Do not assume either. `[CALL 10-09]` vs `[CALL 09-23]` (OD-36)
 16. **The Prism front end is Angular**; this Next/React build is a design and behaviour reference. `[CALL 09-30..10-02 leaders]`
 17. **The market name is "skills checkoff" as well as "skills checklist"**; label unresolved (OD-34). `[CALL 09-30..10-02 leaders]`
+
+> **Entry URLs (2026-11-15):** the product shows only the two walkthroughs: `/admin` and `/student` (steps `/admin/<step>`, `/student/<step>`); `/walk/...` redirects. Lab variants are hidden from the UI and reachable by typed URL only. See `admin/README.md`.

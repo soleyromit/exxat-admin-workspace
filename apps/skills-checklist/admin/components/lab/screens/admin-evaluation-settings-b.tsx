@@ -41,6 +41,7 @@ import { focusField } from "@/components/lab/configure/use-configure"
 import { ruleAllowsCheckOff, withCheckOffDecided, type LabRule, type RuleIssue } from "@/lib/lab/configure"
 import { TIMES_MAX } from "@/lib/lab/program-settings"
 import { FROM_PARAM } from "@/lib/lab/return-to"
+import { ReturnLink } from "@/components/lab/shared/return-link"
 import { buildLibrary } from "@/lib/lab/library"
 import { useV2State } from "@/lib/v2/react"
 import { inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -223,6 +224,8 @@ export function AdminEvaluationSettingsB() {
       onIssue={(i) => { if (hiddenQuestion(i)) setExpanded(true) }}
       headerAction={(m) => (
         <>
+          {/* "Back to {list}" from a list; opened plainly, "Back to Skill lists" (Sankalp 2026-11-15 point 7, D-L155). */}
+          <ReturnLink plainToLists />
           <ProgramPreviewDialog draft={m.rule} />
         </>
       )}

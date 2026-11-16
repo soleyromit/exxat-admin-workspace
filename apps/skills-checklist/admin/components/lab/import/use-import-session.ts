@@ -13,12 +13,12 @@ import * as React from "react"
 import { useSearchParams } from "next/navigation"
 import { useV2Hydrated, useV2State } from "@/lib/v2/react"
 import { skillListNoun } from "@/lib/lab/terms"
+import { listById, programLists, skillLists, uploadPreview, validateListName } from "@/lib/lab/lists"
 import {
   LIBRARY_TARGET,
   NEW_LIBRARY,
   PASTE_KEY,
   SAMPLE_FILE_NAME,
-  TARGET_LABEL,
   applySuggestions,
   applyReviewEdits,
   NO_EDITS,
@@ -28,7 +28,7 @@ import {
   clearDecisions,
   decisionKey,
   fixGroups,
-  importTargets,
+  importListIds,
   leaveOut,
   linesLeft,
   parsePastePayload,
@@ -79,13 +79,31 @@ export function useImportSession() {
   const [rowDescriptions, setRowDescriptions] = React.useState<Record<string, string>>({})
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const targets = React.useMemo(() => [{ id: LIBRARY_TARGET, label: "The library", count: state.skills.length }, ...importTargets(state.skills)], [state.skills])
-  const library: LibrarySkill[] = React.useMemo(
-    () => (target && target !== NEW_LIBRARY ? state.skills.filter((k) => target === LIBRARY_TARGET || k.specialty === target).map((k) => ({ id: k.id, name: k.name, configured: k.configured })) : []),
-    [state.skills, target],
+  // Where they go (Romit 2026-11-15): the library, or one of the program's own skill lists with its size, or a new list. Every upload creates
+  // its skills in the library; a list also gets them, alongside what it has. The old specialty libraries are not offered.
+  const lists = React.useMemo(() => skillLists(programLists(state)), [state])
+  const targets = React.useMemo(
+    () => [{ id: LIBRARY_TARGET, label: "The library", count: state.skills.filter((k) => k.active !== false).length }, ...lists.map((l) => ({ id: l.id, label: l.name, count: l.skillIds.length }))],
+    [state.skills, lists],
   )
+  // Repeats are checked against the whole library, whatever the destination: that is where the skills are made.
+  const library: LibrarySkill[] = React.useMemo(() => state.skills.map((k) => ({ id: k.id, name: k.name, configured: k.configured })), [state.skills])
   const isNewList = target === NEW_LIBRARY
-  const targetLabel = isNewList ? newLibraryName.trim() || `a new ${skillListNoun()}` : target === LIBRARY_TARGET ? "the library" : TARGET_LABEL[target] ?? ""
+  const targetList = isNewList || target === LIBRARY_TARGET ? undefined : listById(lists, target)
+  // The new list's name, checked by the same rules as New skill list; said once the admin has tried to go on.
+  const [nameTried, setNameTried] = React.useState(false)
+  const nameError = isNewList ? validateListName(lists, newLibraryName) : null
+  const targetLabel = isNewList ? newLibraryName.trim() || `a new ${skillListNoun()}` : targetList ? targetList.name : "the library"
+
+  // A link from a list's panel (?to=<listId>) opens with that list chosen.
+  const wanted = params?.get("to") ?? null
+  const appliedTo = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    if (!hydrated || !wanted || appliedTo.current === wanted) return
+    if (!listById(lists, wanted)) return
+    appliedTo.current = wanted
+    setTarget(wanted)
+  }, [hydrated, wanted, lists])
 
   const text = React.useMemo(() => (phase === "review" || phase === "done" ? sourceText ?? buildSampleText(scale) : ""), [phase, scale, sourceText])
   /** Split, merge and added entries [REQ IM-05], applied over the reading so the file's own lines stay as read. */
@@ -100,6 +118,9 @@ export function useImportSession() {
   const plan = React.useMemo(() => planImport(resolved), [resolved])
   const groups = React.useMemo(() => (review ? fixGroups(review, decisions) : []), [review, decisions])
   const left = React.useMemo(() => linesLeft(resolved), [resolved])
+  /** For a list: its name (or the new version it will make, when someone has it) and how many skills go on, before anything is made. */
+  const listPlan = React.useMemo(() => (review && targetList ? uploadPreview(lists, targetList.id, importListIds(review, resolved, (rowId) => `new:${rowId}`)) : null), [review, resolved, targetList, lists])
+  const newListCount = React.useMemo(() => (review && isNewList ? importListIds(review, resolved, (rowId) => `new:${rowId}`).length : 0), [review, resolved, isNewList])
 
   const clearAll = React.useCallback(() => {
     if (timer.current) clearTimeout(timer.current)
@@ -258,6 +279,7 @@ export function useImportSession() {
 
   return {
     demo, fromPaste, hydrated, phase, setPhase, scale, fileName, fileNames, sourceText, target, setTarget, isNewList, newLibraryName, setNewLibraryName,
+    nameError, nameTried, setNameTried, lists, targetList, listPlan, newListCount,
     batchName, setBatchName, targets, library, targetLabel, review, resolved, summary, plan, groups, left, decisions, names,
     readFiles, readText, reset: clearAll, decide, rename, bulkSuggest, bulkLeaveOut, putBack, restoreDecisions, confirm,
     tagsOf, setRowCategory, setTagsFor, descriptionOf, setDescriptionFor,

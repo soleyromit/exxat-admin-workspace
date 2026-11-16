@@ -4,7 +4,7 @@
  * way back and Cancel returns where the user came from rather than to a fixed route. Product words only; never a lab label.
  */
 import { toShort } from "../short-urls"
-import { capitalize, skillListsNoun, skillNoun, skillNounPlural } from "./terms"
+import { capitalize, skillListsNoun, skillNoun } from "./terms"
 
 export const FROM_PARAM = "from"
 
@@ -18,12 +18,25 @@ interface ReturnTarget {
   carryKey?: string
 }
 
+/** On Skill lists, `?list=<id>&setup=configure` reopens New skill list on that list's Configure step (step 3 of 4). */
+export const SETUP_PARAM = "setup"
+export const SETUP_CONFIGURE = "configure"
+
+/** A link out of the Configure step that offers the way back to it: `?from=setup&list=<id>`. */
+export function fromSetup(href: string, listId: string): string {
+  return `${withFrom(href, "setup")}&list=${encodeURIComponent(listId)}`
+}
+
 /** The Skill lists page, short form; `?list=<id>` reopens that list's panel (lists-frame). */
 const LISTS_HREF = toShort("/lab/admin/lists-cohorts")
 
 export const RETURN_TARGETS: Record<string, ReturnTarget> = {
   lists: { label: () => capitalize(skillListsNoun()), href: LISTS_HREF, hrefFor: (id) => toShort(`/lab/admin/lists-cohorts?list=${encodeURIComponent(id)}`), carryKey: "list" },
-  skills: { label: () => capitalize(skillNounPlural()), href: toShort("/lab/admin/skills-library") },
+  // Step 3 of New skill list (Configure skills), left for Evaluation settings or one skill: `?from=setup&list=<id>` leads back to that
+  // list's Configure step (lists-frame reads `?setup=configure`), so the wizard is not lost (Sankalp point 7). The crumb reads the list's name.
+  setup: { label: () => capitalize(skillListsNoun()), href: LISTS_HREF, hrefFor: (id) => toShort(`/lab/admin/lists-cohorts?list=${encodeURIComponent(id)}&${SETUP_PARAM}=${SETUP_CONFIGURE}`), carryKey: "list" },
+  // The Library's own panel row word: under the "Skills" crumb, "Skills > Skills > Bulk upload" said the noun twice (walk 3, D7).
+  skills: { label: () => "Library", href: toShort("/lab/admin/skills-library") },
   // Configure one skill, left for Evaluation settings: `?from=configure&skill=<id>` leads back to that skill's page. With no id
   // the way back is the Library, since Configure has no page without a skill.
   // Evaluation settings, left by "31 use their own number" for the Library filtered to those skills: the crumb leads back to the settings page.
@@ -49,6 +62,29 @@ export function returnTarget(from: string | null | undefined, carry?: string | n
 export function returnCarry(from: string | null | undefined, params: { get(name: string): string | null } | null | undefined): string | null {
   const key = from && Object.hasOwn(RETURN_TARGETS, from) ? RETURN_TARGETS[from]!.carryKey : undefined
   return key ? params?.get(key) ?? null : null
+}
+
+/**
+ * The origins that earn an in-page "Back to ..." control (walk 3, D13; amends D-L42): a page opened from a skill list's panel or from
+ * step 3 of New skill list. A page opened plainly has only its breadcrumb and the Skills panel.
+ */
+export const IN_PAGE_RETURN = ["setup", "lists"] as const
+
+/** The in-page return origin in these params, if any: its key and the list it reopens. */
+export function inPageReturn(params: { get(name: string): string | null } | null | undefined): { from: (typeof IN_PAGE_RETURN)[number]; list: string } | null {
+  const from = params?.get(FROM_PARAM)
+  const list = params?.get("list")
+  return from && list && (IN_PAGE_RETURN as readonly string[]).includes(from) ? { from: from as (typeof IN_PAGE_RETURN)[number], list } : null
+}
+
+/**
+ * `href` carrying the way back the current page holds (`?from=setup&list=`, `?from=lists&list=`), so a link onward (the Library panel's
+ * Configure) still returns to the list that started it. Unchanged when the page holds none, or when `href` names its own origin.
+ */
+export function carryReturn(href: string, params: { get(name: string): string | null } | null | undefined): string {
+  const r = inPageReturn(params)
+  if (!r || /[?&]from=/.test(href)) return href
+  return `${withFrom(href, r.from)}&list=${encodeURIComponent(r.list)}`
 }
 
 /** `href` with `?from=<key>` appended, keeping its own query. */

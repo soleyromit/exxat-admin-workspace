@@ -17,6 +17,7 @@ import { EmptyBlock } from "@/components/lab/empty-block"
 import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { returnFocus } from "@/components/lab/shared/focus"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
+import { ReturnLink } from "@/components/lab/shared/return-link"
 import { ResultBanner, type ResultBannerValue } from "@/components/lab/shared/result-banner"
 import { useAdminData, useLists, useMappingOverlay, type AdminData } from "./use-admin-data"
 
@@ -184,6 +185,8 @@ export function MappingFrame({ variant, children }: { variant: string; children:
           embedded ? undefined : (
             <span className="flex flex-wrap items-center justify-end gap-3">
               {pending ? <span className="hidden text-sm text-muted-foreground sm:inline" role="status" data-levels-pending>{pending}</span> : null}
+              {/* Only when opened from a list's panel (walk 3, D13). */}
+              <ReturnLink />
               <Button type="button" variant="default" size="sm" disabled={!dirty} onClick={save} data-mapping-save>Save changes</Button>
             </span>
           )

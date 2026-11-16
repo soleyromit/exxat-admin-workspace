@@ -103,3 +103,7 @@ NOT verified: visual diff against the live DS catalogue (localhost:4000), hover 
 ## Shell (updated 2026-10-08)
 The utility bar and menu hierarchy follow the Exxat Design OS shell: product switcher, page title, Search, Notifications, Help, Ask Leo, scope switcher and profile menu in the DS order; the rail is one flat list per view (Administrator, Student, Evaluator), and the persona is switched from the profile menu. Anatomy, evidence, delta and decisions: `docs/build/ds-shell-anatomy.md`. The DS `CommandDialog` does not supply the cmdk root: wrap its children in `<Command>` (regression test in `tests/ui/shell-chrome.test.tsx`).
 
+
+## Entry URLs (2026-11-15)
+
+Only the walkthroughs show for now: `/admin` (admin walkthrough) and `/student` (student and evaluator walkthrough); `/` opens `/admin/lists`. Steps are `/admin/<step>` and `/student/<step>`; the flow id never appears in the address. Old `/walk/...`, `/lab/flow/<walkthrough>/...` and `/lab/walkthrough/<id>` redirect to the new form. The lab and its variants stay in the code, reachable only by typed URL (`/all`, `/as/...`, `/flow/...`, `/proto`). Rules: `lib/short-urls.ts`.

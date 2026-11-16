@@ -115,6 +115,7 @@ export function AdminImportC() {
   let footer: StickyFooterProps
   if (done) footer = { secondary: { label: "Import another list", onClick: () => { setDraft(""); saveDraft(""); session.reset() } }, primary: { label: "Open the library", href: LIBRARY_HREF } }
   else if (reviewing) {
+    // One page, no Fix step: the count is the Create button's only reason, so it stays here (variant A says "Decide every line first." beside its Fix toolbar count).
     const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? `Name the new ${skillListNoun()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
     footer = { context: reason ? undefined : "All decided.", primary: { label: `Create ${countSkills(total)}`, onClick: () => undefined, disabled: true, disabledReason: UPLOAD_LATER } }
   } else footer = { context: session.phase === "reading" ? "Reading the files" : undefined }

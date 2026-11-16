@@ -12,7 +12,7 @@ import { toShort } from "../short-urls"
  * n of N, previous, next, exit) is the fallback when a product button does not lead on, and it never shows a variant, set or lab
  * label.
  *
- * No variant is removed or hidden: the walkthroughs are separate flow entries, and the lab index still lists every variant.
+ * No variant is removed: the walkthroughs are separate flow entries, and the lab index still lists every variant, reachable only by its typed URL (/all).
  */
 export const WALKTHROUGH_ID = "setup-walkthrough"
 /**
@@ -21,11 +21,11 @@ export const WALKTHROUGH_ID = "setup-walkthrough"
  */
 export const FULFILLMENT_WALKTHROUGH_ID = "fulfillment-walkthrough"
 /** Entry URLs, linked from the lab index. */
-export const WALKTHROUGH_ENTRY = "/walk"
-export const FULFILLMENT_ENTRY = "/walk/student"
+export const WALKTHROUGH_ENTRY = "/admin"
+export const FULFILLMENT_ENTRY = "/student"
 /** Short ids the entry route accepts, to the flow they open. */
 // Romit 2026-10-28: "instead of setup, use admin; for fulfillment, use student". The old ids still resolve so shared links keep working.
-// `/walk/<flow id>` opens that flow too, so the flow ids are ids as well.
+// The ids resolve through `/lab/walkthrough/<id>`; the old `/walk/<id>` redirects to /admin or /student (lib/short-urls.ts).
 export const WALKTHROUGH_ROUTES: Record<string, string> = { admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID, [WALKTHROUGH_ID]: WALKTHROUGH_ID, [FULFILLMENT_WALKTHROUGH_ID]: FULFILLMENT_WALKTHROUGH_ID }
 
 export const isWalkthrough = (flowId: string | null | undefined): boolean => !!findFlow(flowId)?.walkthrough
@@ -76,7 +76,7 @@ export function walkthroughStepHref(flow: FlowDef, stepId: string, carry?: Param
   const target = flow.steps.find((s) => s.id === stepId)
   const own = target?.params?.[set] ?? {}
   const siblingKeys = new Set(flow.steps.filter((s) => target && s.id !== target.id && s.screen === target.screen).flatMap((s) => Object.keys(s.params?.[set] ?? {})))
-  // The URL carries neither `set` (a walkthrough has one set) nor `present` (a walkthrough is always presented): `/walk/<flow>/<step>`
+  // The URL carries neither `set` (a walkthrough has one set) nor `present` (a walkthrough is always presented): `/admin/<step>` or `/student/<step>`
   // is the whole address, plus whatever the step needs (its own params, an explicit `term`). An explicit `?set=`, `?variant=` or
   // `?term=` on a hand-written URL still wins.
   const q = new URLSearchParams()
@@ -159,6 +159,3 @@ export function walkthroughPaths(): Array<{ id: string; title: string; href: str
     return href ? [{ id: f.id, title: f.title, href }] : []
   })
 }
-
-/** "All variants" in the path bar's Exit menu: the lab index, where every screen, variant and other flow lives (D-L64). */
-export const WALKTHROUGH_EXIT = "/all"

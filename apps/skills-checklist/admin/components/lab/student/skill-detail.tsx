@@ -32,10 +32,11 @@ export function skillPrimary(r: SkillRecord | null, studentId: string, ask?: { h
   if (!r) return null
   // Deactivated [REQ SL-11] or Not configured [REQ IM-09]: nothing new can be sent for it; an open request can still be viewed.
   if (r.active === false || !r.setUp) return r.waiting ? { label: "View request", href: studentHref("my-requests", {}, studentId) } : null
-  if (r.returned) return { label: "Fix and send", href: studentHref("fix-returned", { submission: r.returned.submissionId }, studentId) }
+  // `from: "progress"`: the page opened from My progress reads "My progress" in its crumb (walk 3, D13).
+  if (r.returned) return { label: "Fix and send", href: studentHref("fix-returned", { submission: r.returned.submissionId, from: "progress" }, studentId) }
   if (r.waiting) return { label: "View request", href: studentHref("my-requests", {}, studentId) }
   if (r.state === "achieved") return null
-  if (r.state === "dnq") return { label: "Make a further attempt", href: studentHref("fix-returned", { skill: r.id }, studentId) }
+  if (r.state === "dnq") return { label: "Make a further attempt", href: studentHref("fix-returned", { skill: r.id, from: "progress" }, studentId) }
   // The skill's own page asks for this skill by name; "another" once one has counted, until the times needed are met.
   if (ask) return { label: r.counted > 0 ? "Ask for another evaluation" : "Ask for evaluation", href: ask.href }
   return { label: `Log ${aNoun()}`, href: studentHref("request-signoff", { skill: r.id }, studentId) }
@@ -262,7 +263,7 @@ export function WhyNotCounted({ record, studentId, withAction = true }: { record
       <p className="text-sm text-foreground">{record.failed.next}</p>
       {withAction && !record.waiting && record.active !== false ? (
         <Button asChild variant="outline" size="sm" className="self-start">
-          <Link href={studentHref("fix-returned", { skill: record.id }, studentId)}>Make a further attempt</Link>
+          <Link href={studentHref("fix-returned", { skill: record.id, from: "progress" }, studentId)}>Make a further attempt</Link>
         </Button>
       ) : null}
     </div>

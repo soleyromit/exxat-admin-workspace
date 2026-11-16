@@ -63,9 +63,11 @@ export interface CategoryPickerProps {
   emptyLabel?: string
   /** "quiet": a ghost text trigger with no chevron, for a row where the category is secondary (New skill list). */
   appearance?: "field" | "quiet"
+  /** Shown in the trigger while no category is set, muted, instead of the empty label: "Select category" on a row where it can be set (Romit 2026-11-15: "show a dropdown instead of 'No category'"). The clear option keeps the empty label. */
+  placeholder?: string
 }
 
-export function CategoryPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", className, emptyLabel = "None", appearance = "field" }: CategoryPickerProps) {
+export function CategoryPicker({ id, labelId, value, options, inactive = [], onChange, size = "default", className, emptyLabel = "None", appearance = "field", placeholder }: CategoryPickerProps) {
   const quiet = appearance === "quiet"
   const valueInactive = !!value && inactive.some((x) => normName(x) === normName(value))
   const [open, setOpen] = React.useState(false)
@@ -95,7 +97,7 @@ export function CategoryPicker({ id, labelId, value, options, inactive = [], onC
           data-category-picker
         >
           <span id={`${id}-value`} className={`flex min-w-0 items-center gap-2 ${value && !quiet ? "" : "text-muted-foreground"}`}>
-            <span className="truncate">{value || emptyLabel}</span>
+            <span className="truncate">{value || placeholder || emptyLabel}</span>
             {valueInactive ? <InactiveMark /> : null}
           </span>
           {quiet ? null : <i className="fa-light fa-chevron-down text-xs text-muted-foreground" aria-hidden="true" />}

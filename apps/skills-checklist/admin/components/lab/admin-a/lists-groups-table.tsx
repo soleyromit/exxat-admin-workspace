@@ -14,7 +14,7 @@ import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { useDsTableToolbar } from "@/components/lab/shared/ds-table-toolbar"
 import { RowMenu, type RowMenuEntry } from "@/components/lab/shared/row-menu"
-import { assignedToText, listCanEdit, listHasAssignment, listSizeParts, skillLists, type SkillList } from "@/lib/lab/lists"
+import { assignedToText, deleteBlockedReason, listHasAssignment, listSizeParts, skillLists, type SkillList } from "@/lib/lab/lists"
 import { capitalize, skillListsNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { ListsContext } from "./lists-frame"
 import { fmt, useTextCut } from "./parts"
@@ -28,14 +28,15 @@ interface Row extends Record<string, unknown> {
 }
 
 /**
- * Rename, New version where someone is on the list (one on no one is edited in place), Delete where nobody is and it is not the default [INFER: a program always has one once it has chosen one].
+ * Rename, New version where someone is on the list (one on no one is edited in place), Delete on every list: the default one is blocked with its reason in view, and one that people have asks first, naming who it reaches [INFER: ADMIN-D6 amendment c].
  * The same menu on the row and in the panel.
  */
 export function ListRowMenu({ list, onRename, onNewVersion, onDelete }: { list: SkillList; onRename: (id: string) => void; onNewVersion: (id: string) => void; onDelete: (list: SkillList) => void }) {
   const entries: RowMenuEntry[] = [
     { slot: "edit", label: "Rename", icon: "fa-pen", onSelect: () => onRename(list.id) },
     ...(listHasAssignment(list) ? [{ slot: "lifecycle" as const, label: `Change ${skillNounPlural()}`, icon: "fa-pen", onSelect: () => onNewVersion(list.id) }] : []),
-    ...(listCanEdit(list) && !list.isDefault ? [{ slot: "delete" as const, label: "Delete", icon: "fa-trash", onSelect: () => onDelete(list) }] : []),
+    // Always offered, so nobody reads it as missing (Sankalp 2026-11-15). The default one says why it cannot go; one someone has says who it reaches in its confirm.
+    { slot: "delete" as const, label: "Delete", icon: "fa-trash", onSelect: () => onDelete(list), blockedBecause: deleteBlockedReason(list) },
   ]
   return <RowMenu label={`Actions for ${list.name}`} entries={entries} />
 }
@@ -86,6 +87,8 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
       key: "name",
       label: "Name",
       width: isMobile ? 216 : 320,
+      // The name stays in view when the table scrolls sideways at narrow widths, as the row menu does on the right (Sankalp point 4: a row action must say which list it acts on).
+      defaultPin: "left",
       sortable: true,
       cell: (r) => (
         <span className="flex min-w-0 flex-col items-start gap-1 py-0.5">

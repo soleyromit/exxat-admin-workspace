@@ -89,6 +89,8 @@ export interface CrumbParent {
   when?: string
   drop?: string[]
   leaf?: "heading"
+  /** `?from=<key>` picks another parent: the page reached from somewhere else reads that place in its crumb (walk 3, D13). */
+  fromParent?: Record<string, string>
 }
 
 const DRILL_PARAMS = ["list", "cond", "q"]
@@ -102,7 +104,8 @@ export const CRUMB_PARENTS: Record<string, CrumbParent> = {
   "director/verification-detail": { parent: "director/dashboard" },
   "student/skill-detail": { parent: "student/home" },
   "student/share-record": { parent: "student/record" },
-  "student/fix-returned": { parent: "student/my-requests" },
+  // A further attempt or a fix opened from My progress (its skill page) reads "My progress > ..." (`?from=progress`); else My requests.
+  "student/fix-returned": { parent: "student/my-requests", fromParent: { progress: "student/home" } },
 }
 
 /** The crumb parent for a page, with the parent row's title, or undefined when the page sits at the top of its row. */
@@ -112,7 +115,9 @@ export function crumbParentFor(
 ): (CrumbParent & { label: string }) | undefined {
   const rule = screen ? CRUMB_PARENTS[screen] : undefined
   if (!rule || (rule.when && !params?.get(rule.when))) return undefined
-  const [persona, slug] = rule.parent.split("/")
+  const from = params?.get("from")
+  const parent = (from && rule.fromParent && Object.hasOwn(rule.fromParent, from) ? rule.fromParent[from] : undefined) ?? rule.parent
+  const [persona, slug] = parent.split("/")
   const row = isPersonaId(persona ?? "") ? PERSONA_BY_ID[persona as PersonaId].nav?.().find((r) => r.slug === slug) : undefined
-  return row ? { ...rule, label: row.title } : undefined
+  return row ? { ...rule, parent, label: row.title } : undefined
 }

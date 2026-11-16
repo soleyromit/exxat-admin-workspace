@@ -708,24 +708,32 @@ class T {
     await this.visible(d, "New skill list opened no panel")
     await d.getByRole("textbox", { name: /^Name/ }).fill(name)
     await this.absent(d.getByRole("radio"), "New skill list still asks where to start from")
+    // Name first, then skills (ADMIN-D6 amendment a): Next moves to step 2 and saves nothing.
+    await this.click(d.getByRole("button", { name: /^Next/ }), "no Next on the name step")
+    await this.visible(this.p.locator("[data-new-list-stage=skills]"), "Next did not open Add skills")
   }
   async pickFive() {
+    // Step 2 v3 (ADMIN-D6a amendment 2026-11-15e): the library is the step; tick five rows where they are, no level opens.
     const d = this.dialog().first()
-    await this.click(d.getByRole("button", { name: /^Choose from library$/ }), "no Choose from library")
-    const picker = this.p.locator("[data-new-list-library]")
-    await this.visible(picker, "Choose from library opened no level")
-    const boxes = picker.getByRole("checkbox")
-    await this.visible(boxes.first(), "the library level has no skills to select")
+    const step = this.p.locator("[data-add-skills-step]")
+    await this.visible(step, "Add skills shows no library table")
+    const boxes = step.locator("[data-skill-rows]").getByRole("checkbox")
+    await this.visible(boxes.first(), "the step has no skills to tick")
     for (let i = 0; i < 5; i++) await boxes.nth(i).click()
-    await this.click(this.dialog().first().getByRole("button", { name: /^Add 5 skills/ }), "no Add 5 skills")
-    await this.p.waitForTimeout(300)
-    return this.dialog().first()
+    if ((await step.locator("[data-picked-count]").getAttribute("data-picked-count")) !== "5") fail("five ticks do not read Selected 5")
+    await this.absent(this.p.locator("[data-new-list-library]"), "a library level opened")
+    return d
   }
   /** Step 1 Next creates the list; Back from step 2 lands on its panel, not assigned. */
   async saveNewList() {
-    await this.click(this.dialog().first().getByRole("button", { name: /^Next/ }), "no Next")
-    await this.visible(this.p.locator("[data-list-setup]"), "Next did not open step 2")
-    await this.click(this.dialog().first().getByRole("button", { name: /^Back/ }).first(), "no Back on step 2")
+    await this.click(this.dialog().first().getByRole("button", { name: /^Save and continue/ }), "no Save and continue")
+    await this.visible(this.p.locator("[data-list-setup]"), "Save and continue did not open Configure skills")
+    // X on a setup step leaves for the table (Sankalp point 7); the list is saved, and its row opens its panel.
+    const sub = (await this.dialog().first().locator("[data-slot=floating-sheet-panel-header]").innerText().catch(() => "")) || ""
+    const name = sub.split("·").pop()?.trim() ?? ""
+    await this.click(this.dialog().first().getByRole("button", { name: "Close", exact: true }), "no Close on Configure skills")
+    await this.waitFor(async () => (await this.dialog().count()) === 0, "Close on Configure skills did not return to the table")
+    if (name) await this.click(this.main.locator("[data-list-link]").filter({ hasText: name }).first(), `no row for ${name}`)
     await this.p.waitForTimeout(500)
     return this.dialog().first()
   }
@@ -4040,17 +4048,20 @@ test("C4", "C", "Row with skills: Delete disabled with a reason", async (t) => {
 })
 
 // ------------------------------------------------------------------ T: skill lists (one page, one table, one panel; D-L106)
-test("T1", "T", "New skill list: Name, a drawing with Write a skill and Choose from library, no Create; the library is a level with search and ticks", async (t) => {
+test("T1", "T", "New skill list: Name, then the library itself (step 2 v3): every skill listed with a box, search or add, Copy a list, All and Selected tabs; no method to choose, no drill-in", async (t) => {
   await t.openNewList()
   const d = t.dialog().first()
   await t.absent(d.getByRole("button", { name: /^Create$/ }), "a Create button is back")
-  const first = t.p.locator("[data-no-skills-yet]")
-  await t.visible(first.locator("svg"), "no drawing while the list is empty")
-  await t.visible(first.getByRole("button", { name: /^Write a skill$/ }), "no Write a skill under the drawing")
-  await t.click(first.getByRole("button", { name: /^Choose from library$/ }), "no Choose from library under the drawing")
-  const picker = t.p.locator("[data-new-list-library]")
-  await t.visible(picker.getByRole("searchbox"), "the library level has no search")
-  await t.visible(picker.getByRole("checkbox").first(), "the library level has no skills to select")
+  const step = t.p.locator("[data-add-skills-step]")
+  await t.visible(step.locator("[data-skill-rows] [role=checkbox]").first(), "no skills listed on arrival")
+  await t.visible(d.getByRole("textbox", { name: /^Search or add a/ }), "no search or add field")
+  await t.visible(d.getByRole("button", { name: /^Copy a list/ }), "no Copy a list in view")
+  await t.visible(d.getByRole("tab", { name: /^All/ }), "no All tab")
+  await t.visible(d.getByRole("tab", { name: /^Selected/ }), "no Selected tab")
+  await t.visible(step.getByRole("checkbox", { name: /^Select all \d+/ }), "no header box to select all")
+  await t.absent(d.getByRole("button", { name: /^Choose skills$/ }), "Choose skills (a method to pick first) is back")
+  await t.absent(d.getByRole("group", { name: "Library" }), "the label column of ways in is back")
+  await t.absent(t.p.locator("[data-no-skills-yet]"), "the empty box is back")
 })
 test("T2", "T", "Add 5 from the library, Next: table row 5 and a muted Not assigned, no button in the cell; persists", async (t) => {
   const name = unique("Test list")
@@ -4090,12 +4101,12 @@ test("T4", "T", "An assigned list: View all is read only, with Change skills on 
   await t.absent(panel.getByRole("button", { name: /^(Save|Edit)/ }), "assigned list panel can be saved")
   if (/\b(Draft|Live)\b/.test(await panel.innerText())) fail("the panel says a state word")
 })
-test("T5", "T", "Assigned row menu: Rename, Change skills, nothing else", async (t) => {
+test("T5", "T", "Assigned row menu: Rename, Change skills, Delete (always offered, Sankalp 2026-11-15; ADMIN-D6 amendment c)", async (t) => {
   await t.open(LISTS)
   const row = t.assignedListRows().filter({ hasNotText: /Default/ }).first()
   await t.click(row.getByRole("button", { name: /^Actions/ }), "no menu on an assigned list")
   const labels = await t.menuLabels()
-  if (!same(labels, ["Rename", "Change skills"])) fail(`menu holds ${labels.join(", ")}; want Rename, Change skills`)
+  if (!same(labels, ["Rename", "Change skills", "Delete"])) fail(`menu holds ${labels.join(", ")}; want Rename, Change skills, Delete`)
 })
 test("T6", "T", "Change skills: nothing is made until Save as new list; then {name} v2, Not assigned; original unchanged; persists", async (t) => {
   await t.open(LISTS)
@@ -4157,7 +4168,7 @@ test("T8", "T", "No Map to courses, no New student group, in the table or its me
     await t.p.waitForTimeout(150)
   }
 })
-test("T9", "T", "No state word and no Status column; an unassigned list's menu is Rename, Delete; Edit skills opens the picker", async (t) => {
+test("T9", "T", "No state word and no Status column; an unassigned list's menu is Rename, Delete; Change skills opens the picker", async (t) => {
   await t.open(LISTS)
   const text = (await t.main.innerText()).replace(/\s+/g, " ")
   if (/\b(Live|Draft)\b/.test(text)) fail(`the page still says ${text.match(/\b(Live|Draft)\b/)[0]}`)
@@ -4170,7 +4181,7 @@ test("T9", "T", "No state word and no Status column; an unassigned list's menu i
   if (!same(labels, ["Rename", "Delete"])) fail(`menu holds ${labels.join(", ")}; want Rename, Delete`)
   await t.p.keyboard.press("Escape")
   const panel = await t.openListPanel("list-clinical-2027")
-  await t.click(panel.getByRole("button", { name: /^Edit skills$/ }), "no Edit skills")
+  await t.click(panel.getByRole("button", { name: /^Change skills$/ }), "no Change skills")
   await t.visible(panel.getByRole("checkbox"), "no picker")
 })
 
@@ -4684,7 +4695,7 @@ test("G2.mapping", "G", "Course mapping: Save top right", async (t) => {
 /** G3 and GUARD: make each surface dirty. */
 const DIRTY = {
   settings: { open: (t) => t.open(SET), go: async (t) => { await t.chooseModel(/^Approved/, "no model option to change") } }, // the seeded page has a model now, so switching asks first
-  lists: { open: async (t) => { await t.open(LISTS); const panel = await t.openListPanel("list-clinical-2027"); await t.click(panel.getByRole("button", { name: /^Edit skills$/ }), "no Edit skills") }, go: async (t) => { await t.dialog().first().getByRole("checkbox").first().click() } },
+  lists: { open: async (t) => { await t.open(LISTS); const panel = await t.openListPanel("list-clinical-2027"); await t.click(panel.getByRole("button", { name: /^Change skills$/ }), "no Change skills") }, go: async (t) => { await t.dialog().first().getByRole("checkbox").first().click() } },
   mapping: { open: (t) => t.openMapBySkill(), go: async (t) => { await t.setLevel(0) } },
   perskill: { open: (t) => t.openBulkConfigure(), go: async (t) => { await t.openGroup(t.main, "What the student does"); const s = t.main.getByRole("switch").first(); await t.visible(s, "no control to change"); await s.click() } },
   library: { open: (t) => t.openEditForm(), go: async (t) => { await t.dialog().first().getByRole("textbox", { name: /^Name/ }).fill("Unsaved name") } },
@@ -4950,7 +4961,7 @@ for (const key of ["settings", "lists", "mapping", "perskill", "library"]) {
   const openOnPath = async (t) => {
     if (key === "perskill") { await t.openBulkConfigure(); return }
     await t.walkTo(STOP[key])
-    if (key === "lists") { const panel = await t.openListPanel("list-clinical-2027"); await t.click(panel.getByRole("button", { name: /^Edit skills$/ }), "no Edit skills"); return }
+    if (key === "lists") { const panel = await t.openListPanel("list-clinical-2027"); await t.click(panel.getByRole("button", { name: /^Change skills$/ }), "no Change skills"); return }
     if (key === "mapping") {
       await t.click(t.main.getByRole("radio", { name: "By skill" }).or(t.main.getByRole("tab", { name: "By skill" })), "no By skill view")
       await t.p.waitForTimeout(800)
@@ -5941,8 +5952,8 @@ test("T11", "T", "View skills: X and Esc go back one level, with focus on View s
 test("T12", "T", "A clean picker goes back with no question", async (t) => {
   await t.open(`${LISTS}?list=list-clinical-2027`)
   for (const how of ["Esc", "X"]) {
-    await t.click(listBtn(t, "Edit skills"), "no Edit skills")
-    await expectLevel(t, "lab-admin-list-picker", "Edit skills")
+    await t.click(listBtn(t, "Change skills"), "no Change skills")
+    await expectLevel(t, "lab-admin-list-picker", "Change skills")
     if (how === "X") await pressClose(t); else await t.p.keyboard.press("Escape")
     await expectLevel(t, "lab-admin-list-panel", how)
     if (await t.p.getByRole("alertdialog").count()) fail(`${how}: a clean picker asked a question`)
@@ -5950,8 +5961,8 @@ test("T12", "T", "A clean picker goes back with no question", async (t) => {
 })
 test("T13", "T", "A dirty picker asks on each way out; Keep editing stays; Discard lands on the list's panel", async (t) => {
   await t.open(`${LISTS}?list=list-clinical-2027`)
-  await t.click(listBtn(t, "Edit skills"), "no Edit skills")
-  await expectLevel(t, "lab-admin-list-picker", "Edit skills")
+  await t.click(listBtn(t, "Change skills"), "no Change skills")
+  await expectLevel(t, "lab-admin-list-picker", "Change skills")
   await t.p.locator(LP).getByRole("checkbox").first().click()
   await t.p.waitForTimeout(200)
   for (const how of ["Esc", "X"]) {
@@ -5972,8 +5983,11 @@ const newListNamed = async (t, n) => {
   await t.p.locator("#list-name").fill(n)
   await t.p.waitForTimeout(200)
 }
+const toSkillsStep = async (t) => {
+  await t.click(t.dialog().first().getByRole("button", { name: /^Next/ }), "no Next on the name step")
+  await t.visible(t.p.locator("[data-new-list-stage=skills]"), "Next did not open Add skills")
+}
 const addNewSkill = async (t, n) => {
-  await t.click(t.p.getByRole("button", { name: "Write a skill", exact: true }), "no Write a skill")
   await t.p.locator("#new-skill-name").fill(n)
   await t.p.locator("#new-skill-name").press("Enter")
   await t.p.waitForTimeout(300)
@@ -5994,13 +6008,14 @@ test("T14", "T", "A new list left or discarded leaves no row and no panel", asyn
 })
 test("T15", "T", "Clean picker: no footer. A tick: Unsaved changes, Cancel, Save list as the one filled button. Untick: gone", async (t) => {
   await t.open(`${LISTS}?list=list-clinical-2027`)
-  await t.click(listBtn(t, "Edit skills"), "no Edit skills")
-  await expectLevel(t, "lab-admin-list-picker", "Edit skills")
+  await t.click(listBtn(t, "Change skills"), "no Change skills")
+  await expectLevel(t, "lab-admin-list-picker", "Change skills")
   const footer = t.p.locator(`${LP} [data-unsaved-footer]`)
   if (await footer.count()) fail("a footer shows before any change")
   if (await listBtn(t, "Save list").count()) fail("Save list shows before any change")
   if (await listBtn(t, "Cancel").count()) fail("Cancel shows before any change")
-  const box = t.p.locator(LP).getByRole("checkbox").first()
+  // A row box: the first checkbox in the picker is Select all (ADMIN-D6 amendment d).
+  const box = t.p.locator(`${LP} [data-skill-rows]`).getByRole("checkbox").first()
   await box.click()
   await t.visible(footer, "no footer after a tick", QUICK)
   const text = (await footer.innerText()).replace(/\s+/g, " ")
@@ -6010,20 +6025,19 @@ test("T15", "T", "Clean picker: no footer. A tick: Unsaved changes, Cancel, Save
   await box.click()
   await t.waitFor(async () => (await footer.count()) === 0, "untick left the footer")
 })
-test("T16", "T", "A fresh list: Next with no skills says so under the drawing; adding one clears it and moves the buttons up", async (t) => {
+test("T16", "T", "A fresh list: Save with nothing ticked says Select at least one skill under the tabs; adding one clears it and its category is offered", async (t) => {
   await t.open(LISTS)
   await newListNamed(t, unique("Zz fresh"))
+  await toSkillsStep(t)
   const d = t.dialog().first()
-  await t.click(d.getByRole("button", { name: /^Next/ }), "no Next")
-  await t.visible(t.p.locator("[data-no-skills-yet] [data-skill-error]"), "no message under the drawing", QUICK)
+  await t.click(d.getByRole("button", { name: /^Save and continue/ }), "no Save and continue")
+  await t.visible(t.p.locator("[data-add-skills-step] [data-skill-error]"), "no message on the step", QUICK)
+  if ((await t.p.locator("#new-list-all").evaluate((el) => el === document.activeElement)) !== true) fail("focus did not go to the header box")
   await addNewSkill(t, unique("Zz skill"))
   await t.absent(t.p.locator("[data-skill-error]"), "the message stayed")
-  await t.absent(t.p.locator("[data-no-skills-yet]"), "the drawing stayed")
-  await t.visible(d.getByRole("button", { name: /^Choose from library$/ }), "no Choose from library beside the count", QUICK)
-  await t.absent(d.getByRole("button", { name: /^Write a skill$/ }), "Write a skill repeats the field beside the count")
-  await t.absent(d.getByRole("button", { name: /^Done$/ }), "a Done button is back in the add row")
-  await t.absent(d.locator("[data-add-new-row] [data-category-picker]"), "a category select is back in the add row")
-  if ((await t.p.locator("#new-skill-name").evaluate((el) => el === document.activeElement)) !== true) fail("focus left the field after Enter")
+  await t.absent(t.p.locator("[data-no-skills-yet]"), "the empty box is back")
+  await t.absent(d.getByRole("button", { name: /^Choose skills$/ }), "Choose skills is back")
+  await t.visible(d.locator("[data-row-category] [data-category-picker]").first(), "the new skill has no Select category", QUICK)
 })
 test("T17", "T", "A result banner does not follow into the picker", async (t) => {
   await t.open(`${LISTS}?list=list-core`)
@@ -6042,59 +6056,59 @@ test("T17", "T", "A result banner does not follow into the picker", async (t) =>
 test("T18", "T", "A saved list: no banner in the picker, none after coming back", async (t) => {
   await t.open(LISTS)
   await newListNamed(t, unique("Zz saved"))
+  await toSkillsStep(t)
   await addNewSkill(t, unique("Zz skill"))
   await t.saveNewList()
   await expectLevel(t, "lab-admin-list-panel", "Back from step 2")
-  await t.click(listBtn(t, "Edit skills"), "no Edit skills")
-  await expectLevel(t, "lab-admin-list-picker", "Edit skills")
+  await t.click(listBtn(t, "Change skills"), "no Change skills")
+  await expectLevel(t, "lab-admin-list-picker", "Change skills")
   if (await t.p.locator(`${LP} [data-region=banner]`).count()) fail("a banner in the picker")
   await pressClose(t)
   await expectLevel(t, "lab-admin-list-panel", "X")
   if (await t.p.locator(`${LP} [data-region=banner]`).count()) fail("the banner came back after the picker")
 })
-test("T28", "T", "New skill list add row: Enter adds and keeps focus, newest on top, a name already on the list says so, a pasted list adds each line", async (t) => {
+test("T28", "T", "New skill list search: a new name adds ticked with its category, a name already ticked says so, the add row reads Add as a new skill, a pasted list adds each line", async (t) => {
   await t.open(LISTS)
   await newListNamed(t, unique("Zz add row"))
+  await toSkillsStep(t)
   const d = t.dialog().first()
+  const count = async () => Number(await d.locator("[data-picked-count]").getAttribute("data-picked-count"))
   const a = unique("Zz first"), b = unique("Zz second")
   await addNewSkill(t, a)
   const field = t.p.locator("#new-skill-name")
-  await field.fill(b)
-  await field.press("Enter")
-  await t.p.waitForTimeout(300)
-  const rows = d.locator("[data-list-rows] > li")
-  if ((await rows.count()) !== 2) fail(`want 2 rows, have ${await rows.count()}`)
-  if (!(await rows.first().innerText()).includes(b)) fail("the newest skill is not on top")
-  if ((await d.locator("[data-picked-count]").getAttribute("data-picked-count")) !== "2") fail("the count does not read 2")
+  // One new skill keeps its name in the search, so its row shows ticked with Select category.
+  if ((await field.inputValue()) !== a) fail("the search did not keep the new name")
+  const row = d.locator("[data-skill-rows] > li[data-add-skill-row]").filter({ hasText: a })
+  await t.visible(row, "the new skill has no row", QUICK)
+  if (!(await row.getByRole("checkbox").first().isChecked())) fail("the new skill is not ticked")
+  await t.visible(row.locator("[data-category-picker]"), "the new skill has no Select category", QUICK)
+  await addNewSkill(t, b)
+  if ((await count()) !== 2) fail(`Selected reads ${await count()}, want 2`)
   await field.fill(a)
   await field.press("Enter")
   await t.visible(d.locator("[data-typed-error]"), "a name already on the list says nothing", QUICK)
   if ((await field.inputValue()) !== a) fail("the typed name was cleared on a duplicate")
-  if ((await rows.count()) !== 2) fail("a duplicate was added")
-  // The Add button beside the field (2026-11-11): off while the field is empty, on with a name; a click adds and keeps focus in the field.
+  if ((await count()) !== 2) fail("a duplicate was added")
   const addBtn = d.locator("[data-add-typed]")
   await field.fill("")
-  if (!(await addBtn.isDisabled())) fail("Add is on with an empty field")
-  if (!/^Add \w+$/.test((await addBtn.innerText()).trim())) fail(`the button reads "${await addBtn.innerText()}", not "Add skill"`)
+  if (await addBtn.count()) fail("the add row shows with an empty search")
   const c = unique("Zz third")
   await field.fill(c)
-  if (await addBtn.isDisabled()) fail("Add stayed off with a name typed")
+  await t.visible(addBtn, "no add row with a new name typed", QUICK)
+  if (!/^Add \u201c.+\u201d as a new \w+$/.test((await addBtn.innerText()).trim())) fail(`the add row reads "${await addBtn.innerText()}"`)
   await addBtn.click()
   await t.p.waitForTimeout(300)
-  if ((await rows.count()) !== 3) fail(`Add left ${await rows.count()} rows, want 3`)
-  if ((await field.inputValue()) !== "") fail("the field kept the name after Add")
-  if (!(await field.evaluate((el) => el === document.activeElement))) fail("focus left the field after Add")
+  if ((await count()) !== 3) fail(`Add left Selected ${await count()}, want 3`)
   await field.fill("")
   await field.evaluate((el, text) => { const dt = new DataTransfer(); dt.setData("text", text); el.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })) }, [unique("Zz p1"), unique("Zz p2"), unique("Zz p3")].join("\n"))
   await t.p.waitForTimeout(300)
-  if ((await rows.count()) !== 6) fail(`a pasted list of 3 left ${await rows.count()} rows, want 6`)
+  if ((await count()) !== 6) fail(`a pasted list of 3 left Selected ${await count()}, want 6`)
   await t.absent(d.locator("[data-typed-error]"), "the duplicate message stayed after a good add")
-  await t.visible(d.locator("[data-row-category] [data-category-picker]").first(), "a skill written here has no way to set its category")
 })
 test("T19", "T", "A press outside leaves the panel from the picker too", async (t) => {
   await t.open(`${LISTS}?list=list-clinical-2027`)
-  await t.click(listBtn(t, "Edit skills"), "no Edit skills")
-  await expectLevel(t, "lab-admin-list-picker", "Edit skills")
+  await t.click(listBtn(t, "Change skills"), "no Change skills")
+  await expectLevel(t, "lab-admin-list-picker", "Change skills")
   await t.p.mouse.click(400, 800)
   await expectLevel(t, "table", "a press outside")
 })
@@ -6851,7 +6865,7 @@ test("M29", "M", "A selection with a draft: the bulk bar and Save stack, neither
 })
 
 // ------------------------------------------------------------------ Round 2: Student path side step and bar (W5, W6)
-const STUDENT_PATH = "/lab/walkthrough/student"
+const STUDENT_PATH = "/student"
 test("W5", "W", "A course on stop 1 moves the bar to Skills by course; Next keeps its pinned skill", async (t) => {
   await t.open(STUDENT_PATH)
   const first = await t.position()
@@ -7174,7 +7188,7 @@ test("T24", "T", "1440, 1280: the table has no sideways scroll, and a sideways w
 test("T25", "T", "The no-match action reads Clear, in the picker and in Add students", async (t) => {
   await t.open(LISTS)
   await openListRow(t, "Revised clinical")
-  await t.click(listBtn(t, "Edit skills"), "no Edit skills")
+  await t.click(listBtn(t, "Change skills"), "no Change skills")
   await t.p.waitForTimeout(600)
   const panel = t.p.locator(LP)
   await panel.getByRole("searchbox").or(panel.locator("input[type=search]")).first().fill("zzzqq")

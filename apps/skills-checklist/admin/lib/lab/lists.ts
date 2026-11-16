@@ -20,6 +20,22 @@ import { LAB_ADMIN } from "./library"
 /** Below this a median says more about one student than about the group. */
 export const MEDIAN_MIN_N = 5
 
+/** The one sentence for students ticked and not yet assigned, whichever way the admin leaves (step 4, the panel's X, a link, browser Back). */
+export const ASSIGN_UNSAVED = "The students you chose have not been assigned."
+
+/**
+ * Lists whose New skill list setup was finished this session. Browser Back can reach an entry from before the finish (`?setup=configure`), and it must
+ * open the list, not its setup again. Session storage, so a reload keeps it; a store that throws (private mode) only means setup can reopen.
+ */
+const SETUP_DONE_KEY = "lab-setup-finished"
+function setupDoneIds(): string[] {
+  try { const v = JSON.parse(window.sessionStorage.getItem(SETUP_DONE_KEY) ?? "[]"); return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [] } catch { return [] }
+}
+export function markSetupDone(listId: string): void {
+  try { window.sessionStorage.setItem(SETUP_DONE_KEY, JSON.stringify([...new Set([...setupDoneIds(), listId])])) } catch { /* setup may reopen on Back; nothing is lost */ }
+}
+export const setupDone = (listId: string): boolean => setupDoneIds().includes(listId)
+
 export * from "./list-core"
 
 export const listsHref = (extra: Record<string, string | undefined> = {}): string => {
@@ -566,3 +582,101 @@ export function assignmentSummary(s: V2State, list: SkillList, groups: readonly 
 export const groupLabel = (groups: readonly StudentGroup[], id: string): string => groups.find((g) => g.id === id)?.label ?? id
 
 export const studentsOf = (s: V2State, g: StudentGroup): Person[] => g.studentIds.map((id) => s.people.find((p) => p.id === id)).filter((p): p is Person => !!p)
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Sankalp feedback 2026-11-15 (ADMIN-D6 amendment): clone, delete guard, select all, add vs configure.
+
+/**
+ * Start from an existing list: the skills of that list the picker can still offer (active ones). Nothing else copies: not who has the list, not its required marks
+ * or minimum total [INFER, ADMIN-D6 amendment b]. An unknown list or none gives an empty start.
+ */
+export function skillsToCopy(lists: readonly SkillList[], fromListId: string | null | undefined, offered: ReadonlySet<string>): string[] {
+  const from = listById(lists, fromListId)
+  return from ? from.skillIds.filter((id) => offered.has(id)) : []
+}
+
+/** Lists a new list can start from: another list that holds skills. */
+export const startFromOptions = (lists: readonly SkillList[]): SkillList[] => skillLists(lists).filter((l) => l.skillIds.length > 0)
+
+/** Why a list cannot be deleted, in a sentence for the menu, or null. The default one cannot: new student groups need a list to get [INFER, ADMIN-D6 amendment c]. */
+export function deleteBlockedReason(list: Pick<SkillList, "isDefault">): string | null {
+  return list.isDefault ? "New student groups get this list. Make another list the default first." : null
+}
+
+export interface DeleteImpact {
+  /** Group names that have the list. */
+  groups: string[]
+  /** Everyone who has it, through a group or by name, counted once. */
+  students: number
+  skills: number
+}
+
+/** Who deleting a list touches: the groups on it and how many students lose it. */
+export function deleteImpact(list: SkillList, groups: readonly StudentGroup[]): DeleteImpact {
+  return {
+    groups: list.groupIds.map((g) => groupLabel(groups, g)),
+    students: studentsOnList(list, groups).size,
+    skills: list.skillIds.length,
+  }
+}
+
+export interface PickState {
+  /** Of the rows in the current result, how many are on the list. */
+  on: number
+  /** Rows in the current result. */
+  of: number
+  /** Every row in the result is on. */
+  all: boolean
+  /** Some, not all. */
+  some: boolean
+}
+
+/** The header checkbox of the add-skills picker: it reads and acts on the whole filtered result, not the rows drawn. */
+export function pickState(resultIds: readonly string[], selected: ReadonlySet<string>): PickState {
+  const on = resultIds.filter((id) => selected.has(id)).length
+  return { on, of: resultIds.length, all: resultIds.length > 0 && on === resultIds.length, some: on > 0 && on < resultIds.length }
+}
+
+/** Select all (or none) of the result: the rest of the selection is left as it is. */
+export function pickAll(resultIds: readonly string[], selected: ReadonlySet<string>, on: boolean): Set<string> {
+  const next = new Set(selected)
+  for (const id of resultIds) { if (on) next.add(id); else next.delete(id) }
+  return next
+}
+
+/**
+ * A bulk upload into a skill list (Romit 2026-11-15, "Yes" to the upload brief) [INFER, approved by Romit 2026-11-15]: the skills go on
+ * alongside what is there. Nothing is removed and a skill already on the list is not added twice. A list nobody has changes in place. A list
+ * someone has is never edited in place (D-L104, D-L106): the skills go on a new version, which nobody has yet, and the students keep the
+ * original. Whether an assigned list should change in place instead is Romit's call, not decided here [PENDING-ROMIT].
+ */
+export interface UploadToList {
+  lists: SkillList[]
+  /** The list the skills went on: the chosen one, or its new version. */
+  listId: string
+  listName: string
+  /** Skills that went on; the rest were on the list already. */
+  added: number
+  /** The list a new version was made from, when the chosen one is assigned. */
+  versionOf?: SkillList
+}
+
+export function uploadToList(lists: readonly SkillList[], listId: string, skillIds: readonly string[], versionId: string): UploadToList | null {
+  const list = listById(lists, listId)
+  if (!list) return null
+  const on = new Set(list.skillIds)
+  const fresh = [...new Set(skillIds)].filter((id) => !on.has(id))
+  if (listCanEdit(list)) {
+    return { lists: lists.map((l) => (l.id === listId ? { ...l, skillIds: [...l.skillIds, ...fresh] } : l)), listId, listName: list.name, added: fresh.length }
+  }
+  const version = newVersion(lists, listId, versionId)
+  if (!version) return null
+  const next = { ...version, skillIds: [...version.skillIds, ...fresh] }
+  return { lists: [...lists, next], listId: next.id, listName: next.name, added: fresh.length, versionOf: list }
+}
+
+/** What uploadToList will make, before anything is made: the list's name (or its new version's) and how many skills go on. */
+export function uploadPreview(lists: readonly SkillList[], listId: string, skillIds: readonly string[]): { listName: string; added: number; versionOf?: SkillList } | null {
+  const r = uploadToList(lists, listId, skillIds, "preview")
+  return r ? { listName: r.listName, added: r.added, versionOf: r.versionOf } : null
+}

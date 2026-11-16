@@ -1,8 +1,6 @@
 "use client"
 
-import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { PAGE_TITLE_TYPE_CLASS } from "@exxatdesignux/ui/components/ui/page-header"
-import { LATER_LABEL } from "@/lib/lab/import"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
 
 /**
@@ -17,8 +15,9 @@ export function SampleDataBadge(): null {
  * Marks a phase 2 route (import a file, starting points) wherever it is offered or shown. Calm, never a warning colour. It is not a lab
  * label: it says these do not add skills yet, so it stays when presenting too (a success message must be true).
  */
-export function LaterBadge({ className }: { className?: string }) {
-  return <Badge variant="secondary" className={className}>{LATER_LABEL}</Badge>
+// Retired 2026-11-15: the phase tag is internal and never shows to users. Call sites stay; it renders nothing.
+export function LaterBadge(_props: { className?: string }): null {
+  return null
 }
 
 /**
@@ -27,10 +26,7 @@ export function LaterBadge({ className }: { className?: string }) {
  */
 export function LaterTitle({ children }: { children: string }) {
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-2">
-      <h1 className={PAGE_TITLE_TYPE_CLASS}>{children}</h1>
-      <LaterBadge />
-    </div>
+<h1 className={PAGE_TITLE_TYPE_CLASS}>{children}</h1>
   )
 }
 

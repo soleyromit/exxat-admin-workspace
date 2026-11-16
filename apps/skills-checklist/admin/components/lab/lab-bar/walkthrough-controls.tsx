@@ -10,7 +10,7 @@ import { useShortcut } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { UserMenu } from "@/components/shell/user-menu"
 import { withNoun } from "@/lib/lab/terms"
 import { toLong } from "@/lib/short-urls"
-import { WALKTHROUGH_EXIT, isWalkthrough, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
+import { isWalkthrough, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
 import { useLabPage } from "./page-context"
 import { usePresent } from "./present"
 import { startAgain } from "./reset"
@@ -130,7 +130,6 @@ function PathBar({ w }: { w: NonNullable<ReturnType<typeof useWalkthrough>> }) {
           {walkthroughPaths().filter((p) => p.id !== w.flow.id).map((p) => (
             <DropdownMenuItem key={p.id} asChild><Link href={p.href} data-walkthrough-path={p.id}>{p.title}</Link></DropdownMenuItem>
           ))}
-          <DropdownMenuItem asChild><Link href={WALKTHROUGH_EXIT} data-walkthrough-variants>All variants</Link></DropdownMenuItem>
           <DropdownMenuItem onSelect={() => startAgain(walkthroughStart(w.flow.id) ?? "/")} data-walkthrough-restart>Start again</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -8754,17 +8754,17 @@
    {
     "name": "Badge",
     "from": "@exxatdesignux/ui/components/ui/badge",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "Badge",
+    "from": "@exxatdesignux/ui/components/ui/badge",
     "via": "components/lab/import/sample-badge"
    },
    {
     "name": "Badge",
     "from": "@exxatdesignux/ui/components/ui/badge",
     "via": "components/lab/setup/skills-list-step"
-   },
-   {
-    "name": "Badge",
-    "from": "@exxatdesignux/ui/components/ui/badge",
-    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Badge",
@@ -8829,6 +8829,11 @@
    {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/library/skill-sheet"
    },
    {
@@ -8840,11 +8845,6 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/setup/skills-list-step"
-   },
-   {
-    "name": "Button",
-    "from": "@exxatdesignux/ui/components/ui/button",
-    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Button",
@@ -8969,6 +8969,11 @@
    {
     "name": "Checkbox",
     "from": "@exxatdesignux/ui/components/ui/checkbox",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "Checkbox",
+    "from": "@exxatdesignux/ui/components/ui/checkbox",
     "via": "components/lab/configure/fields"
    },
    {
@@ -9069,6 +9074,11 @@
    {
     "name": "Command",
     "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/library/category-tag-pickers"
    },
    {
@@ -9129,6 +9139,11 @@
    {
     "name": "CommandItem",
     "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/library/category-tag-pickers"
    },
    {
@@ -9140,6 +9155,11 @@
     "name": "CommandList",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "CommandList",
@@ -9339,6 +9359,11 @@
    {
     "name": "DropdownMenu",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -9379,6 +9404,11 @@
    {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -9415,6 +9445,11 @@
     "name": "DropdownMenuItem",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "DropdownMenuItem",
@@ -9489,6 +9524,11 @@
    {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -9540,11 +9580,6 @@
     "name": "Field",
     "from": "@exxatdesignux/ui/components/ui/field",
     "via": "components/lab/configure/fields"
-   },
-   {
-    "name": "FieldDescription",
-    "from": "@exxatdesignux/ui/components/ui/field",
-    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "FieldError",
@@ -9899,7 +9934,7 @@
    {
     "name": "InputGroup",
     "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/setup/skills-list-step"
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "InputGroup",
@@ -9909,6 +9944,11 @@
    {
     "name": "InputGroup",
     "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/setup/skills-list-step"
+   },
+   {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/configure/fields"
    },
    {
@@ -9919,12 +9959,27 @@
    {
     "name": "InputGroupAddon",
     "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupAddon",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/configure/fields"
    },
    {
     "name": "InputGroupAddon",
     "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/admin-a/parts"
+   },
+   {
+    "name": "InputGroupButton",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "InputGroupInput",
@@ -9965,6 +10020,11 @@
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-add-students"
+   },
+   {
+    "name": "Label",
+    "from": "@exxatdesignux/ui/components/ui/label",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "Label",
@@ -10039,12 +10099,12 @@
    {
     "name": "Popover",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/setup/skills-list-step"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Popover",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/library/category-tag-pickers"
+    "via": "components/lab/setup/skills-list-step"
    },
    {
     "name": "Popover",
@@ -10069,12 +10129,12 @@
    {
     "name": "PopoverContent",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/setup/skills-list-step"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "PopoverContent",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/library/category-tag-pickers"
+    "via": "components/lab/setup/skills-list-step"
    },
    {
     "name": "PopoverContent",
@@ -10094,12 +10154,12 @@
    {
     "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/setup/skills-list-step"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/library/category-tag-pickers"
+    "via": "components/lab/setup/skills-list-step"
    },
    {
     "name": "PopoverTrigger",
@@ -10759,17 +10819,17 @@
    {
     "name": "Badge",
     "from": "@exxatdesignux/ui/components/ui/badge",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "Badge",
+    "from": "@exxatdesignux/ui/components/ui/badge",
     "via": "components/lab/import/sample-badge"
    },
    {
     "name": "Badge",
     "from": "@exxatdesignux/ui/components/ui/badge",
     "via": "components/lab/setup/skills-list-step"
-   },
-   {
-    "name": "Badge",
-    "from": "@exxatdesignux/ui/components/ui/badge",
-    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Badge",
@@ -10819,6 +10879,11 @@
    {
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
+    "via": "components/lab/library/category-tag-pickers"
+   },
+   {
+    "name": "Button",
+    "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/library/skill-sheet"
    },
    {
@@ -10830,11 +10895,6 @@
     "name": "Button",
     "from": "@exxatdesignux/ui/components/ui/button",
     "via": "components/lab/setup/skills-list-step"
-   },
-   {
-    "name": "Button",
-    "from": "@exxatdesignux/ui/components/ui/button",
-    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Button",
@@ -11544,12 +11604,12 @@
    {
     "name": "InputGroup",
     "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/setup/skills-list-step"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "InputGroup",
     "from": "@exxatdesignux/ui/components/ui/input-group",
-    "via": "components/lab/library/category-tag-pickers"
+    "via": "components/lab/setup/skills-list-step"
    },
    {
     "name": "InputGroup",
@@ -11649,12 +11709,12 @@
    {
     "name": "Popover",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/setup/skills-list-step"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "Popover",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/library/category-tag-pickers"
+    "via": "components/lab/setup/skills-list-step"
    },
    {
     "name": "PopoverAnchor",
@@ -11669,12 +11729,12 @@
    {
     "name": "PopoverContent",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/setup/skills-list-step"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "PopoverContent",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/library/category-tag-pickers"
+    "via": "components/lab/setup/skills-list-step"
    },
    {
     "name": "PopoverTrigger",
@@ -11684,12 +11744,12 @@
    {
     "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/setup/skills-list-step"
+    "via": "components/lab/library/category-tag-pickers"
    },
    {
     "name": "PopoverTrigger",
     "from": "@exxatdesignux/ui/components/ui/popover",
-    "via": "components/lab/library/category-tag-pickers"
+    "via": "components/lab/setup/skills-list-step"
    },
    {
     "name": "RadioGroup",
@@ -14580,6 +14640,61 @@
     "via": "components/lab/import/import-parts"
    },
    {
+    "name": "Table",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableBody",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableCell",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableHead",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableHeader",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableRow",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Tabs",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsContent",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsCountBadge",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsList",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
     "name": "Textarea",
     "from": "@exxatdesignux/ui/components/ui/textarea",
     "via": "components/lab/import/import-parts"
@@ -15024,6 +15139,61 @@
     "via": "components/lab/import/import-parts"
    },
    {
+    "name": "Table",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableBody",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableCell",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableHead",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableHeader",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableRow",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Tabs",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsContent",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsCountBadge",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsList",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
     "name": "Textarea",
     "from": "@exxatdesignux/ui/components/ui/textarea",
     "via": "components/lab/import/import-parts"
@@ -15411,6 +15581,61 @@
    {
     "name": "StatusBadge",
     "from": "@exxatdesignux/ui/components/ui/status-badge",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Table",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableBody",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableCell",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableHead",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableHeader",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableRow",
+    "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Tabs",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsContent",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsCountBadge",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsList",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/lab/import/import-parts"
    },
    {
@@ -19475,6 +19700,11 @@
     "via": "components/lab/admin-a/lists-add-students"
    },
    {
+    "name": "Checkbox",
+    "from": "@exxatdesignux/ui/components/ui/checkbox",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Collapsible",
     "from": "@exxatdesignux/ui/components/ui/collapsible",
     "via": "components/lab/admin-a/lists-panel"
@@ -19510,6 +19740,11 @@
     "via": "components/lab/admin-a/lists-panel"
    },
    {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "CommandEmpty",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
@@ -19530,9 +19765,19 @@
     "via": "components/lab/admin-a/lists-panel"
    },
    {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "CommandList",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "ConditionalRule",
@@ -19592,6 +19837,11 @@
    {
     "name": "DropdownMenu",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -19607,6 +19857,11 @@
    {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -19618,6 +19873,11 @@
     "name": "DropdownMenuItem",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "DropdownMenuItem",
@@ -19657,6 +19917,11 @@
    {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -19666,11 +19931,6 @@
    },
    {
     "name": "Field",
-    "from": "@exxatdesignux/ui/components/ui/field",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "FieldDescription",
     "from": "@exxatdesignux/ui/components/ui/field",
     "via": "components/lab/admin-a/lists-new-page"
    },
@@ -19790,6 +20050,26 @@
     "via": "components/lab/admin-a/lists-new-page"
    },
    {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupAddon",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupButton",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-parts"
@@ -19803,6 +20083,11 @@
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-add-students"
+   },
+   {
+    "name": "Label",
+    "from": "@exxatdesignux/ui/components/ui/label",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "LocalBanner",
@@ -20065,6 +20350,11 @@
     "via": "components/lab/admin-a/lists-add-students"
    },
    {
+    "name": "Checkbox",
+    "from": "@exxatdesignux/ui/components/ui/checkbox",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Collapsible",
     "from": "@exxatdesignux/ui/components/ui/collapsible",
     "via": "components/lab/admin-a/lists-panel"
@@ -20100,6 +20390,11 @@
     "via": "components/lab/admin-a/lists-panel"
    },
    {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "CommandEmpty",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
@@ -20120,9 +20415,19 @@
     "via": "components/lab/admin-a/lists-panel"
    },
    {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "CommandList",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "ConditionalRule",
@@ -20182,6 +20487,11 @@
    {
     "name": "DropdownMenu",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -20197,6 +20507,11 @@
    {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -20208,6 +20523,11 @@
     "name": "DropdownMenuItem",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "DropdownMenuItem",
@@ -20247,6 +20567,11 @@
    {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -20256,11 +20581,6 @@
    },
    {
     "name": "Field",
-    "from": "@exxatdesignux/ui/components/ui/field",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "FieldDescription",
     "from": "@exxatdesignux/ui/components/ui/field",
     "via": "components/lab/admin-a/lists-new-page"
    },
@@ -20380,6 +20700,26 @@
     "via": "components/lab/admin-a/lists-new-page"
    },
    {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupAddon",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupButton",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-parts"
@@ -20393,6 +20733,11 @@
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-add-students"
+   },
+   {
+    "name": "Label",
+    "from": "@exxatdesignux/ui/components/ui/label",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "LocalBanner",
@@ -20655,6 +21000,11 @@
     "via": "components/lab/admin-a/lists-add-students"
    },
    {
+    "name": "Checkbox",
+    "from": "@exxatdesignux/ui/components/ui/checkbox",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Collapsible",
     "from": "@exxatdesignux/ui/components/ui/collapsible",
     "via": "components/lab/admin-a/lists-panel"
@@ -20690,6 +21040,11 @@
     "via": "components/lab/admin-a/lists-panel"
    },
    {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "CommandEmpty",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
@@ -20710,9 +21065,19 @@
     "via": "components/lab/admin-a/lists-panel"
    },
    {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "CommandList",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "ConditionalRule",
@@ -20772,6 +21137,11 @@
    {
     "name": "DropdownMenu",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -20787,6 +21157,11 @@
    {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -20798,6 +21173,11 @@
     "name": "DropdownMenuItem",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "DropdownMenuItem",
@@ -20837,6 +21217,11 @@
    {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -20846,11 +21231,6 @@
    },
    {
     "name": "Field",
-    "from": "@exxatdesignux/ui/components/ui/field",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "FieldDescription",
     "from": "@exxatdesignux/ui/components/ui/field",
     "via": "components/lab/admin-a/lists-new-page"
    },
@@ -20970,6 +21350,26 @@
     "via": "components/lab/admin-a/lists-new-page"
    },
    {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupAddon",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupButton",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-parts"
@@ -20983,6 +21383,11 @@
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-add-students"
+   },
+   {
+    "name": "Label",
+    "from": "@exxatdesignux/ui/components/ui/label",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "LocalBanner",
@@ -21245,6 +21650,11 @@
     "via": "components/lab/admin-a/lists-add-students"
    },
    {
+    "name": "Checkbox",
+    "from": "@exxatdesignux/ui/components/ui/checkbox",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Collapsible",
     "from": "@exxatdesignux/ui/components/ui/collapsible",
     "via": "components/lab/admin-a/lists-panel"
@@ -21280,6 +21690,11 @@
     "via": "components/lab/admin-a/lists-panel"
    },
    {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "CommandEmpty",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
@@ -21300,9 +21715,19 @@
     "via": "components/lab/admin-a/lists-panel"
    },
    {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "CommandList",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "ConditionalRule",
@@ -21362,6 +21787,11 @@
    {
     "name": "DropdownMenu",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -21377,6 +21807,11 @@
    {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -21388,6 +21823,11 @@
     "name": "DropdownMenuItem",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "DropdownMenuItem",
@@ -21427,6 +21867,11 @@
    {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/shared/row-menu"
    },
    {
@@ -21436,11 +21881,6 @@
    },
    {
     "name": "Field",
-    "from": "@exxatdesignux/ui/components/ui/field",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "FieldDescription",
     "from": "@exxatdesignux/ui/components/ui/field",
     "via": "components/lab/admin-a/lists-new-page"
    },
@@ -21560,6 +22000,26 @@
     "via": "components/lab/admin-a/lists-new-page"
    },
    {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupAddon",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupButton",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-parts"
@@ -21573,6 +22033,11 @@
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-add-students"
+   },
+   {
+    "name": "Label",
+    "from": "@exxatdesignux/ui/components/ui/label",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "LocalBanner",
@@ -22722,6 +23187,11 @@
     "via": "components/lab/admin-a/lists-add-students"
    },
    {
+    "name": "Checkbox",
+    "from": "@exxatdesignux/ui/components/ui/checkbox",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
     "name": "Collapsible",
     "from": "@exxatdesignux/ui/components/ui/collapsible",
     "via": "components/lab/admin-a/lists-panel"
@@ -22774,6 +23244,11 @@
    {
     "name": "Command",
     "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "Command",
+    "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/parts"
    },
    {
@@ -22810,6 +23285,11 @@
     "name": "CommandItem",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "CommandItem",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "CommandItem",
@@ -22820,6 +23300,11 @@
     "name": "CommandList",
     "from": "@exxatdesignux/ui/components/ui/command",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "CommandList",
+    "from": "@exxatdesignux/ui/components/ui/command",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "CommandList",
@@ -22929,6 +23414,11 @@
    {
     "name": "DropdownMenu",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenu",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/student-groups-section"
    },
    {
@@ -22949,6 +23439,11 @@
    {
     "name": "DropdownMenuContent",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuContent",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/student-groups-section"
    },
    {
@@ -22965,6 +23460,11 @@
     "name": "DropdownMenuItem",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/lists-panel"
+   },
+   {
+    "name": "DropdownMenuItem",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "DropdownMenuItem",
@@ -23014,6 +23514,11 @@
    {
     "name": "DropdownMenuTrigger",
     "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "DropdownMenuTrigger",
+    "from": "@exxatdesignux/ui/components/ui/dropdown-menu",
     "via": "components/lab/admin-a/student-groups-section"
    },
    {
@@ -23028,11 +23533,6 @@
    },
    {
     "name": "Field",
-    "from": "@exxatdesignux/ui/components/ui/field",
-    "via": "components/lab/admin-a/lists-new-page"
-   },
-   {
-    "name": "FieldDescription",
     "from": "@exxatdesignux/ui/components/ui/field",
     "via": "components/lab/admin-a/lists-new-page"
    },
@@ -23209,12 +23709,32 @@
    {
     "name": "InputGroup",
     "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroup",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/admin-a/parts"
    },
    {
     "name": "InputGroupAddon",
     "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupAddon",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
     "via": "components/lab/admin-a/parts"
+   },
+   {
+    "name": "InputGroupButton",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
+   },
+   {
+    "name": "InputGroupInput",
+    "from": "@exxatdesignux/ui/components/ui/input-group",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "InputGroupInput",
@@ -23235,6 +23755,11 @@
     "name": "Label",
     "from": "@exxatdesignux/ui/components/ui/label",
     "via": "components/lab/admin-a/lists-add-students"
+   },
+   {
+    "name": "Label",
+    "from": "@exxatdesignux/ui/components/ui/label",
+    "via": "components/lab/admin-a/lists-new-page"
    },
    {
     "name": "Label",
@@ -30573,6 +31098,11 @@
    {
     "name": "Table",
     "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Table",
+    "from": "@exxatdesignux/ui/components/ui/table",
     "via": "components/lab/student/dashboard"
    },
    {
@@ -30583,6 +31113,11 @@
    {
     "name": "TableBody",
     "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableBody",
+    "from": "@exxatdesignux/ui/components/ui/table",
     "via": "components/lab/student/dashboard"
    },
    {
@@ -30593,6 +31128,11 @@
    {
     "name": "TableCell",
     "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableCell",
+    "from": "@exxatdesignux/ui/components/ui/table",
     "via": "components/lab/student/dashboard"
    },
    {
@@ -30603,6 +31143,11 @@
    {
     "name": "TableHead",
     "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableHead",
+    "from": "@exxatdesignux/ui/components/ui/table",
     "via": "components/lab/student/dashboard"
    },
    {
@@ -30613,6 +31158,11 @@
    {
     "name": "TableHeader",
     "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableHeader",
+    "from": "@exxatdesignux/ui/components/ui/table",
     "via": "components/lab/student/dashboard"
    },
    {
@@ -30623,6 +31173,11 @@
    {
     "name": "TableRow",
     "from": "@exxatdesignux/ui/components/ui/table",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TableRow",
+    "from": "@exxatdesignux/ui/components/ui/table",
     "via": "components/lab/student/dashboard"
    },
    {
@@ -30633,6 +31188,11 @@
    {
     "name": "Tabs",
     "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "Tabs",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/chart-card"
    },
    {
@@ -30643,6 +31203,11 @@
    {
     "name": "TabsContent",
     "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsContent",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/chart-card"
    },
    {
@@ -30651,6 +31216,16 @@
     "via": "components/lab/student/progress"
    },
    {
+    "name": "TabsCountBadge",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
+    "name": "TabsList",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
+   },
+   {
     "name": "TabsList",
     "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/chart-card"
@@ -30659,6 +31234,11 @@
     "name": "TabsList",
     "from": "@exxatdesignux/ui/components/ui/tabs",
     "via": "components/lab/student/progress"
+   },
+   {
+    "name": "TabsTrigger",
+    "from": "@exxatdesignux/ui/components/ui/tabs",
+    "via": "components/lab/import/import-parts"
    },
    {
     "name": "TabsTrigger",

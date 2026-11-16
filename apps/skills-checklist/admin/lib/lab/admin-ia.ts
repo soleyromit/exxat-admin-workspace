@@ -71,6 +71,8 @@ export function skillsPanelItemFor(screen: string | undefined, params?: Params |
   // Add a skill is the library with its add sheet (or inline row) open, so it is a Library page: Skills row lit, panel open,
   // Library selected, crumb "Skills" (D-X33 extended 2026-11-03, D-L41), the same sidebar as the steps around it.
   // Starting points and Bulk upload are ways to add to the Library too, reached from its Add menu.
+  // Bulk upload opened from a list's panel (?from=lists, or ?to=<listId>) belongs to Skill lists, as its crumb "Skill lists > Bulk upload" says (2026-11-15).
+  if (screen === "admin/import-ai-review" && (params?.get("from") === "lists" || !!params?.get("to"))) return SKILLS_PANEL.find((i) => i.key === "groups")
   if (screen === ADD_SKILL_SCREEN || screen === "admin/starter-library" || screen === "admin/import-ai-review") return SKILLS_PANEL.find((i) => i.key === "library")
   return SKILLS_PANEL.find((i) => i.screen === screen)
 }
@@ -132,8 +134,6 @@ export function legacyDirectoryHref(query: URLSearchParams): string {
   return withQuery("/lab/admin/settings", q)
 }
 
-const LIBRARY_SCREEN = "admin/skills-library"
-
 /**
  * The link context a Skills nav link (the Skills row, a panel row, the "Skills" crumb) is built from (Romit 2026-11-13, "when i click
  * on skills nav, it needs to go through skills checklist nav walkthrough"). The Skills nav opens the admin walkthrough's page for that
@@ -152,9 +152,13 @@ export function skillsNavContext(screen: string, ctx: LinkContext): LinkContext 
   return { flowId: WALKTHROUGH_ID, carry: ctx.carry }
 }
 
-/** The Skills row and the "Skills" crumb: the Library, in the walkthrough unless the page's lab flow holds it (skillsNavContext). */
+/**
+ * The Skills row and the "Skills" crumb: Skill lists, the panel's first row, so the crumb and the rail lead to the same place (Sankalp
+ * point 7, 2026-11-15: "no way to exit back to the skill lists page"). In the walkthrough unless the page's lab flow holds it.
+ */
 export function skillsNavHref(ctx: LinkContext): string {
-  return navHref(LIBRARY_SCREEN, skillsNavContext(LIBRARY_SCREEN, ctx))
+  // The panel's own Skill lists row link, so the crumb, the Skills row and the panel row are one URL.
+  return skillsPanelHref(SKILLS_PANEL.find((i) => i.key === "groups")!, ctx)
 }
 
 /** Where a Skills panel item goes, keeping the option set and the scope (in the walkthrough, skillsNavContext). */

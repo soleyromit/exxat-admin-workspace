@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next'
 import path from 'path'
 import { LEGACY_REDIRECTS } from './lib/redirects'
-import { SHORT_REWRITES } from './lib/short-urls'
+import { SHORT_REWRITES, WALKTHROUGH_REDIRECTS } from './lib/short-urls'
 
 // Mirrors apps/pce/admin (known-good) without the studentUX alias: this product
 // uses @exxatdesignux/ui for every surface (docs/build/contracts/00-cross-cutting.md §13).
@@ -17,9 +17,9 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // Hybrid IA: every previous URL keeps working (lib/redirects.ts).
   async redirects() {
-    return LEGACY_REDIRECTS
+    return [...WALKTHROUGH_REDIRECTS, ...LEGACY_REDIRECTS]
   },
-  // Short URLs (lib/short-urls.ts): /walk, /flow, /as, /proto and /all serve the long /lab and /v2 routes; the browser keeps the short address.
+  // Short URLs (lib/short-urls.ts): /admin and /student (the walkthroughs), /flow, /as, /proto and /all serve the long /lab and /v2 routes; the browser keeps the short address.
   async rewrites() {
     return { beforeFiles: SHORT_REWRITES, afterFiles: [], fallback: [] }
   },

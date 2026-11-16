@@ -56,7 +56,7 @@ export function AdminStarterLibraryB() {
       actions={<Button asChild variant="outline" size="sm"><Link href="/lab/admin/import-ai-review">{`Import ${skillNounPlural()}`}</Link></Button>}
     >
       <div className="flex flex-col gap-4" data-starter-lab="B" data-page-type="list">
-        <LaterNotice>Later. You can look through these. Nothing is copied to the library yet.</LaterNotice>
+        <LaterNotice>You can look through these. Nothing is copied to the library yet.</LaterNotice>
         {points.length === 0 ? (
           <EmptyBlock title="No starting points are offered" body="Bring in the list you already have instead." action={{ label: `Import ${skillNounPlural()}`, href: "/lab/admin/import-ai-review" }} />
         ) : (

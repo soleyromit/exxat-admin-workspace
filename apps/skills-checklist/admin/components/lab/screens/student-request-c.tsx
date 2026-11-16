@@ -35,6 +35,7 @@ import { StickyFooter } from "@/components/lab/layout/sticky-footer"
 import { ValidationSummary, type ValidationIssue } from "@/components/lab/layout/validation-summary"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { DiscardDialog } from "@/components/lab/import/import-parts"
+import { useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
 import { useLabRouter } from "@/components/lab/lab-bar/lab-link"
 import { useInWalkthrough } from "@/components/lab/lab-bar/walkthrough-controls"
 import { useStudentPage } from "@/components/lab/student/use-student"
@@ -87,9 +88,19 @@ function CourseFirst({ ctx }: { ctx: Student2Ctx }) {
   const router = useLabRouter()
   const [asking, setAsking] = React.useState(false)
   const exitHref = "student/home"
-  const hasWork = !!course && !d.savedAt
+  const hasWork = !!course && !d.savedAt && !d.result
   const cancel = <Button type="button" variant="outline" size="sm" onClick={() => (hasWork ? setAsking(true) : router.push(exitHref))}>Cancel</Button>
-  const discard = <DiscardDialog open={asking} onOpenChange={setAsking} onDiscard={() => router.push(exitHref)} title="Discard this request?" body={`The course and ${skillNounPlural()} you chose will be lost.`} />
+  // Every other way out asks the same (walk 3, D12): the breadcrumb, the sidebar, the phone's back link, browser Back and closing the tab, through
+  // the shared unsaved changes guard. The steps replace this page's entry, so the guard's stop sits below it and Keep editing returns to the step left.
+  const leave = useLeaveGuard(hasWork, { backWithinPage: true })
+  const discardTitle = "Discard this request?"
+  const discardBody = `The course and ${skillNounPlural()} you chose will be lost.`
+  const discard = (
+    <>
+      <DiscardDialog open={asking} onOpenChange={setAsking} onDiscard={() => router.push(exitHref)} title={discardTitle} body={discardBody} />
+      <DiscardDialog open={leave.asking} onOpenChange={(o) => { if (!o) leave.setAsking(false) }} onDiscard={() => leave.go(() => undefined)} title={discardTitle} body={discardBody} />
+    </>
+  )
 
   // The self-rating step exists only when a chosen skill asks for one [REQ SC-15, ST-11].
   const order: StepId[] = ["course", "skills", ...(selfIds.length ? (["self"] as StepId[]) : []), "send"]

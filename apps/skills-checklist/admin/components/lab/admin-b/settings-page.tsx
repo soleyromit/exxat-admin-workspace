@@ -53,6 +53,7 @@ import { pageTitle, returnFocus } from "@/components/lab/shared/focus"
 import { ResultBanner, type ResultBannerValue } from "@/components/lab/shared/result-banner"
 import { writeUrlParam } from "@/components/lab/library/library-chrome"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
+import { ReturnLink } from "@/components/lab/shared/return-link"
 import { LAB_ADMIN, STATUS_META, normName } from "@/lib/lab/library"
 import { EMPTY_SETTINGS, inactiveLast, rememberSeededVocabulary, SCOPE_SECTIONS, VOCABULARY_TITLE, categoryRows, clinicalSettingRows, instructorRows, isSettingsTab, scopeSection, sectionLabel, tagRows, usesOf, validateEntry, type SettingUse, type SettingsOverlay, type SettingsRow, type SettingsScope, type SettingsSection, type SettingsTab } from "@/lib/lab/settings"
 import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -286,7 +287,7 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
 
   return (
     <div className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
-    <PageFrame title={scopeTitle(scope, section)} actions={<SampleDataBadge />} className="flex-1">
+    <PageFrame title={scopeTitle(scope, section)} actions={<>{scope === "vocabulary" ? <ReturnLink /> : null}<SampleDataBadge /></>} className="flex-1">
       <div className="flex flex-col gap-4" data-settings-lab data-settings-scope={scope} data-page-type="list" data-tab={section}>
         <p role="status" aria-live="polite" className="sr-only" data-status-announcement>{announcement}</p>
         <Tabs value={section} onValueChange={(v) => afterAsking(() => changeTab(v))}>

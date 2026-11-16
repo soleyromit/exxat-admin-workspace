@@ -173,6 +173,7 @@ export function AdminImportB() {
   let footer: StickyFooterProps | null = null
   if (done) footer = { secondary: { label: "Import another file", onClick: session.reset }, primary: { label: "Open the library", href: LIBRARY_HREF } }
   else if (reviewing) {
+    // One page, no Fix step: the count is the Create button's only reason, so it stays here (variant A says "Decide every line first." beside its Fix toolbar count).
     const reason = left > 0 ? `${left.toLocaleString("en-US")} ${left === 1 ? "line" : "lines"} left to decide.` : session.isNewList && !session.newLibraryName.trim() ? `Name the new ${skillListNoun()} first.` : total === 0 ? `No ${skillNounPlural()} to create.` : undefined
     footer = {
       summary: <span className="flex flex-wrap items-center gap-x-3 gap-y-1"><TargetSummary session={session} /><NameThisImport session={session} /></span>,

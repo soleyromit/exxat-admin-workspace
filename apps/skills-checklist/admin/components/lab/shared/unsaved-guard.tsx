@@ -14,7 +14,7 @@
  */
 import { toLong } from "@/lib/short-urls"
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { focusTitleAfterLeaving, keepFocus, returnFocus } from "./focus"
@@ -108,6 +108,11 @@ export function useLeaveGuard(dirty: boolean, { backWithinPage = false, keepReco
     if (v && i < 0) armedGuards.push(entry.current)
     else if (!v && i >= 0) armedGuards.splice(i, 1)
   } }
+  // The address the page last showed, for `backWithinPage`: a page that moves by replacing its own entry (the student's Log a skill steps)
+  // leaves the stop below holding the address it opened on, so Keep editing returns to this one instead (walk 3, D12).
+  const search = useSearchParams()
+  const latest = React.useRef("")
+  React.useEffect(() => { latest.current = window.location.href }, [search])
   React.useEffect(() => {
     if (!backWithinPage) return
     const state = window.history.state
@@ -122,7 +127,9 @@ export function useLeaveGuard(dirty: boolean, { backWithinPage = false, keepReco
       if (!dirtyRef.current) return window.history.back()
       // The router has already moved to this entry, so the page stays at this address beneath the question.
       const { [PAGE_START]: _stop, ...rest } = e.state
-      window.history.pushState(rest, "", window.location.href)
+      // Null state when the page had moved on: the router then follows the address, so the page is shown as it was left.
+      if (latest.current && latest.current !== window.location.href) window.history.pushState(null, "", latest.current)
+      else window.history.pushState(rest, "", window.location.href)
       setTarget(BACK)
     }
     window.addEventListener("popstate", onPop)

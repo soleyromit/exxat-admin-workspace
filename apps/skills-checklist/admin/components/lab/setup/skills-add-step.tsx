@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/compo
 import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { useLibrary } from "@/components/lab/library/use-library"
+import { CategoryPicker, useVocabOptions } from "@/components/lab/library/category-tag-pickers"
 import { SkillSheet } from "@/components/lab/library/skill-sheet"
 import { AddSeveralSheet } from "@/components/lab/library/add-several-sheet"
 import { LaterBadge } from "@/components/lab/import/sample-badge"
@@ -35,9 +36,15 @@ export function SkillsAddStep() {
   const [uploadOpen, setUploadOpen] = React.useState(false)
   const rows = React.useMemo(() => api.rows.filter((r) => r.status !== "inactive") as Row[], [api.rows])
   const nounPl = skillNounPlural()
+  const vocab = useVocabOptions()
   const columns: ColumnDef<Row>[] = [
     { key: "name", label: "Name", sortable: true, cell: (r) => <span className="font-medium">{r.name}</span> },
-    { key: "category", label: "Category", width: 240, sortable: true, cell: (r) => (r.category ? r.category : <span className="text-muted-foreground">None</span>) },
+    { key: "category", label: "Category", width: 240, sortable: true, cell: (r) => (
+      <span className="flex min-w-0" data-row-category>
+        <span id={`added-category-label-${r.id}`} className="sr-only">{`Category for ${r.name}`}</span>
+        <CategoryPicker id={`added-category-${r.id}`} labelId={`added-category-label-${r.id}`} value={r.category} options={vocab.categories} inactive={vocab.inactiveCategories} onChange={(c) => api.setDetails([r.id], { category: c })} size="sm" appearance="field" className="w-full max-w-48" placeholder="Select category" emptyLabel="No category" />
+      </span>
+    ) },
     { key: "tags", label: "Tags", width: 280, cell: (r) => (r.tags.length ? <span className="whitespace-normal">{r.tags.join(", ")}</span> : <span className="text-muted-foreground">None</span>) },
   ]
   return (

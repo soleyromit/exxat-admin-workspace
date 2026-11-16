@@ -18,6 +18,8 @@ import { useLabLinkContext } from "@/components/lab/lab-bar/page-context"
 import { rewriteLabUrl } from "@/lib/lab/links"
 import { takeReturnSearch } from "@/lib/lab/configure-origin"
 import { configureSkillHref } from "@/components/lab/configure/shell"
+import { carryReturn, inPageReturn } from "@/lib/lab/return-to"
+import { useSearchParams } from "next/navigation"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { railTriggerProps } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
@@ -377,7 +379,11 @@ function focusAfterBulkPanel() {
 const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, onOpen, onBulkEdit, onClearTab, renderFrame, onRowsInView, justAdded, justReplaced, panelOpen, filter, setFilter, carried, setCarried }: TableBodyProps) {
   const linkContext = React.useRef(useLabLinkContext())
   linkContext.current = useLabLinkContext()
-  const configureHrefOf = React.useCallback((id: string) => rewriteLabUrl(configureSkillHref(id), linkContext.current), [])
+  // A page opened from step 3 of a list keeps that way back on every Configure link (walk 3, D5).
+  const params = useSearchParams()
+  const back = inPageReturn(params)
+  const backKey = back ? `${back.from}:${back.list}` : ""
+  const configureHrefOf = React.useCallback((id: string) => rewriteLabUrl(carryReturn(configureSkillHref(id), back ? new URLSearchParams({ from: back.from, list: back.list }) : null), linkContext.current), [backKey]) // eslint-disable-line react-hooks/exhaustive-deps
   // The filter menu's choices come from the whole library, so a value never vanishes from the menu when a tab hides its rows.
   const choices = React.useMemo<LibraryFilterChoices>(() => {
     const o = filterOptions(rows)

@@ -11,6 +11,7 @@
  * The words of Status and Configuration live in STATUS_META and CONFIGURATION_META (lib/lab/library.ts); the counts come from countLibrary over the shared store.
  */
 import * as React from "react"
+import { ReturnLink } from "@/components/lab/shared/return-link"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -417,7 +418,8 @@ export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, 
   else if (api.rows.length === 0) body = <LibraryEmpty onAdd={onAdd} onAddSeveral={onAddSeveral} />
   return (
     <div data-page-type={pageType} className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
-      <PageFrame title={title} actions={inTable ? undefined : actions} className="flex-1">
+      {/* "Back to {list}" only when opened from a list's step or panel (walk 3, D13); it stays in the header when the actions move to the table. */}
+      <PageFrame title={title} actions={inTable ? <ReturnLink /> : <div className="flex flex-wrap items-center justify-end gap-2"><ReturnLink />{actions}</div>} className="flex-1">
         <LibraryBanner api={api} tab={tab} />
         <LibraryToolbarActions.Provider value={inTable ? actions : null}>{body}</LibraryToolbarActions.Provider>
         {overlays}

@@ -25,6 +25,8 @@ import { LAB_ADMIN, EMPTY_DRAFT, NO_CATEGORY, findDuplicate, mappingHref, normNa
 import { draftConfiguration, draftEdited, panelIssues, panelRuleOf, programSettingsOf, settingsImpact, TIMES_MAX } from "@/lib/lab/program-settings"
 import { emptyRule, hasNeed, type LabRule } from "@/lib/lab/configure"
 import { configureSkillHref } from "@/components/lab/configure/shell"
+import { carryReturn } from "@/lib/lab/return-to"
+import { useSearchParams } from "next/navigation"
 import { skillLists } from "@/lib/lab/lists"
 import { skillReach } from "@/lib/lab/mapping"
 import { skillById } from "@/lib/v2/evidence-index"
@@ -209,6 +211,8 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
   focusConfigure: boolean
 }) {
   const state = useV2State()
+  // Opened from step 3 of a list (`?from=setup&list=`): Configure keeps the way back to it (walk 3, D5).
+  const params = useSearchParams()
   const [overlay] = useMappingOverlay()
   const { lists } = useLists(state)
   const opts = useVocabOptions()
@@ -407,7 +411,7 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
                 emptyText={`Your program has not set how ${skillNounPlural()} are judged.`}
                 action={
                   <Button asChild variant="outline" size="sm">
-                    <Link ref={configureRef} href={configureSkillHref(row.id)} data-panel-configure>
+                    <Link ref={configureRef} href={carryReturn(configureSkillHref(row.id), params)} data-panel-configure>
                       Configure
                       <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
                     </Link>

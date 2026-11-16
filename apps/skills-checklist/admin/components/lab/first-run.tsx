@@ -235,14 +235,14 @@ export function SetupPrompt({ scene, text, action, ...rest }: { scene: keyof typ
   )
 }
 
-export function FirstRun({ scene, title, body, actions, error, ...rest }: { scene: keyof typeof SCENES; title: string; body: string; actions: React.ReactNode; /** Shown under the actions, for a step that cannot go on yet. */ error?: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
+export function FirstRun({ scene, title, body, actions, error, ...rest }: { scene: keyof typeof SCENES; title: string; /** Left out when the title says it all and the ways to start sit above (New skill list, step 2). */ body?: string; actions?: React.ReactNode; /** Shown under the actions, for a step that cannot go on yet. */ error?: React.ReactNode } & React.HTMLAttributes<HTMLDivElement>) {
   const Scene = SCENES[scene]
   return (
     <div {...rest} className="flex flex-col items-center gap-1 rounded-lg border border-border px-4 py-6 text-center" data-region="empty">
       <Scene />
       <h2 className={`${TYPE.card} mt-3`}>{title}</h2>
-      <p className="max-w-prose text-sm text-muted-foreground">{body}</p>
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-2">{actions}</div>
+      {body ? <p className="max-w-prose text-sm text-muted-foreground">{body}</p> : null}
+      {actions ? <div className="mt-3 flex flex-wrap items-center justify-center gap-2">{actions}</div> : null}
       {error ? <div className="mt-2">{error}</div> : null}
     </div>
   )

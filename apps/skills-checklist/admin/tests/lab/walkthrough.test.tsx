@@ -30,7 +30,7 @@ import { buildStudent } from "@/lib/lab/student"
 import { selfEvalEnabled } from "@/lib/lab/student2"
 import { skillById } from "@/lib/v2/evidence-index"
 import { createSeed } from "@/lib/v2/seed"
-import { FULFILLMENT_ENTRY, FULFILLMENT_WALKTHROUGH_ID, WALKTHROUGH_ENTRY, WALKTHROUGH_EXIT, WALKTHROUGH_ID, WALKTHROUGH_ROUTES, effectiveStep, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
+import { FULFILLMENT_ENTRY, FULFILLMENT_WALKTHROUGH_ID, WALKTHROUGH_ENTRY, WALKTHROUGH_ID, WALKTHROUGH_ROUTES, effectiveStep, walkthroughPaths, walkthroughPosition, walkthroughStart } from "@/lib/lab/walkthrough"
 import { toLong } from "@/lib/short-urls"
 import { SKILLS_PANEL, selectedSkillsPanelKey } from "@/lib/lab/admin-ia"
 
@@ -138,8 +138,8 @@ describe("walkthrough definition", () => {
   it("has one entry URL each that lands on the first step in present mode, both listed on the present index", () => {
     expect(WALKTHROUGH_ROUTES).toEqual({ admin: WALKTHROUGH_ID, student: FULFILLMENT_WALKTHROUGH_ID, setup: WALKTHROUGH_ID, fulfillment: FULFILLMENT_WALKTHROUGH_ID, [WALKTHROUGH_ID]: WALKTHROUGH_ID, [FULFILLMENT_WALKTHROUGH_ID]: FULFILLMENT_WALKTHROUGH_ID })
     // The short URL carries no `set=1` and no `present=1`: a walkthrough is presented in its one set, on the current term.
-    expect(walkthroughStart()).toBe("/walk/setup-walkthrough/lists")
-    expect(walkthroughStart(FULFILLMENT_WALKTHROUGH_ID)).toBe("/walk/fulfillment-walkthrough/progress")
+    expect(walkthroughStart()).toBe("/admin/lists")
+    expect(walkthroughStart(FULFILLMENT_WALKTHROUGH_ID)).toBe("/student/progress")
     expect(PRESENT_WALKTHROUGHS.map((w) => w.href)).toEqual([WALKTHROUGH_ENTRY, FULFILLMENT_ENTRY])
   })
 
@@ -293,8 +293,8 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
         else if (f.then) expect(landing(w.next!.href)).toMatchObject({ flowId: f.then, stepId: mainSteps(findFlow(f.then)!)[0]!.id })
         else expect(w.next).toBeUndefined()
         if (i > 0) expect(landing(w.prev!.href).stepId).toBe(ids[i - 1])
-        // Present mode needs no param on a hop: the /walk/... route is always presented (the address carries no present=1 and no set=1).
-        for (const h of [w.prev?.href, w.next?.href]) if (h) { expect(landing(h).q.has("present")).toBe(false); expect(landing(h).q.has("set")).toBe(false); expect(h.startsWith("/walk/")).toBe(true) }
+        // Present mode needs no param on a hop: the /admin|student/... route is always presented (the address carries no present=1 and no set=1).
+        for (const h of [w.prev?.href, w.next?.href]) if (h) { expect(landing(h).q.has("present")).toBe(false); expect(landing(h).q.has("set")).toBe(false); expect(h.startsWith("/admin/") || h.startsWith("/student/")).toBe(true) }
       })
     }
   })
@@ -372,10 +372,9 @@ describe("presenter control", () => {
     expect(screen.getByText("Admin walkthrough")).toBeInTheDocument()
     expect(screen.getByText("Evaluation settings")).toBeInTheDocument()
     expect(screen.getByText("2 of 3")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Back: Skill lists" })).toHaveAttribute("href", "/walk/setup-walkthrough/lists")
-    expect(screen.getByRole("link", { name: "Next: Course mapping" }).getAttribute("href")).toMatch(/^\/walk\/setup-walkthrough\/map(\?|$)/)
+    expect(screen.getByRole("link", { name: "Back: Skill lists" })).toHaveAttribute("href", "/admin/lists")
+    expect(screen.getByRole("link", { name: "Next: Course mapping" }).getAttribute("href")).toMatch(/^\/admin\/map(\?|$)/)
     expect(screen.getByRole("button", { name: "Exit" })).toBeInTheDocument()
-    expect(WALKTHROUGH_EXIT).toBe("/all")
     const text = `${container.textContent ?? ""} ${[...container.querySelectorAll("[aria-label]")].map((e) => e.getAttribute("aria-label")).join(" ")}`
     for (const w of BANNED) expect(text, w).not.toContain(w)
   })

@@ -881,6 +881,17 @@ export function setSkillDetailsInStore(s: V2State, ids: readonly string[], patch
   return appendAudit({ ...s, skills }, actorId, `Edited ${changed === 1 ? skillNoun() : skillNounPlural()}`, label, at)
 }
 
+/**
+ * Whether a list screen offers the category as a control. A skill added in this program (by hand, pasted, imported or copied from a starting point) and one with no
+ * category yet can be given one where it was added; a program-list skill that already has one keeps it, and the Library changes it. [INFER, new-skill-category contract]
+ */
+export function categoryEditable(k: Pick<Skill, "addedByHand" | "category">): boolean {
+  return !!k.addedByHand || !k.category?.trim() || k.category === NO_CATEGORY
+}
+
+/** The category a skill reads under: its own, or "No category" (never blank). */
+export const categoryText = (k: Pick<Skill, "category">): string => k.category?.trim() || NO_CATEGORY
+
 /** What a removal took out of the store, with each skill's place, so Undo puts it back where it was. */
 export interface Removal {
   skills: Array<{ skill: Skill; index: number }>

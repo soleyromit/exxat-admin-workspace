@@ -473,7 +473,7 @@ const SCENARIOS = {
     await page.waitForTimeout(700)
     judgeSurfaces("D6", "Assign to students level", await readSurfaces(page), { pageNeedsOne: false })
     await go(stepHref("admin/lists-cohorts", { list: "list-clinical-2027" }))
-    await page.getByRole("button", { name: /^Edit skills$/ }).first().click({ timeout: 8000 })
+    await page.getByRole("button", { name: /^Change skills$/ }).first().click({ timeout: 8000 })
     await page.waitForTimeout(500)
     await page.locator("[data-skill-picker] [data-slot=checkbox]").first().click({ timeout: 8000 })
     await page.waitForTimeout(300)

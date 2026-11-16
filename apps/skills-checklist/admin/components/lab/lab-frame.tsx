@@ -23,6 +23,7 @@ import { CONFIGURE_SKILL_SCREEN, SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, 
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { utilityBarActionButtonClass } from "@exxatdesignux/ui/components/shell/utility-bar-chrome"
 import { cn } from "@exxatdesignux/ui/lib/utils"
+import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { ProductSwitcher } from "@/components/shell/product-switcher"
 import { PersonaSwitcher } from "@/components/lab/lab-bar/persona-switcher"
 import { LabPageProvider, useLabHref, useLabLinkContext, type LabPage } from "@/components/lab/lab-bar/page-context"
@@ -30,6 +31,8 @@ import { FROM_PARAM, LEAF_TITLE, returnCarry, returnTarget } from "@/lib/lab/ret
 import { SCOPE_CARRY, labHref, navHref } from "@/lib/lab/links"
 import { findFlow } from "@/lib/lab/flows"
 import { inFormOf, toLong, isLabPath } from "@/lib/short-urls"
+import { isWalkthrough } from "@/lib/lab/walkthrough"
+import { INERT_PREFIX } from "@/lib/react-router-compat"
 import { usePresent } from "@/components/lab/lab-bar/present"
 import { ResultBannerSlot } from "@/components/lab/shared/result-banner"
 import { WalkthroughControls } from "@/components/lab/lab-bar/walkthrough-controls"
@@ -45,10 +48,11 @@ import { LightFrame } from "@/components/lab/light-frame"
 import { DEFAULT_SKILL } from "@/components/lab/configure/use-configure"
 import { configurableSkills, parseSkillIds } from "@/lib/lab/configure-many"
 import { skillById } from "@/lib/v2/evidence-index"
+import { listById, programLists } from "@/lib/lab/lists"
 
 export { PersonaSwitcher }
 
-/** The admin Skills row's slug (lib/lab/personas.ts): the Library. */
+/** The admin Skills row's slug (lib/lab/personas.ts); the row itself opens Skill lists (skillsNavHref). */
 const SKILLS_ROW_SLUG = "skills-library"
 
 const icon = (name: string, solid = false) => <i className={`${solid ? "fa-solid" : "fa-light"} fa-${name}`} aria-hidden="true" />
@@ -76,33 +80,45 @@ function makeData(persona: PersonaDef): AppShellData {
       // query; the set and scope ride along at click time (SidebarCarry below).
       const rowUrl = (slug: string) => {
         const screen = `${persona.id}/${slug}`
-        // The Skills row opens the walkthrough's Library unless the page's lab flow holds it (skillsNavHref).
+        // The Skills row opens Skill lists, as the "Skills" crumb does, in the walkthrough unless the page's lab flow holds it (skillsNavHref).
         const url = !link.onFlowRoute && link.screen === screen ? labHref(screen, {}, link) : admin && slug === SKILLS_ROW_SLUG ? skillsNavHref(link) : navHref(screen, link)
         // Written in the form the browser path is in (short /as/..., /flow/... or the long /lab/...), since the DS compares them.
         return inFormOf(pathname, url.split("?")[0]!)
       }
+      // Inside a walkthrough every row stays, and none may leave it (Romit 2026-11-15, "why does it show only skills?"): a row that
+      // opens a page of the walkthrough links there (Skills), the admin Dashboard row links to the PRISM home (`/`), and the rest
+      // (Approvals, Reports, Settings) are inert: no href, aria-disabled (the router shim draws them, lib/react-router-compat.tsx).
+      const inWalkthrough = isWalkthrough(link.flowId)
+      // An inert row's url carries its name ("inert:approvals|Approvals"), so its tooltip names it on the collapsed icon rail too (walk 3, D11).
+      const place = (key: string, url: string, title: string): string => {
+        if (!inWalkthrough || isWalkthrough(toLong(url).split("/")[3])) return url
+        return admin && key === "dashboard" ? "/" : `${INERT_PREFIX}${key}|${title}`
+      }
       const primary = rows.map((r) => {
         const skills = admin && r.key === "skills"
+        const url = skills && onPanelPage ? pathname : place(r.key, rowUrl(r.slug), r.title)
+        // An inert row carries no badge: a count (and the collapsed rail's dot) on a row that opens nothing invites a click that does nothing (walk 3, D11).
+        const inert = url.startsWith(INERT_PREFIX)
         return {
           key: `lab-${persona.id}-${r.key}`,
           title: r.title,
-          url: skills && onPanelPage ? pathname : rowUrl(r.slug),
+          url,
           icon: icon(r.icon),
           iconActive: icon(r.icon, true),
           ...(skills ? { secondaryPanel: SKILLS_PANEL_ID } : {}),
           // A string badge renders the DS neutral (primary) Badge; a number renders the destructive red chip, which breaks the
           // amber-not-red rule for a count that is not an error. DS gap raised in docs/knowledge/design/visual-language.md.
-          ...(r.badge === "approvals" && approvals > 0 ? { badge: String(approvals) } : {}),
+          ...(r.badge === "approvals" && approvals > 0 && !inert ? { badge: String(approvals) } : {}),
         }
       })
       // Settings is not a main row (D-L20): program settings, naming and the evaluator directory. The DS shell (1.6.5) draws no
       // sidebar footer in any layout (showsProfileInSidebar is false), so it sits in the DS trailing group (primaryLayout
       // epilogue) after the main rows. On a Settings page it points at the page itself, so the DS lights it by path.
       const settingsRows = admin
-        ? [{ key: "lab-admin-settings", title: "Settings", url: isSettingsArea(link.screen, params) ? pathname : inFormOf(pathname, settingsHref(link)), icon: icon("gear"), iconActive: icon("gear", true) }]
+        ? [{ key: "lab-admin-settings", title: "Settings", url: isSettingsArea(link.screen, params) ? pathname : place("settings", inFormOf(pathname, settingsHref(link)), "Settings"), icon: icon("gear"), iconActive: icon("gear", true) }]
         : []
       const all = [...primary, ...settingsRows]
-      return { primary: all, primaryLayout: { preamble: primary, sections: [], epilogue: settingsRows }, quickActions: [], documents: [], secondary: [], user: { name: persona.label, email: "", avatar: "" }, knownUrls: all.map((p) => p.url.split("?")[0]!) }
+      return { primary: all, primaryLayout: { preamble: primary, sections: [], epilogue: settingsRows }, quickActions: [], documents: [], secondary: [], user: { name: persona.label, email: "", avatar: "" }, knownUrls: all.filter((p) => !p.url.startsWith(INERT_PREFIX)).map((p) => p.url.split("?")[0]!) }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [approvals, link, pathname, terms.skillNoun, terms.skillNounPlural])
   }
@@ -140,7 +156,9 @@ function usePageHeading(on: boolean): string | undefined {
   return on ? text : undefined
 }
 
-function Crumbs() {
+type Crumb = { label: string; href?: string; back?: boolean }
+
+function useCrumbs(): Crumb[] {
   const pathname = usePathname() ?? ""
   const ctx = React.useContext(FrameContext)
   const [, , seg, screen] = toLong(pathname).split("/")
@@ -158,11 +176,19 @@ function Crumbs() {
   const carried = returnCarry(from, params)
   const back = returnTarget(from, carried)
   // Back to one skill reads that skill's name, as its own page title does.
-  const backLabel = back ? (from === "configure" && carried ? skillById(state, carried)?.name : undefined) ?? back.label() : undefined
-  const leaf = back && link.screen ? LEAF_TITLE[link.screen]?.() : undefined
+  // Back to one list's Configure step reads that list's name.
+  const carriedName = !carried ? undefined : from === "configure" ? skillById(state, carried)?.name : from === "setup" ? listById(programLists(state), carried)?.name : undefined
+  const backLabel = back ? carriedName ?? back.label() : undefined
+  // One skill reached from a list's step 3 reads "Skills > {list} > {skill}", as its own page title does (walk 3, D5).
+  const oneSkillLeaf = back && link.screen === CONFIGURE_SKILL_SCREEN ? shownSkill?.name ?? skillById(state, params?.get("skill") ?? "")?.name : undefined
+  const leaf = back && link.screen ? oneSkillLeaf ?? LEAF_TITLE[link.screen]?.() : undefined
   // Present mode shows no lab label: product crumbs only.
-  const crumbs: Array<{ label: string; href?: string; back?: boolean }> = present ? [] : [{ label: "Design lab", href: "/lab" }]
+  // The first crumb is the way back to the PRISM home (`/`), in present mode too.
+  const crumbs: Crumb[] = [{ label: "Dashboard", href: "/" },...(present ? [] : [{ label: "Design lab", href: "/lab" }])]
   if (persona && !present) crumbs.push({ label: PERSONA_BY_ID[persona].label })
+  // Every page a `from` leads back to is a Skills page, so an admin back crumb sits under "Skills" as the panel pages do:
+  // "Skills > Skill lists > Bulk upload" (2026-11-15).
+  if (back && backLabel && persona === "admin") crumbs.push({ label: skillsLabel(), href: skillsNavHref(link) })
   if (back && backLabel) crumbs.push({ label: backLabel, href: to(back.href), back: true })
   // The course view (My progress with ?course=) is its own place: "My progress > NURS 350" (Romit 2026-10-27, "why does the
   // dropdown change when I am changing a course on My progress?"). Product words, so it shows in present mode too.
@@ -177,19 +203,24 @@ function Crumbs() {
   const settingsLeafLabel = admin && !back && isSettingsArea(link.screen, params) ? settingsLeaf(link.screen, params) : undefined
   let groupLeaf: string | undefined
   if (panelItem) {
-    const libraryHref = skillsNavHref(link)
+    // "Skills" leads to Skill lists everywhere, as the Skills row does (skillsNavHref).
+    const skillsHref = skillsNavHref(link)
     if (link.screen === CONFIGURE_SKILL_SCREEN) {
       // One skill is a level below its panel row: "Skills > Library > {skill}" (or "Skills > Evaluation settings > {skill}").
-      crumbs.push({ label: skillsLabel(), href: libraryHref })
+      crumbs.push({ label: skillsLabel(), href: skillsHref })
       crumbs.push({ label: panelItem.label(), href: skillsPanelHref(panelItem, link) })
       // Several from the Library selection bar (D-L48): "Skills > Library > 12 skills", as the page title.
       const manyIds = parseSkillIds(params?.get("skills"))
       groupLeaf = shownSkill?.name ?? (manyIds.length > 1 ? countSkills(configurableSkills(state, manyIds).length) : skillById(state, manyIds[0] || params?.get("skill") || DEFAULT_SKILL)?.name ?? title)
     } else if (panelItem.key === "library") {
-      crumbs.push({ label: skillsLabel() })
-      groupLeaf = panelItem.label()
+      crumbs.push({ label: skillsLabel(), href: skillsHref })
+      // Bulk upload and Starting points are pages of their own below Library: "Skills > Library > Bulk upload", the leaf saying what the H1 says
+      // (walk 3, D7). Add a skill stays "Skills > Library": it is the library with its add surface open.
+      const ownLeaf = link.screen && link.screen !== panelItem.screen ? LEAF_TITLE[link.screen]?.() : undefined
+      if (ownLeaf) crumbs.push({ label: panelItem.label(), href: skillsPanelHref(panelItem, link) })
+      groupLeaf = ownLeaf ?? panelItem.label()
     } else {
-      crumbs.push({ label: skillsLabel(), href: libraryHref })
+      crumbs.push({ label: skillsLabel(), href: skillsHref })
       // A page under a panel row that is not the row's own page reads its own title.
       groupLeaf = link.screen !== panelItem.screen && title ? withNoun(title) : panelItem.label()
     }
@@ -197,7 +228,7 @@ function Crumbs() {
     // Reached from Add students' "Manage student groups": the crumb returns to Skill lists, carrying the list it left (F:N6).
     const fromLists = params?.get("tab") === "student-groups" ? params.get("from") : null
     if (fromLists && isLabPath(fromLists)) {
-      crumbs.push({ label: skillsLabel(), href: labHref("admin/skills-library", {}, link) }, { label: withNoun(capitalize(skillListsNoun())), href: fromLists })
+      crumbs.push({ label: skillsLabel(), href: skillsNavHref(link) }, { label: withNoun(capitalize(skillListsNoun())), href: fromLists })
     } else crumbs.push({ label: "Settings", href: settingsHref(link) })
     groupLeaf = settingsLeafLabel
   }
@@ -215,6 +246,10 @@ function Crumbs() {
   const parentLeaf = parent?.leaf === "heading" ? heading : undefined
   const leafLabel = course ? course.code : parentLeaf ?? groupLeaf ?? leaf ?? (title ? withNoun(title) : undefined)
   if (leafLabel) crumbs.push({ label: leafLabel })
+  return crumbs
+}
+
+function Crumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (
     <BreadcrumbList className="flex-nowrap">
       {crumbs.map((c, i) => {
@@ -245,7 +280,30 @@ function SidebarToggle() {
   )
 }
 
+/**
+ * Below md the full breadcrumb does not fit beside the product switcher, so the bar keeps one step of it: a back link to the parent
+ * page ("Skill lists", "Skills"), the nearest crumb before the leaf that links somewhere else. Nothing shows on a page with no parent.
+ */
+function CompactBack({ crumbs }: { crumbs: Crumb[] }) {
+  const pathname = usePathname() ?? ""
+  // A crumb that leads to this very page ("Skills" on Skill lists) is not a way back.
+  const here = toLong(pathname)
+  const parent = crumbs.slice(0, -1).reverse().find((c) => c.href && toLong(c.href.split("?")[0]!) !== here)
+  if (!parent?.href || crumbs.length < 2) return null
+  return (
+    <nav aria-label="Breadcrumb" className="flex min-w-0 flex-1 md:hidden" data-compact-back>
+      <Button asChild variant="ghost" size="sm" className="min-w-0 max-w-full justify-start gap-1.5 px-2">
+        <Link href={parent.href} aria-label={`Back to ${parent.label}`} data-return-to={parent.back ? "" : undefined}>
+          <i className="fa-light fa-chevron-left text-xs" aria-hidden="true" />
+          <span className="truncate">{parent.label}</span>
+        </Link>
+      </Button>
+    </nav>
+  )
+}
+
 function LabUtilityBar() {
+  const crumbs = useCrumbs()
   return (
     <nav aria-label="Global utilities" data-slot="utility-bar" data-utility-bar-density="comfort" className="sticky top-0 z-50 flex h-(--shell-utility-bar-height) min-h-(--shell-utility-bar-height) w-full min-w-0 shrink-0 items-center gap-1 bg-sidebar pe-2 sm:pe-3">
       <div className="flex min-w-0 shrink items-center gap-0.5 ps-1.5">
@@ -253,7 +311,8 @@ function LabUtilityBar() {
         <ProductSwitcher markOnly={false} />
       </div>
       <div aria-hidden="true" className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" />
-      <Breadcrumb aria-label="Lab location" className="hidden min-w-0 flex-1 overflow-hidden md:block"><Crumbs /></Breadcrumb>
+      <Breadcrumb aria-label="Breadcrumb" className="hidden min-w-0 flex-1 overflow-hidden md:block"><Crumbs crumbs={crumbs} /></Breadcrumb>
+      <CompactBack crumbs={crumbs} />
       {/* A walkthrough step in present mode: the presenter control, at the end of the bar (renders nothing otherwise). */}
       <WalkthroughControls />
     </nav>
