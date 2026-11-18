@@ -189,7 +189,7 @@ export interface RecapInput {
 export const RECAP_STEP_LABEL: Record<RecapStep, string> = {
   library: "Library",
   categories: "Categories and tags",
-  settings: "Evaluation settings",
+  settings: "Evaluation methods",
   lists: "Skill lists",
   assign: "Assigned to",
   map: "Course mapping",
@@ -213,12 +213,14 @@ export function setupRecap(i: RecapInput): RecapRow[] {
   const cats: RecapRow = {
     step: "categories",
     stepId: "categories",
-    screen: "admin/categories-tags",
+    // The Categories and tags tab of Skill lists (2026-11-16).
+    screen: "admin/lists-cohorts",
+    params: { tab: "categories" },
     state: "done",
     fixes: [],
     inPlace: [
-      { text: `${n(i.categories)} ${i.categories === 1 ? "category" : "categories"}`, screen: "admin/categories-tags", fix: false },
-      { text: `${n(i.tags)} ${i.tags === 1 ? "tag" : "tags"}`, screen: "admin/categories-tags", params: { tab: "tags" }, fix: false },
+      { text: `${n(i.categories)} ${i.categories === 1 ? "category" : "categories"}`, screen: "admin/lists-cohorts", params: { tab: "categories" }, fix: false },
+      { text: `${n(i.tags)} ${i.tags === 1 ? "tag" : "tags"}`, screen: "admin/lists-cohorts", params: { tab: "tags" }, fix: false },
     ],
   }
   const settings: RecapRow = {

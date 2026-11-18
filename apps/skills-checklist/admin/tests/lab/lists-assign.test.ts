@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { createSeed } from "@/lib/v2/seed"
+import { fourLists } from "./fixtures/four-lists"
 import { labState } from "@/lib/lab/reviewer"
 import {
   applyListsOverlay,
@@ -11,7 +12,6 @@ import {
   clinicalOfferingsFor,
   cohortGroupId,
   createList,
-  defaultList,
   diffLists,
   listById,
   defaultForNewGroup,
@@ -24,7 +24,6 @@ import {
   inheritableSkillIds,
   listsReaching,
   newVersion,
-  seedLists,
   setListSkills,
   skillLists,
   studentGroups,
@@ -38,7 +37,7 @@ import { findFlow, stepOf } from "@/lib/lab/flows"
 // in one sentence, and assignment still drives cohort inheritance (decision D-X27).
 
 const s = labState(createSeed())
-const lists = seedLists(s)
+const lists = fourLists(s)
 const groups = studentGroups(s)
 const BSN28 = (s.cohorts ?? []).find((c) => c.name === "BSN 2028")!
 const kindOf = (courseId: string) => (s.courses ?? []).find((c) => c.id === courseId)?.kind ?? "clinical"

@@ -200,16 +200,16 @@ function OneSkillForm({ state, skill, settingsHref }: { state: V2State; skill: S
             {noProgram ? null : (
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2" data-evaluation-switch>
                 <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <span className={TYPE.label} id="cfg-evaluation-settings-label">Evaluation settings</span>
+                  <span className={TYPE.label} id="cfg-evaluation-settings-label">Evaluation methods</span>
                   <ViewSegmentedControl<Choice>
-                    aria-label="Evaluation settings"
+                    aria-label="Evaluation methods"
                     value={custom ? "custom" : "default"}
                     onValueChange={choose}
                     options={[{ value: "default", label: CONFIGURATION_META.default.label }, { value: "custom", label: CONFIGURATION_META.edited.label }]}
                   />
                 </span>
                 {/* Under Default the values are the program's: the way to change them for every skill. */}
-                {custom ? null : <NextLink href={settingsHref} className={cn(TYPE.body, "underline underline-offset-2 hover:text-[var(--brand-color)]")} data-from-settings>Edit Evaluation settings</NextLink>}
+                {custom ? null : <NextLink href={settingsHref} className={cn(TYPE.body, "underline underline-offset-2 hover:text-[var(--brand-color)]")} data-from-settings>Edit Evaluation methods</NextLink>}
               </div>
             )}
             {notConfiguredA ? (

@@ -6,8 +6,13 @@
  * No "Sample data" chip: lab labels belong to the lab bar, the page carries product chrome only (Romit 2026-10-27).
  */
 import * as React from "react"
-import { FirstRun } from "@/components/lab/first-run"
-import { useSearchParams } from "next/navigation"
+import { createListLabel } from "./lists-new-dialog"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Tabs, TabsContent, TabsCountBadge, TabsList, TabsTrigger } from "@exxatdesignux/ui/components/ui/tabs"
+import { HostActionsSlot, SettingsPage } from "@/components/lab/admin-b/settings-page"
+import { useLabHref } from "@/components/lab/lab-bar/page-context"
+import { categoryRows, isVocabularySection, tagRows } from "@/lib/lab/settings"
+import { useV2State } from "@/lib/v2/react"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { PageFrame } from "@/components/skills/page-header"
 import { LocalBanner } from "@exxatdesignux/ui/components/ui/banner"
@@ -18,7 +23,7 @@ import { useOnePressAtATime } from "./lists-focus"
 import { capitalize, countSkills, skillListNoun, skillListsNoun } from "@/lib/lab/terms"
 import { useV2Store } from "@/lib/v2/react"
 import { UPLOAD_RESULT_KEY } from "@/lib/lab/upload-result"
-import { groupLabel, listForOldLink, setupDone, skillLists, type SkillList } from "@/lib/lab/lists"
+import { groupLabel, listForOldLink, programLists, setupDone, skillLists, type SkillList } from "@/lib/lab/lists"
 import { SETUP_CONFIGURE, SETUP_PARAM } from "@/lib/lab/return-to"
 
 export interface ListsContext extends AdminData {
@@ -28,8 +33,24 @@ export interface ListsContext extends AdminData {
 
 type Render = (c: ListsContext) => React.ReactNode
 
+/**
+ * The page's three tabs (Romit 2026-11-16: "Categories and Tags are going to be a tab in the skill list page", then "make category and tags as separate
+ * tabs instead of combined"): Skill lists, Categories (`?tab=categories`), Tags (`?tab=tags`).
+ */
+type ListsTab = "lists" | "categories" | "tags"
+
 export function ListsFrame({ variant, children }: { variant: string; children: Render }) {
   const data = useAdminData()
+  const params = useSearchParams()
+  // Not inside the Set up skills wizard, which mounts this page as one of its steps.
+  const vocab = params?.get("tab")
+  if (variant !== "setup" && isVocabularySection(vocab)) {
+    return (
+      <Shell variant={variant} onNew={() => undefined} newInBody tab={vocab}>
+        <SettingsPage scope="vocabulary" embedded />
+      </Shell>
+    )
+  }
   return data.state ? (
     <Ready data={data} variant={variant}>{children}</Ready>
   ) : (
@@ -117,6 +138,17 @@ function Ready({ data, variant, children }: { data: AdminData; variant: string; 
     if (id && skillLists(model.lists).some((l) => l.id === id) && !setupDone(id)) resumeSetup(id)
     else data.query.set({ [SETUP_PARAM]: null })
   }, [data.ready, resume]) // eslint-disable-line react-hooks/exhaustive-deps
+  // From a list's page, Choose from library (`?pick=1&list=<id>`): that list's skills picker, once.
+  const pick = params?.get("pick") === "1"
+  const picked = React.useRef(false)
+  const { openSkills } = actions
+  React.useEffect(() => {
+    if (picked.current || !data.ready || !pick) return
+    picked.current = true
+    const id = params?.get("list")
+    data.query.set({ pick: null })
+    if (id) openSkills(id)
+  }, [data.ready, pick]) // eslint-disable-line react-hooks/exhaustive-deps
   // A link to a list that is not there (deleted, or from another session) opens nothing.
   const openId = params?.get("list") ?? null
   const { closePanel } = actions
@@ -133,7 +165,11 @@ function Ready({ data, variant, children }: { data: AdminData; variant: string; 
   )
   else if (noLists) body = (
     // New skill list is the page's one filled button (map D6, E rule 5).
-    <FirstRun scene="lists" title={`Start your first ${skillListNoun()}`} actions={<Button type="button" variant="default" size="sm" onClick={() => actions.openNew()} data-new-list="">{`New ${skillListNoun()}`}</Button>} />
+    // Only the action (Sankalp 2026-11-16 [CALL 11-16], D-LS1116-d): one short line and Create skill list, no drawing or helper text.
+    <section className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-border px-4 py-12 text-center" data-lists-empty>
+      <p className="text-sm text-muted-foreground">{`No ${skillListsNoun()} yet.`}</p>
+      <Button type="button" variant="default" size="sm" onClick={() => actions.openNew()} data-new-list="">{createListLabel()}</Button>
+    </section>
   )
   else body = children(c)
   return (
@@ -144,16 +180,46 @@ function Ready({ data, variant, children }: { data: AdminData; variant: string; 
   )
 }
 
-function Shell({ variant, onNew, newInBody = false, banner, children }: { variant: string; onNew: () => void; /** The empty state offers New skill list itself: it shows once. */ newInBody?: boolean; banner?: React.ReactNode; children: React.ReactNode }) {
+/** Skill lists, Categories and Tags, as DS line tabs. In the URL, a new history entry each, so reload and Back keep the tab. */
+function ListsTabs({ value, children }: { value: ListsTab; children: React.ReactNode }) {
+  const router = useRouter()
+  const to = useLabHref()
+  const state = useV2State()
+  const counts: Record<ListsTab, number> = { lists: skillLists(programLists(state)).length, categories: categoryRows(state).length, tags: tagRows(state).length }
+  const labels: Record<ListsTab, string> = { lists: capitalize(skillListsNoun()), categories: "Categories", tags: "Tags" }
   return (
-    <PageFrame
-      title={capitalize(skillListsNoun())}
-      actions={newInBody ? null : <Button type="button" variant="default" size="sm" onClick={onNew} data-new-list>{`New ${skillListNoun()}`}</Button>}
-    >
-      <div className="flex flex-col gap-4" data-page-type="list" data-admin-lab={`lists-${variant}`}>
-        {banner}
-        {children}
-      </div>
+    <Tabs value={value} onValueChange={(v) => router.push(to(v === "lists" ? "?" : `?tab=${v}`), { scroll: false })} className="flex flex-col gap-4">
+      <TabsList variant="line" ariaLabel={`${capitalize(skillListsNoun())} sections`}>
+        {(["lists", "categories", "tags"] as const).map((t) => (
+          <TabsTrigger key={t} value={t} data-lists-tab={t}>
+            {labels[t]}
+            <TabsCountBadge count={counts[t]} />
+          </TabsTrigger>
+        ))}
+      </TabsList>
+      <TabsContent value={value} className="mt-0">{children}</TabsContent>
+    </Tabs>
+  )
+}
+
+function Shell({ variant, onNew, newInBody = false, banner, tab = "lists", children }: { variant: string; onNew: () => void; /** The empty state offers New skill list itself: it shows once. */ newInBody?: boolean; banner?: React.ReactNode; tab?: ListsTab; children: React.ReactNode }) {
+  const body = (
+    <div className="flex flex-col gap-4" data-page-type="list" data-admin-lab={`lists-${variant}`}>
+      {banner}
+      {children}
+    </div>
+  )
+  // One header action slot, top right, for every tab (Romit 2026-11-16: "shift add a category, add a tag to the top right position besides skills list just like add a skill
+  // button"): New skill list on Skill lists; on Categories or Tags the hosted page puts its Add a category or Add a tag here (HostActionsSlot).
+  const [slot, setSlot] = React.useState<HTMLElement | null>(null)
+  const actions = tab === "lists"
+    ? (newInBody ? null : <Button type="button" variant="default" size="sm" onClick={onNew} data-new-list>{`New ${skillListNoun()}`}</Button>)
+    : <div ref={setSlot} className="flex items-center gap-2" data-lists-header-actions />
+  return (
+    <PageFrame title={capitalize(skillListsNoun())} actions={actions}>
+      <HostActionsSlot.Provider value={tab === "lists" ? null : slot}>
+        {variant === "setup" ? body : <ListsTabs value={tab}>{body}</ListsTabs>}
+      </HostActionsSlot.Provider>
     </PageFrame>
   )
 }

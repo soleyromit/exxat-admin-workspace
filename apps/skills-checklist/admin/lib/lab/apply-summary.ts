@@ -143,8 +143,8 @@ function criteriaName(model: LabRule["model"]): string {
 
 /** Name, icon and before and after for one part of the settings. `saved` null: the program's first save. */
 function effectRow(key: ChangeKey, saved: LabRule | null, next: LabRule): Omit<ChangeRow, "scope"> & { icon: string } {
-  if (key === "new") return { name: "Evaluation settings", icon: SETTING_ICON.setup, before: { text: "Not configured", config: "not-configured" }, after: { text: "Default", config: "default" } }
-  if (!saved) return { name: "Evaluation settings", icon: SETTING_ICON.setup, after: { text: "Default", config: "default" } }
+  if (key === "new") return { name: "Evaluation methods", icon: SETTING_ICON.setup, before: { text: "Not configured", config: "not-configured" }, after: { text: "Default", config: "default" } }
+  if (!saved) return { name: "Evaluation methods", icon: SETTING_ICON.setup, after: { text: "Default", config: "default" } }
   switch (key) {
     case "model":
       return { name: `How ${skillNounPlural()} are judged`, icon: SETTING_ICON.model, ...(saved.model ? { before: val(LAB_MODEL_LABEL[saved.model]) } : {}), after: val(next.model ? LAB_MODEL_LABEL[next.model] : "Not set") }

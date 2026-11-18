@@ -252,7 +252,7 @@ export function ConfigureLoading({ title = `Configure ${skillNoun()}` }: { title
 export function ConfigureNotFound({ skillId }: { skillId: string }) {
   return (
     <PageFrame title={`Configure ${skillNoun()}`} width="form">
-      <LocalBanner variant="error" title={`This ${skillNoun()} does not exist`} action={{ label: `Open the ${skillNounPlural()} library`, href: LIBRARY_HREF }}>
+      <LocalBanner variant="error" title={`This ${skillNoun()} does not exist`} action={{ label: `View ${skillNounPlural()}`, href: LIBRARY_HREF }}>
         {`No ${skillNoun()} matches "${skillId}". It may have been removed.`}
       </LocalBanner>
     </PageFrame>

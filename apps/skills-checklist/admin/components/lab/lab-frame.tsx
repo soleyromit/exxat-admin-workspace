@@ -19,7 +19,7 @@ import { LeoAmbienceProvider } from "@exxatdesignux/ui/components/ui/leo-ambienc
 import { AppShellSlotsProvider, AppSidebar, SecondaryHubNavCompactShell, SecondaryHubNavRow, SecondaryPanel, SecondaryPanelProvider, SidebarShell, useSecondaryHubNavChrome, useSecondaryPanel, type AppShellData, type AppShellRoutePolicy, type AppShellSlots, type SecondaryPanelSpec, type ShellNav } from "@exxatdesignux/ui/components/shell"
 import { ResizablePanel, ResizablePanelGroup } from "@exxatdesignux/ui/components/ui/resizable"
 import { installOriginCapture, shownSkillSnapshot, subscribeShownSkill } from "@/lib/lab/configure-origin"
-import { CONFIGURE_SKILL_SCREEN, SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, settingsHref, settingsLeaf, skillsLabel, selectedSkillsPanelKey, skillsNavHref, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
+import { ADD_SKILL_SCREEN, CONFIGURE_SKILL_SCREEN, LIST_SKILLS_SCREEN, SKILLS_PANEL, SKILLS_PANEL_ID, isSettingsArea, listSkillsHref, settingsHref, settingsLeaf, skillsLabel, selectedSkillsPanelKey, skillsNavHref, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@exxatdesignux/ui/components/ui/breadcrumb"
 import { utilityBarActionButtonClass } from "@exxatdesignux/ui/components/shell/utility-bar-chrome"
 import { cn } from "@exxatdesignux/ui/lib/utils"
@@ -48,12 +48,12 @@ import { LightFrame } from "@/components/lab/light-frame"
 import { DEFAULT_SKILL } from "@/components/lab/configure/use-configure"
 import { configurableSkills, parseSkillIds } from "@/lib/lab/configure-many"
 import { skillById } from "@/lib/v2/evidence-index"
-import { listById, programLists } from "@/lib/lab/lists"
+import { listById, programLists, skillsPageList } from "@/lib/lab/lists"
 
 export { PersonaSwitcher }
 
 /** The admin Skills row's slug (lib/lab/personas.ts); the row itself opens Skill lists (skillsNavHref). */
-const SKILLS_ROW_SLUG = "skills-library"
+const SKILLS_ROW_SLUG = "lists-cohorts"
 
 const icon = (name: string, solid = false) => <i className={`${solid ? "fa-solid" : "fa-light"} fa-${name}`} aria-hidden="true" />
 
@@ -177,11 +177,15 @@ function useCrumbs(): Crumb[] {
   const back = returnTarget(from, carried)
   // Back to one skill reads that skill's name, as its own page title does.
   // Back to one list's Configure step reads that list's name.
-  const carriedName = !carried ? undefined : from === "configure" ? skillById(state, carried)?.name : from === "setup" ? listById(programLists(state), carried)?.name : undefined
+  // Back to a list's skills page (`?from=skills`) reads that list's name: the one carried, else the list the plain page shows.
+  const skillsPage = from === "skills" ? skillsPageList(programLists(state), carried) : undefined
+  const carriedName = skillsPage?.name ?? (!carried ? undefined : from === "configure" ? skillById(state, carried)?.name : from === "setup" ? listById(programLists(state), carried)?.name : undefined)
   const backLabel = back ? carriedName ?? back.label() : undefined
   // One skill reached from a list's step 3 reads "Skills > {list} > {skill}", as its own page title does (walk 3, D5).
   const oneSkillLeaf = back && link.screen === CONFIGURE_SKILL_SCREEN ? shownSkill?.name ?? skillById(state, params?.get("skill") ?? "")?.name : undefined
-  const leaf = back && link.screen ? oneSkillLeaf ?? LEAF_TITLE[link.screen]?.() : undefined
+  // A list's skills page reached with return context reads the list's name, as its H1 does.
+  const listLeaf = back && (link.screen === LIST_SKILLS_SCREEN || link.screen === ADD_SKILL_SCREEN) ? skillsPageList(programLists(state), params?.get("list"))?.name : undefined
+  const leaf = back && link.screen ? oneSkillLeaf ?? listLeaf ?? LEAF_TITLE[link.screen]?.() : undefined
   // Present mode shows no lab label: product crumbs only.
   // The first crumb is the way back to the PRISM home (`/`), in present mode too.
   const crumbs: Crumb[] = [{ label: "Dashboard", href: "/" },...(present ? [] : [{ label: "Design lab", href: "/lab" }])]
@@ -189,7 +193,10 @@ function useCrumbs(): Crumb[] {
   // Every page a `from` leads back to is a Skills page, so an admin back crumb sits under "Skills" as the panel pages do:
   // "Skills > Skill lists > Bulk upload" (2026-11-15).
   if (back && backLabel && persona === "admin") crumbs.push({ label: skillsLabel(), href: skillsNavHref(link) })
-  if (back && backLabel) crumbs.push({ label: backLabel, href: to(back.href), back: true })
+  // A list's skills page sits under Skill lists: "Skills > Skill lists > {list} > Bulk upload".
+  const listsRow = SKILLS_PANEL.find((i) => i.key === "groups")!
+  if (back && skillsPage && persona === "admin") crumbs.push({ label: listsRow.label(), href: skillsPanelHref(listsRow, link) })
+  if (back && backLabel) crumbs.push({ label: backLabel, href: skillsPage ? listSkillsHref(skillsPage.id, link) : to(back.href), back: true })
   // The course view (My progress with ?course=) is its own place: "My progress > NURS 350" (Romit 2026-10-27, "why does the
   // dropdown change when I am changing a course on My progress?"). Product words, so it shows in present mode too.
   const courseId = link.screen === "student/home" ? params?.get("course") : null
@@ -206,19 +213,28 @@ function useCrumbs(): Crumb[] {
     // "Skills" leads to Skill lists everywhere, as the Skills row does (skillsNavHref).
     const skillsHref = skillsNavHref(link)
     if (link.screen === CONFIGURE_SKILL_SCREEN) {
-      // One skill is a level below its panel row: "Skills > Library > {skill}" (or "Skills > Evaluation settings > {skill}").
+      // One skill is a level below its list's skills page: "Skills > Skill lists > {list} > {skill}" (or "Skills > Evaluation settings > {skill}").
       crumbs.push({ label: skillsLabel(), href: skillsHref })
       crumbs.push({ label: panelItem.label(), href: skillsPanelHref(panelItem, link) })
-      // Several from the Library selection bar (D-L48): "Skills > Library > 12 skills", as the page title.
+      // Several from the skills page's selection bar (D-L48): "Skills > Skill lists > {list} > 12 skills", as the page title.
       const manyIds = parseSkillIds(params?.get("skills"))
+      if (panelItem.key === "groups") {
+        const first = manyIds[0] || params?.get("skill") || ""
+        const all = programLists(state)
+        const shown = skillsPageList(all, params?.get("list"))
+        const holder = shown?.skillIds.includes(first) ? shown : all.find((l) => l.skillIds.includes(first))
+        if (holder) crumbs.push({ label: holder.name, href: listSkillsHref(holder.id, link) })
+      }
       groupLeaf = shownSkill?.name ?? (manyIds.length > 1 ? countSkills(configurableSkills(state, manyIds).length) : skillById(state, manyIds[0] || params?.get("skill") || DEFAULT_SKILL)?.name ?? title)
-    } else if (panelItem.key === "library") {
+    } else if (panelItem.key === "groups" && link.screen && link.screen !== panelItem.screen) {
+      // A list's skills page (and Add a skill, its sheet open) reads "Skills > Skill lists > {list}", the H1 being the list's name. Bulk upload and
+      // Starting points opened from it are a level below: "Skills > Skill lists > {list} > Bulk upload" (Romit 2026-11-16, the Library row is gone).
       crumbs.push({ label: skillsLabel(), href: skillsHref })
-      // Bulk upload and Starting points are pages of their own below Library: "Skills > Library > Bulk upload", the leaf saying what the H1 says
-      // (walk 3, D7). Add a skill stays "Skills > Library": it is the library with its add surface open.
-      const ownLeaf = link.screen && link.screen !== panelItem.screen ? LEAF_TITLE[link.screen]?.() : undefined
-      if (ownLeaf) crumbs.push({ label: panelItem.label(), href: skillsPanelHref(panelItem, link) })
-      groupLeaf = ownLeaf ?? panelItem.label()
+      crumbs.push({ label: panelItem.label(), href: skillsPanelHref(panelItem, link) })
+      const shown = skillsPageList(programLists(state), params?.get("to") ?? params?.get("list"))
+      const ownLeaf = LEAF_TITLE[link.screen]?.()
+      if (ownLeaf && shown) crumbs.push({ label: shown.name, href: listSkillsHref(shown.id, link) })
+      groupLeaf = ownLeaf ?? shown?.name ?? (title ? withNoun(title) : undefined)
     } else {
       crumbs.push({ label: skillsLabel(), href: skillsHref })
       // A page under a panel row that is not the row's own page reads its own title.

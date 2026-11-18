@@ -37,13 +37,13 @@ import {
   type LibraryRow,
   type SkillDraft,
 } from "@/lib/lab/library"
-import { countSkills, skillNounPlural } from "@/lib/lab/terms"
+import { countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import { LAB_ADMIN } from "@/lib/lab/library"
 import { longDate } from "@/lib/v2/format"
 import type { ResultBannerValue } from "@/components/lab/shared/result-banner"
 import { configurationOf, notConfiguredReason, saveSkillSettings, setTimesNeededMany, timesCellOf } from "@/lib/lab/program-settings"
 import { skillReach } from "@/lib/lab/mapping"
-import { skillLists } from "@/lib/lab/lists"
+import { newVersion, skillLists, skillsPageList, updateListForEveryone, type SkillList } from "@/lib/lab/lists"
 import { useLists, useMappingOverlay } from "@/components/lab/admin-a/use-admin-data"
 import { programRuleIn, type LabRule } from "@/lib/lab/configure"
 import { focusAfterBanner } from "@/components/lab/shared/focus"
@@ -69,7 +69,7 @@ export interface BulkEdit {
   times: number | null
 }
 
-export function useLibrary() {
+export function useLibrary({ listScope = false }: { /** The page is one list's skills (the Library screens outside Set up skills); the setup steps read the whole new program. */ listScope?: boolean } = {}) {
   const store = useV2Store()
   const state = useV2State()
   const hydrated = useV2Hydrated()
@@ -142,18 +142,29 @@ export function useLibrary() {
   }, [hydrated, returned, returnedId, savedParam, state.skills, params, router])
   const seq = React.useRef(0)
   /** Added skills go to the shared store (Not configured), so Configure, mapping and every count see them at once. */
+  // On a list's own page, what is added there goes on that list too (D-LS1116-d: Create lands on the empty list, whose next step is Add skills).
+  // Read through refs: the list and its writer are worked out further down.
+  const pageList = React.useRef<SkillList | undefined>(undefined)
+  const writeLists = React.useRef<((next: SkillList[]) => void) | null>(null)
+  const listsNow = React.useRef<SkillList[]>([])
   const keepAdded = React.useCallback((skills: AddedSkill[], batch?: { id: string; kind: "add-several"; label: string }) => {
     store.update((s) => addSkillsToStore(withVocab(s, skills), skills, ACTOR, at(), batch))
     const ids = skills.map((k) => k.id)
     setOverlay((o) => ({ ...o, fresh: [...(o.fresh ?? []), ...ids] }))
+    const on = pageList.current
+    // Adding never removes and never repeats; evaluations already recorded are untouched. A list students are on takes the addition in place [INFER, Proposed]:
+    // the save question (D-LS1116-c) is for Change skills, which can also take skills off.
+    if (on && writeLists.current && !holdListWrite.current) writeLists.current(updateListForEveryone(listsNow.current, on.id, [...on.skillIds, ...ids.filter((id) => !on.skillIds.includes(id))]))
   }, [store])
+  /** Add skills (ADMIN-D6 round add-skills) writes the list once, with the library's own skills and the new ones together. */
+  const holdListWrite = React.useRef(false)
 
   // The empty demo state still shows what was added on it: the page must not stay empty after an add says it worked.
   // A row's courses are `skillReach`'s, lists included and one per course and cohort: the figure the panel, Deactivate and Course mapping show (audit L8). `buildLibrary` alone sees only
   // the store's direct mappings, and a load-time cycle keeps it from reading the lists.
   const [mappingOverlay] = useMappingOverlay()
-  const { lists } = useLists(state)
-  const rows: LibraryRow[] = React.useMemo(() => {
+  const { lists, setLists } = useLists(state)
+  const allRows: LibraryRow[] = React.useMemo(() => {
     if (!hydrated) return []
     const reach = new Map(skillReach(state, mappingOverlay, "", lists).map((r) => [r.id, r]))
     const held = new Map<string, number>()
@@ -161,9 +172,22 @@ export function useLibrary() {
     const built = buildLibrary(state, overlay).map((r) => ({ ...r, courses: reach.get(r.id)?.courses ?? 0, mandatoryCourses: reach.get(r.id)?.mandatoryCourses ?? 0, onLists: held.get(r.id) ?? 0 }))
     return demo === "empty" ? built.filter((r) => overlay.fresh?.includes(r.id)) : built
   }, [hydrated, state, overlay, demo, mappingOverlay, lists])
+  // The page is one list's skills (Romit 2026-11-16: a list's skills open from its row; the Library row is gone): `?list=<id>`, else the default list.
+  // The new program in Set up skills has no list yet, so its page is the whole library. Duplicate checks and records still read every skill in the program.
+  const listParam = params?.get("list") ?? null
+  const newProgram = !!params?.get("program")
+  const list = React.useMemo(() => (!listScope || newProgram ? undefined : skillsPageList(lists, listParam)), [listScope, newProgram, lists, listParam])
+  pageList.current = list
+  writeLists.current = setLists
+  listsNow.current = lists
+  const rows: LibraryRow[] = React.useMemo(() => {
+    if (!list) return allRows
+    const on = new Set(list.skillIds)
+    return allRows.filter((r) => on.has(r.id))
+  }, [allRows, list])
   const counts = React.useMemo(() => countLibrary(rows), [rows])
-  const names = React.useMemo(() => rows.map((r) => r.name), [rows])
-  const byId = React.useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows])
+  const names = React.useMemo(() => allRows.map((r) => r.name), [allRows])
+  const byId = React.useMemo(() => new Map(allRows.map((r) => [r.id, r])), [allRows])
 
   /** The result banner for skills just added, by the configuration they got (D0 rule 3). One wording with the Add several summary. */
   const addedBanner = React.useCallback((ids: string[], what: string): LibraryBanner => {
@@ -258,6 +282,52 @@ export function useLibrary() {
     const show = { label, onClick: () => showAdded(batchId) }
     setBanner(b.action ? { ...b, secondaryAction: show } : { ...b, action: show })
   }, [addLines, showAdded])
+
+  /**
+   * Add skills to the page's list in one go (ADMIN-D6 round add-skills, Proposed): the library's own skills by id, and names typed or read from a file, which are
+   * created first. Nothing is removed and nothing repeats. `asNewList` is the second answer to "Who should this change apply to?" (D-LS1116-c): the skills go on a
+   * new version, on no one, and the students keep the list as it is. One banner says where they went; in place it carries Undo, which takes them off the list again
+   * (a skill created here stays in the library).
+   */
+  const addToList = React.useCallback((input: { existingIds: readonly string[]; items: SeveralItem[]; defaults: { category: string; tags: string[] }; asNewList?: boolean; hrefFor?: (listId: string) => string }) => {
+    const on = pageList.current
+    if (!on || !writeLists.current) return
+    const before = listsNow.current
+    let created: string[] = []
+    if (input.items.length) {
+      seq.current += 1
+      holdListWrite.current = true
+      try {
+        created = addLines(input.items, input.defaults, { id: `add-several-${Date.now().toString(36)}-${seq.current}`, kind: "add-several", label: `Add several, ${longDate(DEMO_TODAY)}` }).ids
+      } finally { holdListWrite.current = false }
+    }
+    const has = new Set(on.skillIds)
+    const fresh = [...new Set([...input.existingIds, ...created])].filter((id) => !has.has(id))
+    if (!fresh.length) {
+      setBanner({ variant: "info", title: `No ${skillNounPlural()} added.`, body: `They are on ${on.name} already.` })
+      return
+    }
+    const madeHere = created.length ? ` ${created.length} ${created.length === 1 ? "is" : "are"} new.` : ""
+    if (input.asNewList) {
+      seq.current += 1
+      const version = newVersion(before, on.id, `list-${Date.now().toString(36)}-${seq.current}`)
+      if (!version) return
+      writeLists.current([...before, { ...version, skillIds: [...version.skillIds, ...fresh] }])
+      setBanner({ variant: "success", title: `${countSkills(fresh.length)} added to ${version.name}.${madeHere}`, body: `Students on ${on.name} keep it as it is.`, action: input.hrefFor ? { label: `Open ${version.name}`, href: input.hrefFor(version.id) } : undefined })
+      return
+    }
+    writeLists.current(updateListForEveryone(before, on.id, [...on.skillIds, ...fresh]))
+    setJustAdded(fresh)
+    setJustReplaced([])
+    const undo = () => {
+      const now = listsNow.current.find((l) => l.id === on.id)
+      if (now && writeLists.current) writeLists.current(updateListForEveryone(listsNow.current, on.id, now.skillIds.filter((id) => !fresh.includes(id))))
+      setJustAdded([])
+      setBanner({ variant: "info", title: `${countSkills(fresh.length)} taken off ${on.name}.`, body: created.length ? `The ${created.length === 1 ? `new ${skillNoun()} stays` : `${created.length} new ${skillNounPlural()} stay`} in the library.` : undefined })
+      focusAfterBanner()
+    }
+    setBanner({ variant: "success", title: `${countSkills(fresh.length)} added to ${on.name}.${madeHere}`, action: { label: "Undo", onClick: undo } })
+  }, [addLines])
 
   /**
    * Save from the edit panel: name, description, category, tags and, when they changed, the evaluation settings together, written to the shared store
@@ -426,7 +496,7 @@ export function useLibrary() {
     store.update((s) => restoreSkillsToStore(s, removal, ACTOR, at()))
   }, [store])
 
-  return { hydrated, demo, programSaved: !!programRuleIn(state), rows, counts, names, byId, overlay, banner, setBanner, clearSaved, justAdded, justReplaced, add, addDraft, addMany, addSeveral, edit, saveEdit, deactivate, reactivate, remove, bulkEdit, exportCsv, setDetails, removeMany, restore }
+  return { hydrated, demo, programSaved: !!programRuleIn(state), list, lists, setLists, allRows, addToList, rows, counts, names, byId, overlay, banner, setBanner, clearSaved, justAdded, justReplaced, add, addDraft, addMany, addSeveral, edit, saveEdit, deactivate, reactivate, remove, bulkEdit, exportCsv, setDetails, removeMany, restore }
 }
 
 export type LibraryApi = ReturnType<typeof useLibrary>

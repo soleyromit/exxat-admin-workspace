@@ -643,6 +643,11 @@ export interface V2State {
    */
   programSettings?: { rule: unknown; at: string } | null
   /**
+   * Evaluation methods (lab, Proposed D-EM1116): names, the rules of methods other than the program's, and their skills
+   * (lib/lab/methods.ts MethodsOverlay). Typed loosely so the data layer does not import the lab. Optional so older state loads.
+   */
+  methodEdits?: unknown
+  /**
    * Course mapping edits, saved: offering id -> skill id -> level ("none" is Not mapped) [REQ CM-03, CM-06, CM-08]. They replace the
    * course's mapping row for that one offering. Every reader goes through lib/v2/mapping-in-force.ts. Optional so older state loads.
    */
@@ -690,6 +695,8 @@ export interface VocabEntry {
   id: string
   name: string
   active: boolean
+  /** Optional one-line description (D-EM1116-d, prototype 2026-11-16 26, 27). */
+  description?: string
 }
 export interface Vocabulary {
   categories: VocabEntry[]

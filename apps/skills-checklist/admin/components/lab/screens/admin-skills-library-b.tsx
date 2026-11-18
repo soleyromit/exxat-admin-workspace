@@ -80,7 +80,7 @@ type Sort = "library" | "setup"
 
 export function SkillsLibraryTreePage({ startAdding = false }: { startAdding?: boolean }) {
   const configureMany = useConfigureMany()
-  const api = useLibrary()
+  const api = useLibrary({ listScope: true })
   const life = useLifecycle(api)
   const [tab, setTab] = useStatusTab()
   const [openId, setOpenId] = useOpenSkill()

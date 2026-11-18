@@ -81,3 +81,8 @@ body:has([data-library-table]) div[data-dt-group-bar] > [data-slot="badge"] {
 [data-exxat-bulk-bar]:has([data-bulk-selected]) > div:first-child + span {
   display: none;
 }
+
+/* Add skills H (D-ADD1117): a row on the list's unsaved draft has a slim amber edge until Save or Discard; the group heading's "Unsaved" badge carries the word. */
+[data-library-table] tr:has([data-row-unsaved]) > td:first-child {
+  box-shadow: inset 3px 0 0 var(--chart-5);
+}

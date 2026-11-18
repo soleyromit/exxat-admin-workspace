@@ -22,18 +22,14 @@ import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { LAB_ADMIN, EMPTY_DRAFT, NO_CATEGORY, findDuplicate, mappingHref, normName, validateDraft, type LibraryRow } from "@/lib/lab/library"
-import { draftConfiguration, draftEdited, panelIssues, panelRuleOf, programSettingsOf, settingsImpact, TIMES_MAX } from "@/lib/lab/program-settings"
-import { emptyRule, hasNeed, type LabRule } from "@/lib/lab/configure"
-import { configureSkillHref } from "@/components/lab/configure/shell"
-import { carryReturn } from "@/lib/lab/return-to"
-import { useSearchParams } from "next/navigation"
+import { draftEdited, panelIssues, panelRuleOf, programSettingsOf, settingsImpact, TIMES_MAX } from "@/lib/lab/program-settings"
+import { emptyRule, type LabRule } from "@/lib/lab/configure"
 import { skillLists } from "@/lib/lab/lists"
 import { skillReach } from "@/lib/lab/mapping"
 import { skillById } from "@/lib/v2/evidence-index"
 import { plural } from "@/lib/v2/format"
-import { capitalize, skillListsNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, skillListsNoun, skillNoun } from "@/lib/lab/terms"
 import { NUM_LINK } from "@/components/lab/link-styles"
-import { SettingsSummary } from "./settings-summary"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
 import { keepFocus, returnFocus, rowLink } from "@/components/lab/shared/focus"
 import { useLists, useMappingOverlay } from "@/components/lab/admin-a/use-admin-data"
@@ -211,8 +207,6 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
   focusConfigure: boolean
 }) {
   const state = useV2State()
-  // Opened from step 3 of a list (`?from=setup&list=`): Configure keeps the way back to it (walk 3, D5).
-  const params = useSearchParams()
   const [overlay] = useMappingOverlay()
   const { lists } = useLists(state)
   const opts = useVocabOptions()
@@ -236,7 +230,6 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
   const [rule, setRuleState] = React.useState<LabRule>(baseRule)
   const baseEdited = !!skill?.edited
   const [showErrors, setShowErrors] = React.useState(false)
-  const word = draftConfiguration({ rule, baseEdited, baseRule, program, reset: false, custom: baseEdited })
   // A save that changes someone's progress waits here until the admin has seen it (map D0 rule 9).
   const [ask, setAsk] = React.useState<{ students: Array<{ id: string; name: string }> } | null>(null)
 
@@ -322,7 +315,6 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
   React.useEffect(() => {
     if (focusConfigure) requestAnimationFrame(() => requestAnimationFrame(() => configureRef.current?.focus({ preventScroll: true })))
   }, [focusConfigure])
-  const needOk = hasNeed(rule) && rule.need <= TIMES_MAX
 
   const reach = React.useMemo(() => skillReach(state, overlay, "", lists).find((r) => r.id === row.id), [state, overlay, lists, row.id])
   const onLists = skillLists(lists).filter((l) => l.skillIds.includes(row.id)).length
@@ -402,23 +394,6 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
               />
               {needError ? <FieldError id="cfg-need-error">{needError}</FieldError> : null}
             </Row>
-            {/* The live rule and what else applies; a number that cannot be saved stays out of the sentence. */}
-            <div data-panel-configuration={word}>
-              <SettingsSummary
-                id="panel-settings-title"
-                rule={rule.model ? { ...rule, need: needOk ? rule.need : Number.NaN } : null}
-                word={word}
-                emptyText={`Your program has not set how ${skillNounPlural()} are judged.`}
-                action={
-                  <Button asChild variant="outline" size="sm">
-                    <Link ref={configureRef} href={carryReturn(configureSkillHref(row.id), params)} data-panel-configure>
-                      Configure
-                      <i className="fa-light fa-arrow-right text-xs" aria-hidden="true" />
-                    </Link>
-                  </Button>
-                }
-              />
-            </div>
           </form>
         </TabsContent>
 

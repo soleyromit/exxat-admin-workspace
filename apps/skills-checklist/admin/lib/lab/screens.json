@@ -139,7 +139,7 @@
       "slug": "skills-library",
       "title": "Skills library",
       "tier": 1,
-      "recommended": "A",
+      "recommended": "H",
       "variants": [
         {
           "id": "A",
@@ -168,6 +168,24 @@
           "id": "C",
           "question": "Setup board: does a board by configuration status beat a flat list for working through a part-configured library?",
           "file": "components/lab/screens/admin-skills-library-c.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "F",
+          "question": "Search-first picker: is one box that searches, creates and takes a paste, one list of boxes and one Add button enough, with no tabs and no form?",
+          "file": "components/lab/screens/admin-skills-library-f.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "G",
+          "question": "Add on the page: is adding on the list's own page, with Add on a row and Add all, each landing at once with Undo, simpler than choosing in a panel and confirming?",
+          "file": "components/lab/screens/admin-skills-library-g.tsx",
+          "pageType": "list"
+        },
+        {
+          "id": "H",
+          "question": "One side panel, then save: does one Add skills button, one side panel (Library and Import, a source picker in the search, one-click new skill, a review inside the panel) and an unsaved draft that asks who gets the change on Save fit better than adding at once?",
+          "file": "components/lab/screens/admin-skills-library-h.tsx",
           "pageType": "list"
         }
       ],
@@ -214,55 +232,107 @@
     {
       "persona": "admin",
       "slug": "evaluation-settings",
-      "title": "Evaluation settings",
+      "title": "Evaluation methods",
       "tier": 1,
-      "recommended": "B",
+      "recommended": "Q",
       "variants": [
         {
-          "id": "A",
-          "question": "Sections with a side index: do the four sections (How skills are judged, What counts as achieved, How many evaluations, Who does what) as titled sections, with an index to jump between them, read clearer than numbered steps? (Proposed)",
-          "file": "components/lab/screens/admin-evaluation-settings-a.tsx",
-          "pageType": "form"
-        },
-        {
-          "id": "B",
-          "question": "Every field on the page: do five sections on one sheet, every control visible and edited in place, with a sticky rule panel, make the settings easiest to understand and change? (Concept D, chosen by Romit 2026-11-10, D-L141)",
-          "file": "components/lab/screens/admin-evaluation-settings-b.tsx",
+          "id": "G",
+          "question": "Evaluation methods: does a short table of named methods, each opened on its own page with only its fields, make evaluation methods calmer and easier to navigate than one long sheet? (Proposed 2026-11-16, D-EM1116, from Sankalp's prototype of 2026-11-16)",
+          "file": "components/lab/screens/admin-evaluation-settings-g.tsx",
           "requiredDsComponents": [
             "PageHeader",
             "Button",
-            "Input",
+            "DataTable",
             "Dialog",
-            "RadioGroup",
-            "Checkbox",
-            "ToggleSwitch",
-            "FieldLabel"
+            "Input",
+            "Collapsible",
+            "ToggleSwitch"
           ],
-          "pageType": "form"
+          "pageType": "list"
         },
         {
-          "id": "C",
-          "question": "One group at a time: do line tabs for the four sections, with one Save across them, beat one long page? (Proposed)",
-          "file": "components/lab/screens/admin-evaluation-settings-c.tsx",
-          "pageType": "form"
+          "id": "K",
+          "question": "Side panel: does opening a method in a panel beside the methods table, for adding and for editing, with the table still readable and one Save at the panel's foot, beat a dialog over the list? (Proposed 2026-11-16, D-EM1116-g)",
+          "file": "components/lab/screens/admin-evaluation-settings-k.tsx",
+          "requiredDsComponents": [
+            "PageHeader",
+            "Button",
+            "DataTable",
+            "FloatingSheetPanel",
+            "Input",
+            "Checkbox",
+            "AlertDialog",
+            "Tabs"
+          ],
+          "pageType": "list"
         },
         {
-          "id": "D",
-          "question": "One sentence: is the rule as one sentence of inline pickers, with the evaluator form and student request redrawn live below, the clearest way to set it? (Chosen 2026-11-03; no longer the default: B is, Romit 2026-11-04, D-L50)",
-          "file": "components/lab/screens/admin-evaluation-settings-d.tsx",
-          "pageType": "form"
+          "id": "M",
+          "question": "Guided steps to add, a value at a time to edit: do four short steps with a plain-language review make adding a method safer, and is changing one value from its table cell the lightest way to edit? (Proposed 2026-11-16, D-EM1116-g)",
+          "file": "components/lab/screens/admin-evaluation-settings-m.tsx",
+          "requiredDsComponents": [
+            "PageHeader",
+            "Button",
+            "DataTable",
+            "Wizard",
+            "Popover",
+            "Input",
+            "Checkbox",
+            "AlertDialog",
+            "Tabs"
+          ],
+          "pageType": "list"
         },
         {
-          "id": "E",
-          "question": "Journey: do four stage cards in work order (student logs, evaluator rates, admin approves, achieved), each opening its settings below, make who does what obvious? (Proposed)",
-          "file": "components/lab/screens/admin-evaluation-settings-e.tsx",
-          "pageType": "form"
+          "id": "O",
+          "question": "The wizard, done better (1): do two questions and a summary, with the evaluator's form drawn beside every step and edit opening the same wizard on its summary, beat M's four steps and cell editors? (Proposed 2026-11-16, D-EM1116-h)",
+          "file": "components/lab/screens/admin-evaluation-settings-o.tsx",
+          "requiredDsComponents": [
+            "PageHeader",
+            "Button",
+            "DataTable",
+            "Wizard",
+            "ToggleGroup",
+            "Input",
+            "Checkbox",
+            "AlertDialog",
+            "Tabs"
+          ],
+          "pageType": "list"
         },
         {
-          "id": "F",
-          "question": "Edit on the form: does editing each setting in place on drawn evaluator and student forms remove the need for a settings column? (Proposed)",
-          "file": "components/lab/screens/admin-evaluation-settings-f.tsx",
-          "pageType": "form"
+          "id": "P",
+          "question": "The wizard, done better (2): is one page of four short questions, where each answer folds into a line with Change and the page becomes its own summary, calmer than steps for adding and for editing? (Proposed 2026-11-16, D-EM1116-h)",
+          "file": "components/lab/screens/admin-evaluation-settings-p.tsx",
+          "requiredDsComponents": [
+            "PageHeader",
+            "Button",
+            "DataTable",
+            "Collapsible",
+            "ToggleGroup",
+            "Input",
+            "Checkbox",
+            "AlertDialog",
+            "Tabs"
+          ],
+          "pageType": "list"
+        },
+        {
+          "id": "Q",
+          "question": "Templates and side panel (Romit's handoff spec): does picking one of four templates on a full page, then finishing the method in a panel over the list, prefilled, make adding a method faster, with the same panel for editing? (Proposed 2026-11-17, D-EM1117-q)",
+          "file": "components/lab/screens/admin-evaluation-settings-q.tsx",
+          "requiredDsComponents": [
+            "PageHeader",
+            "Button",
+            "DataTable",
+            "FloatingSheetPanel",
+            "Input",
+            "Checkbox",
+            "AlertDialog",
+            "Tabs"
+          ],
+          "pageType": "list"
         }
       ],
       "requiredDsComponents": [
@@ -314,7 +384,7 @@
         },
         {
           "id": "C",
-          "question": "Set up skills as one focus workflow: does a route of its own with a six-step rail (Skills, Categories and tags, Evaluation settings, Groups and assignment, Course mapping, Review), Next gated where a later step depends on it and Skip only on optional steps, ending on this summary as its Review step, tell the admin what comes next better than the hub pages? (Proposed, D-L44)",
+          "question": "Set up skills as one focus workflow: does a route of its own with a six-step rail (Skills, Categories and tags, Evaluation methods, Groups and assignment, Course mapping, Review), Next gated where a later step depends on it and Skip only on optional steps, ending on this summary as its Review step, tell the admin what comes next better than the hub pages? (Proposed, D-L44)",
           "file": "components/lab/screens/admin-setup-skills-a.tsx",
           "pageType": "wizard",
           "frame": "focus"
@@ -558,7 +628,7 @@
       "variants": [
         {
           "id": "A",
-          "question": "Change one skill: does a page in the same four sections as Evaluation settings, with only times needed, minimums and its own questions editable and everything inherited shown as plain values, make one-off changes clear? (Proposed 2026-11-02) (No longer recommended: B is the default, Romit 2026-11-04, D-L47)",
+          "question": "Change one skill: does a page in the same four sections as Evaluation methods, with only times needed, minimums and its own questions editable and everything inherited shown as plain values, make one-off changes clear? (Proposed 2026-11-02) (No longer recommended: B is the default, Romit 2026-11-04, D-L47)",
           "file": "components/lab/screens/admin-configure-skill-a.tsx",
           "pageType": "form"
         },

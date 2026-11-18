@@ -20,9 +20,6 @@
  * The same sheet edits a skill's details (mode="edit"), where a repeated name is still an error: there is nothing to keep both of.
  */
 import * as React from "react"
-import { useV2State } from "@/lib/v2/react"
-import { ruleForNewSkill } from "@/lib/lab/program-settings"
-import { SettingsSummary } from "./settings-summary"
 import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
@@ -32,7 +29,7 @@ import { FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFo
 import { FloatingSheetPanel } from "@/components/lab/shared/sheet"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { EMPTY_DRAFT, NO_CATEGORY, duplicateChoices, findDuplicate, keepBothSeveralName, libraryTwins, normName, validateDraft, type DraftErrors, type DuplicateChoice, type LibraryRow, type SkillDraft } from "@/lib/lab/library"
-import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, skillNoun } from "@/lib/lab/terms"
 import { useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
 import { focusSheetOpener } from "@/components/lab/shared/focus"
 import { CategoryPicker, TagsPicker, useVocabOptions } from "./category-tag-pickers"
@@ -57,7 +54,6 @@ export interface SkillSheetProps {
 }
 
 export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, defaultSection, onSave, onOpenExisting }: SkillSheetProps) {
-  const newSkillRule = ruleForNewSkill(useV2State())
   const initial = React.useMemo(() => (mode === "edit" && editing ? draftFromRow(editing) : { ...EMPTY_DRAFT, section: defaultSection ?? "" }), [mode, editing, defaultSection])
   const [d, setD] = React.useState<SkillDraft>(initial)
   const [errors, setErrors] = React.useState<DraftErrors>({})
@@ -194,8 +190,6 @@ export function SkillSheet({ open, onOpenChange, rows, mode = "add", editing, de
                 <FieldLabel id="skill-tags-label" htmlFor="skill-tags">Tags (optional)</FieldLabel>
                 <TagsPicker id="skill-tags" labelId="skill-tags-label" value={d.tags} options={opts.tags} inactive={opts.inactiveTags} onChange={(t) => set("tags", t)} />
               </Field>
-              {/* What the new skill starts with: read here, changed on Evaluation settings or on the skill once it exists. */}
-              {adding ? <SettingsSummary id="add-skill-settings" rule={newSkillRule} emptyText={`Your program has not set how ${skillNounPlural()} are judged. This ${skillNoun()} waits until it has.`} /> : null}
             </FloatingSheetPanelBody>
             <FloatingSheetPanelFooter className="flex items-center justify-end gap-2">
               <Button type="button" variant="ghost" size="sm" onClick={requestClose}>Cancel</Button>

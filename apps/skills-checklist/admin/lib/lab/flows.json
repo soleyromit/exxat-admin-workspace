@@ -687,10 +687,10 @@
         },
         {
           "id": "settings",
-          "label": "Evaluation settings",
+          "label": "Evaluation methods",
           "screen": "admin/evaluation-settings",
           "variants": {
-            "1": "B"
+            "1": "Q"
           }
         },
         {
@@ -703,10 +703,10 @@
         },
         {
           "id": "library",
-          "label": "Library",
+          "label": "Skill list",
           "screen": "admin/skills-library",
           "variants": {
-            "1": "A"
+            "1": "H"
           },
           "side": true,
           "after": "lists"
@@ -738,45 +738,15 @@
         },
         {
           "id": "add",
-          "label": "Add a skill",
-          "screen": "admin/add-skill",
+          "label": "Add skills",
+          "screen": "admin/skills-library",
           "variants": {
-            "1": "A"
-          },
-          "side": true,
-          "after": "lists"
-        },
-        {
-          "id": "paste",
-          "label": "Add several",
-          "screen": "admin/add-skill",
-          "variants": {
-            "1": "A"
+            "1": "H"
           },
           "params": {
             "1": {
-              "how": "several"
+              "add": "1"
             }
-          },
-          "side": true,
-          "after": "lists"
-        },
-        {
-          "id": "bulk",
-          "label": "Bulk upload",
-          "screen": "admin/import-ai-review",
-          "variants": {
-            "1": "A"
-          },
-          "side": true,
-          "after": "lists"
-        },
-        {
-          "id": "starter",
-          "label": "Starting points",
-          "screen": "admin/starter-library",
-          "variants": {
-            "1": "A"
           },
           "side": true,
           "after": "lists"

@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   // On Vercel the platform sets the root; overriding it breaks output tracing.
   ...(process.env.VERCEL
     ? {}
-    : { outputFileTracingRoot: path.resolve(__dirname, '../../..') }),
+    : { outputFileTracingRoot: process.env.TURBOPACK_ROOT ?? path.resolve(__dirname, '../../..') }),
   devIndicators: false,
   // Hybrid IA: every previous URL keeps working (lib/redirects.ts).
   async redirects() {
@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
   // The DS dist imports react-router(-dom) directly (it targets a Vite stack).
   // Remap both to a Next-safe shim so DS shell components render without a <Router>.
   turbopack: {
+    // A git worktree links node_modules to the main checkout, outside this folder; TURBOPACK_ROOT widens the root to cover both. Local only.
+    ...(process.env.TURBOPACK_ROOT ? { root: process.env.TURBOPACK_ROOT } : {}),
     resolveAlias: {
       'react-router-dom': './lib/react-router-compat.tsx',
       'react-router': './lib/react-router-compat.tsx',

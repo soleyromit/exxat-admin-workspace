@@ -429,3 +429,750 @@ Principles check (short; full table in the work report):
 | Colour rule, WCAG 1.4.1 | Amber only when a student leaves a state, always with a down arrow and the state badges |
 | WCAG 4.1.2, 2.5.8, 1.4.10 | Name = title, description = card sentence; targets measured; reflow units at 320 |
 
+
+## Amendment 2026-11-16 (G): Evaluation settings as named evaluation methods (Proposed, D-EM1116)
+
+Romit, 2026-11-16: "can you update evaluation settings based on the prototype understanding of evaluation methods that he has created? We are not copying exactly, but i need you to understand the context, before you design this screen. Ensure that its not crowded, but easier for the user to navigate and work on the screen." Source idea: `docs/knowledge/prototype-2026-11-16.md` F6 and (h). Variant G, set as the walkthrough's Evaluation settings step; variant B (D-L141) stays reachable as a lab variant for comparison.
+
+**Job.** The admin sees how the program judges its skills as a short list of named methods, opens one, changes it, saves, and comes back. One method open at a time; nothing else competes.
+
+**Requirements this screen must satisfy (quoted from REQ).**
+
+| ID | Text (short) | Where in G |
+|---|---|---|
+| 4.1 | "Four models are required initially ... allow further models" | Type tiles on the method page (four); methods are named instances, more can be added |
+| SC-01 | "Creating a skill and configuring how it is evaluated are separate actions" | Methods are configured here, apart from creating skills |
+| SC-02 | "exactly one model ... chosen explicitly; no default is assumed" | A new program lists no method; a new method has no type selected; nothing preselected |
+| SC-03 | Binary: both labels program-defined, which qualifies explicit, both required, differ | Approved or not: Outcomes field (existing `OutcomesField`) |
+| SC-04, SC-05, SC-06 | Question set maintained; all / at least N of M / named subset; satisfiable | Questions: `QuestionsField` + `QuestionCountsWhen` (the question-level model; the prototype's Checklist is its nearest equivalent) |
+| SC-07 | Scored: scale, average / minimum each / total | `ScaleField` + `ScoredCountsWhen` |
+| SC-08 | Demonstration: levels program-defined, ordered | `LevelsField` |
+| SC-13 | Student-supplied fields, label, type, mandatory | "What the student fills in", behind a disclosure on the method page |
+| SC-14 | Feedback capturable; mandatory decided | "Feedback is required" switch |
+| SC-15 | Self-evaluation first; admin approval | Steps before it counts (two switches) |
+| SC-16 | Evaluator roles per skill | Not on this page since Romit's 2026-11-16 removal of "Achieved when"; carried as every role on a new program [INFER, open]; still editable on Configure one skill |
+| SC-17 | Dependency apparent | "Moves a student forward" column in the table, and the method page order type, then what counts |
+| SC-18 | Unsatisfiable not savable | Save with problems: count in the save bar, first field focused, messages under fields |
+| SC-19 | Review everything before use | Preview dialog on the method page |
+| AE-04 | Four states | No state words on this page; nothing says Not Started or Not Met |
+
+**Layout.**
+```
+List view (1440)                                            Method page (1440)
+┌ ← Evaluation settings                 [New method] ┐      ┌ ← Independence levels          [Preview] [Rename] ┐
+│ Method               Type          Moves forward  │      │ How skills are judged   ( 2 x 2 type tiles )      │
+│ Independence levels  Independence  With ass...    │      │ Levels 3                (list, lowest that counts) │ ┌ Used by ─────────┐
+│   New skills (badge)                 166 skills ⋯ │      │ ─────────────────────────────────────────────────  │ │ 166 skills  link │
+│ Approved or not      Approved      Met     2   ⋯  │      │ Steps before it counts  (self rating, approval)    │ └──────────────────┘
+│ ...                                               │      │ Forms  feedback, group check-off, ▸ student fields │
+└───────────────────────────────────────────────────┘      └ [n unsaved changes]           [Discard] [Save]   ┘
+```
+- One filled primary per view: New method on the list; Save on the method page (the save bar, only with something to save).
+- The way back is the icon before the title (Romit 2026-11-16 "Back to Skills list, should be an icon besides the title").
+- No sticky rule panel and no wide preview column (the crowding Romit named); Preview is a dialog.
+
+**Data (Proposed minimum).** `V2State.methodEdits` (lab overlay): `{ programName?, methods: [{ id, name, rule, skillIds }] }`. The program's saved rule stays the method new skills and Default skills use; its save is the existing first-save / Apply flow. Other methods are written to their skills as their own (Custom) settings, each keeping its own Times needed. With no overlay, methods are read from the seed: the program rule, plus one per distinct Custom rule.
+
+**States.** Loading (skeleton), new program (empty: "No evaluation methods yet." + New method), method not found (message + back), validation (save bar count, messages, focus), delete blocked (in use or the program's method: reason in the menu), delete confirm, rename errors (empty, duplicate), unsaved guard on every link.
+
+**Acceptance.** Create, rename, delete a method; save with an error focuses the field; back icon with unsaved work asks first; 1440 and 375 without page scroll sideways.
+
+
+## Amendment 2026-11-16 (G, later): a clean method page, program-wide details, vocabulary descriptions (Proposed, D-EM1116-b, -c, -d)
+
+Romit, 2026-11-16: "inside every evalution settings per evaluation method, we need to make the ui clean where wwe don't add extra sub titles, or bold unnecessary. I want you to conciously use ui and ux principles." He also approved two moves toward the 16 Nov prototype: program-wide details (F6) and Description on Categories and Tags.
+
+**D-EM1116-b, the method page.** Principles and what each changes:
+
+| Principle | Before | After |
+|---|---|---|
+| One emphasis per region (hierarchy) | Bold section titles in a 13rem left column; bold "Used by"; bold switch labels | Only the page title is bold. Field and switch labels are plain body text; groups are separated by a hairline and 32 px, not by headings |
+| Proximity and alignment instead of headings | "How skills are judged", "Levels 3", "Steps before it counts", "Forms" | No visible section headings. Each group keeps a programmatic name (`role="group"` + `aria-label`, or the radiogroup's name) |
+| Progressive disclosure, Hick | Four type tiles always shown, each with a subtitle | Saved method: one line "Independence level · Change"; Change opens the tiles (name only). New method: the tiles show until a type is chosen. Changing type keeps the existing switch dialog [REQ SC-09] |
+| Helper only when it changes what the user does | A helper under every step and switch | No helper under steps or switches. Kept: the group check-off note when the level does not move a student forward, and errors |
+| Shorter column heads | "Level, highest first" / "Moves student toward achieving the skill" | "Level" / "Moves forward"; each checkbox keeps its full name ("{level} moves a student toward achieving the skill"); the list keeps "Levels, highest first" as its accessible name |
+| Fewer controls | "Start from" select on every list | Shown only while the method is not saved yet, after Add a level (presets stay, CALL 10-26) |
+| Occam (fixed steps carry no decision) | Numbered steps with "Always" rows | One group of four switches in evaluation order: Student rates themselves first; An admin approves before it counts; Feedback is required; Let faculty check off a group at once [REQ SC-14, SC-15] |
+| Used by | Side block with a bold heading and a name list | Meta line under the title: "Used by 166 skills" (a link); another method's skill names open from that count in a popover |
+| 8 pt rhythm, DS type scale only | Mixed gaps | `gap-2` inside a field, `gap-4` between fields, `gap-8` between groups; every size from `TYPE` |
+
+```
+Method page (1440)
+┌ ← Supervised levels                                   [Preview] [⋯] ┐
+│ Independence level · Change      Used by 166 skills                  │
+│ ──────────────────────────────────────────────────────────────────── │
+│ Level                                  Moves forward                 │
+│ ⠿ [Works alone          ]                   ☑            ×           │
+│ ⠿ [With assistance      ]                   ☑            ×           │
+│ ⠿ [Needs coaching       ]                   ☐            ×           │
+│ Add a level                                                           │
+│ ──────────────────────────────────────────────────────────────────── │
+│ Student rates themselves first                              (o )     │
+│ An admin approves before it counts                          ( o)     │
+│ Feedback is required                                        ( o)     │
+│ Let faculty check off a group at once                       (o )     │
+└ [n unsaved changes]                               [Discard] [Save]   ┘
+```
+
+Seed method names (Proposed, one honest short name each, derived from the rule): Supervised levels (the program's levels method), Approved, with review; Questions, self-rated; Levels, self-rated, reviewed; Levels, self-rated; then the pass words only when two would collide.
+
+**D-EM1116-c, program-wide details.** The list page gets two tabs, Methods and Details (the calmer option: one table and one filled action per view; a section below would put two primaries and two tables in one viewport). Details: one DataTable, Detail | Type | Required | menu; "Filled in by" shows only when it differs between rows. Built-in rows are locked and carry a "Built in" badge: Date performed, Graded or practice, On a patient or simulated, Clinical site. Program rows: Add detail (dialog: Name, Type, Filled in by, Required), Edit, Move up, Move down, Stop collecting (past values kept; Resume), Delete (only when never used; otherwise the menu says why). The per-method "What the student fills in" section leaves the method page; the method's stored `studentFields` are not edited from G and still feed the existing forms until the engine reads the program table [INFER, flagged]. Graded or practice is listed as a collected detail only: whether practice ever counts is new behaviour for Sankalp, not decided here.
+
+| ID | Text (short) | Where |
+|---|---|---|
+| SC-13 | Student-supplied fields: label, type, mandatory | Details tab (program-wide), every row: name, type, Required |
+| SC-14 | Feedback capturable; mandatory decided | Method page switch "Feedback is required" |
+| SC-15 | Self-evaluation first; admin approval | Method page switches |
+| SC-09 | Changing the model rebuilds what depends on it | "Change" opens the tiles; a switch that loses data asks first (existing dialog) |
+
+**D-EM1116-d, Categories and Tags.** Both tabs on `/admin/lists` get a Description column (one line, truncated with the full text on hover; an empty cell reads "Add a description" as a link that opens the edit dialog). Descriptions are optional, stored on the vocabulary entry. "Where each tag reaches" (prototype 27) is not built: the Tags table already shows Categories per tag, and listing every skill per tag does not hold at 150+ skills; proposed to Romit as a popover on the Categories count instead.
+
+**States.** Details: loading (skeleton), empty program rows (built-ins still show, so the table is never empty), add/edit validation (name required, unique, 60 characters), delete blocked (reason in the menu), delete confirm, stopped rows (badge "Stopped", Resume). Method page: as before, plus the type line's Change toggle (`aria-expanded`).
+
+**Acceptance.** Method page has no visible heading but the title, no helper under a switch, and every control keeps an accessible name; tiles keep the radiogroup name "How skills are judged"; Details add, move, stop, delete; Description shows on both vocabulary tabs; 1440 and 375 without sideways scroll.
+
+**Same day, Sankalp [CALL 11-16] via the coordinator.** (1) "Who can sign off" is part of the method again, first in the "How evaluations happen" group, never carried silently [REQ SC-16]; (2) New method dialog asks Type first (four choices, none preselected [REQ SC-02]), then Name, and the page opens with that type; (3) zero state is one line and New method; (4) Times needed stays per skill on the list. Seed top level "Independent" not applied: it moves the seed fingerprint (data owner's SEED_VERSION).
+
+**Round 2, same day (Romit: "this page for every evaluation method doesn't have a simple layout, and looks complicated", relayed by the coordinator).** One 40rem column, left-aligned under the title (also the 96rem preview grid's first column). Two quiet groups, each with one plain heading in muted body size (not bold): the type's list ("Levels", "Outcomes", "Questions") and "How evaluations happen"; whitespace between groups (40 px), no dividers. Levels and Outcomes in G are a light list: no outer border or row rules, the name input 20rem, the "Moves forward" box right beside it, ghost Remove, ghost Add a level; the name column has no head (the group heading says it). The type line is muted. Switch rows 32 px min height. Applies to all four types and to a new method. "Counts" as the column head was not used: Romit rejected "Counts" on 2026-11-11 (D-L142 item 7).
+
+## Amendment 2026-11-16 (G, round 4): the method editor, designed from the job (Proposed, D-EM1116-e)
+
+Romit, 2026-11-16, on the dialog that followed the prototype closely: "see editing an evaluation method, you just copy pasted instead of using any ui, ux principle or best practices." Earlier the same day: "make the ui clean where we don't add extra sub titles, or bold unnecessary. I want you to conciously use ui and ux principles." The prototype says what the screen must do; it is not the layout. This amendment replaces the editor of the "later" amendment above (the list, the Details tab, the data model and the deep link stay).
+
+**Job [CALL 11-16].** 95 to 98 percent of programs use one method for every skill. So a method is created once or twice, opened mostly to check how it works, and edited rarely: a level or question renamed or reordered, which answers move a student forward, who can evaluate, self-evaluation, comment, approval, group check-off. Changing the type is the rarest edit and the only one that rebuilds the method [REQ SC-09].
+
+**Diagnosis (principle, problem in the prototype and in our copy, fix).**
+
+| Principle | Problem | Fix |
+|---|---|---|
+| Task frequency sets prominence | Four type tiles with descriptions take the top third of the edit view; the type is the rarest edit | Edit shows the type as one fact line under the title; "Change type" is a quiet control at the end of that line |
+| Hick's law | Editing a level meant scanning four tiles, a list, a card of seven controls and three footer buttons | Edit shows only what this type needs: one list, two short groups, one primary |
+| Error prevention | The destructive choice (type) is one stray click away, same size as everything else | Behind "Change type"; a switch that removes levels or questions asks first (SC-09 dialog, kept); Save names the students whose progress changes (AE-02, kept) |
+| Progressive disclosure | New method shows every setting, most disabled, before the one decision that shapes them | New shows Name and the four types only; the rest appears once a type is chosen. Description is behind "Add a description", as in the New skill list dialog |
+| Recognition over recall | Type names alone do not say what the evaluator sees | In New (and when changing type) each tile carries one line; in Edit the list itself shows it |
+| Gestalt proximity | Description sat under the list, far from Name; "Moves forward" head floated over a boxed table | Name and description together; the list's label and its column head share one line, directly over the rows |
+| Common region, said once | A card inside a dialog, with a card title over a field label ("How evaluations happen" over "Who can evaluate") | No card: one hairline between two columns. Each group has one label |
+| Affordance and consistency | Roles were chips (read as filters or tags) beside checkboxes for the same kind of on or off choice; the page before used switches | Checkboxes for every on or off choice. A dialog that saves on a button uses checkboxes; switches are for settings that apply at once |
+| One primary, Fitts's law | Preview, Cancel and Save sat as three equal neighbours; the error count sat at the far left, away from the button just pressed | Preview alone at the footer's start; Cancel and Save at the end; "n to fix" beside them |
+| F pattern | Eye path: name, 2 x 2 tiles, list, back up to the right card | Top to bottom on the left (name, what the evaluator picks), then the right column once (who, what each evaluation needs) |
+| Consistency | Title repeated the name above a Name field ("Edit Supervised levels", "Supervised levels") | Title "Edit method" or "New method"; the name is said once, in its field |
+| Calm (Romit) | Bordered rows inside a bordered table inside a dialog; amber "Changed" on every touched control | Rows without rules or frame; "Changed" only on the type, the one change that rebuilds |
+
+**Three concepts.**
+
+```
+A  Summary first                      B  Focused editor (chosen)             C  Guided create, tabbed edit
+┌ Supervised levels            x ┐    ┌ Edit method                    x ┐    ┌ New method      1 Type 2 Answers 3 Steps ┐
+│ Independence level · 166 skills │    │ Independence level · Used by 166 │    │  ( four types, one line each )           │
+│ Levels                    Edit │    │ skills                Change type │    │                          [Back] [Next]   │
+│  Works alone       moves fwd   │    ├──────────────────────┬───────────┤    └──────────────────────────────────────────┘
+│  With assistance   moves fwd   │    │ Name [............]  │ Who can   │    ┌ Supervised levels                      x ┐
+│  Needs coaching    no          │    │ Add a description    │ evaluate  │    │ [Answers] [Evaluation] [Used by 166]     │
+│ Who can evaluate          Edit │    │ Levels   Moves fwd   │ [x] ...   │    │  Levels ...                               │
+│  Preceptor, clinical faculty   │    │ :: [Works alone] [x] │ Each eval │    │                                           │
+│ Each evaluation needs     Edit │    │ :: [With assist] [x] │ needs     │    │                        [Cancel] [Save]   │
+│  Self-evaluation first         │    │ Add a level          │ [x] ...   │    └──────────────────────────────────────────┘
+│                        [Close] │    │ Preview     [Cancel] [Save method]│
+└────────────────────────────────┘    └──────────────────────┴───────────┘
+```
+
+| Concept | Mental model | Good | Cost | Question it tests |
+|---|---|---|---|---|
+| A Summary first | A spec sheet; Edit per section | Matches "open to check"; nothing changes by accident | Every field is drawn twice (read and edit); three save points; a click before the commonest edit; the list already is the summary | Do admins want a read mode? |
+| B Focused editor | One surface; the type is a fact, not a choice | Every value is visible and editable in place; one Save; the same surface for New once a type is chosen; fewest controls | A stray edit is possible (answered by Save staying off until something changes, the discard question and the save confirm) | Is hiding the type choice enough to make edit feel simple? |
+| C Guided create, tabbed edit | A wizard to create, tabs to edit | One decision per step | Three steps for six fields, done once per program; tabs hide half the method from the "check how it works" job (recall); most chrome | Does create need hand-holding? |
+
+**Choice: B**, with A's good part kept where it is free (the list's columns answer "how does it work" without opening) and C's good part kept without its chrome (New is staged: type first, then the editor). Reasons: frequency sets prominence (the commonest edits are one click from the list), Hick (fewest choices on screen), recognition (values in place), one primary, and one learned surface for New and Edit (Jakob, consistency).
+
+**Layout (dialog, `sm:max-w-5xl`; full screen under 640 px).**
+
+```
+Edit, 1440                                                         New, before a type is chosen
+┌───────────────────────────────────────────────────────────────┐  ┌──────────────────────────────────────────────────────┐
+│ Edit method                                                 x │  │ New method                                         x │
+│ Independence level · Used by 166 skills · Change type         │  ├──────────────────────────────────────────────────────┤
+├───────────────────────────────────────┬───────────────────────┤  │ Name                                                 │
+│ Name                                  │ Who can evaluate      │  │ [For example, Supervised levels ]                    │
+│ [Supervised levels              ]     │ [x] Preceptor         │  │ Add a description                                    │
+│ Add a description                     │ [x] Clinical faculty  │  │ Type                                                 │
+│                                       │ [ ] Lab instructor    │  │ ( ) Independence  ( ) Approved or  ( ) Questions ( ) │
+│ Levels highest first    Moves forward │                       │  │     level             not approved               Score│
+│ :: [Works alone        ]     [x]    x │ Each evaluation needs │  │     one line          one line       one line    ...  │
+│ :: [With assistance    ]     [x]    x │ [x] Student self-eval │  ├──────────────────────────────────────────────────────┤
+│ :: [Needs coaching     ]     [ ]    x │ [ ] Evaluator comment │  │                         [Cancel] [Create method]     │
+│ Add a level                           │ [ ] Admin approval    │  └──────────────────────────────────────────────────────┘
+│                                       │                       │  After a type is chosen the two columns appear under the
+│                                       │ [x] Let faculty check │  tiles (the tiles stay: creating is choosing, and a radio
+│                                       │     off a group ...   │  group must not vanish under an arrow key).
+├───────────────────────────────────────┴───────────────────────┤
+│ Preview                      2 to fix   [Cancel] [Save method] │  375: one column in the same order; footer fixed.
+└───────────────────────────────────────────────────────────────┘
+```
+
+- Type weight: only the dialog title is semibold. Labels are the DS label weight; nothing else is bold.
+- Left column per type: Independence level, the levels (highest first; checking a level checks those above it); Approved or not approved, the two outcomes with one radio; Questions, the questions then "Moves forward when"; Score on a scale, the questions, the scale, then "Moves forward when". Order follows the dependency [REQ SC-17].
+- Long and short labels: the name inputs take the column's width, the group check-off select grows to its longest level up to the column, table cells wrap. Checked with "Independent" and "Performed with assistance".
+- Change type (Edit): opens the four tiles above the columns (`aria-expanded`); choosing one that would remove levels or questions asks first; the type line then reads the new type with "Changed". Nothing is written until Save.
+- List: Method (name; the description under it only when the admin wrote one), Type (plain text, no badge: it is not a state), Moves forward when, Each evaluation needs, Skills (a link), row menu. One emphasis per row: the name.
+- Kept: `?method=<id|new>` pushed on open so Back closes; Cancel, Escape, the close button and a click outside ask "Discard your changes?" when there is unsaved work; Save with problems focuses the first field and says "n to fix"; the save confirm names students [REQ AE-02]; nothing preselected in New [REQ SC-02].
+
+**Requirements (every state of the editor carries the same list).**
+
+| ID | REQ text (short) | Where |
+|---|---|---|
+| 4.1 | "Four models are required initially" | Four type tiles: New, and Edit behind Change type |
+| SC-02 | "The model must be chosen explicitly; no default is assumed" | New: no tile selected, no roles checked; Create without a type is refused with a message |
+| SC-03 | "both outcome labels are program-defined ... Which of the two qualifies must be recorded explicitly" | Outcomes list: two inputs, one radio each |
+| SC-04, SC-05, SC-06 | "the program defines and maintains the question set"; all, at least N of M, named subset; satisfiable | Questions list; Moves forward when |
+| SC-07 | "the response scale is program-configured ... average, minimum on every question, or a total" | Scale; Moves forward when |
+| SC-08 | "levels of supervision are program-defined and ordered" | Levels list: rename, reorder, add, remove |
+| SC-09 | "Changing the model must rebuild the criteria" | Change type, with the switch question |
+| SC-14 | "feedback ... the program decides per skill whether it is mandatory" | "Evaluator comment" |
+| SC-15 | "student self-evaluates ... administrator must approve" | "Student self-evaluation first", "Admin approval before it counts" |
+| SC-16 | "which evaluator roles may sign off" | Who can evaluate |
+| SC-17 | "The dependency ... must be apparent" | Type line, then the list, then what moves forward; the list page column |
+| SC-18 | "A configuration that cannot be satisfied must not be savable" | Save refused, "n to fix", messages under fields |
+| SC-19 | "review everything it will ask of the student and the evaluator" | Preview |
+| AE-02 | "a change to the rule re-applies to evidence already held" | Save confirm names the students whose progress changes |
+| SC-13 | Student-supplied fields | Details tab (unchanged, D-EM1116-c) |
+
+**Not on the editor, on purpose.** Times needed (per skill on the list [CALL 11-16]); the details collected (Details tab); a read-only summary mode; per-field "Changed" marks; helper lines under checkboxes; the "Used by" sentence about what Save will show (said once, by the confirm).
+
+**Acceptance.** Edit opens with no type tiles and no card; one semibold element (the title); Tab order follows the reading order; at 1440 the levels and approved methods fit without scrolling; at 375 nothing scrolls sideways; New shows no setting but Name and Type until a type is chosen; axe clean at 1440 and 375.
+
+**Round 4, what was walked and what was not (2026-11-16).** Walked in a headless browser at 1440 and 375: new method (nothing chosen, type error, type chosen, name and rule errors, saved), edit of all four types by deep link, save through the confirm on a method in use, change type with the switch question (Keep and Switch), duplicate name, a problem in a question past the first eight, a link to a method that no longer exists, the leave guard. At 1440 only: Preview over unsaved changes, the guard by outside press and close button, Back. Not walked this round: the program's method saved through the Apply dialog, and a program method named but never saved (a new program). No unit test covers the editor. A hydration warning shows on some loads; it also shows on Course mapping, which this round did not touch.
+
+## Amendment 2026-11-16 (round 5 variants): three editors that are not a popup, H, I and J (Proposed, D-EM1116-f)
+
+Romit, 2026-11-16, on G's dialog editor: "is this the best ui you got, where you are showing a popup? you don't have any other alternatives/variants?" Standing from the same day: the method page "looks complicated", "better ui" than the prototype without copying it, "conciously use ui and ux principles", no extra subtitles, no unnecessary bold. G is unchanged and stays "recommended" until Romit chooses. H, I and J are lab variants of the same screen with the same data (`lib/lab/methods.ts`, `lib/lab/details.ts`) and the same fields (`components/lab/configure/*`); what differs is the mental model of opening and changing a method.
+
+**Job [CALL 11-16], unchanged from round 4.** One method serves 95 to 98 percent of programs. A method is opened mostly to check how it works; sometimes one thing changes (level names, what moves forward, who evaluates, self-evaluation, comment, approval, group check-off). A type change is rare and rebuilds the method [REQ SC-09].
+
+**Why not a popup (what G costs).** A dialog covers the list it came from, caps the width at 64rem whatever the screen, cannot show what the settings produce without a second dialog on top (Preview), and puts a discard question over a dialog over a page. It is the right tool for a decision, less so for a record with a URL (playbook 3.5: "route for anything with a URL").
+
+**References looked at (Mobbin, web).** Stripe "Customize your page" (settings column left, the live page right; teaches: the preview is the proof, the settings stay short; not copied: Edit links that open further panels) https://mobbin.com/screens/dc59eb23-8342-468a-92c7-db04999541d2 · incident.io "Create custom field" (fields left, a small Preview right, Cancel and Save in a footer; teaches: the preview can be small when it is literal) https://mobbin.com/screens/2f0a19d1-ffdc-4f31-b79f-9341aac268de · Sprig study settings (preview pane that can be closed; not copied: a floating preview over content) https://mobbin.com/screens/398d4fdf-1c46-442d-8ff0-1078a8c47916 · Canva "Your account" and Spellbook profile (label, value, Edit per row; teaches: a read row costs one line; not copied: a button per row at full weight) https://mobbin.com/screens/ca3a7736-f836-4395-84cf-0c3449c65a09 https://mobbin.com/screens/6e336587-d69a-4b5a-a66f-d63a0da408e0 · Replit settings (list of sections left, the chosen one right) https://mobbin.com/screens/d21f986c-cfeb-4f32-b59c-2d202647bb4e. No close reference was found for a master-detail of fewer than ten reusable records; the nearest everyday model is a mail client. Outside software: H is a tailor's mirror (change the cloth, see the fit), I is a ring binder with tabs down the side, J is a printed specification sheet with pencil corrections.
+
+**H. Live preview editor.**
+
+```
+List (?variant=H)                                    Method page (?variant=H&method=m-program), 1440
+┌ <- Evaluation settings          [New method] ┐     ┌ <- Supervised levels                                             ┐
+│ Methods 6 | Details 4                        │     │ Independence level · Used by 166 skills · Change type            │
+│ Method      Type     Moves fwd  Needs  Skills│     ├───────────────────────────────────────┬──────────────────────────┤
+│ Supervised  Indep.   Any level  Self   166 … │     │ Name [Supervised levels            ]  │ (Evaluator | Student)    │
+│ Approved…   Approved Met        Admin    2 … │     │ Add a description                     │ Example: IV insertion v  │
+└──────────────────────────────────────────────┘     │ Levels highest first    Moves forward │ ┌ evaluator form ───────┐│
+A row opens the page; Back returns to the list.      │ :: [Works alone       ]   [x]   x     │ │ What the student sent ││
+                                                     │ :: [With assistance   ]   [x]   x     │ │ ( ) Works alone       ││
+New (?method=new): the four types only, then the     │ Add a level                           │ │ ( ) With assistance   ││
+same page with the preview appearing beside it.      │ Who can evaluate   Each evaluation    │ │ ( ) Needs coaching    ││
+                                                     │ [x] Preceptor      needs              │ │ [ Submit 1 skill ]    ││
+375: (Settings | Preview) switch under the title,    │ [x] Clinical fac.  [x] Self-eval      │ └───────────────────────┘│
+one pane at a time; save bar fixed at the bottom.    │ [x] Let faculty check off a group     │   sticky, read only      │
+                                                     ├───────────────────────────────────────┴──────────────────────────┤
+                                                     │ (only after a change)        2 to fix   [Cancel] [Save method]   │
+                                                     └──────────────────────────────────────────────────────────────────┘
+```
+
+**I. Master-detail.**
+
+```
+1440 (?variant=I, the first method is open; ?method= picks another)          375
+┌ <- Evaluation settings                                    [New method] ┐   ┌ <- Evaluation settings ┐   ┌ <- Supervised levels ┐
+│ Methods 6 | Details 4                                                  │   │ Methods 6 | Details 4  │   │ Independence level · │
+├──────────────────────┬─────────────────────────────────────────────────┤   │ Supervised levels  166 │   │ Used by 166 skills   │
+│ Supervised levels 166│ Independence level · Used by 166 · Change type …│   │ Independence level     │   │ Name [............]  │
+│ Independence level   │ Name [Supervised levels      ] │ Who can evaluate│  │ Approved, with rev.  2 │   │ Levels ...           │
+│──────────────────────│ Add a description              │ [x] Preceptor   │  │ Approved or not ...    │   │ Who can evaluate ... │
+│ Approved, with rev. 2│ Levels highest first  Moves fwd│ [x] Clinical fac│  │ ...                    │   │ [Cancel][Save method]│
+│ Approved or not appr.│ :: [Works alone    ] [x]  x    │ Each evaluation │  └────────────────────────┘   └──────────────────────┘
+│ Questions, self-rat 2│ :: [With assist.   ] [x]  x    │ needs ...       │   list first, a row opens the detail, the back icon
+│ ...                  │ Add a level                    │ [x] Group check │   returns to the list
+│                      ├────────────────────────────────┴─────────────────┤
+│                      │ Preview   (after a change) [Cancel] [Save method]│
+└──────────────────────┴──────────────────────────────────────────────────┘
+Choosing another method with unsaved changes asks "Discard your changes?" first; the draft is kept on Keep editing.
+```
+
+**J. Summary first, edit one block in place.**
+
+```
+Method page (?variant=J&method=m-program), reading                 One block being edited
+┌ <- Supervised levels                              [Preview] ┐    │ Levels, highest first        Moves forward │
+│ Name                          Edit │ Who can evaluate   Edit │    │ :: [Works alone        ]        [x]    x   │
+│ Supervised levels                  │ Preceptor, clinical     │    │ :: [With assistance    ]        [x]    x   │
+│────────────────────────────────────│ faculty                 │    │ :: [Needs coaching     ]        [ ]    x   │
+│ Type                   Change type │─────────────────────────│    │ Add a level                                │
+│ Independence level                 │ Each evaluation    Edit │    │ [Save] [Cancel]                 1 to fix   │
+│ Used by 166 skills                 │ needs                   │    The other blocks stay as text. Edit on another
+│────────────────────────────────────│ Student self-evaluation │    block with unsaved work asks to discard first.
+│ Levels                        Edit │ first                   │
+│ Works alone        moves forward   │─────────────────────────│    New (?method=new): the four types, then every
+│ With assistance    moves forward   │ Group check-off    Edit │    block open as fields with one Create method
+│ Needs coaching     does not        │ On. Counts as works     │    (there is nothing to summarise yet).
+│                                    │ alone                   │
+└────────────────────────────────────┴─────────────────────────┘
+List: the same table as G and H; a row opens this page.
+```
+
+**Concept table.**
+
+| Concept | Mental model | Primary job | First viewport at 1440 (regions of 4) | DS components | Not on the page | Risk | Question it tests |
+|---|---|---|---|---|---|---|---|
+| G (current) | A form in a dialog over the list | Change a field and close | Dialog counts alone: 1 | Dialog, Checkbox, Input, AlertDialog | Any picture of the result (second dialog) | Popup over a page; width capped | Is hiding the type choice enough? |
+| H Live preview | "Change it and watch the form change" | See exactly what evaluator and student get | 3: header with type line, settings, preview | PageHeader, Input, Checkbox, ViewSegmentedControl, Popover + Command (example), AlertDialog, DataTable (list) | Type tiles (behind Change type), a Preview button, Times needed | Preview pulls the eye from the fields; long question sets scroll the settings past a sticky preview | Does seeing the result remove the need to "check how it works" by reading settings? |
+| I Master-detail | "All my methods on one desk" | Compare and hop between methods | 4: header, tabs, list, detail | PageHeader, Tabs, Button (list rows as links), Input, Checkbox, DropdownMenu, AlertDialog | The table columns (type sits under each name; the rest is in the detail) | One method (95 percent of programs) leaves a one-row list beside the editor; the detail column is narrower | Is switching worth a permanent column? |
+| J Summary first | "A spec sheet I can correct" | Check, then fix one thing | 3: header, left blocks, right blocks | PageHeader, Button (link), Input, Checkbox, AlertDialog, DataTable (list) | Fields, until asked for; a page-level Save | One more click before any edit; values are drawn twice (text and field); several small saves | Do admins want to read before they edit? |
+
+**Principle trade-offs.**
+
+| Principle | G dialog | H live preview | I master-detail | J summary first |
+|---|---|---|---|---|
+| Recognition over recall | Values in fields; result behind Preview | Best: the result is on screen | Values in fields; type under each name in the list | Good: plain sentences, but fields hidden |
+| Immediate feedback (Nielsen 1) | None until Preview | Best: every keystroke redraws the form | None until Preview | Summary updates on Save only |
+| Error prevention | Stray edit possible, guarded by Save and discard | Same as G | Same, plus the switch guard | Best: nothing is editable until Edit; one block at a time |
+| Task frequency (check often, edit rarely) | One click to open, all editable | One click, check by looking at the form | Zero clicks for the first method | Best for checking; worst for a run of edits |
+| Hick (choices in view) | About 12 controls | About 12, plus a passive picture | About 12, plus the list | Fewest: 6 Edit links |
+| Spatial memory, comparison | Lost: the list is covered | Lost: one method per page | Best: the list never moves | Lost: one method per page |
+| Fitts | Save in the dialog footer | Save bar at the bottom edge, full width | Save bar at the bottom of the detail | Save beside the block edited (shortest travel) |
+| Use of 1440 width | 64rem cap | Filled by the preview | Filled by list and detail | Two columns of text; lightest |
+| 375 | Full-screen dialog | Settings or Preview, one at a time | List, then detail | Stacks naturally; best |
+| Doherty, cost to build | Built | Preview renders on each edit (cheap, local) | Cheap | Cheap |
+
+**Shared rules for H, I and J.** Title is the page (the method's name on a method page; "New method" for a new one). No subtitle: in H the type is a field among the fields (label Type, then type, skills count, Change type); in I it opens the detail pane; in J it is a block. J's title is the method's name, so its first block reads the description and opens both fields (the name is said once). Bold only on the title (the DS h1); group labels are DS label weight. One filled primary per view: New method on a list; Save method or Create method while there is something to save (the bar appears only after a change, so nothing disabled sits above the fold); in J, Save inside the block. Checkboxes for on or off, since every change waits for Save. Kept from G in all three: the back icon beside the title, the leave guard (links, browser Back, reload), validation focus with "n to fix", the type-change question [REQ SC-09], the save confirm naming students [REQ AE-02] (the Apply dialog for the program's method), the Details tab on the list view, `?method=<id|new>` deep links, the missing-method banner, Duplicate and Delete. Nothing preselected in New [REQ SC-02].
+
+**Requirements (H, I and J carry G's list, every state).**
+
+| ID | REQ text (short) | H | I | J |
+|---|---|---|---|---|
+| 4.1 | "Four models are required initially" | Four type tiles in New and behind Change type | same | Tiles in New and in the Type block's Change type |
+| SC-02 | "The model must be chosen explicitly; no default is assumed" | New: nothing selected, Create refused without a type | same | same |
+| SC-03 | Outcome labels program-defined; which qualifies explicit | Outcomes list | same | Outcomes block, read and edit |
+| SC-04, SC-05, SC-06 | Question set; all, N of M, named subset | Questions, Moves forward when | same | Questions block |
+| SC-07 | Scale; average, minimum on every question, total | Scale, Moves forward when | same | Questions block |
+| SC-08 | Levels program-defined and ordered | Levels list | same | Levels block |
+| SC-09 | "Changing the model must rebuild the criteria" | Change type, switch question | same | Change type opens tiles and the criteria fields together |
+| SC-14, SC-15, SC-16 | Feedback, self-evaluation, approval, roles | Who can evaluate, Each evaluation needs | same | Two blocks |
+| SC-17 | "The dependency ... must be apparent" | Type line, list, moves forward, and the preview | Type line, list | Blocks in dependency order |
+| SC-18 | Unsatisfiable configuration not savable | Save refused, "n to fix" | same | Save in the block refused, "n to fix" |
+| SC-19 | Review what student and evaluator will be asked | The live preview (both forms) | Preview button | Preview button |
+| AE-02 | Rule change re-applies to evidence held | Save confirm names students | same | same, from the block's Save |
+| SC-13 | Student-supplied fields | Details tab | Details tab | Details tab |
+
+**Registry.** `admin/evaluation-settings` keeps B and G and gains H, I and J (five variants; the registry test allows six on a tier 1 screen). A, D, E and F are unregistered (never chosen; their files stay). G stays `recommended`.
+
+**Acceptance.** No dialog holds the editor in H, I or J (confirms only). Each fits its fields for the levels method in 900 px at 1440 without page scroll in the settings; at 375 nothing scrolls sideways. One semibold element per view (the h1). Each walked: new (empty, error, saved), edit of the four types, change type, the leave guard. axe clean at 1440 and 375.
+
+**Changed during the build (the sketches above show the first draft).** H: the type line moved from under the title to the field "Type" below Name, because a line of facts under an h1 reads as a subtitle (anatomy rule A1). J: the first block is "Name and description" and reads the description ("No description" when there is none), because the title already says the name (anatomy rule A6).
+
+**Round 5, what was walked and what was not (2026-11-16).** Headless browser, 1440 and 375, each of H, I and J: the list; edit of Independence level, Approved or not approved and Questions by deep link; New with nothing chosen, Create with no type, a type chosen, Create with an empty name, no qualifying outcome and no role ("3 to fix", focus on the name), the leave guard from the back icon, then created; Change type with the switch question; a save through the confirm on a method in use; a link to a method that no longer exists; the fields of Score on a scale in New. I at 1440: another method, and the Details tab, with unsaved changes (asked, Keep editing kept the draft, Discard switched). J: Edit on a second block with unsaved work (asked), Save in a block through the confirm, an empty name, a type change saved with no levels ("3 to fix"), leaving with unsaved work. Not walked: an existing Score on a scale method (the sample data has none), the program's method saved through the Apply dialog, a new program with no method, the browser's Back button, reload with unsaved work, Duplicate and Delete from I's detail menu, 1024 and 1920 widths, a screen reader. No unit test covers these three screens.
+
+## Amendment 2026-11-16 (round 6 variants): adding and editing as separate jobs, K, L, M and N (Proposed, D-EM1116-g)
+
+Romit, 2026-11-16, after choosing G over H, I and J (D-EM1116-f): "is that all the options you have considered?" G stays the decided design and is not edited. K, L, M and N are four more patterns for the same screen, data (`lib/lab/methods.ts`, `lib/lab/details.ts`) and fields (`components/lab/methods/method-parts.tsx`, `components/lab/configure/*`). None repeats G (dialog), H (page with live preview), I (master-detail) or J (summary blocks on a page).
+
+**The two jobs are not the same job [CALL 11-16] [INFER].** Adding is rare (once or twice per program) and hard: the admin must decide a type before knowing what a type looks like [REQ SC-02]. Editing is mostly "open, check, change one thing": a name, which answers move a student forward, who can evaluate, self-evaluation, feedback, approval, group check-off. A type change is the rarest edit and rebuilds the method [REQ SC-09]. So a variant may use one pattern for both (K) or a different pattern for each (L, M, N).
+
+**References (Mobbin, looked at).** incident.io "Edit follow-up" (a right panel over a task table, Cancel and Save in its footer; teaches: one Save at the panel's foot, the list stays as context; not copied: the dimmed page, K keeps the table readable) https://mobbin.com/screens/7fd6497d-a992-4570-870a-f304715aec0e · Givingli contacts (row, then a panel of that record) https://mobbin.com/screens/ebc35a6b-d145-477a-8a0b-b99985a8490f · Wix "Add a new service" (describe it, or start from a template, or "Start from scratch"; "You'll review them before they're added"; teaches: examples and blank are peers, review is promised up front; not copied: stock photos, AI wording) https://mobbin.com/screens/82347748-d312-4748-a3a9-0dfeca13b569 · Spellbook workflows (cards of a name and one line; teaches: a starting point is chosen from what it does) https://mobbin.com/screens/a99b0b45-3700-4e6b-b87e-7d0ba8cc8563 · Remote expenses approval (a rule row opened in place with its own Cancel and "Add rule"; teaches: the row is the editor, the page never changes) https://mobbin.com/screens/5b8c1fc5-a2a0-4064-9eec-3e22ee6b6596 · Remote "Describe the report you'd like to create" (one text box, "or Create with template, Create manually"; teaches: the manual way is always one click away; not copied: sending the text anywhere) https://mobbin.com/screens/ec130832-d63d-4f43-9023-a5fe34e03a58 · Meetup create a group (short steps, one decision each, review before submit) https://mobbin.com/screens/6b488d48-bc04-44b2-b8f0-d8849f90188a. No reference was found for editing a rule through a popover on a table cell (M's edit); the nearest everyday model is a spreadsheet cell. Outside software: K is a clipboard held beside the register, L is a printed form picked from a rack of filled-in samples, M is a counter clerk asking one question at a time, N is dictating to a clerk who fills the form and hands it back to be checked.
+
+**K. Side panel (one pattern for both).**
+
+```
+1440 (?variant=K&method=m-program)                                          375
+┌ <- Evaluation settings                     [New method] ┬───────────────┐  panel is full width; the list is
+│ Methods 6 | Details 4                                   │ Edit method  x│  behind it; footer fixed
+│ Method            Type            Moves forward when    │ Independence  │
+│ Supervised lev.   Independence l. Works alone or ...    │ level · Used  │
+│ Approved, with …  Approved or …   Approved              │ by 166 skills │
+│ ...                                                     │ · Change type │
+│ (the page narrows beside the panel; the open row is     │ Name [......] │
+│  marked; another row swaps the panel, asking first      │ Levels  Moves │
+│  when there is unsaved work)                            │ :: [....] [x] │
+│                                                         │ Who can eval. │
+│                                                         │ Each eval.    │
+│                                                         │ needs         │
+│                                                         ├───────────────┤
+│                                                         │Preview  [Save]│
+└─────────────────────────────────────────────────────────┴───────────────┘
+New: the same panel, the four types first, nothing chosen; the fields appear once a type is.
+```
+
+DS `FloatingSheetPanel` (non-modal, 32rem), not a dialog: the table stays readable and clickable. Panel title "Edit method" or "New method", the type line in the DS subtitle slot, one column in reading order, footer Preview at the start, "n to fix", Cancel and the one Save. Cancel and Save show only with something to save.
+
+**L. Start from an example, edit in the row.**
+
+```
+New (?variant=L&method=new), 1440                              Edit (?variant=L&method=m-program): the row opens in place
+┌ <- New method                                             ┐  ┌ <- Evaluation settings                    [New method] ┐
+│ Independence level  Approved or not  Questions   Score    │  │ Methods 6 | Details 4                                  │
+│ ( ) Supervision     ( ) Met or unmet ( ) Every   ( ) 1 to │  │ v Supervised levels  Independence level  Works al… 166 │
+│     levels              Met ✓            question    5,   │  │   Name [.........]            │ Who can evaluate       │
+│     Independent ✓       Unmet            Yes         avg 4│  │   Levels      Moves forward   │ [x] Preceptor ...      │
+│     With assistance ( ) Approved,                         │  │   :: [Works alone   ] [x]     │ Each evaluation needs  │
+│     Observed            with review                       │  │   Add a level                 │ [x] Self-evaluation    │
+│ ( ) Developmental                                         │  │   Preview            1 to fix [Cancel] [Save method]   │
+│     levels, self-rated                                    │  │ > Approved, with review  Approved or not …  Approved 2 │
+│ ( ) Start blank                                           │  │ > Questions, self-rated  Questions  All 5 answered… 2  │
+├───────────────────────────────────────────────────────────┤  └────────────────────────────────────────────────────────┘
+│                                    [Cancel] [Continue]    │  One row open at a time; another row with unsaved work asks.
+└───────────────────────────────────────────────────────────┘
+Then the same page shows the editor filled from the example, "Create method", Back to the starting points.
+```
+
+Six ready-made examples across the four types plus "Start blank"; radios, none checked, Continue refused until one is [REQ SC-02]. Each tile shows what the evaluator would pick and what moves a student forward (recognition over recall). An example fills names and the choices its tile states; it never fills who can evaluate or any question text, so Create cannot be pressed straight through [REQ SC-16, SC-04] [INFER]. Edit: DS `Accordion` rows; the closed row carries the table's facts, the open row is the editor with its own Save. No navigation, no overlay.
+
+**M. Guided steps to add, edit a value in the table.**
+
+```
+New (?variant=M&method=new), 1440                                   Edit (?variant=M&method=m-program): the table, one value open
+┌ <- New method                                                 ┐   ┌ Method        Type          Moves forward when   Who can evaluate  Each evaluation needs  Skills ┐
+│ (1 Type)──(2 Levels)──(3 Evaluation)──(4 Review)              │   │ Supervised v  Independence  [Works alone or … v] [Preceptor, … v]  [Self-evaluation … v]   166 … │
+│ How is the skill judged?                │ So far              │   │               level         ┌──────────────────────────┐                                        │
+│ ( ) Independence level  one line        │ Independence level  │   │                             │ Levels     Moves forward │                                        │
+│ ( ) Approved or not     one line        │ 3 levels ...        │   │                             │ :: [Works alone ]  [x]   │                                        │
+│ ( ) Questions           one line        │                     │   │                             │ Add a level              │                                        │
+│ ( ) Score on a scale    one line        │                     │   │                             │ 1 to fix [Cancel] [Save] │                                        │
+├─────────────────────────────────────────┴─────────────────────┤   │                             └──────────────────────────┘                                        │
+│ [Back]                                           [Continue]   │   └──────────────────────────────────────────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────┘   Change type (row menu) opens the same steps for that method.
+Step 4 reads the method in plain sentences, each with a Change link to its step, then Name and Create method; the forms preview sits beside it.
+```
+
+Add: DS `Wizard` (compact, horizontal) through the lab `WizardPage`; one decision per step, checked on Continue; step 2 is named for the type (Levels, Outcomes, Questions). Edit: each value in the table is a button that opens a DS `Popover` holding only that group, with Save and Cancel. Chosen over a sheet because the commonest edit touches one group: one press to the field, one to save, and the table (the summary) never leaves. A type change rebuilds the method, so it reuses the guided steps.
+
+**N. Describe in words (spike).**
+
+```
+New or Edit (?variant=N&method=new | m-program), 1440
+┌ <- New method                                                                                         ┐
+│ In words                                   │ Type  ( ) Independence ( ) Approved ( ) Questions ( ) Score │
+│ ┌────────────────────────────────────────┐ │ Name [..............]             │ Who can evaluate       │
+│ │ 3 levels, preceptor or faculty,        │ │ Levels          Moves forward     │ [x] Preceptor          │
+│ │ self-evaluation first                  │ │ :: [          ]  [ ]              │ [x] Clinical faculty   │
+│ └────────────────────────────────────────┘ │ :: [          ]  [ ]              │ Each evaluation needs  │
+│ [Fill in the form]                         │ :: [          ]  [ ]              │ [x] Self-evaluation    │
+│ Filled in: Independence level · 3 levels · │                                                           │
+│ Preceptor, clinical faculty · Self-eval.   │                                                           │
+│ Not used: "twice a year"                   │                                                           │
+├────────────────────────────────────────────┴───────────────────────────────────────────────────────────┤
+│                                                    2 to fix   [Cancel] [Create method]                  │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+A local, deterministic reader (`lib/lab/method-words.ts`); no network, no model. It fills only what the words state and lists it under "Filled in"; words it could not use are listed under "Not used" (Postel: accept, show the guess, let it be undone). It never guesses names, which answers move a student forward or who evaluates [REQ SC-02, SC-03]. The structured form is always on the page, filled or not, and is the only thing Save reads: the description is a way to fill it, the form is the review. Edit: the box holds the saved method in words (`describeMethod`), the same words the reader understands, so a tweak is typed or ticked. Filling again over hand edits asks first.
+
+**Concept table.**
+
+| Concept | Mental model | Primary job | First viewport at 1440 (regions of budget) | DS components | Not on the page | Risk | Question it tests |
+|---|---|---|---|---|---|---|---|
+| K Side panel | An inspector beside the list | Edit while seeing the other methods | List 3 of 4 (header, tabs, table) plus the panel | FloatingSheetPanel, DataTable, Input, Checkbox, AlertDialog | Two columns (the panel is one), a second Save | 32rem is narrow for long questions; the panel hides the table's last columns below 1100 px | Does keeping the list in view beat a centred dialog? |
+| L Example, then row | Pick a filled-in sample; the row is the editor | Add by recognition; edit without moving | New 3 of 4 (header, tiles, footer); list 3 of 4 | RadioGroup, Accordion, Input, Checkbox, AlertDialog, StickyFooter | Abstract type tiles before an example is seen; a table header | Examples anchor the program on our wording; an open row pushes the others down | Do examples make the first method faster and less wrong? |
+| M Steps, then cell | A short interview; then a spreadsheet | Add one decision at a time; tweak one value | New 4 of 4 (header, stepper, step, footer); list 3 of 4 | Wizard, DataTable, Popover, Input, Checkbox, AlertDialog | Every field at once; an editor surface for edit | Four steps for a job done once; a popover is small for 10 questions; two edit surfaces (cell, steps) | Does create need hand-holding, and is one value at a time enough for edit? |
+| N In words | Dictate, then check the form | Add or change by describing | 4 of 4 (header, words, form, footer) | Textarea, RadioGroup, Input, Checkbox, AlertDialog, StickyFooter | Any hidden interpretation; a mode switch between words and form | A reader that understands less than the admin expects; two ways to say one thing | Is describing faster than ticking for an admin who knows what they want? |
+
+**Principles check (what each law demands here, and how each variant answers).**
+
+| Principle | Demand | K | L | M | N |
+|---|---|---|---|---|---|
+| Progressive disclosure | Type first, fields after; rare things later | Tiles, then fields; Change type behind a link | Examples, then editor; closed rows are summaries | One step at a time; one group per popover | Words first; the form fills as it is understood |
+| Recognition over recall | Show what a method looks like | Table beside the panel | Best: filled examples with what moves forward | Plain-language "So far" and Review | The method read back in words |
+| One primary per view | One filled button | Save in the panel; New method goes quiet while it is open | Continue, then Create; Save in the open row | Continue, then Create; Save in the popover | Fill in the form until filled, then Create or Save |
+| Error prevention | No stray or blind change | Asks before swapping rows, closing or leaving | Nothing preselected; roles and questions never prefilled; one row at a time | Each step checked on Continue; SC-09 question on type | Never guesses; lists what was not used; asks before refilling |
+| Fitts | Action beside its object | Save at the panel foot | Save inside the open row | Save inside the popover, beside the cell | Fill under the box; Save in the footer |
+| Hick | Few choices in view | About 12 controls | 7 tiles, then about 12 | 4, then one group | 1 box, then about 12 |
+| Task frequency | Check often, edit rarely, add once | One press to check and edit | Zero to check (row), one to edit | Zero to check, one per value | One press, read the words |
+| WCAG 2.1 AA | Name, role, focus, 24 px targets, no colour alone | Focus to the panel, back to the row; Esc asks | Radios; accordion buttons with `aria-expanded` | Stepper named; popover focus returns to its cell | Label on the box; results in a polite live region |
+
+**Shared rules (all four).** Kept from G: the back icon beside the title (`ReturnTitle`, `BackTitle`), the leave guard, validation with focus on the first problem and "n to fix", the type-change question [REQ SC-09], the save confirm naming students [REQ AE-02] (the Apply dialog for the program's method), the Details tab, `?method=<id|new>` deep links, the missing-method banner, Duplicate and Delete, four types with nothing preselected in New [REQ SC-02]. No subtitle, bold only on the title, sentence case, no icon on a text button, no internal notes. Checkboxes for on or off (every change waits for Save).
+
+**Requirements (K, L, M and N carry G's list, every state).**
+
+| ID | REQ text (short) | K | L | M | N |
+|---|---|---|---|---|---|
+| 4.1 | "Four models are required initially" | Tiles in New and behind Change type | Examples for all four, Start blank opens the tiles; Change type in the row | Step 1; Change type reopens it | Tiles always on the form |
+| SC-02 | "The model must be chosen explicitly; no default is assumed" | Nothing chosen; Create refused | No tile checked; Continue refused | No type checked; Continue refused | The reader sets a type only when the words name one |
+| SC-03 | Outcome labels program-defined; which qualifies explicit | Outcomes list | same; an example's choice is stated on its tile | Step 2 | Only when the words say which |
+| SC-04, SC-05, SC-06 | Question set; all, N of M, named subset | Questions, Moves forward when | same; questions never prefilled | Step 2 | Form; the reader sets count and rule, never text |
+| SC-07 | Scale; average, minimum, total | Scale, Moves forward when | same | Step 2 | Form; "1 to 5", "average 4" |
+| SC-08 | Levels program-defined and ordered | Levels list | same | Step 2; popover | Form; "levels: a, b, c" |
+| SC-09 | "Changing the model must rebuild the criteria" | Change type, switch question | Change type in the open row | Change type reopens the steps, switch question | Tiles; a description that names another type asks first |
+| SC-14, SC-15, SC-16 | Feedback, self-evaluation, approval, roles | Two groups | Two groups | Step 3; two popovers | Form; words |
+| SC-17 | "The dependency ... must be apparent" | Type line, list, moves forward | Tile shows it; then the same | Step order | Form order |
+| SC-18 | Unsatisfiable configuration not savable | Save refused, "n to fix" | same | Continue and Save refused | same |
+| SC-19 | Review what student and evaluator will be asked | Preview in the footer | Preview in the row | Preview beside Review; Preview in the popover | Preview |
+| AE-02 | Rule change re-applies to evidence held | Save confirm names students | same | same, from a popover | same |
+| SC-13 | Student-supplied fields | Details tab | Details tab | Details tab | Details tab |
+
+**Registry.** `admin/evaluation-settings` holds G (recommended), H, K, L, M, N: six, the tier 1 limit. B, I and J are unregistered (files kept).
+
+**Acceptance.** Each walked at 1440 and 375: edit of Independence level, Approved or not approved and Questions by deep link; New empty, with errors, created; change type; the leave guard. One semibold element per view. Nothing scrolls sideways at 375. axe clean at 1440 and 375. No network call from N.
+
+## Amendment 2026-11-16 (round 7 variants): the wizard, done better, O and P (Proposed, D-EM1116-h)
+
+Romit, 2026-11-16, on M: he wants to try the wizard approach for adding and editing a method, "but can you do it better". G stays the decided design and is not edited; K, L and M stay as built. O and P are two wizards for the same screen, data (`lib/lab/methods.ts`) and fields (`components/lab/methods/method-parts.tsx`, `components/lab/configure/*`), with their shared pieces in `components/lab/methods/method-wizard.tsx`.
+
+**What is wrong with M (seen in its round 6 screenshots, and the UX critic's notes).**
+
+| Problem in M | Principle it breaks | Answer in O and P |
+|---|---|---|
+| Four steps for a job done once or twice a year; the last one only repeats the first three | Occam; Pareto | O: two questions and a summary. P: five short questions on one page, the page itself is the summary |
+| Step names "Type", "Answers", "Evaluation" say nothing | Recognition over recall; plain language | Every step is headed by the question the admin answers; the second question is worded for the chosen type |
+| On steps 2 and 3 the earlier choices are gone; only Review shows the whole | Context; Zeigarnik | O: the evaluator's form is drawn beside every step from the first choice, and one line under the heading says what is chosen. P: answered questions stay on the page as one line each |
+| Half the page is empty on every step (dead canvas) | D-L5, D-X30; hierarchy | O and P: the preview column holds the real evaluator and student forms from 1280 px |
+| The name is asked last, under four sentences | Serial position | O: the name leads the summary. P: "What is this method called?" is its own short question |
+| Edit is a different surface (a popover on a table cell); a chevron in every cell | One mental model; Gestalt (one mark, one meaning); Hick | Edit opens the same wizard on its summary; "Change" opens one question and returns. The table is the calm one (no cell controls) |
+| The popover is tight for ten questions | Fitts; readable width | Every question is edited on the full page |
+
+**References (Mobbin, looked at).** The New York Times checkout (answered steps fold to one line with "Edit", the open step below them; teaches P's stack; not copied: the numbers before each line) https://mobbin.com/screens/ad5678f4-2c93-4bed-864b-cab066fd150e · Stripe "Review and submit" (a summary in named groups, each with its own Edit; teaches O's summary and that edit can start from it; not copied: a card per group) https://mobbin.com/screens/d8b29b26-595c-487b-af8c-04b9762468ef · Quo "Give your inbox a name and icon" (one question, suggestions as chips, the result drawn live on the right; teaches the starting sets and the preview column; not copied: "1 of 4") https://mobbin.com/screens/da0341da-f6b1-48e4-8ccb-78b963a2e2fa · Upwork job post (answered sections with a pencil, optional ones closed; not copied: icon-only edit) https://mobbin.com/screens/bfde8a78-6885-4127-b877-9f960848e1ae · Wix marketing plan setup (a step with its example beside it) https://mobbin.com/screens/ddfb785e-ecc6-4840-a497-64f959fe7eb0. Outside SaaS: a paper form with the carbon copy beside it (O), and a checkout where each finished part folds into a receipt line (P).
+
+**O. Two questions and a summary, the evaluator's form always beside.**
+
+```
+New (?variant=O&method=new), 1440                                         Summary: step 3 of New, and where Edit opens (?variant=O&method=m-program)
+┌ <- New method                                                      ┐    ┌ <- Supervised levels                                                ┐
+│ (1 Rating)──(2 Evaluators)──(3 Summary)                            │    │ (✓ Rating)──(✓ Evaluators)──(● Summary)                             │
+│ How does the evaluator rate a skill?        │ Evaluator | Student  │    │ Name [Supervised levels      ]          │ Evaluator | Student      │
+│ ( ) Independence level  ( ) Approved or not │ ┌──────────────────┐ │    │ Add a description                       │ ┌──────────────────────┐ │
+│ ( ) Questions           ( ) Score on a scale│ │ IV catheter ...  │ │    │ Rating                           Change │ │ IV catheter ...      │ │
+│  (once one is chosen, under the tiles)      │ │ Level observed   │ │    │ Independence level                      │ │ Level observed       │ │
+│ Start from [Independent, With assistance, …]│ │ [Independent   ] │ │    │ The evaluator picks one of 3 levels ... │ │ [Works alone       ] │ │
+│ Levels  Highest first        Moves forward  │ │ [With assistance]│ │    │ A student moves forward on: any level.  │ │ ...                  │ │
+│ :: [Independent      ]            [ ]   x   │ │ [Observed      ] │ │    │ ─────────────────────────────────────── │ │                      │ │
+│ :: [With assistance  ]            [ ]   x   │ │ Feedback         │ │    │ Evaluators                       Change │ │                      │ │
+│ Add a level                                 │ └──────────────────┘ │    │ Preceptor or clinical faculty can ...   │ └──────────────────────┘ │
+├─────────────────────────────────────────────┴──────────────────────┤    ├─────────────────────────────────────────┴──────────────────────────┤
+│                                      1 to fix  [Cancel] [Continue] │    │                                                           [Close]  │
+└────────────────────────────────────────────────────────────────────┘    └────────────────────────────────────────────────────────────────────┘
+375: the stepper is one line ("Rating, 1 of 3"), one column, Preview opens from the footer, the buttons stack full width.
+```
+
+DS `Wizard` (compact, horizontal) through the lab `WizardPage` with its `stepTitle` (the question, the page's one 18 px heading) and `aside` (the live `ProgramPreview`). Three steps: Rating (the type, then what the evaluator picks and what moves a student forward, which appear under the tiles once a type is chosen: one decision, and the dependency of SC-17 is on one screen), Evaluators (who can evaluate, what each evaluation needs, group check-off), Summary (the name first, then the method in plain sentences in two named groups, each with Change). Change opens that step with "Done" as its primary, which checks the step and returns to the summary. Edit opens the same wizard on its summary: nothing to save shows Close only; a change shows Cancel and Save method. In Edit the type is a fact line with "Change type" behind it (the rarest edit, SC-09 question kept).
+
+**P. One question at a time, answers stay on the page.**
+
+```
+New (?variant=P&method=new), 1440, third question open                    Edit (?variant=P&method=m-program): every question answered
+┌ <- New method                                                      ┐    ┌ <- Supervised levels                                                ┐
+│ How does the evaluator rate a skill?        │ Evaluator | Student  │    │ How does the evaluator rate a skill?    │ Evaluator | Student      │
+│ Independence level                   Change │ ┌──────────────────┐ │    │ Independence level               Change │ ┌──────────────────────┐ │
+│ ─────────────────────────────────────────── │ │ IV catheter ...  │ │    │ ─────────────────────────────────────── │ │ ...                  │ │
+│ What are the levels, and which move a       │ │ Level observed   │ │    │ What are the levels, and which move ... │ │                      │ │
+│ student forward?                            │ │ ...              │ │    │ Works alone, with assistance, needs     │ │                      │ │
+│ Independent, with assistance, observed.     │ │                  │ │    │ coaching. Any level moves forward Change│ │                      │ │
+│ Independent moves a student forward  Change │ │                  │ │    │ ─────────────────────────────────────── │ │                      │ │
+│ ─────────────────────────────────────────── │ │                  │ │    │ Who can evaluate?                       │ │                      │ │
+│ Who can evaluate?            (18 semibold)  │ │                  │ │    │ Preceptor, clinical faculty      Change │ │                      │ │
+│ [ ] Preceptor [ ] Clinical faculty [ ] Lab… │ │                  │ │    │ What else does each evaluation need?    │ │                      │ │
+│ ─────────────────────────────────────────── │ │                  │ │    │ Self-evaluation first            Change │ │                      │ │
+│ What else does each evaluation need?        │ │                  │ │    │ What is this method called?             │ │                      │ │
+│ What is this method called?                 │ └──────────────────┘ │    │ Supervised levels                Change │ └──────────────────────┘ │
+├─────────────────────────────────────────────┴──────────────────────┤    ├─────────────────────────────────────────┴──────────────────────────┤
+│ [Back]                                         [Cancel] [Continue] │    │                                                           [Close]  │
+└────────────────────────────────────────────────────────────────────┘    └────────────────────────────────────────────────────────────────────┘
+```
+
+No stepper. Five questions in one readable column (44rem): how a skill is rated, the levels (or outcomes, or questions, worded for the type), who can evaluate, what else each evaluation needs, what the method is called. One question is open at a time, as the page's one heading with its fields; an answered question is two lines (the question, muted, and the answer in plain words) with Change; a question still to come is its text only, muted, so the admin sees what is left without a counter. Continue (in the lab's sticky footer, like every wizard) checks the open question and opens the next; after the last, the page is the summary and the footer's primary becomes Create method. Edit opens that same page, every question answered; Change opens one, Done folds it back, Save method shows once something changed. Composed from DS `Button`, `Field`, `RadioGroup`, `Checkbox`, `Input`; the disclosure is a `Button` with `aria-expanded` and `aria-controls` (DS `Accordion` puts the whole row in one trigger with a chevron, which cannot hold "Change" as its own control or a row that is not yet reachable).
+
+**Considered and not built.** A left rail of steps with each answer under its step (the lab's `WizardPage layout="rail"`): it keeps context, but beside the app rail and the Skills panel it is a third column of navigation before the first field, and at 1440 the fields fall under 28rem. A page of example tiles as step 1 (L): seven tiles before the first question, and its examples tick what moves a student forward; the same recognition is given here by the type tiles' wording, the starting sets and the live form.
+
+**Starting sets (both).** Under a chosen type that has common wording (levels, outcomes), "Start from" offers the sets of `LABEL_PRESETS` as visible buttons that read as what the evaluator would see ("Independent, With assistance, Observed"). A set fills names only: which levels or which outcome moves a student forward is never ticked by a set, so the step cannot be passed until the admin ticks it [REQ SC-02, SC-03]. A set over names the admin typed asks first. Nothing is preselected in New; Continue is refused with "Choose how skills are rated." until a type is chosen.
+
+**Concept table.**
+
+| Concept | Mental model | Primary job | First viewport at 1440 (regions of budget) | DS components | Not on the page | Risk | Question it tests |
+|---|---|---|---|---|---|---|---|
+| O Steps with the form beside | Fill a form, watch the carbon copy | Add in two decisions; edit from the summary | 4 of 4 (header, stepper, step with its preview, footer) | Wizard, RadioGroup, Input, Checkbox, Button, AlertDialog, ViewSegmentedControl | A review that repeats the steps; a "so far" list; cell editors | The first step is long for Questions (tiles, questions, the rule); earlier steps are reachable from the stepper only when they come before the open one (DS Wizard) | Do fewer, larger steps with a live picture beat four small ones? |
+| P Answers stay on the page | A checkout: each finished part folds into a line | Add one small question at a time; edit any line | 3 of 4 (header, the questions with their preview, footer) | Button, RadioGroup, Input, Checkbox, Field, AlertDialog | A stepper; a separate review; a second edit surface | Five Continue presses; a long page once a question with ten questions is open; no DS stepper to say "wizard" | Is one page that grows into its own summary calmer than steps? |
+| (not built) Left rail | A table of contents | Jump between steps | 5 of 4 | Wizard vertical | n/a | A third navigation column | n/a |
+
+**Principles check.**
+
+| Principle | Demand here | O | P |
+|---|---|---|---|
+| Hick | Few choices in view | 4 tiles, then one list | One question's controls only |
+| Miller, chunking | 5 to 7 per cluster | 3 steps; 2 summary groups | 5 questions |
+| Progressive disclosure, two levels | Type first, its fields after | Fields appear under the chosen tile; Change type behind a link in Edit | A question opens when the one before is answered |
+| Recognition over recall | See what a method looks like before committing | Live evaluator form beside every step; sets read as the evaluator's choices | Same form beside the stack; answers read back in plain words |
+| Zeigarnik, goal gradient | Show what is left | Stepper | Unanswered questions listed, muted |
+| Serial position | First and last carry the weight | Question heading first; the name leads the summary | The open question is the one heading; Create method ends it |
+| Fitts | Action beside its object, 24 px targets | Change beside each group; footer primary full width at 375 | Change at the end of each answer; same footer |
+| Error prevention | No blind or stray change | Nothing preselected; sets never tick; step checked on Continue; SC-09 question; AE-02 confirm | Same, per question |
+| Recovery | Say what failed and where | "n to fix" beside the primary, focus to the first problem; a problem in another step opens that step | Same; a problem in a folded question opens it |
+| One primary per view | One filled button | Continue, Done, Create method or Save method | Same |
+| Peak-end | End on an outcome | "Created {name}." on the list | Same |
+| Jakob | Behave like the lab's other wizards | DS Wizard, sticky footer, Back at the left | Sticky footer, Back at the left |
+| WCAG 2.1 AA | 1.3.1, 2.4.3, 2.4.6, 2.5.8, 3.3.1, 3.3.3, 4.1.2, 4.1.3 | Headed steps, focus to the step heading, errors tied with aria-describedby, live "n to fix" | Sections named by their question, `aria-expanded` on Change, focus to the opened heading and back to Change |
+
+**Shared rules.** Kept from G: the back icon beside the title (`BackTitle`, `ReturnTitle`), the leave guard, the SC-09 type-change question, the AE-02 save confirm (the Apply dialog for the program's method), the Details tab, `?method=<id|new>` deep links plus `&step=` (O: `rating`, `who`, `summary`; P: `rating`, `answers`, `who`, `needs`, `name`), the missing-method banner, Duplicate and Delete, four types. The list is the shared `MethodsTable`: a row opens the method, no control in a cell. Back never loses input (one draft for the whole wizard). No subtitle, one 18 px heading per view, sentence case, no icon on a text button, no internal notes.
+
+**Requirements (O and P, every state; quoted from `docs/source/requirements.extracted.txt`).**
+
+| ID | REQ text | O | P |
+|---|---|---|---|
+| 4.1 | "Four models are required initially" | Four tiles, step 1; behind Change type in Edit | First question |
+| SC-02 | "The model must be chosen explicitly; no default is assumed" | No tile checked; Continue refused | Same |
+| SC-03 | "Which of the two qualifies must be recorded explicitly. Both labels are required and must differ." | Outcomes list; a set never chooses | Second question |
+| SC-04, SC-05, SC-06 | "the program defines and maintains the question set"; "all questions answered Yes; at least N of M answered Yes; or a named subset"; "A qualification rule must be satisfiable" | Step 1, Questions | Second question |
+| SC-07 | "the response scale is program-configured. Qualification is by average across questions, a minimum on every question, or a total" | Step 1, Score on a scale | Second question |
+| SC-08 | "the levels of supervision are program-defined and ordered. No fixed three-point scale is assumed" | Step 1, Levels | Second question |
+| SC-09 | "Changing the model must rebuild the criteria rather than leave contradictory settings in place" | Tiles ask before removing levels or questions | Same, first question |
+| SC-14, SC-15, SC-16 | feedback mandatory per skill; self-evaluation and approval; "which evaluator roles may sign off" | Step 2 | Third and fourth questions |
+| SC-17 | "The dependency from evaluation model ... to the achievement criteria must be apparent" | Type, what is picked and what moves forward on one step, in that order | Question order; the answers read in that order |
+| SC-18 | "A configuration that cannot be satisfied must not be savable" | Continue, Done and Save refused, "n to fix" | Same |
+| SC-19 | "review everything it will ask of the student and the evaluator, together" | Preview column (Evaluator, Student); Preview in the footer below 1280 | Same |
+| AE-02 | "a change to the rule re-applies to evidence already held" | Save confirm names students | Same |
+| SC-13 | Student-supplied fields | Details tab | Details tab |
+
+**Registry.** `admin/evaluation-settings` holds G (recommended), K, L, M, O, P: six, the tier 1 limit. H and N are unregistered (files kept).
+
+**Acceptance.** Each walked at 1440 and 375: New for the four types (nothing chosen refused, a starting set, errors, created); edit of the three seeded methods from the summary through Change and back, saved through the AE-02 confirm; change type; the leave guard; Back keeps input. One 18 px heading per view. Nothing scrolls sideways at 375. axe clean at 1440 and 375.
+
+**After review (same day; these replace the lines above where they differ).** The UX critic ranked O first for adding and P first for editing, and blocked on two things. Applied: (1) P asks four questions, not five: who can evaluate and what each evaluation needs are one question ("Who can evaluate, and what does each evaluation need?", two columns), so adding is three Continue presses and Create method; `&step=needs` opens that question. (2) No empty framed preview: before a type is chosen there is no preview column in O or P (the sentence "The evaluator's form appears here once you choose." is gone); the column appears with the first form. (3) A step or question opened by Change keeps Cancel beside Done (it asks before discarding). (4) Below 1280 px, Preview sits under the fields, not in the footer, so the phone footer holds only the primary, Cancel and Back. Not applied, open for Romit: asking the name first; opening any unanswered question out of order in P; the preview listing levels lowest first while the editor says "Highest first" (shared `ProgramPreview`, used by G and others, not changed here).
+
+## Amendment 2026-11-17 (round 8 variant): Q, templates and side panel (Proposed, D-EM1117-q)
+
+Source: Romit's handoff spec `evaluation-methods-handoff.md` ("Variant 1: Templates and side panel", 2026-11-17). Built inside our hard rules; each deviation from the spec is listed below and in the build report.
+
+```
+List (?variant=Q), 1440                                       Gallery (?variant=Q&method=new), 1440
+┌ Evaluation settings                       [New method] ┐    ┌ <- New method                                    [Cancel] ┐
+│ Methods 4 | Details 6                                  │    │ Choose a starting point                (18 semibold)       │
+│ ┌ banner: Created Supervised levels. [Assign to skills]│    │ ┌──────────────────────────┐ ┌──────────────────────────┐ │
+│ Method              Type        Moves forward  Skills  │    │ │ [Approved][Not approved] │ │ Works alone      ✓       │ │
+│ Supervised levels New  Indep... With assist...   0  ⋯  │    │ │ Approved or not approved │ │ With assistance  ✓       │ │
+│ Program method  New skills ...                 166  ⋯  │    │ │ One decision by the ...  │ │ Independence levels      │ │
+│ ...                                                    │    │ └──────────────────────────┘ └──────────────────────────┘ │
+└────────────────────────────────────────────────────────┘    │ ┌ Step checklist ─────────┐ ┌ Scored criteria ─────────┐ │
+                                                              └────────────────────────────────────────────────────────────┘
+Panel over the list (?variant=Q&method=new&template=tpl-levels | ?variant=Q&method=<id>)
+                                   ┌ New method                          [x] ┐
+                                   │ From Independence levels                │
+                                   │ Name [Independence levels          ]    │
+                                   │ Levels (shared LevelsField)             │
+                                   │ Who can evaluate  [ ] [ ] [ ]           │
+                                   │ Each evaluation needs [ ] [ ] [ ]       │
+                                   │ Group check-off [ ]                     │
+                                   ├─────────────────────────────────────────┤
+                                   │ Change template    [Preview] [Create]   │
+                                   └─────────────────────────────────────────┘
+```
+
+**Flow.** List, New method, a full-width gallery of four template cards (nothing selected, a card is a link), the DS `FloatingSheetPanel` (right, `md`) over the list, prefilled from the card; Create method closes it and the list shows a `LocalBanner` (lab `ResultBanner`) with "Assign to skills" (links to the Library) and the new row first with a "New" badge until the page is left. A row opens the same panel with saved values; Save on a method used by skills shows the AE-02 confirm in the spec's words ("Update n skills?", "Keep editing", "Update n skills", "Evaluations already recorded keep their results.") over the student names whose progress changes; the program's method keeps G's Apply dialog.
+
+**Templates onto our four types [REQ 4.1].** Approved or not approved = Approved or not approved (binary, "Approved" / "Not approved", "Approved" qualifies); Independence levels = Independence level (Works alone, With assistance, Needs coaching; With assistance and above move forward); Step checklist = Questions (every question must be Yes; four empty questions to write); Scored criteria = Score on a scale (1 to 4, a total of 12, four empty criteria). Templates never fill who can evaluate [REQ SC-16] or the text of a question [REQ SC-04], as L's examples.
+
+**Deviations from the spec.** Toast to `LocalBanner`; spec colours and fonts to DS tokens and type; the DS panel is non-modal (no scrim, no focus trap); Checklist has no N/A, group headings or prefilled step text, Scored has no "from" on the scale (1 is fixed) and no N/A; no "Default"/"Make default" (SC-02, open decision 2), the program's method keeps the "New skills" tag; the list keeps the shared columns ("Moves forward when", "Each evaluation needs"); roles are checkboxes, not toggle chips; levels reorder by Move up / Move down (no DS drag primitive); type lock by the SC-09 question (no lock on recorded evaluations exists); group check-off offered for every type, as every other variant; validation copy is the lab's shared copy; no change count in the Edit footer; no submitting spinner (local save is synchronous).
+
+**Requirements.** 4.1, SC-02, SC-03, SC-04 to SC-08, SC-09, SC-14, SC-15, SC-16, SC-17, SC-18, SC-19, AE-02, SC-13 (Details tab), as round 7.
+
+**Registry.** `admin/evaluation-settings` holds Q (recommended; Romit 2026-11-17, "Q is the default", D-EM1117-q Decided), G, K, M, O, P. L is unregistered (file kept). `/admin/settings` and the walkthrough render Q.
+
+### Q panel, 2026-11-17 (later): type select, description area, Preview tab, two-level hierarchy (Romit, Proposed)
+
+Romit: type as a dropdown, description as a textarea, icons so the panel reads at a glance, Preview as a tab. Then, on the first build: "too many icons, no UI and UX hierarchy". Built as the second direction.
+
+```
+Panel, 1440 (md, right)                      375: same column, primary full width at the bottom
+┌ New method                            [x] ┐
+│ From Independence levels    (meta)        │   title: 18 semibold (one step above sections)
+│ Settings | Preview          (sticky tabs) │
+│ Name         [Independence levels      ]  │   identity block: no heading, no icons
+│ Description  [                         ]  │   DS Textarea, always shown, optional
+│ Type         [⌂ Independence level   v]   │   DS Select; icon per type in items and trigger
+│ ───────────────────────────────────────── │   DS Separator, 24px between sections
+│ (i) What the evaluator picks  (16 semibold)│
+│ Levels / Outcomes / Questions (field label)│
+│ ───────────────────────────────────────── │
+│ (i) Who can evaluate         [ ] [ ] [ ]  │   options plain, no icons
+│ ───────────────────────────────────────── │
+│ (i) Each evaluation needs    [ ] [ ] [ ]  │
+│ ───────────────────────────────────────── │
+│ (i) Group check-off          [ ]          │
+├───────────────────────────────────────────┤
+│ Change template      [n to fix] [Create]  │   edit: Cancel + Save method once dirty, else Close
+└───────────────────────────────────────────┘
+```
+
+- **Type** is a DS `Select` (`TypeSelect`), in create and edit. Its value is only the template the admin picked or the method's saved type; with neither it shows "Choose a type" [REQ SC-02]. A change that would remove levels, questions, minimums or the counting rule asks first, in the tiles' words ("Switch to …?", "Keep …", "Switch") [REQ SC-09]. "Changed" sits after the label when the saved type was changed. Order and icons follow the gallery: Approved or not approved `fa-circle-half-stroke`, Independence level `fa-stairs`, Questions `fa-list-check`, Score on a scale `fa-star-half-stroke` (the tile icons); muted, brand only on the chosen one.
+- **Description** is a DS `Textarea` under Name, always visible, 160 characters, optional.
+- **Hierarchy.** Two levels. The identity block (Name, Description, Type) has no heading and no icons. Four sections follow, each a 16 semibold heading (`TYPE.card`, one step above the 14 medium field label) with one plain muted Font Awesome light icon, split by a DS `Separator`: What the evaluator picks `fa-hand-pointer`, Who can evaluate `fa-user-check`, Each evaluation needs `fa-clipboard-list`, Group check-off `fa-users`. A plain glyph, not a tinted chip: four chips down a narrow panel read as four more objects. No icon on field labels or options. No helper text, subtitle or description added. The panel title moves to 18 semibold so it stays above the sections.
+- **Preview** is a DS `Tabs` pair, Settings and Preview, at the top of the panel body (sticky while the body scrolls). Preview shows, inline, the forms the Preview dialog showed: the evaluator's first, then the student's, on a library skill picked with "Example" [REQ SC-19]. The footer Preview button is gone. The footer primary (Create method / Save method) shows on both tabs. Settings stays mounted while Preview shows; a failed save, or "n to fix", brings Settings back and focuses the first problem (the type select when there is no type).
+- The edit caption no longer repeats the type (it is in the select): "New skills" where it applies, then the skill count.
+- Gallery mini previews: the tick icons are `text-xs` (the 16px tick box grew from 14px to hold them), nothing under 12px.
+
+Opt-in props in `components/lab/methods/method-parts.tsx` (default off, G, H, J, K, M, O and P pass none): `NameFields descriptionArea`, `RolesField section`, `NeedsField section`, `CheckOffField section`. New exports used by Q only: `TypeSelect`, `MethodPreview`, `SectionHeading`, `TYPE_ICON`, `SECTION_ICON`, `PICKS_LABEL`, `CHECKOFF_HEADING`.
+
+### Q, 2026-11-17 (last): no gallery, the panel opens on New method; Q is the default (Romit, Decided)
+
+Romit: "when I click on New method, open the same panel instead of starting points"; then Q made the default (`screens.json` recommended G to Q). This replaces the gallery, the "From {template}" caption and "Change template" above; the panel layout above stands.
+
+```
+List ── New method ──> Panel over the list (?variant=Q&method=new)
+                       ┌ New method                            [x] ┐
+                       │ Settings | Preview                        │
+                       │ Name         [                         ]  │
+                       │ Description  [                         ]  │
+                       │ Type         [Choose a type          v]   │  nothing chosen [REQ SC-02]
+                       │ ───────────────────────────────────────── │
+                       │ (once a type is chosen)                   │
+                       │ (i) What the evaluator picks              │  the type's starting values
+                       │ ───────────────────────────────────────── │
+                       │ (i) Who can evaluate     (from the start) │
+                       │ ───────────────────────────────────────── │
+                       │ (i) Each evaluation needs (from the start)│
+                       │ ───────────────────────────────────────── │
+                       │ (i) Group check-off  (once a type)        │
+                       │     [x] Let faculty check off a group     │
+                       │         A group check-off counts as [v]   │  one row, nested to the label text
+                       ├───────────────────────────────────────────┤
+                       │                   [1 to fix] [Create]     │
+                       └───────────────────────────────────────────┘
+```
+
+- **No gallery.** `&method=new` opens the panel over the list. No "From {template}" caption, no "Change template". The `?template=` parameter is ignored.
+- **Type** starts on "Choose a type". Picking one fills that type's starting values, the old template's (`METHOD_TEMPLATES` in `lib/lab/method-examples.ts`): Independence level gets Works alone, With assistance, Needs coaching with the top two moving forward; Approved or not approved gets Approved / Not approved with Approved moving forward; Questions gets four empty questions, every one Yes; Score on a scale gets four empty criteria, 1 to 4, total 12. Who can evaluate, what each evaluation needs, group check-off and student fields the admin already set are kept [REQ SC-16]. Switching after that still asks the SC-09 question when levels or questions would go.
+- **Create with no type** shows "Choose how skills are judged." under Type (`aria-invalid` on the select), "1 to fix" beside Create, and brings back the Settings tab with focus on the select.
+- **Sections before a type:** Who can evaluate and Each evaluation needs show from the start; What the evaluator picks and Group check-off wait for the type, because both depend on it (the check-off value is a level or score of that type).
+- **Preview with no type** shows one line, "Choose a type to see the evaluator's form." The tab stays enabled: a disabled tab says nothing about why, and the empty state tells the admin the one thing to do.
+- **Group check-off**, ticked: "A group check-off counts as" and its select on one row, indented to the checkbox's label text, the label muted and normal weight (quieter than the checkbox's). No helper line under it ("Faculty do not evaluate each student…" removed in Q). The amber note for a level below the cut-off stays, since it is a consequence and not a hint. For Approved or not approved and Questions, nothing is nested (the sentence "A group check-off counts as …" is no longer shown in Q).
+- No helper or hint text under any field in Q's panel; only validation errors.
+- Opt-in props in `method-parts.tsx` (default off; G, H, J, K, M, O and P pass none): `NameFields descriptionArea`, `RolesField section`, `NeedsField section`, `CheckOffField section` (the heading, the nested one-row select, no helper), `TypeSelect prefill`.
+
+### Q Preview tab, 2026-11-17: one person's screen at a time (Romit: "it's unclear to see the difference between evaluator and student")
+
+```
+Preview tab
+[ Student | Evaluator ]                    [Example: IV catheter insertion v]
+┌ (icon) Preceptor ─────────────────────────────────────────┐  slim header: who sees it
+│ Harbor University BSN               No account needed     │
+│ IV catheter insertion / From the student / Level observed │
+│ Feedback / [Submit 1 skill]                               │
+└───────────────────────────────────────────────────────────┘
+```
+
+- DS `ViewSegmentedControl` ("Whose screen"), Student then Evaluator: the student always acts first (asks for sign-off, rating themselves first when self-evaluation is on). Evaluator is open by default, since it is the form the method shapes.
+- One frame per view (DS border and radius) with a slim muted header naming who sees it: the first ticked role in Who can evaluate (Preceptor `fa-user-doctor`, Clinical faculty `fa-chalkboard-user`, Lab instructor `fa-flask`), or "Evaluator" (`fa-user-check`) when none is ticked; "Student" (`fa-user-graduate`). The forms' own inner border is dropped inside the frame, so there is one frame, not a frame in a frame. No other text added.
+- The evaluator form's "Told after submit: …" line is hidden in Q: it describes what happens after the screen, it is not on the evaluator's screen.
+
+### Details tab framing, 2026-11-17 (Romit: "In the Details tab, if you check the prototype it gives some idea of what it's about, which I don't see here.")
+
+Amends D-EM1116-c (above). The tab now carries the prototype's own framing [PROTO 11-16, section "Details collected with every evaluation"] and nothing more. Shared by every variant through `SettingsHome`; only `components/lab/configure/details-table.tsx` changed.
+
+```
+Methods 6 | Details 4                                              [Add detail]
+Details collected with every evaluation                      (TYPE.section, h2)
+Set up once for the program. Every skill, every method and every evaluation asks for these.   (TYPE.helper)
+┌ Detail                         │ Type        │ Filled in by │ Required │ ⋯ ┐
+│ Date performed  (Built in)     │ Date        │ Student      │ Yes      │   │
+│ Shift                          │ Choice      │ Student      │ No       │ ⋯ │
+│ Day · Evening · Night  (meta)  │             │              │          │   │
+└──────────────────────────────────────────────────────────────────────────┘
+A student sending several skills fills these in once. On the check-off grid they are entered once
+for the session. To see them in place, [open any method] and choose Preview.          (TYPE.helper)
+```
+
+- "Filled in by" is always a column (replaces "shows only when it differs"): who fills each detail in is what the table is for, as in the prototype. "Required" is a column (Yes / No), replacing the inline "Optional" word.
+- A program dropdown lists its choices under its name in meta type; a built-in's name already states its choices, so no second line.
+- The closing link opens the first method (`?method=<id>`, variant and return context kept, `tab` dropped). Q keeps its panel's Settings / Preview tab in component state, so the link cannot land on Preview itself; it reads "open any method and choose Preview". With no method, the line ends "Once a method exists, its Preview shows them in place." (no link).
+- Known gap, not fixed here: the method Preview's "From the student" block still reads the method's own fields (Course, where it was done, Date performed), not this table [INFER, flagged in D-EM1116-c], so the closing line's promise holds only partly until Preview reads `detailsOf`.
+- Test: `admin/tests/lab/details-table.test.tsx`.

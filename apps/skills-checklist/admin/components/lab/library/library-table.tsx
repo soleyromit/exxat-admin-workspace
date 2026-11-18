@@ -35,32 +35,21 @@ import { capitalize, countSkills, skillListsNoun, skillNoun, skillNounPlural } f
 import { plural } from "@/lib/v2/format"
 import { EmptyBlock } from "@/components/lab/empty-block"
 import { keepFocus, pageTitle, returnFocus, rowLink } from "@/components/lab/shared/focus"
-import { ConfigurationBadge, LINK, LibraryStatusBadge, LibraryToolbarActionsSlot, useUrlParam } from "./library-chrome"
+import { LINK, LibraryStatusBadge, LibraryToolbarActionsSlot, useUrlParam } from "./library-chrome"
 import { CategoryName, TagBadges, tagLineText } from "./category-tag-pickers"
 import { RowActions, type RowActionHandlers } from "./row-actions"
 import { anyFilterOn, LibraryFilterChips, NO_FILTER, useLibraryFilter } from "./library-filter"
 import { TimesNeededCell } from "./times-needed"
+import { MethodCell, MethodsContext, type MethodsInView } from "./method-cell"
+import { choosableMethods, methodsOf } from "@/lib/lab/methods"
 import { BulkEditSheet } from "./bulk-edit-sheet"
 import { BulkCount } from "@/components/lab/shared/bulk-count"
 import { useV2State } from "@/lib/v2/react"
+import type { V2State } from "@/lib/v2/types"
+import { StatusBadge } from "@exxatdesignux/ui"
 import { timesCellOf } from "@/lib/lab/program-settings"
 import type { BulkEdit } from "./use-library"
 import { afterPaint, useBesideWidth } from "./beside-panel"
-
-/** The Configuration word is a link to the skill's full page (map D1c). A plain next/link, with the set-aware address worked out once at the table: a lab link subscribes to the URL, and 178 of them would render on every change to it. */
-function ConfigurationCell({ row, hrefOf }: { row: LibraryRow; hrefOf: (id: string) => string }) {
-  return (
-    <NextLink
-      href={hrefOf(row.id)}
-      className="inline-flex min-h-6 items-center rounded-sm no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
-      aria-label={`Configuration: ${CONFIGURATION_META[row.configuration].label}. Configure ${row.name}`}
-      {...railTriggerProps()}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <ConfigurationBadge value={row.configuration} />
-    </NextLink>
-  )
-}
 
 /** A row's own address, for a new tab: the set and the program stay. A plain next/link: a lab link subscribes to the URL, and 178 of them would render on every change to it. */
 function rowHref(id: string): string {
@@ -88,7 +77,7 @@ function SkipToBar() {
 }
 
 /** What the DS filter menu offers for the columns whose values are a fixed set (categories, sources and the rest come from the rows). */
-export interface LibraryFilterChoices { categories: string[]; sources: string[]; models: string[] }
+export interface LibraryFilterChoices { categories: string[]; sources: string[]; models: string[]; methods?: string[]; /** The list has unsaved rows (Add skills H): their group heading is a warning badge. */ unsaved?: boolean }
 
 const IS: FilterOperator[] = ["is", "is_not"]
 const pick = (values: readonly string[]) => values.map((v) => ({ value: v, label: v }))
@@ -130,7 +119,8 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
             >
               {r.name}
             </NextLink>
-            {r.isNew ? <Badge variant="outline">New</Badge> : r.justUpdated ? <Badge variant="outline">Updated</Badge> : null}
+            {/* Unsaved (D-ADD1117): the group heading carries the badge and the row a slim amber edge (app/globals.css); the word stays here for a screen reader. */}
+            {r.unsaved ? <span className="sr-only" data-row-unsaved>Unsaved</span> : r.isNew ? <Badge variant="outline">New</Badge> : r.justUpdated ? <Badge variant="outline">Updated</Badge> : null}
           </span>
           {/* One quiet line under the name: the description, then the tags (02 section 7), so tags show in every view without a wide extra column and the row never grows to a third line.
               The source list's second heading (`group`) does not show here: a skill has one category (glossary), and that word beside the Category column read as a second one (Nasogastric tube care: NG TUBE, Nutrition). */}
@@ -147,11 +137,14 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
     },
     // Times needed [CALL 11-02]: the program's number on every row, edited in place; one source with Evaluation settings.
     // Beside the name so the row being edited stays in view at 1024 (the name column is not pinned).
-    { key: "times", label: "Times needed", width: 120, sortable: true, sortKey: "times", filter: { type: "range", icon: "fa-hashtag", dataBounds: true, rangeStep: 1 }, cell: (r) => <TimesNeededCell id={r.id} name={r.name} /> },
+    { key: "times", label: "Times needed", width: 120, sortable: true, sortKey: "times", filter: { type: "range", icon: "fa-hashtag", dataBounds: true, rangeStep: 1 }, cell: (r) => (r.unsaved ? <span className="tabular-nums" data-unsaved-times>{typeof r.times === "number" ? r.times : "Not set"}</span> : <TimesNeededCell id={r.id} name={r.name} />) },
     // The DS toolbar's filters (Romit 2026-11-09: the DS table controls on every table); status stays the tabs.
-    { key: "section", label: "Category", width: 200, sortable: true, sortKey: "section", filter: { type: "select", icon: "fa-layer-group", operators: IS, options: pick(choices.categories) }, cell: (r) => <CategoryName name={r.categoryName ?? r.section} inactive={r.categoryInactive} /> },
+    { key: "section", label: "Category", width: 200, sortable: true, sortKey: "section", filter: { type: "select", icon: "fa-layer-group", operators: IS, options: [...pick(choices.categories), ...(choices.unsaved ? [{ value: UNSAVED_GROUP, label: "Unsaved", node: <StatusBadge label="Unsaved" tone="warning" icon="fa-pen" size="sm" surface="table" data-unsaved-group /> }] : [])] }, cell: (r) => <CategoryName name={r.categoryName ?? r.section} inactive={r.categoryInactive} /> },
     // Plain Default, a badge only for the exceptions (D-L97). The word opens the panel on Evaluation, where the word is decided; the rest of the row opens it on Details.
-    { key: "configuration", label: "Configuration", width: 150, sortable: true, sortKey: "configuration", filter: { type: "select", icon: "fa-sliders", operators: IS, options: CONFIGURATION_ORDER.map((c) => ({ value: c, label: CONFIGURATION_META[c].label })) }, cell: (r) => <ConfigurationCell row={r} hrefOf={configureHrefOf} /> },
+    // Evaluation method, chosen per skill and the same on every list (D-LS1116-b; prototype 11-16 "Method, all lists"). It takes the place of the
+    // Configuration column, whose three words it says more exactly: a method named, or Choose a method. Configuration stays as a filter field (`?config=` links).
+    { key: "method", label: "Evaluation method", width: 220, sortable: true, filter: { type: "select", icon: "fa-scale-balanced", operators: IS, options: pick(choices.methods ?? []) }, cell: (r) => (r.unsaved ? <span className={r.method ? undefined : "text-muted-foreground"}>{typeof r.method === "string" && r.method ? r.method : "Not configured"}</span> : <MethodCell id={r.id} name={r.name} inactive={r.status === "inactive"} />) },
+    { key: "configuration", label: "Configuration", filterOnly: true, filter: { type: "select", icon: "fa-sliders", operators: IS, options: CONFIGURATION_ORDER.map((c) => ({ value: c, label: CONFIGURATION_META[c].label })) } },
     { key: "status", label: "Status", width: 120, sortable: true, sortKey: "status", filter: { type: "select", icon: "fa-circle-check", operators: IS, options: [{ value: "active", label: "Active" }, { value: "inactive", label: "Inactive" }] }, cell: (r) => <LibraryStatusBadge status={r.status} /> },
     { key: "modelLabel", label: "How it's judged", width: 180, sortable: true, filter: { type: "select", icon: "fa-scale-balanced", operators: IS, options: pick(choices.models) }, cell: (r) => (r.modelLabel ? <span className="block whitespace-normal" data-model-label>{r.modelLabel}</span> : <span className="text-muted-foreground">Not chosen</span>) },
     {
@@ -176,7 +169,7 @@ export function libraryColumns(handlers: RowActionHandlers, onOpen: (id: string)
       cell: (r) => (r.tags.length ? <TagBadges tags={r.tags} inactive={r.inactiveTags} /> : <span className="text-muted-foreground">None</span>),
     },
     { key: "source", label: "Came from", width: 160, sortable: true, filter: { type: "select", icon: "fa-inbox-in", operators: IS, options: pick(choices.sources) } },
-    { key: "actions", label: "Actions", width: 64, resizable: false, defaultPin: "right", lockPin: true, header: () => <span className="sr-only">Actions</span>, cell: (r) => <RowActions row={r} handlers={handlers} /> },
+    { key: "actions", label: "Actions", width: 64, resizable: false, defaultPin: "right", lockPin: true, header: () => <span className="sr-only">Actions</span>, cell: (r) => (r.unsaved ? null : <RowActions row={r} handlers={handlers} />) },
     ...FILTER_ONLY,
   ]
 }
@@ -253,6 +246,8 @@ const LAYER_OVER_TABLE = ['[role=dialog]', '[role=alertdialog]', '[role=menu]', 
  */
 const JUST_ADDED_GROUP = " Just added"
 const JUST_UPDATED_GROUP = " Just updated"
+/** Add skills H: the draft's rows, first, until Save or Discard. */
+const UNSAVED_GROUP = " Unsaved"
 
 
 export interface LibraryTableProps {
@@ -275,6 +270,10 @@ export interface LibraryTableProps {
   justAdded?: readonly string[]
   /** Of those, the ones replaced in place: they read Updated (map D2). */
   justReplaced?: readonly string[]
+  /** Add skills H (D-ADD1117): rows on the list's unsaved draft. They read Unsaved, sit first, and are read-only until Save. */
+  unsaved?: ReadonlySet<string>
+  /** The store as the draft's Save will leave it, so an Unsaved row shows its times needed and method. */
+  previewState?: V2State
 }
 
 /** The row's own markers, set on the DOM: see `useOpenRow`. */
@@ -376,7 +375,7 @@ function focusAfterBulkPanel() {
   }, 30)
 }
 
-const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, onOpen, onBulkEdit, onClearTab, renderFrame, onRowsInView, justAdded, justReplaced, panelOpen, filter, setFilter, carried, setCarried }: TableBodyProps) {
+const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, onOpen, onBulkEdit, onClearTab, renderFrame, onRowsInView, justAdded, justReplaced, unsaved, previewState, panelOpen, filter, setFilter, carried, setCarried }: TableBodyProps) {
   const linkContext = React.useRef(useLabLinkContext())
   linkContext.current = useLabLinkContext()
   // A page opened from step 3 of a list keeps that way back on every Configure link (walk 3, D5).
@@ -385,25 +384,34 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
   const backKey = back ? `${back.from}:${back.list}` : ""
   const configureHrefOf = React.useCallback((id: string) => rewriteLabUrl(carryReturn(configureSkillHref(id), back ? new URLSearchParams({ from: back.from, list: back.list }) : null), linkContext.current), [backKey]) // eslint-disable-line react-hooks/exhaustive-deps
   // The filter menu's choices come from the whole library, so a value never vanishes from the menu when a tab hides its rows.
+  const v2Now = useV2State()
   const choices = React.useMemo<LibraryFilterChoices>(() => {
     const o = filterOptions(rows)
-    return { categories: o.categories.map((c) => c.name), sources: o.sources.map((x) => x.name), models: [...new Set(rows.map((r) => r.modelLabel).filter(Boolean))].sort() }
-  }, [rows])
+    return { categories: o.categories.map((c) => c.name), sources: o.sources.map((x) => x.name), models: [...new Set(rows.map((r) => r.modelLabel).filter(Boolean))].sort(), methods: choosableMethods(v2Now).map((m) => m.name), unsaved: !!unsaved?.size }
+  }, [rows, v2Now, unsaved])
   const columns = React.useMemo(() => libraryColumns(handlers, onOpen, configureHrefOf, choices), [handlers, onOpen, configureHrefOf, choices])
-  const v2 = useV2State()
+  const v2Store = useV2State()
+  const v2 = previewState ?? v2Store
+  // Every method and which skill uses which, read once for all rows (methodsOf walks the whole library).
+  const methods = React.useMemo<MethodsInView>(() => {
+    const of = new Map<string, ReturnType<typeof methodsOf>[number]>()
+    for (const m of methodsOf(v2)) for (const id of m.skillIds) of.set(id, m)
+    return { choices: choosableMethods(v2), of }
+  }, [v2])
   // Each row carries its times needed so the column sorts like the others (null sorts as "Not set"). What was just added comes first in a plain list too; grouped, its group sorts first.
   const decorate = React.useMemo(() => {
-    const just = new Set(justAdded ?? [])
+    const just = new Set([...(justAdded ?? []), ...(unsaved ?? [])])
     const updated = new Set(justReplaced ?? [])
     return (list: readonly LibraryRow[]) => {
       const out = list.map((r) => withFilterFields({
         ...r,
         times: timesCellOf(v2, r.id).value,
-        ...(updated.has(r.id) ? { isNew: false, justUpdated: true, categoryName: r.section, section: JUST_UPDATED_GROUP } : just.has(r.id) ? { categoryName: r.section, section: JUST_ADDED_GROUP } : {}),
+        method: methods.of.get(r.id)?.name ?? "",
+        ...(unsaved?.has(r.id) ? { isNew: false, unsaved: true, categoryName: r.categoryName ?? r.section, section: UNSAVED_GROUP } : updated.has(r.id) ? { isNew: false, justUpdated: true, categoryName: r.section, section: JUST_UPDATED_GROUP } : just.has(r.id) ? { categoryName: r.section, section: JUST_ADDED_GROUP } : {}),
       }))
       return just.size ? [...out.filter((r) => just.has(r.id)), ...out.filter((r) => !just.has(r.id))] : out
     }
-  }, [v2, justAdded, justReplaced])
+  }, [v2, methods, justAdded, justReplaced, unsaved])
   // Show them: everything that add touched, what it replaced too (the batch holds both). Every other filter is the DS table's own.
   const filtered = React.useCallback((list: readonly LibraryRow[]) => {
     const batch = filter.added ? v2.batches.find((b) => b.id === filter.added) : null
@@ -475,7 +483,8 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
   // is open and Configuration and Status stay in view; in Plain list it steps aside only where there is no room for it [INFER]. Not part of a saved view.
   const besideWidth = useBesideWidth()
   const roomForCategory = useRoomForCategory()
-  const hideCategory = panelOpen && besideWidth && (ts.groupBy === "section" || !roomForCategory)
+  // Grouped by category, the group row already names it: the column steps aside (clean-UI rule, Romit 2026-11-16: say it once).
+  const hideCategory = ts.groupBy === "section" || (panelOpen && besideWidth && !roomForCategory)
   const categoryAside = React.useRef(false)
   // After every render, and as a change to what is hidden now, not to what this render read: on a reload with the panel open this runs in the same pass as the first view, whose
   // columns a copy of the render's set would overwrite. Choosing a view again is covered by the same line.
@@ -651,7 +660,10 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
           filtersOn ? (
             <EmptyBlock compact title={`No ${skillNounPlural()} match`} action={{ label: "Clear" }} onAction={() => { ts.setActiveFilters([]); ts.setSearch(""); setFilter(NO_FILTER) }} />
           ) : (
-            <EmptyBlock compact title={`No ${skillNounPlural()} in this tab`} action={{ label: "Show all" }} onAction={onClearTab} />
+            rows.length === 0 ? (
+              // A list just created (D-LS1116-d): what will appear; the one action is Add a skill, top right.
+              <EmptyBlock compact title={`No ${skillNounPlural()} on this list yet`} />
+            ) : <EmptyBlock compact title={`No ${skillNounPlural()} in this tab`} action={{ label: "Show all" }} onAction={onClearTab} />
           )
         }
       />
@@ -660,7 +672,9 @@ const TableBody = React.memo(function TableBody({ rows, visible, tab, handlers, 
 
   return (
     <>
-      {renderFrame(null, <div className="flex flex-col gap-3"><LibraryFilterChips value={{ ...NO_FILTER, added: filter.added }} onChange={setFilter} />{table}</div>, counts)}
+      <MethodsContext.Provider value={methods}>
+        {renderFrame(null, <div className="flex flex-col gap-3"><LibraryFilterChips value={{ ...NO_FILTER, added: filter.added }} onChange={setFilter} />{table}</div>, counts)}
+      </MethodsContext.Provider>
       <BulkEditSheet rows={editing} onClose={() => { setEditing(null); focusAfterBulkPanel() }} onApply={(ids, edit) => { onBulkEdit(ids, edit); ts.setSelected(new Set()); setEditing(null); focusAfterBulkPanel() }} />
     </>
   )

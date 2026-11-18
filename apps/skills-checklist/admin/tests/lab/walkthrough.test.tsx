@@ -45,7 +45,7 @@ import { SKILLS_PANEL, selectedSkillsPanelKey } from "@/lib/lab/admin-ia"
 const AGREED = [
   // D-L64, D-L122: recommended pages only, the stops. Skill lists is the start; Library and the ways to add are side steps.
   ["lists", "Skill lists"],
-  ["settings", "Evaluation settings"],
+  ["settings", "Evaluation methods"],
   ["map", "Course mapping"],
 ] as const
 // D-L67: one student and one skill, from My progress to the evaluator and back, then the faculty's own way in. Log a skill, the
@@ -130,7 +130,11 @@ describe("walkthrough definition", () => {
   it("has no assign stop (D-L106), opens Configure on the sample skill; Library and the ways to add are side steps of Skill lists", () => {
     expect(resolveStep(WALKTHROUGH_ID, "assign", "1")).toBeFalsy()
     expect(resolveStep(WALKTHROUGH_ID, "configure", "1")!.params).toEqual({ skill: NG })
-    expect(flow().steps.filter((s) => s.side).map((s) => [s.id, s.after])).toEqual([["library", "lists"], ["categories", "lists"], ["configure", "lists"], ["add", "lists"], ["paste", "lists"], ["bulk", "lists"], ["starter", "lists"]])
+    expect(flow().steps.filter((s) => s.side).map((s) => [s.id, s.after])).toEqual([["library", "lists"], ["categories", "lists"], ["configure", "lists"], ["add", "lists"]])
+    // D-ADD1117: Add a skill, Add several, Bulk upload and Starting points became one side step, "Add skills", which opens variant H with its panel open; the Skill list is H too.
+    expect(resolveStep(WALKTHROUGH_ID, "add", "1")!.variant.id).toBe("H")
+    expect(resolveStep(WALKTHROUGH_ID, "add", "1")!.params).toEqual({ add: "1" })
+    expect(resolveStep(WALKTHROUGH_ID, "library", "1")!.variant.id).toBe("H")
     expect(resolveStep(WALKTHROUGH_ID, "map", "1")!.params).toEqual({})
     expect(resolveStep(WALKTHROUGH_ID, "map", "1")!.variant.id).toBe("B")
   })
@@ -223,7 +227,8 @@ describe("the step a page is really on follows the screen's own params (effectiv
 
 describe("the product's own buttons lead on inside the walkthrough", () => {
   it("One skill goes to its panel in the Library, on the same stop (D-L91)", () => {
-    const l = landing(rewriteLabUrl(configureHref("sk-new-1"), ctxFor("add")))
+    // The Skill list stop is variant H (D-ADD1117): the page's own context carries its letter.
+    const l = landing(rewriteLabUrl(configureHref("sk-new-1"), { ...ctxFor("library"), variant: "H" }))
     expect([l.flowId, l.stepId, l.q.get("skill"), l.q.get("present"), l.q.get("set")]).toEqual([WALKTHROUGH_ID, "library", "sk-new-1", "1", null])
   })
 
@@ -249,14 +254,17 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
   })
 
   it("Import's Open the library and the library's Replace with a new version stay inside the walkthrough", () => {
-    expect(landing(labHref("admin/skills-library", {}, ctxFor("bulk")))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "library" })
-    expect(landing(rewriteLabUrl("/lab/admin/import-ai-review", ctxFor("library")))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "bulk" })
+    expect(landing(labHref("admin/skills-library", {}, ctxFor("lists")))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "library" })
+    // A list's "Upload a file" opens H's Import tab and stays on the path (D-ADD1117-r).
+    const upload = landing(labHref("admin/skills-library", { list: "list-clinical", add: "1", from: "file" }, ctxFor("lists")))
+    expect(upload.flowId).toBe(WALKTHROUGH_ID)
+    expect([upload.q.get("add"), upload.q.get("from"), upload.q.get("list")]).toEqual(["1", "file", "list-clinical"])
     expect(landing(rewriteLabUrl("/lab/admin/lists-cohorts", ctxFor("library")))).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "lists" })
   })
 
   it("a page opened from the library's Add menu keeps ?from=skills (and a group deep link keeps ?new=1), so its breadcrumb and Cancel lead back to Skills", () => {
+    // Bulk upload is no longer a walkthrough stop (D-ADD1117); its own route still keeps ?from=skills.
     const bulk = landing(rewriteLabUrl(withFrom("/lab/admin/import-ai-review", "skills"), ctxFor("library")))
-    expect(bulk).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "bulk" })
     expect(bulk.q.get("from")).toBe("skills")
     const group = landing(rewriteLabUrl(withFrom("/lab/admin/lists-cohorts?new=1", "skills"), ctxFor("library")))
     expect(group).toMatchObject({ flowId: WALKTHROUGH_ID, stepId: "lists" })
@@ -302,8 +310,8 @@ describe("the product's own buttons lead on inside the walkthrough", () => {
   it("Course mapping follows Evaluation settings, and a page off the path keeps the bar: Back to its stop, Next to the stop after", () => {
     const w = walkthroughPosition(WALKTHROUGH_ID, "settings", new URLSearchParams("set=1&present=1"))!
     expect([w.index, w.total, landing(w.prev!.href).stepId, landing(w.next!.href).stepId]).toEqual([2, 3, "lists", "map"])
-    const off = walkthroughPosition(WALKTHROUGH_ID, "paste", new URLSearchParams("set=1&present=1&how=several"))!
-    expect([off.step.id, off.index, landing(off.prev!.href).stepId, landing(off.next!.href).stepId]).toEqual(["paste", 1, "lists", "settings"])
+    const off = walkthroughPosition(WALKTHROUGH_ID, "add", new URLSearchParams("set=1&present=1&add=1"))!
+    expect([off.step.id, off.index, landing(off.prev!.href).stepId, landing(off.next!.href).stepId]).toEqual(["add", 1, "lists", "settings"])
   })
 })
 
@@ -332,7 +340,7 @@ const BANNED = ["Tests", "Variant", "variant", "Components", "Scenario", "Tier",
 describe("navigation model A on the admin walkthrough (D-L42: hub pages, breadcrumbs and the Skills panel, no wizard chrome)", () => {
   const f = () => findFlow(WALKTHROUGH_ID)!
   it("keeps every step id and route, with no chapters or footer labels in the flow data", () => {
-    expect(f().steps.map((s) => s.id)).toEqual(["lists", "settings", "map", "library", "categories", "configure", "add", "paste", "bulk", "starter"])
+    expect(f().steps.map((s) => s.id)).toEqual(["lists", "settings", "map", "library", "categories", "configure", "add"])
     expect("chapters" in f()).toBe(false)
     for (const s of f().steps) {
       expect("chapter" in s, s.id).toBe(false)
@@ -340,10 +348,11 @@ describe("navigation model A on the admin walkthrough (D-L42: hub pages, breadcr
     }
   })
 
-  it("Setup summary is off the Skills panel (D-L77); Categories and tags stays on it", () => {
-    expect(SKILLS_PANEL.map((i) => i.label())).toEqual(["Skill lists", "Library", "Categories and tags", "Evaluation settings", "Course mapping"])
+  it("Setup summary is off the Skills panel (D-L77); Library and Categories and tags are too, under Skill lists (2026-11-16)", () => {
+    expect(SKILLS_PANEL.map((i) => i.label())).toEqual(["Skill lists", "Evaluation methods", "Course mapping"])
     expect(selectedSkillsPanelKey("admin/setup-result")).toBeUndefined()
-    expect(selectedSkillsPanelKey("admin/categories-tags")).toBe("categories")
+    expect(selectedSkillsPanelKey("admin/categories-tags")).toBe("groups")
+    expect(selectedSkillsPanelKey("admin/skills-library")).toBe("groups")
   })
 })
 
@@ -370,7 +379,7 @@ describe("presenter control", () => {
   it("shows the walkthrough, Back, the page, N of M, Next and Exit, and nothing else (no persona, flow, variant or score)", () => {
     const { container } = renderAt("settings")
     expect(screen.getByText("Admin walkthrough")).toBeInTheDocument()
-    expect(screen.getByText("Evaluation settings")).toBeInTheDocument()
+    expect(screen.getByText("Evaluation methods")).toBeInTheDocument()
     expect(screen.getByText("2 of 3")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Back: Skill lists" })).toHaveAttribute("href", "/admin/lists")
     expect(screen.getByRole("link", { name: "Next: Course mapping" }).getAttribute("href")).toMatch(/^\/admin\/map(\?|$)/)

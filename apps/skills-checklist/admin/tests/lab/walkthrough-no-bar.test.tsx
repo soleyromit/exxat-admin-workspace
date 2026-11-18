@@ -22,7 +22,7 @@ import { configureHref, mappingHref } from "@/lib/lab/library"
 import { SKILLS_PANEL, skillsNavHref, skillsPanelHref } from "@/lib/lab/admin-ia"
 import { WALKTHROUGH_ID } from "@/lib/lab/walkthrough"
 import { FROM_PARAM, LEAF_TITLE, returnCarry, returnTarget } from "@/lib/lab/return-to"
-import { LAB_ADMIN, importHref, newListHref, starterHref } from "@/lib/lab/library"
+import { LAB_ADMIN, newListHref } from "@/lib/lab/library"
 import { MAPPING_PATH } from "@/lib/lab/mapping"
 import { EVALUATION_SETTINGS_HREF } from "@/lib/lab/admin-ia"
 import { WalkthroughControls, WalkthroughRow } from "@/components/lab/lab-bar/walkthrough-controls"
@@ -236,7 +236,7 @@ describe("Configure one skill: the Evaluation settings link and its way back", (
     expect(new URL(returnTarget("configure", "a b&c")!.href, "http://x").searchParams.get("skill")).toBe("a b&c")
     // With no skill in hand the way back is the Library, never Configure on a default skill.
     expect(returnTarget("configure")!.href).toBe("/as/admin/skills-library")
-    expect(LEAF_TITLE["admin/evaluation-settings"]?.()).toBe("Evaluation settings")
+    expect(LEAF_TITLE["admin/evaluation-settings"]?.()).toBe("Evaluation methods")
   })
 
   it("the Configure pages hold no literal Evaluation settings address", () => {
@@ -251,8 +251,9 @@ describe("Configure one skill: the Evaluation settings link and its way back", (
     const literals = [
       `${LAB_ADMIN}/evaluation-settings`, `${LAB_ADMIN}/evaluation-settings?program=new`, EVALUATION_SETTINGS_HREF,
       `${LAB_ADMIN}/skills-library?config=not-configured`, `${LAB_ADMIN}/skills-library?tag=Airway`, "/lab/admin/skills-library?tab=not-configured",
-      `${LAB_ADMIN}/lists-cohorts`, newListHref, "/lab/admin/course-mapping", MAPPING_PATH, importHref, starterHref,
-      "/lab/admin/import-ai-review", "/as/admin/skills-library", "/as/admin/lists-cohorts?list=list-7",
+      `${LAB_ADMIN}/lists-cohorts`, newListHref, "/lab/admin/course-mapping", MAPPING_PATH,
+      "/as/admin/skills-library", "/as/admin/lists-cohorts?list=list-7",
+      // Bulk upload (importHref) and Starting points (starterHref) are no longer walkthrough stops (D-ADD1117): Add skills H holds the file import.
     ]
     for (const from of flow.steps) {
       for (const l of literals) expect(rewriteLabUrl(l, walkCtx(from.id)), `${from.id} -> ${l}`).toMatch(/^\/admin\/[a-z-]+(\?|$)/)

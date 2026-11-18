@@ -66,11 +66,11 @@ export function StudentAddsRow({ rule, setRule, issues, showErrors, settings, er
 }
 
 /** With nothing to preview it looks unavailable and says why. Not the disabled attribute: that would take it out of the keyboard's way along with the reason. */
-function PreviewButton({ ready, onOpen }: { ready: boolean; onOpen: () => void }) {
-  if (ready) return <Button type="button" variant="outline" size="sm" onClick={onOpen}>Preview</Button>
+function PreviewButton({ ready, onOpen, variant = "outline" }: { ready: boolean; onOpen: () => void; variant?: "outline" | "ghost" }) {
+  if (ready) return <Button type="button" variant={variant} size="sm" onClick={onOpen}>Preview</Button>
   return (
     <Tip label="Choose how it is judged first.">
-      <Button type="button" variant="outline" size="sm" aria-disabled className="cursor-not-allowed text-muted-foreground hover:bg-transparent hover:text-muted-foreground">Preview</Button>
+      <Button type="button" variant={variant} size="sm" aria-disabled className="cursor-not-allowed text-muted-foreground hover:bg-transparent hover:text-muted-foreground">Preview</Button>
     </Tip>
   )
 }
@@ -136,12 +136,12 @@ function useProgramExample(draft: LabRule, active: boolean) {
   return { rule, shown, picker, program: `${state.program.school} ${state.program.name}` }
 }
 
-export function ProgramPreviewDialog({ draft }: { draft: LabRule }) {
+export function ProgramPreviewDialog({ draft, variant }: { draft: LabRule; /** G's footer (prototype 33): a ghost Preview beside Cancel. */ variant?: "outline" | "ghost" }) {
   const [open, setOpen] = React.useState(false)
   const { rule, shown, picker } = useProgramExample(draft, open)
   return (
     <>
-      <PreviewButton ready={!!draft.model} onOpen={() => setOpen(true)} />
+      <PreviewButton ready={!!draft.model} onOpen={() => setOpen(true)} variant={variant} />
       {draft.model && open ? <PreviewFrame open={open} setOpen={setOpen} title="Preview" rule={rule} example={shown} head={picker ? <div>{picker}</div> : null} /> : null}
     </>
   )

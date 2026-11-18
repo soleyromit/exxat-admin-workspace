@@ -47,7 +47,9 @@ describe("the seeded program's Evaluation settings (D-L72, map D0)", () => {
   it("pin the figures this moved, each with its reason (before: 1547, 757, 49, 28, 35; 159, 19, 157)", () => {
     const f = facts(seed)
     // D-L102: every student reads the skills on their list, 14,896 records and 7,578 achieved after the earlier-term evidence of SEED_VERSION 2026-11-05.3 (4,416 before it). Against the program clock 23 are behind.
-    expect([f.listRecords, f.listAchieved, f.achievedPct, f.behind, f.awaitingApproval]).toEqual([14896, 7578, 51, 23, 35])
+    // Romit 2026-11-16, one seeded list: Clinical skills checklist (152 active skills) on all 123 students, BSN 2026 included (it was on the 52-skill core list) and no second
+    // list of competencies, so 18,696 records (123 x 152), 8,688 achieved, 46 percent; behind on the program clock rises from 23 to 58, mostly the graduating cohort.
+    expect([f.listRecords, f.listAchieved, f.achievedPct, f.behind, f.awaitingApproval]).toEqual([18696, 8688, 46, 58, 35])
     // Mandatory this term has not moved: IV catheter insertion, mandatory on NURS 350, adds 43 records and its evidence achieves 20 of them, so 1,590 records, 777 achieved, 49 percent, 28 behind.
     const term = populationTotals(populationRows(seed, undefined, undefined, { set: "term" }))
     expect([term.records, term.achieved, term.achievedPct, term.behind]).toEqual([1590, 777, 49, 28])

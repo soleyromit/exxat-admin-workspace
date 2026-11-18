@@ -103,7 +103,7 @@ describe("LabBar", () => {
     renderBar(FLOW_PROPS)
     await user.click(screen.getByRole("button", { name: /^Components/ }))
     const dialog = await screen.findByRole("dialog", { name: "Design system components on this page" })
-    expect(within(dialog).getByText("Imported by this page")).toBeInTheDocument()
+    expect(await within(dialog).findByText("Imported by this page", {}, { timeout: 10000 })).toBeInTheDocument()
     await user.keyboard("{Escape}")
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument())
   })

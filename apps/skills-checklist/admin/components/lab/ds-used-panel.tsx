@@ -4,7 +4,7 @@ import * as React from "react"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@exxatdesignux/ui/components/ui/collapsible"
-import used from "@/lib/lab/ds-used.generated.json"
+import counts from "@/lib/lab/ds-used-counts.generated.json"
 
 interface Entry {
   name: string
@@ -12,13 +12,19 @@ interface Entry {
   via?: string
 }
 
-const registry = used as Record<string, { direct: Entry[]; via: Entry[] }>
+type Registry = Record<string, { direct: Entry[]; via: Entry[] }>
+const countMap = counts as Record<string, number>
+
+// The full list (1+ MB) is fetched only when a list first renders, so it never lands in the shared lab bundle.
+let registryPromise: Promise<Registry> | null = null
+function loadRegistry(): Promise<Registry> {
+  registryPromise ??= import("@/lib/lab/ds-used.generated.json").then((m) => (m.default ?? m) as unknown as Registry)
+  return registryPromise
+}
 
 /** Distinct DS component names the gate found for a variant, or null when the variant has not been scanned. */
 export function dsUsedCount(screenKey: string): number | null {
-  const entry = registry[screenKey]
-  if (!entry) return null
-  return new Set([...entry.direct, ...entry.via].map((d) => d.name)).size
+  return screenKey in countMap ? countMap[screenKey] : null
 }
 
 /**
@@ -26,6 +32,13 @@ export function dsUsedCount(screenKey: string): number | null {
  * `node scripts/lab-ds-gate.mjs --write`. Content only: the lab bar shows it in a Sheet (components/lab/lab-bar).
  */
 export function DsUsedList({ screenKey }: { screenKey: string }) {
+  const [registry, setRegistry] = React.useState<Registry | null>(null)
+  React.useEffect(() => {
+    let live = true
+    loadRegistry().then((r) => { if (live) setRegistry(r) })
+    return () => { live = false }
+  }, [])
+  if (!registry) return <p className="text-sm text-muted-foreground" data-ds-used-loading>Loading components.</p>
   const entry = registry[screenKey]
   if (!entry) return <p className="text-sm text-muted-foreground">This variant has not been scanned. Run node scripts/lab-ds-gate.mjs --write.</p>
   return (

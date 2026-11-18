@@ -25,7 +25,7 @@ export function AdminEvaluationSettingsC() {
     <ProgramSettingsFrame onIssue={(i) => open(groupOfIssue(i))}>
       {(p) => (
         <Tabs value={group} onValueChange={(v) => isGroup(v) && open(v)} className="flex flex-col gap-6" data-layout="tabs">
-          <TabsList variant="line" ariaLabel="Evaluation settings">
+          <TabsList variant="line" ariaLabel="Evaluation methods">
             {PROGRAM_GROUPS.map((g) => (
               <TabsTrigger key={g.id} value={g.id}>{g.label}</TabsTrigger>
             ))}

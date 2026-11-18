@@ -14,7 +14,7 @@ import { focusField } from "./use-configure"
 import { ProgramBanners, useProgramSave, useProgramSettings, type ProgramModel, type TimesEdits } from "./program-parts"
 import type { RuleIssue } from "@/lib/lab/configure"
 
-export const EVALUATION_SETTINGS_TITLE = "Evaluation settings"
+export const EVALUATION_SETTINGS_TITLE = "Evaluation methods"
 
 export interface ProgramPage {
   m: ProgramModel
@@ -23,7 +23,7 @@ export interface ProgramPage {
 }
 
 /** Page frame: title with the one Save, banner, the layout, the confirmation. `onIssue` lets a layout reveal a group. */
-export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction, saveBar }: { children: (p: ProgramPage) => React.ReactNode; onIssue?: (i: RuleIssue) => void; /** The control a problem focuses, when it sits inside a dialog on this layout. */ focusOf?: (i: RuleIssue) => string; /** Beside the one Save: Preview on the plain page (map D3). With `saveBar`, the header holds only this. */ headerAction?: (m: ProgramModel) => React.ReactNode; /** Save and Discard leave the header for one bar pinned to the bottom of the content column at every width, shown while there is something to save (variant B, 2026-11-11). `unsaved` counts the changes for its words. Off by default: other layouts keep Save in the header. */ saveBar?: { unsaved: (m: ProgramModel) => number } }) {
+export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction, saveBar, title }: { children: (p: ProgramPage) => React.ReactNode; /** The page title; Evaluation settings by default. The methods page (variant G) names the method, with its back icon. */ title?: React.ReactNode; onIssue?: (i: RuleIssue) => void; /** The control a problem focuses, when it sits inside a dialog on this layout. */ focusOf?: (i: RuleIssue) => string; /** Beside the one Save: Preview on the plain page (map D3). With `saveBar`, the header holds only this. */ headerAction?: (m: ProgramModel) => React.ReactNode; /** Save and Discard leave the header for one bar pinned to the bottom of the content column at every width, shown while there is something to save (variant B, 2026-11-11). `unsaved` counts the changes for its words. Off by default: other layouts keep Save in the header. */ saveBar?: { unsaved: (m: ProgramModel) => number } }) {
   const m = useProgramSettings()
   const go = (i: RuleIssue) => {
     onIssue?.(i)
@@ -47,7 +47,7 @@ export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction,
   const saveOff = !s.changed || s.invalid || !m.rule.model
   if (m.loading) {
     return (
-      <PageFrame title={EVALUATION_SETTINGS_TITLE}>
+      <PageFrame title={title ?? EVALUATION_SETTINGS_TITLE}>
         <div aria-busy="true">
           <Skeleton className="h-96 w-full" aria-label="Loading" />
         </div>
@@ -57,7 +57,7 @@ export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction,
   return (
     <div className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col" data-page-type="form">
       <PageFrame
-        title={EVALUATION_SETTINGS_TITLE}
+        title={title ?? EVALUATION_SETTINGS_TITLE}
         className="flex-1"
         // Navigation model A (D-L42): the page's one filled action sits in the header; no flow footer.
         // Nothing chosen on a new program: nothing to save yet (map D3, S1).
@@ -70,7 +70,9 @@ export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction,
           unsaved changes. It sits last in the flow, so nothing is hidden under it at the end of the page and focus reaches it after the last field. */}
       {bar && (!m.saved || s.changed) ? (
         <SaveBar
-          m={m}
+          issues={m.showErrors ? m.issues : []}
+          saved={!!m.saved}
+          onDiscard={m.saved && m.dirty ? () => m.discard() : undefined}
           unsaved={saveBar!.unsaved(m) + Object.keys(s.edits).length}
           label={saveLabel}
           off={saveOff}
@@ -89,17 +91,18 @@ export function ProgramSettingsFrame({ children, onIssue, focusOf, headerAction,
  * content column, never over the sidebar, inside the shell's one scrollport. Left, what is waiting in neutral words (unsaved is not a problem); after a
  * failed Save, how many problems, as a link to the first. Right, Discard (saved setups only) and Save. Full width under 640 px.
  */
-function SaveBar({ m, unsaved, label, off, onSave, onGo }: { m: ProgramModel; unsaved: number; label: string; off: boolean; onSave: () => void; onGo: (i: RuleIssue) => void }) {
-  const failing = m.showErrors && m.issues.length > 0
+export function SaveBar({ issues, saved, onDiscard, unsaved, label, off, onSave, onGo, ariaLabel = "Save settings" }: { /** Problems to show, only after a failed Save. */ issues: RuleIssue[]; /** Something is saved already: the words count changes; else "Not saved yet". */ saved: boolean; onDiscard?: () => void; unsaved: number; label: string; off: boolean; onSave: () => void; onGo: (i: RuleIssue) => void; ariaLabel?: string }) {
+  const failing = issues.length > 0
   const n = Math.max(1, unsaved)
   return (
-    <section aria-label="Save settings" className="sticky bottom-0 z-20 mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border bg-background px-4 py-3 sm:px-6" data-save-bar>
-      <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-foreground" aria-live="polite" data-save-bar-status>
+    <section aria-label={ariaLabel} className="sticky bottom-0 z-20 mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border bg-background px-4 py-3 sm:px-6" data-save-bar>
+      {/* After a failed Save the count is said at once (state review 2026-11-16): focus has moved to the first problem, so the total would go unheard. */}
+      <div className="flex min-w-0 flex-1 items-center gap-2 text-sm text-foreground" aria-live={failing ? "assertive" : "polite"} aria-atomic="true" data-save-bar-status>
         {failing ? (
-          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-destructive" onClick={() => onGo(m.issues[0]!)} data-save-bar-problems>
-            {`${m.issues.length} to fix before saving`}
+          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-destructive" onClick={() => onGo(issues[0]!)} data-save-bar-problems>
+            {`${issues.length} to fix before saving`}
           </Button>
-        ) : m.saved ? (
+        ) : saved ? (
           <>
             <i className="fa-light fa-pen text-xs text-muted-foreground" aria-hidden="true" />
             <span data-unsaved-count>{`${n} unsaved ${n === 1 ? "change" : "changes"}`}</span>
@@ -109,7 +112,7 @@ function SaveBar({ m, unsaved, label, off, onSave, onGo }: { m: ProgramModel; un
         )}
       </div>
       <div className="flex items-center gap-2 max-sm:w-full">
-        {m.saved && m.dirty ? <Button type="button" variant="ghost" size="sm" className="max-sm:flex-1" onClick={() => m.discard()} data-discard>Discard</Button> : null}
+        {onDiscard ? <Button type="button" variant="ghost" size="sm" className="max-sm:flex-1" onClick={onDiscard} data-discard>Discard</Button> : null}
         <Button type="button" variant="default" size="sm" className="max-sm:flex-1" onClick={onSave} disabled={off}>{label}</Button>
       </div>
     </section>

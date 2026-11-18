@@ -20,6 +20,7 @@
  * URL: ?tab=, ?uses=, ?state=, ?q= (the search, so Back from a count finds it).
  */
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { useEmbeddedStep } from "@/components/lab/layout/embedded"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useIsMobile } from "@exxatdesignux/ui/hooks/use-mobile"
@@ -45,7 +46,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelHeader, FloatingSheetPanelToolbar } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
 import { FloatingSheetPanel } from "@/components/lab/shared/sheet"
 import { PageFrame } from "@/components/skills/page-header"
-import { useV2Hydrated, useV2State } from "@/lib/v2/react"
+import { useV2Hydrated, useV2State, useV2Store } from "@/lib/v2/react"
+import { getVocabulary } from "@/lib/v2/vocabulary"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
+import { Field, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
 import { parseDemoState } from "@/lib/lab/dashboard"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { useClinicalSettingActions, useVocabularyActions, isVocabKind, RenameDialog, renamedText } from "@/components/lab/admin-b/use-vocabulary"
@@ -53,7 +57,7 @@ import { pageTitle, returnFocus } from "@/components/lab/shared/focus"
 import { ResultBanner, type ResultBannerValue } from "@/components/lab/shared/result-banner"
 import { writeUrlParam } from "@/components/lab/library/library-chrome"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
-import { ReturnLink } from "@/components/lab/shared/return-link"
+import { ReturnTitle } from "@/components/lab/shared/return-link"
 import { LAB_ADMIN, STATUS_META, normName } from "@/lib/lab/library"
 import { EMPTY_SETTINGS, inactiveLast, rememberSeededVocabulary, SCOPE_SECTIONS, VOCABULARY_TITLE, categoryRows, clinicalSettingRows, instructorRows, isSettingsTab, scopeSection, sectionLabel, tagRows, usesOf, validateEntry, type SettingUse, type SettingsOverlay, type SettingsRow, type SettingsScope, type SettingsSection, type SettingsTab } from "@/lib/lab/settings"
 import { aNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -84,8 +88,29 @@ const rememberPageScroll = () => {
   if (y) window.history.replaceState({ ...window.history.state, [PAGE_SCROLL_MARK]: y }, "")
 }
 
-export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
+/** The host page's header action slot (Skill lists' Categories and Tags tabs): the page's Add button renders there, top right. */
+export const HostActionsSlot = React.createContext<HTMLElement | null>(null)
+
+/** The page's own frame, or none when another page hosts it (Categories and tags as a tab of Skill lists, Romit 2026-11-16): that page owns the title. */
+function Frame({ embedded, title, actions, className, children }: { embedded: boolean; title: React.ReactNode; actions?: React.ReactNode; className?: string; children: React.ReactNode }) {
+  if (embedded) return <>{children}</>
+  return <PageFrame title={title} actions={actions} className={className}>{children}</PageFrame>
+}
+
+/** The section tabs, or plain blocks when hosted: the host's tabs already name the section and own the tab panel (one tablist, one panel). */
+function SectionTabs({ embedded, value, onValueChange, children }: { embedded: boolean; value: string; onValueChange: (v: string) => void; children: React.ReactNode }) {
+  if (embedded) return <div className="flex flex-col">{children}</div>
+  return <Tabs value={value} onValueChange={onValueChange}>{children}</Tabs>
+}
+
+function SectionPanel({ embedded, value, className, children, ...rest }: { embedded: boolean; value: string; className?: string; children: React.ReactNode; "data-tab-panel"?: string }) {
+  if (embedded) return <div className={className} {...rest}>{children}</div>
+  return <TabsContent value={value} className={className} {...rest}>{children}</TabsContent>
+}
+
+export function SettingsPage({ scope = "program", embedded = false }: { scope?: SettingsScope; /** Rendered inside another page's tab: no page header, and the section always named in the URL. */ embedded?: boolean }) {
   const data = useV2State()
+  const hostActions = React.useContext(HostActionsSlot)
   const hydrated = useV2Hydrated()
   const params = useSearchParams()
   const router = useRouter()
@@ -99,6 +124,24 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
   const [overlay] = React.useState<SettingsOverlay>(EMPTY_SETTINGS)
   const [banner, setBanner] = React.useState<(ResultBannerValue & { atForm?: boolean }) | null>(null)
   const [deleting, setDeleting] = React.useState<SettingsRow | null>(null)
+  const [describing, setDescribing] = React.useState<SettingsRow | null>(null)
+  const store = useV2Store()
+  const descriptions = React.useMemo(() => {
+    const out: Record<string, string> = {}
+    if (tab !== "categories" && tab !== "tags") return out
+    for (const e of getVocabulary(data)[tab]) if (e.description?.trim()) out[e.id] = e.description.trim()
+    return out
+  }, [data, tab])
+  const saveDescription = (r: SettingsRow, text: string) => {
+    if (tab !== "categories" && tab !== "tags") return
+    const kind = tab
+    store.update((s) => {
+      const v = getVocabulary(s)
+      return { ...s, vocabulary: { ...v, [kind]: v[kind].map((e) => (e.id === r.id ? { ...e, description: text.trim() || undefined } : e)) } }
+    })
+    setDescribing(null)
+    setBanner({ variant: "success", title: text.trim() ? `Description saved for ${r.name}.` : `Description removed from ${r.name}.` })
+  }
   const [createError, setCreateError] = React.useState<string | null>(null)
   // Local for the keystroke, written through to the URL: a controlled field cannot wait for the router's transition.
   const [query, setQueryState] = React.useState(() => params?.get("q") ?? "")
@@ -167,13 +210,13 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
 
   if (!hydrated || demo === "loading") {
     return (
-      <PageFrame title={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"}>
+      <Frame embedded={embedded} title={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"}>
         <div role="status" aria-busy="true" aria-label={scope === "vocabulary" ? "Loading categories and tags" : "Loading settings"} className="flex flex-col gap-3">
           <Skeleton aria-hidden="true" className="h-9 w-[28rem]" />
           <Skeleton aria-hidden="true" className="h-8 w-80" />
           {Array.from({ length: 8 }, (_, i) => <Skeleton key={i} aria-hidden="true" className="h-12 w-full" />)}
         </div>
-      </PageFrame>
+      </Frame>
     )
   }
 
@@ -278,7 +321,8 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
   }
   const changeTab = (v: string) => {
     setBanner(null); setBand(0); setCreateError(null); setCreating(false); setTypedDirty(false); setHeld(new Set<string>()); setAnnouncement(""); setQueryState("")
-    setParams({ tab: v === sections[0] ? null : v, list: null, uses: null, ...EVALUATOR_FILTERS_OFF })
+    // Hosted as a tab, the section stays in the URL: with no `tab` the host shows its own first tab.
+    setParams({ tab: v === sections[0] && !embedded ? null : v, list: null, uses: null, ...EVALUATOR_FILTERS_OFF })
   }
   const usesRef = usesParam ? parseUses(usesParam) : null
   const usesRow = usesRef ? lists[usesRef.tab].find((r) => r.id === usesRef.id) : null
@@ -286,16 +330,17 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
   const openUses = (r: SettingsRow, what?: SettingUse) => { setCreateError(null); setParams({ uses: `${tab}|${r.id}|${what ?? ""}` }) }
 
   return (
-    <div className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
-    <PageFrame title={scopeTitle(scope, section)} actions={<>{scope === "vocabulary" ? <ReturnLink /> : null}<SampleDataBadge /></>} className="flex-1">
+    <div className={embedded ? "flex w-full flex-col" : "flex min-h-[calc(100dvh-5.5rem)] w-full flex-col"}>
+    <Frame embedded={embedded} title={scope === "vocabulary" ? <ReturnTitle>{scopeTitle(scope, section)}</ReturnTitle> : scopeTitle(scope, section)} actions={<SampleDataBadge />} className="flex-1">
       <div className="flex flex-col gap-4" data-settings-lab data-settings-scope={scope} data-page-type="list" data-tab={section}>
         <p role="status" aria-live="polite" className="sr-only" data-status-announcement>{announcement}</p>
-        <Tabs value={section} onValueChange={(v) => afterAsking(() => changeTab(v))}>
+        <SectionTabs embedded={embedded} value={section} onValueChange={(v) => afterAsking(() => changeTab(v))}>
           {/* While the form is open: in view wherever the page is scrolled, at every width above a phone, where this row would hold too much of the screen. The DS table's fixed head stacks under this slot. */}
           <div {...(creating ? { "data-slot": "tabs-sticky-subheader" } : {})} className={creating ? "z-30 flex flex-col gap-2 bg-background pb-2 md:sticky md:top-0" : "flex flex-col gap-2"}>
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2" data-region="tabs">
             <div className="min-w-0 flex-1 basis-56">
-            <TabsList variant="line" ariaLabel={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings lists"}>
+            {/* Hosted, the host's own tabs name the section (Skill lists: Categories, Tags), so this row keeps only its Add button. */}
+            {embedded ? null : <TabsList variant="line" ariaLabel={scope === "vocabulary" ? VOCABULARY_TITLE : "Settings lists"}>
               {sections.map((t) => (
                 <TabsTrigger key={t} value={t} data-tab={t}>
                   {sectionLabel(t)}
@@ -303,19 +348,17 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
                   {demo === "error" ? null : t === "student-groups" ? <StudentGroupsCount empty={demo === "empty"} /> : <TabsCountBadge count={t === "evaluators" ? (demo === "empty" ? 0 : evaluatorCount) : shownCount(t)} />}
                 </TabsTrigger>
               ))}
-            </TabsList>
+            </TabsList>}
             </div>
             {/* The one filled button on the page (map E5), in one place: it opens the form, then submits it. */}
             {section !== "evaluators" && section !== "student-groups" && demo !== "error" ? (
               creating ? (
                 <InlineCreate key={tab} tab={tab} names={names} onAdd={add} onClose={() => afterAsking(closeCreate)} error={createError} setError={reportCreateError} onTyped={setTypedDirty} />
-              ) : (
-                <div className={ADD_ROW}>
-                  <Button ref={addRef} type="button" variant="default" size="sm" onClick={() => { setBanner(null); setBand(0); setCreating(true) }} data-inline-create-open>
-                    {`Add a ${NOUN[tab]}`}
-                  </Button>
-                </div>
-              )
+              ) : (() => {
+                const open = <Button ref={addRef} type="button" variant="default" size="sm" onClick={() => { setBanner(null); setBand(0); setCreating(true) }} data-inline-create-open>{`Add a ${NOUN[tab]}`}</Button>
+                // Hosted on Skill lists, the button sits in the host's header, top right, where New skill list and Add a skill sit (Romit 2026-11-16); the form still opens here.
+                return embedded && hostActions ? createPortal(open, hostActions) : <div className={ADD_ROW}>{open}</div>
+              })()
             ) : null}
           </div>
           {banner && (creating || banner.atForm) ? (
@@ -326,7 +369,7 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
           </div>
           {/* One panel for the active section, so the selected trigger's aria-controls resolves (axe aria-valid-attr-value).
               Radix renders only the active TabsContent; inactive triggers carry aria-selected="false", which axe allows. */}
-          <TabsContent key={section} value={section} className="mt-2 flex flex-col gap-4" data-tab-panel={section}>
+          <SectionPanel embedded={embedded} key={section} value={section} className="mt-2 flex flex-col gap-4" data-tab-panel={section}>
         {demo === "error" ? (
           <LocalBanner variant="error" title={`${scope === "vocabulary" ? VOCABULARY_TITLE : "Settings"} could not be loaded`} action={{ label: "Try again", onClick: () => setParams({ state: null }) }}>Nothing was changed.</LocalBanner>
         ) : section === "student-groups" ? (
@@ -336,12 +379,13 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
         ) : (
           <>
             {demo === "partial" ? <LocalBanner variant="info" title="Usage counts are still loading">Delete stays off until they finish.</LocalBanner> : null}
-            <SettingsTable query={query} onQuery={(v) => { setCreateError(null); setQuery(v) }} tab={tab} rows={marked} filtered={!!qq} onClear={() => setQuery("")} partial={demo === "partial"} onToggle={toggle} onDelete={askDelete} onUses={openUses} onRename={tab === "instructors" ? undefined : askRename} />
+            <SettingsTable query={query} onQuery={(v) => { setCreateError(null); setQuery(v) }} tab={tab} rows={marked} filtered={!!qq} onClear={() => setQuery("")} partial={demo === "partial"} onToggle={toggle} onDelete={askDelete} onUses={openUses} onRename={tab === "instructors" ? undefined : askRename} descriptions={descriptions} onDescribe={tab === "categories" || tab === "tags" ? setDescribing : undefined} />
           </>
         )}
-          </TabsContent>
-        </Tabs>
+          </SectionPanel>
+        </SectionTabs>
       </div>
+      <DescriptionDialog row={describing} initial={describing ? descriptions[describing.id] ?? "" : ""} onCancel={() => setDescribing(null)} onSave={saveDescription} />
       {tab !== "instructors" ? (
         <RenameDialog
           kind={tab}
@@ -403,7 +447,7 @@ export function SettingsPage({ scope = "program" }: { scope?: SettingsScope }) {
           else leave.go(() => { setTypedDirty(false); setCreating(false) })
         }}
       />
-    </PageFrame>
+    </Frame>
     </div>
   )
 }
@@ -505,12 +549,12 @@ function RowName({ name, active, narrow }: { name: string; active: boolean; narr
 /** The words beside a count when it moves under the name on a phone. */
 const FACT_WORDS: Record<string, [string, string]> = { categories: ["category", "categories"], sites: ["site", "sites"], courses: ["course", "courses"], evidence: ["evaluation", "evaluations"] }
 
-function SettingsTable({ query, onQuery, tab, rows, filtered, onClear, partial, onToggle, onDelete, onUses, onRename }: { query: string; onQuery: (v: string) => void; tab: SettingsTab; rows: SettingsRow[]; filtered: boolean; onClear: () => void; partial: boolean; onToggle: (r: SettingsRow) => void; onDelete: (r: SettingsRow) => void; onUses: (r: SettingsRow, what?: SettingUse) => void; onRename?: (r: SettingsRow) => void }) {
+function SettingsTable({ query, onQuery, tab, rows, filtered, onClear, partial, onToggle, onDelete, onUses, onRename, descriptions, onDescribe }: { query: string; onQuery: (v: string) => void; tab: SettingsTab; rows: SettingsRow[]; filtered: boolean; onClear: () => void; partial: boolean; onToggle: (r: SettingsRow) => void; onDelete: (r: SettingsRow) => void; onUses: (r: SettingsRow, what?: SettingUse) => void; onRename?: (r: SettingsRow) => void; /** Categories and Tags (D-EM1116-d): id -> description, and the way to edit one. */ descriptions?: Record<string, string>; onDescribe?: (r: SettingsRow) => void }) {
   const narrow = useIsMobile()
   // A skill count is a link to the Library filtered to this entry, a list of the same length (map D5, F C2).
   const libraryCount = (r: SettingsRow, n: number) =>
     n === 0 ? <span className="tabular-nums text-muted-foreground">0</span> : (
-      <Link className={`text-sm ${NUM_LINK}`} onClick={rememberPageScroll} aria-label={`${r.name}: ${plural(n, skillNoun(), skillNounPlural())}. Open in the Library`} href={`${LAB_ADMIN}/skills-library?${tab === "tags" ? "tag" : "cat"}=${encodeURIComponent(r.name)}`}>{fmt(n)}</Link>
+      <Link className={`text-sm ${NUM_LINK}`} onClick={rememberPageScroll} aria-label={`${r.name}: ${plural(n, skillNoun(), skillNounPlural())}. Show them`} href={`${LAB_ADMIN}/skills-library?${tab === "tags" ? "tag" : "cat"}=${encodeURIComponent(r.name)}`}>{fmt(n)}</Link>
     )
   const count = (r: SettingsRow, n: number, label: string, what?: SettingUse) =>
     n === 0 ? <span className="tabular-nums text-muted-foreground">0</span> : (
@@ -569,6 +613,7 @@ function SettingsTable({ query, onQuery, tab, rows, filtered, onClear, partial, 
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-64">
             {onRename ? <DropdownMenuItem onSelect={() => onRename(r)}>Rename</DropdownMenuItem> : null}
+            {onDescribe ? <DropdownMenuItem onSelect={() => onDescribe(r)}>{descriptions?.[r.id] ? "Edit description" : "Add a description"}</DropdownMenuItem> : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" disabled={!!blocked} onSelect={() => onDelete(r)} className="flex flex-col items-start gap-0">
               <span>Delete</span>
@@ -622,7 +667,19 @@ function SettingsTable({ query, onQuery, tab, rows, filtered, onClear, partial, 
               { key: "email", label: "Email", width: 260, sortable: true },
               { key: "evaluations", label: "Evaluations signed", width: 160, sortable: true, cell: (r) => count(r, n(r, "evaluations"), plural(n(r, "evaluations"), "evaluation", "evaluations")) },
             ]
-  const columns = [nameCol, ...(narrow ? [] : middle), statusCol, actionsCol]
+  // Description (D-EM1116-d): one line, the full text on hover; an empty cell is the way to write one, not a dash.
+  const descriptionCol: ColumnDef<SettingsRow> | null = onDescribe && (tab === "categories" || tab === "tags") ? {
+    key: "description",
+    label: "Description",
+    width: 360,
+    cell: (r) => {
+      const d = descriptions?.[r.id]
+      return d
+        ? <span className="block truncate text-sm text-foreground" title={d}>{d}</span>
+        : <Button type="button" variant="link" size="sm" className="h-auto p-0 text-sm font-normal text-muted-foreground no-underline hover:underline" aria-label={`Add a description for ${r.name}`} onClick={() => onDescribe(r)} data-add-description>Add a description</Button>
+    },
+  } : null
+  const columns = [nameCol, ...(narrow || !descriptionCol ? [] : [descriptionCol]), ...(narrow ? [] : middle), statusCol, actionsCol]
   const empty = filtered ? (
     <EmptyBlock compact title={`No ${NOUNS[tab]} match this search`} action={{ label: "Clear search" }} onAction={onClear} />
   ) : (
@@ -635,4 +692,30 @@ function SettingsTable({ query, onQuery, tab, rows, filtered, onClear, partial, 
   React.useEffect(() => { if (search !== query) onQuery(search) }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
   const { toolbarSlot, conditionalRules } = useDsTableToolbar<SettingsRow>(columns, sectionLabel(tab))
   return <DataTable<SettingsRow> key={`${tab}-${narrow ? "narrow" : "wide"}`} data={rows} columns={columns} state={ts} getRowId={(r) => r.id} selectable={false} searchable showQueryControls toolbarSlot={toolbarSlot} conditionalRules={conditionalRules} edgeInset={false} emptyState={empty} />
+}
+
+/** One optional line about a category or tag (D-EM1116-d). */
+function DescriptionDialog({ row, initial, onCancel, onSave }: { row: SettingsRow | null; initial: string; onCancel: () => void; onSave: (r: SettingsRow, text: string) => void }) {
+  const [text, setText] = React.useState(initial)
+  React.useEffect(() => { if (row) setText(initial) }, [row, initial])
+  return (
+    <Dialog open={!!row} onOpenChange={(o) => { if (!o) onCancel() }}>
+      <DialogContent className="sm:max-w-md" data-description-dialog>
+        <form onSubmit={(e) => { e.preventDefault(); if (row) onSave(row, text) }} className="flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>{row ? `Describe ${row.name}` : "Description"}</DialogTitle>
+            <DialogDescription className="sr-only">One optional line shown beside the name.</DialogDescription>
+          </DialogHeader>
+          <Field>
+            <FieldLabel htmlFor="vocab-description">Description</FieldLabel>
+            <Input id="vocab-description" autoFocus maxLength={160} value={text} onChange={(e) => setText(e.target.value)} />
+          </Field>
+          <DialogFooter>
+            <Button type="button" variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+            <Button type="submit" variant="default" size="sm">Save description</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
 }

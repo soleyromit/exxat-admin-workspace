@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * The Skill lists table (designer 2026-11-05, D-L106): Name with a Default tag on one, Skills with any inactive count under it, Assigned to as tags, and a row menu of Rename, Change skills and Delete where allowed. A row click opens the
+ * The Skill lists table (designer 2026-11-05, D-L106; D-LS1116-a): Name with a Default tag on one, Students (a link to Reports for that list), Skills with any inactive count under it, Assigned to as tags, and a row menu of Rename, Change skills, Duplicate and Delete where allowed. A row click opens the
  * panel. No Status column and no action in a cell. At phone width: Name, Skills and the menu, with Assigned to under the name.
  */
 import * as React from "react"
@@ -14,8 +14,13 @@ import { DataTable } from "@exxatdesignux/ui/components/data-table"
 import type { ColumnDef } from "@exxatdesignux/ui/components/data-table/types"
 import { useDsTableToolbar } from "@/components/lab/shared/ds-table-toolbar"
 import { RowMenu, type RowMenuEntry } from "@/components/lab/shared/row-menu"
-import { assignedToText, deleteBlockedReason, listHasAssignment, listSizeParts, skillLists, type SkillList } from "@/lib/lab/lists"
+import { assignedToText, deleteBlockedReason, listHasAssignment, listSizeParts, skillLists, studentCount, type SkillList } from "@/lib/lab/lists"
 import { capitalize, skillListsNoun, skillNounPlural } from "@/lib/lab/terms"
+import { listSkillsHref } from "@/lib/lab/admin-ia"
+import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
+import { useLabHref, useLabLinkContext } from "@/components/lab/lab-bar/page-context"
+import { useRouter } from "next/navigation"
+import { EmptyBlock } from "@/components/lab/empty-block"
 import type { ListsContext } from "./lists-frame"
 import { fmt, useTextCut } from "./parts"
 
@@ -24,6 +29,7 @@ interface Row extends Record<string, unknown> {
   list: SkillList
   name: string
   size: number
+  students: number
   assigned: string
 }
 
@@ -31,23 +37,30 @@ interface Row extends Record<string, unknown> {
  * Rename, New version where someone is on the list (one on no one is edited in place), Delete on every list: the default one is blocked with its reason in view, and one that people have asks first, naming who it reaches [INFER: ADMIN-D6 amendment c].
  * The same menu on the row and in the panel.
  */
-export function ListRowMenu({ list, onRename, onNewVersion, onDelete }: { list: SkillList; onRename: (id: string) => void; onNewVersion: (id: string) => void; onDelete: (list: SkillList) => void }) {
+export function ListRowMenu({ list, onRename, onNewVersion, onDuplicate, onDelete, onDetails }: { list: SkillList; onRename: (id: string) => void; onNewVersion: (id: string) => void; /** Opens Create skill list prefilled "{name} (copy)" (D-LS1116-a). */ onDuplicate?: (id: string) => void; onDelete: (list: SkillList) => void; /** On the table only: the list's panel (who it is assigned to, its courses, the default), since a row click opens its skills. */ onDetails?: (id: string) => void }) {
   const entries: RowMenuEntry[] = [
+    ...(onDetails ? [{ slot: "edit" as const, label: "Details", icon: "fa-circle-info", onSelect: () => onDetails(list.id) }] : []),
     { slot: "edit", label: "Rename", icon: "fa-pen", onSelect: () => onRename(list.id) },
     ...(listHasAssignment(list) ? [{ slot: "lifecycle" as const, label: `Change ${skillNounPlural()}`, icon: "fa-pen", onSelect: () => onNewVersion(list.id) }] : []),
+    ...(onDuplicate ? [{ slot: "lifecycle" as const, label: "Duplicate", icon: "fa-copy", onSelect: () => onDuplicate(list.id) }] : []),
     // Always offered, so nobody reads it as missing (Sankalp 2026-11-15). The default one says why it cannot go; one someone has says who it reaches in its confirm.
     { slot: "delete" as const, label: "Delete", icon: "fa-trash", onSelect: () => onDelete(list), blockedBecause: deleteBlockedReason(list) },
   ]
   return <RowMenu label={`Actions for ${list.name}`} entries={entries} />
 }
 
-/** The list's name, opening its panel. Cut off, it gives the whole name on hover or focus (the button already takes focus). */
-function ListNameLink({ name, id, onOpen }: { name: string; id: string; onOpen: (id: string) => void }) {
+/**
+ * The list's name, a link to its skills (Romit 2026-11-16), as the whole row is. A real link, so it is in the tab order and Enter opens it. Cut off, it gives the whole
+ * name on hover or focus.
+ */
+function ListNameLink({ name, id, href }: { name: string; id: string; href: string }) {
   const { ref, cut } = useTextCut<HTMLSpanElement>(name)
   return (
     <Tip label={name} disabled={!cut} triggerClassName="min-w-0 max-w-full">
-      <Button type="button" variant="link" size="sm" className="h-auto min-w-0 max-w-full justify-start p-0 text-left text-sm font-medium text-foreground no-underline underline-offset-2 hover:underline" onClick={(e) => { e.stopPropagation(); onOpen(id) }} data-list-link={id}>
-        <span ref={ref} className="truncate">{name}</span>
+      <Button asChild variant="link" size="sm" className="h-auto min-w-0 max-w-full justify-start p-0 text-left text-sm font-medium text-foreground no-underline underline-offset-2 hover:underline">
+        <Link href={href} onClick={(e) => e.stopPropagation()} data-list-link={id}>
+          <span ref={ref} className="truncate">{name}</span>
+        </Link>
       </Button>
     </Tip>
   )
@@ -81,7 +94,13 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
   const { model, actions } = c
   const nounPl = skillNounPlural()
   const isMobile = useIsMobile()
-  const rows: Row[] = skillLists(model.lists).map((l) => ({ id: l.id, list: l, name: l.name, size: l.skillIds.length, assigned: assignedToText(l, model.groups), fAssigned: listHasAssignment(l) ? "yes" : "no" }))
+  const router = useRouter()
+  const link = useLabLinkContext()
+  const skillsHref = React.useCallback((id: string) => listSkillsHref(id, link), [link])
+  // Where a list's students are seen: Reports, scoped to that list (`skillList`, lib/lab/scope.ts), as Student groups links a group there.
+  const to = useLabHref()
+  const studentsHref = React.useCallback((id: string) => to("admin/attainment", { skillList: id }), [to])
+  const rows: Row[] = skillLists(model.lists).map((l) => ({ id: l.id, list: l, name: l.name, size: l.skillIds.length, students: studentCount(l, model.groups), assigned: assignedToText(l, model.groups), fAssigned: listHasAssignment(l) ? "yes" : "no" }))
   const columns = React.useMemo<ColumnDef<Row>[]>(() => {
     const name: ColumnDef<Row> = {
       key: "name",
@@ -94,7 +113,7 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
         <span className="flex min-w-0 flex-col items-start gap-1 py-0.5">
           <span className="flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-1">
             <i className="fa-light fa-list-check w-4 shrink-0 text-center text-sm text-muted-foreground" aria-hidden="true" />
-            <ListNameLink name={r.name} id={r.id} onOpen={actions.openList} />
+            <ListNameLink name={r.name} id={r.id} href={skillsHref(r.id)} />
             {r.list.isDefault ? <span className="shrink-0"><StatusBadge label="Default" tone="info" icon="fa-star" size="sm" surface="table" /></span> : null}
           </span>
           {isMobile ? <AssignedTo list={r.list} groups={model.groups} /> : null}
@@ -117,6 +136,19 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
         ) : <span className="tabular-nums">{fmt(r.size)}</span>
       },
     }
+    // Everyone the list reaches, counted once (prototype 11-16 [10]); the number opens them in Reports.
+    const students: ColumnDef<Row> = {
+      key: "students",
+      label: "Students",
+      width: isMobile ? 88 : 120,
+      sortable: true,
+      filter: { type: "range", icon: "fa-user", dataBounds: true, rangeStep: 1 },
+      cell: (r) => r.students === 0 ? <span className="tabular-nums text-muted-foreground">0</span> : (
+        <Button asChild variant="link" size="sm" className="h-auto p-0 text-sm font-normal tabular-nums">
+          <Link href={studentsHref(r.id)} onClick={(e) => e.stopPropagation()} aria-label={`${fmt(r.students)} students on ${r.name}, in Reports`} data-list-students={r.id}>{fmt(r.students)}</Link>
+        </Button>
+      ),
+    }
     const menu: ColumnDef<Row> = {
       key: "actions",
       label: "",
@@ -127,15 +159,15 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
       cell: (r) => (
         // The menu is portalled, but its presses still bubble through here: they must not read as a click on the row.
         <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          <ListRowMenu list={r.list} onRename={actions.openRename} onNewVersion={actions.makeVersion} onDelete={actions.openDelete} />
+          <ListRowMenu list={r.list} onRename={actions.openRename} onNewVersion={actions.makeVersion} onDuplicate={actions.openDuplicate} onDelete={actions.openDelete} onDetails={actions.openList} />
         </div>
       ),
     }
     // Filter-only: whether the list reaches anyone, the one question the Assigned to text cannot answer as a pick.
     const reach: ColumnDef<Row> = { key: "fAssigned", label: "Assignment", filterOnly: true, filter: { type: "select", icon: "fa-users", operators: ["is", "is_not"], options: [{ value: "yes", label: "Assigned" }, { value: "no", label: "Not assigned" }] } }
-    if (isMobile) return [name, size, menu, reach]
-    return [name, size, { key: "assigned", label: "Assigned to", width: 430, sortable: true, filter: { type: "text", icon: "fa-users" }, cell: (r) => <AssignedTo list={r.list} groups={model.groups} /> }, menu, reach]
-  }, [nounPl, model.groups, model.state, actions, isMobile])
+    if (isMobile) return [name, students, size, menu, reach]
+    return [name, students, size, { key: "assigned", label: "Assigned to", width: 430, sortable: true, filter: { type: "text", icon: "fa-users" }, cell: (r) => <AssignedTo list={r.list} groups={model.groups} /> }, menu, reach]
+  }, [nounPl, model.groups, model.state, actions, isMobile, skillsHref, studentsHref])
 
   const { toolbarSlot, conditionalRules } = useDsTableToolbar<Row>(columns, capitalize(skillListsNoun()))
   return (
@@ -145,7 +177,8 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
         data={rows}
         columns={columns}
         getRowId={(r) => r.id}
-        onRowClick={(r) => actions.openList(r.id)}
+        // The whole row opens the list's skills (Romit 2026-11-16); the name is the same link for keyboard users. The panel is the row menu's Details.
+        onRowClick={(r) => router.push(skillsHref(r.id))}
         openRowId={actions.openId}
         searchable
         showQueryControls
@@ -154,7 +187,8 @@ export function GroupsActionTable({ c }: { c: ListsContext }) {
         // No bulk action on this page: selection would only offer the table's default bar, and a row menu press landing on the row would raise it.
         selectable={false}
         edgeInset={false}
-        emptyState={<p className="p-4 text-sm text-muted-foreground">{`No ${skillListsNoun()} yet.`}</p>}
+        // Only a search or filter empties this table (a program with no lists shows the page's own empty state): say that, with a way out.
+        emptyState={<EmptyBlock compact title={`No ${skillListsNoun()} match`} />}
       />
     </div>
   )

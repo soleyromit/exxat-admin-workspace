@@ -22,7 +22,7 @@ import { isConfigured as isConfiguredSkill } from "@/lib/v2/population"
 import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
 import { sectionOf, LAB_ADMIN } from "./library"
 import { listsForCohort, programLists, type SkillList } from "./lists"
-import { capitalize, skillNoun, skillNounPlural } from "./terms"
+import { capitalize, skillListNoun, skillNoun, skillNounPlural } from "./terms"
 
 const capitalizeNoun = () => capitalize(skillNoun())
 const skillNounPluralOf = () => skillNounPlural()
@@ -383,7 +383,7 @@ export type SetLevelResult = { ok: true; overlay: MappingOverlay } | { ok: false
 export function setLevel(s: V2State, o: MappingOverlay, offeringId: string, skillId: string, level: MapLevel): SetLevelResult {
   const skill = s.skills.find((k) => k.id === skillId)
   if (!skill) return { ok: false, reason: `This ${skillNoun()} is no longer in the library.` }
-  if (!isMappable(skill)) return { ok: false, reason: `This ${skillNoun()} is inactive. Reactivate it in the library to map it.` }
+  if (!isMappable(skill)) return { ok: false, reason: `This ${skillNoun()} is inactive. Reactivate it on its ${skillListNoun()} to map it.` }
   if (!offeringById(s, offeringId)) return { ok: false, reason: "This offering no longer exists." }
   if (level !== "none" && !isConfigured(skill)) return { ok: false, reason: `Configure this ${skillNoun()} before mapping it.` }
   return { ok: true, overlay: { ...o, [offeringId]: { ...(o[offeringId] ?? {}), [skillId]: level } } }

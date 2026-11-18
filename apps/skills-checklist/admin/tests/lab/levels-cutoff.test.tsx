@@ -124,7 +124,7 @@ describe("Group check-off wording (2026-11-11)", () => {
 describe("Return target: Evaluation settings", () => {
   it("the Library reached from the own-number link leads back to Evaluation settings", () => {
     expect(FROM_PARAM).toBe("from")
-    expect(returnTarget("settings")?.label()).toBe("Evaluation settings")
+    expect(returnTarget("settings")?.label()).toBe("Evaluation methods")
     expect(returnHref("settings", "/x")).toMatch(/evaluation-settings/)
   })
 })

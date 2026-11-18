@@ -657,7 +657,7 @@ export function saveSkillSettings(s: V2State, skillId: string, rule: LabRule, op
 export function applyDefaultConfiguration(s: V2State, skillId: string, opts: { at: string; byId: string }): SettingsResult {
   const program = programRuleIn(s)
   const k = s.skills.find((x) => x.id === skillId)
-  if (!program || !k) return { ok: false, error: "There are no evaluation settings to go back to." }
+  if (!program || !k) return { ok: false, error: "There are no evaluation methods to go back to." }
   return saveSkillSettings(s, skillId, defaultDraftOf(panelRuleOf(k), program), { ...opts, edited: false })
 }
 

@@ -137,7 +137,7 @@ const MODEL_SAMPLE: Record<EvalModel, string[]> = {
   scored: ["1", "2", "3", "4", "5"],
 }
 
-export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, legend, legendHidden, onChosen, plain, across, rebuild, examples, row }: SectionProps & { columns?: 1 | 2 | 4; legend?: string; onChosen?: (m: EvalModel) => void; /** A stacked list of plain radios (the Library edit panel), not tiles. */ plain?: boolean; /** Plain radios side by side across a wide row. */ across?: boolean; /** The panel's own model change [REQ SC-09]: no question first; the form rebuilds and its Save lists what is cleared. */ rebuild?: (r: LabRule, m: EvalModel) => LabRule; /** Tiles of a name and one example line, across the row (Evaluation settings, map D3). The name alone names the radio. Needs a container above it. */ examples?: Record<EvalModel, string>; /** With `examples`: four quiet tiles in one row from a 56rem container, the choice marked by its radio and a brand border (Evaluation settings, 2026-11-10). */ row?: boolean }) {
+export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, legend, legendHidden, onChosen, plain, across, rebuild, examples, row, nameOnly }: SectionProps & { columns?: 1 | 2 | 4; legend?: string; onChosen?: (m: EvalModel) => void; /** A stacked list of plain radios (the Library edit panel), not tiles. */ plain?: boolean; /** Plain radios side by side across a wide row. */ across?: boolean; /** The panel's own model change [REQ SC-09]: no question first; the form rebuilds and its Save lists what is cleared. */ rebuild?: (r: LabRule, m: EvalModel) => LabRule; /** Tiles of a name and one example line, across the row (Evaluation settings, map D3). The name alone names the radio. Needs a container above it. */ examples?: Record<EvalModel, string>; /** With `examples`: four quiet tiles in one row from a 56rem container, the choice marked by its radio and a brand border (Evaluation settings, 2026-11-10). */ row?: boolean; /** With `row`: the name only, no example line (G, D-EM1116-b). */ nameOnly?: boolean }) {
   const err = useErr(issues, showErrors)("cfg-model")
   const [pending, setPending] = React.useState<EvalModel | null>(null)
   const modelNow = React.useRef(rule.model)
@@ -171,7 +171,7 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
         id="cfg-model"
         value={rule.model ?? ""}
         onValueChange={onValue}
-        aria-label="Evaluation model"
+        aria-label={nameOnly && legend ? legend : "Evaluation model"}
         className={cn(columns === 4 ? "flex flex-wrap gap-x-6 gap-y-3 outline-none" : "grid gap-3 outline-none", columns === 2 && !plain && !examples && "@min-[64rem]:grid-cols-2", across && "sm:grid-cols-2 @min-[56rem]:grid-cols-4", examples && !row && "@min-[26rem]:grid-cols-2", examples && row && "grid-cols-1 @min-[26rem]:grid-cols-2 @min-[56rem]:grid-cols-4")}
         {...errProps("cfg-model", err)}
       >
@@ -181,10 +181,10 @@ export function ModelSection({ rule, setRule, issues, showErrors, columns = 2, l
             return (
               <Label key={m} htmlFor={id} className="flex cursor-pointer flex-col items-start gap-2 rounded-[var(--radius)] border border-border bg-background p-3 font-normal hover:border-[var(--border-control-35)] has-[[data-state=checked]]:border-[var(--brand-color)] has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-[var(--brand-color)]" data-model-tile={m}>
                 <span className="flex items-center gap-2">
-                  <RadioGroupItem id={id} value={m} aria-labelledby={`${id}-name`} aria-describedby={`${id}-example`} />
-                  <span id={`${id}-name`} className={TYPE.label}>{MODEL_LABEL[m]}</span>
+                  <RadioGroupItem id={id} value={m} aria-labelledby={`${id}-name`} aria-describedby={nameOnly ? undefined : `${id}-example`} />
+                  <span id={`${id}-name`} className={nameOnly ? TYPE.body : TYPE.label}>{MODEL_LABEL[m]}</span>
                 </span>
-                <span id={`${id}-example`} title={examples[m]} className={cn(TYPE.meta, "line-clamp-2 break-words")}>{examples[m]}</span>
+                {nameOnly ? null : <span id={`${id}-example`} title={examples[m]} className={cn(TYPE.meta, "line-clamp-2 break-words")}>{examples[m]}</span>}
               </Label>
             )
           }
@@ -1073,11 +1073,11 @@ export function SelfRatingToggle({ rule, setRule, title = "Student rates themsel
 }
 
 /** Which evaluator roles can sign off [REQ SC-16]. */
-export function SignersField({ rule, setRule, issues, showErrors, legendHidden, compact }: SectionProps & { /** Closer together, so the three stay on one line in a narrow column. */ compact?: boolean }) {
+export function SignersField({ rule, setRule, issues, showErrors, legendHidden, compact, plain }: SectionProps & { /** Closer together, so the three stay on one line in a narrow column. */ compact?: boolean; /** G (D-EM1116-b): legend and role names in body weight. */ plain?: boolean }) {
   const roleErr = useErr(issues, showErrors)("cfg-role-preceptor")
   return (
-    <FieldSet>
-      <FieldLegend variant="label" className={legendHidden ? "sr-only" : undefined}>Who can sign off</FieldLegend>
+    <FieldSet className={plain ? "gap-2" : undefined}>
+      <FieldLegend variant="label" className={cn(legendHidden && "sr-only", plain && "mb-0 font-normal")}>Who can sign off</FieldLegend>
       <div className={cn("flex flex-wrap gap-y-3", compact ? "gap-x-4" : "gap-x-6")}>
         {ROLES.map((role) => (
           <div key={role} className="flex items-center gap-2">
@@ -1087,7 +1087,7 @@ export function SignersField({ rule, setRule, issues, showErrors, legendHidden, 
               onCheckedChange={(c) => setRule((r) => ({ ...r, evaluatorRoles: c ? [...r.evaluatorRoles, role] : r.evaluatorRoles.filter((x) => x !== role) }))}
               {...errProps("cfg-role-preceptor", roleErr)}
             />
-            <Label htmlFor={`cfg-role-${role}`}>{ROLE_LABEL[role]}</Label>
+            <Label htmlFor={`cfg-role-${role}`} className={plain ? "font-normal" : undefined}>{ROLE_LABEL[role]}</Label>
           </div>
         ))}
       </div>

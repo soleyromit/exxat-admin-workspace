@@ -14,6 +14,7 @@ All paths relative to `apps/skills-checklist/`. If they are missing in the curre
 | Need | Read |
 |---|---|
 | Always, first | `docs/knowledge/00-design-brief.md`, `glossary.md`, `02-decisions-ledger.md` |
+| Latest prototype (2026-11-16), first on any layout, IA or copy question | `/Users/romitsoley/Work/apps/skills-checklist/docs/knowledge/prototype-2026-11-16.md` (flows, interactions, DS map, diffs vs Oct 8 and vs our build), then `docs/source/prism-skills-prototype-2026-11-16.html` and `docs/source/prototype-text-dump-2026-11-16.txt` (main checkout `/Users/romitsoley/Work/apps/skills-checklist/`) |
 | Full playbook (long form of this prompt) | `docs/knowledge/agent-playbook.md` |
 | Latest call | `docs/knowledge/design/granola-2026-10-26-updates.md` |
 | IA, content, interaction, UI, charts, dashboards, laws | `docs/knowledge/strategy/01` to `07` |
@@ -26,7 +27,7 @@ All paths relative to `apps/skills-checklist/`. If they are missing in the curre
 ## 1. Operating rules
 
 1. Start every answer with one line: what you consulted and which decisions apply (for example "Consulted brief, ledger 3b/3c, strategy 07. Applies: D-L1, D-X12, D-X21").
-2. Precedence for behaviour: REQ > CALL > prototype > inference. For visual layout, IA and copy structure the prototype is the design to build, inside the DS base shell (Romit 2026-10-08). Tag claims `[REQ id]`, `[CALL 10-26]`, `[COMP]`, `[LEDGER D-x]`, `[INFER]`.
+2. Precedence for behaviour: REQ > CALL > prototype > inference. For visual layout, IA and copy structure the prototype is the design to build, inside the DS base shell (Romit 2026-10-08). The 2026-11-16 prototype supersedes the 2026-10-08 one for layout, IA and copy wherever they differ, unless a ledger decision says otherwise (ledger "New prototype 2026-11-16 ingested", Proposed). Tag claims `[REQ id]`, `[CALL 10-26]`, `[COMP]`, `[LEDGER D-x]`, `[PROTO 11-16]`, `[INFER]`.
 3. Never treat an `OD-*` as decided. Ledger 3c (D-X1 to D-X26) are delegated defaults, not Romit's words: say "delegated default" when you rely on one.
 4. Direct answer first, then evidence and the file. Be honest about verified versus inferred. A claim never reaches further than the check behind it.
 5. Never commit, push, deploy, stash or reset. Ask Romit only for decisions that are genuinely his (scope, an OD, a PENDING item, reversing his own decision), in plain chat text, never a menu or AskUserQuestion. Otherwise proceed on a documented default and flag it.
@@ -135,6 +136,22 @@ A program defines the skills it expects (it names them: skill, competency, EPA),
 - Pace (term clock) as a real program concept; Sample data chip on evaluator pages.
 - Whether Arthi sees reporting screens; non-lockstep mapping; faculty-by-location data source.
 - "Apply to new evidence only" (D-X27); J9 import grouping words (applied as default in D-X28); clinical-only start (Arthi).
+
+**Prototype 2026-11-16 digest (Sankalp; full: `docs/knowledge/prototype-2026-11-16.md`; verify there before relying on a line).**
+- Lives inside Prism's "Skills and Competencies" module: tabs Competencies | Skills; Skills has Setup | Approvals | Reports; Setup runs 1 Skills Lists, 2 Evaluation Methods; Lists has tabs Lists | Categories | Tags.
+- The skills list is the setup object. Default is one list for All students; a cohort or group list replaces it for them. No Library page: the library is the "Add skills" dialog (by category, Add all n, Create a new skill, Import).
+- List page: rows grouped by category with group select-all; per row Required/Optional, Times needed stepper, On a patient stepper, Method (same in all lists), Courses count, remove; bulk bar: Times needed + Apply, Make required, Make optional, Remove from list, Clear.
+- Draft then Save: "n unsaved change", Discard; saving a list with students asks "Update it for everyone on it" or "Save as a new skills list" (current students keep the old one). Duplicate opens New skills list prefilled "(copy)".
+- New skills list is one dialog: name, More options (description, complete by, In use | Archived), Who uses it (All students | a cohort or group), Students on this list; then "Create and add skills" lands on the list page.
+- Evaluation Methods: named reusable methods, one Default; types Sign-off (Pass / Not yet), Levels (ordered, tick which count), Checklist (steps Done / Not done / N/A, headings), Rated (criteria on a scale, score needed, optional N/A). Per method: who can evaluate, self-evaluation first, comment required, admin approves. Actions: Preview, Edit, Use for all skills, Make default, Duplicate, Delete (guarded).
+- "Details collected with every evaluation" are program-wide: built in Date performed, Graded or practice, On a patient or simulated, Clinical site; plus program details; Stop collecting keeps history.
+- Every evaluation is Graded or Practice (practice never counts) and On a patient or Simulated; lists can require a patient minimum.
+- Course mapping lives on the course offering (Courses, offering, Skills tab): Expected skills, Mandatory | Non-mandatory; second view Check-off, a lab grid (students x skills, session details once, ticks only for Sign-off and Levels).
+- Approvals: 4 KPIs, table by offering, right drawer by student: View, Return ("What should the evaluator change?"), Approve, Approve all (n), Approve selected, filter Would count | Would not count.
+- Reports: filters incl. Skills list; tabs By student, skill, tag, item, competency; Export popover. Competencies: Map menu gains Skills (with Leo suggestions); Review gains a Skills source.
+- Evaluator: delegator link, no sign-in; details once, one card per skill, "Same result as", Submit unlocks when complete.
+- Conflicts to raise, never decide: default method and configured-on-import vs REQ SC-02, IM-09; question-level model dropped vs SC-01; fixed noun "Skill" vs `{itemNoun}`; Mandatory / Non-mandatory vs D-L76 Recommended; Not Started / Not Met vs AE-04 and D-L1; list delete with no confirm; 6 KPIs, red badge, progress bars, em dashes, "items" in its copy (do not copy these).
+- Against our build: Evaluation settings (one rule + Custom) vs Evaluation Methods is the biggest gap; New skill list four-step panel (D-L117, D-L122 Romit) vs one dialog; Times needed per list vs Evaluation settings (D-X44); course mapping page vs offering tab. Romit decides.
 
 **The lab.**
 - `/lab` (By flow, By persona), `/lab?present=1`. 38 screens, 93 variants (`admin/lib/lab/screens.json`), 10 flows with option sets (`admin/lib/lab/flows.json`; set-up-skills: 1 Guided, 2 One page, 3 Many at once).

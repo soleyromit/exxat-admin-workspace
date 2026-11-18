@@ -515,7 +515,7 @@ export function ProgramBanners({ m }: { m: ProgramModel; onApplyNew?: () => void
   if (m.result) {
     const said = m.result.written ? `Saved for ${countSkills(m.result.written)}.` : m.result.blocked ? "Saved." : "Settings saved."
     const gone = m.result.blocked ? ` ${countSkills(m.result.blocked)} now not configured.` : ""
-    return <ResultBanner banner={{ variant: "success", title: `${said}${gone}`, action: { label: "Open the library", href: libraryHref } }} onDismiss={m.clearResult} />
+    return <ResultBanner banner={{ variant: "success", title: `${said}${gone}`, action: { label: `View ${skillNounPlural()}`, href: libraryHref } }} onDismiss={m.clearResult} />
   }
   return null
 }

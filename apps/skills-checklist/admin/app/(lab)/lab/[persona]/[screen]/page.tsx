@@ -5,7 +5,7 @@ import { FocusFrame } from "@/components/lab/focus-frame"
 import { ProgramScope } from "@/components/lab/setup/new-program-scope"
 import { LabBar } from "@/components/lab/lab-bar"
 import { PlaceholderScreen } from "@/components/lab/placeholder-screen"
-import { VARIANT_COMPONENTS } from "@/components/lab/screens"
+import { VariantScreen } from "@/components/lab/screens"
 import { isPersonaId } from "@/lib/lab/personas"
 import { findScreen, resolveVariant, screenKey } from "@/lib/lab/screens"
 import { isPresent } from "@/lib/lab/present"
@@ -54,7 +54,8 @@ export default async function LabScreenPage({ params, searchParams }: { params: 
   const requested = !present && typeof sp.variant === "string" ? sp.variant : undefined
   const variant = resolveVariant(screen, requested)
   const key = `${screenKey(screen)}/${variant.id}`
-  const Built = variant.file ? VARIANT_COMPONENTS[key] : undefined
+  const ph = <PlaceholderScreen screen={screen} variant={variant} />
+  const built = variant.file ? <VariantScreen variantKey={key} fallback={ph} /> : ph
   const bar = (
     <React.Suspense fallback={<div className="h-10 shrink-0 border-b border-border" data-lab-chrome aria-hidden="true" />}>
       <LabBar persona={persona} screen={screenKey(screen)} variant={variant.id} />
@@ -64,13 +65,13 @@ export default async function LabScreenPage({ params, searchParams }: { params: 
   if (variant.frame === "focus") {
     return (
       <FocusFrame bar={bar} page={{ screen: screenKey(screen), variant: variant.id }}>
-        <React.Suspense fallback={null}><ProgramScope>{Built ? <Built /> : <PlaceholderScreen screen={screen} variant={variant} />}</ProgramScope></React.Suspense>
+        <React.Suspense fallback={null}><ProgramScope>{built}</ProgramScope></React.Suspense>
       </FocusFrame>
     )
   }
   return (
     <LabFrame persona={persona} bar={bar} page={{ screen: screenKey(screen), variant: variant.id }}>
-      <React.Suspense fallback={null}><ProgramScope>{Built ? <Built /> : <PlaceholderScreen screen={screen} variant={variant} />}</ProgramScope></React.Suspense>
+      <React.Suspense fallback={null}><ProgramScope>{built}</ProgramScope></React.Suspense>
     </LabFrame>
   )
 }

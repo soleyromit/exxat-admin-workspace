@@ -32,7 +32,6 @@ import {
   FileStatus,
   FixIntro,
   FixList,
-  LIBRARY_HREF,
   ConfirmSummary,
   ImportAnswers,
   ReadingState,
@@ -54,7 +53,7 @@ import { ensureVocab } from "@/lib/v2/vocabulary"
 import { LaterTitle } from "@/components/lab/import/sample-badge"
 import { TYPE } from "@/components/lab/type-scale"
 import { cn } from "@exxatdesignux/ui/lib/utils"
-import { capitalize, countSkills, skillListNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { capitalize, countSkills, skillListNoun, skillListsNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 
 const STEP_IDS = ["upload", "review", "fix", "confirm"] as const
 type StepId = (typeof STEP_IDS)[number]
@@ -225,7 +224,7 @@ export function AdminImportA() {
 
   let footer: StickyFooterProps
   if (done) {
-    footer = { secondary: { label: "Import another file", onClick: () => { session.reset(); go(0) } }, primary: landedList ? { label: `Open ${landedList.listName}`, href: to("admin/lists-cohorts", { list: landedList.listId }) } : { label: "Open the library", href: LIBRARY_HREF } }
+    footer = { secondary: { label: "Import another file", onClick: () => { session.reset(); go(0) } }, primary: landedList ? { label: `Open ${landedList.listName}`, href: to("admin/skills-library", { list: landedList.listId }) } : { label: `Open ${skillListsNoun()}`, href: to("admin/lists-cohorts") } }
   } else if (step === 0) {
     const reason = session.phase === "reading" ? "Reading the file" : session.phase === "failed" ? "Choose a file that can be read." : session.phase === "review" ? undefined : "Choose a file first."
     footer = { primary: { label: "Next", onClick: () => { if (session.isNewList && session.nameError) { session.setNameTried(true); requestAnimationFrame(() => document.getElementById("import-new-list-name")?.focus()); return } go(1) }, disabled: !!reason, disabledReason: reason } }

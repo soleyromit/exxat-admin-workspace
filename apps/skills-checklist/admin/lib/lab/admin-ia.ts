@@ -11,7 +11,7 @@
  */
 import { capitalize, skillListsNoun, skillNounPlural } from "./terms"
 import { isVocabularySection, scopeSection, sectionLabel, type SettingsSection } from "./settings"
-import { labHref, navHref, type LinkContext } from "./links"
+import { labHref, type LinkContext } from "./links"
 import { findFlow } from "./flows"
 import { WALKTHROUGH_ID, walkthroughFlow } from "./walkthrough"
 
@@ -27,7 +27,10 @@ const CONFIGURE_PANEL_VARIANT = "B"
 export const FROM_EVALUATION_SETTINGS = "settings"
 export const EVALUATION_SETTINGS_HREF = "/lab/admin/evaluation-settings"
 
-export type SkillsPanelKey = "library" | "groups" | "categories" | "settings" | "mapping"
+export type SkillsPanelKey = "groups" | "categories" | "settings" | "mapping"
+
+/** The skills page of one list (Romit 2026-11-16, "Skills associated to Skills list would be accessed after clicking on the Skill list table row. Remove library nav."): the Library screen opened on a list. */
+export const LIST_SKILLS_SCREEN = "admin/skills-library"
 
 export interface SkillsPanelItem {
   key: SkillsPanelKey
@@ -40,13 +43,13 @@ export interface SkillsPanelItem {
 
 /**
  * Panel rows in Sankalp's order of the admin's work [CALL 11-02] (Proposed 2026-11-02, contract V2-06). Evaluation settings
- * (program level, times needed included) sits after Categories and tags. No checklist page (Romit 2026-11-02).
+ * (program level, times needed included) sits after Categories and tags. No checklist page (Romit 2026-11-02). No Library row (Romit
+ * 2026-11-16): a list's skills open from its row on Skill lists, so the skills pages sit under Skill lists. No Categories and tags row either (Romit
+ * 2026-11-16, "Categories and Tags are going to be a tab in the skill list page"): it is the tab `?tab=categories` of Skill lists.
  */
 export const SKILLS_PANEL: SkillsPanelItem[] = [
   { key: "groups", label: () => capitalize(skillListsNoun()), screen: "admin/lists-cohorts", icon: "fa-layer-group" },
-  { key: "library", label: () => "Library", screen: "admin/skills-library", icon: "fa-book" },
-  { key: "categories", label: () => "Categories and tags", screen: "admin/categories-tags", icon: "fa-tags" },
-  { key: "settings", label: () => "Evaluation settings", screen: "admin/evaluation-settings", icon: "fa-sliders" },
+  { key: "settings", label: () => "Evaluation methods", screen: "admin/evaluation-settings", icon: "fa-sliders" },
   { key: "mapping", label: () => "Course mapping", screen: "admin/course-mapping", icon: "fa-sitemap" },
 ]
 
@@ -63,17 +66,14 @@ export function settingsSectionOf(params: Params | null | undefined): SettingsSe
 /** The Skills panel item the page is on, if any. Settings is never one (D-L21). */
 export function skillsPanelItemFor(screen: string | undefined, params?: Params | null, variant?: string): SkillsPanelItem | undefined {
   if (!screen) return undefined
+  const lists = SKILLS_PANEL.find((i) => i.key === "groups")
   if (screen === CONFIGURE_SKILL_SCREEN) {
     if (variant !== CONFIGURE_PANEL_VARIANT) return undefined
-    const key: SkillsPanelKey = params?.get("from") === FROM_EVALUATION_SETTINGS ? "settings" : "library"
-    return SKILLS_PANEL.find((i) => i.key === key)
+    return params?.get("from") === FROM_EVALUATION_SETTINGS ? SKILLS_PANEL.find((i) => i.key === "settings") : lists
   }
-  // Add a skill is the library with its add sheet (or inline row) open, so it is a Library page: Skills row lit, panel open,
-  // Library selected, crumb "Skills" (D-X33 extended 2026-11-03, D-L41), the same sidebar as the steps around it.
-  // Starting points and Bulk upload are ways to add to the Library too, reached from its Add menu.
-  // Bulk upload opened from a list's panel (?from=lists, or ?to=<listId>) belongs to Skill lists, as its crumb "Skill lists > Bulk upload" says (2026-11-15).
-  if (screen === "admin/import-ai-review" && (params?.get("from") === "lists" || !!params?.get("to"))) return SKILLS_PANEL.find((i) => i.key === "groups")
-  if (screen === ADD_SKILL_SCREEN || screen === "admin/starter-library" || screen === "admin/import-ai-review") return SKILLS_PANEL.find((i) => i.key === "library")
+  // A list's skills page, and what it opens (Add a skill with its sheet open, Bulk upload, Starting points), belong to Skill lists since the Library row
+  // went (Romit 2026-11-16): Skills row lit, panel open, Skill lists selected.
+  if (screen === LIST_SKILLS_SCREEN || screen === ADD_SKILL_SCREEN || screen === "admin/starter-library" || screen === "admin/import-ai-review" || screen === VOCABULARY_SCREEN) return lists
   return SKILLS_PANEL.find((i) => i.screen === screen)
 }
 
@@ -89,6 +89,10 @@ export function isSettingsArea(screen: string | undefined, _params?: Params | nu
 
 export const VOCABULARY_SCREEN = "admin/categories-tags"
 
+/** Categories and tags, the tab of Skill lists (Romit 2026-11-16). `tags` opens it on its Tags section. */
+export const VOCABULARY_TAB_SCREEN = "admin/lists-cohorts"
+export const vocabularyTabParams = (section: "categories" | "tags" = "categories"): Record<string, string> => ({ tab: section })
+
 /**
  * Where an evaluator name awaiting verification is decided: Approvals, "New evaluators" (Romit 2026-10-27, D-L23 and D-X36; the Approvals
  * page owns the tab). The Settings Evaluators list links each unverified row here.
@@ -102,8 +106,8 @@ const withQuery = (path: string, q: URLSearchParams) => {
 
 /**
  * Old Settings URLs whose section moved, or null when the URL is a Settings section:
- * - Categories or Tags (`?tab=categories|tags`, or variant B's `?list=`) live on their own page (D-L21). Categories is that
- *   page's landing, so it needs no param; Tags keeps the param name it came with.
+ * - Categories or Tags (`?tab=categories|tags`, or variant B's `?list=`) are the Categories and tags tab of Skill lists (D-L21, moved
+ *   2026-11-16), always named in `?tab=`.
  * - Lab instructors (`?tab=instructors`) is the Evaluators section with the role filter on Lab instructor (D-L24).
  * Every other param (variant, set, scope, entry) is kept.
  */
@@ -119,8 +123,8 @@ export function legacySettingsHref(query: URLSearchParams): string | null {
   if (!isVocabularySection(raw)) return null
   q.delete("tab")
   q.delete("list")
-  if (raw === "tags") q.set(key, "tags")
-  return withQuery(`/lab/${VOCABULARY_SCREEN}`, q)
+  q.set("tab", raw)
+  return withQuery(`/lab/${VOCABULARY_TAB_SCREEN}`, q)
 }
 
 /**
@@ -164,8 +168,13 @@ export function skillsNavHref(ctx: LinkContext): string {
 /** Where a Skills panel item goes, keeping the option set and the scope (in the walkthrough, skillsNavContext). */
 export function skillsPanelHref(item: SkillsPanelItem, ctx: LinkContext): string {
   const nav = skillsNavContext(item.screen, ctx)
-  if (item.key === "library") return navHref(item.screen, nav)
-  return labHref(item.screen, item.key === "categories" ? { tab: null, list: null, entry: null } : {}, nav)
+  // The Skill lists row opens its first tab, whatever tab the page was on.
+  return labHref(item.screen, item.key === "groups" ? { tab: null } : {}, nav)
+}
+
+/** One list's skills page, from a row on Skill lists or a link that names the list. In the walkthrough unless the page's lab flow holds it. */
+export function listSkillsHref(listId: string, ctx: LinkContext, extra: Record<string, string | null> = {}): string {
+  return labHref(LIST_SKILLS_SCREEN, { ...extra, list: listId }, skillsNavContext(LIST_SKILLS_SCREEN, ctx))
 }
 
 /** The Settings footer link: the Settings page on its first program section (clinical settings), set-aware. */

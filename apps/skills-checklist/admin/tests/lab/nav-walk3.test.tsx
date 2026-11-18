@@ -41,6 +41,14 @@ afterEach(() => {
 const WALK = "setup-walkthrough"
 
 function frameOn(step: string, search = "") {
+  // Bulk upload is no longer a walkthrough stop (D-ADD1117: the four add steps became one, "Add skills"): its crumbs are read on its own lab route.
+  if (step === "bulk") {
+    nav.pathname = "/lab/admin/import-ai-review"
+    nav.search = search
+    return render(
+      <LabProviders><LabFrame persona="admin" navPersona="admin" page={{ screen: "admin/import-ai-review", variant: "A" }}><div>page</div></LabFrame></LabProviders>,
+    )
+  }
   const r = resolveStep(WALK, step, "1")!
   nav.pathname = `/lab/flow/${WALK}/${step}`
   nav.search = search
@@ -55,23 +63,24 @@ function crumbsOn(step: string, search = ""): Array<{ text: string; href: string
   const out = Array.from(full.querySelectorAll("li")).filter((li) => !li.getAttribute("role")).map((li) => {
     const a = li.querySelector("a")
     return { text: (li.textContent ?? "").trim(), href: a ? a.getAttribute("href") : null }
-  }).filter((c) => c.text && c.text !== "Design lab" && c.text !== "Admin")
+  }).filter((c) => c.text && c.text !== "Design lab" && c.text !== "Admin" && !(step === "bulk" && c.text === "Administrator"))
   unmount()
   return out
 }
 
 describe("D7: Bulk upload's crumb names the page", () => {
-  it("opened plainly: Dashboard > Skills > Library > Bulk upload, Library a link to the library", () => {
+  // The Library row is gone (Romit 2026-11-16): the skills page is one list's, under Skill lists.
+  it("opened plainly: Dashboard > Skills > Skill lists > {list} > Bulk upload, the list a link to its skills", () => {
     const crumbs = crumbsOn("bulk")
-    expect(crumbs.map((c) => c.text)).toEqual(["Dashboard", "Skills", "Library", "Bulk upload"])
-    expect(crumbs.find((c) => c.text === "Library")?.href).toMatch(/library/)
+    expect(crumbs.map((c) => c.text)).toEqual(["Dashboard", "Skills", "Skill lists", "Clinical skills checklist", "Bulk upload"])
+    expect(crumbs.find((c) => c.text === "Clinical skills checklist")?.href).toMatch(/library\?(.*&)?list=list-clinical/)
     expect(crumbs.at(-1)?.href).toBeNull()
   })
-  it("opened from the library's menu (?from=skills): the same words, not Skills twice", () => {
-    expect(crumbsOn("bulk", "from=skills").map((c) => c.text)).toEqual(["Dashboard", "Skills", "Library", "Bulk upload"])
+  it("opened from the list's menu (?from=skills): the same words, not Skills twice", () => {
+    expect(crumbsOn("bulk", "from=skills&list=list-clinical").map((c) => c.text)).toEqual(["Dashboard", "Skills", "Skill lists", "Clinical skills checklist", "Bulk upload"])
   })
-  it("the Library page itself still reads Skills > Library", () => {
-    expect(crumbsOn("library").map((c) => c.text)).toEqual(["Dashboard", "Skills", "Library"])
+  it("the list's skills page reads Skills > Skill lists > {list}", () => {
+    expect(crumbsOn("library").map((c) => c.text)).toEqual(["Dashboard", "Skills", "Skill lists", "Clinical skills checklist"])
   })
 })
 
@@ -212,13 +221,18 @@ describe("D13: Back to {list} only with return context, and carried onward", () 
     expect(returnTarget("setup", "l1")?.href).toMatch(/list=l1&setup=configure$/)
     expect(carryReturn("/lab/admin/configure-skill?skill=sk-1", new URLSearchParams("skill=sk-1"))).toBe("/lab/admin/configure-skill?skill=sk-1")
   })
-  it("Evaluation settings keeps its plain Back to Skill lists (Sankalp point 7); Library, Categories, Evaluation settings and Course mapping share one control", async () => {
+  it("Evaluation settings keeps its plain way back to Skill lists (Sankalp point 7); every page's way back is one icon before the title (Romit 2026-11-16)", async () => {
     const fs = await import("node:fs")
-    const settings = fs.readFileSync("components/lab/screens/admin-evaluation-settings-b.tsx", "utf8")
-    expect(settings).toMatch(/<ReturnLink plainToLists \/>/)
-    for (const f of ["components/lab/screens/admin-evaluation-settings-b.tsx", "components/lab/library/library-chrome.tsx", "components/lab/admin-b/settings-page.tsx", "components/lab/admin-a/mapping-frame.tsx"]) {
-      expect(fs.readFileSync(f, "utf8"), f).toMatch(/<ReturnLink( plainToLists)? \/>/)
+    for (const f of ["components/lab/screens/admin-evaluation-settings-b.tsx", "components/lab/screens/admin-evaluation-settings-g.tsx"]) {
+      expect(fs.readFileSync(f, "utf8"), f).toMatch(/<ReturnTitle plainToLists>/)
     }
+    for (const f of ["components/lab/library/library-chrome.tsx", "components/lab/admin-b/settings-page.tsx", "components/lab/admin-a/mapping-frame.tsx"]) {
+      expect(fs.readFileSync(f, "utf8"), f).toMatch(/<ReturnTitle>/)
+    }
+    const control = fs.readFileSync("components/lab/shared/return-link.tsx", "utf8")
+    expect(control).toMatch(/size="icon"/)
+    expect(control).toMatch(/fa-arrow-left/)
+    expect(control).not.toMatch(/export function ReturnLink/)
   })
   it("a further attempt opened from My progress reads My progress in its crumb; else My requests", () => {
     expect(crumbParentFor("student/fix-returned", new URLSearchParams("skill=sk-1&from=progress"))?.label).toBe("My progress")

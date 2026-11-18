@@ -25,7 +25,7 @@ export const SECTIONS: PrismSection[] = [
       { id: "curriculum-mapping", label: "Curriculum Mapping", icon: "fa-grid-2-plus", sharp: true, badge: "leo", desc: "Build your curriculum, map it with standards, and get insightful reports." },
       { id: "competency", label: "Competency Management", icon: "fa-transporter", sharp: true, badge: "beta", desc: "Set up your competencies, map them to assessments and course offerings and generate insightful reports." },
       // Not on the live page. Copy is [INFER], not approved by Romit.
-      { id: "skills-checklist", label: SKILLS_CHECKLIST.label, icon: "fa-list-check", href: SKILLS_CHECKLIST.href, desc: "Set up skills, evaluation settings and course mapping." },
+      { id: "skills-checklist", label: SKILLS_CHECKLIST.label, icon: "fa-list-check", href: SKILLS_CHECKLIST.href, desc: "Set up skills, evaluation methods and course mapping." },
     ],
   },
   {

@@ -142,8 +142,9 @@ export function SheetSection({ id, title, count, changed, children }: { id: stri
 }
 
 /** A field: its label above the control, an optional quiet word after it, "Changed", and on the right of the label line an action of the field's own. */
-export function FieldBlock({ label, labelId, htmlFor, hint, end, changed, children, srLabel }: { label: string; labelId?: string; htmlFor?: string; hint?: string; end?: React.ReactNode; changed?: boolean; children: React.ReactNode; /** The section's name already says it: the label is for a screen reader only, and "Changed" goes on the section heading (SheetSection). */ srLabel?: boolean }) {
-  const name = htmlFor ? <Label htmlFor={htmlFor} id={labelId} className={cn(TYPE.group, srLabel && "sr-only")}>{label}</Label> : <p id={labelId} className={cn(TYPE.group, srLabel && "sr-only")}>{label}</p>
+export function FieldBlock({ label, labelId, htmlFor, hint, end, changed, children, srLabel, plain }: { label: string; labelId?: string; htmlFor?: string; hint?: string; end?: React.ReactNode; changed?: boolean; children: React.ReactNode; /** The section's name already says it: the label is for a screen reader only, and "Changed" goes on the section heading (SheetSection). */ srLabel?: boolean; /** Evaluation methods G (D-EM1116-e): the label in the DS label weight, not semibold. */ plain?: boolean }) {
+  const labelType = plain ? TYPE.label : TYPE.group
+  const name = htmlFor ? <Label htmlFor={htmlFor} id={labelId} className={cn(labelType, srLabel && "sr-only")}>{label}</Label> : <p id={labelId} className={cn(labelType, srLabel && "sr-only")}>{label}</p>
   // "Changed" sits only after a visible label, never alone on a line (2026-11-11).
   const mark = changed && !srLabel
   const line = !srLabel || end
@@ -294,6 +295,28 @@ const ROW = "grid min-w-0 items-center gap-x-2 gap-y-1 border-t border-border px
 const LEVEL_COLS = "grid-cols-[2rem_minmax(0,1fr)_5rem_2rem] @[28rem]:grid-cols-[2rem_minmax(0,1fr)_9rem_2rem]"
 const OUTCOME_COLS = "grid-cols-[minmax(0,1fr)_5rem] @[28rem]:grid-cols-[minmax(0,1fr)_9rem]"
 
+// G's frameless lists (D-EM1116-e): no outer border or row rules (the inputs carry the only lines), the checkbox column just wide enough for its head.
+const PLAIN_ROW = "grid min-w-0 items-center gap-x-2 gap-y-1"
+const PLAIN_LEVEL_COLS = "grid-cols-[2rem_minmax(0,1fr)_4.5rem_2rem] @[28rem]:grid-cols-[2rem_minmax(0,1fr)_6.5rem_2rem]"
+const PLAIN_OUTCOME_COLS = "grid-cols-[minmax(0,1fr)_4.5rem] @[28rem]:grid-cols-[minmax(0,1fr)_6.5rem]"
+
+/**
+ * G's list head (D-EM1116-e): the list's label and the head over its controls on one line, directly over the rows (proximity), so there is no
+ * label line above a head line. Hidden from a screen reader, as ColumnHeads is: the group and every control name themselves in full.
+ */
+function PlainHeads({ label, note, cols, lead }: { label: string; /** A fact about the list's order, muted, after the label. */ note?: string; cols: string; lead?: boolean }) {
+  return (
+    <div className={cn("grid min-w-0 items-baseline gap-x-2 pb-2", cols)} aria-hidden="true" data-list-heads>
+      <span className={cn("flex min-w-0 flex-wrap items-baseline gap-x-2", lead && "col-span-2")}>
+        <span className={TYPE.label}>{label}</span>
+        {note ? <span className={TYPE.meta}>{note}</span> : null}
+      </span>
+      <span className={cn(TYPE.meta, "text-balance text-center")}>{MOVES_SHORT}</span>
+      {lead ? <span /> : null}
+    </div>
+  )
+}
+
 /** The list's column heads, on the rows' own grid so each sits over its column. Hidden from a screen reader: every control names itself in full. */
 function ColumnHeads({ name, cols, lead, inset }: { name: string; cols: string; /** A grip column before the name. */ lead?: boolean; inset?: boolean }) {
   return (
@@ -307,9 +330,9 @@ function ColumnHeads({ name, cols, lead, inset }: { name: string; cols: string; 
 }
 
 /** The list's frame: one bordered group, named by the field's label (the question). */
-function ChoiceList({ id, labelledBy, children, invalid, describedBy }: { id: string; labelledBy: string; children: React.ReactNode; invalid?: boolean; describedBy?: string }) {
+function ChoiceList({ id, labelledBy, children, invalid, describedBy, bare }: { id: string; labelledBy: string; children: React.ReactNode; invalid?: boolean; describedBy?: string; bare?: boolean }) {
   return (
-    <div id={id} role="group" tabIndex={-1} aria-labelledby={labelledBy} className="@container min-w-0 overflow-hidden rounded-[var(--radius)] border border-border outline-none" aria-invalid={invalid || undefined} aria-describedby={describedBy} data-counts-from>
+    <div id={id} role="group" tabIndex={-1} aria-labelledby={labelledBy} className={cn("@container min-w-0 outline-none", !bare && "overflow-hidden rounded-[var(--radius)] border border-border")} aria-invalid={invalid || undefined} aria-describedby={describedBy} data-counts-from>
       {children}
     </div>
   )
@@ -322,7 +345,10 @@ function ChoiceList({ id, labelledBy, children, invalid, describedBy }: { id: st
  * one clears every level below it; the engine keeps one threshold, and every box checked is "at any level". A linked change to other rows is said aloud.
  * Reorder by dragging the grip or, focused, the arrow keys; a move that changes which levels move a student on is said aloud too.
  */
-export function LevelsField({ rule, setRule, err }: { rule: LabRule; setRule: SetRule; err: Err }) {
+/** G's short column head over the controls (D-EM1116-b). */
+export const MOVES_SHORT = "Moves forward"
+
+export function LevelsField({ rule, setRule, err, plain, presets }: { rule: LabRule; setRule: SetRule; err: Err; /** G (D-EM1116-e): a frameless list, its label and the "Moves forward" head on one line, no Start from on the label line. */ plain?: boolean; /** With `plain`: Start from after Add a level (a method not saved yet). */ presets?: boolean }) {
   const n = rule.levels.length
   const [said, setSaid] = React.useState("")
   const countsErr = err("cfg-counts-from")
@@ -350,11 +376,11 @@ export function LevelsField({ rule, setRule, err }: { rule: LabRule; setRule: Se
   return (
     // The question names the group for a screen reader; on screen the column heads say it over the checkboxes (2026-11-11), so the label line keeps only
     // Changed and Start from.
-    <FieldBlock label={levelsQuestion()} labelId="cfg-levels-label" srLabel end={<StartFrom rule={rule} setRule={setRule} />}>
+    <FieldBlock label={levelsQuestion()} labelId="cfg-levels-label" srLabel end={plain ? undefined : <StartFrom rule={rule} setRule={setRule} />}>
       {n ? (
-        <ChoiceList id="cfg-counts-from" labelledBy="cfg-levels-label" invalid={!!countsErr} describedBy={countsErr ? "cfg-counts-from-error" : undefined}>
-          <ColumnHeads name="Level, highest first" cols={LEVEL_COLS} lead />
-          <ol className="flex flex-col" aria-label="Levels, highest first">
+        <ChoiceList id="cfg-counts-from" labelledBy="cfg-levels-label" invalid={!!countsErr} describedBy={countsErr ? "cfg-counts-from-error" : undefined} bare={plain}>
+          {plain ? <PlainHeads label="Levels" note="Highest first" cols={PLAIN_LEVEL_COLS} lead /> : <ColumnHeads name="Level, highest first" cols={LEVEL_COLS} lead />}
+          <ol className={cn("flex flex-col", plain && "gap-2")} aria-label="Levels, highest first">
             {order.map((i) => {
               const id = `cfg-level-${i}`
               const message = err(id)
@@ -362,9 +388,9 @@ export function LevelsField({ rule, setRule, err }: { rule: LabRule; setRule: Se
               const on = levelTicked(rule, i)
               const r = reorder(i, (k) => `cfg-level-grip-${k}`, `Reorder level ${shown}`, 1, "Reorder level")
               return (
-                <li key={i} className={cn(ROW, LEVEL_COLS)} data-level-row {...r.row}>
+                <li key={i} className={plain ? cn(PLAIN_ROW, PLAIN_LEVEL_COLS) : cn(ROW, LEVEL_COLS)} data-level-row {...r.row}>
                   {r.grip}
-                  <Input id={id} className="h-8 min-w-0" aria-label={`Level ${i + 1}`} placeholder={placeholderFor("Level", i, n)} value={rule.levels[i]} onChange={(e) => setRule((x) => ({ ...x, levels: x.levels.map((l, k) => (k === i ? e.target.value : l)) }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
+                  <Input id={id} className={plain ? "min-w-0" : "h-8 min-w-0"} aria-label={`Level ${i + 1}`} placeholder={placeholderFor("Level", i, n)} value={rule.levels[i]} onChange={(e) => setRule((x) => ({ ...x, levels: x.levels.map((l, k) => (k === i ? e.target.value : l)) }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
                   <span className="flex justify-center" data-level-segment={i} data-counts={on || undefined}>
                     <Checkbox id={`cfg-counts-from-${i}`} aria-label={movesName(shown)} checked={on} onCheckedChange={(c) => tick(i, c === true)} />
                   </span>
@@ -378,7 +404,10 @@ export function LevelsField({ rule, setRule, err }: { rule: LabRule; setRule: Se
       ) : null}
       {countsErr ? <FieldError id="cfg-counts-from-error">{countsErr}</FieldError> : null}
       <div className="flex flex-col gap-1">
-        <Button id="cfg-add-level" type="button" variant="ghost" size="sm" className="w-fit" aria-describedby={addErr ? "cfg-add-level-error" : undefined} onClick={() => { setRule((r) => ({ ...r, levels: [...r.levels, ""] })); requestAnimationFrame(() => document.getElementById(`cfg-level-${n}`)?.focus()) }}>Add a level</Button>
+        <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-2", plain && "ps-10")}>
+          <Button id="cfg-add-level" type="button" variant="ghost" size="sm" className="w-fit" aria-describedby={addErr ? "cfg-add-level-error" : undefined} onClick={() => { setRule((r) => ({ ...r, levels: [...r.levels, ""] })); requestAnimationFrame(() => document.getElementById(`cfg-level-${n}`)?.focus()) }}>Add a level</Button>
+          {plain && presets ? <span className="flex items-center gap-2"><StartFrom rule={rule} setRule={setRule} /></span> : null}
+        </div>
         {addErr ? <FieldError id="cfg-add-level-error">{addErr}</FieldError> : null}
       </div>
       <p role="status" className="sr-only" data-level-count-change>{said}</p>
@@ -393,14 +422,14 @@ const movedWords = (name: string, now: boolean) => (now ? `${cap(name)} now move
 const lowerPlace = (i: number, n: number) => { const p = levelPlace(i, n); return p.charAt(0).toLowerCase() + p.slice(1) }
 
 /** Outcomes of the approved model [REQ SC-03]: the two names in place, one radio per row, the list labelled by its question; exactly one is chosen. */
-export function OutcomesField({ rule, setRule, err }: { rule: LabRule; setRule: SetRule; err: Err }) {
+export function OutcomesField({ rule, setRule, err, plain, presets }: { rule: LabRule; setRule: SetRule; err: Err; plain?: boolean; presets?: boolean }) {
   const q = rule.qualifyingLabel
   const qErr = err("cfg-qualifying")
   const shownOf = (i: number) => rule.outcomeLabels[i].trim() || (i === 0 ? "the first outcome" : "the second outcome")
   return (
-    <FieldBlock label={outcomeQuestion()} labelId="cfg-outcomes-label" srLabel end={<StartFrom rule={rule} setRule={setRule} />}>
-      <div className="@container min-w-0 overflow-hidden rounded-[var(--radius)] border border-border">
-        <ColumnHeads name="Outcome" cols={OUTCOME_COLS} inset />
+    <FieldBlock label={outcomeQuestion()} labelId="cfg-outcomes-label" srLabel end={plain ? undefined : <StartFrom rule={rule} setRule={setRule} />}>
+      <div className={cn("@container min-w-0", !plain && "overflow-hidden rounded-[var(--radius)] border border-border")}>
+        {plain ? <PlainHeads label="Outcomes" cols={PLAIN_OUTCOME_COLS} /> : <ColumnHeads name="Outcome" cols={OUTCOME_COLS} inset />}
         <RadioGroup
           id="cfg-qualifying"
           tabIndex={-1}
@@ -411,13 +440,13 @@ export function OutcomesField({ rule, setRule, err }: { rule: LabRule; setRule: 
           aria-describedby={qErr ? "cfg-qualifying-error" : undefined}
           className="flex flex-col gap-0 outline-none"
         >
-          <ul className="flex flex-col" aria-label="Outcomes">
+          <ul className={cn("flex flex-col", plain && "gap-2")} aria-label="Outcomes">
             {[0, 1].map((i) => {
               const id = `cfg-label-${i}`
               const message = err(id)
               return (
-                <li key={i} className={cn(ROW, "ps-3", OUTCOME_COLS)} data-outcome-row>
-                  <Input id={id} className="h-8 min-w-0" aria-label={i === 0 ? "First label" : "Second label"} value={rule.outcomeLabels[i]} onChange={(e) => setRule((r) => ({ ...r, outcomeLabels: (i === 0 ? [e.target.value, r.outcomeLabels[1]] : [r.outcomeLabels[0], e.target.value]) as [string, string] }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
+                <li key={i} className={plain ? cn(PLAIN_ROW, PLAIN_OUTCOME_COLS) : cn(ROW, "ps-3", OUTCOME_COLS)} data-outcome-row>
+                  <Input id={id} className={plain ? "min-w-0" : "h-8 min-w-0"} aria-label={i === 0 ? "First label" : "Second label"} value={rule.outcomeLabels[i]} onChange={(e) => setRule((r) => ({ ...r, outcomeLabels: (i === 0 ? [e.target.value, r.outcomeLabels[1]] : [r.outcomeLabels[0], e.target.value]) as [string, string] }))} aria-invalid={!!message || undefined} aria-describedby={message ? `${id}-error` : undefined} />
                   <span className="flex justify-center"><RadioGroupItem id={`cfg-qualifying-${i}`} value={String(i)} aria-label={movesName(shownOf(i))} /></span>
                   {message ? <FieldError id={`${id}-error`} className="col-span-full">{message}</FieldError> : null}
                 </li>
@@ -427,6 +456,7 @@ export function OutcomesField({ rule, setRule, err }: { rule: LabRule; setRule: 
         </RadioGroup>
       </div>
       {qErr ? <FieldError id="cfg-qualifying-error">{qErr}</FieldError> : null}
+      {plain && presets ? <span className="flex items-center gap-2"><StartFrom rule={rule} setRule={setRule} /></span> : null}
     </FieldBlock>
   )
 }
@@ -441,7 +471,7 @@ export const QUESTIONS_SHOWN = 8
  * The question list in place [REQ SC-04, SC-07]: a grip, the number, the question, Remove; Add a question and Paste a list under it. Longer than 8, the
  * first 8 and "Show all n"; a new question, or a problem in a hidden one, opens the list (`expanded` is the page's, so a problem link can open it).
  */
-export function QuestionsField({ rule, setRule, err, expanded, setExpanded }: { rule: LabRule; setRule: SetRule; err: Err; expanded: boolean; setExpanded: (v: boolean) => void }) {
+export function QuestionsField({ rule, setRule, err, expanded, setExpanded, plain }: { rule: LabRule; setRule: SetRule; err: Err; expanded: boolean; setExpanded: (v: boolean) => void; /** G (D-EM1116-e): the label "Questions" shows, in the DS label weight. */ plain?: boolean }) {
   const m = rule.questions.length
   const move = (i: number, j: number) => setRule((r) => moveItem(r, "questions", i, j))
   const reorder = useReorder(m, move)
@@ -449,7 +479,7 @@ export function QuestionsField({ rule, setRule, err, expanded, setExpanded }: { 
   const shown = hidden ? rule.questions.slice(0, QUESTIONS_SHOWN) : rule.questions
   const addErr = err("cfg-add-question")
   return (
-    <FieldBlock label="Questions" labelId="cfg-questions-label" srLabel>
+    <FieldBlock label="Questions" labelId="cfg-questions-label" srLabel={!plain} plain={plain}>
       {m ? (
         <ol className="flex flex-col gap-2" aria-labelledby="cfg-questions-label" id="cfg-question-list">
           {shown.map((q, i) => {
@@ -485,14 +515,14 @@ export function QuestionsField({ rule, setRule, err, expanded, setExpanded }: { 
 }
 
 /** Counts when for the questions model [REQ SC-05]: every question Yes, at least [n] of N, or only the questions chosen. */
-export function QuestionCountsWhen({ rule, setRule, err, changed }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean }) {
+export function QuestionCountsWhen({ rule, setRule, err, changed, label, plain }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean; label?: string; plain?: boolean }) {
   const r = rule.questionRule
   const m = rule.questions.length
   const nErr = err("cfg-qrule-n")
   const kindErr = err("cfg-qrule")
   const choose = (v: string) => setRule((x) => ({ ...x, questionRule: v === "all" ? { kind: "all" } : v === "atLeast" ? { kind: "atLeast", n: x.questionRule?.kind === "atLeast" ? x.questionRule.n : Math.max(1, m - 1) } : { kind: "subset", indices: x.questionRule?.kind === "subset" ? x.questionRule.indices : [] } }))
   return (
-    <FieldBlock label={movesWhen()} labelId="cfg-qrule-label" changed={changed}>
+    <FieldBlock label={label ?? movesWhen()} labelId="cfg-qrule-label" changed={changed} plain={plain}>
       <RadioGroup id="cfg-qrule" tabIndex={-1} value={r?.kind ?? ""} onValueChange={choose} aria-labelledby="cfg-qrule-label" className="flex flex-col gap-2 outline-none" aria-invalid={!!kindErr || undefined} aria-describedby={kindErr ? "cfg-qrule-error" : undefined}>
         <div className="flex min-h-9 items-center gap-2.5">
           <RadioGroupItem id="cfg-qrule-all" value="all" />
@@ -539,7 +569,7 @@ const SCORED_ROWS: Array<{ kind: "average" | "minEach" | "total"; label: string 
  * Counts when for the score model [REQ SC-07]: three options, each with its number in one shared column ("Average score at least [4] out of 5"). Typing in
  * another option's number chooses that option and carries the number.
  */
-export function ScoredCountsWhen({ rule, setRule, err, changed }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean }) {
+export function ScoredCountsWhen({ rule, setRule, err, changed, label, plain }: { rule: LabRule; setRule: SetRule; err: Err; changed?: boolean; label?: string; plain?: boolean }) {
   const r = rule.scoredRule
   const top = Number.isInteger(rule.scaleMax) && rule.scaleMax >= 2 ? rule.scaleMax : null
   const outOf = (k: (typeof SCORED_ROWS)[number]["kind"]) => (top ? (k === "total" ? top * Math.max(1, rule.questions.length) : top) : null)
@@ -547,7 +577,7 @@ export function ScoredCountsWhen({ rule, setRule, err, changed }: { rule: LabRul
   const kErr = err("cfg-srule")
   const pick = (kind: (typeof SCORED_ROWS)[number]["kind"], value?: number) => setRule((x) => ({ ...x, scoredRule: { kind, value: value ?? x.scoredRule?.value ?? Number.NaN } }))
   return (
-    <FieldBlock label={movesWhen()} labelId="cfg-srule-label" changed={changed}>
+    <FieldBlock label={label ?? movesWhen()} labelId="cfg-srule-label" changed={changed} plain={plain}>
       <RadioGroup id="cfg-srule" tabIndex={-1} value={r?.kind ?? ""} onValueChange={(v) => pick(v as (typeof SCORED_ROWS)[number]["kind"])} aria-labelledby="cfg-srule-label" className="grid grid-cols-[1rem_max-content_auto] items-center gap-x-2.5 gap-y-2 outline-none" aria-invalid={!!kErr || undefined} aria-describedby={kErr ? "cfg-srule-error" : undefined}>
         {SCORED_ROWS.map((row) => {
           const on = r?.kind === row.kind
@@ -613,13 +643,13 @@ export function StepList({ steps, changed }: { steps: Step[]; changed?: (id: str
 }
 
 /** On or off: name and one line of what it does on the left, the switch at the right edge; `below` is what the switch reveals. */
-export function SwitchField({ id, label, help, checked, onChange, changed, below }: { id: string; label: string; help?: string; checked: boolean; onChange: (v: boolean) => void; changed?: boolean; below?: React.ReactNode }) {
+export function SwitchField({ id, label, help, checked, onChange, changed, below, plain }: { id: string; label: string; help?: string; checked: boolean; onChange: (v: boolean) => void; changed?: boolean; below?: React.ReactNode; /** G (D-EM1116-b): the label in body weight. */ plain?: boolean }) {
   return (
     <div className="flex min-w-0 flex-col gap-3" data-switch-row>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6">
+      <div className={cn("grid grid-cols-[minmax(0,1fr)_auto] gap-x-6", plain ? "min-h-8 items-center" : "items-start")}>
         <span className="flex min-w-0 flex-col">
           <span className="flex flex-wrap items-center gap-2">
-            <span id={`${id}-label`} className={TYPE.group}>{label}</span>
+            <span id={`${id}-label`} className={plain ? TYPE.body : TYPE.group}>{label}</span>
             {changed ? <ChangedMark /> : null}
           </span>
           {help ? <span id={`${id}-help`} className={TYPE.helper}>{help}</span> : null}

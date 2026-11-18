@@ -29,7 +29,8 @@ import { TYPE } from "@/components/lab/type-scale"
 import { SectionTitle, SetupPrompt } from "@/components/lab/first-run"
 import { PanelResultSlot } from "@/components/lab/shared/result-banner"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
-import { ALL_STUDENTS_GROUP, deleteBlockedReason, listCanEdit, pickAll, pickState, setListSkills, skillLists, type PickState, type SkillList } from "@/lib/lab/lists"
+import { ALL_STUDENTS_GROUP, deleteBlockedReason, listCanEdit, pickAll, pickState, setListSkills, skillLists, studentCount, type PickState, type SkillList } from "@/lib/lab/lists"
+import { SaveScopeDialog } from "./lists-save-scope"
 import { CONFIGURATION_META, categoryEditable, categoryText, setSkillDetailsInStore } from "@/lib/lab/library"
 import { CategoryPicker, useVocabOptions } from "@/components/lab/library/category-tag-pickers"
 import { ensureVocab } from "@/lib/v2/vocabulary"
@@ -43,7 +44,8 @@ import type { Skill } from "@/lib/v2/types"
 import { AppliedFilterChips, FiltersControl, LINK, fmt, plural, useTextCut, type FilterField } from "./parts"
 import { LaterBadge } from "@/components/lab/import/sample-badge"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
-import { useLabHref } from "@/components/lab/lab-bar/page-context"
+import { useLabHref, useLabLinkContext } from "@/components/lab/lab-bar/page-context"
+import { listSkillsHref } from "@/lib/lab/admin-ia"
 import { listSizeText, type ListsModel } from "./lists-parts"
 import { ListRowMenu } from "./lists-groups-table"
 import { focusAfterQuestion, focusPanel, LIST_PANEL, listLink, stepOffPanelClose, useRovingChecks, type FocusBack } from "./lists-focus"
@@ -159,14 +161,13 @@ function useSkillFilter(skills: readonly Skill[], library?: boolean, searchLabel
   return { matches, controls, noMatch, fields, filtering: !!query.trim() || !!category }
 }
 
-/** What a program with an empty library sees in the picker: nothing to filter, and where skills come from. */
-function NoSkillsYet() {
-  const to = useLabHref()
+/** What a program with no skills sees in the picker: nothing to filter, and where skills come from (the list's own skills page, since the Library row went). */
+function NoSkillsYet({ listId }: { listId: string }) {
+  const link = useLabLinkContext()
   return (
     <p className="text-sm text-muted-foreground" data-no-skills>
-      {`There are no ${skillNounPlural()} yet. Add them in the `}
-      <Link className={LINK} href={to("admin/skills-library")}>Library</Link>
-      .
+      {`There are no ${skillNounPlural()} yet. `}
+      <Link className={LINK} href={listSkillsHref(listId, link)}>{`Add ${skillNounPlural()}`}</Link>
     </p>
   )
 }
@@ -371,6 +372,7 @@ function NamedStudents({ rows, listName, renderRow }: { rows: AssignedRow[]; lis
 /** The list itself: its size, who it is assigned to, and whether new groups get it. */
 function ListBody({ model, list, onSkills, onChangeSkills, onAddStudents, onRemove, onDefault, onDelete }: { onDelete: (list: SkillList) => void; onChangeSkills: () => void;  model: ListsModel; list: SkillList; onSkills: () => void; onAddStudents: () => void; onRemove: (who: RemoveWho) => void; onDefault: (id: string) => void }) {
   const to = useLabHref()
+  const link = useLabLinkContext()
   const rows = assignedRows(model, list)
   const empty = list.skillIds.length === 0
   const other = skillLists(model.lists).find((l) => l.isDefault && l.id !== list.id)
@@ -436,8 +438,8 @@ function ListBody({ model, list, onSkills, onChangeSkills, onAddStudents, onRemo
         <div className="flex min-h-8 flex-wrap items-center justify-between gap-2">
           <SectionTitle icon="fa-list-check" id={`skills-${list.id}`} className={TYPE.group}>{capitalize(skillNounPlural())}</SectionTitle>
           <span className="flex flex-wrap items-center gap-2">
-            {/* A file of skills into this list (Romit 2026-11-15): the Bulk upload wizard, opened on this list; it comes back here with the result. */}
-            <Button asChild variant="outline" size="sm"><Link href={to("admin/import-ai-review", { to: list.id, from: "lists", list: list.id })} data-upload-to-list>Upload a file</Link></Button>
+            {/* A file of skills into this list: the list's own page with Add skills open on Import (D-ADD1117-r), so it stays inside the walkthrough. */}
+            <Button asChild variant="outline" size="sm"><Link href={to("admin/skills-library", { list: list.id, add: "1", from: "file" })} data-upload-to-list>Upload a file</Link></Button>
             {listCanEdit(list) ? (
               <Button type="button" variant={empty ? "default" : "outline"} size="sm" onClick={onSkills} data-list-skills="edit">{`Change ${skillNounPlural()}`}</Button>
             ) : (
@@ -464,7 +466,8 @@ function ListBody({ model, list, onSkills, onChangeSkills, onAddStudents, onRemo
             ))}
             {list.skillIds.length > preview.length ? (
               <li className="flex min-h-11 items-center">
-                <Button type="button" variant="link" size="sm" className="h-auto p-0 text-sm" onClick={onSkills} data-list-skills={listCanEdit(list) ? undefined : "view"}>{`View all ${countSkills(list.skillIds.length)}`}</Button>
+                {/* The list's skills page, where each skill opens and is configured (Romit 2026-11-16); Change skills above still edits the list here. */}
+                <Button asChild variant="link" size="sm" className="h-auto p-0 text-sm"><Link href={listSkillsHref(list.id, link)} data-list-skills-page={list.id}>{`View all ${countSkills(list.skillIds.length)}`}</Link></Button>
               </li>
             ) : null}
           </ul>
@@ -507,7 +510,7 @@ const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) => a.size === b
 const NAV_TOGGLE = '[aria-label="Collapse to icons"], [aria-label="Show labels"]'
 const onRowBody = (t: Element | null) => !!t?.closest?.("[data-region=lists] tbody tr") && !t?.closest?.("a, button, input, [role=checkbox], [role=menuitem]")
 
-export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, view, onView, dirtyRef, back, onClose, onSaved, onAddStudents, onRemove, onDefault, onNewVersion, onRename, onDelete }: {
+export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, view, onView, dirtyRef, back, onClose, onSaved, onAddStudents, onRemove, onDefault, onNewVersion, onUpdatedForEveryone, onDuplicate, changingFromId, onRename, onDelete }: {
   model: ListsModel
   list: SkillList | null
   /** Asked for in the New skill list dialog and not yet on the program. */
@@ -523,6 +526,11 @@ export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, 
   onRemove: (who: RemoveWho) => void
   onDefault: (id: string) => void
   onNewVersion: (id: string) => void
+  /** "Update it for everyone on it" chosen at Save (D-LS1116-c): the list's own skills change in place. */
+  onUpdatedForEveryone: (origin: SkillList, skillIds: string[], students: number) => void
+  onDuplicate: (id: string) => void
+  /** The list Change skills started from (its `versionOf` names the family's first list, which may be another). */
+  changingFromId?: string | null
   onRename: (id: string) => void
   onDelete: (list: SkillList) => void
   /** A deeper level in this same panel: it replaces the content and owns how to leave. */
@@ -567,11 +575,21 @@ export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, 
     else backNow()
   }
   const changing = isFresh && !!list?.versionOf
-  const origin = changing ? model.lists.find((l) => l.id === list?.versionOf) : undefined
+  const origin = changing ? model.lists.find((l) => l.id === (changingFromId ?? list?.versionOf)) : undefined
   const unsaved = changing ? `${origin?.name ?? "The list"} stays as it is.` : `The ${skillNounPlural()} you selected have not been saved.`
+  // Saving a change to a list students are on asks who it applies to (D-LS1116-c, merging D-L119): nothing changes until a choice is made.
+  const [askScope, setAskScope] = React.useState(false)
+  const reach = origin ? studentCount(origin, model.groups) : 0
   const save = () => {
     if (!list) return
     const ids = rows.filter((k) => picked.has(k.id)).map((k) => k.id)
+    // A list with no skills yet measures no one: filling it changes it in place, with nothing to ask.
+    if (changing && origin && origin.skillIds.length === 0) { setEdits(null); onUpdatedForEveryone(origin, ids, reach); return }
+    if (changing && origin && reach > 0) { setAskScope(true); return }
+    saveAsNew(ids)
+  }
+  const saveAsNew = (ids: string[] = rows.filter((k) => picked.has(k.id)).map((k) => k.id)) => {
+    if (!list) return
     model.applyNow((ls) => setListSkills(isFresh ? [...ls, list] : ls, list.id, ids))
     setEdits(null)
     onSaved(list, ids.length)
@@ -630,9 +648,9 @@ export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, 
                 onBack={view === "skills" && (!isFresh || changing) ? requestBack : undefined}
                 backLabel={`Back to ${changing ? origin?.name ?? list.name : list.name}`}
                 closeLabel="Close"
-                actions={isFresh ? undefined : <ListRowMenu list={list} onRename={onRename} onNewVersion={onNewVersion} onDelete={onDelete} />}
+                actions={isFresh ? undefined : <ListRowMenu list={list} onRename={onRename} onNewVersion={onNewVersion} onDuplicate={onDuplicate} onDelete={onDelete} />}
               />
-              <FloatingSheetPanelHeader title={changing ? `Change ${skillNounPlural()}` : list.name} subtitle={changing ? `Saves as ${list.name}. Students on ${origin?.name ?? "the current list"} keep it.` : view === "list" ? <span data-list-size>{listSizeText(model.state, list)}</span> : undefined} className="data-scrolled:border-transparent [&>div]:pb-2" />
+              <FloatingSheetPanelHeader title={changing ? `Change ${skillNounPlural()}` : list.name} subtitle={changing ? undefined : view === "list" ? <span data-list-size>{listSizeText(model.state, list)}</span> : undefined} className="data-scrolled:border-transparent [&>div]:pb-2" />
               <PanelResultSlot />
               {view === "list" ? (
                 <ListBody model={model} list={list} onDelete={onDelete} onSkills={() => onView("skills")} onChangeSkills={() => onNewVersion(list.id)} onAddStudents={onAddStudents} onRemove={onRemove} onDefault={onDefault} />
@@ -640,8 +658,7 @@ export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, 
                 <FloatingSheetPanelBody className="flex flex-col gap-3 px-4 pb-4" data-list-skills={picking ? "editable" : "read-only"}>
                   {reading ? (
                     <>
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm text-muted-foreground" data-read-only-line>{`Students keep these ${skillNounPlural()}. Changes save as a new list.`}</p>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                         <Button type="button" variant="outline" size="sm" onClick={() => onNewVersion(list.id)}>{`Change ${skillNounPlural()}`}</Button>
                       </div>
                       <SkillRows key={list.id} skills={rows.filter((k) => saved.has(k.id))} />
@@ -649,7 +666,7 @@ export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, 
                   ) : rows.length ? (
                     <SkillPicker key={list.id} skills={rows} savedIds={saved} selected={picked} others={others} onChange={(ids) => setEdits({ listId: list.id, ids })} idPrefix={`list-skills-${list.id}`} />
                   ) : (
-                    <NoSkillsYet />
+                    <NoSkillsYet listId={list.id} />
                   )}
                 </FloatingSheetPanelBody>
               )}
@@ -660,7 +677,7 @@ export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, 
                   <span className="text-sm text-muted-foreground" aria-hidden="true">Unsaved changes</span>
                   <span className="flex items-center gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={requestBack}>Cancel</Button>
-                    <Button type="button" variant="default" size="sm" onClick={save}>{changing ? "Save as new list" : "Save list"}</Button>
+                    <Button type="button" variant="default" size="sm" onClick={save}>{changing ? "Save changes" : "Save list"}</Button>
                   </span>
                 </FloatingSheetPanelFooter>
               ) : null}
@@ -668,6 +685,21 @@ export function ListPanel({ level, levelLeave, levelExit, model, list, isFresh, 
           ) : null}
         </FloatingSheetPanelContent>
       </FloatingSheetPanel>
+      {origin ? (
+        <SaveScopeDialog
+          open={askScope}
+          listName={origin.name}
+          students={reach}
+          onCancel={() => setAskScope(false)}
+          onUpdate={() => {
+            setAskScope(false)
+            const ids = rows.filter((k) => picked.has(k.id)).map((k) => k.id)
+            setEdits(null)
+            onUpdatedForEveryone(origin, ids, reach)
+          }}
+          onSaveNew={() => { setAskScope(false); saveAsNew() }}
+        />
+      ) : null}
       <DiscardChangesDialog open={asking !== null} onKeep={() => { setAsking(null); stepOffPanelClose() }} onDiscard={() => (asking === "back" ? backNow() : closeNow())} body={unsaved} />
       <DiscardChangesDialog open={leave.asking} onKeep={() => leave.setAsking(false)} onDiscard={() => leave.go(closeNow)} body={unsaved} />
     </>

@@ -33,7 +33,7 @@ import { PERSONAS } from "@/lib/lab/personas"
 import { SCREENS, screenKey, screensFor, type PersonaId } from "@/lib/lab/screens"
 import { FLOWS, findFlow, flowsForPersona, mainSteps, resolveStep } from "@/lib/lab/flows"
 import { variantCounts } from "@/lib/lab/links"
-import { ADD_SKILL_SCREEN, SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelHref, skillsPanelItemFor } from "@/lib/lab/admin-ia"
+import { ADD_SKILL_SCREEN, SKILLS_PANEL, isSettingsArea, legacyDirectoryHref, legacySettingsHref, settingsLeaf, settingsSectionOf, skillsPanelItemFor } from "@/lib/lab/admin-ia"
 
 afterEach(() => {
   cleanup()
@@ -158,12 +158,9 @@ describe("admin IA: Categories and tags under Skills, Settings on its own sectio
     return out
   }
 
-  it("the panel item points at the new page, not Settings", () => {
-    const item = SKILLS_PANEL.find((i) => i.key === "categories")!
-    expect(item.screen).toBe("admin/categories-tags")
-    expect(item.label()).toBe("Categories and tags")
-    // Outside a lab Skills flow the Skills nav opens the walkthrough's page, without the lab strip (Romit 2026-11-13).
-    expect(skillsPanelHref(item, {})).toBe("/admin/categories")
+  it("Categories and tags is no panel row: it is the Categories and Tags tabs of Skill lists (Romit 2026-11-16)", () => {
+    expect(SKILLS_PANEL.map((i) => i.label())).toEqual(["Skill lists", "Evaluation methods", "Course mapping"])
+    expect(SKILLS_PANEL.some((i) => i.screen === "admin/categories-tags" || i.screen === "admin/skills-library")).toBe(false)
   })
 
   it.each([
@@ -174,18 +171,19 @@ describe("admin IA: Categories and tags under Skills, Settings on its own sectio
     expect(rows.Skills).toBe("/admin/lists")
   })
 
-  it.each(["A", "B", "C"])("Add a skill (%s) is a Library page: Skills row lit, panel open on Library (D-L41)", (variant) => {
+  it.each(["A", "B", "C"])("Add a skill (%s) is a list's skills page: Skills row lit, panel open on Skill lists (D-L41; Library row gone 2026-11-16)", (variant) => {
     const params = new URLSearchParams(`variant=${variant}`)
-    expect(skillsPanelItemFor("admin/add-skill", params)?.key).toBe("library")
-    // Configure the skill, variant B only (D-L47): under Library, or under Evaluation settings when opened from there.
-    expect(skillsPanelItemFor("admin/configure-skill", params, "B")?.key).toBe("library")
+    expect(skillsPanelItemFor("admin/add-skill", params)?.key).toBe("groups")
+    expect(skillsPanelItemFor("admin/skills-library", params)?.key).toBe("groups")
+    // Configure the skill, variant B only (D-L47): under Skill lists, or under Evaluation settings when opened from there.
+    expect(skillsPanelItemFor("admin/configure-skill", params, "B")?.key).toBe("groups")
     expect(skillsPanelItemFor("admin/configure-skill", new URLSearchParams("from=settings"), "B")?.key).toBe("settings")
     expect(skillsPanelItemFor("admin/configure-skill", params, "A")).toBeUndefined()
   })
 
-  it.each(["A", "B"])("on Categories and tags (%s) the Skills row and panel item are lit; Settings is not", (variant) => {
+  it.each(["A", "B"])("on the old Categories and tags page (%s) Skill lists is the panel item; Settings is not lit", (variant) => {
     const params = new URLSearchParams(`variant=${variant}&tab=tags`)
-    expect(skillsPanelItemFor("admin/categories-tags", params)?.key).toBe("categories")
+    expect(skillsPanelItemFor("admin/categories-tags", params)?.key).toBe("groups")
     expect(isSettingsArea("admin/categories-tags", params)).toBe(false)
     const rows = rawRows("/lab/admin/categories-tags", params.toString(), { screen: "admin/categories-tags", variant })
     expect(rows.Skills).toBe("/lab/admin/categories-tags") // the page itself: the DS lights it by path
@@ -210,10 +208,10 @@ describe("admin IA: Categories and tags under Skills, Settings on its own sectio
     expect(settingsSectionOf(new URLSearchParams("tab=tags"))).toBe("settings")
   })
 
-  it("old Settings links on Categories or Tags redirect to the new page, keeping the other params", () => {
-    expect(legacySettingsHref(new URLSearchParams("tab=categories&variant=B&term=Fall%202026"))).toBe("/lab/admin/categories-tags?variant=B&term=Fall+2026")
-    expect(legacySettingsHref(new URLSearchParams("tab=tags"))).toBe("/lab/admin/categories-tags?tab=tags")
-    expect(legacySettingsHref(new URLSearchParams("variant=B&list=tags&entry=tags%3Ax"))).toBe("/lab/admin/categories-tags?variant=B&entry=tags%3Ax&list=tags")
+  it("old Settings links on Categories or Tags open that tab of Skill lists, keeping the other params (2026-11-16)", () => {
+    expect(legacySettingsHref(new URLSearchParams("tab=categories&variant=B&term=Fall%202026"))).toBe("/lab/admin/lists-cohorts?variant=B&term=Fall+2026&tab=categories")
+    expect(legacySettingsHref(new URLSearchParams("tab=tags"))).toBe("/lab/admin/lists-cohorts?tab=tags")
+    expect(legacySettingsHref(new URLSearchParams("variant=B&list=tags&entry=tags%3Ax"))).toBe("/lab/admin/lists-cohorts?variant=B&entry=tags%3Ax&tab=tags")
     expect(legacySettingsHref(new URLSearchParams("tab=settings"))).toBeNull()
     expect(legacySettingsHref(new URLSearchParams("tab=evaluators"))).toBeNull()
     expect(legacySettingsHref(new URLSearchParams(""))).toBeNull()
@@ -283,7 +281,7 @@ describe("variant counts: /lab index equals the lab bar", () => {
  * (Approvals, Reports, Settings) are inert: aria-disabled, no href. Nothing links to a lab, walk or flow address.
  */
 describe("walkthrough sidebar: every row shows, only walkthrough pages and the PRISM home are links", () => {
-  const WALK = [
+  const _WALK = [
     { persona: "admin" as PersonaId, flowId: "setup-walkthrough", root: "/admin" },
     { persona: "student" as PersonaId, flowId: "fulfillment-walkthrough", root: "/student" },
   ]

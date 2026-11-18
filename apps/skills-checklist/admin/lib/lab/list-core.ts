@@ -45,7 +45,7 @@ export interface ListsOverlay {
   /** Lists created in this session. */
   created: SkillList[]
   /** Per list: replaced fields. */
-  edits: Record<string, Partial<Pick<SkillList, "name" | "groupIds" | "studentIds" | "isDefault" | "minTotal" | "skillIds">>>
+  edits: Record<string, Partial<Pick<SkillList, "name" | "groupIds" | "studentIds" | "isDefault" | "minTotal" | "skillIds" | "requiredIds">>>
   /** Seeded lists the admin deleted. A created list is simply dropped from `created`. */
   deleted?: string[]
 }
@@ -82,14 +82,10 @@ export function studentGroups(s: V2State, custom: readonly CustomGroup[] = []): 
 export function seedListShapes(s: V2State): SkillList[] {
   // A program with no skills has no skill lists yet (Set up skills starts from one, D-L44).
   if (s.skills.length === 0) return []
+  // One list (Romit 2026-11-16: "Reduce the skill list table to one row, i.e. 'Clinical skills checklist'"): the imported checklist, the default,
+  // on every cohort, the graduating one included, so no student is left without a list. The id stays so saved overlays keep working.
   const checklist = s.skills.filter((k) => k.hgtc)
-  const COMPETENCY_SECTIONS = new Set(["Communication", "Documentation", "Teaching Learning Principles", "Psycho-social assessment", "Emotional/Cognitive"])
-  const competencies = s.skills.filter((k) => !k.addedByHand && (COMPETENCY_SECTIONS.has(k.category) || (!k.hgtc && k.specialty === "bsn-med-surg")))
-  const graduating = s.program.cohorts.includes("BSN 2026") ? [cohortGroupId("BSN 2026")] : []
-  const cohorts = s.program.cohorts.map(cohortGroupId).filter((g) => !graduating.includes(g))
-  const bsn2027 = s.program.cohorts.includes("BSN 2027") ? [cohortGroupId("BSN 2027")] : []
-  const track = (s.tracks ?? [])[0]
-  const lists: SkillList[] = [
+  return [
     {
       id: "list-clinical",
       name: "Clinical skills checklist",
@@ -98,51 +94,11 @@ export function seedListShapes(s: V2State): SkillList[] {
       skillIds: checklist.map((k) => k.id),
       requiredIds: [],
       isDefault: true,
-      groupIds: cohorts,
+      groupIds: s.program.cohorts.map(cohortGroupId),
       minTotal: 120,
       standard: "Program checklist, 2024 edition",
     },
-    {
-      id: "list-competencies",
-      name: "Practicum competencies",
-      noun: "competency",
-      nounPlural: "competencies",
-      skillIds: competencies.map((k) => k.id),
-      requiredIds: [],
-      isDefault: false,
-      groupIds: [...bsn2027, ...(track ? [trackGroupId(track.id)] : [])],
-      minTotal: Math.round(competencies.length * 0.8),
-      standard: "Senior practicum",
-    },
-    {
-      // The list the graduating cohort was assigned when it started: the core of the checklist. "Done" means every skill on it.
-      id: "list-core",
-      name: "Core clinical skills",
-      noun: "skill",
-      nounPlural: "skills",
-      skillIds: checklist.filter((k) => k.hgtc?.required).map((k) => k.id),
-      requiredIds: [],
-      isDefault: false,
-      groupIds: graduating,
-      minTotal: 0,
-      standard: "",
-    },
-    {
-      id: "list-clinical-2027",
-      // A neutral name (Sankalp 2026-10-27 review): a list named after a standard contradicted "Standards are managed in Program
-      // details". The id stays so saved overlays keep working.
-      name: "Revised clinical skills checklist",
-      noun: "skill",
-      nounPlural: "skills",
-      skillIds: checklist.map((k) => k.id),
-      requiredIds: [],
-      isDefault: false,
-      groupIds: [],
-      minTotal: 120,
-      standard: "",
-    },
   ]
-  return lists
 }
 
 

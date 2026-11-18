@@ -72,7 +72,7 @@ const WARN_TEXT = "text-[var(--status-badge-warning-fg)]"
 function gateMessage(id: SetupStepId): string {
   const nounPl = skillNounPlural()
   if (id === "skills") return `No ${nounPl} yet. Add at least one.`
-  if (id === "settings") return "Evaluation settings are not saved. Complete them and save."
+  if (id === "settings") return "Evaluation methods are not saved. Complete them and save."
   return `No student group has ${nounPl}. Assign at least one.`
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { readFileSync, existsSync } from "node:fs"
 import { join } from "node:path"
 import { createSeed } from "@/lib/v2/seed"
+import { fourLists } from "./fixtures/four-lists"
 import { labState } from "@/lib/lab/reviewer"
 import {
   addToList,
@@ -19,7 +20,6 @@ import {
   makeDefault,
   plainLists,
   removeStudent,
-  seedLists,
   studentGroups,
   studentsMatching,
   studentsOnList,
@@ -29,7 +29,7 @@ import {
 
 /** Who a whole list goes to: a group, filters or individuals (Sankalp 11-04, Granola 365abc25 ch 9), all in one Add students dialog (designer 2026-11-05, D-L106). */
 const s = labState(createSeed())
-const lists = seedLists(s)
+const lists = fourLists(s)
 const groups = studentGroups(s)
 const byId = (ls: readonly SkillList[], id: string) => ls.find((l) => l.id === id)!
 const students = s.people.filter((p) => p.kind === "student")

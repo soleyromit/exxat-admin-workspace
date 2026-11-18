@@ -19,7 +19,7 @@ export interface SetupStepDef {
 export const SETUP_STEPS: readonly SetupStepDef[] = [
   { id: "skills", label: "Skills", optional: false },
   { id: "categories", label: "Categories and tags", optional: true },
-  { id: "settings", label: "Evaluation settings", optional: false },
+  { id: "settings", label: "Evaluation methods", optional: false },
   { id: "assign", label: "Skill lists", optional: false },
   { id: "mapping", label: "Course mapping", optional: true },
   { id: "review", label: "Review", optional: false },

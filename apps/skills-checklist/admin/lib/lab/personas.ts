@@ -32,10 +32,10 @@ export const PERSONAS: PersonaDef[] = [
     id: "admin", short: "Admin", label: "Administrator", chrome: "shell", landing: "dashboard",
     nav: () => [
       { key: "dashboard", title: "Dashboard", slug: "dashboard", icon: "gauge" },
-      { key: "skills", title: capitalize(skillNounPlural()), slug: "skills-library", icon: "list-check" },
+      { key: "skills", title: capitalize(skillNounPlural()), slug: "lists-cohorts", icon: "list-check" },
       { key: "approvals", title: "Approvals", slug: "approvals", icon: "clipboard-check", badge: "approvals" },
       // "Reports" (was "Attainment"; Romit 2026-10-27, D-L20): the slug stays so links keep working. The Skills row opens the
-      // Skills panel (Library, Skill lists, Categories and tags, Course mapping) and Settings is a sidebar footer link,
+      // Skills panel (Skill lists, Categories and tags, Evaluation settings, Course mapping; no Library row since 2026-11-16) and Settings is a sidebar footer link,
       // both wired in components/lab/lab-frame.tsx from lib/lab/admin-ia.ts.
       { key: "reports", title: "Reports", slug: "attainment", icon: "chart-mixed" },
     ],

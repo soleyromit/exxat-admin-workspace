@@ -57,7 +57,9 @@ describe("the lists return target", () => {
   })
 
   it("skills keeps working", () => {
-    expect(returnTarget("skills", "ignored")!.href).toBe("/as/admin/skills-library")
+    // A list's skills page (2026-11-16): the list it carries, else the page on the default list.
+    expect(returnTarget("skills")!.href).toBe("/as/admin/skills-library")
+    expect(returnTarget("skills", "list-clinical")!.href).toBe("/as/admin/skills-library?list=list-clinical")
     expect(Object.keys(RETURN_TARGETS)).toEqual(expect.arrayContaining(["skills", "lists"]))
     expect(withFrom("/lab/admin/x", "lists")).toBe(`/lab/admin/x?${FROM_PARAM}=lists`)
   })

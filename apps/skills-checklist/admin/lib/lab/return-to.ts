@@ -35,18 +35,19 @@ export const RETURN_TARGETS: Record<string, ReturnTarget> = {
   // Step 3 of New skill list (Configure skills), left for Evaluation settings or one skill: `?from=setup&list=<id>` leads back to that
   // list's Configure step (lists-frame reads `?setup=configure`), so the wizard is not lost (Sankalp point 7). The crumb reads the list's name.
   setup: { label: () => capitalize(skillListsNoun()), href: LISTS_HREF, hrefFor: (id) => toShort(`/lab/admin/lists-cohorts?list=${encodeURIComponent(id)}&${SETUP_PARAM}=${SETUP_CONFIGURE}`), carryKey: "list" },
-  // The Library's own panel row word: under the "Skills" crumb, "Skills > Skills > Bulk upload" said the noun twice (walk 3, D7).
-  skills: { label: () => "Library", href: toShort("/lab/admin/skills-library") },
+  // A list's skills page (the Library row is gone, Romit 2026-11-16): `?from=skills&list=<id>` leads back to that list's skills; the breadcrumb
+  // reads the list's name (components/lab/lab-frame.tsx). With no id, the page shows the default list.
+  skills: { label: () => capitalize(skillListsNoun()), href: toShort("/lab/admin/skills-library"), hrefFor: (id) => toShort(`/lab/admin/skills-library?list=${encodeURIComponent(id)}`), carryKey: "list" },
   // Configure one skill, left for Evaluation settings: `?from=configure&skill=<id>` leads back to that skill's page. With no id
   // the way back is the Library, since Configure has no page without a skill.
   // Evaluation settings, left by "31 use their own number" for the Library filtered to those skills: the crumb leads back to the settings page.
-  settings: { label: () => "Evaluation settings", href: toShort("/lab/admin/evaluation-settings") },
+  settings: { label: () => "Evaluation methods", href: toShort("/lab/admin/evaluation-settings") },
   configure: { label: () => capitalize(skillNoun()), href: toShort("/lab/admin/skills-library"), hrefFor: (id) => toShort(`/lab/admin/configure-skill?skill=${encodeURIComponent(id)}`), carryKey: "skill" },
 }
 
 /** The page's own title for its leaf crumb, so the breadcrumb and the H1 say one thing ("Skills > Bulk upload"). */
 export const LEAF_TITLE: Record<string, () => string> = {
-  "admin/evaluation-settings": () => "Evaluation settings",
+  "admin/evaluation-settings": () => "Evaluation methods",
   "admin/import-ai-review": () => "Bulk upload",
   "admin/lists-cohorts": () => capitalize(skillListsNoun()),
   "admin/starter-library": () => "Starting points",

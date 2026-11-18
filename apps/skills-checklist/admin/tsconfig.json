@@ -37,10 +37,12 @@
     ".next-3023/types/**/*.ts",
     ".next-build/types/**/*.ts",
     ".next-build2/types/**/*.ts",
+    ".next-build3/types/**/*.ts",
+    ".next-perf/types/**/*.ts",
     ".next-student/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-build3/types/**/*.ts"
+    ".next-verify/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

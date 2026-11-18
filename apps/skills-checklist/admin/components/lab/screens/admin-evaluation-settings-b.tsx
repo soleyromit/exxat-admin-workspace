@@ -2,24 +2,23 @@
 
 /**
  * Evaluation settings (map D3), "every field on the page" (concept D, D-L141, Romit 2026-11-10: "Concept D, make the level counts selection process
- * better"). One sheet of five sections divided by hairlines: How skills are judged, the model's own section (Levels, Outcomes, or Questions and what
- * counts), Achieved when, Steps before it counts, Forms. Each section's name sits left, its fields right, labels above fields. Nothing is behind
+ * better"). One sheet of four sections divided by hairlines: How skills are judged, the model's own section (Levels, Outcomes, or Questions and what
+ * counts), Steps before it counts, Forms. "Achieved when" (Times needed, Who can sign off) is not on this page (Romit 2026-11-16: "remove 'achieved
+ * when' section from evaluation settings"); the rule keeps both values, and a new program carries 1 time and every role so a save is never blocked
+ * by a field that is not here. Each section's name sits left, its fields right, labels above fields. Nothing is behind
  * an Edit, a tab or a side panel. A sticky "Your rule" panel draws the rule as a path of steps (D-L145) and puts what is missing or wrong on the step it
  * blocks, each a link to its field. At phone width the panel goes first and Save is a bar at the bottom. Preview is a dialog.
  *
  * URL: ?state=loading.
  */
 import * as React from "react"
-import Link from "next/link"
-import { FieldError } from "@exxatdesignux/ui/components/ui/field"
-import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Label } from "@exxatdesignux/ui/components/ui/label"
 import { TYPE } from "@/components/lab/type-scale"
 import { useLabHref } from "@/components/lab/lab-bar/page-context"
-import { CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, CheckOffGrantNote, ModelSection, NUMBER_WIDTH, ScaleField, SignersField, checkOffGrantSelect, withCheckOffPatch, type SectionProps } from "@/components/lab/configure/fields"
-import { NumberWithUnit, tileExamples } from "@/components/lab/configure/settings-rows"
+import { CHECKOFF_GRANT_LABEL, CHECKOFF_SWITCH_LABEL, CheckOffGrantNote, ModelSection, ScaleField, checkOffGrantSelect, withCheckOffPatch, type SectionProps } from "@/components/lab/configure/fields"
+import { tileExamples } from "@/components/lab/configure/settings-rows"
 import { ProgramPreviewDialog, ProgramPreviewPanel } from "@/components/lab/configure/settings-dialogs"
-import { ProgramSettingsFrame, type ProgramPage } from "@/components/lab/configure/program-layout"
+import { EVALUATION_SETTINGS_TITLE, ProgramSettingsFrame, type ProgramPage } from "@/components/lab/configure/program-layout"
 import {
   FieldBlock,
   LevelsField,
@@ -38,10 +37,9 @@ import {
   type Step,
 } from "@/components/lab/configure/settings-sheet"
 import { focusField } from "@/components/lab/configure/use-configure"
-import { ruleAllowsCheckOff, withCheckOffDecided, type LabRule, type RuleIssue } from "@/lib/lab/configure"
-import { TIMES_MAX } from "@/lib/lab/program-settings"
+import { ROLES, hasNeed, ruleAllowsCheckOff, withCheckOffDecided, type LabRule, type RuleIssue } from "@/lib/lab/configure"
 import { FROM_PARAM } from "@/lib/lab/return-to"
-import { ReturnLink } from "@/components/lab/shared/return-link"
+import { ReturnTitle } from "@/components/lab/shared/return-link"
 import { buildLibrary } from "@/lib/lab/library"
 import { useV2State } from "@/lib/v2/react"
 import { inSentence, skillNoun, skillNounPlural } from "@/lib/lab/terms"
@@ -54,6 +52,9 @@ const hiddenQuestion = (i: RuleIssue) => {
   const m = /^cfg-question-(\d+)$/.exec(i.field)
   return !!m && Number(m[1]) >= QUESTIONS_SHOWN
 }
+
+/** The values of the removed "Achieved when" section on a program not saved yet: 1 time and every role, each only when unset. */
+const withCarried = (r: LabRule): LabRule => ({ ...r, need: hasNeed(r) ? r.need : 1, evaluatorRoles: r.evaluatorRoles.length ? r.evaluatorRoles : [...ROLES] })
 
 /** The model's own section: its name and count. No purpose lines: they restated the fields (D-L34, anatomy A8). */
 function modelSection(rule: LabRule): { title: string; count?: number } | null {
@@ -74,14 +75,14 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
   const undecided = !m.saved && !!rule.model && rule.checkOff?.enabled == null
   // No saved settings: group check-off starts off once there is a model, never the model's default [REQ SC-02].
   React.useEffect(() => { if (undecided) setRule(withCheckOffDecided) }, [undecided, setRule])
+  // Times needed and who signs off are not on this page: a new program carries 1 time and every role, so neither can block a save [INFER, to confirm].
+  const uncarried = !m.saved && !!rule.model && (!hasNeed(rule) || rule.evaluatorRoles.length === 0)
+  React.useEffect(() => { if (uncarried) setRule(withCarried) }, [uncarried, setRule])
   const props: SectionProps = { rule, setRule, issues, showErrors, settings: [], legendHidden: true }
   const err = (f: string) => (showErrors ? issues.find((i) => i.field === f)?.message : undefined)
-  const needErr = err("cfg-need")
   const grant = rule.model ? checkOffGrantSelect(rule, setRule) : null
   const library = React.useMemo(() => buildLibrary(state), [state])
   const custom = library.filter((r) => r.configuration === "edited").length
-  // Skills on these settings (Custom left out, as the rule panel counts) that keep their own number; the Times needed line names only these.
-  const ownDefault = library.filter((r) => r.configuration !== "edited" && r.timesDiffer).length
   const changed = React.useMemo(() => changedSettings(rule, m.saved), [rule, m.saved])
   const own = modelSection(rule)
   const total = m.ids.length
@@ -139,43 +140,6 @@ function SettingsBody({ page, expanded, setExpanded }: { page: ProgramPage; expa
           ) : null}
           {rule.model ? (
             <>
-              <SheetSection id="cfg-sec-counts" title="Achieved when">
-                <FieldBlock
-                  label="Times needed"
-                  htmlFor="cfg-need"
-                  changed={changed.has("need")}
-                >
-                  <NumberWithUnit unit={`${rule.need === 1 ? "evaluation" : "evaluations"} for each ${skillNoun()}`} unitId="cfg-need-unit">
-                    <Input
-                      id="cfg-need"
-                      type="number"
-                      inputMode="numeric"
-                      min={1}
-                      max={TIMES_MAX}
-                      step={1}
-                      className={NUMBER_WIDTH}
-                      value={Number.isFinite(rule.need) ? String(rule.need) : ""}
-                      onChange={(e) => { const raw = e.target.value; setRule((r) => ({ ...r, need: raw.trim() === "" ? Number.NaN : Number(raw) })) }}
-                      aria-invalid={!!needErr || undefined}
-                      aria-describedby={[needErr ? "cfg-need-error" : "", "cfg-need-unit", m.saved && ownDefault ? "cfg-need-scope" : ""].filter(Boolean).join(" ")}
-                    />
-                  </NumberWithUnit>
-                  {needErr ? <FieldError id="cfg-need-error">{needErr}</FieldError> : null}
-                  {/* The skills that keep their own number, which a save leaves alone (2026-11-11: no second "166" beside the rule panel's "Applies to").
-                      Hidden when none do. */}
-                  {m.saved && ownDefault ? (
-                    <p id="cfg-need-scope" className={TYPE.helper} data-need-scope>
-                      <Link href={to("admin/skills-library", { different: "1", config: "default", [FROM_PARAM]: "settings" })} className="text-foreground underline underline-offset-4 hover:text-[var(--brand-color)]" data-different-link>
-                        {`${ownDefault.toLocaleString("en-US")} of these ${ownDefault === 1 ? `${skillNounPlural()} uses its` : `${skillNounPlural()} use their`} own number`}
-                      </Link>
-                      {` and ${ownDefault === 1 ? "is" : "are"} not changed.`}
-                    </p>
-                  ) : null}
-                </FieldBlock>
-                <FieldBlock label="Who can sign off" changed={changed.has("signers")}>
-                  <SignersField {...props} />
-                </FieldBlock>
-              </SheetSection>
               <SheetSection id="cfg-sec-steps" title="Steps before it counts">
                 <StepList steps={steps} changed={(id) => (id === "cfg-self" && changed.has("self")) || (id === "cfg-approval" && changed.has("approval"))} />
               </SheetSection>
@@ -222,13 +186,9 @@ export function AdminEvaluationSettingsB() {
       saveBar={{ unsaved: (m) => (m.saved && m.dirty ? Math.max(1, changedSettings(m.rule, m.saved).size) : 0) }}
       // Save with a problem in a question the list hides: the list opens, then the frame focuses the field.
       onIssue={(i) => { if (hiddenQuestion(i)) setExpanded(true) }}
-      headerAction={(m) => (
-        <>
-          {/* "Back to {list}" from a list; opened plainly, "Back to Skill lists" (Sankalp 2026-11-15 point 7, D-L155). */}
-          <ReturnLink plainToLists />
-          <ProgramPreviewDialog draft={m.rule} />
-        </>
-      )}
+      // The way back is an icon before the title: "Back to {list}" from a list; opened plainly, "Back to Skill lists" (D-L155; Romit 2026-11-16 "Back to Skills list, should be an icon besides the title").
+      title={<ReturnTitle plainToLists>{EVALUATION_SETTINGS_TITLE}</ReturnTitle>}
+      headerAction={(m) => <ProgramPreviewDialog draft={m.rule} />}
     >
       {(page) => <SettingsBody page={page} expanded={expanded} setExpanded={setExpanded} />}
     </ProgramSettingsFrame>

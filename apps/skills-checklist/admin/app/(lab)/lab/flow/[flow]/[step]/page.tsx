@@ -5,7 +5,7 @@ import { FocusFrame } from "@/components/lab/focus-frame"
 import { ProgramScope } from "@/components/lab/setup/new-program-scope"
 import { LabBar } from "@/components/lab/lab-bar"
 import { PlaceholderScreen } from "@/components/lab/placeholder-screen"
-import { VARIANT_COMPONENTS } from "@/components/lab/screens"
+import { VariantScreen } from "@/components/lab/screens"
 import { toShort } from "@/lib/short-urls"
 import { isPersonaId } from "@/lib/lab/personas"
 import { findFlow, resolveStep } from "@/lib/lab/flows"
@@ -71,7 +71,8 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
   const override = present ? undefined : one("variant")
   const variant = (override && r.screen.variants.find((v) => v.id === override)) || r.variant
   const key = `${screenKey(r.screen)}/${variant.id}`
-  const Built = variant.file ? VARIANT_COMPONENTS[key] : undefined
+  const ph = <PlaceholderScreen screen={r.screen} variant={variant} />
+  const built = variant.file ? <VariantScreen variantKey={key} fallback={ph} /> : ph
   // A walkthrough can cross roles (student, evaluator, faculty): its breadcrumb names the role of the page, not the flow's first role.
   const navPersona = !r.flow.walkthrough && isPersonaId(r.flow.persona) ? r.flow.persona : persona
   // A walkthrough shows no lab bar (D-L139), so it reserves no row for one while it loads either. The element stays: the frames
@@ -86,7 +87,7 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
   if (variant.frame === "focus") {
     return (
       <FocusFrame bar={bar} page={{ flow: r.flow.id, step: step.id, screen: screenKey(r.screen), variant: variant.id }}>
-        <React.Suspense fallback={null}><ProgramScope>{Built ? <Built /> : <PlaceholderScreen screen={r.screen} variant={variant} />}</ProgramScope></React.Suspense>
+        <React.Suspense fallback={null}><ProgramScope>{built}</ProgramScope></React.Suspense>
       </FocusFrame>
     )
   }
@@ -95,7 +96,7 @@ export default async function LabFlowStepPage({ params, searchParams }: { params
     // audit 2026-10-27); the design flows keep the screen's registry title, except Sankalp's A4 to A6 steps (2026-10-27: the
     // step, the breadcrumb and the H1 all say the step), where one screen serves two jobs (skill lists, assign).
     <LabFrame persona={persona} navPersona={navPersona} title={r.flow.walkthrough || STEP_TITLED_SCREENS.has(step.screen) ? step.label : r.screen.title} bar={bar} page={{ flow: r.flow.id, step: step.id, screen: screenKey(r.screen), variant: variant.id }}>
-      <React.Suspense fallback={null}><ProgramScope>{Built ? <Built /> : <PlaceholderScreen screen={r.screen} variant={variant} />}</ProgramScope></React.Suspense>
+      <React.Suspense fallback={null}><ProgramScope>{built}</ProgramScope></React.Suspense>
     </LabFrame>
   )
 }

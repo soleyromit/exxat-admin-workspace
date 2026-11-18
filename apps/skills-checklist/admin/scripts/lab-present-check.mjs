@@ -37,7 +37,7 @@ const BANNED = [
 const CHROME = "[data-lab-bar], [data-ds-used-panel], [data-lab-question], [data-variant-bar]"
 // The marquee, in order (lib/lab/present.ts MARQUEE; UX critique 2026-10-26).
 // Proposed 2026-11-02 (ledger D-X45): program evaluation settings and the setup summary.
-const MARQUEE_LABELS = ["Skills library", "Add a skill", "Evaluation settings", "Assign to a cohort or group", "Course mapping", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"]
+const MARQUEE_LABELS = ["Skills library", "Add a skill", "Evaluation methods", "Assign to a cohort or group", "Course mapping", "My progress", "Log a skill", "My requests", "Evaluation form", "Evaluation submitted", "Approvals"]
 const MARQUEE_COUNT = MARQUEE_LABELS.length
 const STUDENT = new Set(["My progress", "Log a skill", "My requests"])
 // Romit 2026-10-27 (LEDGER D-L11): "remove sample data tags from everywhere". No marquee screen carries a Sample data chip.
@@ -151,7 +151,7 @@ const WALKS = [
     steps: [
       // D-L64, D-L77, D-L106: recommended pages only, four stops.
       ["library", "Library"],
-      ["settings", "Evaluation settings"],
+      ["settings", "Evaluation methods"],
       ["lists", "Skill lists"],
       ["map", "Course mapping"],
     ],

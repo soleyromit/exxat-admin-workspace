@@ -5,7 +5,8 @@ import { buildStudent } from "@/lib/lab/student"
 import { buildAttainment } from "@/lib/lab/attainment"
 import { buildReadiness } from "@/lib/lab/director"
 import { EMPTY_SCOPE } from "@/lib/lab/scope"
-import { assignedSkillIdsByStudent, customGroupValue, programLists, seedLists, studentsWithNoList, type ListsOverlay } from "@/lib/lab/lists"
+import { assignedSkillIdsByStudent, customGroupValue, programLists, seedLists, studentsWithNoList } from "@/lib/lab/lists"
+import { fourLists, withFourLists } from "./fixtures/four-lists"
 import { levelOf, levelSourceOf, noCourseIds, offeringById, offeringRows, overlayChanges, skillReach, tidyOverlay, type MappingOverlay } from "@/lib/lab/mapping"
 import { setupResult, courseGapIds } from "@/lib/lab/setup-result"
 import type { V2State } from "@/lib/v2/types"
@@ -123,25 +124,28 @@ describe("one definition of in a course", () => {
 })
 
 describe("assignment reads the admin's list edits, in shared code [REQ CM, D-L53]", () => {
-  const withEdits = (o: ListsOverlay): V2State => ({ ...seed, listEdits: o })
+  // The seed holds one list since 2026-11-16; these read the four lists it held before, saved as the admin's own (tests/lab/fixtures/four-lists.ts).
+  const four = fourLists(seed)
+  const base = withFourLists(seed)
+  const withGroups = (groups: Record<string, string[]>): V2State => withFourLists(seed, four.map((l) => (groups[l.id] ? { ...l, groupIds: groups[l.id]! } : l)))
   it("programLists applies the saved edits", () => {
-    expect(programLists(withEdits({ created: [], edits: { "list-core": { groupIds: [] } } })).find((l) => l.id === "list-core")!.groupIds).toEqual([])
+    expect(programLists(withGroups({ "list-core": [] })).find((l) => l.id === "list-core")!.groupIds).toEqual([])
   })
   it("removing BSN 2026's list reaches readiness: the group reads as unassigned, with nothing from the default list (D-L103)", () => {
-    const s = withEdits({ created: [], edits: { "list-core": { groupIds: [] } } })
-    const before = assignedSkillIdsByStudent(seed).get(GRACE)!
+    const s = withGroups({ "list-core": [] })
+    const before = assignedSkillIdsByStudent(base).get(GRACE)!
     const after = assignedSkillIdsByStudent(s).get(GRACE)!
     expect(before.size).toBeGreaterThan(0)
     expect(after.size).toBe(0)
     const scope = { ...EMPTY_SCOPE, cohort: "BSN 2026" }
-    expect(buildReadiness(seed, scope).rows.some((r) => r.id === GRACE)).toBe(true)
+    expect(buildReadiness(base, scope).rows.some((r) => r.id === GRACE)).toBe(true)
     expect(buildReadiness(s, scope).rows.some((r) => r.id === GRACE)).toBe(false)
     expect(populationRows(s, scope).unassigned.some((p) => p.id === GRACE)).toBe(true)
     expect(studentsWithNoList(s).some((p) => p.id === GRACE)).toBe(true)
   })
   it("a list on a custom group reaches its students with no store behind it", () => {
     const id = customGroupValue({ graduationYear: 2026 })
-    const s = withEdits({ created: [], edits: { "list-competencies": { groupIds: [id] }, "list-core": { groupIds: [] } } })
+    const s = withGroups({ "list-competencies": [id], "list-core": [] })
     const comp = programLists(s).find((l) => l.id === "list-competencies")!
     const mine = assignedSkillIdsByStudent(s).get(GRACE)!
     expect(comp.skillIds.every((k) => mine.has(k))).toBe(true)

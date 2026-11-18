@@ -114,20 +114,13 @@ export const detachGroup = (lists: readonly SkillList[], groupId: string): Skill
 export { customGroup, customGroupValue, type CustomGroup, type GroupRule }
 
 /**
- * The program's lists as the seed implies them [INFER]: the imported clinical checklist is the default list on the current cohorts; the
- * graduating cohort stays on the shorter core list it started with (the program made a new list for later cohorts, stakeholder
- * review 2026-11-04, D-L62); the communication, documentation, teaching and psycho-social skills form a second list of practicum competencies on BSN 2027 and the accelerated track (two lists on one cohort, [CALL]); a list for
- * the next standard exists with no group yet.
+ * The program's lists as the seed implies them: one, the imported clinical checklist, the default on every cohort (Romit 2026-11-16, one row on
+ * Skill lists). A program can still make more with New skill list.
  */
 export function seedLists(s: V2State): SkillList[] {
   const lists = seedListShapes(s)
-  if (lists.length === 0) return lists
-  // The default list's minimum comes from the data, not a fixed 120 (UX critique 2026-10-26: with 120 of 154 every group
-  // read "0 of N"). The unassigned 2027 list keeps the same minimum as the list it will replace.
-  const clinicalMin = dataMinTotal(s, lists[0]!)
-  lists[0]!.minTotal = clinicalMin
-  lists[3]!.minTotal = clinicalMin
-  lists[2]!.minTotal = dataMinTotal(s, lists[2]!)
+  // The list's minimum comes from the data, not a fixed 120 (UX critique 2026-10-26: with 120 of 154 every group read "0 of N").
+  for (const l of lists) l.minTotal = dataMinTotal(s, l)
   return lists
 }
 
@@ -188,6 +181,16 @@ export const listById = (lists: readonly SkillList[], id: string | null | undefi
 /** The default list, or the first assigned one. Its required skills are what course mapping checks coverage against. */
 export function defaultList(lists: readonly SkillList[]): SkillList | undefined {
   return lists.find((l) => l.isDefault) ?? lists.find((l) => listHasAssignment(l) && !l.individual)
+}
+
+/**
+ * The list a skills page shows (Romit 2026-11-16: a list's skills open from its row; the Library row is gone): the one named in `?list=`, else the default list,
+ * else the first. None when the program has no list yet (a new program in Set up skills), and then the page is the whole library.
+ */
+export function skillsPageList(lists: readonly SkillList[], listId: string | null | undefined): SkillList | undefined {
+  const all = skillLists(lists)
+  if (listId) return listById(all, listId) ?? defaultList(all) ?? all[0]
+  return defaultList(all) ?? all[0]
 }
 
 /** A list's size as the Skill lists page says it: "154, 2 inactive". Its panel lists all 154; a student's figure reads the 152 active ones (map D6). */
@@ -429,6 +432,8 @@ export function diffLists(base: readonly SkillList[], next: readonly SkillList[]
     if (b.isDefault !== n.isDefault) e.isDefault = n.isDefault
     if (b.minTotal !== n.minTotal) e.minTotal = n.minTotal
     if (b.skillIds.join("|") !== n.skillIds.join("|")) e.skillIds = n.skillIds
+    // Required or optional per list (Add skills H, D-ADD1117): kept only when it changed.
+    if (b.requiredIds.join("|") !== n.requiredIds.join("|")) e.requiredIds = n.requiredIds
     if (Object.keys(e).length) edits[n.id] = e
   }
   const deleted = base.filter((b) => !next.some((n) => n.id === b.id)).map((b) => b.id)
@@ -680,3 +685,22 @@ export function uploadPreview(lists: readonly SkillList[], listId: string, skill
   const r = uploadToList(lists, listId, skillIds, "preview")
   return r ? { listName: r.listName, added: r.added, versionOf: r.versionOf } : null
 }
+
+/**
+ * "Update it for everyone on it" (D-LS1116-c, Proposed; prototype 11-16 [16]): the list's skills change in place, for every student on it.
+ * Evaluations already recorded are never written; what counts follows the list [REQ AE-02]. The other choice stays `newVersion` (D-L119).
+ */
+export function updateListForEveryone(lists: readonly SkillList[], listId: string, skillIds: readonly string[]): SkillList[] {
+  return lists.map((l) => (l.id === listId ? { ...l, skillIds: [...skillIds] } : l))
+}
+
+/** Duplicate's starting name (D-LS1116-a, prototype 11-16 [23]): "{name} (copy)", then "(copy 2)", never a name another list has. */
+export function copyName(lists: readonly SkillList[], name: string): string {
+  const taken = new Set(lists.map((l) => l.name.toLowerCase()))
+  let out = `${name} (copy)`
+  for (let i = 2; taken.has(out.toLowerCase()); i++) out = `${name} (copy ${i})`
+  return out.length > LIST_NAME_MAX ? out.slice(0, LIST_NAME_MAX) : out
+}
+
+/** Everyone a list reaches, counted once (the Skill lists table's Students column). */
+export const studentCount = (list: ListReach, groups: readonly StudentGroup[]): number => studentsOnList(list, groups).size

@@ -20,7 +20,7 @@ export function SettingsSummary({ rule, word, action, emptyText, id = "settings-
     <section className="flex flex-col gap-3 rounded-[var(--radius)] border border-border p-3" aria-labelledby={id} data-settings-summary>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-          <SectionTitle icon="fa-sliders" id={id} className={TYPE.group}>Evaluation settings</SectionTitle>
+          <SectionTitle icon="fa-sliders" id={id} className={TYPE.group}>Evaluation methods</SectionTitle>
           {word ? <ConfigurationBadge value={word} /> : null}
         </span>
         {action}

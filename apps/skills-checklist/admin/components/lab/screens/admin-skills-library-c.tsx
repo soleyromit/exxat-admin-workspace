@@ -96,7 +96,7 @@ function Column({ status, rows, filtered, openId, onOpen }: { status: BoardColum
 }
 
 export function SkillsLibraryBoardPage({ startAdding = false }: { startAdding?: boolean }) {
-  const api = useLibrary()
+  const api = useLibrary({ listScope: true })
   const life = useLifecycle(api)
   const [viewParam, setView] = useUrlParam("view")
   const view: "board" | "list" = viewParam === "list" ? "list" : "board"

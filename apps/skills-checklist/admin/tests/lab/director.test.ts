@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { createSeed } from "@/lib/v2/seed"
+import { withFourLists } from "./fixtures/four-lists"
 import { populationRows } from "@/lib/lab/dashboard"
 import { EMPTY_SCOPE } from "@/lib/lab/scope"
 import {
@@ -20,7 +21,9 @@ import {
   type ListKey,
 } from "@/lib/lab/director"
 
-const seed = createSeed()
+// The graduating cohort on its own core list, as the seed held it until 2026-11-16 (tests/lab/fixtures/four-lists.ts). On the one seeded list
+// (Clinical skills checklist, every cohort) all 38 read far behind, since their evidence is on the core skills.
+const seed = withFourLists(createSeed())
 const q = (href: string) => new URLSearchParams(href.split("?")[1] ?? "")
 const cohort = graduatingCohort(seed)!
 const scope = { ...EMPTY_SCOPE, cohort, term: "Fall 2026" }
@@ -39,6 +42,11 @@ describe("director readiness (one calculation for every director screen)", () =>
     const pop = populationRows(directorFixture(seed).state, scope)
     expect(m.rows.map((r) => r.id).sort()).toEqual(pop.rows.map((r) => r.id).sort())
     expect(m.rows.length).toBe(38)
+  })
+
+  it("on the one seeded list (2026-11-16) the graduating cohort reads far behind: their evidence is on the core skills only (open for Romit)", () => {
+    const one = createSeed()
+    expect(buildReadiness(one, { ...scope, cohort: graduatingCohort(one)! }).stage).toEqual({ complete: 0, short: 0, far: 38 })
   })
 
   it("reads every skill on the assigned list (D-L54, D-L62): the graduating cohort is a believable mix", () => {

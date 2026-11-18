@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { createSeed } from "@/lib/v2/seed"
+import { fourLists } from "./fixtures/four-lists"
 import { labState } from "@/lib/lab/reviewer"
 import {
   applyListsOverlay,
@@ -18,7 +19,7 @@ import {
   EMPTY_LISTS_OVERLAY, listCanEdit } from "@/lib/lab/lists"
 
 const s = labState(createSeed())
-const lists = seedLists(s)
+const lists = fourLists(s)
 const groups = studentGroups(s)
 
 describe("lists as objects", () => {
@@ -85,9 +86,21 @@ describe("assignment", () => {
   })
 })
 
+describe("the seed holds one list (Romit 2026-11-16)", () => {
+  it("is Clinical skills checklist, the default, on every cohort, so no student is without a list", () => {
+    const seeded = seedLists(s)
+    expect(seeded.map((l) => l.name)).toEqual(["Clinical skills checklist"])
+    expect(seeded[0]!.isDefault).toBe(true)
+    expect(seeded[0]!.groupIds).toEqual(s.program.cohorts.map((c) => `coh:${c}`))
+    const reached = new Set(groups.filter((g) => seeded[0]!.groupIds.includes(g.id)).flatMap((g) => g.studentIds))
+    expect(reached.size).toBe(s.people.filter((p) => p.kind === "student").length)
+  })
+})
+
 describe("seeded completion rule (UX critique 2026-10-26: groups must differ)", () => {
   it("derives the default list's minimum from the data so groups differ", () => {
-    const l = lists.find((x) => x.id === "list-clinical")!
+    // The one seeded list (2026-11-16), on every cohort.
+    const l = seedLists(s).find((x) => x.id === "list-clinical")!
     expect(validateMinTotal(l, l.minTotal)).toBeNull()
     expect(l.minTotal).toBeLessThan(120)
     const standings = groups.filter((g) => l.groupIds.includes(g.id)).map((g) => groupStanding(s, l, g))

@@ -11,7 +11,8 @@
  * The words of Status and Configuration live in STATUS_META and CONFIGURATION_META (lib/lab/library.ts); the counts come from countLibrary over the shared store.
  */
 import * as React from "react"
-import { ReturnLink } from "@/components/lab/shared/return-link"
+import { ReturnTitle } from "@/components/lab/shared/return-link"
+import { inPageReturn } from "@/lib/lab/return-to"
 import { LabLink as Link } from "@/components/lab/lab-bar/lab-link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
@@ -51,6 +52,10 @@ import { aNoun, capitalize, countSkills, skillListNoun, skillNoun, skillNounPlur
 import { FirstRun } from "@/components/lab/first-run"
 import type { LibraryApi } from "./use-library"
 import { useTerms } from "./use-terms"
+import { listsHref } from "@/lib/lab/lists"
+import { PAGE_TITLE_TYPE_CLASS } from "@exxatdesignux/ui/components/ui/page-header"
+import { SKILLS_PANEL, skillsPanelHref } from "@/lib/lab/admin-ia"
+import { useLabLinkContext } from "@/components/lab/lab-bar/page-context"
 
 /** Names inside the library table, tree and board: the shared hover-underline link (consistency audit item 7). */
 export { LINK_IN_TABLE as LINK } from "@/components/lab/link-styles"
@@ -96,11 +101,21 @@ const ADD_WAY_ITEM = "items-start gap-3 px-2 py-2"
  * default library (REQ SL-01).
  * `primaryElsewhere` steps the whole button down to outline while a sheet or panel shows its own primary (rule L2).
  */
-export function LibraryActions({ onAdd, onAddSeveral, primaryElsewhere = false }: { onAdd: () => void; onAddSeveral?: () => void; primaryElsewhere?: boolean }) {
+export function LibraryActions({ onAdd, onAddSeveral, primaryElsewhere = false, listId, addSkills }: { onAdd: () => void; onAddSeveral?: () => void; primaryElsewhere?: boolean; /** The list whose skills the page shows: Bulk upload opens on it, and every page opened here leads back to it. */ listId?: string; /** One way in (ADMIN-D6 round add-skills, variants D and E): one button, no menu. */ addSkills?: () => void }) {
   const variant = primaryElsewhere ? "outline" : "default"
+  const back = (href: string, extra: Record<string, string> = {}) => {
+    const q = new URLSearchParams(listId ? { ...extra, list: listId } : {})
+    const s = q.toString()
+    return `${withFrom(href, "skills")}${s ? `&${s}` : ""}`
+  }
   // A menu row that opens a sheet: focus belongs in the sheet, not back on the chevron, until the sheet closes and returns it there.
   const openingSheet = React.useRef(false)
   const fromMenu = (open: () => void) => () => { openingSheet.current = true; rememberSheetOpener(ADD_MENU_TRIGGER); open() }
+  if (addSkills) return (
+    <Button type="button" variant={variant} size="sm" onClick={() => { rememberSheetOpener(ADD_SKILL_TRIGGER); addSkills() }} data-add-skill-trigger data-add-skills-open>
+      {`Add ${skillNounPlural()}`}
+    </Button>
+  )
   const several = <AddWayRow icon="fa-list" label="Add several" description="Paste a list of names" />
   return (
     <ButtonGroup aria-label={`Add ${skillNounPlural()}`} data-add-menu>
@@ -116,20 +131,28 @@ export function LibraryActions({ onAdd, onAddSeveral, primaryElsewhere = false }
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72" onCloseAutoFocus={(e) => { if (openingSheet.current) { openingSheet.current = false; e.preventDefault() } }}>
+          {/* Pick skills the program already has (D-LS1116-d, [CALL 11-16]): the list's skills picker on Skill lists. */}
+          {listId ? (
+            <DropdownMenuItem className={ADD_WAY_ITEM} asChild>
+              <Link href={listsHref({ list: listId, pick: "1" })} data-choose-from-library>
+                <AddWayRow icon="fa-books" label="Choose from library" description={`${capitalize(skillNounPlural())} the program already has`} />
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
           {onAddSeveral ? (
             <DropdownMenuItem className={ADD_WAY_ITEM} onSelect={fromMenu(onAddSeveral)}>{several}</DropdownMenuItem>
           ) : (
             <DropdownMenuItem className={ADD_WAY_ITEM} asChild>
-              <Link href={withFrom(addSeveralHref, "skills")}>{several}</Link>
+              <Link href={back(addSeveralHref)}>{several}</Link>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem className={ADD_WAY_ITEM} asChild>
-            <Link href={withFrom(importHref, "skills")}>
+            <Link href={back(importHref, listId ? { to: listId } : {})}>
               <AddWayRow icon="fa-file-arrow-up" label="Bulk upload" description="From a PDF, Word or Excel file" later />
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem className={ADD_WAY_ITEM} asChild>
-            <Link href={withFrom(starterHref, "skills")}>
+            <Link href={back(starterHref)}>
               <AddWayRow icon="fa-copy" label="Starting points" description={`Look through ready-made sets of ${skillNounPlural()}`} later />
             </Link>
           </DropdownMenuItem>
@@ -291,8 +314,7 @@ export function LibraryBanner({ api }: { api: LibraryApi; tab?: LibraryTab }) {
 /** The columns the table opens with (map D1), so nothing moves when the rows arrive. Below md only the name and the number, as the table's own width allows without scrolling the page. */
 const LOADING_COLUMNS: Array<{ label: string; cell: string; wide?: boolean }> = [
   { label: "Times needed", cell: "h-8 w-14" },
-  { label: "Category", cell: "h-4 w-28", wide: true },
-  { label: "Configuration", cell: "h-4 w-20", wide: true },
+  { label: "Evaluation method", cell: "h-4 w-28", wide: true },
   { label: "Status", cell: "h-4 w-14", wide: true },
 ]
 type LoadingRow = { id: string; index: number }
@@ -338,7 +360,34 @@ export function LibraryLoading() {
  * so the empty page and the header never disagree. Same box as EmptyBlock; it needs three actions, so it composes the box
  * here. Every action is outline: the page's one filled primary stays the title-zone split button.
  */
-export function LibraryEmpty({ onAdd, onAddSeveral }: { onAdd?: () => void; onAddSeveral?: () => void }) {
+export function LibraryEmpty({ onAdd, onAddSeveral, listId, addSkills }: { onAdd?: () => void; onAddSeveral?: () => void; /** A list just created (D-LS1116-d, [CALL 11-16]): its three ways in, pick existing, create one, import. */ listId?: string; /** One way in (ADMIN-D6 round add-skills, variant D): what it holds, said once, and one button. */ addSkills?: () => void }) {
+  if (addSkills) return (
+    <FirstRun
+      scene="library"
+      title={`No ${skillNounPlural()} on this list yet`}
+      body="Choose from the library, type names or upload a file."
+      // The one filled button of an empty list: the header holds no second copy of it (ADMIN-D6 round add-skills).
+      actions={<Button type="button" variant="default" size="sm" onClick={() => { rememberSheetOpener("[data-add-skills-empty]"); addSkills() }} data-add-skills-empty>{`Add ${skillNounPlural()}`}</Button>}
+    />
+  )
+  if (listId) return (
+    <FirstRun
+      scene="library"
+      title={`No ${skillNounPlural()} on this list yet`}
+      actions={
+        <>
+          <Button asChild variant="outline" size="sm"><Link href={listsHref({ list: listId, pick: "1" })} data-choose-from-library>Choose from library</Link></Button>
+          {onAdd ? <Button type="button" variant="outline" size="sm" onClick={onAdd}>{`Create ${aNoun()}`}</Button> : null}
+          <Button asChild variant="outline" size="sm">
+            <Link href={`${withFrom(importHref, "skills")}&list=${encodeURIComponent(listId)}&to=${encodeURIComponent(listId)}`} className="inline-flex items-center gap-2">
+              Bulk upload
+              <LaterBadge />
+            </Link>
+          </Button>
+        </>
+      }
+    />
+  )
   return (
     <FirstRun
       scene="library"
@@ -386,7 +435,14 @@ export function LibraryError() {
  * Page frame plus the demo states. `children` render only when there is data; `overlays` (sheets, dialogs) always.
  * Every option set uses this frame, so the title, the action placement and the banner slot are identical across sets.
  */
-export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, overlays, children, pageType = "list", actionsInTable = false }: {
+export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, overlays, children, pageType = "list", actionsInTable = false, addSkills, headerExtra }: {
+  /** Variant H: the draft's "n unsaved changes", Discard and Save changes, before the page's other actions (D-ADD1117). */
+  headerExtra?: React.ReactNode
+  /**
+   * One way to add skills to the list (ADMIN-D6 round add-skills): `open` is the header's one button and the empty state's. With `step` (variant E) the add step is the
+   * page: an empty list shows it in place of the empty state, and `adding` shows it in place of the table, titled by what it does, with `close` behind the back icon.
+   */
+  addSkills?: { open: () => void; step?: React.ReactNode; adding?: boolean; close?: () => void; /** Variant G (round add-skills-simple): `step` is a region above the table, not a page. The title, the page type and the table stay; the result banner sits between the region and the table, so the region never moves. */ inline?: boolean }
   api: LibraryApi
   tab?: LibraryTab
   onAdd: () => void
@@ -398,28 +454,66 @@ export function LibraryFrame({ api, tab, onAdd, onAddSeveral, primaryElsewhere, 
   /** The table's toolbar holds Add a skill and Export (the DS table pattern); the header keeps only the title. */
   actionsInTable?: boolean
 }) {
-  // "Skills library" under the crumb "Skills > Library" (D-L64). It follows the program's noun; the hook re-renders the frame when it changes.
+  // One list's skills, titled by the list (Romit 2026-11-16: a list's skills open from its row; the Library row is gone), under "Skills > Skill lists".
+  // A program with no list yet (Set up skills) still reads "Skills library". It follows the program's noun; the hook re-renders the frame when it changes.
   const terms = useTerms()
-  const title = `${capitalize(terms.skillNounPlural)} library`
+  const link = useLabLinkContext()
+  const listsRow = SKILLS_PANEL.find((i) => i.key === "groups")!
+  const name = api.list?.name ?? `${capitalize(terms.skillNounPlural)} library`
+  // Inside a list, a back icon before the title leads to Skill lists (Romit 2026-11-16: "need a back icon when inside a skills checklist"). A link, so the
+  // page's leave guards (an edit panel with unsaved changes) ask first, as they do for every link.
+  // With return context (step 3 of New skill list, a list's panel) the same icon leads back there instead: "Back to {list}" (Romit 2026-11-16).
+  const returning = !!inPageReturn(useSearchParams())
+  const inline = !!addSkills?.inline && !!addSkills.step
+  const stepOnTable = !inline && !!addSkills?.step && !!addSkills.adding && api.rows.length > 0
+  const title: React.ReactNode = stepOnTable ? (
+    <div className="flex min-w-0 items-center gap-1" data-list-title>
+      <Button type="button" variant="ghost" size="icon" className="-ms-2 shrink-0" onClick={addSkills?.close} aria-label={`Back to ${name}`} data-back-to-list>
+        <i className="fa-light fa-arrow-left" aria-hidden="true" />
+      </Button>
+      <h1 className={`line-clamp-2 min-w-0 overflow-hidden break-words ${PAGE_TITLE_TYPE_CLASS}`}>{`Add ${terms.skillNounPlural} to ${name}`}</h1>
+    </div>
+  ) : returning ? <ReturnTitle>{name}</ReturnTitle> : api.list ? (
+    <div className="flex min-w-0 items-center gap-1" data-list-title>
+      <Button asChild variant="ghost" size="icon" className="-ms-2 shrink-0">
+        <Link href={skillsPanelHref(listsRow, link)} aria-label={`Back to ${listsRow.label()}`} data-back-to-lists>
+          <i className="fa-light fa-arrow-left" aria-hidden="true" />
+        </Link>
+      </Button>
+      {/* An empty list that opens on the add step (variant E) is titled by the step, as it is from the table; the icon still leads to Skill lists. */}
+      <h1 className={`line-clamp-2 min-w-0 overflow-hidden break-words ${PAGE_TITLE_TYPE_CLASS}`}>{addSkills?.step && !inline && api.hydrated && !api.demo && api.rows.length === 0 ? `Add ${terms.skillNounPlural} to ${name}` : name}</h1>
+    </div>
+  ) : name
   // Navigation model A (D-L42): the header holds the page's actions, one filled; there is no flow footer.
   // Add a skill first, then Export (Romit 2026-11-09).
   const actions = (
     <div className="flex flex-wrap items-center justify-end gap-2">
-      <LibraryActions onAdd={onAdd} onAddSeveral={onAddSeveral} primaryElsewhere={primaryElsewhere} />
+      {headerExtra}
+      <LibraryActions onAdd={onAdd} onAddSeveral={onAddSeveral} primaryElsewhere={primaryElsewhere} listId={api.list?.id} addSkills={addSkills?.open} />
       <LibraryExport onExport={() => api.exportCsv()} canExport={api.rows.length > 0} />
     </div>
   )
+  // While the add step is the page (variant E), its footer holds the one primary: the header keeps only the title.
+  const stepShown = !inline && !!addSkills?.step && api.hydrated && !api.demo && (api.rows.length === 0 || !!addSkills.adding)
+  // G: the region shows above the table while adding, and on an empty list, where it is the page's one job. Export alone stays in the header beside it.
+  const regionShown = inline && api.hydrated && !api.demo && (api.rows.length === 0 || !!addSkills?.adding)
+  // An empty list with one way in (variant D): the empty state holds the one button, so the header shows no second copy and no Export with nothing to export.
+  const emptyWithOneWayIn = !!addSkills && !addSkills.step && api.hydrated && api.demo !== "loading" && api.demo !== "error" && api.rows.length === 0
   // In the table only while the table is on screen; loading, error and empty keep their own ways in.
   const inTable = actionsInTable && api.hydrated && !api.demo && api.rows.length > 0
   let body: React.ReactNode = children
   if (!api.hydrated || api.demo === "loading") body = <LibraryLoading />
   else if (api.demo === "error") body = <LibraryError />
   // One empty message, whatever made the library empty: a new program, or the demo state (map D1, D2).
-  else if (api.rows.length === 0) body = <LibraryEmpty onAdd={onAdd} onAddSeveral={onAddSeveral} />
+  else if (stepShown) body = addSkills?.step
+  else if (regionShown) body = api.rows.length === 0 ? null : children
+  else if (api.rows.length === 0) body = <LibraryEmpty onAdd={onAdd} onAddSeveral={onAddSeveral} listId={api.list?.id} addSkills={addSkills?.open} />
+  const regionActions = api.rows.length > 0 ? <LibraryExport onExport={() => api.exportCsv()} canExport /> : undefined
   return (
-    <div data-page-type={pageType} className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
-      {/* "Back to {list}" only when opened from a list's step or panel (walk 3, D13); it stays in the header when the actions move to the table. */}
-      <PageFrame title={title} actions={inTable ? <ReturnLink /> : <div className="flex flex-wrap items-center justify-end gap-2"><ReturnLink />{actions}</div>} className="flex-1">
+    <div data-page-type={stepShown ? "form" : pageType} className="flex min-h-[calc(100dvh-5.5rem)] w-full flex-col">
+      {/* The way back is the icon before the title (walk 3, D13; Romit 2026-11-16). */}
+      <PageFrame title={title} actions={regionShown ? regionActions : inTable || stepShown || emptyWithOneWayIn ? undefined : actions} className="flex-1">
+        {regionShown ? addSkills?.step : null}
         <LibraryBanner api={api} tab={tab} />
         <LibraryToolbarActions.Provider value={inTable ? actions : null}>{body}</LibraryToolbarActions.Provider>
         {overlays}

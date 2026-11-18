@@ -11,6 +11,7 @@ import { checkShared, checkVariant } from "./lab-ds-gate-lib.mjs"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const registry = JSON.parse(fs.readFileSync(path.join(root, "lib/lab/screens.json"), "utf8"))
 const outFile = path.join(root, "lib/lab/ds-used.generated.json")
+const countsFile = path.join(root, "lib/lab/ds-used-counts.generated.json")
 const write = process.argv.includes("--write")
 
 let failed = false
@@ -42,13 +43,18 @@ console.log(`${shared.violations.length ? "FAIL" : "PASS"} shared (${shared.scan
 for (const x of shared.violations) console.log(`  VIOLATION ${x.rule} ${x.file}:${x.line} ${x.message}`)
 if (shared.violations.length) failed = true
 
-const next = JSON.stringify(generated, null, 1) + "\n"
-if (write) {
-  fs.writeFileSync(outFile, next)
-  console.log(`wrote ${path.relative(root, outFile)}`)
-} else {
-  const cur = fs.existsSync(outFile) ? fs.readFileSync(outFile, "utf8") : ""
-  if (cur !== next) { console.log("FAIL lib/lab/ds-used.generated.json is stale: run node scripts/lab-ds-gate.mjs --write"); failed = true }
+// Tiny per-variant count of distinct component names: the lab bar imports this, the full list loads only when its drawer opens.
+const counts = Object.fromEntries(Object.entries(generated).map(([k, e]) => [k, new Set([...e.direct, ...e.via].map((d) => d.name)).size]))
+const outputs = [[outFile, JSON.stringify(generated, null, 1) + "\n"], [countsFile, JSON.stringify(counts, null, 1) + "\n"]]
+for (const [file, next] of outputs) {
+  const rel = path.relative(root, file)
+  if (write) {
+    fs.writeFileSync(file, next)
+    console.log(`wrote ${rel}`)
+  } else {
+    const cur = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : ""
+    if (cur !== next) { console.log(`FAIL ${rel} is stale: run node scripts/lab-ds-gate.mjs --write`); failed = true }
+  }
 }
 console.log(`\n${built} built variant(s) checked. ${failed ? "GATE FAILED" : "GATE PASSED"}`)
 process.exit(failed ? 1 : 0)

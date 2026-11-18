@@ -15,15 +15,12 @@ import { ResultBanner } from "@/components/lab/shared/result-banner"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@exxatdesignux/ui/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@exxatdesignux/ui/components/ui/alert-dialog"
 import { DiscardChangesDialog, useDialogDiscard, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
-import { useUrlParam, writeUrlParam } from "@/components/lab/library/library-chrome"
-import { SETUP_CONFIGURE, SETUP_PARAM } from "@/lib/lab/return-to"
+import { useUrlParam } from "@/components/lab/library/library-chrome"
 import {
   addToList,
   assign,
   ALL_STUDENTS_GROUP,
-  ASSIGN_UNSAVED,
   customGroup,
-  markSetupDone,
   defaultForNewGroup,
   deleteImpact,
   detachGroup,
@@ -35,6 +32,7 @@ import {
   namesOf,
   namesUpTo,
   newVersion,
+  updateListForEveryone,
   removeStudent,
   renameList,
   ruleIsEmpty,
@@ -57,8 +55,8 @@ import { parseCustomGroup, type CustomGroup } from "@/lib/v2/filters"
 import { fmt, plural } from "./parts"
 import { customGroupsStore, useLists } from "./use-admin-data"
 import { ListPanel, type PanelView } from "@/components/lab/admin-a/lists-panel"
-import { AssignWizard, draftHasPicks, type AddedStudents, type AssignDraft } from "@/components/lab/admin-a/lists-add-students"
-import { ListSetupLevel, NewListPage } from "@/components/lab/admin-a/lists-new-page"
+import { AssignWizard, type AddedStudents } from "@/components/lab/admin-a/lists-add-students"
+import { NewListDialog } from "@/components/lab/admin-a/lists-new-dialog"
 import { useRovingChecks } from "./lists-focus"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { AppliedFilterChips, FiltersControl, SearchField, type FilterField } from "./parts"
@@ -142,32 +140,18 @@ export function useListActions(model: ListsModel) {
   const [renaming, setRenaming] = React.useState<string | null>(null)
   const [deleting, setDeleting] = React.useState<SkillList | null>(null)
   const [creating, setCreating] = React.useState(false)
+  // Duplicate (D-LS1116-a): the create dialog, prefilled from this list.
+  const [copying, setCopying] = React.useState<SkillList | null>(null)
+  // The list Change skills started from, for the save question (D-LS1116-c).
+  const [changingFrom, setChangingFrom] = React.useState<string | null>(null)
   const [adding, setAdding] = React.useState<{ listId: string; query: string } | null>(null)
   const [removing, setRemoving] = React.useState<Removing | null>(null)
   const [feedback, setFeedback] = React.useState<Feedback | null>(null)
   const panelDirty = React.useRef(false)
   const levelLeave = React.useRef<(() => void) | null>(null)
-  // X on a setup step leaves the flow for the table (Sankalp point 7); Esc and Back step back one level through levelLeave.
+  // No level of this panel exits to the table on its own any more: the four-step New skill list panel is gone (D-LS1116-d, Romit 2026-11-16).
   const levelExit = React.useRef<(() => void) | null>(null)
-  // Back from step 3 opens the saved list again on step 2.
-  const [editing, setEditing] = React.useState<string | null>(null)
-  const [exitAsk, setExitAsk] = React.useState(false)
-  // New skill list goes on in this panel: step 2, then step 3 (D-L122).
-  const [setup, setSetup] = React.useState<{ listId: string; step: 2 | 3 } | null>(null)
   const levelDirty = React.useRef(false)
-  // Step 4's choices, kept while the admin steps back to step 3 and forward again; dropped when the wizard ends.
-  const assignDraft = React.useRef<AssignDraft | null>(null)
-  // Step 3 settles a typed Times needed number before X or a press outside goes on.
-  const setupExit = React.useRef<((go: () => void) => void) | null>(null)
-  // While New skill list is on step 3 or 4, the URL says so (`?list=<id>&setup=configure`), so browser Back from a page reached from step 3
-  // (Evaluation settings, the Library, one skill) returns to that step; it comes off when the wizard ends, so a finished list never reopens in setup.
-  const inSetup = React.useRef(false)
-  React.useEffect(() => {
-    const on = new URLSearchParams(window.location.search).get(SETUP_PARAM) === SETUP_CONFIGURE
-    if (setup && !on) writeUrlParam(SETUP_PARAM, SETUP_CONFIGURE)
-    if (!setup && inSetup.current && on) writeUrlParam(SETUP_PARAM, null)
-    inSetup.current = !!setup
-  }, [setup])
   // A double click on New version: the second press makes nothing.
   const versioning = React.useRef(false)
 
@@ -198,18 +182,13 @@ export function useListActions(model: ListsModel) {
     if (id === shownId) return
     if (shownId && (panelDirty.current || levelDirty.current)) return setSwitchTo(id)
     setAdding(null)
-    setSetup(null)
     if (!shownId) panelBack.remember(listLink(id))
     setFresh(null)
     setView("list")
     setOpenId(id)
   }
   const closePanel = () => {
-    assignDraft.current = null
     setAdding(null)
-    setSetup(null)
-    setEditing(null)
-    setExitAsk(false)
     // Leaving a change of skills goes back to the list it started from, unchanged.
     const backToList = !!fresh?.versionOf
     setFresh(null)
@@ -227,6 +206,7 @@ export function useListActions(model: ListsModel) {
     if (!shownId) panelBack.remember(listLink(id))
     setOpenId(id)
     setFeedback(null)
+    setChangingFrom(id)
     setFresh(created)
     setView("skills")
     requestAnimationFrame(focusPanel)
@@ -254,18 +234,9 @@ export function useListActions(model: ListsModel) {
     const nameOf = (id: string) => model.state.people.find((p) => p.id === id)?.name ?? id
     const who = [groupNames.length ? namesOf(groupNames) : "", people ? (groupNames.length ? plural(people, "student", "students") : namesUpTo(a.studentIds.map(nameOf))) : ""].filter(Boolean)
     withUndo(listId, addToList(lists, listId, a, groups), a.groupIds.includes(ALL_STUDENTS_GROUP) ? `${list.name} assigned to all students.` : `${list.name} assigned to ${namesOf(who)}.`)
-    // The last step of New skill list ends on the table with the result banner (Sankalp point 7); Assign to students from a list's panel stays in that panel.
-    const finishing = !!setup
+    // Assign to students from a list's panel stays in that panel.
     setAdding(null)
-    setSetup(null)
-    if (finishing) {
-      assignDraft.current = null
-      markSetupDone(listId)
-      setFresh(null)
-      setView("list")
-      setOpenId(null)
-      requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-new-list]")?.focus({ preventScroll: true }))
-    } else requestAnimationFrame(focusPanel)
+    requestAnimationFrame(focusPanel)
   }
 
   const setAsDefault = (id: string) => {
@@ -277,49 +248,30 @@ export function useListActions(model: ListsModel) {
   }
 
   const addingList = adding ? listById(lists, adding.listId) ?? null : null
-  const setupList = setup ? listById(lists, setup.listId) ?? null : null
-  const editingList = editing ? listById(lists, editing) ?? null : null
-  // Steps 3 and 4 exit to the table; with students ticked on step 4 (or kept from it while on step 3), ask first. Step 3 settles a typed number before that.
-  const exitSetup = () => (levelDirty.current || draftHasPicks(assignDraft.current) ? setExitAsk(true) : closePanel())
-  levelExit.current = setupList ? (setup?.step === 2 ? () => (setupExit.current ? setupExit.current(exitSetup) : exitSetup()) : exitSetup) : null
+  levelExit.current = null
   const dialogs = (
     <>
-      {creating || editingList ? (
-        <NewListPage
-          key={editingList?.id ?? "new"}
+      {/* Create skill list is one dialog (D-LS1116-d, Decided, Romit 2026-11-16; [CALL 11-16]); Create stays on this page and says so in a banner (D-LS1116-f). */}
+      {creating || copying ? (
+        <NewListDialog
+          key={copying?.id ?? "new"}
           model={model}
-          editList={editingList ?? undefined}
-          onClose={() => { if (editingList) { setEditing(null); closePanel() } else setCreating(false) }}
-          onSaved={(l) => {
+          copyOf={copying}
+          onClose={() => { setCreating(false); setCopying(null) }}
+          onCreated={(l, skillsHref) => {
+            // Stay on the landing page (D-LS1116-f): the new row is in the table, and the banner's one action opens its skills page.
             setCreating(false)
-            setEditing(null)
-            setOpenId(l.id)
-            setView("list")
-            setFeedback(null)
-            setSetup({ listId: l.id, step: 2 })
-            requestAnimationFrame(focusPanel)
+            setCopying(null)
+            setOpenId(null)
+            setFeedback({ title: `${l.name} created.`, body: "", listId: l.id, action: { label: `Add ${skillNounPlural()}`, href: skillsHref } })
           }}
+          onRestoreFocus={() => back.restore()}
         />
       ) : null}
       <ListPanel
         model={model}
-        list={creating || editingList ? null : shown}
-        level={setupList && setup?.step === 2 ? (
-          <ListSetupLevel
-            model={model}
-            list={setupList}
-            leaveRef={levelLeave}
-            exitRef={setupExit}
-            // The arrow names where it goes: Add skills (step 2) for a list no one has yet, else the list itself.
-            backLabel={listCanEdit(setupList) ? `Back to Add ${skillNounPlural()}` : `Back to ${setupList.name}`}
-            picksPending={draftHasPicks(assignDraft.current)}
-            onDiscardPicks={() => { assignDraft.current = null }}
-            onBack={() => { if (listCanEdit(setupList)) { setSetup(null); setEditing(setupList.id) } else setSetup(null) }}
-            onNext={() => setSetup({ listId: setupList.id, step: 3 })}
-          />
-        ) : setupList ? (
-          <AssignWizard key={setupList.id} model={model} list={setupList} initialQuery="" stepLabel="Step 4 of 4" leaveRef={levelLeave} dirtyRef={levelDirty} draft={assignDraft} onBack={() => setSetup({ listId: setupList.id, step: 2 })} onClose={closePanel} onAdd={(a) => added(setupList.id, a)} />
-        ) : addingList ? <AssignWizard key={addingList.id} model={model} list={addingList} initialQuery={adding?.query ?? ""} leaveRef={levelLeave} dirtyRef={levelDirty} onClose={() => { setAdding(null); requestAnimationFrame(() => addStudentsButton()?.focus({ preventScroll: true })) }} onAdd={(a) => added(addingList.id, a)} /> : null}
+        list={creating || copying ? null : shown}
+        level={addingList ? <AssignWizard key={addingList.id} model={model} list={addingList} initialQuery={adding?.query ?? ""} leaveRef={levelLeave} dirtyRef={levelDirty} onClose={() => { setAdding(null); requestAnimationFrame(() => addStudentsButton()?.focus({ preventScroll: true })) }} onAdd={(a) => added(addingList.id, a)} /> : null}
         levelLeave={levelLeave}
         levelExit={levelExit}
         isFresh={!!fresh}
@@ -339,6 +291,16 @@ export function useListActions(model: ListsModel) {
         onRemove={(who) => { if (shown) requestRemove({ listId: shown.id, who }) }}
         onDefault={setAsDefault}
         onNewVersion={makeVersion}
+        onUpdatedForEveryone={(origin, ids, students) => {
+          // "Update it for everyone on it" (D-LS1116-c): the list changes in place, with Undo; the panel shows that list again.
+          setFresh(null)
+          setOpenId(origin.id)
+          setView("list")
+          withUndo(origin.id, updateListForEveryone(lists, origin.id, ids), `${origin.name} updated for ${plural(students, "student", "students")}.`)
+          requestAnimationFrame(focusPanel)
+        }}
+        changingFromId={changingFrom}
+        onDuplicate={(id) => { const l = listById(lists, id); if (l) { back.remember(listLink(id)); setCopying(l) } }}
         onRename={(id) => { back.remember(listLink(id)); setRenaming(id) }}
         onDelete={(l) => { back.remember(listLink(l.id)); setDeleting(l) }}
       />
@@ -348,15 +310,13 @@ export function useListActions(model: ListsModel) {
         onDiscard={() => {
           const id = switchTo
           setAdding(null)
-          setSetup(null)
-          setFresh(null)
+                setFresh(null)
           setView("list")
           setOpenId(id)
           setSwitchTo(null)
         }}
         body={`The ${skillNounPlural()} you selected have not been saved.`}
       />
-      <DiscardChangesDialog open={exitAsk} onKeep={() => setExitAsk(false)} onDiscard={closePanel} body={ASSIGN_UNSAVED} />
       <RemoveFromListDialog
         target={removing}
         listName={removing ? listById(lists, removing.listId)?.name ?? "" : ""}
@@ -421,14 +381,25 @@ export function useListActions(model: ListsModel) {
 
   return {
     // Every door remembers what opened it, while that control is still known (a menu's item is gone a moment later).
-    openNew: () => { if (levelDirty.current) return; setAdding(null); setSetup(null); back.remember(); panelBack.remember(); setCreating(true) },
+    openNew: () => { if (levelDirty.current) return; setAdding(null); back.remember(); panelBack.remember(); setCreating(true) },
     openRename: (id: string) => { back.remember(listLink(id)); setRenaming(id) },
+    /** "Choose from library" on a list's page (`?list=<id>&pick=1`): the list's skills picker, a Change skills for a list someone has. */
+    openSkills: (id: string) => {
+      const l = listById(lists, id)
+      if (!l) return
+      if (!listCanEdit(l)) return makeVersion(id)
+      if (!shownId) panelBack.remember(listLink(id))
+      setOpenId(id)
+      setView("skills")
+      requestAnimationFrame(focusPanel)
+    },
+    openDuplicate: (id: string) => { const l = listById(lists, id); if (l) { back.remember(listLink(id)); setCopying(l) } },
     openDelete: (l: SkillList) => { back.remember(listLink(l.id)); setDeleting(l) },
     openList,
     /** An old link named a group that is not on this list: Add students, already searching for that group. */
     askToAdd: (listId: string, group: string) => setAdding({ listId, query: group }),
-    /** Back from a page left on the Configure step (`?setup=configure&list=`): New skill list opens again on that list's step 3. */
-    resumeSetup: (listId: string) => { setAdding(null); setFresh(null); setEditing(null); setView("list"); setOpenId(listId); setSetup({ listId, step: 2 }); requestAnimationFrame(focusPanel) },
+    /** An old link to the retired setup steps (`?setup=configure&list=`): the list's panel (the four-step panel is gone, D-LS1116-d). */
+    resumeSetup: (listId: string) => { setAdding(null); setFresh(null); setView("list"); setOpenId(listId); requestAnimationFrame(focusPanel) },
     closePanel,
     openId: shownId,
     makeVersion,

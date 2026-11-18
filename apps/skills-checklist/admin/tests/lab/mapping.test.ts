@@ -6,7 +6,6 @@ import {
   academicYear,
   currentTermId,
   filterOfferings,
-  offeringById,
   offeringRows,
   offeringsForSkill,
   professionalYear,
@@ -19,13 +18,14 @@ import {
   resolvedLevels,
   EMPTY_MAPPING_OVERLAY,
 } from "@/lib/lab/mapping"
-import { assign, cohortGroupId, seedLists, type SkillList } from "@/lib/lab/lists"
+import { assign, cohortGroupId, type SkillList } from "@/lib/lab/lists"
+import { fourLists } from "./fixtures/four-lists"
 import { facts } from "@/lib/v2/facts"
 
 const s = labState(createSeed())
 const term = currentTermId(s)
 /** The seeded lists with no cohort assigned: only the explicit layer (the course mapping rows) applies. */
-const unassigned: SkillList[] = seedLists(s).map((l) => ({ ...l, groupIds: [] }))
+const unassigned: SkillList[] = fourLists(s).map((l) => ({ ...l, groupIds: [] }))
 
 describe("course offerings at scale", () => {
   const rows = offeringRows(s, EMPTY_MAPPING_OVERLAY)

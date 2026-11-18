@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { render, within } from "@testing-library/react"
 import { TooltipProvider } from "@exxatdesignux/ui/components/ui/tooltip"
 import { createSeed } from "@/lib/v2/seed"
+import { withFourLists } from "./fixtures/four-lists"
 import { EMPTY_SCOPE } from "@/lib/lab/scope"
 import { GRADUATION_LIST, GRADUATION_STAGES, buildReadiness, filterRows, graduatingCohort, type GraduationStage, type Readiness } from "@/lib/lab/director"
 import { ReadinessPipeline, STAGE_HINT, shownBands } from "@/components/lab/director/pipeline"
@@ -14,7 +15,9 @@ import type { DirectorContext } from "@/components/lab/director/use-director"
  * data (31 / 4 / 0 / 3), so a synthetic row moves one far-behind student into it and every band view must show it, link to a
  * list of the same length, and still sum to the cohort.
  */
-const seed = createSeed()
+// The graduating cohort on its own core list, as the seed held it until 2026-11-16 (tests/lab/fixtures/four-lists.ts). On the one seeded list
+// (Clinical skills checklist, every cohort) all 38 read far behind, since their evidence is on the core skills.
+const seed = withFourLists(createSeed())
 const scope = { ...EMPTY_SCOPE, cohort: graduatingCohort(seed)!, term: "Fall 2026" }
 const real = buildReadiness(seed, scope)
 

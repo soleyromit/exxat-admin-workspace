@@ -14,7 +14,7 @@ import { PageFrame } from "@/components/skills/page-header"
 import { SampleDataBadge } from "@/components/lab/import/sample-badge"
 import { RetireFlow } from "@/components/lab/admin-b/retire-flow"
 import { useRetire } from "@/components/lab/admin-b/use-retire"
-import { aNoun, capitalize, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { aNoun, capitalize, skillListNoun, skillNoun } from "@/lib/lab/terms"
 
 export function AdminDeactivateA() {
   const r = useRetire()
@@ -57,7 +57,7 @@ export function AdminDeactivateA() {
         ) : deleted ? (
           <LocalBanner variant="success" title="Deleted">{`${impact?.name ?? capitalize(skillNoun())} is removed from the library.`}</LocalBanner>
         ) : !impact ? (
-          <LocalBanner variant="info" title={`Choose ${aNoun()}`}>{`Pick the ${skillNoun()} to change from the list above, or open it from the ${skillNounPlural()} library.`}</LocalBanner>
+          <LocalBanner variant="info" title={`Choose ${aNoun()}`}>{`Pick the ${skillNoun()} to change from the list above, or open it from its ${skillListNoun()}.`}</LocalBanner>
         ) : (
           <RetireFlow
             impact={impact}

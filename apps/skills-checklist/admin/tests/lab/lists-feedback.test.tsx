@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createSeed } from "@/lib/v2/seed"
+import { fourLists } from "./fixtures/four-lists"
 import { labState } from "@/lib/lab/reviewer"
 import {
   createList,
@@ -10,7 +11,6 @@ import {
   deleteImpact,
   pickAll,
   pickState,
-  seedLists,
   skillsToCopy,
   startFromOptions,
   studentGroups,
@@ -24,7 +24,7 @@ import type { Skill } from "@/lib/v2/types"
 
 /** Sankalp 2026-11-15 (ADMIN-D6 amendment): clone, delete guard, select all, adding apart from configuring. */
 const s = labState(createSeed())
-const lists = seedLists(s)
+const lists = fourLists(s)
 const groups = studentGroups(s)
 const def = lists.find((l) => l.isDefault)!
 

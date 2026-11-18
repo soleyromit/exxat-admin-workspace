@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event"
 import { createSeed } from "@/lib/v2/seed"
 import { labState } from "@/lib/lab/reviewer"
 import { listCanEdit, programLists, skillLists, uploadPreview, uploadToList, validateListName } from "@/lib/lab/lists"
+import { withFourLists } from "./fixtures/four-lists"
 import { buildReview, importListIds, resolve, buildSampleText, applySuggestions, LIBRARY_TARGET, NEW_LIBRARY } from "@/lib/lab/import"
 import { V2StoreProvider } from "@/lib/v2/react"
 import { createV2Store } from "@/lib/v2/store"
@@ -14,7 +15,8 @@ const params = new URLSearchParams()
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push() {}, replace() {} }), usePathname: () => "/", useSearchParams: () => params }))
 
 const state = labState(createSeed())
-const lists = skillLists(programLists(state))
+// More than one list (an unassigned one among them): the four the seed held until 2026-11-16 (tests/lab/fixtures/four-lists.ts).
+const lists = skillLists(programLists(withFourLists(state)))
 
 describe("uploadToList: alongside, never removing, never twice", () => {
   const open = lists.find(listCanEdit)!
@@ -56,7 +58,7 @@ describe("importListIds: created skills plus exact library matches", () => {
 })
 
 describe("Bulk upload step 1: where they go", () => {
-  const store = () => createV2Store({ storage: null, seed: () => state })
+  const store = () => createV2Store({ storage: null, seed: () => withFourLists(state) })
   it("lists the library, every real skill list with its size, then a new list; no specialty libraries", async () => {
     const { AdminImportA } = await import("@/components/lab/screens/admin-import-a")
     const user = userEvent.setup()
@@ -127,12 +129,12 @@ describe("Confirm: every line in one group, and the groups agree with the senten
 })
 
 describe("Sidebar: Bulk upload from a list lights Skill lists (rework 1)", () => {
-  it("from=lists or ?to= selects Skill lists; from the Library it stays Library", async () => {
+  it("from=lists or ?to= selects Skill lists; from a list's skills page (the Library row is gone, 2026-11-16) too", async () => {
     const { skillsPanelItemFor } = await import("@/lib/lab/admin-ia")
     expect(skillsPanelItemFor("admin/import-ai-review", new URLSearchParams("from=lists&list=list-core&to=list-core"))?.key).toBe("groups")
     expect(skillsPanelItemFor("admin/import-ai-review", new URLSearchParams("to=list-core"))?.key).toBe("groups")
-    expect(skillsPanelItemFor("admin/import-ai-review", new URLSearchParams("from=skills"))?.key).toBe("library")
-    expect(skillsPanelItemFor("admin/import-ai-review", null)?.key).toBe("library")
+    expect(skillsPanelItemFor("admin/import-ai-review", new URLSearchParams("from=skills"))?.key).toBe("groups")
+    expect(skillsPanelItemFor("admin/import-ai-review", null)?.key).toBe("groups")
   })
 })
 
@@ -173,7 +175,7 @@ describe("Confirm v3: heading and button agree, left out is the one amber group,
 })
 
 describe("Steps v4: the four steps agree", () => {
-  const store = () => createV2Store({ storage: null, seed: () => state })
+  const store = () => createV2Store({ storage: null, seed: () => withFourLists(state) })
   it("Review shows the destination read only with Change, figures that add up to the lines read, and no amber", async () => {
     params.set("state", "review")
     const { AdminImportA } = await import("@/components/lab/screens/admin-import-a")

@@ -5,7 +5,8 @@ import { EMPTY_SCOPE } from "@/lib/lab/scope"
 import { buildAttainment } from "@/lib/lab/attainment"
 import { buildDrill } from "@/lib/lab/dashboard"
 import { buildReadiness } from "@/lib/lab/director"
-import { assign, assignedSkillIdsByStudent, cohortGroupId, diffLists, listInForce, listsOfStudent, programLists, seedLists, addToList, studentGroups, studentsWithNoList, unassign, type SkillList } from "@/lib/lab/lists"
+import { assign, assignedSkillIdsByStudent, cohortGroupId, listInForce, listsOfStudent, programLists, addToList, studentGroups, studentsWithNoList, unassign, type SkillList } from "@/lib/lab/lists"
+import { fourLists, withFourLists } from "./fixtures/four-lists"
 import { buildStudent } from "@/lib/lab/student"
 import { pickRows } from "@/lib/lab/student2"
 import { skillProgress } from "@/lib/v2/student"
@@ -14,7 +15,9 @@ import type { V2State } from "@/lib/v2/types"
 /** My progress reads the skill list; course mapping says where (designer 2026-11-05, D-L102; Aarti 205da2dd ch 9, 11; Sankalp e72ea925 ch 9, 655e2cbd ch 1-2). */
 const seed = createSeed()
 const students = seed.people.filter((p) => p.kind === "student")
-const withLists = (next: SkillList[]): V2State => ({ ...seed, listEdits: diffLists(seedLists(seed), next, []) })
+// Two lists, an unassigned one and a core list for BSN 2026: the seed held these until 2026-11-16 and holds one now (tests/lab/fixtures/four-lists.ts).
+const four = withFourLists(seed)
+const withLists = (next: SkillList[]): V2State => withFourLists(seed, next)
 
 describe("student and admin agree, for all 123", () => {
   const dashboard = new Map(buildDrill(seed, EMPTY_SCOPE, { list: "students" }).students!.map((r) => [r.id, r]))
@@ -50,25 +53,25 @@ describe("student and admin agree, for all 123", () => {
 })
 
 describe("two lists read apart, never merged", () => {
-  const maya = buildStudent(seed, "stu-maya")!
+  const maya = buildStudent(four, "stu-maya")!
   it("each has its own figure and the page reads one at a time", () => {
     expect(maya.lists.map((l) => l.id)).toEqual(["list-clinical", "list-competencies"])
-    const second = buildStudent(seed, "stu-maya", undefined, { listId: "list-competencies" })!
+    const second = buildStudent(four, "stu-maya", undefined, { listId: "list-competencies" })!
     expect(second.list!.id).toBe("list-competencies")
     expect(second.counts.required).toBe(maya.lists[1]!.total)
     expect(second.counts.required).not.toBe(maya.counts.required)
     // No figure anywhere is the union.
-    const union = assignedSkillIdsByStudent(seed).get("stu-maya")!.size
+    const union = assignedSkillIdsByStudent(four).get("stu-maya")!.size
     expect(union).toBeGreaterThan(maya.counts.required)
-    expect(populationRows(seed).rows.find((r) => r.id === "stu-maya")!.required).toBe(maya.counts.required)
+    expect(populationRows(four).rows.find((r) => r.id === "stu-maya")!.required).toBe(maya.counts.required)
   })
   it("a list that does not reach the student reads their first", () => {
-    expect(buildStudent(seed, "stu-maya", undefined, { listId: "list-core" })!.list!.id).toBe("list-clinical")
+    expect(buildStudent(four, "stu-maya", undefined, { listId: "list-core" })!.list!.id).toBe("list-clinical")
   })
 })
 
 describe("a student with no list [REQ CM-05]", () => {
-  const next = unassign(unassign(seedLists(seed), "list-clinical", cohortGroupId("BSN 2027")), "list-competencies", cohortGroupId("BSN 2027"))
+  const next = unassign(unassign(fourLists(seed), "list-clinical", cohortGroupId("BSN 2027")), "list-competencies", cohortGroupId("BSN 2027"))
   const s = withLists(next)
   const m = buildStudent(s, "stu-maya")!
 
@@ -105,14 +108,14 @@ describe("a student with no list [REQ CM-05]", () => {
 describe("a skill mapped on the course but not on the list [INFER]", () => {
   // BSN 2026 is on its core list only; NUR 220 recommends checklist skills that are on none of its lists.
   const p = students.find((x) => x.cohort === "BSN 2026")!
-  const m = buildStudent(seed, p.id)!
+  const m = buildStudent(four, p.id)!
   const off = m.courses.flatMap((c) => c.skills.map((x) => ({ c, x }))).find(({ x }) => m.all.find((r) => r.id === x.id)?.onLists.length === 0)
   it("stays on the course page and can be submitted, and does not count toward the list", () => {
     expect(off, "the seed should hold such a skill").toBeTruthy()
     const rec = m.all.find((r) => r.id === off!.x.id)!
     expect(rec.required).toBe(false)
     expect(m.required.some((r) => r.id === rec.id)).toBe(false)
-    expect(pickRows(seed, m).some((r) => r.id === rec.id)).toBe(true)
+    expect(pickRows(four, m).some((r) => r.id === rec.id)).toBe(true)
   })
   it("the course's own clock reads only what is owed, so it cannot make them behind", () => {
     const rec = m.all.find((r) => r.id === off!.x.id)!
@@ -124,11 +127,11 @@ describe("a skill mapped on the course but not on the list [INFER]", () => {
 })
 
 describe("what the admin saves is what the student sees", () => {
-  const before = seedLists(seed)
+  const before = fourLists(seed)
   const groups = studentGroups(seed)
   it("assigning a group adds a list; unassigning takes it off", () => {
     const id = students.find((x) => x.cohort === "BSN 2028")!.id
-    expect(buildStudent(seed, id)!.lists.map((l) => l.id)).toEqual(["list-clinical"])
+    expect(buildStudent(four, id)!.lists.map((l) => l.id)).toEqual(["list-clinical"])
     const on = withLists(assign(before, "list-competencies", cohortGroupId("BSN 2028")))
     expect(buildStudent(on, id)!.lists.map((l) => l.id)).toEqual(["list-clinical", "list-competencies"])
     const off = withLists(unassign(before, "list-clinical", cohortGroupId("BSN 2028")))
