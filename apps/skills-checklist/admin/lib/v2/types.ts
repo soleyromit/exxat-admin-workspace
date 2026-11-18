@@ -236,6 +236,8 @@ export interface ImportBatch {
   kind: "starter-library" | "file-import" | "add-several"
   label: string
   skillIds: string[]
+  /** The skill list the batch was created on (a list's Add skills), so the skill panel can say "Created in {list}". Absent elsewhere. */
+  listId?: string
 }
 
 export interface Skill {

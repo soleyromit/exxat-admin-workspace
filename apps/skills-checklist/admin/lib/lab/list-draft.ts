@@ -34,7 +34,7 @@ export interface DraftOpts {
   actorId: string
   at: string
   /** The batch the new skills arrive in [REQ IM-11]. */
-  batch?: { id: string; label: string }
+  batch?: { id: string; label: string; listId?: string }
 }
 
 /** The store as it will be after Save: new skills created, their method and categories set, times needed written where they differ. Lists are not in the store. */
@@ -46,7 +46,7 @@ export function applyDraft(s: V2State, entries: readonly DraftEntry[], opts: Dra
     const categories = fresh.map((e) => e.category.trim()).filter((c) => c && c !== NO_CATEGORY)
     state = ensureVocab(state, "categories", categories, opts.actorId, opts.at)
     const added: AddedSkill[] = fresh.map((e) => ({ id: e.id, name: e.name.trim().replace(/\s+/g, " "), ...(e.description ? { description: e.description } : {}), section: e.category.trim(), group: "", category: e.category.trim(), tags: [], model: null, mandatoryDefault: null }))
-    state = addSkillsToStore(state, added, opts.actorId, opts.at, opts.batch ? { id: opts.batch.id, kind: "add-several", label: opts.batch.label } : undefined)
+    state = addSkillsToStore(state, added, opts.actorId, opts.at, opts.batch ? { id: opts.batch.id, kind: "add-several", label: opts.batch.label, ...(opts.batch.listId ? { listId: opts.batch.listId } : {}) } : undefined)
     for (const e of fresh) {
       if (!e.methodId || methodOfSkill(state, e.id)?.id === e.methodId) continue
       const r = setSkillMethod(state, e.id, e.methodId, { at: opts.at, byId: opts.actorId })

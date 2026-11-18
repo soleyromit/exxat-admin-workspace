@@ -5,12 +5,14 @@
  * - Library (default): a source picker inside the search field (Whole library or another list, D-X17: a copy is always asked for), a substring search with a
  *   "Close matches" group under it (decision 4), Select all over what is shown, a "Select all n" per category, rows already on the list ticked and disabled.
  *   A name the library does not have offers one click, Add "{name}" as a new skill; it joins the selection with defaults and no form (spec 3.4).
- * - Import: upload or paste, read with `readImport`; skipped lines listed with their text [REQ IM-08]; headings proposed as categories [REQ IM-07].
+ * - Upload or paste (D-ADD1117-z, Decided): a plain list. Every line read is a row, ticked, under the file's headings as categories [REQ IM-07];
+ *   only formatting is dropped. In the lab any file shows the sample file (D-ADD1117-x, demo mode); a pasted list is read as typed.
  * - Review, inside the panel: times needed and Required per skill; a new skill's name, category and method are edited on its row (decision 7: no configure step).
  * "Add n skills" hands the selection to the list's draft (list-draft.tsx); nothing is written to the store here (decision 1).
  * Only Active skills with an evaluation method are offered [REQ IM-09]; the rest are counted once at the bottom.
  */
 import * as React from "react"
+import { flushSync } from "react-dom"
 import { Button } from "@exxatdesignux/ui/components/ui/button"
 import { Checkbox } from "@exxatdesignux/ui/components/ui/checkbox"
 import { FloatingSheetPanelBody, FloatingSheetPanelContent, FloatingSheetPanelFooter, FloatingSheetPanelHeader } from "@exxatdesignux/ui/components/ui/floating-sheet-panel"
@@ -21,9 +23,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@exxatdesignux/ui/components/ui/accordion"
 import { Badge } from "@exxatdesignux/ui/components/ui/badge"
 import { BulkSelectionBar } from "@exxatdesignux/ui/components/data-table/bulk-selection-bar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@exxatdesignux/ui/components/ui/dropdown-menu"
 import { useIsMobile } from "@exxatdesignux/ui/hooks/use-mobile"
-import { Popover, PopoverContent, PopoverTrigger } from "@exxatdesignux/ui/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@exxatdesignux/ui/components/ui/tooltip"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { ViewSegmentedControl } from "@exxatdesignux/ui/components/ui/view-segmented-control"
@@ -39,10 +40,14 @@ import { useV2State } from "@/lib/v2/react"
 import { activeNames } from "@/lib/v2/vocabulary"
 import { NO_CATEGORY, duplicateChoices, keepBothSeveralName, libraryTwins, normName, type DuplicateChoice, type LibraryRow } from "@/lib/lab/library"
 import { DuplicateChoiceSelect } from "./add-several-sheet"
+import { BulkTimesPopover } from "./bulk-times-popover"
+import { PanelEmpty } from "./panel-empty"
 import { skillLists, type SkillList } from "@/lib/lab/lists"
 import { choosableMethods, PROGRAM_METHOD_ID } from "@/lib/lab/methods"
 import { TIMES_MAX, timesCellOf } from "@/lib/lab/program-settings"
-import { namesExisting, readImport, searchSkills, skippedReason, type ImportRead } from "@/lib/lab/skill-search"
+import { namesExisting, searchSkills } from "@/lib/lab/skill-search"
+import { readImportText, type ImportLine } from "@/lib/lab/import-triage"
+import { SAMPLE_FILE, SAMPLE_TEXT } from "@/lib/lab/import-sample"
 import type { DraftEntry } from "@/lib/lab/list-draft"
 import { aNoun, capitalize, countSkills, skillNoun, skillNounPlural } from "@/lib/lab/terms"
 import type { LibraryApi } from "./use-library"
@@ -61,6 +66,8 @@ const GROUP_HEAD = "flex min-h-8 items-center justify-between gap-3"
 const SURFACE = "bg-[var(--dt-group-bg)]"
 const FIELD = "flex flex-col gap-1.5"
 const FIELD_LABEL = "text-xs font-medium text-muted-foreground"
+/** A selection menu's title (D-ADD1117-p): reads as the menu's question ("Move 2 skills to"), not the DS label's 12 px muted caption. */
+const MENU_TITLE = "px-2 pt-2 pb-1.5 text-sm font-semibold text-foreground"
 /** Purposeful icons only, one size and colour. */
 const ICON = "fa-light text-sm text-muted-foreground"
 const slug = (s: string) => s.replace(/[^a-z0-9]+/gi, "-").toLowerCase()
@@ -70,25 +77,52 @@ interface Fresh { id: string; name: string; category: string; description?: stri
 /** What Review edits per row (D-ADD1117-r): name, category, times needed, required. Nothing else; the method is set silently on a new skill. */
 interface Setting { times?: number; required?: boolean; name?: string; category?: string }
 interface ReviewRow { id: string; isNew: boolean; name: string; category: string }
+/** A line of the upload; `key` survives edits. */
+/** A line of the upload; `key` survives edits. */
+type ImpRow = ImportLine & { key: string }
+interface Imported { file: string | null; rows: ImpRow[]; noise: number; lineCount: number }
 
 let seq = 0
 const newId = () => `lab-skill-h-${Date.now().toString(36)}-${++seq}`
 
-/** The lists a skill is on, for the row's right side: one name, "On n lists", or nothing when it is on none (D-ADD1117-d). */
-function listsText(lists: readonly SkillList[], id: string): string {
-  const on = lists.filter((l) => l.skillIds.includes(id))
-  if (!on.length) return ""
-  return on.length === 1 ? on[0]!.name : `On ${fmt(on.length)} lists`
+/** Rows drawn at first, and added per "Show more": a 150-skill source draws in one frame, and the order stays the reading order (scale, brief section 9). */
+export const ROW_STEP = 60
+
+/** The lists each skill is on, for the row's right side: one name, "On n lists", or nothing when it is on none (D-ADD1117-d). One pass over the lists, not one per row. */
+function listsTextById(lists: readonly SkillList[]): Map<string, string> {
+  const on = new Map<string, string[]>()
+  for (const l of lists) for (const id of l.skillIds) { const a = on.get(id); if (a) a.push(l.name); else on.set(id, [l.name]) }
+  const out = new Map<string, string>()
+  for (const [id, names] of on) out.set(id, names.length === 1 ? names[0]! : `On ${fmt(names.length)} lists`)
+  return out
+}
+
+/** The empty state when every skill of the chosen source is already on this list: names both lists, singular and plural. */
+export function allInSourceTitle(n: number, source: string | null, current: string): string {
+  if (!source) return `Every library ${skillNoun()} is already on ${current}`
+  return n === 1 ? `The 1 ${skillNoun()} in ${source} is already on ${current}` : `All ${fmt(n)} ${skillNounPlural()} in ${source} are already on ${current}`
+}
+
+/** Focus the first of these that exists in the panel (an element, or a selector inside the panel). */
+function focusFirst(targets: ReadonlyArray<HTMLElement | string | undefined>) {
+  for (const t of targets) {
+    const el = typeof t === "string" ? document.querySelector<HTMLElement>(`[data-h-panel] ${t}`) : t
+    if (el) { el.focus(); return }
+  }
 }
 
 function grouped<T extends { category: string }>(rows: readonly T[]): Array<[string, T[]]> {
   const by = new Map<string, T[]>()
-  for (const r of rows) by.set(r.category, [...(by.get(r.category) ?? []), r])
+  for (const r of rows) { const a = by.get(r.category); if (a) a.push(r); else by.set(r.category, [r]) }
   // "No category" last, the prototype's order.
   return [...by].sort(([a], [b]) => (a === NO_CATEGORY ? 1 : b === NO_CATEGORY ? -1 : a.localeCompare(b)))
 }
 
-async function readFileText(f: File): Promise<{ text: string; columns: boolean } | null> {
+/**
+ * The real reader: the extract route for Word, PDF and Excel, plain text read here. Kept, unused in the lab while demo mode is on
+ * (D-ADD1117-x, Romit 2026-11-17): every file shows the sample instead.
+ */
+export async function readFileText(f: File): Promise<{ text: string; columns: boolean } | null> {
   try {
     const body = new FormData()
     body.append("file", f)
@@ -165,7 +199,7 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
   const isMobile = useIsMobile()
   const view: "browse" | "review" = step === "review" ? "review" : "browse"
   /** To Review, focus on its first control (Select all). */
-  const goSelected = () => { setStep("review"); requestAnimationFrame(() => document.getElementById("h-review-all")?.focus()) }
+  const goSelected = () => { setStep("review"); requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-h-select-mode]")?.focus()) }
   const setView = (v: "browse" | "review") => (v === "review" ? goSelected() : setStep("pick"))
   const [source, setSource] = React.useState<string>(WHOLE)
   // The library source to return to from Upload or paste.
@@ -188,16 +222,19 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
   const search = React.useRef<HTMLInputElement>(null)
   // Import
   const [paste, setPaste] = React.useState("")
-  const [file, setFile] = React.useState<string | null>(null)
-  const [read, setRead] = React.useState<ImportRead | null>(null)
-  const [busy, setBusy] = React.useState(false)
+  const [imp, setImp] = React.useState<Imported | null>(null)
+  const read = imp
+  const file = imp?.file ?? null
   const [readError, setReadError] = React.useState<string | null>(null)
-  const [importOff, setImportOff] = React.useState<Set<number>>(new Set())
+  // What is ticked to add, by row key: every line read starts ticked (D-ADD1117-z).
+  const [ticked, setTicked] = React.useState<Set<string>>(new Set())
+  const [editingLine, setEditingLine] = React.useState<string | null>(null)
+  const [editValue, setEditValue] = React.useState("")
+  // A detected category is created only while its Create box is ticked [REQ IM-07, IM-13].
   // A file line that names a library skill: Use library skill (default), Keep both or Replace [REQ IM-05, IM-06], the Add several choices.
-  const [dupChoice, setDupChoice] = React.useState<Record<number, DuplicateChoice>>({})
+  const [dupChoice, setDupChoice] = React.useState<Record<string, DuplicateChoice>>({})
   // Library skills a file line replaces: its description and category go on the skill on Save, never before.
   const [replacing, setReplacing] = React.useState<Record<string, { description?: string }>>({})
-  const [makeCategories, setMakeCategories] = React.useState(true)
   // A file dragged over the panel on step 1: a full-panel drop target; dropping reads it (keyboard and screen readers use Upload a file).
   const [dragging, setDragging] = React.useState(false)
   const hasFiles = (e: React.DragEvent) => [...e.dataTransfer.types].includes("Files")
@@ -206,7 +243,7 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
   React.useEffect(() => {
     if (!open) return
     setStep("pick"); setShowInList(false); setSource(initialTab === "import" ? FILE : WHOLE); setOrigin({}); setFormOpen(false); setFormName(""); setFormError(null); setQuery(""); setPicked(new Set()); setFresh([]); setSettings({})
-    setPaste(""); setFile(null); setRead(null); setReadError(null); setImportOff(new Set()); setMakeCategories(true); setDupChoice({}); setReplacing({})
+    setPaste(""); setImp(null); setReadError(null); setTicked(new Set()); setDupChoice({}); setReplacing({}); setEditingLine(null)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // `?source=<listId>`: open on that list, as if chosen in Skills from.
@@ -215,16 +252,35 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
   // 150 ms after typing stops (spec 5).
   const [q, setQ] = React.useState("")
   React.useEffect(() => { const t = window.setTimeout(() => setQ(query.trim()), 150); return () => window.clearTimeout(t) }, [query])
-  React.useEffect(() => { if (!q) setShowInList(false) }, [q])
-
   const sourceList = source === WHOLE || source === FILE ? null : others.find((l) => l.id === source) ?? null
-  const inSource = React.useMemo(() => (sourceList ? pool.filter((r) => sourceList.skillIds.includes(r.id)) : pool), [pool, sourceList])
+  // Clearing the search hides in-list rows again on the whole library; a list source keeps them, since picking a list is to see it.
+  React.useEffect(() => { if (!q && !sourceList) setShowInList(false) }, [q, sourceList])
+  // Another source starts with its in-list rows hidden, and with the first rows only.
+  React.useEffect(() => { setShowInList(false) }, [source])
+  const [limit, setLimit] = React.useState(ROW_STEP)
+  React.useEffect(() => { setLimit(ROW_STEP) }, [source, q, showInList, open])
+  // A list source reads whole (Romit 2026-11-17: "shouldn't I see the skills?"): its rows already on this list stay in place, ticked, disabled, "In list".
+  const reveal = showInList || !!sourceList
+
+  const inSource = React.useMemo(() => { if (!sourceList) return pool; const ids = new Set(sourceList.skillIds); return pool.filter((r) => ids.has(r.id)) }, [pool, sourceList])
   const { exact, close } = React.useMemo(() => searchSkills(inSource, q), [inSource, q])
   const shown = React.useMemo(() => [...exact, ...close], [exact, close])
-  const addable = shown.filter((r) => !onList.has(r.id))
+  const addable = React.useMemo(() => shown.filter((r) => !onList.has(r.id)), [shown, onList])
   const alreadyIn = shown.length - addable.length
-  // "Show n already in list" only while searching (D-ADD1117-v): an empty search hides in-list skills with no count, and clearing the search resets the toggle.
-  const inListLink = q && alreadyIn > 0 ? (
+  const onListsText = React.useMemo(() => listsTextById(lists), [lists])
+  // What is drawn, in reading order: Created here, the categories, then Close matches; each capped by `limit` (Show more adds the next rows).
+  const drawn = React.useMemo(() => {
+    let left = limit
+    const take = <T,>(rows: readonly T[]): T[] => { const out = rows.slice(0, Math.max(0, left)); left -= out.length; return out }
+    const visibleExact = reveal ? exact : exact.filter((r) => !onList.has(r.id))
+    const groups = grouped(visibleExact).map(([name, rows]) => ({ name, rows, draw: take(rows) })).filter((g) => g.draw.length > 0)
+    const closeVisible = reveal ? close : close.filter((r) => !onList.has(r.id))
+    const closeDraw = take(closeVisible)
+    const total = visibleExact.length + closeVisible.length
+    return { groups, closeVisible, closeDraw, total, more: Math.max(0, total - limit) }
+  }, [exact, close, reveal, onList, limit])
+  // "Show n already in list" while searching (D-ADD1117-v), and always on a list source: picking a list is to see what it holds.
+  const inListLink = q && !sourceList && alreadyIn > 0 ? (
     <Button type="button" variant="link" size="sm" className="h-auto shrink-0 p-0 text-muted-foreground" aria-pressed={showInList} onClick={() => setShowInList((v) => !v)} data-h-already={alreadyIn}>{`${showInList ? "Hide" : "Show"} ${fmt(alreadyIn)} already in list`}</Button>
   ) : null
   const allPicked = addable.length > 0 && addable.every((r) => picked.has(r.id))
@@ -288,7 +344,11 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
   const defaultTimes = (r: ReviewRow) => timesFor(r.id, r.isNew ? programMethod?.id ?? null : null)
   const [openRow, setOpenRow] = React.useState<string | null>(null)
   const [reviewSel, setReviewSel] = React.useState<Set<string>>(new Set())
-  React.useEffect(() => { if (open) { setReviewSel(new Set()); setOpenRow(null) } }, [open])
+  // Select mode (D-ADD1117-u): boxes and the bar only after "Select"; "Done" ends it.
+  const [selecting, setSelecting] = React.useState(false)
+  React.useEffect(() => { if (open) { setReviewSel(new Set()); setOpenRow(null); setSelecting(false) } }, [open])
+  // Rows start collapsed every time Review opens, at any width (a rule, not a fixture).
+  React.useEffect(() => { if (step === "review") setOpenRow(null); else setSelecting(false) }, [step])
   const own = (id: string): Setting => settings[id] ?? {}
   const patch = (id: string, p: Partial<Setting>) => setSettings((s) => ({ ...s, [id]: { ...s[id], ...p } }))
   // Each skill's own values (D-ADD1117-b): its current times needed (the skill's, D-ADD1117-t), Required on, unless edited here.
@@ -324,11 +384,12 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
   // Several at once (Romit 2026-11-17): the DS selection bar takes the footer's place; each action opens a small menu and changes nothing until a choice; the result is said once.
   const [bulkNote, setBulkNote] = React.useState<{ text: string; undo?: () => void } | null>(null)
   React.useEffect(() => { if (step === "pick") setBulkNote(null) }, [step])
-  const [bulkTimes, setBulkTimes] = React.useState<number | null>(null)
   const [timesOpen, setTimesOpen] = React.useState(false)
   const lastTicked = React.useRef<string | null>(null)
-  React.useEffect(() => { if (open) { setBulkNote(null); setBulkTimes(null) } }, [open])
+  React.useEffect(() => { if (open) setBulkNote(null) }, [open])
   const tick = (id: string, on: boolean) => { if (on) lastTicked.current = id; setReviewSel((sel) => { const n = new Set(sel); if (on) n.add(id); else n.delete(id); return n }) }
+  const startSelecting = () => { setSelecting(true); requestAnimationFrame(() => document.getElementById("h-review-all")?.focus()) }
+  const endSelecting = () => { setSelecting(false); setReviewSel(new Set()); requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-h-select-mode]")?.focus()) }
   const endSelection = () => {
     setReviewSel(new Set())
     const id = lastTicked.current
@@ -348,6 +409,30 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
     setBulkNote({ text: `${fmt(count)} removed.`, undo: () => { setPicked(before.picked); setFresh(before.fresh); setSettings(before.settings); setReplacing(before.replacing); setBulkNote(null) } })
   }
   const categoryChoices = React.useMemo(() => [...new Set([...categories, ...rowsAll.map((r) => r.category).filter(Boolean), ...Object.values(settings).map((x) => x.category ?? "").filter(Boolean)])].sort((a, b) => a.localeCompare(b)), [categories, rowsAll, settings])
+  // The shared values, said once, in plain counts (D-ADD1117-u): "All new · 26 at 1 time, 2 at 2 times · 2 optional".
+  const timesWord = (t: number | null) => (t === null ? "times not set" : t === 1 ? "1 time" : `${fmt(t)} times`)
+  const tally = <T,>(xs: readonly T[]) => [...xs.reduce((m, x) => m.set(x, (m.get(x) ?? 0) + 1), new Map<T, number>()).entries()].sort((a, b) => b[1] - a[1])
+  const timesTally = tally(rowsAll.map((r) => timesOf(r)))
+  const timesMajor = timesTally[0]?.[0] ?? null
+  const optionalN = rowsAll.filter((r) => !requiredOf(r)).length
+  const requiredMajor = optionalN * 2 <= rowsAll.length
+  const newN = rowsAll.filter((r) => r.isNew).length
+  const sharedLine = [
+    newN === rowsAll.length ? "All new" : newN === 0 ? "All from the library" : `${fmt(newN)} new, ${fmt(rowsAll.length - newN)} from the library`,
+    timesTally.length === 1 ? (timesMajor === null ? "Times not set" : `${timesWord(timesMajor)} each`) : timesTally.map(([t, c]) => `${fmt(c)} at ${timesWord(t)}`).join(", "),
+    optionalN === 0 ? "Required" : optionalN === rowsAll.length ? "Optional" : `${fmt(optionalN)} optional`,
+  ].join(" · ")
+  /** What differs from the summary, one form. */
+  const factsOf = (r: ReviewRow): string => {
+    const t = timesOf(r)
+    return [t !== timesMajor ? timesWord(t) : "", requiredOf(r) !== requiredMajor ? (requiredOf(r) ? "Required" : "Optional") : ""].filter(Boolean).join(" · ")
+  }
+  /** Provenance, only on the minority (a tie marks the new ones). */
+  const originTag = (r: ReviewRow): string => {
+    if (newN === 0 || newN === rowsAll.length) return ""
+    const markNew = newN * 2 <= rowsAll.length
+    return r.isNew === markNew ? (r.isNew ? "New" : "From library") : ""
+  }
   // Grouped as the library groups: by category, "No category" last.
   const reviewGroups = grouped(rowsAll.map((r) => ({ ...r, category: categoryOf(r) || NO_CATEGORY })).sort((a, b) => nameOf(a).localeCompare(nameOf(b))))
   React.useEffect(() => { if (step === "review" && total === 0) setStep("pick") }, [step, total])
@@ -376,49 +461,63 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
     onAdd(entries)
   }
 
-  // Import
+  // Import (D-ADD1117-z, plain list): each line read with its library twin, if any. A name the file repeats is read once.
   const importRows = React.useMemo(() => {
-    if (!read) return []
-    return read.lines.map((l) => {
-      const twin = byName.get(normName(l.name))
+    if (!imp) return []
+    const seen = new Set<string>()
+    return imp.rows.map((l) => {
+      const twin = byName.get(normName(l.text))
       const status: "new" | "library" | "in-list" | "unusable" = !twin ? "new" : onList.has(twin.id) ? "in-list" : usable(twin) ? "library" : "unusable"
-      return { ...l, twin, status }
-    })
-  }, [read, byName, onList, usable])
-  // A name the file repeats is read once.
-  const importUnique = React.useMemo(() => { const seen = new Set<string>(); return importRows.filter((r) => { const k = normName(r.name); if (seen.has(k)) return false; seen.add(k); return true }) }, [importRows])
-  const toAdd = importUnique.filter((r) => (r.status === "new" || r.status === "library") && !importOff.has(r.line))
-  const newCategories = React.useMemo(() => [...new Set(importUnique.filter((r) => r.status === "new" && r.category).map((r) => r.category!))].filter((c) => !categories.some((x) => normName(x) === normName(c))), [importUnique, categories])
+      const k = normName(l.text)
+      const repeat = seen.has(k)
+      seen.add(k)
+      return { ...l, twin, status, repeat }
+    }).filter((r) => !r.repeat)
+  }, [imp, byName, onList, usable])
+  const importUnique = importRows
+  const canTick = (r: (typeof importRows)[number]) => r.status === "new" || r.status === "library"
+  const toAdd = importRows.filter((r) => canTick(r) && ticked.has(r.key))
+  const newCategories = React.useMemo(() => [...new Set(importRows.filter((r) => r.category).map((r) => r.category!))].filter((c) => !categories.some((x) => normName(x) === normName(c))), [importRows, categories])
   const takeText = (text: string, columns: boolean, name: string | null) => {
-    const r = readImport(text, { columns })
-    setFile(name)
-    if (!r.lines.length) { setRead(null); setReadError("We couldn't find any skills in this file."); return }
-    setReadError(null); setRead(r); setImportOff(new Set()); setDupChoice({})
+    const t = readImportText(text, { columns })
+    if (!t.lines.length) { setImp(null); setReadError(`We couldn't find any ${skillNounPlural()} in this text.`); return }
+    const rows = t.lines.map((l): ImpRow => ({ ...l, key: `l${l.line}` }))
+    setReadError(null)
+    setImp({ file: name, rows, noise: t.noise, lineCount: text.split(/\r?\n/).length })
+    // Every line read is ticked; the admin unticks what is not a skill (D-ADD1117-z).
+    setTicked(new Set(rows.map((r) => r.key)))
+    setEditingLine(null); setDupChoice({})
   }
-  const onFile = async (f: File) => {
-    setBusy(true)
-    const got = await readFileText(f)
-    setBusy(false)
-    if (!got) { setRead(null); setFile(f.name); setReadError(`${f.name} could not be read. Try a spreadsheet, a document or a text file.`); return }
-    takeText(got.text, got.columns, f.name)
+  // Demo mode (D-ADD1117-x, Romit 2026-11-17): in the lab no file is read; every file shows the sample, under the sample's name.
+  const useSample = () => takeText(SAMPLE_TEXT, false, SAMPLE_FILE)
+  const onFile = (_f: File) => useSample()
+  const tickLine = (key: string, on: boolean) => setTicked((s) => { const n = new Set(s); if (on) n.add(key); else n.delete(key); return n })
+  const setRows = (f: (rows: ImpRow[]) => ImpRow[]) => setImp((m) => (m ? { ...m, rows: f(m.rows) } : m))
+  // Edit name, in place: Enter or Save keeps it, Esc or Cancel leaves it as read.
+  const editLine = (r: ImpRow) => { setEditingLine(r.key); setEditValue(r.text) }
+  const cancelLine = (key: string) => { setEditingLine(null); requestAnimationFrame(() => document.querySelector<HTMLElement>(`[data-h-line-edit="${key}"]`)?.focus()) }
+  const saveLine = (key: string) => {
+    const v = editValue.trim().replace(/\s+/g, " ")
+    if (!v) return
+    setRows((r) => r.map((l) => (l.key === key ? { ...l, text: v } : l)))
+    cancelLine(key)
   }
-  const choiceOf = (line: number): DuplicateChoice => dupChoice[line] ?? "skip"
+  const choiceOf = (key: string): DuplicateChoice => dupChoice[key] ?? "skip"
   const reviewImport = () => {
-    const known = new Set(categories.map(normName))
-    // A category the program has is used as it is; a new one only when the admin keeps "Create categories" ticked [REQ IM-07, IM-13].
-    const catOf = (c?: string) => (c && (makeCategories || known.has(normName(c))) ? c : "")
+    // A file heading the program does not have becomes a new category on Save (D-ADD1117-z); where skills go is changed in Review.
+    const catOf = (c?: string): string => c ?? ""
     const libRows = toAdd.filter((r) => r.status === "library")
-    const use = libRows.filter((r) => choiceOf(r.line) !== "keep-both")
-    const replace = libRows.filter((r) => choiceOf(r.line) === "replace")
+    const use = libRows.filter((r) => choiceOf(r.key) !== "keep-both")
+    const replace = libRows.filter((r) => choiceOf(r.key) === "replace")
     const taken = [...names, ...fresh.map((f) => f.name)]
-    const keepBoth: Fresh[] = libRows.filter((r) => choiceOf(r.line) === "keep-both").map((r) => {
-      const name = keepBothSeveralName(r.name, taken)
+    const keepBoth: Fresh[] = libRows.filter((r) => choiceOf(r.key) === "keep-both").map((r) => {
+      const name = keepBothSeveralName(r.text, taken)
       taken.push(name)
       return { id: newId(), name, category: catOf(r.category), ...(r.description ? { description: r.description } : {}) }
     })
-    const add: Fresh[] = toAdd.filter((r) => r.status === "new").filter((r) => !fresh.some((f) => normName(f.name) === normName(r.name))).map((r) => ({
+    const add: Fresh[] = toAdd.filter((r) => r.status === "new").filter((r) => !fresh.some((f) => normName(f.name) === normName(r.text))).map((r) => ({
       id: newId(),
-      name: r.name,
+      name: r.text,
       category: catOf(r.category),
       ...(r.description ? { description: r.description } : {}),
     }))
@@ -449,17 +548,24 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
     return order.filter((k) => by.get(k)).map((k) => `${fmt(by.get(k)!)} ${words(k)}`).join(" · ")
   })()
   const summaryText = `${countSkills(total)}${summaryParts ? `: ${summaryParts}` : ""}`
+  // The title names the one source when there is one: "24 skills from sample-nursing-skills.xlsx".
+  const summaryTitle = (() => {
+    const keys = [...new Set([...picked, ...fresh.map((f) => f.id)].map((id) => origin[id] ?? "library"))]
+    const k = keys.length === 1 ? keys[0]! : null
+    if (!k || k === "new") return countSkills(total)
+    return `${countSkills(total)} ${k === "library" ? "from the library" : k.startsWith("file:") ? (k.slice(5) ? `from ${k.slice(5)}` : "from a pasted list") : `from ${k}`}`
+  })()
   // On Import the footer and the primary count the same thing: what is already selected plus what the file adds to it.
-  const fromFile = toAdd.filter((r) => (r.status === "library" ? choiceOf(r.line) === "keep-both" || !picked.has(r.twin!.id) : !fresh.some((f) => normName(f.name) === normName(r.name)))).length
+  const fromFile = toAdd.filter((r) => (r.status === "library" ? choiceOf(r.key) === "keep-both" || !picked.has(r.twin!.id) : !fresh.some((f) => normName(f.name) === normName(r.text)))).length
   const shownTotal = tab === "import" && read ? total + fromFile : total
   const browsePrimary = `Review ${countSkills(tab === "import" && read ? shownTotal : total)}`
   const browseDisabled = tab === "import" && read ? toAdd.length === 0 : total === 0
 
   const libraryRow = (r: Offered, describedBy?: string) => {
     const inList = onList.has(r.id)
-    if (inList && !showInList) return null
+    if (inList && !reveal) return null
     const id = `h-add-${r.id}`
-    const onLists = inList ? "" : listsText(lists, r.id)
+    const onLists = inList ? "" : onListsText.get(r.id) ?? ""
     return (
       <li key={r.id} className={ROW} data-h-row={r.id} data-h-in-list={inList || undefined}>
         <Checkbox id={id} aria-describedby={describedBy} checked={inList || picked.has(r.id)} disabled={inList} onCheckedChange={(v) => toggle([r.id], v === true)} />
@@ -476,10 +582,10 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
       {action}
     </div>
   )
-  const group = (name: string, rows: readonly Offered[], prefix: string) => {
-    const open = rows.filter((r) => !onList.has(r.id))
-    const visible = showInList ? rows : open
-    if (!visible.length) return null
+  /** A category: `visible` is every row it shows (the heading counts them, Select all takes them), `draw` the ones rendered so far. */
+  const group = (name: string, visible: readonly Offered[], draw: readonly Offered[], prefix: string) => {
+    const open = visible.filter((r) => !onList.has(r.id))
+    if (!draw.length) return null
     const all = open.length > 0 && open.every((r) => picked.has(r.id))
     const headId = `h-${prefix}-${slug(name)}`
     return (
@@ -489,7 +595,7 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
             {all ? "Clear" : `Select all ${fmt(open.length)}`}
           </Button>
         ) : undefined)}
-        <ul className="flex flex-col overflow-hidden rounded-[var(--radius)] border border-border">{visible.map((r) => libraryRow(r, headId))}</ul>
+        <ul className="flex flex-col overflow-hidden rounded-[var(--radius)] border border-border">{draw.map((r) => libraryRow(r, headId))}</ul>
       </section>
     )
   }
@@ -508,7 +614,7 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
           onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragging(false) }}
           onDrop={(e) => { if (!dragging) return; e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f) { setSource(FILE); onFile(f) } }}
           // Esc closes the top thing first: the New skill form, then a selection, then the panel. The DS layer hears Escape in the capture phase, so the form is closed here.
-          onEscapeKeyDown={(e) => { if (formOpen) { e.preventDefault(); cancelForm(); return } if (view === "review" && reviewSel.size) { e.preventDefault(); endSelection() } }}
+          onEscapeKeyDown={(e) => { if (formOpen) { e.preventDefault(); cancelForm(); return } if (editingLine) { e.preventDefault(); cancelLine(editingLine); return } if (view === "review" && reviewSel.size) { e.preventDefault(); endSelection(); return } if (view === "review" && selecting) { e.preventDefault(); endSelecting() } }}
           onOpenAutoFocus={(e) => { e.preventDefault(); search.current?.focus() }}
           onCloseAutoFocus={(e) => { e.preventDefault(); focusSheetOpener() }}
           onInteractOutside={(e) => {
@@ -587,9 +693,11 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
                         <i className={`fa-light ${UPLOAD_ICON} text-2xl text-muted-foreground`} aria-hidden="true" />
                         <p className={TYPE.body}>
                           {"Drop a file here or "}
-                          <Button type="button" variant="link" size="sm" className="h-auto p-0 align-baseline text-sm" disabled={busy} onClick={() => fileInput.current?.click()} data-h-upload>Choose a file</Button>
+                          <Button type="button" variant="link" size="sm" className="h-auto p-0 align-baseline text-sm" onClick={() => fileInput.current?.click()} data-h-upload>Choose a file</Button>
                         </p>
                         <p className={TYPE.meta}>CSV, Excel, Word, PDF or text</p>
+                        {/* Demo mode (D-ADD1117-x): the lab reads no file; this says so by doing it. */}
+                        <Button type="button" variant="link" size="sm" className="h-auto p-0 text-muted-foreground" onClick={useSample} data-h-use-sample>Use sample file</Button>
                       </section>
                       <div className="flex flex-col gap-2">
                         <Label htmlFor="h-paste" className={TYPE.group}>Or paste a list</Label>
@@ -598,57 +706,90 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
                           <Button type="button" variant="outline" size="sm" disabled={!paste.trim()} onClick={() => takeText(paste, false, null)} data-h-read>Read the list</Button>
                         </div>
                       </div>
-                      {busy ? <p className={TYPE.helper} role="status">Reading the file</p> : null}
                       {readError ? <p className="text-sm text-[var(--status-badge-warning-fg)]" role="alert" data-h-read-error>{readError}</p> : null}
                     </>
-                  ) : (
-                    <>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="min-w-0 flex flex-col">
-                          <span className={`${TYPE.label} truncate`}>{file ?? "Pasted list"}</span>
-                          <span className={TYPE.meta}>{`${fmt(read.read)} ${read.read === 1 ? "line" : "lines"} read`}</span>
-                        </span>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => { setRead(null); setFile(null) }} data-h-replace>Replace</Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2" data-h-import-summary>
-                        <StatusBadge label={`${fmt(toAdd.length)} to add`} tone="neutral" size="sm" />
-                        {importUnique.some((r) => r.status === "in-list") ? <StatusBadge label={`${fmt(importUnique.filter((r) => r.status === "in-list").length)} already in this list`} tone="neutral" size="sm" /> : null}
-                        {read.skipped.length ? <StatusBadge label={`${fmt(read.skipped.length)} skipped`} tone="warning" icon="fa-triangle-exclamation" size="sm" /> : null}
-                      </div>
-                      {newCategories.length ? (
-                        <div className="flex items-start gap-3">
-                          <Checkbox id="h-make-categories" checked={makeCategories} onCheckedChange={(v) => setMakeCategories(v === true)} className="mt-0.5" data-h-make-categories />
-                          <Label htmlFor="h-make-categories" className="font-normal">{`Create categories ${newCategories.join(", ")} from the file`}</Label>
+                  ) : (() => {
+                    // D-ADD1117-z (Decided, Romit 2026-11-17): a plain list. Every line read is a row, ticked; headings group it; nothing is judged.
+                    const tickable = importRows.filter(canTick)
+                    const allOn = tickable.length > 0 && tickable.every((r) => ticked.has(r.key))
+                    const cats = [...new Set(importRows.map((r) => r.category).filter((c): c is string => !!c))]
+                    // The edit affordance shows on hover and keyboard focus; on a phone, always (no hover there).
+                    const quiet = isMobile ? "" : "opacity-0 transition-opacity group-hover/line:opacity-100 group-focus-within/line:opacity-100"
+                    const row = (r: (typeof importRows)[number]) => {
+                      const id = `h-import-${r.key}`
+                      const off = !canTick(r)
+                      if (editingLine === r.key) {
+                        return (
+                          <li key={r.key} className="flex min-h-11 items-center gap-2 py-1" data-h-import-row={r.text} data-h-line-editing={r.key}>
+                            <Input
+                              autoFocus
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); saveLine(r.key) } if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelLine(r.key) } }}
+                              aria-label={`${capitalize(skillNoun())} name`}
+                              className="h-8 min-w-0 flex-1"
+                              data-h-line-input
+                            />
+                            <Button type="button" variant="default" size="sm" disabled={!editValue.trim()} onClick={() => saveLine(r.key)} data-h-line-save>Save</Button>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => cancelLine(r.key)}>Cancel</Button>
+                          </li>
+                        )
+                      }
+                      return (
+                        <li key={r.key} className="group/line flex min-h-11 items-center gap-3 py-1" data-h-import-row={r.text}>
+                          <Checkbox id={id} checked={r.status === "in-list" || (!off && ticked.has(r.key))} disabled={off} onCheckedChange={(v) => tickLine(r.key, v === true)} />
+                          <Label htmlFor={id} className="min-w-0 flex-1 whitespace-normal font-normal [overflow-wrap:anywhere]">{r.text}</Label>
+                          {r.status === "new" ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button type="button" variant="ghost" size="icon-sm" className={`shrink-0 ${quiet}`} aria-label={`Edit name: ${r.text}`} onClick={() => editLine(r)} data-h-line-edit={r.key}><i className="fa-light fa-pen" aria-hidden="true" /></Button>
+                              </TooltipTrigger>
+                              <TooltipContent className={ABOVE_PANEL_MENU}>Edit name</TooltipContent>
+                            </Tooltip>
+                          ) : null}
+                          {r.status === "in-list" ? <StatusBadge label="In list" tone="neutral" size="sm" />
+                            : r.status === "unusable" ? <span className="shrink-0 text-xs text-muted-foreground">No evaluation method yet</span>
+                            : r.status === "library" ? (
+                              <span className="shrink-0" data-h-dup-choice={choiceOf(r.key)}>
+                                <DuplicateChoiceSelect id={`h-dup-${r.key}`} value={choiceOf(r.key)} choices={duplicateChoices(twins.get(normName(r.text)))} onChange={(c) => setDupChoice((m) => ({ ...m, [r.key]: c }))}
+                                  label={`${r.text} is in the library`} skipLabel={`Use library ${skillNoun()}`} triggerClassName="w-40" contentClassName={ABOVE_PANEL_MENU} />
+                              </span>
+                            ) : null}
+                        </li>
+                      )
+                    }
+                    return (
+                      <div className="flex flex-col gap-5" data-h-import-rows={importRows.length}>
+                        <div className="flex items-center gap-2" data-h-file-line>
+                          <i className="fa-light fa-file-lines text-muted-foreground" aria-hidden="true" />
+                          <span className={`${TYPE.label} min-w-0 truncate`} data-h-file-name>{file ?? "Pasted list"}</span>
+                          <span className={`${TYPE.meta} shrink-0`}>{`· ${fmt(read.lineCount)} ${read.lineCount === 1 ? "line" : "lines"}`}</span>
+                          <span className="flex-1" aria-hidden="true" />
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setImp(null)} data-h-replace>Replace</Button>
                         </div>
-                      ) : null}
-                      <ul className="flex flex-col overflow-hidden rounded-[var(--radius)] border border-border" aria-label="What the file holds" data-h-import-rows={importUnique.length}>
-                        {importUnique.map((r) => {
-                          const id = `h-import-${r.line}`
-                          const off = r.status === "in-list" || r.status === "unusable"
+                        <div className="flex min-h-6 items-center gap-3">
+                          <Checkbox id="h-import-all" checked={allOn ? true : tickable.some((r) => ticked.has(r.key)) ? "indeterminate" : false} disabled={!tickable.length} onCheckedChange={() => setTicked((s) => { const x = new Set(s); for (const r of tickable) { if (allOn) x.delete(r.key); else x.add(r.key) } return x })} data-h-import-all />
+                          <Label htmlFor="h-import-all" className="font-normal">{`Select all ${fmt(tickable.length)}`}</Label>
+                        </div>
+                        {importRows.some((r) => !r.category) ? <ul className="flex flex-col" aria-label={`${capitalize(skillNounPlural())} read`}>{importRows.filter((r) => !r.category).map(row)}</ul> : null}
+                        {cats.map((c) => {
+                          const isNew = newCategories.includes(c)
+                          const rowsIn = importRows.filter((r) => r.category === c)
                           return (
-                            <li key={r.line} className={ROW} data-h-import-row={r.name}>
-                              <Checkbox id={id} checked={!off && !importOff.has(r.line)} disabled={off} onCheckedChange={(v) => setImportOff((s) => { const n = new Set(s); if (v === true) n.delete(r.line); else n.add(r.line); return n })} />
-                              <Label htmlFor={id} className="min-w-0 flex-1 whitespace-normal font-normal [overflow-wrap:anywhere]">{r.name}</Label>
-                              {r.status === "in-list" ? <StatusBadge label="In list" tone="neutral" size="sm" />
-                                : r.status === "unusable" ? <span className="shrink-0 text-xs text-muted-foreground">No evaluation method yet</span>
-                                : r.status === "library" ? (
-                                  <span className="shrink-0" data-h-dup-choice={choiceOf(r.line)}>
-                                    <DuplicateChoiceSelect id={`h-dup-${r.line}`} value={choiceOf(r.line)} choices={duplicateChoices(twins.get(normName(r.name)))} onChange={(c) => setDupChoice((m) => ({ ...m, [r.line]: c }))}
-                                      label={`${r.name} is in the library`} skipLabel={`Use library ${skillNoun()}`} triggerClassName="w-40" contentClassName={ABOVE_PANEL_MENU} />
-                                  </span>
-                                )
-                                : <span className="max-w-[40%] shrink-0 truncate text-xs text-muted-foreground">{r.category ?? "No category"}</span>}
-                            </li>
+                            <section key={c} className="flex flex-col" aria-label={c} data-h-import-category={c}>
+                              {/* The same heading as step 2: semibold name and a count, rows aligned under it. */}
+                              <div className="flex min-h-8 items-center gap-3 border-b border-border pb-1">
+                                <h4 className={`${TYPE.group} min-w-0 truncate`}>{c}</h4>
+                                <Badge variant="outline" className="tabular-nums" aria-label={countSkills(rowsIn.length)}>{fmt(rowsIn.length)}</Badge>
+                                {isNew ? <Badge variant="outline" className="shrink-0 font-normal text-muted-foreground">New category</Badge> : null}
+                              </div>
+                              <ul className="flex flex-col">{rowsIn.map(row)}</ul>
+                            </section>
                           )
                         })}
-                      </ul>
-                      {read.skipped.length ? (
-                        <ul className="flex flex-col gap-1" aria-label="Lines skipped" data-h-skipped={read.skipped.length}>
-                          {read.skipped.map((s) => <li key={s.line} className="text-sm text-muted-foreground [overflow-wrap:anywhere]">{`Line ${s.line} skipped: "${s.raw}" ${skippedReason(s)}`}</li>)}
-                        </ul>
-                      ) : null}
-                    </>
-                  )}
+                      </div>
+                    )
+                  })()}
                 </FloatingSheetPanelBody>
               ) : (
                 <FloatingSheetPanelBody className="flex flex-col gap-4 px-4 pt-3 pb-4">
@@ -656,7 +797,7 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
                     {addable.length > 0 ? <div className="flex min-h-6 items-center justify-between gap-3 px-3">
                       {addable.length > 0 ? <div className="flex min-w-0 items-center gap-3">
                         <Checkbox id="h-select-all" checked={allPicked ? true : somePicked ? "indeterminate" : false} disabled={addable.length === 0} onCheckedChange={() => toggle(addable.map((r) => r.id), !allPicked)} data-h-select-all={addable.length} />
-                        <Label htmlFor="h-select-all" className="font-normal">{`Select all ${fmt(addable.length)} not in this list`}</Label>
+                        <Label htmlFor="h-select-all" className="font-normal">{`Select all ${fmt(addable.length)} not ${sourceList ? "on" : "in"} this list`}</Label>
                       </div> : null}
                       {addable.length > 0 && inListLink ? <span className="ms-auto">{inListLink}</span> : null}
                     </div> : null}
@@ -705,34 +846,50 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
                             <li key={f.id} className={`${ROW} border-[var(--border)]`} data-h-new-row={f.name}>
                               <Checkbox id={`h-new-${f.id}`} checked onCheckedChange={() => remove(f.id, true)} />
                               <Label htmlFor={`h-new-${f.id}`} className="min-w-0 flex-1 whitespace-normal font-normal [overflow-wrap:anywhere]">{f.name}</Label>
+                              {/* The tint is never the only signal (critique 8): each row repeats the group's seedling glyph; the heading carries the words. */}
+                              <i className={`${ICON} fa-seedling shrink-0`} aria-hidden="true" data-h-new-glyph />
                             </li>
                           ))}
                         </ul>
                       </section>
                     ) : null}
-                    {grouped(exact).map(([name, rows]) => group(name, rows, "x"))}
-                    {(() => {
-                      const closeShown = showInList ? close : close.filter((r) => !onList.has(r.id))
-                      return closeShown.length ? (
-                        <section className="flex flex-col gap-1.5" aria-labelledby="h-close-group" data-h-close-matches={close.length}>
-                          {heading("fa-magnifying-glass", "Close matches in the library", closeShown.length, "h-close-group")}
-                          <ul className="flex flex-col overflow-hidden rounded-[var(--radius)] border border-border">{close.map((r) => libraryRow(r, "h-close-group"))}</ul>
-                        </section>
-                      ) : null
-                    })()}
-                    {q && !addable.length && !showInList ? (
+                    {drawn.groups.map((g) => group(g.name, g.rows, g.draw, "x"))}
+                    {drawn.closeDraw.length ? (
+                      <section className="flex flex-col gap-1.5" aria-labelledby="h-close-group" data-h-close-matches={close.length}>
+                        {heading("fa-magnifying-glass", "Close matches in the library", drawn.closeVisible.length, "h-close-group")}
+                        <ul className="flex flex-col overflow-hidden rounded-[var(--radius)] border border-border">{drawn.closeDraw.map((r) => libraryRow(r, "h-close-group"))}</ul>
+                      </section>
+                    ) : null}
+                    {drawn.more > 0 ? (
+                      // The rest of a long source, in order after what is drawn; focus moves to the first new row, so keyboard and screen-reader order carry on.
+                      <Button type="button" variant="outline" size="default" className="w-full" data-h-show-more={drawn.more}
+                        onClick={() => {
+                          const from = limit
+                          // Synchronously, so focus is placed before the panel's focus trap sees the button leave and refocuses the panel.
+                          flushSync(() => setLimit((n) => n + ROW_STEP * 3))
+                          const boxes = [...document.querySelectorAll<HTMLButtonElement>("[data-h-panel] [data-h-row] button[role=checkbox]")].slice(from)
+                          focusFirst([boxes.find((b) => !b.disabled), "[data-h-show-more]", "[data-h-already]", "[data-h-search]"])
+                        }}>
+                        {drawn.more <= ROW_STEP * 3 ? `Show ${fmt(drawn.more)} more` : `Show ${fmt(ROW_STEP * 3)} more of ${fmt(drawn.more)}`}
+                      </Button>
+                    ) : null}
+                    {q && !addable.length && !reveal ? (
                       // Only skills already on the list match: say so, and offer them right under it.
-                      <div className="flex flex-col items-start gap-1" data-h-none>
-                        <p className="text-sm text-muted-foreground">{alreadyIn ? `No ${skillNounPlural()} to add match` : `No ${skillNounPlural()} match`}</p>
+                      <div className="flex flex-col items-center" data-h-none>
+                        <PanelEmpty icon="fa-magnifying-glass" title={alreadyIn ? `No ${skillNounPlural()} to add match "${typed}"` : `No ${skillNounPlural()} match "${typed}"`} className="flex flex-col items-center gap-3 pt-8 pb-2 text-center" />
                         {inListLink}
                       </div>
                     ) : null}
-                    {q && !addable.length && showInList ? <div className="flex" data-h-hide-inlist>{inListLink}</div> : null}
-                    {!q && shown.length > 0 && addable.length === 0 && !fresh.length ? (
-                      <div className="flex flex-col gap-0.5" data-h-all-in>
-                        <span className={TYPE.label}>{`Every ${skillNoun()} is already in this list`}</span>
-                        <span className={TYPE.helper}>{`Create a new ${skillNoun()}, or import a file of ${skillNounPlural()}.`}</span>
+                    {q && sourceList && !shown.length ? <PanelEmpty icon="fa-magnifying-glass" title={`No ${skillNounPlural()} in ${sourceList.name} match "${typed}"`} data-h-none /> : null}
+                    {q && !sourceList && !addable.length && showInList ? <div className="flex" data-h-hide-inlist>{inListLink}</div> : null}
+                    {!q && !sourceList && shown.length > 0 && addable.length === 0 && !fresh.length && !showInList ? (
+                      // D-ADD1117-e: an illustration and the fact, naming both lists; on a list source, the way to see them right under it.
+                      <div className="flex flex-col items-center" data-h-all-in-wrap>
+                        <PanelEmpty icon="fa-layer-group" marker="fa-check" title={allInSourceTitle(shown.length, null, list?.name ?? "this list")} className="flex flex-col items-center gap-3 pt-10 pb-2 text-center" data-h-all-in />
                       </div>
+                    ) : null}
+                    {!q && shown.length === 0 && !hidden && !fresh.length && !formOpen ? (
+                      <PanelEmpty icon="fa-list-ul" title={sourceList ? `${sourceList.name} has no ${skillNounPlural()}` : `The library has no ${skillNounPlural()}`} data-h-source-empty />
                     ) : null}
                   </div>
                   {hidden ? <p className={`${TYPE.helper} mt-3`} data-h-hidden-note={hidden}>{`${countSkills(hidden)} ${hidden === 1 ? "is" : "are"} not listed because ${hidden === 1 ? "it has" : "they have"} no evaluation method yet.`}</p> : null}
@@ -740,106 +897,98 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
               )}
             </>
           ) : (
-            <FloatingSheetPanelBody className="flex flex-col px-4 pt-1 pb-4" data-h-review>
-              {/* Concept A (Romit 2026-11-17), crafted: a batch block, then each category as a heading and one bordered list; a row opens in place (DS Accordion, one at a time) and keeps what differs from the batch as its note. */}
-              {/* Batch editing is selection only (D-ADD1117-b): Select all here, a box per category, and the DS selection bar at the foot. */}
-              {/* What step 1 produced, counted by where it came from (D-ADD1117-d), and the way back to change it. */}
-              <div className="flex min-h-12 items-center justify-between gap-3 border-b border-border" data-h-summary={summaryText}>
-                <span className="text-sm"><span className="font-semibold text-foreground">{countSkills(total)}</span>{summaryParts ? <span className="text-muted-foreground">{`: ${summaryParts}`}</span> : null}</span>
-                <Button type="button" variant="link" size="sm" className="h-auto p-0" onClick={() => setStep("pick")} data-h-change>Change</Button>
+            <FloatingSheetPanelBody className="flex flex-col gap-4 px-4 pt-3 pb-4" data-h-review>
+              {/* Review (D-ADD1117-u, Decided): every listed skill is included; Select turns on boxes for bulk edits. The summary says the shared values once. */}
+              <div className="flex flex-col gap-0.5" data-h-summary={summaryText}>
+                <div className="flex items-baseline gap-2">
+                  <p className={`${TYPE.card} min-w-0 [overflow-wrap:anywhere]`} data-h-summary-title>{summaryTitle}</p>
+                  <span className="flex-1" aria-hidden="true" />
+                  <Button type="button" variant="link" size="sm" className="h-auto shrink-0 p-0" aria-pressed={selecting} onClick={() => (selecting ? endSelecting() : startSelecting())} data-h-select-mode>{selecting ? "Done" : "Select"}</Button>
+                </div>
+                <p className={TYPE.helper} data-h-shared>{sharedLine}</p>
               </div>
-              <div className="sticky top-0 z-10 flex min-h-11 items-center border-b border-border bg-background" data-h-review-head>
-                <span className="flex w-10 shrink-0 justify-center">
+              {selecting ? (
+                <div className="flex min-h-8 items-center gap-3" data-h-review-head>
                   <Checkbox id="h-review-all" checked={reviewSel.size && reviewSel.size === rowsAll.length ? true : reviewSel.size ? "indeterminate" : false} onCheckedChange={() => { const all = reviewSel.size === rowsAll.length; for (const r of rowsAll) tick(r.id, !all) }} data-h-review-all />
-                </span>
-                <Label htmlFor="h-review-all" className="font-normal">{`Select all ${fmt(rowsAll.length)}`}</Label>
-              </div>
-              <div className="h-3" aria-hidden="true" />
-              <Accordion type="single" collapsible value={openRow ?? ""} onValueChange={(v) => setOpenRow(v || null)} className="flex flex-col gap-5" aria-label={`${skillNounPlural()} to add`}>
+                  <Label htmlFor="h-review-all" className={`${TYPE.helper} font-normal`}>{`Select all ${fmt(rowsAll.length)}`}</Label>
+                </div>
+              ) : null}
+              <Accordion type="single" collapsible value={openRow ?? ""} onValueChange={(v) => setOpenRow(v || null)} className="flex flex-col gap-4" aria-label={`${skillNounPlural()} to add`}>
                 {reviewGroups.map(([g, rows]) => (
-                  <section key={g} className="group/sec flex flex-col gap-2" aria-labelledby={`h-group-${slug(g)}`} data-h-review-group={g}>
-                    <h3 id={`h-group-${slug(g)}`} className={`${TYPE.group} flex items-center gap-2`}>
-                      {(() => {
+                  <section key={g} className="flex flex-col" aria-labelledby={`h-group-${slug(g)}`} data-h-review-group={g}>
+                    <div className="flex min-h-8 items-center gap-3 border-b border-border pb-1">
+                      {selecting ? (() => {
                         const inG = rows.filter((x) => reviewSel.has(x.id)).length
-                        return (
-                          <span className="flex w-10 shrink-0 justify-center">
-                            <Checkbox checked={inG === rows.length ? true : inG ? "indeterminate" : false} onCheckedChange={() => { const all = inG === rows.length; for (const x of rows) tick(x.id, !all) }}
-                              aria-label={`Select all ${countSkills(rows.length)} in ${g}`} className={reviewSel.size ? "" : "opacity-0 transition-opacity group-hover/sec:opacity-100 group-focus-within/sec:opacity-100 focus-visible:opacity-100"} data-h-group-select={g} />
-                          </span>
-                        )
-                      })()}
-                      <i className={`${ICON} fa-folder`} aria-hidden="true" />
-                      {g}
+                        return <Checkbox checked={inG === rows.length ? true : inG ? "indeterminate" : false} onCheckedChange={() => { const all = inG === rows.length; for (const x of rows) tick(x.id, !all) }} aria-label={`Select all ${countSkills(rows.length)} in ${g}`} data-h-group-select={g} />
+                      })() : null}
+                      <h3 id={`h-group-${slug(g)}`} className={TYPE.group}>{g}</h3>
                       <Badge variant="outline" className="tabular-nums" aria-label={`${countSkills(rows.length)}`}>{fmt(rows.length)}</Badge>
-                    </h3>
-                    <div className="overflow-hidden rounded-[var(--radius)] border border-border">
-                      {rows.map((row) => {
-                        const r = rowsAll.find((x) => x.id === row.id)!
-                        const name = nameOf(r)
-                        const err = nameError(r)
-                        const values = valuesOf(r)
-                        const errId = `h-name-error-${r.id}`
-                        const times = timesOf(r)
-                        return (
-                          <AccordionItem key={r.id} value={r.id} className="group" data-h-review-row-id={r.id} data-h-review-row={r.name} data-h-review-new={r.isNew || undefined} data-h-values={values}>
-                            <div className="flex items-center">
-                              {/* The box's column is always there, so nothing moves when it shows on hover, focus or once any row is ticked. */}
-                              <span className="flex w-10 shrink-0 justify-center">
-                                <Checkbox checked={reviewSel.has(r.id)} onCheckedChange={(v) => tick(r.id, v === true)} aria-label={`Select ${name}`}
-                                  className={reviewSel.size ? "" : "opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"} data-h-review-select />
-                              </span>
-                              <div className="min-w-0 flex-1">
-                                <AccordionTrigger className="items-center gap-3 py-2.5 pe-3 text-start font-normal" data-h-row-toggle={r.id}>
-                                  <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{name}</span>
-                                  <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
-                                    {err ? <StatusBadge label="Fix name" tone="warning" icon="fa-triangle-exclamation" size="sm" data-h-fix-name /> : null}
-                                    {/* Tags first, then the row's own values, then the chevron: the draft's order (D-ADD1117-d). */}
-                                    {r.isNew && !programMethod ? <StatusBadge label="Not configured" tone="warning" icon="fa-triangle-exclamation" size="sm" data-h-not-configured /> : null}
-                                    {replacing[r.id] ? <span className={TYPE.meta} data-h-replaces>{`Replaces library ${skillNoun()}`}</span> : null}
-                                    {r.isNew ? <StatusBadge label="New" tone="success" size="sm" aria-label={`New ${skillNoun()}`} data-h-new-tag /> : null}
-                                    {!err ? <span className={`${TYPE.meta} tabular-nums`} data-h-row-values>{values}</span> : null}
-                                  </span>
-                                </AccordionTrigger>
+                    </div>
+                    {rows.map((row) => {
+                      const r = rowsAll.find((x) => x.id === row.id)!
+                      const name = nameOf(r)
+                      const err = nameError(r)
+                      const values = valuesOf(r)
+                      const facts = factsOf(r)
+                      const tag = originTag(r)
+                      const errId = `h-name-error-${r.id}`
+                      const times = timesOf(r)
+                      return (
+                        <AccordionItem key={r.id} value={r.id} className="border-b border-border last:border-b-0" data-h-review-row-id={r.id} data-h-review-row={r.name} data-h-review-new={r.isNew || undefined} data-h-values={values}>
+                          <div className="flex items-center gap-3">
+                            {selecting ? <Checkbox checked={reviewSel.has(r.id)} onCheckedChange={(v) => tick(r.id, v === true)} aria-label={`Select ${name}`} data-h-review-select /> : null}
+                            <div className="min-w-0 flex-1">
+                              <AccordionTrigger className="min-h-11 items-center gap-3 py-2 text-start font-normal" data-h-row-toggle={r.id}>
+                                <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+                                  <span className="min-w-0 [overflow-wrap:anywhere]">{name}</span>
+                                  {/* Provenance, the minority only, by the name (D-ADD1117-u). */}
+                                  {tag ? <span className={TYPE.meta} {...(tag === "New" ? { "data-h-new-tag": "" } : { "data-h-library-tag": "" })}>{tag}</span> : null}
+                                </span>
+                                <span className="flex shrink-0 items-center gap-2 text-muted-foreground">
+                                  {err ? <StatusBadge label="Fix name" tone="warning" icon="fa-triangle-exclamation" size="sm" data-h-fix-name /> : null}
+                                  {r.isNew && !programMethod ? <StatusBadge label="Not configured" tone="warning" icon="fa-triangle-exclamation" size="sm" data-h-not-configured /> : null}
+                                  {replacing[r.id] ? <span className={TYPE.meta} data-h-replaces>{`Replaces library ${skillNoun()}`}</span> : null}
+                                  {/* Only what differs from the summary, one form: "2 times", "Optional", "2 times · Optional". */}
+                                  {!err && facts ? <span className={`${TYPE.meta} tabular-nums`} data-h-row-values>{facts}</span> : null}
+                                </span>
+                              </AccordionTrigger>
+                            </div>
+                          </div>
+                          {/* The open row is light: an indent and a rule, no fill (D-ADD1117-u). */}
+                          <AccordionContent className="mb-3 ms-1 flex flex-col gap-3 border-s-2 border-border ps-4 pt-1 text-foreground" data-h-row-editor={r.id}>
+                            <div className={FIELD}>
+                              <Label htmlFor={`h-row-name-${r.id}`} className={TYPE.label}>Name</Label>
+                              <Input id={`h-row-name-${r.id}`} value={name} onChange={(e) => patch(r.id, { name: e.target.value })} aria-invalid={!!err} aria-describedby={err ? errId : undefined} data-h-row-name={r.id} data-h-name />
+                              {err ? <p id={errId} className="text-sm text-destructive" role="alert" data-h-name-error>{err}</p> : null}
+                            </div>
+                            <div className="flex flex-wrap items-end gap-x-4 gap-y-3">
+                              <div className={`${FIELD} min-w-[10rem] flex-1`}>
+                                <Label htmlFor={`h-row-category-${r.id}`} className={TYPE.label}>Category</Label>
+                                <Select value={categoryOf(r) || NO_CATEGORY} onValueChange={(v) => { patch(r.id, { category: v === NO_CATEGORY ? "" : v }); requestAnimationFrame(() => document.querySelector<HTMLElement>(`#h-row-category-${CSS.escape(r.id)}`)?.focus()) }}>
+                                  <SelectTrigger id={`h-row-category-${r.id}`} className="w-full" data-h-category><SelectValue /></SelectTrigger>
+                                  <SelectContent className={ABOVE_PANEL_MENU}>
+                                    <SelectItem value={NO_CATEGORY}>No category</SelectItem>
+                                    {categoryChoices.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className={FIELD}>
+                                <Label htmlFor={`h-row-times-${r.id}`} className={TYPE.label}>Times needed</Label>
+                                {times !== null ? <TimesField id={`h-row-times-${r.id}`} value={times} onCommit={(n) => { if (n !== null) patch(r.id, { times: n }) }} className="h-10" data-h-times />
+                                  : <span className="flex h-10 items-center text-sm text-muted-foreground">Not set</span>}
+                              </div>
+                              <div className="flex h-10 items-center gap-2">
+                                <Checkbox id={`h-row-required-${r.id}`} checked={requiredOf(r)} onCheckedChange={(v) => patch(r.id, { required: v === true })} data-h-required />
+                                <Label htmlFor={`h-row-required-${r.id}`} className="font-normal">Required</Label>
                               </div>
                             </div>
-                            <AccordionContent className={`flex flex-col gap-3 border-t border-border px-4 pt-3 pb-3 text-foreground ${SURFACE}`} data-h-row-editor={r.id}>
-                              <div className={FIELD}>
-                                <Label htmlFor={`h-row-name-${r.id}`} className={FIELD_LABEL}>Name</Label>
-                                <Input id={`h-row-name-${r.id}`} value={name} onChange={(e) => patch(r.id, { name: e.target.value })} aria-invalid={!!err} aria-describedby={err ? errId : undefined} className="h-8 bg-background" data-h-row-name={r.id} data-h-name />
-                                {err ? <p id={errId} className="text-sm text-destructive" role="alert" data-h-name-error>{err}</p> : null}
-                              </div>
-                              <div className="flex flex-wrap items-start gap-x-4 gap-y-3">
-                                <div className={`${FIELD} min-w-[10rem] flex-1 basis-full sm:basis-0`}>
-                                  <Label htmlFor={`h-row-category-${r.id}`} className={FIELD_LABEL}>Category</Label>
-                                  <Select value={categoryOf(r) || NO_CATEGORY} onValueChange={(v) => { patch(r.id, { category: v === NO_CATEGORY ? "" : v }); requestAnimationFrame(() => document.querySelector<HTMLElement>(`#h-row-category-${CSS.escape(r.id)}`)?.focus()) }}>
-                                    <SelectTrigger id={`h-row-category-${r.id}`} size="sm" className="w-full bg-background" data-h-category><SelectValue /></SelectTrigger>
-                                    <SelectContent className={ABOVE_PANEL_MENU}>
-                                      <SelectItem value={NO_CATEGORY}>No category</SelectItem>
-                                      {categoryChoices.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className={FIELD}>
-                                  <Label htmlFor={`h-row-times-${r.id}`} className={FIELD_LABEL}>Times needed</Label>
-                                  {times !== null ? <TimesField id={`h-row-times-${r.id}`} value={times} onCommit={(n) => { if (n !== null) patch(r.id, { times: n }) }} className="bg-background" data-h-times />
-                                    : <span className="flex h-8 items-center text-sm text-muted-foreground">Not set</span>}
-                                </div>
-                                <div className={FIELD}>
-                                  <Label htmlFor={`h-row-required-${r.id}`} className={FIELD_LABEL}>Required</Label>
-                                  <span className="flex h-8 items-center"><Checkbox id={`h-row-required-${r.id}`} checked={requiredOf(r)} onCheckedChange={(v) => patch(r.id, { required: v === true })} data-h-required /></span>
-                                </div>
-                              </div>
-                              <div className="flex items-center justify-between gap-3">
-                                <span />
-                                <Button type="button" variant="ghost" size="sm" onClick={() => remove(r.id, r.isNew)} aria-label={`Remove ${name} from this batch`} data-h-remove>
-                                  <i className="fa-light fa-trash" aria-hidden="true" />Remove
-                                </Button>
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        )
-                      })}
-                    </div>
+                            <div className="flex justify-end">
+                              <Button type="button" variant="ghost" size="sm" onClick={() => remove(r.id, r.isNew)} aria-label={`Remove ${name} from this batch`} data-h-remove>Remove</Button>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      )
+                    })}
                   </section>
                 ))}
               </Accordion>
@@ -870,35 +1019,22 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
                           <i className="fa-light fa-folder-arrow-right" aria-hidden="true" />{isMobile ? null : "Category"}
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className={`${ABOVE_PANEL_MENU} max-h-72 overflow-y-auto`}>
+                      <DropdownMenuContent side="top" align="start" sideOffset={8} collisionPadding={16} className={`${ABOVE_PANEL_MENU} max-h-72 w-60 overflow-y-auto`} data-h-bar-category-menu>
+                        <DropdownMenuLabel className={MENU_TITLE}>{`Move ${countSkills(n)} to`}</DropdownMenuLabel>
                         <DropdownMenuRadioGroup value={sharedCategory} onValueChange={moveTo}>
                           {[...categoryChoices, NO_CATEGORY].map((c) => <DropdownMenuRadioItem key={c} value={c} data-h-bar-category-option={c}>{c}</DropdownMenuRadioItem>)}
                         </DropdownMenuRadioGroup>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <Popover open={timesOpen} onOpenChange={(o) => { setTimesOpen(o); if (o) setBulkTimes(null) }}>
-                      <PopoverTrigger asChild>
-                        <Button type="button" variant="outline" size={isMobile ? "icon-sm" : "sm"} aria-label={`Times needed for ${countSkills(n)}`} data-h-bar-times>
-                          <i className="fa-light fa-repeat" aria-hidden="true" />{isMobile ? null : "Times"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent align="start" sideOffset={8} className={`${ABOVE_PANEL_MENU} w-56`}>
-                        <form className="flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); if (bulkTimes !== null) setTimesFor(bulkTimes) }} data-h-bar-times-form>
-                          <div className={FIELD}>
-                            <Label htmlFor="h-bar-times" className={FIELD_LABEL}>Times needed</Label>
-                            <TimesField id="h-bar-times" value={bulkTimes} allowEmpty onCommit={setBulkTimes} autoFocus data-h-bar-times-input />
-                          </div>
-                          <Button type="submit" variant="default" size="sm" disabled={bulkTimes === null} data-h-bar-times-apply>Apply</Button>
-                        </form>
-                      </PopoverContent>
-                    </Popover>
+                    <BulkTimesPopover current={selRows.map((r) => timesOf(r))} onApply={setTimesFor} compact={isMobile} open={timesOpen} onOpenChange={setTimesOpen} />
                     {isMobile ? (
                       // A phone: Required and Remove fold into More, so the bar never scrolls an action out of sight.
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button type="button" variant="outline" size="sm" aria-label={`More actions for ${countSkills(n)}`} data-h-bar-more>More</Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className={ABOVE_PANEL_MENU}>
+                        <DropdownMenuContent side="top" align="end" sideOffset={8} collisionPadding={16} className={`${ABOVE_PANEL_MENU} w-56`}>
+                          <DropdownMenuLabel className={MENU_TITLE}>{`Set ${countSkills(n)} as`}</DropdownMenuLabel>
                           <DropdownMenuRadioGroup value={sharedRequired} onValueChange={setRequiredFor}>
                             <DropdownMenuRadioItem value="required">Required</DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="optional">Optional</DropdownMenuRadioItem>
@@ -915,7 +1051,8 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
                           Required
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start" className={ABOVE_PANEL_MENU}>
+                      <DropdownMenuContent side="top" align="start" sideOffset={8} collisionPadding={16} className={`${ABOVE_PANEL_MENU} w-56`} data-h-bar-required-menu>
+                        <DropdownMenuLabel className={MENU_TITLE}>{`Set ${countSkills(n)} as`}</DropdownMenuLabel>
                         <DropdownMenuRadioGroup value={sharedRequired} onValueChange={setRequiredFor}>
                           <DropdownMenuRadioItem value="required" data-h-bar-required-option="required">Required</DropdownMenuRadioItem>
                           <DropdownMenuRadioItem value="optional" data-h-bar-required-option="optional">Optional</DropdownMenuRadioItem>
@@ -941,7 +1078,7 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
             {view === "review" ? (
               <>
                 {/* Own keys: step 1's dark primary must not morph into Back (its background would fade from dark). */}
-                <Button key="back" type="button" variant="outline" size="sm" onClick={() => setStep("pick")} data-h-back>Back</Button>
+                <Button key="back" type="button" variant="outline" size="sm" onClick={() => setStep("pick")} data-h-back><i className="fa-light fa-arrow-left" aria-hidden="true" />Back</Button>
                 <Button key="add" type="button" variant="default" size="sm" disabled={total === 0} onClick={finish} data-h-add>{reviewPrimary}</Button>
               </>
             ) : (

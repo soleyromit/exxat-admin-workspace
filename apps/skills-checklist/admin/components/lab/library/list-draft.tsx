@@ -78,7 +78,7 @@ export function useListDraft(api: LibraryApi, enabled: boolean) {
   /** Writes the store (new skills, methods, times) once. */
   const writeSkills = () => {
     const fresh = entries.filter((e) => e.isNew).length
-    store.update((s) => applyDraft(s, entries, { actorId: ACTOR, at: at(), ...(fresh ? { batch: { id: `add-skills-${Date.now().toString(36)}`, label: `Add skills, ${longDate(DEMO_TODAY)}` } } : {}) }))
+    store.update((s) => applyDraft(s, entries, { actorId: ACTOR, at: at(), ...(fresh ? { batch: { id: `add-skills-${Date.now().toString(36)}`, label: `Add skills, ${longDate(DEMO_TODAY)}`, ...(list ? { listId: list.id } : {}) } } : {}) }))
   }
   const madeHere = () => { const n = entries.filter((e) => e.isNew).length; return n ? ` ${n} ${n === 1 ? "is" : "are"} new in the library.` : "" }
 

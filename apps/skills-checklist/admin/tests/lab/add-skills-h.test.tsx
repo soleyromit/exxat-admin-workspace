@@ -20,6 +20,9 @@ vi.mock("next/navigation", () => ({
 
 import { LabProviders } from "@/components/lab/lab-frame"
 import { AdminSkillsLibraryH } from "@/components/lab/screens/admin-skills-library-h"
+import { ROW_STEP } from "@/components/lab/library/add-skills-h"
+import { createV2Store } from "@/lib/v2/store"
+import { diffLists, seedLists, type SkillList } from "@/lib/lab/lists"
 
 beforeAll(() => {
   // Radix Select and Popover need these in jsdom.
@@ -84,6 +87,10 @@ describe("Add skills H", () => {
     expect(panel.querySelector("[data-h-drop-overlay]")).toBeNull()
     expect(await within(panel).findByRole("radio", { name: "Upload or paste" }, { timeout: 5000 })).toHaveAttribute("aria-checked", "true")
     await waitFor(() => expect(panel.querySelector("[data-h-import-rows]")).not.toBeNull(), { timeout: 5000 })
+    // Demo mode (D-ADD1117-x): any file shows the sample, under the sample's name, never the dropped file's.
+    expect(panel.querySelector("[data-h-file-name]")).toHaveTextContent("sample-nursing-skills.xlsx")
+    expect(panel.textContent).not.toContain("extra.txt")
+    expect(panel.textContent).not.toContain("Arterial blood gas sampling")
     expect(panel.querySelector('[data-h-import-row="Peak flow measurement"]')).not.toBeNull()
   }, 90000)
 
@@ -105,6 +112,8 @@ describe("Add skills H", () => {
     expect(showToggle.textContent).toBe(`Show ${m.toLocaleString("en-US")} already in list`)
     await user.click(showToggle)
     expect(panel.querySelector("[data-h-already]")!.textContent).toMatch(/^Hide \d+ already in list$/)
+    // A long result draws its first rows; Show more draws the rest (scale, ROW_STEP).
+    for (let i = 0; i < 5 && panel.querySelector("[data-h-show-more]"); i++) await user.click(panel.querySelector<HTMLElement>("[data-h-show-more]")!)
     expect(panel.querySelectorAll("[data-h-in-list]").length).toBe(m)
     const inList = panel.querySelector("[data-h-in-list]")
     expect(inList).not.toBeNull()
@@ -125,9 +134,17 @@ describe("Add skills H", () => {
     }
     expect(found).toBe(true)
     expect(panel.querySelector("[data-h-none] [data-h-already]")?.textContent).toMatch(/^Show \d+ already in list$/)
+    // D-ADD1117-e: no match at all is a placeholder naming the search, under the Create row; no sentence repeats the buttons.
+    await user.clear(search)
+    await new Promise((r) => setTimeout(r, 250))
+    await user.type(search, "Zzqx")
+    await waitFor(() => expect(panel.querySelector("[data-h-none]")?.textContent).toBe('No skills match "Zzqx"'))
+    expect(panel.querySelector("[data-h-create]")?.compareDocumentPosition(panel.querySelector("[data-h-none]")!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(panel.textContent).not.toContain("import a file")
     // Clearing the search hides the in-list rows again and drops the link.
     await user.clear(search)
     await waitFor(() => expect(panel.querySelector("[data-h-already]")).toBeNull())
+    await waitFor(() => expect(panel.querySelector("[data-h-group]")).not.toBeNull())
     expect(panel.querySelector("[data-h-in-list]")).toBeNull()
     // One grouping style (D-ADD1117-d): a heading above a bordered list; no row says "Not in a list".
     expect(panel.querySelector("[data-h-group]")?.nextElementSibling?.tagName).toBe("UL")
@@ -196,6 +213,8 @@ describe("Add skills H", () => {
     expect(panel.querySelector("[data-h-step-line]")).toHaveTextContent("Step 2 of 2 · Review")
     // The summary counts by source: one picked in the library, one typed here.
     expect(panel.querySelector("[data-h-summary]")).toHaveAttribute("data-h-summary", "2 skills: 1 from library · 1 new")
+    // Back leads with an arrow (Romit 2026-11-17, D-ADD1117-p), decorative to assistive tech.
+    expect(within(panel).getByRole("button", { name: "Back" }).querySelector("i.fa-arrow-left[aria-hidden=true]")).not.toBeNull()
     await user.click(within(panel).getByRole("button", { name: "Back" }))
     expect(panel.querySelector("[data-h-step-line]")).toHaveTextContent("Step 1 of 2 · Choose")
     expect(within(panel).getByRole("combobox", { name: "Skills from" })).toHaveTextContent("Whole library")
@@ -212,6 +231,10 @@ describe("Add skills H", () => {
     expect(within(review).queryAllByRole("combobox", { name: /Evaluation method/ })).toHaveLength(0)
     expect(rowOf(NEW_NAME).querySelector("[data-h-new-tag]")).not.toBeNull()
     expect(groupOf(NEW_NAME)).toBe("No category")
+    // D-ADD1117-u: every listed skill is included, so no boxes until Select; the shared values are said once in plain counts.
+    expect(within(review).queryAllByRole("checkbox")).toHaveLength(0)
+    expect(review.querySelector("[data-h-shared]")?.textContent).toMatch(/^1 new, 1 from the library · /)
+    expect(review.querySelector("[data-h-change]")).toBeNull()
     expect(rowOf(libName).getAttribute("data-h-values")).toMatch(/^(\d+ times?|Times not set) · Required$/)
     // An edit in the open row shows in its values once closed; there is no "Use batch settings".
     await toggle(libName)
@@ -245,28 +268,49 @@ describe("Add skills H", () => {
     expect(within(review).queryByRole("alert")).toBeNull()
     await toggle(NEW_NAME)
     // Several at once: Select all ticks both; the DS bar replaces the footer, with a neutral count; actions open menus and change nothing until a choice.
+    await user.click(within(review).getByRole("button", { name: "Select" }))
+    expect(within(review).getByRole("button", { name: "Done" })).toHaveAttribute("aria-pressed", "true")
     await user.click(within(review).getByRole("checkbox", { name: "Select all 2" }))
     expect(panel.querySelector("[data-h-bar]")).toHaveAttribute("data-h-bar", "2")
     expect(within(panel).queryByRole("button", { name: /^Add 2 skills$/ })).toBeNull()
     expect(panel.querySelector("[data-h-bar] [data-slot=badge]")?.closest("[data-exxat-bulk-bar]")?.className).toContain("[&_[data-slot=badge]]:bg-transparent")
     // Required: a menu; Optional sets both; the result is said right above the bar.
     await user.click(within(panel).getByRole("button", { name: "Required or optional for 2 skills" }))
+    // The menu is titled by its question (D-ADD1117-p).
+    expect(await screen.findByText("Set 2 skills as")).toBeInTheDocument()
     await user.click(await screen.findByRole("menuitemradio", { name: "Optional" }))
     expect(rowOf(libName)).toHaveAttribute("data-h-values", "5 times · Optional")
     expect(rowOf(NEW_NAME).getAttribute("data-h-values")).toMatch(/· Optional$/)
     const note = () => panel.querySelector("[data-h-bulk-note]")
     expect(note()).toHaveTextContent("2 skills set to optional.")
     expect(note()?.nextElementSibling).toHaveAttribute("data-h-bar", "2")
-    // Times: a popover with a number and Apply.
+    // Times (D-ADD1117-p): a titled popover with the values now, quick picks, Other (text, no spinner), Cancel and Apply.
+    const timesBefore = rowOf(NEW_NAME).getAttribute("data-h-values")!.split(" · ")[0]
     await user.click(within(panel).getByRole("button", { name: "Times needed for 2 skills" }))
-    await waitFor(() => expect(document.querySelector("[data-h-bar-times-input]")).not.toBeNull())
-    await user.type(document.querySelector<HTMLElement>("[data-h-bar-times-input]")!, "4")
-    await user.click(screen.getByRole("button", { name: "Apply" }))
+    const pop = await waitFor(() => { const p = document.querySelector<HTMLElement>("[data-h-bar-times-popover]"); expect(p).not.toBeNull(); return p! })
+    expect(within(pop).getByText("Times needed for 2 skills")).toBeInTheDocument()
+    expect(pop.querySelector("[data-h-bar-times-now]")?.textContent).toMatch(/^Now: .*\(mixed\)$|^Now: \d+$/)
+    expect(pop.querySelector("[data-h-bar-times-input]")).toHaveAttribute("type", "text")
+    expect(within(pop).getByRole("button", { name: "Apply" })).toBeDisabled()
+    // Cancel closes without change.
+    await user.click(within(pop).getByRole("radio", { name: "2 times" }))
+    expect(within(pop).getByRole("button", { name: "Apply" })).toBeEnabled()
+    await user.click(within(pop).getByRole("button", { name: "Cancel" }))
+    await waitFor(() => expect(document.querySelector("[data-h-bar-times-popover][data-state=open]")).toBeNull())
+    expect(rowOf(NEW_NAME).getAttribute("data-h-values")!.split(" · ")[0]).toBe(timesBefore)
+    // Other out of range says so and cannot apply; a valid Other applies on Enter.
+    await user.click(within(panel).getByRole("button", { name: "Times needed for 2 skills" }))
+    const other = await waitFor(() => { const i = document.querySelector<HTMLElement>("[data-h-bar-times-popover][data-state=open] [data-h-bar-times-input]"); expect(i).not.toBeNull(); return i! })
+    await user.type(other, "0")
+    expect(screen.getByRole("alert")).toHaveTextContent(/^Enter 1 to \d+\.$/)
+    await user.clear(other)
+    await user.type(other, "4{Enter}")
     expect(rowOf(libName)).toHaveAttribute("data-h-values", "4 times · Optional")
     expect(rowOf(NEW_NAME)).toHaveAttribute("data-h-values", "4 times · Optional")
     expect(note()).toHaveTextContent("Times needed set to 4 for 2 skills.")
     // Category: a menu; choosing moves both.
     await user.click(within(panel).getByRole("button", { name: "Category for 2 skills" }))
+    expect(await screen.findByText("Move 2 skills to")).toBeInTheDocument()
     await user.click(await screen.findByRole("menuitemradio", { name: "No category" }))
     expect(groupOf(libName)).toBe("No category")
     expect(groupOf(NEW_NAME)).toBe("No category")
@@ -414,4 +458,137 @@ describe("Add skills H", () => {
     await waitFor(() => expect(p2.querySelector("[data-h-select-all]")).toHaveAttribute("data-h-select-all", "1"))
     expect(before).toBeGreaterThan(1)
   }, 120000)
+
+  // Romit 2026-11-17 ("When I am selecting a skill list from the dropdown, shouldn't I see the skills?"): a list source reads whole.
+  it("a source list whose skills are all on this list shows them all, ticked, disabled and In list; no Select all, no link, no empty state", async () => {
+    const user = userEvent.setup()
+    seedOneMoreList((clinical) => clinical.skillIds.slice(0, 6))
+    const panel = await openPanel(user)
+    await chooseSource(user, panel, "Subset list")
+    await waitFor(() => expect(panel.querySelectorAll("[data-h-in-list]").length).toBe(6))
+    for (const box of [...panel.querySelectorAll<HTMLElement>("[data-h-in-list] [role=checkbox]")]) {
+      expect(box).toBeDisabled()
+      expect(box).toHaveAttribute("data-state", "checked")
+    }
+    expect(panel.querySelectorAll("[data-h-row]").length).toBe(6)
+    expect(panel.querySelector("[data-h-select-all]")).toBeNull()
+    expect(panel.querySelector("[data-h-already]")).toBeNull()
+    expect(panel.querySelector("[data-h-all-in]")).toBeNull()
+    // Back to the whole library: in-list rows hide again.
+    await user.click(within(panel).getByRole("combobox", { name: "Skills from" }))
+    await user.click(await screen.findByRole("option", { name: "Whole library" }))
+    await waitFor(() => expect(panel.querySelector("[data-h-in-list]")).toBeNull())
+  }, 90000)
+
+  it("a list source with skills to add shows every skill of the list: the ones to add, then the ones already here in place", async () => {
+    const user = userEvent.setup()
+    // The library skills this list does not have, read from a first render.
+    let free: string[] = []
+    {
+      const panel = await openPanel(user)
+      free = [...panel.querySelectorAll<HTMLElement>("[data-h-row]")].map((li) => li.getAttribute("data-h-row")!).slice(0, 2)
+      cleanup()
+      window.localStorage.clear()
+    }
+    expect(free.length).toBe(2)
+    seedOneMoreList((clinical) => [...clinical.skillIds.slice(0, 6), ...free])
+    const panel = await openPanel(user)
+    await chooseSource(user, panel, "Subset list")
+    // Arriving from the list selects what it holds that this list does not (spec 3.9); the rest is shown, In list, with no search typed.
+    await waitFor(() => expect(panel.querySelector("[data-h-select-all]")).toHaveAttribute("data-h-select-all", "2"))
+    expect(within(panel).getByText("Select all 2 not on this list")).toBeInTheDocument()
+    expect(within(panel).getByRole("searchbox")).toHaveValue("")
+    expect(panel.querySelectorAll("[data-h-in-list]").length).toBe(6)
+    expect(panel.querySelectorAll("[data-h-row]").length).toBe(8)
+    expect(panel.querySelector("[data-h-already]")).toBeNull()
+  }, 120000)
+
+  it("a long source draws the first rows and Show more draws the rest in order", async () => {
+    const user = userEvent.setup()
+    const panel = await openPanel(user)
+    // The whole library with in-list rows shown is well over one step.
+    await user.type(within(panel).getByRole("searchbox", { name: "Search skills" }), "a")
+    const link = await waitFor(() => { const el = panel.querySelector<HTMLElement>("[data-h-already]"); if (!el) throw new Error("no link yet"); return el })
+    await user.click(link)
+    const more = await waitFor(() => { const el = panel.querySelector<HTMLElement>("[data-h-show-more]"); if (!el) throw new Error("no Show more"); return el })
+    expect(panel.querySelectorAll("[data-h-row]").length).toBe(ROW_STEP)
+    const rest = Number(more.getAttribute("data-h-show-more"))
+    await user.click(more)
+    await waitFor(() => expect(panel.querySelectorAll("[data-h-row]").length).toBe(Math.min(ROW_STEP * 4, ROW_STEP + rest)))
+  }, 90000)
+
+  it("Upload or paste (D-ADD1117-z, -x): the sample reads as a plain list, every line ticked under its heading; a name edits in place; a pasted letter is read as typed", async () => {
+    const user = userEvent.setup()
+    const panel = await openPanel(user)
+    await user.click(within(panel).getByRole("radio", { name: "Upload or paste" }))
+    await user.click(within(panel).getByRole("button", { name: "Use sample file" }))
+    expect(panel.querySelector("[data-h-file-line]")).toHaveTextContent(/sample-nursing-skills\.xlsx\s*· \d+ lines/)
+    // A plain list (Romit: "remove these unnecessary intelligence"): no verdict, no Not sure or Not added groups, no reason tags.
+    expect(panel.querySelector("[data-h-verdict], [data-h-look], [data-h-skipped], [data-h-reason]")).toBeNull()
+    expect(panel.querySelector("[data-h-import-rows]")).toHaveAttribute("data-h-import-rows", "24")
+    expect([...panel.querySelectorAll("[data-h-import-category]")].map((g) => g.getAttribute("data-h-import-category"))).toEqual(["Airway", "Cardiac", "Medication", "Neurological"])
+    // A heading the program does not have is tagged New category; no choice to make here (where skills go is changed in Review).
+    expect(panel.querySelector('[data-h-import-category="Neurological"]')?.textContent).toContain("New category")
+    expect(panel.querySelector('[data-h-import-category="Airway"]')?.textContent).not.toContain("New category")
+    expect(within(panel).queryByRole("combobox", { name: /What to do with category/ })).toBeNull()
+    // The library twin keeps the duplicate choice, Use library skill by default [REQ IM-06].
+    expect(panel.querySelector('[data-h-import-row="Basic airway management"] [data-h-dup-choice]')).toHaveAttribute("data-h-dup-choice", "skip")
+    expect(panel.querySelector("[data-h-review-open]")).toHaveAttribute("data-h-selected", "24")
+    // Edit name in place: Esc leaves it, Enter keeps it; the row stays ticked.
+    await user.click(within(panel).getByRole("button", { name: "Edit name: Peak flow measurement" }))
+    await user.keyboard("{Escape}")
+    expect(panel.querySelector('[data-h-import-row="Peak flow measurement"]')).not.toBeNull()
+    expect(screen.getByRole("dialog", { name: /Add skills/ })).toBeInTheDocument()
+    await user.click(within(panel).getByRole("button", { name: "Edit name: Peak flow measurement" }))
+    const box = within(panel).getByRole("textbox", { name: "Skill name" })
+    await user.clear(box)
+    await user.type(box, "Peak expiratory flow measurement{Enter}")
+    expect(panel.querySelector('[data-h-import-row="Peak expiratory flow measurement"] [role=checkbox]')).toHaveAttribute("data-state", "checked")
+    // Untick one; Review counts what is ticked.
+    await user.click(within(panel).getByRole("checkbox", { name: "Peak expiratory flow measurement" }))
+    expect(panel.querySelector("[data-h-review-open]")).toHaveAttribute("data-h-selected", "23")
+    // A pasted letter is read as typed: every line a row, ticked; nothing is judged.
+    await user.click(within(panel).getByRole("button", { name: "Replace" }))
+    await user.click(within(panel).getByRole("textbox", { name: "Or paste a list" }))
+    await user.paste(["Dear hiring team,", "I am writing to apply for the role at your clinic.", "---", "Design systems", "", "Sincerely,", "Robin Hale"].join("\n"))
+    await user.click(within(panel).getByRole("button", { name: "Read the list" }))
+    expect(panel.querySelector("[data-h-file-name]")).toHaveTextContent("Pasted list")
+    expect([...panel.querySelectorAll("[data-h-import-row]")].map((r) => r.getAttribute("data-h-import-row"))).toEqual(["Dear hiring team,", "I am writing to apply for the role at your clinic.", "Design systems", "Sincerely,", "Robin Hale"])
+    expect(within(panel).getByRole("button", { name: "Review 5 skills" })).toBeEnabled()
+  }, 90000)
+
+  it("a file heading the program does not have becomes a new category: tagged on the heading, its skills grouped under it in Review, created on Save", async () => {
+    const user = userEvent.setup()
+    const panel = await openPanel(user)
+    await user.click(within(panel).getByRole("radio", { name: "Upload or paste" }))
+    await user.click(within(panel).getByRole("button", { name: "Use sample file" }))
+    expect(panel.querySelector('[data-h-import-category="Neurological"]')?.textContent).toContain("New category")
+    await user.click(within(panel).getByRole("button", { name: /^Review \d+ skills$/ }))
+    expect(panel.querySelector('[data-h-review-row="Glasgow Coma Scale scoring"]')?.closest("[data-h-review-group]")?.getAttribute("data-h-review-group")).toBe("Neurological")
+    // Not created yet: no row of the list's table names it before Save.
+    expect([...document.querySelectorAll("tr, [role=row]")].some((r) => !r.closest("[data-h-panel]") && /Neurological/.test(r.textContent ?? ""))).toBe(false)
+    await user.click(within(panel).getByRole("button", { name: /^Add \d+ skills$/ }))
+    await user.click(await screen.findByRole("button", { name: "Save changes" }))
+    await user.click(within(await screen.findByRole("dialog", { name: "Who gets these changes?" })).getByRole("button", { name: /Everyone on this list/ }))
+    await waitFor(() => expect(screen.queryByText(/unsaved change/)).toBeNull())
+    // Saved: the category exists, and the skill sits in it on the list.
+    await waitFor(() => expect([...document.querySelectorAll("tr, [role=row]")].some((r) => !r.closest("[data-h-panel]") && /Neurological/.test(r.textContent ?? ""))).toBe(true))
+  }, 120000)
 })
+
+/** A second list beside the seeded one, saved as the admin's own (as Save, A new list, or New skill list would leave it). */
+function seedOneMoreList(pick: (clinical: SkillList) => string[]) {
+  const store = createV2Store()
+  store.hydrate()
+  store.update((s) => {
+    const base = seedLists(s)
+    const clinical = base[0]!
+    const sub: SkillList = { ...clinical, id: "list-subset", name: "Subset list", isDefault: false, groupIds: [], skillIds: pick(clinical), requiredIds: [] }
+    return { ...s, listEdits: diffLists(base, [...base, sub], [sub]) }
+  })
+}
+
+async function chooseSource(user: ReturnType<typeof userEvent.setup>, panel: HTMLElement, name: string) {
+  await user.click(within(panel).getByRole("combobox", { name: "Skills from" }))
+  await user.click(await screen.findByRole("option", { name: new RegExp(`^${name} · \\d+ skills?$`) }))
+}

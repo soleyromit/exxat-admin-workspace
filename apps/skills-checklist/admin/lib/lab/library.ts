@@ -496,7 +496,7 @@ export function draftToSkill(d: SkillDraft, id: string): AddedSkill {
  * before that, or when the program's model needs questions it does not have, it is Not configured [REQ IM-09]. A blank category is stored as
  * "No category" (category is optional, REQ SL-03). It joins no live list on its own (map C3).
  */
-export function addSkillsToStore(s: V2State, added: readonly AddedSkill[], actorId: string, at: string, batch?: Pick<ImportBatch, "id" | "kind" | "label">): V2State {
+export function addSkillsToStore(s: V2State, added: readonly AddedSkill[], actorId: string, at: string, batch?: Pick<ImportBatch, "id" | "kind" | "label" | "listId">): V2State {
   if (!added.length) return s
   const specialty = s.skills[0]?.specialty ?? "bsn-med-surg"
   const program = programRuleIn(s)

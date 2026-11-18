@@ -480,3 +480,39 @@ Step 1 of 2 · Choose
 - New skill form: Enter adds (ticked, in Created here), Esc cancels (the panel stays); a library name is refused with "Select it".
 - Upload or paste: the band keeps the switch; drop zone, "Or paste a list", Read the list; IM-05/IM-06 choices on read rows.
 - Step 2 unchanged. URLs `add=1`, `from=file` (alias `addTab=import`), `source=<listId>`.
+
+### Amendment 2026-11-17: upload triage and decluttered Review applied to H (D-ADD1117-u Decided, D-ADD1117-x)
+Reader: `lib/lab/import-triage.ts` replaces `readImport` in H (tables keep name, description and category columns [REQ IM-03, IM-05, IM-07]). Demo mode: any file shows `sample-nursing-skills.xlsx`; paste is read as typed.
+```
+| (file) sample-nursing-skills.xlsx  31 lines                 Replace |
+| (!) This doesn't look like a list of skills ...    <- only when name-like lines < 50% |
+| Ready to add [24]                                          Clear all |   ticked unless the verdict shows
+|   (folder) Neurological [New category]                 [x] Create   |
+|     [x] Glasgow Coma Scale scoring                                   |
+|   [x] Basic airway management          [Use library skill v]        |   IM-05/IM-06 choice on library twins
+| Needs a look [2]                                            Hide    |   one line (Show) while the verdict shows
+|   [ ] and skin check   [Starts mid-line]  Join above (pen) (x)      |   actions on hover/focus; always on a phone
+| Not added [1 heading]                                       Show    |   grouped by reason when open, L-numbers, Add anyway
+```
+Step 2:
+```
+| 24 skills from sample-nursing-skills.xlsx                   Select  |
+| 23 new, 1 from the library · 23 at 1 time, 1 at 3 times · Required |
+| Airway [6]                                                          |
+|   Basic airway management  From library              3 times   v   |   minority provenance by the name; facts only where they differ
+| (<- Back)                                          [Add 24 skills] |
+```
+Select shows row and group boxes and Select all; ticking shows the selection bar; Done ends it; Esc clears the ticks, then leaves Select. Rows start collapsed whenever Review opens. The open row is an indent and a rule, no fill. "Change" is gone; Back returns.
+
+### Amendment 2026-11-17 (later): plain upload list (D-ADD1117-z supersedes the triage in the amendment above)
+```
+| (file) sample-nursing-skills.xlsx · 24 lines                 Replace |
+| [x] Select all 24                                                    |
+| Airway [6]                                                           |
+|   [x] Basic airway management             [Use library skill v]     |
+|   [x] Suctioning, oral                                   (pen)      |   Edit name on hover/focus, always on a phone
+| Neurological [5] [New category]                                     |   created on Save; moved in Review if wanted
+| 24 selected                                       [Review 24 skills] |
+```
+No verdict, no "Not sure" or "Not added" groups, no reason tags. Only formatting lines are dropped. Review step unchanged.
+

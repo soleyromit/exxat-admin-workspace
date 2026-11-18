@@ -21,15 +21,20 @@ import { ToggleSwitch } from "@exxatdesignux/ui/components/ui/toggle-switch"
 import { Input } from "@exxatdesignux/ui/components/ui/input"
 import { Textarea } from "@exxatdesignux/ui/components/ui/textarea"
 import { FieldError, FieldLabel } from "@exxatdesignux/ui/components/ui/field"
-import { LAB_ADMIN, EMPTY_DRAFT, NO_CATEGORY, findDuplicate, mappingHref, normName, validateDraft, type LibraryRow } from "@/lib/lab/library"
+import { EMPTY_DRAFT, NO_CATEGORY, findDuplicate, mappingHref, normName, validateDraft, type LibraryRow } from "@/lib/lab/library"
 import { draftEdited, panelIssues, panelRuleOf, programSettingsOf, settingsImpact, TIMES_MAX } from "@/lib/lab/program-settings"
 import { emptyRule, type LabRule } from "@/lib/lab/configure"
-import { skillLists } from "@/lib/lab/lists"
-import { skillReach } from "@/lib/lab/mapping"
+import type { SkillList } from "@/lib/lab/list-core"
+import { mappingLink } from "@/lib/lab/mapping"
+import { courseUses, listUses, skillOrigin, USED_IN_SHOWN } from "@/lib/lab/skill-used-in"
+import { listSkillsHref } from "@/lib/lab/admin-ia"
+import { MAPPING_LEVEL_LABEL } from "@/lib/v2/labels"
+import { useLabHref, useLabLinkContext } from "@/components/lab/lab-bar/page-context"
+import { StatusBadge } from "@exxatdesignux/ui/components/ui/status-badge"
 import { skillById } from "@/lib/v2/evidence-index"
 import { plural } from "@/lib/v2/format"
-import { capitalize, skillListsNoun, skillNoun } from "@/lib/lab/terms"
-import { NUM_LINK } from "@/components/lab/link-styles"
+import { capitalize, skillListsNoun, skillNoun, skillNounPlural } from "@/lib/lab/terms"
+import { LINK, NUM_LINK } from "@/components/lab/link-styles"
 import { DiscardChangesDialog, useLeaveGuard } from "@/components/lab/shared/unsaved-guard"
 import { keepFocus, returnFocus, rowLink } from "@/components/lab/shared/focus"
 import { useLists, useMappingOverlay } from "@/components/lab/admin-a/use-admin-data"
@@ -192,6 +197,93 @@ function TabProblem() {
 /** Hidden, not unmounted: a half-typed tag or the place in a long form is still there on the way back. */
 const TAB_PANE = "flex flex-col gap-4 data-[state=inactive]:hidden"
 
+/** A muted value line: a state, not a record. */
+const MUTED_LINE = "py-1 text-sm text-muted-foreground"
+
+/** Up to three rows, then "and N more", which shows the rest in place (the panel is narrow, and 100+ lists or courses must not push the tab off screen). */
+function FirstFew<T>({ rows, render, more, testId }: { rows: readonly T[]; render: (r: T) => React.ReactNode; more: string; testId: string }) {
+  const [all, setAll] = React.useState(false)
+  const shown = all ? rows : rows.slice(0, USED_IN_SHOWN)
+  const rest = rows.length - shown.length
+  return (
+    <ul className="flex flex-col gap-1.5 py-1" data-used-in={testId}>
+      {shown.map((r, i) => <li key={i} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 text-sm">{render(r)}</li>)}
+      {rest > 0 ? (
+        <li>
+          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-sm" aria-expanded={false} aria-label={`Show ${rest} more ${more}`} onClick={() => setAll(true)}>
+            {`and ${rest} more`}
+          </Button>
+        </li>
+      ) : null}
+    </ul>
+  )
+}
+
+/**
+ * The Used in tab (Romit 2026-11-17, "info looks vague"): each list and course by name, each a link to where it is acted on, with its one
+ * fact as a word; and where the skill came from, as specifically as the store says (`skillOrigin`). Label and value rows, as Details.
+ */
+function UsedIn({ row, lists }: { row: LibraryRow; lists: readonly SkillList[] }) {
+  const state = useV2State()
+  const [overlay] = useMappingOverlay()
+  const ctx = useLabLinkContext()
+  const to = useLabHref()
+  const inactive = row.status === "inactive"
+  const onLists = React.useMemo(() => listUses(lists, row.id), [lists, row.id])
+  const courses = React.useMemo(() => courseUses(state, overlay, row.id), [state, overlay, row.id])
+  const origin = React.useMemo(() => skillOrigin(state, row.id, lists), [state, row.id, lists])
+  const fact = (label: string) => <StatusBadge label={label} tone="neutral" size="sm" />
+  return (
+    <>
+      <Row label={capitalize(skillListsNoun())}>
+        {inactive ? (
+          <span className={MUTED_LINE}>Withdrawn</span>
+        ) : onLists.length === 0 ? (
+          <span className={MUTED_LINE}>Not on a list yet</span>
+        ) : (
+          <FirstFew rows={onLists} testId="lists" more={skillListsNoun()} render={(l) => (
+            <>
+              <Link className={`${LINK} min-w-0 [overflow-wrap:anywhere]`} href={listSkillsHref(l.id, ctx)}>{l.name}</Link>
+              {fact(l.required ? "Required" : "Optional")}
+            </>
+          )} />
+        )}
+      </Row>
+      <Row label="Courses">
+        {inactive ? (
+          <span className={MUTED_LINE}>Withdrawn</span>
+        ) : row.configuration === "not-configured" ? (
+          <span className={MUTED_LINE}>Mapped after it is configured</span>
+        ) : courses.length === 0 ? (
+          <Link className={`${LINK} py-1 text-sm`} href={mappingHref(row.id)}>Not mapped yet</Link>
+        ) : (
+          <FirstFew rows={courses} testId="courses" more="courses" render={(c) => (
+            <>
+              <Link className={`${LINK} min-w-0 [overflow-wrap:anywhere]`} href={mappingLink({ by: "course", offering: c.offeringId })}>
+                <span className="tabular-nums">{c.code}</span>{` ${c.name}`}{c.cohort ? `, ${c.cohort}` : ""}
+              </Link>
+              {fact(MAPPING_LEVEL_LABEL[c.level])}
+            </>
+          )} />
+        )}
+      </Row>
+      <Row label="Added">
+        <div className="flex flex-col gap-1 py-1 text-sm text-foreground" data-used-in="origin">
+          <span className="[overflow-wrap:anywhere]">
+            {origin.lead}
+            {origin.name ? " " : null}
+            {origin.name && origin.listId ? <Link className={LINK} href={listSkillsHref(origin.listId, ctx)}>{origin.name}</Link> : origin.name}
+            {origin.date ? <span className="text-muted-foreground">{` · ${origin.date}`}</span> : null}
+          </span>
+          {origin.batchId && origin.others > 0 ? (
+            <Link className={`${NUM_LINK} self-start`} href={to("admin/skills-library", { added: origin.batchId })}>{`With ${plural(origin.others, `other ${skillNoun()}`, `other ${skillNounPlural()}`)}`}</Link>
+          ) : null}
+        </div>
+      </Row>
+    </>
+  )
+}
+
 /** The form for one skill. Keyed by skill, so moving to another row starts clean. */
 const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited, onOpen, onCancel, onDirty, tab, onTab, focusConfigure }: {
   row: LibraryRow
@@ -207,7 +299,6 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
   focusConfigure: boolean
 }) {
   const state = useV2State()
-  const [overlay] = useMappingOverlay()
   const { lists } = useLists(state)
   const opts = useVocabOptions()
   const skill = skillById(state, row.id)
@@ -273,7 +364,6 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
   React.useEffect(() => { if (dirty) onEdited() }, [dirty, onEdited])
   React.useEffect(() => () => onDirty(false), [onDirty])
 
-  const inactive = row.status === "inactive"
   const categoryOff = !!d.category && opts.inactiveCategories.some((c) => normName(c) === normName(d.category))
   const others = React.useMemo(() => allRows.filter((r) => r.id !== row.id), [allRows, row])
   const nameProblem = (name: string) => validateDraft({ ...EMPTY_DRAFT, name }, others.map((r) => r.name)).name ?? null
@@ -316,8 +406,6 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
     if (focusConfigure) requestAnimationFrame(() => requestAnimationFrame(() => configureRef.current?.focus({ preventScroll: true })))
   }, [focusConfigure])
 
-  const reach = React.useMemo(() => skillReach(state, overlay, "", lists).find((r) => r.id === row.id), [state, overlay, lists, row.id])
-  const onLists = skillLists(lists).filter((l) => l.skillIds.includes(row.id)).length
   const detailsProblem = !!nameError || (showErrors && issues.length > 0)
 
   // The DS table pins its floating head under any `tabs-sticky-subheader` it finds in the document, and that finds this strip too, floating over the page beside the panel. A banner lowers the
@@ -398,23 +486,7 @@ const EditForm = React.memo(function EditForm({ row, allRows, saveEdit, onEdited
         </TabsContent>
 
         <TabsContent value="used" forceMount className={TAB_PANE}>
-          <Row label={capitalize(skillListsNoun())}>
-            {inactive
-              ? <span className="py-1 text-sm text-muted-foreground">Withdrawn</span>
-              : <Link className={`${NUM_LINK} py-1`} href={`${LAB_ADMIN}/lists-cohorts`}>{plural(onLists, "list", "lists")}</Link>}
-          </Row>
-          <Row label="Courses">
-            {inactive ? (
-              <span className="py-1 text-sm text-muted-foreground">Withdrawn</span>
-            ) : row.configuration === "not-configured" ? (
-              <span className="py-1 text-sm text-muted-foreground">Mapped after it is configured</span>
-            ) : (
-              <Link className={`${NUM_LINK} py-1`} href={mappingHref(row.id)}>
-                {reach?.courses ? `${plural(reach.courses, "course", "courses")}${reach.mandatoryCourses ? `, ${reach.mandatoryCourses} mandatory` : ""}` : "Not mapped yet"}
-              </Link>
-            )}
-          </Row>
-          <Row label="Came from"><span className="py-1 text-sm text-foreground">{row.source}</span></Row>
+          <UsedIn row={row} lists={lists} />
         </TabsContent>
       </FloatingSheetPanelBody>
       {/* Only with something to save (Shopify's save bar, D-L97). With nothing to save, X is the way out. A flex child under a body that keeps its scrollTop, so nothing moves when it appears. The DS FloatingSheetPanelWorkflowFooter hard-codes flex-1 buttons and key hints, with no prop to turn them off. */}
