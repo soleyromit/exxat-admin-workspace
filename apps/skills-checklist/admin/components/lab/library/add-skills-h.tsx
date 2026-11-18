@@ -65,7 +65,6 @@ const GROUP_HEAD = "flex min-h-8 items-center justify-between gap-3"
 /** Neutral, not the theme's tinted muted: the table group surface (app/globals.css), which has its own dark value. */
 const SURFACE = "bg-[var(--dt-group-bg)]"
 const FIELD = "flex flex-col gap-1.5"
-const FIELD_LABEL = "text-xs font-medium text-muted-foreground"
 /** A selection menu's title (D-ADD1117-p): reads as the menu's question ("Move 2 skills to"), not the DS label's 12 px muted caption. */
 const MENU_TITLE = "px-2 pt-2 pb-1.5 text-sm font-semibold text-foreground"
 /** Purposeful icons only, one size and colour. */
@@ -474,7 +473,6 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
       return { ...l, twin, status, repeat }
     }).filter((r) => !r.repeat)
   }, [imp, byName, onList, usable])
-  const importUnique = importRows
   const canTick = (r: (typeof importRows)[number]) => r.status === "new" || r.status === "library"
   const toAdd = importRows.filter((r) => canTick(r) && ticked.has(r.key))
   const newCategories = React.useMemo(() => [...new Set(importRows.filter((r) => r.category).map((r) => r.category!))].filter((c) => !categories.some((x) => normName(x) === normName(c))), [importRows, categories])
@@ -489,8 +487,8 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
     setEditingLine(null); setDupChoice({})
   }
   // Demo mode (D-ADD1117-x, Romit 2026-11-17): in the lab no file is read; every file shows the sample, under the sample's name.
-  const useSample = () => takeText(SAMPLE_TEXT, false, SAMPLE_FILE)
-  const onFile = (_f: File) => useSample()
+  const loadSample = () => takeText(SAMPLE_TEXT, false, SAMPLE_FILE)
+  const onFile = (_f: File) => loadSample()
   const tickLine = (key: string, on: boolean) => setTicked((s) => { const n = new Set(s); if (on) n.add(key); else n.delete(key); return n })
   const setRows = (f: (rows: ImpRow[]) => ImpRow[]) => setImp((m) => (m ? { ...m, rows: f(m.rows) } : m))
   // Edit name, in place: Enter or Save keeps it, Esc or Cancel leaves it as read.
@@ -697,7 +695,7 @@ export function AddSkillsSidePanel({ api, open, onOpenChange, onAdd, draftIds, i
                         </p>
                         <p className={TYPE.meta}>CSV, Excel, Word, PDF or text</p>
                         {/* Demo mode (D-ADD1117-x): the lab reads no file; this says so by doing it. */}
-                        <Button type="button" variant="link" size="sm" className="h-auto p-0 text-muted-foreground" onClick={useSample} data-h-use-sample>Use sample file</Button>
+                        <Button type="button" variant="link" size="sm" className="h-auto p-0 text-muted-foreground" onClick={loadSample} data-h-use-sample>Use sample file</Button>
                       </section>
                       <div className="flex flex-col gap-2">
                         <Label htmlFor="h-paste" className={TYPE.group}>Or paste a list</Label>
